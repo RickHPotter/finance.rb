@@ -1,15 +1,16 @@
-<div class="w-full">
-  <div class="flex justify-between items-center">
-    <h1 class="text-white text-lg font-bold text-4xl">Card Transactions</h1>
-    <%= link_to 'New Post', new_card_transaction_path,
-      class: "rounded-lg py-3 px-5 bg-blue-600 text-white block font-medium",
-      data: { 'turbo-frame': 'new_card_transaction' }
-    %>
+<div class='w-full'>
+  <div class='flex justify-between items-center'>
+    <h1 class='text-white font-bold text-4xl'>Card Transactions</h1>
+    <%= link_to 'New Card Transaction', new_card_transaction_path,
+                class: 'rounded-lg py-3 px-5 bg-blue-600 text-white block font-medium',
+                data: { 'turbo-frame': 'new_card_transaction' } %>
   </div>
+
+  <%= turbo_stream_from :card_transactions %>
 
   <%= turbo_frame_tag :new_card_transaction %>
 
-  <div class="min-w-full">
+  <div class='min-w-full'>
     <%= turbo_frame_tag :card_transactions do %>
       <%= render @card_transactions %>
     <% end %>

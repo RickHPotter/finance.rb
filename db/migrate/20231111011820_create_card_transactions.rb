@@ -9,7 +9,7 @@ class CreateCardTransactions < ActiveRecord::Migration[7.0]
       t.string :description, null: false
       t.text :comment
       t.references :category, null: false, foreign_key: true
-      t.references :category2, null: true, foreign_key: true
+      t.references :category2, null: true
       t.references :entity, null: false, foreign_key: true
       t.decimal :starting_price, null: false
       t.decimal :price, null: false
@@ -20,5 +20,7 @@ class CreateCardTransactions < ActiveRecord::Migration[7.0]
 
       t.timestamps
     end
+
+    add_foreign_key 'card_transactions', 'categories', column: 'category2_id'
   end
 end

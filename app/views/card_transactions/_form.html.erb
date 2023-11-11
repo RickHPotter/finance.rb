@@ -1,0 +1,69 @@
+<%= turbo_frame_tag dom_id card_transaction do %>
+  <% form_with(
+       model: card_transaction, id: 'form',
+       class: 'contents',
+       html: { data: { controller: 'notice', action: 'submit->notice#clear' } }
+  ) do |form| %>
+
+    <%= render 'layouts/shared/errors', object: card_transaction %>
+
+    <div class='my-5'>
+      <%= form.label :date %>
+      <%= form.date_field :date, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class='my-5'>
+      <%= form.label :card %>
+      <%= form.select :card_id, [['Azul', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :description %>
+      <%= form.text_field :description, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class='my-5'>
+      <%= form.label :category %>
+      <%= form.select :category_id, [['Food', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class='my-5'>
+      <%= form.label :category2 %>
+      <%= form.select :category2_id, [['Food', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class='my-5'>
+      <%= form.label :entity %>
+      <%= form.select :entity_id, [['Moi', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :price %>
+      <%= form.number_field :price, step: 0.01, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :month %>
+      <%= form.number_field :month, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :year %>
+      <%= form.number_field :year, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :installments %>
+      <%= form.number_field :installments, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :installments_number %>
+      <%= form.number_field :installments_number, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    </div>
+
+    <div class="inline">
+      <%= form.submit class: "rounded-lg py-3 px-5 bg-blue-600 text-white inline-block font-medium" %>
+    </div>
+  <% end %>
+<% end %>

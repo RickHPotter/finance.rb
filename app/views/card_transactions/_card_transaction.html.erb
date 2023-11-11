@@ -1,3 +1,18 @@
- <p class="my-5">
-   <%= @card_transaction.id %>
- </p>
+<%= turbo_frame_tag dom_id card_transaction do %>
+  <div class="bg-white w-full p-4 rounded-md mt-2">
+    <h1 class="my-5 font-bold text-gray-700 text-4xl hover:text-blue-400">
+      <%= link_to card_transaction.description, edit_card_transaction_path(card_transaction),
+                  data: { 'turbo-frame': "edit_card_transaction_#{card_transaction.id}" } %>
+    </h1>
+    <p class="my-5">
+      <%= card_transaction.price %>
+    </p>
+
+    <div class="w-full mt-2 flex flex-wrap border shadow p-2 rounded-md">
+      <p class="flex-1 text-center font-bold text-gray-700">Created at: <%= card_transaction.created_at.strftime('%d/%m/%Y') %></p>
+      <p class="flex-1 text-center font-bold text-gray-700">Entity: <%= card_transaction.entity.entity_name %></p>
+    </div>
+
+    <%= turbo_frame_tag "edit_card_transaction_#{card_transaction.id}" %>
+  </div>
+<% end %>
