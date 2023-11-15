@@ -6,6 +6,10 @@ class CardTransactionsController < ApplicationController
 
   def index
     @card_transactions = CardTransaction.all
+
+    @items = Entity.all.map do |entity|
+      AutocompleteSelectComponent::Item.new(entity.id, entity.entity_name)
+    end
   end
 
   def show; end
@@ -67,5 +71,3 @@ class CardTransactionsController < ApplicationController
     )
   end
 end
-
-# TODO: StartingPrice has to be Price at create

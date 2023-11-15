@@ -1,0 +1,5 @@
+<%= turbo_frame_tag :second_tab do %>
+  <div class='flex justify-center'>
+    <%= render TabsComponent.new(items: @items_second_tab) %>
+  </div>
+<% end %>

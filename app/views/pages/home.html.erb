@@ -1,0 +1,11 @@
+<div class='w-full'>
+  <div class='flex justify-center'>
+    <%= render TabsComponent.new(items: @items_first_tab) %>
+  </div>
+
+  <%= turbo_frame_tag :second_tab %>
+
+  <div class='flex justify-center mt-14'>
+    <%= turbo_frame_tag :center_container %>
+  </div>
+</div>

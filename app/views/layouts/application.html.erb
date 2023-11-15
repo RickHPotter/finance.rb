@@ -12,12 +12,16 @@
     <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
-  <body class="bg-gray-700">
+  <body class="bg-gray-900 text-white">
     <%= turbo_frame_tag :notice, class: 'w-full' do %>
     <% end %>
 
     <main class="container mx-auto mt-28 px-5 flex">
       <%= yield %>
     </main>
+
+    <!-- WHERE CREDITS ARE DUE: The following commented scripts were converted into Stimulus Controllers
+      <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/tabs.js"></script>
+    -->
   </body>
 </html>

@@ -1,0 +1,13 @@
+<div class="w-2/3" data-controller='material-tailwind-tab'>
+  <div class="relative right-0">
+    <ul class="relative flex list-none flex-wrap rounded-xl bg-blue-gray-50/60 p-1"
+        data-tabs="tabs"
+        data-material-tailwind-tab-target="tab"
+        role="list" >
+
+      <% @items.each do |item| %>
+        <%= render 'shared/components/tab/tab', item:, width: @items.count %>
+      <% end %>
+    </ul>
+  </div>
+</div>

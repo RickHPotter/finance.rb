@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  resources :card_transactions
-  # TODO: test without the /
-  get '/notice', to: 'card_transactions#clear_message'
+  resources :pages do
+    collection do
+      get 'card_transaction'
+      get 'transaction'
+      get 'whatever'
+    end
+  end
 
-  root 'card_transactions#index'
+  root 'pages#home'
 end
