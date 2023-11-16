@@ -1,13 +1,33 @@
-<div class="w-2/3" data-controller='material-tailwind-tab'>
-  <div class="relative right-0">
-    <ul class="relative flex list-none flex-wrap rounded-xl bg-blue-gray-50/60 p-1"
-        data-tabs="tabs"
-        data-material-tailwind-tab-target="tab"
-        role="list" >
+<% if @dependent %>
+  <div class="opacity-<%= @default ? 100 : 0 %>" role="tabpanel" id="tab-item-<%= @dependent_no %>" >
+<% else %>
+  <div <%= 'data-controller=material-tailwind-tab' unless @dependent %> >
+<% end %>
+  <ul class="relative flex list-none flex-wrap rounded-xl bg-blue-gray-50/60 p-1"
+      data-tabs="tabs" data-default='<%= @default %>'
+      data-material-tailwind-tab-target="tabList"
+      role="list" >
 
-      <% @items.each do |item| %>
-        <%= render 'shared/components/tab/tab', item:, width: @items.count %>
+    <% width = @items.count %>
+    <% @items.each_with_index do |item, index| %>
+      <li class='z-30 flex-auto text-center w-1/<%= width %>'
+          data-material-tailwind-tab-target='tabItem' >
+        <%= link_to item.link, role: 'tab', aria: { selected: @default, controls: "tab-item-#{index}" },
+                    class: 'text-slate-700 z-30 mb-0 flex w-full cursor-pointer items-center justify-center
+                           rounded-lg border-0 bg-inherit px-0 py-1 transition-all ease-in-out',
+                    data: { 'turbo-frame': item.turbo_frame, 'tab-target': '' } do %>
+          <%= render item.icon %>
+            <span class='ml-1 font-bold text-slate-700'><%= item.label %></span>
+          <% end %>
+      </li>
+    <% end %>
+  </ul>
+
+  <% if @dependents.present? %>
+    <div data-tab-content="">
+      <% @dependents.each_with_index do |partial, index| %>
+        <%= render TabsComponent.new(items: partial, default: index.zero?, dependent: true, dependent_no: index) %>
       <% end %>
-    </ul>
-  </div>
+    </div>
+  <% end %>
 </div>
