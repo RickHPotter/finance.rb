@@ -1,10 +1,7 @@
 <%= turbo_frame_tag :center_container do %>
-  <div class='w-full bg-white p-4 rounded-md mt-4'>
-    <h1 class='text-lg font-bold'>New Card Transaction</h1>
+  <h1 class='text-4xl text-sky-600 font-mono font-bold'>New Card Transaction</h1>
 
-    <%= render 'form', card_transaction: @card_transaction %>
+  <%= render 'form', card_transaction: @card_transaction %>
 
-    <%= link_to 'Back to Card Transactions', card_transactions_path,
-                 class: 'ml-2 rounded-lg py-3 px-5 bg-gray-100 inline-block font-medium' %>
-  </div>
+  <%= link_to 'Back to Card Transactions', card_transactions_path, class: 'ml-2 rounded-lg py-3 px-5 bg-gray-100 inline-block font-medium' %>
 <% end %>
