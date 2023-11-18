@@ -1,0 +1,18 @@
+en:
+  activerecord:
+    models:
+      card_transaction:
+        one: Card transaction
+        other: Card transactions
+    attributes:
+      card_transaction:
+        id: ID
+        description: Description
+        date: Date
+        starting_price: Price
+        card_id: Card
+        entity_id: Entity
+        category_id: Primary Category
+        category2_id: Secondary Category
+        created_at: Created at
+        updated_at: Updated at

@@ -10,53 +10,65 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 20_231_111_011_820) do
-  create_table 'card_transactions', force: :cascade do |t|
-    t.date 'date', null: false
-    t.integer 'card_id', null: false
-    t.string 'description', null: false
-    t.text 'comment'
-    t.integer 'category_id', null: false
-    t.integer 'category2_id'
-    t.integer 'entity_id', null: false
-    t.decimal 'starting_price', null: false
-    t.decimal 'price', null: false
-    t.integer 'month', null: false
-    t.integer 'year', null: false
-    t.integer 'installments', null: false
-    t.integer 'installments_number', null: false
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
-    t.index ['card_id'], name: 'index_card_transactions_on_card_id'
-    t.index ['category2_id'], name: 'index_card_transactions_on_category2_id'
-    t.index ['category_id'], name: 'index_card_transactions_on_category_id'
-    t.index ['entity_id'], name: 'index_card_transactions_on_entity_id'
+ActiveRecord::Schema[7.0].define(version: 2023_11_17_181718) do
+  create_table "card_transactions", force: :cascade do |t|
+    t.date "date", null: false
+    t.integer "card_id", null: false
+    t.string "description", null: false
+    t.text "comment"
+    t.integer "category_id", null: false
+    t.integer "category2_id"
+    t.integer "entity_id", null: false
+    t.decimal "starting_price", null: false
+    t.decimal "price", null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "installment_id", null: false
+    t.integer "installments_count", default: 0, null: false
+    t.index ["card_id"], name: "index_card_transactions_on_card_id"
+    t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
+    t.index ["category_id"], name: "index_card_transactions_on_category_id"
+    t.index ["entity_id"], name: "index_card_transactions_on_entity_id"
+    t.index ["installment_id"], name: "index_card_transactions_on_installment_id"
   end
 
-  create_table 'cards', force: :cascade do |t|
-    t.string 'card_name', null: false
-    t.date 'due_date', null: false
-    t.decimal 'min_spend', null: false
-    t.decimal 'credit_limit', null: false
-    t.boolean 'active', null: false
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
+  create_table "cards", force: :cascade do |t|
+    t.string "card_name", null: false
+    t.date "due_date", null: false
+    t.decimal "min_spend", null: false
+    t.decimal "credit_limit", null: false
+    t.boolean "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
-  create_table 'categories', force: :cascade do |t|
-    t.string 'description', null: false
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
+  create_table "categories", force: :cascade do |t|
+    t.string "description", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
-  create_table 'entities', force: :cascade do |t|
-    t.string 'entity_name', null: false
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
+  create_table "entities", force: :cascade do |t|
+    t.string "entity_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
-  add_foreign_key 'card_transactions', 'cards'
-  add_foreign_key 'card_transactions', 'categories'
-  add_foreign_key 'card_transactions', 'categories', column: 'category2_id'
-  add_foreign_key 'card_transactions', 'entities'
+  create_table "installments", force: :cascade do |t|
+    t.string "installable_type", null: false
+    t.integer "installable_id", null: false
+    t.decimal "price"
+    t.integer "number"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"
+  end
+
+  add_foreign_key "card_transactions", "cards"
+  add_foreign_key "card_transactions", "categories"
+  add_foreign_key "card_transactions", "categories", column: "category2_id"
+  add_foreign_key "card_transactions", "entities"
+  add_foreign_key "card_transactions", "installments"
 end

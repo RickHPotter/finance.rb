@@ -5,36 +5,36 @@
   "TODO": [
     "Layoyt": [
       "Standardise with tailwind and ViewComponent",
-      "Minimalist dashboard with two tabs uptop: Card Transactions and Transcations",
+      "Minimalist TabComponent uptop for: New, Card Transactions and Transcations",
       "Create hotkeys (i.e. N for creating a new Transaction)"
     ],
-    "( Card ) Transactions Dashboard": [
+    "New TabComponent Item": [
       "Uptop": [
-        "Tabs for each Card on the centre",
-        "Dropdown on the left for Category",
-        "Dropdown on the right for Entity"
+        "TabComponent with buttons that render each table form on the container below"
       ],
-      "Left Side": [
-        "Reference to Month Year,
-        Include the ability to toggle the sidemenu"
+      "Container": [
+        "FormComponent with InputComponents, and so on",
+        "If a form belongs to a model that has has FK, then implement a ModalComponent"
+      ]
+    ],
+    "( Card ) Transaction TabComponent Item": [
+      "Uptop": [
+        "Multi-CheckBoxComponents for Card, Entity, Category, and so on"
       ],
-      "Center": [
-        "Table-like": [
-          "Something like a table but not a table but less poluted",
+      "Container": [
+        "Left Side": [
+          "Multi-CheckBoxComponent for Reference Month Year,
+          Include the ability to toggle the sidemenu"
+        ],
+        "Center": [
+          "TableComponent way less poluted and nicer-looking than the average table",
           "Data to be displayed is date (motnh/day), description, entity and price",
           "Category would be the icon",
           "Entity would be the colour"
         ]
-      ],
-      "Right Side": [
-        "Button New": [
-          "Create a new transaction",
-          "Replace the second row of tabs uptop with the TransactionsFK Forms",
-          "Use Hotwire to replace everything for the modern form",
-          "Use modals with hotwire to create TransactionsFK"
-        ]
       ]
-    ]
+    ],
+
   ],
   "POST_CLARITY_TODO": [
     "Add devise",
