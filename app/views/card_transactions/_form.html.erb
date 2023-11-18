@@ -1,66 +1,69 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
+  <% colour = :sky %>
+
   <% form_with(
        model: card_transaction, id: 'form',
-       class: 'contents',
+       class: 'contents text-black',
        html: { data: { controller: 'notice', action: 'submit->notice#clear' } }
   ) do |form| %>
 
     <%= render 'layouts/shared/errors', object: card_transaction %>
 
-    <div class='my-5'>
-      <%= form.label :date %>
-      <%= form.date_field :date, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    <div class="flex space-x-12">
+      <!-- TODO: DateFieldComponent -->
+      <div class="flex w-72 flex-col gap-6 my-5">
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :date, options: { type: 'date', colour: }) %>
+        <%#= form.date_field :date, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+      </div>
+      <!-- TODO: TODOEND -->
+
+      <div class="flex w-full flex-col gap-6 my-5">
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :description, options: { colour: }) %>
+      </div>
     </div>
 
-    <div class='my-5'>
-      <%= form.label :card %>
-      <%= form.select :card_id, [['Azul', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    <div class="flex space-x-12">
+      <div class="flex w-96 flex-col gap-6 my-5">
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :card_id, items: @cards, options: { colour: }) %>
+      </div>
+
+      <div class="flex w-96 flex-col gap-6 my-5">
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :entity_id, items: @entities, options: { colour: }) %>
+      </div>
     </div>
 
-    <div class="my-5">
-      <%= form.label :description %>
-      <%= form.text_field :description, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
+    <div class="flex space-x-12">
+      <div class="flex w-96 flex-col gap-6 my-5">
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category_id, items: @categories, options: { colour: }) %>
+      </div>
+
+      <div class="flex w-96 flex-col gap-6 my-5">
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category2_id, items: @categories, options: { colour: }) %> </div>
     </div>
 
-    <div class='my-5'>
-      <%= form.label :category %>
-      <%= form.select :category_id, [['Food', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
-    </div>
-
-    <div class='my-5'>
-      <%= form.label :category2 %>
-      <%= form.select :category2_id, [['Food', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
-    </div>
-
-    <div class='my-5'>
-      <%= form.label :entity %>
-      <%= form.select :entity_id, [['Moi', '1']], class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
-    </div>
-
-    <div class="my-5">
-      <%= form.label :price %>
+    <div class="flex w-72 flex-col gap-6 my-5">
       <%= form.number_field :price, step: 0.01, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
     </div>
 
-    <div class="my-5">
-      <%= form.label :month %>
+    <!-- TODO: Only one field that builds up a reference of MonthYear, possibly an AutoSelect, that gets defaulted -->
+    <div class="flex w-72 flex-col gap-6 my-5">
       <%= form.number_field :month, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
     </div>
 
-    <div class="my-5">
-      <%= form.label :year %>
+    <div class="flex w-72 flex-col gap-6 my-5">
       <%= form.number_field :year, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
     </div>
+    <!-- TODO: TODOEND -->
 
-    <div class="my-5">
-      <%= form.label :installments %>
+    <!-- TODO: Usage of stimulus to get the nummber of installments through an increment button. Installments nested fields appear -->
+    <div class="flex w-72 flex-col gap-6 my-5">
       <%= form.number_field :installments, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
     </div>
 
-    <div class="my-5">
-      <%= form.label :installments_number %>
+    <div class="flex w-72 flex-col gap-6 my-5">
       <%= form.number_field :installments_number, class: 'block shadow rounded-md border border-gray-200 outline-none px-3 py-2 mt-2 w-full' %>
     </div>
+    <!-- TODO: TODOEND -->
 
     <div class="inline">
       <%= form.submit class: "rounded-lg py-3 px-5 bg-blue-600 text-white inline-block font-medium" %>
