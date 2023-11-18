@@ -9,6 +9,7 @@ export default class extends Controller {
   }
 
   toggle() {
+    console.log('test')
     if (this.listTarget.classList.contains("hidden")) {
       this.open()
     } else {

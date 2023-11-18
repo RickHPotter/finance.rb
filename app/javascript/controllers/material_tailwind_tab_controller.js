@@ -9,14 +9,13 @@ export default class extends Controller {
 
   connect() {
     this.initialise()
+    this.render_default()
   }
 
   initialise() {
     const tabs = this.tabListTargets
 
     tabs.forEach(item => { this.add_moving_part(item) })
-
-    this.moving_part_on_resize(tabs)
 
     tabs.filter(item => item.dataset.default == 'false').forEach(item => {
       item.parentElement.classList.add('hidden')
@@ -25,9 +24,16 @@ export default class extends Controller {
     this.tabularise()
   }
 
+  render_default() {
+    const selected_li = this.tabItemTargets.find(item => item.querySelector('a').getAttribute('aria-selected') == 'true')
+    const selected_a = selected_li.querySelector('a')
+    if (selected_a) {
+      selected_a.click()
+    }
+  }
+
   add_moving_part(item) {
     var getEventTarget = function getEventTarget(e) {
-      e = e || window.event
       return e.target || e.srcElement
     }
 
@@ -82,68 +88,10 @@ export default class extends Controller {
     }
   }
 
-  // TODO: Very likely not working, but I don't care for now
-  moving_part_on_resize(tabs) {
-    window.addEventListener('resize', (_event) => {
-      tabs.forEach(item => {
-        item = item.parentElement.firstElementChild
-        item.querySelector('[moving-tab]').remove()
-        var moving_div = document.createElement('div')
-        var tab = item.querySelector("[data-tab-target][aria-selected='true']").cloneNode()
-        tab.innerHTML = '-'
-        tab.classList.remove('bg-inherit')
-        tab.classList.add('bg-white', 'text-white')
-        tab.style.animation = '.2s ease'
-        moving_div.classList.add('z-10', 'absolute', 'text-slate-700', 'rounded-lg', 'bg-inherit', 'flex-auto', 'text-center', 'bg-none', 'border-0', 'block', 'shadow')
-        moving_div.setAttribute('moving-tab', '')
-        moving_div.setAttribute('data-tab-target', '')
-        moving_div.appendChild(tab)
-        item.appendChild(moving_div)
-        moving_div.style.padding = '0px'
-        moving_div.style.transition = '.5s ease'
-        var li = item.querySelector("[data-tab-target][aria-selected='true']").parentElement
-        if (li) {
-          var nodes = Array.from(li.closest('ul').children)
-          var index = nodes.indexOf(li) + 1
-          var sum = 0
-          if (item.classList.contains('flex-col')) {
-            for (var j = 1; j <= nodes.indexOf(li); j++) {
-              sum += item.querySelector('li:nth-child(' + j + ')').offsetHeight
-            }
-            moving_div.style.transform = 'translate3d(0px,' + sum + 'px, 0px)'
-            moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px'
-            moving_div.style.height = item.querySelector('li:nth-child(' + j + ')').offsetHeight
-          } else {
-            for (var j = 1; j <= nodes.indexOf(li); j++) {
-              sum += item.querySelector('li:nth-child(' + j + ')').offsetWidth
-            }
-            moving_div.style.transform = 'translate3d(' + sum + 'px, 0px, 0px)'
-            moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px'
-          }
-        }
-      })
-
-      if (window.innerWidth < 991) {
-        tabs.forEach(item => {
-          if (!item.classList.contains('flex-col')) {
-            item.classList.add('flex-col', 'on-resize')
-          }
-        })
-      } else {
-        tabs.forEach(item => {
-          if (item.classList.contains('on-resize')) {
-            item.classList.remove('flex-col', 'on-resize')
-          }
-        })
-      }
-    })
-  }
-
   tabularise() {
     const total = document.querySelectorAll('[data-tab-content]') || []
     total.forEach(function(nav_pills) {
       const links = nav_pills.previousElementSibling.querySelectorAll('li a[data-tab-target]')
-      console.log(links)
       links.forEach(function(link) {
         link.addEventListener('click', function() {
           const clicked_tab = document.querySelector('#' + link.getAttribute('aria-controls'))
