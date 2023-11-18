@@ -3,13 +3,13 @@
 # Controller for CardTransaction
 class CardTransactionsController < ApplicationController
   before_action :set_card_transaction, only: %i[show edit update destroy]
+  before_action :set_cards, only: %i[new edit]
+  before_action :set_entities, only: %i[new edit]
+  before_action :set_categories, only: %i[new edit]
 
   def index
-    @card_transactions = CardTransaction.all
-
-    @items = Entity.all.map do |entity|
-      AutocompleteSelectComponent::Item.new(entity.id, entity.entity_name)
-    end
+    # WARNING: Do I need installments in this eager load?
+    @card_transactions = CardTransaction.all.eager_load(:card, :category, :category2, :entity, :installments)
   end
 
   def show; end
@@ -63,11 +63,23 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.find(params[:id])
   end
 
+  def set_cards
+    @cards = Card.all.order(:card_name).pluck(:id, :card_name)
+  end
+
+  def set_entities
+    @entities = Entity.all.order(:entity_name).pluck(:id, :entity_name)
+  end
+
+  def set_categories
+    @categories = Category.all.order(:description).pluck(:id, :description)
+  end
+
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
       :date, :card_id, :description, :comment, :category_id, :category2_id, :entity_id,
-      :price, :month, :year, :installments, :installments_number
+      :price, :month, :year, :installments, :installments_count
     )
   end
 end
