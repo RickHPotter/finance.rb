@@ -2,8 +2,7 @@
   <%= hidden_field_tag field, nil, data: { autocomplete_select_target: "input" } %>
 
   <div class="relative h-11 w-full min-w-[200px]">
-    <%= input %>
-    <%= label %>
+    <%= render TextFieldComponent.new(form:, object:, field:, options:, wrapper: false) %>
 
     <button data-action="autocomplete-select#toggle" type="button" tabindex="-1"
             class="absolute inset-y-0 right-0 flex flex-row-reverse items-center rounded-r-md px-2 focus:outline-none">
@@ -11,11 +10,11 @@
     </button>
 
     <ul data-autocomplete-select-target="list" id="options" role="listbox"
-        class="hidden absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+        class="hidden absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
       <% items.each do |item| %>
         <li data-autocomplete-select-target="item" data-action="click->autocomplete-select#choose" data-id="<%= item.id %>"
             id="option-0" role="option" tabindex="-1"
-                                        class="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:text-white hover:bg-<%= @options[:colour] %>" >
+                                        class="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:text-white  hover:bg-<%= options[:colour] %>-<%= options[:strength] %>" >
 
           <div data-js="label" class="flex items-center">
             <span data-js="title" class="ml-3 truncate"><%= item.label %></span>

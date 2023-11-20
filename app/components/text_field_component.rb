@@ -1,38 +1,28 @@
 # frozen_string_literal: true
 
 # Component to render an input text field
-class TextFieldComponent < CustomViewComponent
+class TextFieldComponent < ViewComponent::Base
+  include ApplicationHelper
   include TranslateHelper
-  attr_reader :label, :input
+  attr_reader :options, :wrapper
 
-  def initialize(form:, object:, field:, options: {})
+  def initialize(form:, object:, field:, options: {}, wrapper: true)
     @object = object
     @field = field
     @options = default_options(options)
-
-    if form
-      @label = form.label(@field, class: label_class)
-      @input = form.text_field(@field, class: input_class, type: @options[:type], placeholder: ' ')
-    else
-      @label = content_tag(:label, @options[:label], class: label_class)
-      @input = content_tag(:input, nil, class: input_class, type: @options[:type], placeholder: ' ')
-    end
+    @wrapper = wrapper
     super
   end
 
   def default_options(options)
     {
-      colour: COLOURS[options[:colour].to_sym ||= 'indigo'],
+      id: options[:id] || "#{@object.model_name.singular}_#{@field}_select",
+      colour: options[:colour] || 'indigo',
+      strength: options[:strength] || '500',
       label: options[:label] || attribute_model(@object, @field),
-      type: options[:type] || 'text'
+      type: options[:type] || 'text',
+      step: options[:step] || '',
+      data: data_attributes(options[:data])
     }
-  end
-
-  def input_class
-    custom_input_class(colour: @options[:colour])
-  end
-
-  def label_class
-    custom_label_class(colour: @options[:colour])
   end
 end

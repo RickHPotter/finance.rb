@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 # Component to render an autocomplete select
-class AutocompleteSelectComponent < CustomViewComponent
+class AutocompleteSelectComponent < ViewComponent::Base
   include TranslateHelper
-  attr_reader :form, :object, :field, :label, :input, :items
+  attr_reader :form, :object, :field, :options, :label, :input, :items
 
   def initialize(form:, object:, field:, items:, options: {})
     @object = object
@@ -13,8 +13,6 @@ class AutocompleteSelectComponent < CustomViewComponent
     @items = items.map do |item|
       Item.new(id: item[0], label: item[1])
     end
-
-    set_helpers
     super
   end
 
@@ -24,37 +22,15 @@ class AutocompleteSelectComponent < CustomViewComponent
 
   def default_options(options)
     {
-      id: "#{@object.model_name.singular}_#{@field}_select",
-      colour: COLOURS[options[:colour].to_sym ||= 'indigo'],
-      label: options[:label] || attribute_model(@object, @field)
-    }
-  end
-
-  def set_helpers
-    if form
-      @label = form.label(@field, label_options)
-      @input = form.text_field(@field, input_options)
-    else
-      @label = content_tag(:label, @options[:label], label_options)
-      @input = content_tag(:input, nil, input_options)
-    end
-  end
-
-  def input_options
-    {
-      id: @id, role: 'combobox', type: 'text', placeholder: ' ',
-      class: custom_input_class(colour: @options[:colour]),
+      id: options[:id] || "#{@object.model_name.singular}_#{@field}_select",
+      colour: options[:colour] || 'indigo',
+      strength: options[:strength] || '500',
+      label: options[:label] || attribute_model(@object, @field),
+      type: 'select',
       data: {
-        autocomplete_select_target: 'selected', placeholder: @options[:placeholder],
+        autocomplete_select_target: 'selected',
         action: 'input->autocomplete-select#filterList keydown->autocomplete-select#onKeyDown'
       }
-    }
-  end
-
-  def label_options
-    {
-      for: @id,
-      class: custom_label_class(colour: @options[:colour])
     }
   end
 end

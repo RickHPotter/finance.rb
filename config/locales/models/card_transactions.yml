@@ -8,11 +8,17 @@ en:
       card_transaction:
         id: ID
         description: Description
+        comment: Comment
         date: Date
-        starting_price: Price
+        price: Price
+        starting_price: Original Price
         card_id: Card
         entity_id: Entity
         category_id: Primary Category
         category2_id: Secondary Category
+        month: Month
+        year: Year
+        installment: Installment
+        installments_count: Installments Count
         created_at: Created at
         updated_at: Updated at
