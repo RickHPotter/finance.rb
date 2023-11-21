@@ -12,12 +12,22 @@
     <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
-  <body class="bg-gray-900 text-white antialiased">
-    <%= turbo_frame_tag :notice, class: 'w-full' do %>
-    <% end %>
+  <body class="">
+    <main class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white antialiased">
+      <div class="flex justify-between">
+        <div class="p-2">
+          <%= render 'shared/dark_mode' %>
+        </div>
+        <div>
+          <!-- TODO: Fix notice through Turbo -->
+          <%= turbo_frame_tag :notice, class: 'w-full' do %>
+          <% end %>
+        </div>
+      </div>
 
-    <main class="container mx-auto mt-28 px-5 flex">
-      <%= yield %>
+      <section class="container mx-auto mt-28 px-5 flex">
+        <%= yield %>
+      </section>
     </main>
 
     <!-- WHERE CREDITS ARE DUE: The following commented scripts were converted into Stimulus Controllers

@@ -9,6 +9,7 @@ module.exports = {
     './app/components/**/*.html.erb',
     './app/views/**/*.{erb,haml,html,slim}'
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
