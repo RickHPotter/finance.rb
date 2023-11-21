@@ -23,8 +23,6 @@ class AutocompleteSelectComponent < ViewComponent::Base
   def default_options(options)
     {
       id: options[:id] || "#{@object.model_name.singular}_#{@field}_select",
-      colour: options[:colour] || 'indigo',
-      strength: options[:strength] || '500',
       label: options[:label] || attribute_model(@object, @field),
       type: 'select',
       data: {
@@ -37,6 +35,5 @@ end
 
 # TODO: Following features:
 # - When typing, the first option should be rendered also in the input, but with font-light and grey colour
-# - Bugfix check icon far-right
 # - Add option to use a round-colour or an icon or a picure on the far-left
-# - Implement through stimulus a possibility to deny an option in a second select if already chosen in a previous select
+# - Implement through stimulus a possibility to deny an option if already chosen in a previous select (Category, i.e.)

@@ -17,8 +17,6 @@ class TextFieldComponent < ViewComponent::Base
   def default_options(options)
     {
       id: options[:id] || "#{@object.model_name.singular}_#{@field}_select",
-      colour: options[:colour] || 'indigo',
-      strength: options[:strength] || '500',
       label: options[:label] || attribute_model(@object, @field),
       type: options[:type] || 'text',
       step: options[:step] || '',

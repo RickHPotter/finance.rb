@@ -10,16 +10,16 @@
     </button>
 
     <ul data-autocomplete-select-target="list" id="options" role="listbox"
-        class="hidden absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+        class="hidden bg-white absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
       <% items.each do |item| %>
         <li data-autocomplete-select-target="item" data-action="click->autocomplete-select#choose" data-id="<%= item.id %>"
             id="option-0" role="option" tabindex="-1"
-                                        class="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:text-white  hover:bg-<%= options[:colour] %>-<%= options[:strength] %>" >
+                                        class="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:text-white hover:bg-slate-900" >
 
           <div data-js="label" class="flex items-center">
             <span data-js="title" class="ml-3 truncate"><%= item.label %></span>
           </div>
-          <span data-js="check" class="hidden absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600 group-hover:text-white">
+          <span data-js="check" class="hidden absolute inset-y-0 right-0 flex items-center pr-4 text-slate-900 group-hover:text-white">
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"> <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /> </svg>
           </span>
         </li>

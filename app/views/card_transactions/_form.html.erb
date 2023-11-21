@@ -1,5 +1,4 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
-  <% colour = :white %>
 
   <% form_with(
        model: card_transaction, id: 'form',
@@ -9,52 +8,51 @@
 
     <%= render 'layouts/shared/errors', object: card_transaction %>
 
-
     <div class="flex space-x-12">
       <div class="flex w-2/3 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :description, options: { colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :description) %>
       </div>
 
       <div class="flex w-1/3 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :date, options: { type: 'date', colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :date, options: { type: 'date' }) %>
       </div>
     </div>
 
     <div class="flex space-x-12">
       <div class="flex w-2/3 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :comment, options: { colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :comment) %>
       </div>
 
       <div class="flex w-1/3 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :starting_price, options: { type: 'number', step: 0.01, colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :starting_price, options: { type: 'number', step: 0.01 }) %>
       </div>
     </div>
 
     <div class="flex space-x-12">
       <div class="flex w-1/4 flex-col gap-6 my-5">
-        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :card_id, items: @cards, options: { colour: }) %>
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :card_id, items: @cards) %>
       </div>
 
       <div class="flex w-1/4 flex-col gap-6 my-5">
-        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :entity_id, items: @entities, options: { colour: }) %>
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :entity_id, items: @entities) %>
       </div>
 
       <div class="flex w-1/4 flex-col gap-6 my-5">
-        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category_id, items: @categories, options: { colour: }) %>
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category_id, items: @categories) %>
       </div>
 
       <div class="flex w-1/4 flex-col gap-6 my-5">
-        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category2_id, items: @categories, options: { colour: }) %> </div>
+        <%= render AutocompleteSelectComponent.new(form: nil, object: card_transaction, field: :category2_id, items: @categories) %> </div>
     </div>
 
     <!-- TODO: Only one field that builds up a reference of MonthYear, possibly an AutoSelect, that gets defaulted -->
     <div class="flex space-x-12 justify-center">
       <div class="flex w-1/6 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :month, options: { type: 'number', step: 1, colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :month, options: { type: 'number', step: 1 }) %>
       </div>
 
       <div class="flex w-1/6 flex-col gap-6 my-5">
-        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :year, options: { type: 'number', step: 1, colour: }) %>
+        <%= render TextFieldComponent.new(form: nil, object: card_transaction, field: :year, options: { type: 'number', step: 1 }) %>
       </div>
     </div>
 
@@ -62,11 +60,11 @@
         TODO: Usage of stimulus to get the number of installments through an increment button. Installments nested fields appear
 
     <div class="flex w-72 flex-col gap-6 my-5">
-      <%#= render TextFieldComponent.new(form: nil, object: card_transaction, field: :installment_id, options: { type: 'number', step: 1, colour: }) %>
+      <%#= render TextFieldComponent.new(form: nil, object: card_transaction, field: :installment_id, options: { type: 'number', step: 1 }) %>
     </div>
 
     <div class="flex w-72 flex-col gap-6 my-5">
-      <%#= render TextFieldComponent.new(form: nil, object: card_transaction, field: :installments_count, options: { type: 'number', step: 1, colour: }) %>
+      <%#= render TextFieldComponent.new(form: nil, object: card_transaction, field: :installments_count, options: { type: 'number', step: 1 }) %>
     </div>
     -->
 

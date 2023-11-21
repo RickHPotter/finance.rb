@@ -5,11 +5,9 @@ export default class extends Controller {
   static targets = ["list", "item", "selected", "input"]
 
   connect() {
-    this.originalListHTML = this.listTarget.innerHTML
   }
 
   toggle() {
-    console.log('test')
     if (this.listTarget.classList.contains("hidden")) {
       this.open()
     } else {
@@ -18,7 +16,6 @@ export default class extends Controller {
   }
 
   open() {
-    this.listTarget.innerHTML = this.originalListHTML
     this.selectedTarget.focus()
     this.listTarget.classList.remove("hidden")
   }
