@@ -42,7 +42,7 @@ export default class extends Controller {
     var tab = first_li.cloneNode()
     tab.innerHTML = '-'
     tab.classList.remove('bg-inherit', 'text-slate-700')
-    tab.classList.add('bg-white', 'text-white')
+    tab.classList.add('bg-white', 'dark:bg-sky-500', 'text-transparent')
     tab.style.animation = '.2s ease'
     moving_div.classList.add('z-10', 'absolute', 'text-slate-700', 'rounded-lg', 'bg-inherit', 'flex-auto', 'text-center', 'bg-none', 'border-0', 'block', 'shadow')
     moving_div.setAttribute('moving-tab', '')
