@@ -10,6 +10,7 @@ class AutocompleteSelectComponent < ViewComponent::Base
 
   # public instance methods ...................................................
   def initialize(form:, object:, field:, items:, options: {})
+    @form = form
     @object = object
     @field = field
     @options = default_options(options)

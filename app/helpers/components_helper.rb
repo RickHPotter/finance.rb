@@ -16,7 +16,13 @@ module ComponentsHelper
     'flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
   end
 
-  def data_attributes(data)
+  def data_attributes(*args)
+    args.compact!
+    return {} if args.empty?
+
+    args.flatten!
+    data = args.reduce({}, :update)
+
     data&.map do |key, value|
       "data-#{key.to_s.gsub('_', '-')}=\"#{value}\""
     end&.join(' ')&.html_safe
