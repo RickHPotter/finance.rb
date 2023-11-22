@@ -2,9 +2,13 @@
 
 # Component to render an autocomplete select
 class AutocompleteSelectComponent < ViewComponent::Base
+  # includes ..................................................................
   include TranslateHelper
+
+  # security (i.e. attr_accessible) ...........................................
   attr_reader :form, :object, :field, :options, :label, :input, :items
 
+  # public instance methods ...................................................
   def initialize(form:, object:, field:, items:, options: {})
     @object = object
     @field = field
@@ -16,13 +20,14 @@ class AutocompleteSelectComponent < ViewComponent::Base
     super
   end
 
+  # private instance methods ..................................................
   private
 
   Item = Struct.new(:id, :label)
 
   def default_options(options)
     {
-      id: options[:id] || "#{@object.model_name.singular}_#{@field}_select",
+      id: options[:id] || "#{@object.model_name.singular}_#{@field}",
       label: options[:label] || attribute_model(@object, @field),
       type: 'select',
       data: {

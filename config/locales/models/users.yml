@@ -11,5 +11,6 @@ en:
         last_name: Last Name
         email: Email
         password: Password
+        password_confirmation: Password Confirmation
         created_at: Created at
         updated_at: Updated at
