@@ -2,18 +2,12 @@
   <div class="relative h-11 w-full min-w-[200px]">
 <% end %>
 
-<input class="peer border-0 rounded-[7px] shadow-md outline-none w-full px-2.5 pb-2.5 pt-3 appearance-none text-sm text-gray-900 transition-all
-              focus:ring-1 focus:ring-green-600"
-       id="<%= options[:id] %>" type="<%= options[:type] %>" step=" <%= options[:step] %>" placeholder=" "
-       <%= options[:data] %>
-       >
-<label class="absolute top-2 px-2 z-10 bg-white text-sm text-gray-500 duration-300 transform -translate-y-2 scale-75 origin-[0] start-1
-              peer-focus:text-green-600 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4
-              peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm
-              rtl:peer-focus:-translate-x-1/4 rtl:peer-focus:left-auto"
-       for="<%= options[:id] %>">
-  <%= options[:label] %>
-</label>
+<%= form.text_field field, id: options[:id], placeholder: ' ', type: options[:type],
+                    step: options[:step], autocomplete: options[:autocomplete], autofocus: options[:autofocus],
+                    data: options[:data],
+                    class: input_class %>
+
+<%= form.label field, options[:label], class: label_class, for: options[:id] %>
 
 <% if wrapper %>
   </div>
