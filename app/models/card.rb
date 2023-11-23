@@ -1,31 +1,27 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: cards
 #
-#  id           :integer          not null, primary key
-#  card_name    :string           not null
-#  due_date     :date             not null
-#  min_spend    :decimal(, )      not null
-#  credit_limit :decimal(, )      not null
-#  active       :boolean          not null
-#  created_at   :datetime         not null
-#  updated_at   :datetime         not null
+#  id         :integer          not null, primary key
+#  card_name  :string           not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
 #
 class Card < ApplicationRecord
   # extends ...................................................................
   # includes ..................................................................
   # security (i.e. attr_accessible) ...........................................
   # relationships .............................................................
-  has_many :card_transactions
+  has_many :user_cards
 
   # validations ...............................................................
-  validates :card_name, :due_date, :min_spend, :credit_limit, :active, presence: true
-  validates :card_name, uniqueness: true
+  belongs_to :user
+  validates :card_name, presence: true, uniqueness: true
 
   # callbacks .................................................................
   # scopes ....................................................................
-  scope :active, -> { where(active: true) }
-
   # additional config .........................................................
   # class methods .............................................................
   # public instance methods ...................................................

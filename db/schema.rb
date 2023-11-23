@@ -10,10 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_32_131733) do
   create_table "card_transactions", force: :cascade do |t|
     t.date "date", null: false
-    t.integer "card_id", null: false
     t.string "description", null: false
     t.text "comment"
     t.integer "category_id", null: false
@@ -27,7 +26,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
     t.datetime "updated_at", null: false
     t.integer "installment_id", null: false
     t.integer "installments_count", default: 0, null: false
-    t.index ["card_id"], name: "index_card_transactions_on_card_id"
+    t.integer "card_id"
+    t.integer "user_id"
     t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
     t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["entity_id"], name: "index_card_transactions_on_entity_id"
@@ -36,10 +36,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
 
   create_table "cards", force: :cascade do |t|
     t.string "card_name", null: false
-    t.date "due_date", null: false
-    t.decimal "min_spend", null: false
-    t.decimal "credit_limit", null: false
-    t.boolean "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -48,12 +44,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
     t.string "description", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id"
   end
 
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id"
   end
 
   create_table "installments", force: :cascade do |t|
@@ -64,6 +62,20 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"
+  end
+
+  create_table "user_cards", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "card_id"
+    t.string "card_name", null: false
+    t.date "due_date", null: false
+    t.decimal "min_spend", null: false
+    t.decimal "credit_limit", null: false
+    t.boolean "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_id"], name: "index_user_cards_on_card_id"
+    t.index ["user_id"], name: "index_user_cards_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -82,9 +94,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_004729) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "card_transactions", "cards"
   add_foreign_key "card_transactions", "categories"
   add_foreign_key "card_transactions", "categories", column: "category2_id"
   add_foreign_key "card_transactions", "entities"
   add_foreign_key "card_transactions", "installments"
+  add_foreign_key "card_transactions", "user_cards", column: "card_id"
+  add_foreign_key "card_transactions", "users"
+  add_foreign_key "categories", "users"
+  add_foreign_key "entities", "users"
 end
