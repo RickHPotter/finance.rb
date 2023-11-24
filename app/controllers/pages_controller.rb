@@ -14,16 +14,12 @@ class PagesController < ApplicationController
     @sub_tab = [new, card_transaction, transaction]
   end
 
-  def whatever; end
-
-  def whatevers; end
-
   private
 
   def new
     items = %w[Card Entity Transaction]
     icons = %w[credit_card credit_card credit_card credit_card]
-    links = %i[new_card_transaction whatever_pages whatever_pages whatever_pages]
+    links = %i[new_card_transaction new_card_transaction new_card_transaction new_card_transaction]
 
     items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{icons[index]}", links[index], :center_container)
@@ -33,7 +29,7 @@ class PagesController < ApplicationController
   def card_transaction
     items = %w[Azul Click Will Nubank]
     icons = %w[credit_card credit_card credit_card credit_card]
-    links = %i[card_transactions whatevers_pages whatevers_pages whatevers_pages]
+    links = %i[card_transactions card_transactions card_transactions card_transactions]
 
     @card_transaction_tab = items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{icons[index]}", links[index], :center_container)
@@ -43,7 +39,7 @@ class PagesController < ApplicationController
   def transaction
     items = %w[Pix Investment]
     icons = %w[wallet wallet]
-    links = %i[transactions whatever_pages]
+    links = %i[transactions transactions]
 
     @transaction_tab = items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{icons[index]}", links[index], :center_container)

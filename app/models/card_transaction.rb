@@ -36,10 +36,10 @@ class CardTransaction < ApplicationRecord
 
   # validations ...............................................................
   validates :date, :card_id, :description, :category_id, :entity_id, :starting_price,
-            :price, :month, :year, :installments, :installments_count, presence: true
+            :price, :month, :year, :installments_count, presence: true
 
   # callbacks .................................................................
-  before_validation :set_starting_price, on: :create
+  before_validation :set_starting_price, :set_active, on: :create
 
   # scopes ....................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
@@ -49,20 +49,55 @@ class CardTransaction < ApplicationRecord
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
   scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
 
-  # additional config .........................................................
-  # class methods .............................................................
-  # public instance methods ...................................................
   def month_year
     RefMonthYear.new(month, year).month_year
   end
 
-  # TODO: Create Installments
+  # Create default installments for the CardTransaction.
   #
+  # This method creates a specified number of default installments for a CardTransaction,
+  # distributing the total price evenly among the installments.
+  #
+  # @return [void]
+  #
+  # @example Create default installments for a CardTransaction
+  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
+  #   card_transaction.create_default_installments
+  #
+  # @note The method uses the `installments_count` attribute to determine the number
+  #   of installments to create and distributes the total `price` evenly among them.
+  #
+  def create_default_installments
+    installable_id = id
+    installable_type = 'CardTransaction'
+    remaining = price
+
+    (1...installments_count).each do |number|
+      price = self.price / installments_count.to_d
+      Installment.create!(installable_id:, installable_type:, number:, price:)
+      remaining -= price
+    end
+
+    Installment.create!(installable_id:, installable_type:, number: installments_count, price: remaining)
+  end
+
   # protected instance methods ................................................
   # private instance methods ..................................................
   private
 
+  # @return [void]
+  #
+  # @callback
+  #
   def set_starting_price
     self.starting_price ||= price
+  end
+
+  # @return [void]
+  #
+  # @callback
+  #
+  def set_active
+    self.active = true
   end
 end

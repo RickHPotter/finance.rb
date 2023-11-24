@@ -30,6 +30,8 @@ class UserCard < ApplicationRecord
   validates :card_name, uniqueness: true
 
   # callbacks .................................................................
+  before_validation :set_card_name
+
   # scopes ....................................................................
   scope :active, -> { where(active: true) }
 
@@ -38,4 +40,9 @@ class UserCard < ApplicationRecord
   # public instance methods ...................................................
   # protected instance methods ................................................
   # private instance methods ..................................................
+  private
+
+  def set_card_name
+    self.card_name = card.card_name
+  end
 end

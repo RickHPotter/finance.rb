@@ -5,17 +5,25 @@ class RefMonthYear
   attr_reader :month, :year
 
   def initialize(month, year)
-    # TODO: move these to initialiser.rb as Enumerator
-    @months_full = %w[Janvier Fevrier Mars Avril Mai June Jui Aout Septembre Octobre Novembre Decembre]
-    @months = %w[Jan Fev Mars Avril Mai June Jui Aout Sept Oct Nov Dec]
     @month = month
     @year = year % 100
   end
 
-  # Reads the attributes and returns in a given format, uppercase
+  # Get the formatted month and year string.
   #
-  # @return [String] Month Year in a MONTH <YEAR> format
+  # This method returns a formatted string representing the month and year
+  # using the RefMonthYear class.
+  #
+  # @return [String] Formatted month and year string in the format "MONTH <YEAR>"
+  #
+  # @example Get the month and year for a CardTransaction
+  #   card_transaction = CardTransaction.new(month: 5, year: 2023)
+  #   card_transaction.month_year
+  #   # => "May <23>"
+  #
+  # @note The method uses the RefMonthYear class to format the month and year.
+  #
   def month_year
-    "#{@months[@month - 1].upcase} <#{@year}>"
+    "#{MONTHS_ABBR[@month - 1].upcase} <#{@year}>"
   end
 end

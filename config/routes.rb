@@ -2,12 +2,11 @@
 
 Rails.application.routes.draw do
   devise_for :users
+
   resources :pages do
     collection do
       get 'card_transaction'
       get 'transaction'
-      get 'whatever'
-      get 'whatevers'
     end
   end
 
