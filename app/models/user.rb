@@ -15,10 +15,14 @@
 #  last_name              :string           not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
+#  confirmed_at           :datetime
+#  confirmation_sent_at   :datetime
+#  unconfirmed_email      :string
 #
 class User < ApplicationRecord
-  # extends ...................................................................
-  devise :database_authenticatable, :registerable, :confirmable,
+  # extends ..................................................................
+  # TODO: Add :confirmable
+  devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
   # includes ..................................................................

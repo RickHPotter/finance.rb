@@ -17,19 +17,19 @@
 #  year               :integer          not null
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
-#  installment_id     :integer          not null
 #  installments_count :integer          default(0), not null
-#  card_id            :integer
-#  user_id            :integer
+#  installment_id     :integer
+#  card_id            :integer          not null
+#  user_id            :integer          not null
 #
 class CardTransaction < ApplicationRecord
   # extends ...................................................................
   # includes ..................................................................
   # security (i.e. attr_accessible) ...........................................
   # relationships .............................................................
-  belongs_to :user_card
+  belongs_to :user_card, class_name: 'UserCard', foreign_key: :card_id
   belongs_to :category
-  belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id'
+  belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
   belongs_to :entity
 
   has_many :installments, as: :installable
@@ -39,7 +39,7 @@ class CardTransaction < ApplicationRecord
             :price, :month, :year, :installments_count, presence: true
 
   # callbacks .................................................................
-  before_validation :set_starting_price, :set_active, on: :create
+  before_validation :set_starting_price, on: :create
 
   # scopes ....................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
@@ -91,13 +91,5 @@ class CardTransaction < ApplicationRecord
   #
   def set_starting_price
     self.starting_price ||= price
-  end
-
-  # @return [void]
-  #
-  # @callback
-  #
-  def set_active
-    self.active = true
   end
 end

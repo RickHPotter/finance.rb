@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_32_131733) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_32_161616) do
   create_table "card_transactions", force: :cascade do |t|
     t.date "date", null: false
     t.string "description", null: false
@@ -24,10 +24,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_131733) do
     t.integer "year", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "installment_id", null: false
     t.integer "installments_count", default: 0, null: false
-    t.integer "card_id"
-    t.integer "user_id"
+    t.integer "installment_id"
+    t.integer "card_id", null: false
+    t.integer "user_id", null: false
     t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
     t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["entity_id"], name: "index_card_transactions_on_entity_id"
@@ -44,31 +44,31 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_131733) do
     t.string "description", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "user_id"
+    t.integer "user_id", null: false
   end
 
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.integer "user_id"
+    t.integer "user_id", null: false
   end
 
   create_table "installments", force: :cascade do |t|
     t.string "installable_type", null: false
     t.integer "installable_id", null: false
-    t.decimal "price"
-    t.integer "number"
+    t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
+    t.integer "number", default: 1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"
   end
 
   create_table "user_cards", force: :cascade do |t|
-    t.integer "user_id"
-    t.integer "card_id"
+    t.integer "user_id", null: false
+    t.integer "card_id", null: false
     t.string "card_name", null: false
-    t.date "due_date", null: false
+    t.integer "due_date", null: false
     t.decimal "min_spend", null: false
     t.decimal "credit_limit", null: false
     t.boolean "active", null: false
@@ -89,6 +89,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_131733) do
     t.string "last_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "confirmed_at"
+    t.datetime "confirmation_sent_at"
+    t.string "unconfirmed_email"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

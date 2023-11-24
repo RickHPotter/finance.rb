@@ -17,7 +17,6 @@ class Card < ApplicationRecord
   has_many :user_cards
 
   # validations ...............................................................
-  belongs_to :user
   validates :card_name, presence: true, uniqueness: true
 
   # callbacks .................................................................
