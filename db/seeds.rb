@@ -2,10 +2,10 @@
 
 require 'faker'
 
-User.create!(first_name: 'John', last_name: 'Doe', email: 'john@user.com', password: '123123',
-             password_confirmation: '123123')
-User.create!(first_name: 'Jane', last_name: 'Doe', email: 'jane@user.com', password: '123123',
-             password_confirmation: '123123')
+User.create!(first_name: 'John', last_name: 'Doe', email: 'john@user.com',
+             password: '123123', password_confirmation: '123123')
+User.create!(first_name: 'Jane', last_name: 'Doe', email: 'jane@user.com',
+             password: '123123', password_confirmation: '123123')
 
 20.times do
   Card.create!(card_name: Faker::Color.unique.color_name)

@@ -22,55 +22,75 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
-  let(:valid_attributes) do
-    {
-      first_name: 'John',
-      last_name: 'Doe',
-      email: 'user@example.com',
-      password: 'password123',
-      password_confirmation: 'password123'
-    }
-  end
+  let(:john) { FactoryBot.create(:user) }
+  let(:jane) { FactoryBot.create(:user, :with_first_name_jane, :with_email_jane) }
+
+  let(:without_first_name) { FactoryBot.build(:user, :without_first_name) }
+  let(:without_last_name) { FactoryBot.build(:user, :without_last_name) }
+  let(:without_email) { FactoryBot.build(:user, :without_email) }
+  let(:without_password) { FactoryBot.build(:user, :without_password) }
+  let(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
+
+  let(:with_recurring_email) { FactoryBot.build(:user, :with_email_jane) }
+  let(:with_invalid_email) { FactoryBot.build(:user, :with_invalid_email) }
+  let(:with_invalid_password) { FactoryBot.build(:user, :with_invalid_password) }
 
   describe 'validations' do
     it 'is valid with valid attributes' do
-      user = User.new(valid_attributes)
-      expect(user).to be_valid
+      expect(john).to be_valid
     end
 
-    it 'requires an email' do
-      user = User.new(valid_attributes.merge(email: nil))
-      expect(user).not_to be_valid
-      expect(user.errors[:email]).to include("can't be blank")
+    %i[first_name last_name email password].each do |attribute|
+      it "is not valid with a nil #{attribute}" do
+        user = public_send("without_#{attribute}")
+        expect(user).to_not be_valid
+        expect(user.errors[attribute]).to include("can't be blank")
+      end
+    end
+
+    it 'requires a matching password confirmation' do
+      expect(with_different_password_confirmation).to_not be_valid
+      expect(with_different_password_confirmation.errors[:password_confirmation]).to include("doesn't match Password")
     end
 
     it 'requires a unique email' do
-      User.create(valid_attributes)
-      user = User.new(valid_attributes)
-      expect(user).not_to be_valid
-      expect(user.errors[:email]).to include('has already been taken')
+      expect(jane).to be_valid
+      expect(with_recurring_email).to_not be_valid
+      expect(with_recurring_email.errors[:email]).to include('has already been taken')
     end
 
-    it 'requires a password' do
-      user = User.new(valid_attributes.merge(password: nil))
-      expect(user).not_to be_valid
-      expect(user.errors[:password]).to include("can't be blank")
+    it 'requires a valid email' do
+      expect(with_invalid_email).to_not be_valid
+      expect(with_invalid_email.errors[:email]).to include('is invalid')
     end
 
     it 'requires a minimum password length' do
-      user = User.new(valid_attributes.merge(password: 'short'))
-      expect(user).not_to be_valid
-      expect(user.errors[:password]).to include('is too short (minimum is 6 characters)')
+      expect(with_invalid_password).to_not be_valid
+      expect(with_invalid_password.errors[:password]).to include('is too short (minimum is 6 characters)')
     end
   end
 
   describe 'associations' do
-    xit 'has many user cards' do
-      # user = User.create(valid_attributes)
-      # has_many :user_cards
-      # has_many :card_transactions
-      # has_many :categories
-      # has_many :entities
+    it 'has many user cards' do
+      expect(john).to respond_to :user_cards
+    end
+
+    it 'has many card transactions' do
+      expect(john).to respond_to :card_transactions
+    end
+
+    it 'has many categories' do
+      expect(john).to respond_to :categories
+    end
+
+    it 'has many entities' do
+      expect(john).to respond_to :entities
+    end
+  end
+
+  describe 'public methods' do
+    it 'returns full_name' do
+      expect(john.full_name).to eq 'John Doe'
     end
   end
 end
