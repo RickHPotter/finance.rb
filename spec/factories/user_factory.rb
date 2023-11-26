@@ -1,5 +1,24 @@
 # frozen_string_literal: true
 
+# == Schema Information
+#
+# Table name: users
+#
+#  id                     :integer          not null, primary key
+#  email                  :string           default(""), not null
+#  encrypted_password     :string           default(""), not null
+#  reset_password_token   :string
+#  reset_password_sent_at :datetime
+#  remember_created_at    :datetime
+#  confirmation_token     :string
+#  first_name             :string           not null
+#  last_name              :string           not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  confirmed_at           :datetime
+#  confirmation_sent_at   :datetime
+#  unconfirmed_email      :string
+#
 FactoryBot.define do
   factory :user do
     first_name { 'John' }
@@ -10,40 +29,21 @@ FactoryBot.define do
   end
 
   # VALID
-  trait :with_first_name_jane do
+  trait :jane do
     first_name { 'Jane' }
-  end
-
-  trait :with_email_jane do
     email { 'jane@example.com' }
   end
 
   # INVALID
-  trait :without_first_name do
-    first_name { nil }
-  end
-
-  trait :without_last_name do
-    last_name { nil }
-  end
-
-  trait :without_email do
-    email { nil }
-  end
-
-  trait :without_password do
-    password { nil }
-  end
-
-  trait :with_different_password_confirmation do
-    password_confirmation { '123456' }
-  end
-
   trait :with_invalid_email do
     email { 'not_an_email' }
   end
 
   trait :with_invalid_password do
     password { '1' }
+  end
+
+  trait :with_different_password_confirmation do
+    password_confirmation { '123456' }
   end
 end
