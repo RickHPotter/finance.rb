@@ -29,17 +29,17 @@ FactoryBot.define do
   end
 
   # VALID
-  trait :jane do
+  trait :jane_user do
     first_name { 'Jane' }
     email { 'jane@example.com' }
   end
 
   # INVALID
-  trait :with_invalid_email do
+  trait :user_with_invalid_email do
     email { 'not_an_email' }
   end
 
-  trait :with_invalid_password do
+  trait :user_with_invalid_password do
     password { '1' }
   end
 
