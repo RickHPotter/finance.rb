@@ -2,36 +2,31 @@
 
 require 'faker'
 
-User.create!(first_name: 'John', last_name: 'Doe', email: 'john@user.com',
-             password: '123123', password_confirmation: '123123')
-User.create!(first_name: 'Jane', last_name: 'Doe', email: 'jane@user.com',
-             password: '123123', password_confirmation: '123123')
+FactoryBot.create(:user)
+FactoryBot.create(:user, :different)
+FactoryBot.create(:user, :random)
 
-20.times do
-  Card.create!(card_name: Faker::Color.unique.color_name)
-  Category.create!(description: Faker::Commerce.unique.department, user_id: User.all.sample.id)
-  Entity.create!(entity_name: Faker::Company.unique.name, user_id: User.all.sample.id)
-end
+p 'Creating Cards, Categories and Entities...'
+FactoryBot.create_list(:card, 15, :random)
+FactoryBot.create_list(:category, 10, :random, user_id: User.all.sample.id)
+FactoryBot.create_list(:entity, 10, :random, user_id: User.all.sample.id)
 
+p 'Creating UserCards...'
 loop do
-  UserCard.create(
-    user_id: User.all.sample.id,
-    card_id: Card.all.sample.id,
-    # card_name: set_card_name callback will handle this
-    due_date: rand(1..31),
-    credit_limit: Faker::Number.decimal(l_digits: rand(3..4)).ceil + 200.00,
-    min_spend: [0.00, 100.00, 200.00].sample
-    # active: set_active callback will handle this
-  )
-  break if UserCard.all.count == 10
+  FactoryBot.create(:user_card, :random, user: User.all.sample, card: Card.all.sample)
+  break if UserCard.all.count == 15
+rescue ActiveRecord::RecordInvalid
+  next
 end
 
+p 'Creating CardTransactions...'
+# TODO: Apply FactoryBot
 100.times do
   date = Faker::Date.between(from: 3.months.ago, to: Date.today)
   card_transaction = CardTransaction.create!(
     date:,
-    description: Faker::Lorem.sentence,
-    comment: [Faker::Lorem.sentence, nil].sample,
+    ct_description: Faker::Lorem.sentence,
+    ct_comment: [Faker::Lorem.sentence, nil].sample,
     category_id: Category.all.sample.id,
     entity_id: Entity.all.sample.id,
     # starting_price: set_starting_price callback will handle this
@@ -46,4 +41,4 @@ end
   card_transaction.create_default_installments
 end
 
-# TODO: Add Transactions
+p 'Done!'

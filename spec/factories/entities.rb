@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: entities
@@ -10,6 +12,19 @@
 #
 FactoryBot.define do
   factory :entity do
-    
+    entity_name { 'Moi' }
+
+    # VALID
+    trait :different do
+      entity_name { 'Nous' }
+    end
+
+    trait :random do
+      entity_name do
+        [
+          Faker::GreekPhilosophers.unique.name, Faker::BossaNova.unique.artist, Faker::DcComics.unique.villain
+        ].sample
+      end
+    end
   end
 end

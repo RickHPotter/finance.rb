@@ -4,8 +4,8 @@
 #
 #  id                 :integer          not null, primary key
 #  date               :date             not null
-#  description        :string           not null
-#  comment            :text
+#  ct_description     :string           not null
+#  ct_comment         :text
 #  category_id        :integer          not null
 #  category2_id       :integer
 #  entity_id          :integer          not null

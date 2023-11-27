@@ -26,24 +26,29 @@ FactoryBot.define do
     email { 'john@example.com' }
     password { '123123' }
     password_confirmation { '123123' }
-  end
 
-  # VALID
-  trait :jane_user do
-    first_name { 'Jane' }
-    email { 'jane@example.com' }
-  end
+    # VALID
+    trait :different do
+      first_name { 'Jane' }
+      email { 'jane@example.com' }
+    end
 
-  # INVALID
-  trait :user_with_invalid_email do
-    email { 'not_an_email' }
-  end
+    trait :random do
+      first_name { Faker::Name.unique.first_name }
+      email { Faker::Internet.unique.email }
+    end
 
-  trait :user_with_invalid_password do
-    password { '1' }
-  end
+    # INVALID
+    trait :with_invalid_email do
+      email { 'not_an_email' }
+    end
 
-  trait :with_different_password_confirmation do
-    password_confirmation { '123456' }
+    trait :with_invalid_password do
+      password { '1' }
+    end
+
+    trait :with_different_password_confirmation do
+      password_confirmation { '123456' }
+    end
   end
 end
