@@ -10,11 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_32_161616) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_32_161617) do
   create_table "card_transactions", force: :cascade do |t|
     t.date "date", null: false
-    t.string "description", null: false
-    t.text "comment"
+    t.string "ct_description", null: false
+    t.text "ct_comment"
     t.integer "category_id", null: false
     t.integer "category2_id"
     t.integer "entity_id", null: false
@@ -41,7 +41,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161616) do
   end
 
   create_table "categories", force: :cascade do |t|
-    t.string "description", null: false
+    t.string "category_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
@@ -67,7 +67,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161616) do
   create_table "user_cards", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "card_id", null: false
-    t.string "card_name", null: false
+    t.string "user_card_name", null: false
     t.integer "due_date", null: false
     t.decimal "min_spend", null: false
     t.decimal "credit_limit", null: false

@@ -7,8 +7,8 @@ en:
     attributes:
       card_transaction:
         id: ID
-        description: Description
-        comment: Comment
+        ct_description: Description
+        ct_comment: Comment
         date: Date
         price: Price
         starting_price: Original Price

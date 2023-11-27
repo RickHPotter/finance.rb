@@ -4,11 +4,11 @@
 #
 # Table name: categories
 #
-#  id          :integer          not null, primary key
-#  description :string           not null
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  user_id     :integer          not null
+#  id            :integer          not null, primary key
+#  category_name :string           not null
+#  created_at    :datetime         not null
+#  updated_at    :datetime         not null
+#  user_id       :integer          not null
 #
 class Category < ApplicationRecord
   # extends ...................................................................
@@ -20,8 +20,8 @@ class Category < ApplicationRecord
   has_many :card_transactions
 
   # validations ...............................................................
-  validates :description, presence: true
-  validates :description, uniqueness: true
+  validates :category_name, presence: true
+  validates :category_name, uniqueness: true
 
   # callbacks .................................................................
   # scopes ....................................................................

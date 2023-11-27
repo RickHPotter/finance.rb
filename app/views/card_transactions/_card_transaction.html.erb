@@ -1,7 +1,7 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
   <div class="bg-white w-full p-4 rounded-md mt-2">
     <h1 class="my-5 font-bold text-gray-700 text-4xl hover:text-blue-400">
-      <%= link_to card_transaction.description, edit_card_transaction_path(card_transaction),
+      <%= link_to card_transaction.ct_description, edit_card_transaction_path(card_transaction),
                   data: { 'turbo-frame': "edit_card_transaction_#{card_transaction.id}" } %>
     </h1>
     <p class="my-5">

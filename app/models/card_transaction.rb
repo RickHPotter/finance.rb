@@ -6,8 +6,8 @@
 #
 #  id                 :integer          not null, primary key
 #  date               :date             not null
-#  description        :string           not null
-#  comment            :text
+#  ct_description     :string           not null
+#  ct_comment         :text
 #  category_id        :integer          not null
 #  category2_id       :integer
 #  entity_id          :integer          not null
@@ -35,7 +35,7 @@ class CardTransaction < ApplicationRecord
   has_many :installments, as: :installable
 
   # validations ...............................................................
-  validates :date, :card_id, :description, :category_id, :entity_id, :starting_price,
+  validates :date, :card_id, :ct_description, :category_id, :entity_id, :starting_price,
             :price, :month, :year, :installments_count, presence: true
 
   # callbacks .................................................................
@@ -83,6 +83,7 @@ class CardTransaction < ApplicationRecord
 
   # protected instance methods ................................................
   # private instance methods ..................................................
+
   private
 
   # @return [void]

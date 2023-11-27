@@ -9,7 +9,7 @@ class CardTransactionsController < ApplicationController
 
   def index
     # WARNING: Do I need installments in this eager load?
-    @card_transactions = CardTransaction.all.eager_load(:card, :category, :category2, :entity, :installments)
+    @card_transactions = CardTransaction.all.eager_load(:card, :category, :entity, :installments)
   end
 
   def show; end
@@ -63,6 +63,7 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.find(params[:id])
   end
 
+  # FIXME: NOT all cards, but only UserCards, SAME FOR CATEGORIES AND ENTITIES
   def set_cards
     @cards = Card.all.order(:card_name).pluck(:id, :card_name)
   end
@@ -78,7 +79,7 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      :date, :card_id, :description, :comment, :category_id, :category2_id, :entity_id,
+      :date, :card_id, :ct_description, :ct_comment, :category_id, :category2_id, :entity_id,
       :price, :month, :year, :installments, :installments_count
     )
   end
