@@ -22,7 +22,7 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
-  let(:john) { FactoryBot.create(:user) }
+  let(:john) { FactoryBot.build(:user) }
   let(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
 
   describe 'presence validations' do
@@ -40,9 +40,9 @@ RSpec.describe User, type: :model do
     it_behaves_like 'validate_uniqueness', :user, :email
   end
 
-  describe 'lenght validations' do
-    it_behaves_like 'validate_min_lenght', :user, :password, 6
-    it_behaves_like 'validate_max_lenght', :user, :password, 22
+  describe 'length validations' do
+    it_behaves_like 'validate_min_length', :user, :password, 6
+    it_behaves_like 'validate_max_length', :user, :password, 22
   end
 
   describe 'invalid validations' do

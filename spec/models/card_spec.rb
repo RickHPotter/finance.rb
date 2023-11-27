@@ -10,7 +10,13 @@
 require 'rails_helper'
 
 RSpec.describe Card, type: :model do
-  let(:azul) { FactoryBot.create(:card) }
+  let(:azul) { FactoryBot.build(:card) }
+
+  describe 'valid validations' do
+    it 'is valid with valid attributes' do
+      expect(azul).to be_valid
+    end
+  end
 
   describe 'presence validations' do
     it_behaves_like 'validate_nil', :card, :card_name

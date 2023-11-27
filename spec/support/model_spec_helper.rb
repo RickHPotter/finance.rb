@@ -30,7 +30,7 @@ module ModelSpecHelper
   # UNIQUENESS VALIDATIONS
   #
   RSpec.shared_examples 'validate_uniqueness' do |model, attribute|
-    let(:helper) { FactoryBot.create model }
+    let(:helper) { FactoryBot.create(model, :random) }
     let(:subject) { FactoryBot.build(model, attribute => helper.public_send(attribute)) }
 
     it "is not valid with an existing #{attribute}" do
@@ -42,11 +42,15 @@ module ModelSpecHelper
 
   RSpec.shared_examples 'validate_uniqueness_scope' do |model, attribute, scope|
     let(:helper) { FactoryBot.create(model) }
-    let(:subject) { FactoryBot.build(model, "#{model}_#{attribute}_scope_#{scope}") }
+    let(:subject) do
+      FactoryBot.build(
+        model, :random,
+        attribute => helper.public_send(attribute),
+        scope => helper.public_send(scope)
+      )
+    end
 
-    it "is not valid with #{attribute} that has already been taken for the same user" do
-      p helper.user
-      p subject.user
+    it "is not valid with an existing #{attribute} in the same scope #{scope}" do
       expect(helper).to be_valid
       expect(subject).to_not be_valid
       expect(subject.errors[attribute]).to include('has already been taken')
@@ -54,9 +58,9 @@ module ModelSpecHelper
   end
 
   #
-  # LENGHT VALIDATIONS
+  # LENGTH VALIDATIONS
   #
-  RSpec.shared_examples 'validate_min_lenght' do |model, attribute, min|
+  RSpec.shared_examples 'validate_min_length' do |model, attribute, min|
     let(:subject) { FactoryBot.build(model, attribute => '2' * (min - 1)) }
 
     it "is not valid with #{attribute} with an shorter length than the minimum" do
@@ -65,7 +69,7 @@ module ModelSpecHelper
     end
   end
 
-  RSpec.shared_examples 'validate_max_lenght' do |model, attribute, max|
+  RSpec.shared_examples 'validate_max_length' do |model, attribute, max|
     let(:subject) { FactoryBot.build(model, attribute => '2' * (max + 1)) }
 
     it "is not valid with #{attribute} with longer length than the maximum" do
@@ -74,21 +78,21 @@ module ModelSpecHelper
     end
   end
 
-  RSpec.shared_examples 'validate_min_number' do |model, attribute, min|
+  RSpec.shared_examples 'validate_min_number' do |model, attribute, min, message|
     let(:subject) { FactoryBot.build(model, attribute => (min - 1)) }
 
     it "is not valid with #{attribute} with an shorter length than the minimum" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include('is too short (minimum is 6 characters)')
+      expect(subject.errors[attribute]).to include(message)
     end
   end
 
-  RSpec.shared_examples 'validate_max_number' do |model, attribute, max|
+  RSpec.shared_examples 'validate_max_number' do |model, attribute, max, message|
     let(:subject) { FactoryBot.build(model, attribute => (max + 1)) }
 
     it "is not valid with #{attribute} with longer length than the maximum" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include('is too long (maximum is 22 characters)')
+      expect(subject.errors[attribute]).to include(message)
     end
   end
 
@@ -96,7 +100,7 @@ module ModelSpecHelper
   # OTHER VALIDATIONS
   #
   RSpec.shared_examples 'validate_invalid' do |model, attribute|
-    let(:subject) { FactoryBot.build(model, "#{model}_with_invalid_#{attribute}") }
+    let(:subject) { FactoryBot.build(model, "with_invalid_#{attribute}") }
 
     it "is not valid with invalid #{attribute}" do
       expect(subject).to_not be_valid
