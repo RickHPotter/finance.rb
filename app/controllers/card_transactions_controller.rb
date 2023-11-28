@@ -8,7 +8,7 @@ class CardTransactionsController < ApplicationController
   before_action :set_categories, only: %i[new edit]
 
   def index
-    # WARNING: Do I need installments in this eager load?
+    # @WARNING: Do I need installments in this eager load?
     @card_transactions = CardTransaction.all.eager_load(:card, :category, :entity, :installments)
   end
 
@@ -63,17 +63,23 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.find(params[:id])
   end
 
-  # FIXME: NOT all cards, but only UserCards, SAME FOR CATEGORIES AND ENTITIES
+  def set_user
+    @user = current_user if user_signed_in?
+  end
+
   def set_cards
-    @cards = Card.all.order(:card_name).pluck(:id, :card_name)
+    @cards = @user.user_cards.order(:user_card_name).pluck(:id, :card_name)
+    # @cards = UserCard.all.order(:user_card_name).pluck(:id, :user_card_name) # @comment
   end
 
   def set_entities
-    @entities = Entity.all.order(:entity_name).pluck(:id, :entity_name)
+    @entities = @user.entities.order(:entity_name).pluck(:id, :entity_name)
+    # @entities = Entity.all.order(:entity_name).pluck(:id, :entity_name) # @comment
   end
 
   def set_categories
-    @categories = Category.all.order(:description).pluck(:id, :description)
+    @categories = @user.categories.order(:description).pluck(:id, :category_name)
+    # @categories = Category.all.order(:description).pluck(:id, :category_name) # @comment
   end
 
   # Only allow a list of trusted parameters through.

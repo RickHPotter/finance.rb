@@ -4,6 +4,18 @@
 class RefMonthYear
   attr_reader :month, :year
 
+  # Initialize a new RefMonthYear instance.
+  #
+  # @param month [Integer] The month (1-12).
+  # @param year [Integer] The year (e.g., 2023).
+  #
+  # @return [RefMonthYear] A new instance of RefMonthYear.
+  #
+  # @example Create a new RefMonthYear instance
+  #   ref_month_year = RefMonthYear.new(5, 2023)
+  #
+  # @note The month is expected to be an integer between 1 and 12.
+  #
   def initialize(month, year)
     @month = month
     @year = year % 100

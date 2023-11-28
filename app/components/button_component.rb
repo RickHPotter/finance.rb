@@ -2,13 +2,26 @@
 
 # Component to render an autocomplete select
 class ButtonComponent < ViewComponent::Base
-  # includes ..................................................................
+  # @includes .................................................................
   include ComponentsHelper
 
-  # security (i.e. attr_accessible) ...........................................
+  # @security (i.e. attr_accessible) ..........................................
   attr_reader :form, :link, :options
 
-  # public instance methods ...................................................
+  # @public_instance_methods ..................................................
+  # Initializes a Component of Type Button
+  #
+  # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
+  # @param link [String] The link possibly associated with the form (default is nil).
+  # @param options [Hash] Additional options for customizing the button.
+  #
+  # @option options [String] :id The HTML ID attribute for the button (default is method button_id).
+  # @option options [String] :label The label for the button (default is 'Button Without A Name').
+  # @option options [String] :colour The colour of the button (default is 'button').
+  # @option options [Hash] :data Additional data attributes for the button field.
+  #
+  # @return [ButtonComponent] A new instance of ButtonComponent.
+  #
   def initialize(form: nil, link: nil, options: {})
     @form = form
     @link = link
@@ -16,9 +29,12 @@ class ButtonComponent < ViewComponent::Base
     super
   end
 
-  # private instance methods ..................................................
-  private
-
+  # Set default options for the button.
+  #
+  # @param options [Hash] Additional options for customizing the button.
+  #
+  # @return [Hash] Merged options with default values.
+  #
   def default_options(options)
     {
       id: options[:id] || button_id,
@@ -29,6 +45,10 @@ class ButtonComponent < ViewComponent::Base
     }
   end
 
+  # Set html id for button based on the presence of a link.
+  #
+  # @return [String] HTML id for the button tag.
+  #
   def button_id
     return "#{link}_button" if link
 
@@ -36,5 +56,5 @@ class ButtonComponent < ViewComponent::Base
   end
 end
 
-# TODO: Following Features
+# @TODO: Following Features
 # - Add colour variants

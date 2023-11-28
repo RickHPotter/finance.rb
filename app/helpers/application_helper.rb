@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
-# Overall Helper
+# God Helper
 module ApplicationHelper
 end

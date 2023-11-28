@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-# Helpers for CardTransaction
+# Helpers for CardTransactions
+# @TODO: Something needs to be done here
 module CardTransactionsHelper
   NOTICE = {
     create: 'Card Transaction created successfully',

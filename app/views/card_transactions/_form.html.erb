@@ -47,7 +47,7 @@
         <%= render AutocompleteSelectComponent.new(form:, object:, field: :category2_id, items: @categories) %> </div>
     </div>
 
-    <!-- TODO: Only one field that builds up a reference of MonthYear, possibly an AutoSelect, that gets defaulted -->
+    <!-- @TODO: Only one field that builds up a reference of MonthYear, possibly an AutoSelect, that gets defaulted -->
     <div class="flex space-x-12 justify-center">
       <div class="flex w-1/6 flex-col gap-6 my-5">
         <%= render TextFieldComponent.new(form:, object:, field: :month, options: { type: 'number', step: 1 }) %>
@@ -59,7 +59,7 @@
     </div>
 
     <!--
-        TODO: Usage of stimulus to get the number of installments through an increment button. Installments nested fields appear
+        @TODO: Usage of stimulus to get the number of installments through an increment button. Installments nested fields appear
 
     <div class="flex w-72 flex-col gap-6 my-5">
       <%#= render TextFieldComponent.new(form:, object:, field: :installment_id, options: { type: 'number', step: 1 }) %>

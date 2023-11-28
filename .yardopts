@@ -1,0 +1,14 @@
+--protected
+--no-private
+--hide-tag comment
+--hide-tag extends
+--hide-tag includes
+--hide-tag security
+--hide-tag relationships
+--hide-tag validations
+--hide-tag callbacks
+--hide-tag additional_config
+--hide-tag class_methods
+--hide-tag public_instance_methods
+--hide-tag protected_instance_methods
+--hide-tag private_instance_methods

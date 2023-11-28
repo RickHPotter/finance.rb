@@ -2,11 +2,21 @@
 
 # Component to render a tab
 class TabsComponent < ViewComponent::Base
-  # includes ..................................................................
-  # security (i.e. attr_accessible) ...........................................
+  # @includes .................................................................
+  # @security (i.e. attr_accessible) ..........................................
   attr_reader :items
 
-  # public instance methods ...................................................
+  # @public_instance_methods ..................................................
+  # Initializes a Component of Type Tab
+  #
+  # @param items [Array] Array of Item Structs.
+  # @param dependents [Array] Array of dependent items.
+  # @param default [Boolean] Whether the tab is the default tab (default is false).
+  # @param dependent [Boolean] Whether the tab is dependent (default is false).
+  # @param dependent_no [Integer] The number of the dependent tab (default is nil).
+  #
+  # @return [TabComponent] A new instance of TabComponent.
+  #
   def initialize(items: [], dependents: [], default: false, dependent: false, dependent_no: nil)
     @items = items
     @default = default
@@ -17,11 +27,9 @@ class TabsComponent < ViewComponent::Base
   end
 
   Item = Struct.new(:label, :icon, :link, :turbo_frame)
-
-  # private instance methods ..................................................
 end
 
-# TODO: Following features:
+# @TODO: Following features:
 # - Make the Item Struct cleaner on the Controller
 # - Create MultiCheckBoxComponent
 # - Pass in dependents as other structure other than itself (after creating MultiCheckBoxComponent)

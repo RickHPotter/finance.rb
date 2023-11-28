@@ -9,7 +9,6 @@
 
     <% width = @items.count %>
     <% @items.each_with_index do |item, index| %>
-      <!-- TODO: Why does this dynamic w-1/ work? -->
       <li class='z-30 flex-auto text-center w-1/<%= width %>'
           data-material-tailwind-tab-target='tabItem' >
         <%= link_to item.link, role: 'tab', aria: { selected: @default, controls: "tab-item-#{index}" },

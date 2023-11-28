@@ -2,6 +2,7 @@
 
 # Controller for Home SPA
 class PagesController < ApplicationController
+  # @FIXME: THIS IS AN ABOMINATION
   def home
     main_items = ['New', 'Card Transaction', 'Transaction']
     main_icons = %w[plus credit_card wallet]

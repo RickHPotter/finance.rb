@@ -20,7 +20,7 @@ rescue ActiveRecord::RecordInvalid
 end
 
 p 'Creating CardTransactions...'
-# TODO: Apply FactoryBot
+# @TODO: Apply FactoryBot
 100.times do
   date = Faker::Date.between(from: 3.months.ago, to: Date.today)
   card_transaction = CardTransaction.create!(
