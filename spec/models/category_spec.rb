@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: categories
@@ -11,5 +13,28 @@
 require 'rails_helper'
 
 RSpec.describe Category, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  let(:category) { FactoryBot.build(:category) }
+
+  describe 'presence validations' do
+    it 'is valid with valid attributes' do
+      expect(category).to be_valid
+    end
+
+    %i[category_name].each do |attribute|
+      it_behaves_like 'validate_nil', :category, attribute
+      it_behaves_like 'validate_blank', :category, attribute
+    end
+  end
+
+  describe 'uniqueness validations' do
+    it_behaves_like 'validate_uniqueness', :category, :category_name
+  end
+
+  describe 'associations' do
+    %i[user card_transactions].each do |model|
+      it "has_many #{model}" do
+        expect(category).to respond_to model
+      end
+    end
+  end
 end

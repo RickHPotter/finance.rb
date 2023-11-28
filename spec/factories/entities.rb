@@ -13,6 +13,7 @@
 FactoryBot.define do
   factory :entity do
     entity_name { 'Moi' }
+    association :user
 
     # VALID
     trait :different do

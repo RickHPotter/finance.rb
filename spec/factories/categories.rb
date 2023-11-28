@@ -13,6 +13,7 @@
 FactoryBot.define do
   factory :category do
     category_name { 'Food' }
+    association :user
 
     # VALID
     trait :different do

@@ -18,11 +18,11 @@
 require 'rails_helper'
 
 RSpec.describe UserCard, type: :model do
-  let(:azul) { FactoryBot.build(:user_card) }
+  let(:user_card) { FactoryBot.build(:user_card) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do
-      expect(azul).to be_valid
+      expect(user_card).to be_valid
     end
 
     # user_card_name and active callbacks test
@@ -45,7 +45,7 @@ RSpec.describe UserCard, type: :model do
   describe 'associations' do
     %i[user card card_transactions].each do |model|
       it "has_many #{model}" do
-        expect(azul).to respond_to model
+        expect(user_card).to respond_to model
       end
     end
   end
