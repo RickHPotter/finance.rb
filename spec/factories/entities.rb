@@ -12,20 +12,16 @@
 #
 FactoryBot.define do
   factory :entity do
-    entity_name { 'Moi' }
+    entity_name { 'Nous' }
     association :user
 
     # VALID
     trait :different do
-      entity_name { 'Nous' }
+      entity_name { 'Moi' }
     end
 
     trait :random do
-      entity_name do
-        [
-          Faker::GreekPhilosophers.unique.name, Faker::BossaNova.unique.artist, Faker::DcComics.unique.villain
-        ].sample
-      end
+      entity_name { Faker::Book.unique.title }
     end
   end
 end

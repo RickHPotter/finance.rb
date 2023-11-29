@@ -6,10 +6,14 @@ FactoryBot.create(:user)
 FactoryBot.create(:user, :different)
 FactoryBot.create(:user, :random)
 
-p 'Creating Cards, Categories and Entities...'
+p 'Creating Cards...'
 FactoryBot.create_list(:card, 15, :random)
-FactoryBot.create_list(:category, 10, :random, user_id: User.all.sample.id)
-FactoryBot.create_list(:entity, 10, :random, user_id: User.all.sample.id)
+
+p 'Creating Categories and Entities...'
+User.all.each do |user|
+  FactoryBot.create_list(:category, 5, :random, user:)
+  FactoryBot.create_list(:entity, 5, :random, user:)
+end
 
 p 'Creating UserCards...'
 loop do
@@ -20,25 +24,8 @@ rescue ActiveRecord::RecordInvalid
 end
 
 p 'Creating CardTransactions...'
-# @TODO: Apply FactoryBot
-100.times do
-  date = Faker::Date.between(from: 3.months.ago, to: Date.today)
-  card_transaction = CardTransaction.create!(
-    date:,
-    ct_description: Faker::Lorem.sentence,
-    ct_comment: [Faker::Lorem.sentence, nil].sample,
-    category_id: Category.all.sample.id,
-    entity_id: Entity.all.sample.id,
-    # starting_price: set_starting_price callback will handle this
-    price: Faker::Number.decimal(l_digits: rand(1..3)),
-    month: date.month,
-    year: date.year,
-    installments_count: [1, 1, 1, 2, rand(1..10)].sample,
-    card_id: UserCard.all.sample.id,
-    user_id: User.all.sample.id
-  )
-
-  card_transaction.create_default_installments
+User.all.each do |user|
+  FactoryBot.create_list(:card_transaction, 40, :random, user:)
 end
 
 p 'Done!'

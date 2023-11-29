@@ -27,6 +27,7 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
+  belongs_to :user
   belongs_to :user_card, class_name: 'UserCard', foreign_key: :card_id
   belongs_to :category
   belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
@@ -40,6 +41,7 @@ class CardTransaction < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_starting_price, on: :create
+  after_create :create_default_installments
 
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
@@ -59,34 +61,6 @@ class CardTransaction < ApplicationRecord
     RefMonthYear.new(month, year).month_year
   end
 
-  # Create default installments for the CardTransaction.
-  #
-  # This method creates a specified number of default installments for a CardTransaction,
-  # distributing the total price evenly among the installments.
-  #
-  # @return [void]
-  #
-  # @example Create default installments for a CardTransaction
-  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
-  #   card_transaction.create_default_installments
-  #
-  # @note The method uses the `installments_count` attribute to determine the number
-  #   of installments to create and distributes the total `price` evenly among them.
-  #
-  def create_default_installments
-    installable_id = id
-    installable_type = 'CardTransaction'
-    remaining = price
-
-    (1...installments_count).each do |number|
-      price = self.price / installments_count.to_d
-      Installment.create!(installable_id:, installable_type:, number:, price:)
-      remaining -= price
-    end
-
-    Installment.create!(installable_id:, installable_type:, number: installments_count, price: remaining)
-  end
-
   # @protected_instance_methods ...............................................
 
   protected
@@ -98,6 +72,54 @@ class CardTransaction < ApplicationRecord
   # @return [void]
   def set_starting_price
     self.starting_price ||= price
+  end
+
+  # Create default installments for the CardTransaction when not previously created.
+  #
+  # This method calculates and creates a specified number of default installments for
+  # a CardTransaction, distributing the total price evenly among the installments.
+  #
+  # @return [void]
+  #
+  # @example Create default installments for a CardTransaction
+  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
+  #   card_transaction.create_default_installments
+  #
+  # @note The method uses the `installments_count` attribute to determine the number
+  #   of installments to create and distributes the total `price` evenly among them.
+  #
+  def create_default_installments
+    return if installments.present?
+
+    prices_arr = (0..installments_count - 2).map do
+      (price / installments_count.to_d).round 2
+    end
+    prices_arr << (price - prices_arr.sum)
+
+    create_installments(prices_arr)
+  end
+
+  # Create installments based on the provided prices array.
+  #
+  # @example Create installments for a CardTransaction
+  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
+  #   prices_arr = [33, 33, 34]
+  #   card_transaction.create_installments(prices_arr)
+  #
+  # @note The method uses the `installable_id` and `installable_type` attributes
+  #   along with the provided `prices_arr` to create installments for the CardTransaction.
+  #
+  # @param prices_arr [Array<BigDecimal>] An array containing the prices for each installment.
+  #
+  # @return [void]
+  #
+  def create_installments(prices_arr)
+    installable_id = id
+    installable_type = 'CardTransaction'
+
+    prices_arr.each_with_index do |price, number|
+      Installment.create!(installable_id:, installable_type:, number: number + 1, price:)
+    end
   end
 
   # @private_instance_methods .................................................
