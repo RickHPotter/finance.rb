@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_32_161617) do
+ActiveRecord::Schema[7.0].define(version: 2023_11_32_161618) do
   create_table "card_transactions", force: :cascade do |t|
     t.date "date", null: false
     t.string "ct_description", null: false
@@ -25,13 +25,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161617) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "installments_count", default: 0, null: false
-    t.integer "installment_id"
     t.integer "card_id", null: false
     t.integer "user_id", null: false
     t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
     t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["entity_id"], name: "index_card_transactions_on_entity_id"
-    t.index ["installment_id"], name: "index_card_transactions_on_installment_id"
   end
 
   create_table "cards", force: :cascade do |t|
@@ -100,7 +98,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161617) do
   add_foreign_key "card_transactions", "categories"
   add_foreign_key "card_transactions", "categories", column: "category2_id"
   add_foreign_key "card_transactions", "entities"
-  add_foreign_key "card_transactions", "installments"
   add_foreign_key "card_transactions", "user_cards", column: "card_id"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "categories", "users"

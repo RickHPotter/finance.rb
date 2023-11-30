@@ -18,7 +18,6 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  installments_count :integer          default(0), not null
-#  installment_id     :integer
 #  card_id            :integer          not null
 #  user_id            :integer          not null
 #
@@ -91,9 +90,7 @@ class CardTransaction < ApplicationRecord
   def create_default_installments
     return if installments.present?
 
-    prices_arr = (0..installments_count - 2).map do
-      (price / installments_count.to_d).round 2
-    end
+    prices_arr = (0..installments_count - 2).map { (price / installments_count).round(2) }
     prices_arr << (price - prices_arr.sum)
 
     create_installments(prices_arr)
@@ -118,7 +115,7 @@ class CardTransaction < ApplicationRecord
     installable_type = 'CardTransaction'
 
     prices_arr.each_with_index do |price, number|
-      Installment.create!(installable_id:, installable_type:, number: number + 1, price:)
+      Installment.create(installable_id:, installable_type:, number: number + 1, price:)
     end
   end
 

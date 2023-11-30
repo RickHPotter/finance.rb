@@ -18,7 +18,6 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  installments_count :integer          default(0), not null
-#  installment_id     :integer
 #  card_id            :integer          not null
 #  user_id            :integer          not null
 #
