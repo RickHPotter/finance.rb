@@ -17,6 +17,8 @@ export default class extends Controller {
       label.classList.add('peer-focus:text-red-600')
     })
 
-    invalid_fields[0].focus()
+    if (invalid_fields.length > 0) {
+      invalid_fields[0].focus()
+    }
   }
 }

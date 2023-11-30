@@ -3,13 +3,10 @@
 # Controller for CardTransaction
 class CardTransactionsController < ApplicationController
   before_action :set_card_transaction, only: %i[show edit update destroy]
-  before_action :set_cards, only: %i[new edit]
-  before_action :set_entities, only: %i[new edit]
-  before_action :set_categories, only: %i[new edit]
+  before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    # @WARNING: Do I need installments in this eager load?
-    @card_transactions = CardTransaction.all.eager_load(:card, :category, :entity, :installments)
+    @card_transactions = CardTransaction.all.eager_load(:user_card, :category, :entity, :installments)
   end
 
   def show; end
@@ -67,19 +64,16 @@ class CardTransactionsController < ApplicationController
     @user = current_user if user_signed_in?
   end
 
-  def set_cards
-    @cards = @user.user_cards.order(:user_card_name).pluck(:id, :card_name)
-    # @cards = UserCard.all.order(:user_card_name).pluck(:id, :user_card_name) # @comment
+  def set_user_cards
+    @user_cards = @user.user_cards.order(:user_card_name).pluck(:id, :user_card_name)
   end
 
   def set_entities
     @entities = @user.entities.order(:entity_name).pluck(:id, :entity_name)
-    # @entities = Entity.all.order(:entity_name).pluck(:id, :entity_name) # @comment
   end
 
   def set_categories
     @categories = @user.categories.order(:description).pluck(:id, :category_name)
-    # @categories = Category.all.order(:description).pluck(:id, :category_name) # @comment
   end
 
   # Only allow a list of trusted parameters through.

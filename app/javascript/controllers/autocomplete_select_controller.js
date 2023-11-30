@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
+import { useClickOutside } from "stimulus-use"
 
 // Connects to data-controller="autocomplete-select"
 export default class extends Controller {
   static targets = ["list", "item", "selected", "input"]
 
   connect() {
+    useClickOutside(this)
   }
 
   toggle() {
@@ -13,6 +15,11 @@ export default class extends Controller {
     } else {
       this.close()
     }
+  }
+
+  clickOutside(event) {
+    event.preventDefault()
+    this.close()
   }
 
   open() {

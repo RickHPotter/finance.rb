@@ -51,7 +51,7 @@ class TextFieldComponent < ViewComponent::Base
       step: options[:step] || '',
       autofocus: options[:autofocus] || false,
       autocomplete: options[:autocomplete] || @field,
-      data: data_attributes({ form_validate_target: 'field' }, options[:data])
+      data: { form_validate_target: 'field' }.merge(options[:data] || {})
     }
   end
 end

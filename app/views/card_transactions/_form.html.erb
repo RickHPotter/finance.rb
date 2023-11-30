@@ -1,5 +1,6 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
+
   <% form_with(
        model: card_transaction, id: 'form',
        class: 'contents text-black',
@@ -32,7 +33,7 @@
 
     <div class="flex space-x-12">
       <div class="flex w-1/4 flex-col gap-6 my-5">
-        <%= render AutocompleteSelectComponent.new(form:, object:, field: :card_id, items: @cards) %>
+        <%= render AutocompleteSelectComponent.new(form:, object:, field: :card_id, items: @user_cards) %>
       </div>
 
       <div class="flex w-1/4 flex-col gap-6 my-5">
