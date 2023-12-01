@@ -15,8 +15,11 @@ module ComponentsHelper
   end
 
   # @return [String] tailwind class for form button
-  def form_button_class
-    'flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
+  def form_button_class(options)
+    p options
+    "flex w-full py-2 px-4 justify-center rounded-md border border-transparent #{options[:colour][:bg]}
+    text-sm font-medium #{options[:colour][:text]} shadow-sm #{options[:colour][:hover][:bg]}
+    focus:outline-none focus:ring-2 #{options[:colour][:focus][:ring]} focus:ring-offset-2"
   end
 
   # This method takes a variable number of hash arguments and converts them into

@@ -39,7 +39,7 @@ class ButtonComponent < ViewComponent::Base
     {
       id: options[:id] || button_id,
       label: options[:label] || 'Button Without A Name',
-      colour: options[:colour] || :indigo,
+      colour: { colour: colours(options[:colour]) },
       type: 'button',
       data: data_attributes(options[:data])
     }
@@ -54,7 +54,15 @@ class ButtonComponent < ViewComponent::Base
 
     "#{form.object.model_name.singular}_submit_button"
   end
-end
 
-# @TODO: Following Features
-# - Add colour variants
+  def colours(colour)
+    case colour
+    when nil, :indigo
+      { text: 'text-white', bg: 'bg-indigo-600',
+        hover: { bg: 'hover:bg-indigo-700' }, focus: { ring: 'focus:ring-black' } }
+    when :red
+      { text: 'text-black', bg: 'bg-red-500',
+        hover: { bg: 'hover:bg-red-600' }, focus: { ring: 'focus:ring-black' } }
+    end
+  end
+end
