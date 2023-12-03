@@ -24,5 +24,25 @@
 require 'rails_helper'
 
 RSpec.describe CardTransaction, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  let(:card_transaction) { FactoryBot.create(:card_transaction) }
+
+  describe 'presence validations' do
+    p User.count
+    it 'is valid with valid attributes' do
+      expect(card_transaction).to be_valid
+    end
+
+    %i[date ct_description category_id entity_id price installments_count].each do |attribute|
+      it_behaves_like 'validate_nil', :card_transaction, attribute
+      it_behaves_like 'validate_blank', :card_transaction, attribute
+    end
+  end
+
+  describe 'associations' do
+    %i[user user_card category category2 entity installments].each do |model|
+      it "has_many #{model}" do
+        expect(card_transaction).to respond_to model
+      end
+    end
+  end
 end
