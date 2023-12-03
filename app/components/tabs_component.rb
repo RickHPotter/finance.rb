@@ -28,8 +28,3 @@ class TabsComponent < ViewComponent::Base
 
   Item = Struct.new(:label, :icon, :link, :turbo_frame)
 end
-
-# @TODO: Following features:
-# - Make the Item Struct cleaner on the Controller
-# - Create MultiCheckBoxComponent
-# - Pass in dependents as other structure other than itself (after creating MultiCheckBoxComponent)

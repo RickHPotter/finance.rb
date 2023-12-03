@@ -58,8 +58,3 @@ class AutocompleteSelectComponent < ViewComponent::Base
     "#{@object.model_name.singular}_#{@field}"
   end
 end
-
-# @TODO: Following features:
-# - When typing, the first option should be rendered also in the input, but with font-light and grey colour
-# - Add option to use a round-colour or an icon or a picure on the far-left
-# - Implement through stimulus a possibility to deny an option if already chosen in a previous select (Category, i.e.)
