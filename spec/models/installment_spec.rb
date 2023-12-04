@@ -15,5 +15,34 @@
 require 'rails_helper'
 
 RSpec.describe Installment, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  shared_examples 'it creates the right amount of installments' do |installments_no|
+    card_transaction = FactoryBot.create(:card_transaction, :random, installments_count: installments_no)
+
+    it 'creates the expected amount of installments' do
+      expect(card_transaction.installments.count).to eq installments_no
+    end
+
+    it 'applies the right relationship to the created installments' do
+      card_transaction.installments.each do |installment|
+        expect(installment.installable_id).to eq card_transaction.id
+        expect(installment.installable_type).to eq 'CardTransaction'
+      end
+    end
+
+    it 'sums the installments correctly' do
+      expect(card_transaction.installments.sum(:price)).to eq card_transaction.price
+    end
+  end
+
+  context 'when installments_count is 1' do
+    include_examples 'it creates the right amount of installments', 1
+  end
+
+  context 'when installments_count is 2' do
+    include_examples 'it creates the right amount of installments', 2
+  end
+
+  context 'when installments_count is 3' do
+    include_examples 'it creates the right amount of installments', 3
+  end
 end
