@@ -111,11 +111,8 @@ class CardTransaction < ApplicationRecord
   # @return [void]
   #
   def create_installments(prices_arr)
-    installable_id = id
-    installable_type = 'CardTransaction'
-
     prices_arr.each_with_index do |price, number|
-      Installment.create(installable_id:, installable_type:, number: number + 1, price:)
+      installments << Installment.create(number: number + 1, price:)
     end
   end
 

@@ -27,7 +27,6 @@ RSpec.describe CardTransaction, type: :model do
   let(:card_transaction) { FactoryBot.create(:card_transaction) }
 
   describe 'presence validations' do
-    p User.count
     it 'is valid with valid attributes' do
       expect(card_transaction).to be_valid
     end
@@ -43,6 +42,12 @@ RSpec.describe CardTransaction, type: :model do
       it "has_many #{model}" do
         expect(card_transaction).to respond_to model
       end
+    end
+  end
+
+  describe 'public methods' do
+    it 'return a formatted date' do
+      expect(card_transaction.month_year).to eq 'DEC <23>'
     end
   end
 end
