@@ -24,6 +24,9 @@
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include MonthYear
+  include StartingPriceCallback
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
@@ -39,7 +42,6 @@ class CardTransaction < ApplicationRecord
             :price, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
-  before_validation :set_starting_price, on: :create
   after_create :create_default_installments
 
   # @scopes ...................................................................
@@ -50,28 +52,10 @@ class CardTransaction < ApplicationRecord
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
   scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
 
-  # Get the formatted month and year string.
-  #
-  # @return [String] Formatted month and year string in the format "MONTH <YEAR>"
-  #
-  # @note This method internally uses the RefMonthYear#month_year.
-  #
-  def month_year
-    RefMonthYear.new(month, year).month_year
-  end
-
+  # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
 
   protected
-
-  # Sets starting_price based on the price on create.
-  #
-  # @note This is a callback that is called before_create.
-  #
-  # @return [void]
-  def set_starting_price
-    self.starting_price ||= price
-  end
 
   # Create default installments for the CardTransaction when not previously created.
   #
