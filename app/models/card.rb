@@ -8,7 +8,7 @@
 #  card_name  :string           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
-#  bank_id    :integer
+#  bank_id    :integer          not null
 #
 class Card < ApplicationRecord
   # @extends ..................................................................

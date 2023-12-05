@@ -14,7 +14,6 @@
 #  active         :boolean          not null
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
-#  bank_id        :integer
 #
 require 'rails_helper'
 
