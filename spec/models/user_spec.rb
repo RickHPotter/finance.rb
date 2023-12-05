@@ -57,7 +57,7 @@ RSpec.describe User, type: :model do
   end
 
   describe 'associations' do
-    %i[user_cards card_transactions categories entities].each do |model|
+    %i[user_cards card_transactions user_bank_accounts transactions categories entities].each do |model|
       it "has_many #{model}" do
         expect(john).to respond_to model
       end

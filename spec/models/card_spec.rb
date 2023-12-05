@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: cards
@@ -6,15 +8,16 @@
 #  card_name  :string           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
+#  bank_id    :integer
 #
 require 'rails_helper'
 
 RSpec.describe Card, type: :model do
-  let(:azul) { FactoryBot.build(:card) }
+  let(:card) { FactoryBot.build(:card) }
 
   describe 'valid validations' do
     it 'is valid with valid attributes' do
-      expect(azul).to be_valid
+      expect(card).to be_valid
     end
   end
 
@@ -28,6 +31,6 @@ RSpec.describe Card, type: :model do
   end
 
   describe 'associations' do
-    it { expect(azul).to respond_to(:user_cards) }
+    it { expect(card).to respond_to(:user_cards) }
   end
 end

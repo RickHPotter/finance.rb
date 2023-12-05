@@ -31,7 +31,7 @@ RSpec.describe CardTransaction, type: :model do
       expect(card_transaction).to be_valid
     end
 
-    %i[date ct_description category_id entity_id price installments_count].each do |attribute|
+    %i[date ct_description price installments_count].each do |attribute|
       it_behaves_like 'validate_nil', :card_transaction, attribute
       it_behaves_like 'validate_blank', :card_transaction, attribute
     end

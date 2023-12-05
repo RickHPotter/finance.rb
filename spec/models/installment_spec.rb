@@ -22,7 +22,7 @@ RSpec.describe Installment, type: :model do
       expect(card_transaction.installments.count).to eq installments_no
     end
 
-    it 'applies the right relationship to the created installments' do
+    it 'applies the right relationship to the installments' do
       card_transaction.installments.each do |installment|
         expect(installment.installable_id).to eq card_transaction.id
         expect(installment.installable_type).to eq 'CardTransaction'

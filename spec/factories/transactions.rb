@@ -4,18 +4,19 @@
 #
 # Table name: transactions
 #
-#  id             :integer          not null, primary key
-#  t_description  :string           not null
-#  t_comment      :string
-#  date           :date             not null
-#  user_id        :integer          not null
-#  category_id    :integer          not null
-#  starting_price :decimal(, )      not null
-#  price          :decimal(, )      not null
-#  month          :integer          not null
-#  year           :integer          not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
+#  id                   :integer          not null, primary key
+#  t_description        :string           not null
+#  t_comment            :string
+#  date                 :date             not null
+#  user_id              :integer          not null
+#  category_id          :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  user_bank_account_id :integer          not null
 #
 FactoryBot.define do
   factory :transaction do
@@ -28,6 +29,7 @@ FactoryBot.define do
 
     association :user
     category { FactoryBot.create(:category, user:) }
+    user_bank_account { FactoryBot.create(:user_bank_account, user:) }
 
     trait :different do
       t_description { 'HotWheels' }
@@ -37,6 +39,7 @@ FactoryBot.define do
       year { 2024 }
 
       category { FactoryBot.create(:category, :different, user:) }
+      user_bank_account { FactoryBot.create(:user_bank_account, :different, user:) }
     end
 
     trait :random do
@@ -47,6 +50,9 @@ FactoryBot.define do
 
       user { FactoryBot.create(:user, :random) }
       category { user.categories.sample || FactoryBot.create(:category, :random, user:) }
+      user_bank_account do
+        user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, :random, user:)
+      end
     end
   end
 end

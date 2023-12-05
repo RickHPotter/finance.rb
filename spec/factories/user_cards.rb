@@ -14,6 +14,7 @@
 #  active         :boolean          not null
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
+#  bank_id        :integer
 #
 FactoryBot.define do
   factory :user_card do
