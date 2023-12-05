@@ -32,9 +32,9 @@ FactoryBot.define do
     installments_count { 1 }
 
     association :user
-    category { FactoryBot.create(:category, user:) }
-    entity { FactoryBot.create(:entity, user:) }
-    user_card { FactoryBot.create(:user_card, user:) }
+    category { user.categories.sample || FactoryBot.create(:category, user:) }
+    entity { user.entities.sample || FactoryBot.create(:entity, user:) }
+    user_card { user.user_cards.sample || FactoryBot.create(:user_card, user:) }
 
     trait :different do
       ct_description { 'Sitpass' }
@@ -43,8 +43,8 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      category { FactoryBot.create(:category, :different, user:) }
-      entity { FactoryBot.create(:entity, :different, user:) }
+      category { user.categories.sample || FactoryBot.create(:category, :different, user:) }
+      entity { user.entities.sample || FactoryBot.create(:entity, :different, user:) }
     end
 
     trait :random do

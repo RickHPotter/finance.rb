@@ -12,6 +12,8 @@ module MonthYear
   # @note This method internally uses the RefMonthYear#month_year.
   #
   def month_year
+    month ||= date.month
+    year ||= date.year
     RefMonthYear.new(month, year).month_year
   end
 end

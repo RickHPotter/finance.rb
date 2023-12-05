@@ -31,7 +31,13 @@ RSpec.describe Entity, type: :model do
   end
 
   describe 'associations' do
-    %i[user card_transactions].each do |model|
+    %i[user].each do |model|
+      it "belongs_to #{model}" do
+        expect(entity).to respond_to model
+      end
+    end
+
+    %i[card_transactions].each do |model|
       it "has_many #{model}" do
         expect(entity).to respond_to model
       end

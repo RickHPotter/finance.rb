@@ -22,8 +22,10 @@ RSpec.describe Card, type: :model do
   end
 
   describe 'presence validations' do
-    it_behaves_like 'validate_nil', :card, :card_name
-    it_behaves_like 'validate_blank', :card, :card_name
+    %i[card_name].each do |attribute|
+      it_behaves_like 'validate_nil', :card, attribute
+      it_behaves_like 'validate_blank', :card, attribute
+    end
   end
 
   describe 'uniqueness validations' do
@@ -31,6 +33,10 @@ RSpec.describe Card, type: :model do
   end
 
   describe 'associations' do
-    it { expect(card).to respond_to(:user_cards) }
+    %i[user_cards].each do |model|
+      it "has_many #{model}" do
+        expect(card).to respond_to model
+      end
+    end
   end
 end

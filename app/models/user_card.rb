@@ -28,7 +28,8 @@ class UserCard < ApplicationRecord
   has_many :card_transactions, foreign_key: :card_id
 
   # @validations ..............................................................
-  validates :user_card_name, :due_date, :min_spend, :credit_limit, :active, presence: true
+  validates :user_card_name, :due_date, :min_spend, :credit_limit, :active,
+            :user_id, :card_id, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
   validates :due_date, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
 

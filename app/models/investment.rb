@@ -2,27 +2,21 @@
 
 # == Schema Information
 #
-# Table name: transactions
+# Table name: investments
 #
 #  id                   :integer          not null, primary key
-#  t_description        :string           not null
-#  t_comment            :string
+#  price                :decimal(, )      not null
 #  date                 :date             not null
 #  user_id              :integer          not null
 #  category_id          :integer          not null
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
-#  month                :integer          not null
-#  year                 :integer          not null
+#  user_bank_account_id :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
-#  user_bank_account_id :integer          not null
 #
-class Transaction < ApplicationRecord
+class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include MonthYear
-  include StartingPriceCallback
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -31,8 +25,7 @@ class Transaction < ApplicationRecord
   belongs_to :user_bank_account
 
   # @validations ..............................................................
-  validates :t_description, :date, :user_id, :category_id, :starting_price,
-            :user_bank_account_id, :price, :month, :year, presence: true
+  validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

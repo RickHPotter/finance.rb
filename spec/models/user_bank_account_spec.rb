@@ -26,7 +26,7 @@ RSpec.describe UserBankAccount, type: :model do
   end
 
   describe 'presence validations' do
-    %i[balance].each do |attribute|
+    %i[balance user_id bank_id].each do |attribute|
       it_behaves_like 'validate_nil', :user_bank_account, attribute
       it_behaves_like 'validate_blank', :user_bank_account, attribute
     end
@@ -34,6 +34,12 @@ RSpec.describe UserBankAccount, type: :model do
 
   describe 'associations' do
     %i[user bank].each do |model|
+      it "belongs_to #{model}" do
+        expect(user_bank_account).to respond_to model
+      end
+    end
+
+    %i[investments].each do |model|
       it "has_many #{model}" do
         expect(user_bank_account).to respond_to model
       end

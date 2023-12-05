@@ -18,6 +18,8 @@ class Category < ApplicationRecord
   belongs_to :user
 
   has_many :card_transactions
+  has_many :transactions
+  has_many :investments
 
   # @validations ..............................................................
   validates :category_name, presence: true

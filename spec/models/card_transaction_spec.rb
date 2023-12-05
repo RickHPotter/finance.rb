@@ -38,7 +38,13 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   describe 'associations' do
-    %i[user user_card category category2 entity installments].each do |model|
+    %i[user user_card category category2 entity].each do |model|
+      it "belongs_to #{model}" do
+        expect(card_transaction).to respond_to model
+      end
+    end
+
+    %i[installments].each do |model|
       it "has_many #{model}" do
         expect(card_transaction).to respond_to model
       end

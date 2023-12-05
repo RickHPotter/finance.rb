@@ -28,7 +28,8 @@ RSpec.describe Transaction, type: :model do
       expect(transaction).to be_valid
     end
 
-    %i[date t_description price].each do |attribute|
+    # FIXME: why does category_id throw an error?
+    %i[t_description date price user_id user_bank_account_id].each do |attribute|
       it_behaves_like 'validate_nil', :transaction, attribute
       it_behaves_like 'validate_blank', :transaction, attribute
     end
@@ -36,7 +37,7 @@ RSpec.describe Transaction, type: :model do
 
   describe 'associations' do
     %i[user user_bank_account category].each do |model|
-      it "has_many #{model}" do
+      it "belongs_to #{model}" do
         expect(transaction).to respond_to model
       end
     end

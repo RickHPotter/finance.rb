@@ -24,6 +24,8 @@ class UserBankAccount < ApplicationRecord
   belongs_to :user
   belongs_to :bank
 
+  has_many :investments
+
   # @validations ..............................................................
   validates :user_id, :bank_id, :active, :balance, presence: true
 

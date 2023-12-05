@@ -25,8 +25,7 @@ RSpec.describe UserCard, type: :model do
       expect(user_card).to be_valid
     end
 
-    # user_card_name and active callbacks test
-    %i[due_date min_spend credit_limit].each do |attribute|
+    %i[due_date min_spend credit_limit user_id card_id].each do |attribute|
       it_behaves_like 'validate_nil', :user_card, attribute
       it_behaves_like 'validate_blank', :user_card, attribute
     end
@@ -43,7 +42,13 @@ RSpec.describe UserCard, type: :model do
   end
 
   describe 'associations' do
-    %i[user card card_transactions].each do |model|
+    %i[user card].each do |model|
+      it "belongs_to #{model}" do
+        expect(user_card).to respond_to model
+      end
+    end
+
+    %i[card_transactions].each do |model|
       it "has_many #{model}" do
         expect(user_card).to respond_to model
       end
