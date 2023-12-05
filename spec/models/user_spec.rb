@@ -22,7 +22,7 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
-  let(:john) { FactoryBot.build(:user) }
+  let(:john) { FactoryBot.create(:user) }
   let(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
 
   describe 'presence validations' do

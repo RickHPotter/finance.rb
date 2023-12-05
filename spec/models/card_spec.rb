@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Card, type: :model do
-  let(:card) { FactoryBot.build(:card) }
+  let(:card) { FactoryBot.create(:card) }
 
   describe 'valid validations' do
     it 'is valid with valid attributes' do

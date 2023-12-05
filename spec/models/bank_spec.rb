@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Bank, type: :model do
-  let(:bank) { FactoryBot.build(:bank) }
+  let(:bank) { FactoryBot.create(:bank) }
 
   describe 'valid validations' do
     it 'is valid with valid attributes' do
@@ -22,13 +22,14 @@ RSpec.describe Bank, type: :model do
   end
 
   describe 'presence validations' do
-    it_behaves_like 'validate_nil', :bank, :bank_name
-    it_behaves_like 'validate_blank', :bank, :bank_code
+    %i[bank_name bank_code].each do |attribute|
+      it_behaves_like 'validate_nil', :bank, attribute
+      it_behaves_like 'validate_blank', :bank, attribute
+    end
   end
 
   describe 'uniqueness validations' do
-    # TODO: implement
-    # it_behaves_like 'validate_uniqueness_double', :bank, :bank_name, :bank_code
+    it_behaves_like 'validate_uniqueness_combination', :bank, :bank_name, :bank_code
   end
 
   describe 'associations' do

@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Category, type: :model do
-  let(:category) { FactoryBot.build(:category) }
+  let(:category) { FactoryBot.create(:category) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do

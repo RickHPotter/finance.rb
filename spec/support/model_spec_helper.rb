@@ -10,7 +10,7 @@ module ModelSpecHelper
 
     it "is not valid with a nil #{attribute}" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include("can't be blank")
+      expect(subject.errors[attribute]).to include('can\'t be blank')
     end
   end
 
@@ -22,7 +22,7 @@ module ModelSpecHelper
 
     it "is not valid with a blank #{attribute}" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include("can't be blank")
+      expect(subject.errors[attribute]).to include('can\'t be blank')
     end
   end
 
@@ -40,20 +40,18 @@ module ModelSpecHelper
     end
   end
 
-  RSpec.shared_examples 'validate_uniqueness_scope' do |model, attribute, scope|
-    let(:helper) { FactoryBot.create(model) }
+  RSpec.shared_examples 'validate_uniqueness_combination' do |model, *attributes|
+    let(:helper) { FactoryBot.create(model, :random) }
     let(:subject) do
       FactoryBot.build(
-        model, :random,
-        attribute => helper.public_send(attribute),
-        scope => helper.public_send(scope)
+        model, :random, attributes.to_h { |attribute| [attribute, helper.public_send(attribute)] }
       )
     end
 
-    it "is not valid with an existing #{attribute} in the same scope #{scope}" do
+    it "is not valid with an existing combination of #{attributes.join(' X ')}" do
       expect(helper).to be_valid
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include('has already been taken')
+      expect(subject.errors[attributes.first]).to include('has already been taken')
     end
   end
 

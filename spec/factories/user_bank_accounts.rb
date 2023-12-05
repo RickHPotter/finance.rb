@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: user_bank_accounts
@@ -19,7 +21,7 @@ FactoryBot.define do
     balance { 393.92 }
 
     association :user
-    bank { FactoryBot.create(:bank) }
+    association :bank
 
     trait :different do
       agency_number { '3422' }

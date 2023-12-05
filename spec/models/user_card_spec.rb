@@ -18,7 +18,7 @@
 require 'rails_helper'
 
 RSpec.describe UserCard, type: :model do
-  let(:user_card) { FactoryBot.build(:user_card) }
+  let(:user_card) { FactoryBot.create(:user_card) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do
@@ -33,7 +33,7 @@ RSpec.describe UserCard, type: :model do
   end
 
   describe 'uniqueness validations', focus: true do
-    it_behaves_like 'validate_uniqueness_scope', :user_card, :user_card_name, :user
+    it_behaves_like 'validate_uniqueness_combination', :user_card, :user_card_name, :user
   end
 
   describe 'length validations' do

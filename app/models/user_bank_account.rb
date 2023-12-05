@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: user_bank_accounts
@@ -15,6 +17,8 @@
 class UserBankAccount < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include ActiveCallback
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user

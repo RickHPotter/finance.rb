@@ -18,6 +18,8 @@
 class UserCard < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include ActiveCallback
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
@@ -31,7 +33,7 @@ class UserCard < ApplicationRecord
   validates :due_date, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
 
   # @callbacks ................................................................
-  before_validation :set_user_card_name, :set_active, on: :create
+  before_validation :set_user_card_name, on: :create
 
   # @scopes ...................................................................
   scope :active, -> { where(active: true) }
@@ -50,15 +52,6 @@ class UserCard < ApplicationRecord
   # @return [void]
   def set_user_card_name
     self.user_card_name ||= card.card_name
-  end
-
-  # Sets active state in case it was not previously set.
-  #
-  # @note This is a callback that is called before_validation.
-  #
-  # @return [void]
-  def set_active
-    self.active ||= true
   end
 
   # @private_instance_methods .................................................

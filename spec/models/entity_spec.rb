@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Entity, type: :model do
-  let(:entity) { FactoryBot.build(:entity) }
+  let(:entity) { FactoryBot.create(:entity) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do
