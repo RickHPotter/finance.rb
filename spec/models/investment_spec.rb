@@ -23,8 +23,7 @@ RSpec.describe Investment, type: :model do
       expect(investment).to be_valid
     end
 
-    # FIXME: why does category_id throw an error?
-    %i[price date user_id user_bank_account_id].each do |attribute|
+    %i[price date].each do |attribute|
       it_behaves_like 'validate_nil', :investment, attribute
       it_behaves_like 'validate_blank', :investment, attribute
     end

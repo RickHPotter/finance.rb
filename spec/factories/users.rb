@@ -27,7 +27,6 @@ FactoryBot.define do
     password { '123123' }
     password_confirmation { '123123' }
 
-    # VALID
     trait :different do
       first_name { 'Jane' }
       email { 'jane@example.com' }

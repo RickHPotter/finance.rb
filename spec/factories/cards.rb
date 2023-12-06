@@ -21,7 +21,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      card_name { "#{Faker::Color.unique.color_name} #{%w[Bronze Silver Gold Platinum Premium Black].sample}" }
+      card_name { "#{Faker::Color.unique.color_name} #{%w[Bronze Silver Gold Platinum Black].sample} #{rand(1..10)}" }
       bank { FactoryBot.create(:bank, :random) }
     end
   end

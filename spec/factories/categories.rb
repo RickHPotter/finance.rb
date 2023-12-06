@@ -15,13 +15,14 @@ FactoryBot.define do
     category_name { 'Food' }
     association :user
 
-    # VALID
     trait :different do
       category_name { 'Transport' }
+      association :user, :different
     end
 
     trait :random do
-      category_name { Faker::Hobby.unique.activity }
+      category_name { "#{Faker::Hobby.unique.activity} Level #{rand(1..10)}" }
+      association :user, :random
     end
   end
 end

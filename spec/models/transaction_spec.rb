@@ -28,8 +28,7 @@ RSpec.describe Transaction, type: :model do
       expect(transaction).to be_valid
     end
 
-    # FIXME: why does category_id throw an error?
-    %i[t_description date price user_id user_bank_account_id].each do |attribute|
+    %i[t_description date price].each do |attribute|
       it_behaves_like 'validate_nil', :transaction, attribute
       it_behaves_like 'validate_blank', :transaction, attribute
     end

@@ -32,9 +32,9 @@ FactoryBot.define do
     installments_count { 1 }
 
     association :user
-    category { user.categories.sample || FactoryBot.create(:category, user:) }
-    entity { user.entities.sample || FactoryBot.create(:entity, user:) }
-    user_card { user.user_cards.sample || FactoryBot.create(:user_card, user:) }
+    category { custom_create model: :category, reference: { user: } }
+    entity { custom_create model: :entity, reference: { user: } }
+    user_card { custom_create model: :user_card, reference: { user: } }
 
     trait :different do
       ct_description { 'Sitpass' }
@@ -43,8 +43,9 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      category { user.categories.sample || FactoryBot.create(:category, :different, user:) }
-      entity { user.entities.sample || FactoryBot.create(:entity, :different, user:) }
+      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
+      entity { custom_create(model: :entity, traits: [:different], reference: { user: }) }
+      user_card { custom_create(model: :user_card, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -55,9 +56,9 @@ FactoryBot.define do
       installments_count { [1, 1, 1, 2, rand(1..10)].sample }
 
       user { FactoryBot.create(:user, :random) }
-      category { user.categories.sample || FactoryBot.create(:category, :random, user:) }
-      entity { user.entities.sample || FactoryBot.create(:entity, :random, user:) }
-      user_card { user.user_cards.sample || FactoryBot.create(:user_card, :random, user:) }
+      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
+      entity { custom_create(model: :entity, traits: [:random], reference: { user: }) }
+      user_card { custom_create(model: :user_card, traits: [:random], reference: { user: }) }
     end
   end
 end

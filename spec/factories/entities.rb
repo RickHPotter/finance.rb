@@ -15,13 +15,14 @@ FactoryBot.define do
     entity_name { 'Nous' }
     association :user
 
-    # VALID
     trait :different do
       entity_name { 'Moi' }
+      association :user, :different
     end
 
     trait :random do
       entity_name { "#{Faker::Book.unique.title} #{Faker::Book.unique.author}" }
+      association :user, :random
     end
   end
 end

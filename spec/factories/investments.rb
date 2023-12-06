@@ -19,16 +19,16 @@ FactoryBot.define do
     date { Date.new(2023, 12, 16) }
 
     association :user
-    category { user.categories.sample || FactoryBot.create(:category, user:) }
-    user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, user:) }
+    category { custom_create(model: :category, reference: { user: }) }
+    user_bank_account { custom_create(model: :user_bank_account, reference: { user: }) }
 
     trait :different do
       price { 0.52 }
       date { Date.new(2023, 11, 26) }
 
       association :user, :different
-      category { user.categories.sample || FactoryBot.create(:category, :different, user:) }
-      user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, :different, user:) }
+      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
+      user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -36,8 +36,8 @@ FactoryBot.define do
       date { Faker::Date.between(from: 1.months.ago, to: Date.today) }
 
       association :user, :random
-      category { user.categories.sample || FactoryBot.create(:category, :random, user:) }
-      user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, :random, user:) }
+      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
+      user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
     end
   end
 end

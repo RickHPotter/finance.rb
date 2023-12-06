@@ -28,8 +28,8 @@ FactoryBot.define do
     year { 2023 }
 
     association :user
-    category { user.categories.sample || FactoryBot.create(:category, user:) }
-    user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, user:) }
+    category { custom_create(model: :category, reference: { user: }) }
+    user_bank_account { custom_create(model: :user_bank_account, reference: { user: }) }
 
     trait :different do
       t_description { 'HotWheels' }
@@ -38,8 +38,9 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      category { user.categories.sample || FactoryBot.create(:category, :different, user:) }
-      user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, :different, user:) }
+      association :user, :different
+      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
+      user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -49,8 +50,8 @@ FactoryBot.define do
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
 
       user { FactoryBot.create(:user, :random) }
-      category { user.categories.sample || FactoryBot.create(:category, :random, user:) }
-      user_bank_account { user.user_bank_accounts.sample || FactoryBot.create(:user_bank_account, :random, user:) }
+      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
+      user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
     end
   end
 end
