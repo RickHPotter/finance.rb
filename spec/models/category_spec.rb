@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Category, type: :model do
-  let(:category) { FactoryBot.build(:category) }
+  let(:category) { FactoryBot.create(:category) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do
@@ -31,7 +31,13 @@ RSpec.describe Category, type: :model do
   end
 
   describe 'associations' do
-    %i[user card_transactions].each do |model|
+    %i[user].each do |model|
+      it "belongs_to #{model}" do
+        expect(category).to respond_to model
+      end
+    end
+
+    %i[card_transactions transactions investments].each do |model|
       it "has_many #{model}" do
         expect(category).to respond_to model
       end

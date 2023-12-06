@@ -2,24 +2,25 @@
 
 # == Schema Information
 #
-# Table name: cards
+# Table name: banks
 #
 #  id         :integer          not null, primary key
-#  card_name  :string           not null
+#  bank_name  :string           not null
+#  bank_code  :string           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
-#  bank_id    :integer          not null
 #
-class Card < ApplicationRecord
+class Bank < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :bank
-  has_many :user_cards
+  has_many :cards
+  has_many :user_bank_accounts
 
   # @validations ..............................................................
-  validates :card_name, presence: true, uniqueness: true
+  validates :bank_name, :bank_code, presence: true
+  validates :bank_name, uniqueness: { scope: :bank_code }
 
   # @callbacks ................................................................
   # @scopes ...................................................................

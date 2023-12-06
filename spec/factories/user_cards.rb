@@ -30,6 +30,9 @@ FactoryBot.define do
     trait :different do
       user_card_name { 'MyCard' }
       due_date { 16 }
+
+      association :user, :different
+      association :card, :different
     end
 
     trait :random do

@@ -10,7 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_11_32_161618) do
+ActiveRecord::Schema[7.0].define(version: 2023_12_05_153653) do
+  create_table "banks", force: :cascade do |t|
+    t.string "bank_name", null: false
+    t.string "bank_code", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "card_transactions", force: :cascade do |t|
     t.date "date", null: false
     t.string "ct_description", null: false
@@ -36,6 +43,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161618) do
     t.string "card_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "bank_id", null: false
   end
 
   create_table "categories", force: :cascade do |t|
@@ -60,6 +68,49 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161618) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"
+  end
+
+  create_table "investments", force: :cascade do |t|
+    t.decimal "price", null: false
+    t.date "date", null: false
+    t.integer "user_id", null: false
+    t.integer "category_id", null: false
+    t.integer "user_bank_account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_investments_on_category_id"
+    t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
+    t.index ["user_id"], name: "index_investments_on_user_id"
+  end
+
+  create_table "transactions", force: :cascade do |t|
+    t.string "t_description", null: false
+    t.string "t_comment"
+    t.date "date", null: false
+    t.integer "user_id", null: false
+    t.integer "category_id", null: false
+    t.decimal "starting_price", null: false
+    t.decimal "price", null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_bank_account_id", null: false
+    t.index ["category_id"], name: "index_transactions_on_category_id"
+    t.index ["user_id"], name: "index_transactions_on_user_id"
+  end
+
+  create_table "user_bank_accounts", force: :cascade do |t|
+    t.integer "agency_number"
+    t.integer "account_number"
+    t.integer "user_id", null: false
+    t.integer "bank_id", null: false
+    t.boolean "active", default: true, null: false
+    t.decimal "balance", default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bank_id"], name: "index_user_bank_accounts_on_bank_id"
+    t.index ["user_id"], name: "index_user_bank_accounts_on_user_id"
   end
 
   create_table "user_cards", force: :cascade do |t|
@@ -100,6 +151,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_32_161618) do
   add_foreign_key "card_transactions", "entities"
   add_foreign_key "card_transactions", "user_cards", column: "card_id"
   add_foreign_key "card_transactions", "users"
+  add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
   add_foreign_key "entities", "users"
+  add_foreign_key "investments", "categories"
+  add_foreign_key "investments", "user_bank_accounts"
+  add_foreign_key "investments", "users"
+  add_foreign_key "transactions", "categories"
+  add_foreign_key "transactions", "user_bank_accounts"
+  add_foreign_key "transactions", "users"
+  add_foreign_key "user_bank_accounts", "banks"
+  add_foreign_key "user_bank_accounts", "users"
 end

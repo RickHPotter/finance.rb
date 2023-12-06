@@ -2,29 +2,33 @@
 
 # == Schema Information
 #
-# Table name: cards
+# Table name: investments
 #
-#  id         :integer          not null, primary key
-#  card_name  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  bank_id    :integer          not null
+#  id                   :integer          not null, primary key
+#  price                :decimal(, )      not null
+#  date                 :date             not null
+#  user_id              :integer          not null
+#  category_id          :integer          not null
+#  user_bank_account_id :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
-class Card < ApplicationRecord
+class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include MonthYear
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :bank
-  has_many :user_cards
+  belongs_to :user
+  belongs_to :category
+  belongs_to :user_bank_account
 
   # @validations ..............................................................
-  validates :card_name, presence: true, uniqueness: true
+  validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
-  # @additional_config ........................................................
-  # @class_methods ............................................................
   # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................

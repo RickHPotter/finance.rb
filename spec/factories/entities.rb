@@ -21,7 +21,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      entity_name { Faker::Book.unique.title }
+      entity_name { "#{Faker::Book.unique.title} #{Faker::Book.unique.author}" }
     end
   end
 end

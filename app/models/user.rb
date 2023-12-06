@@ -30,6 +30,8 @@ class User < ApplicationRecord
   # @relationships ............................................................
   has_many :user_cards
   has_many :card_transactions
+  has_many :user_bank_accounts
+  has_many :transactions
   has_many :categories
   has_many :entities
 
