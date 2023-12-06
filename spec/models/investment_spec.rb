@@ -7,9 +7,12 @@
 #  id                   :integer          not null, primary key
 #  price                :decimal(, )      not null
 #  date                 :date             not null
+#  month                :integer          not null
+#  year                 :integer          not null
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
+#  transaction_id       :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #

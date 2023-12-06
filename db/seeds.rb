@@ -6,6 +6,8 @@ FactoryBot.create(:user)
 FactoryBot.create(:user, :different)
 FactoryBot.create(:user, :random)
 
+# p 'Creating Banks...'
+
 p 'Creating Cards...'
 FactoryBot.create_list(:card, 15, :random)
 
@@ -23,9 +25,15 @@ rescue ActiveRecord::RecordInvalid
   next
 end
 
+# p 'Creating UserBankAccounts...'
+
 p 'Creating CardTransactions...'
 User.all.each do |user|
   FactoryBot.create_list(:card_transaction, 40, :random, user:)
 end
+
+# p 'Creating Transactions...'
+# p 'Creating Investments...'
+# p 'Creating Exchanges...'
 
 p 'Done!'

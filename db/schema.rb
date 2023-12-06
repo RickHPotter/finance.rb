@@ -73,12 +73,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_05_153653) do
   create_table "investments", force: :cascade do |t|
     t.decimal "price", null: false
     t.date "date", null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
     t.integer "user_id", null: false
     t.integer "category_id", null: false
     t.integer "user_bank_account_id", null: false
+    t.integer "transaction_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_investments_on_category_id"
+    t.index ["transaction_id"], name: "index_investments_on_transaction_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
@@ -155,6 +159,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_05_153653) do
   add_foreign_key "categories", "users"
   add_foreign_key "entities", "users"
   add_foreign_key "investments", "categories"
+  add_foreign_key "investments", "transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
   add_foreign_key "transactions", "categories"

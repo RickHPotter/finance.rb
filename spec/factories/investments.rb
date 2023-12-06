@@ -7,9 +7,12 @@
 #  id                   :integer          not null, primary key
 #  price                :decimal(, )      not null
 #  date                 :date             not null
+#  month                :integer          not null
+#  year                 :integer          not null
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
+#  transaction_id       :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -21,6 +24,7 @@ FactoryBot.define do
     association :user
     category { custom_create(model: :category, reference: { user: }) }
     user_bank_account { custom_create(model: :user_bank_account, reference: { user: }) }
+    transaction { custom_create(model: :transaction, reference: { user: }) }
 
     trait :different do
       price { 0.52 }
@@ -29,6 +33,7 @@ FactoryBot.define do
       association :user, :different
       category { custom_create(model: :category, traits: [:different], reference: { user: }) }
       user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
+      transaction { custom_create(model: :transaction, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -38,6 +43,7 @@ FactoryBot.define do
       association :user, :random
       category { custom_create(model: :category, traits: [:random], reference: { user: }) }
       user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
+      transaction { custom_create(model: :transaction, traits: [:random], reference: { user: }) }
     end
   end
 end

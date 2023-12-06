@@ -30,6 +30,9 @@ class Transaction < ApplicationRecord
   belongs_to :category
   belongs_to :user_bank_account
 
+  has_many :card_transactions
+  has_many :investments
+
   # @validations ..............................................................
   validates :t_description, :date, :user_id, :category_id, :starting_price,
             :user_bank_account_id, :price, :month, :year, presence: true

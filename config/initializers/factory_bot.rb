@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Creating Custom Methods for FactoryBot
 module FactoryHelper
   def custom_create(model:, reference:, traits: [])
     key = reference.keys.first
@@ -14,8 +15,12 @@ module FactoryHelper
   end
 end
 
-RSpec.configure do |config|
-  config.include FactoryHelper
-end
+module FactoryBot
+  class DefinitionProxy
+    include FactoryHelper
+  end
 
-FactoryBot::SyntaxRunner.include FactoryHelper
+  class SyntaxRunner
+    include FactoryHelper
+  end
+end
