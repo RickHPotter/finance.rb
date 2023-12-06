@@ -32,7 +32,7 @@ User.all.each do |user|
   FactoryBot.create_list(:card_transaction, 40, :random, user:)
 end
 
-# p 'Creating Transactions...'
+# p 'Creating MoneyTransactions...'
 # p 'Creating Investments...'
 # p 'Creating Exchanges...'
 

@@ -2,47 +2,49 @@
 
 # == Schema Information
 #
-# Table name: investments
+# Table name: money_transactions
 #
 #  id                   :integer          not null, primary key
-#  price                :decimal(, )      not null
+#  mt_description       :string           not null
+#  mt_comment           :string
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
-#  money_transaction_id :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
 require 'rails_helper'
 
-RSpec.describe Investment, type: :model do
-  let(:investment) { FactoryBot.create(:investment) }
+RSpec.describe MoneyTransaction, type: :model do
+  let(:money_transaction) { FactoryBot.create(:money_transaction) }
 
   describe 'presence validations' do
     it 'is valid with valid attributes' do
-      expect(investment).to be_valid
+      expect(money_transaction).to be_valid
     end
 
-    %i[price date].each do |attribute|
-      it_behaves_like 'validate_nil', :investment, attribute
-      it_behaves_like 'validate_blank', :investment, attribute
+    %i[mt_description date price].each do |attribute|
+      it_behaves_like 'validate_nil', :money_transaction, attribute
+      it_behaves_like 'validate_blank', :money_transaction, attribute
     end
   end
 
   describe 'associations' do
-    %i[user user_bank_account category money_transaction].each do |model|
+    %i[user user_bank_account category].each do |model|
       it "belongs_to #{model}" do
-        expect(investment).to respond_to model
+        expect(money_transaction).to respond_to model
       end
     end
   end
 
   describe 'public methods' do
     it 'return a formatted date' do
-      expect(investment.month_year).to eq 'DEC <23>'
+      expect(money_transaction.month_year).to eq 'DEC <23>'
     end
   end
 end

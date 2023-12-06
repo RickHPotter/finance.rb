@@ -6,6 +6,8 @@ class CreateEntities < ActiveRecord::Migration[7.0]
     create_table :entities do |t|
       t.string :entity_name, null: false, unique: true
 
+      t.references :user, null: false, foreign_key: true
+
       t.timestamps
     end
   end

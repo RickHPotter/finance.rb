@@ -37,7 +37,7 @@ RSpec.describe Category, type: :model do
       end
     end
 
-    %i[card_transactions transactions investments].each do |model|
+    %i[card_transactions money_transactions investments].each do |model|
       it "has_many #{model}" do
         expect(category).to respond_to model
       end

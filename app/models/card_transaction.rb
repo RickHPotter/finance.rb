@@ -5,21 +5,21 @@
 # Table name: card_transactions
 #
 #  id                 :integer          not null, primary key
-#  date               :date             not null
 #  ct_description     :string           not null
 #  ct_comment         :text
+#  date               :date             not null
+#  month              :integer          not null
+#  year               :integer          not null
+#  starting_price     :decimal(, )      not null
+#  price              :decimal(, )      not null
+#  installments_count :integer          default(0), not null
+#  user_id            :integer          not null
+#  user_card_id       :integer          not null
 #  category_id        :integer          not null
 #  category2_id       :integer
 #  entity_id          :integer          not null
-#  starting_price     :decimal(, )      not null
-#  price              :decimal(, )      not null
-#  month              :integer          not null
-#  year               :integer          not null
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
-#  installments_count :integer          default(0), not null
-#  card_id            :integer          not null
-#  user_id            :integer          not null
 #
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
@@ -30,7 +30,7 @@ class CardTransaction < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  belongs_to :user_card, class_name: 'UserCard', foreign_key: :card_id
+  belongs_to :user_card
   belongs_to :category
   belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
   belongs_to :entity
@@ -38,7 +38,7 @@ class CardTransaction < ApplicationRecord
   has_many :installments, as: :installable
 
   # @validations ..............................................................
-  validates :date, :card_id, :ct_description, :category_id, :entity_id, :starting_price,
+  validates :date, :user_card_id, :ct_description, :category_id, :entity_id, :starting_price,
             :price, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
@@ -46,7 +46,7 @@ class CardTransaction < ApplicationRecord
 
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
-  scope :by_card, ->(card_id, user_id) { where(card_id:).by_user(user_id:) }
+  scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
   scope :by_category, ->(category_id, user_id) { where(category_id:).or(where(category2_id:)).by_user(user_id:) }
   scope :by_entity, ->(entity_id, user_id) { where(entity_id:).by_user(user_id:) }
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }

@@ -5,13 +5,13 @@
 # Table name: user_cards
 #
 #  id             :integer          not null, primary key
-#  user_id        :integer          not null
-#  card_id        :integer          not null
 #  user_card_name :string           not null
-#  due_date       :integer          not null
+#  due_date_day   :integer          not null
 #  min_spend      :decimal(, )      not null
 #  credit_limit   :decimal(, )      not null
 #  active         :boolean          not null
+#  user_id        :integer          not null
+#  card_id        :integer          not null
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
 #
@@ -28,10 +28,10 @@ class UserCard < ApplicationRecord
   has_many :card_transactions, foreign_key: :card_id
 
   # @validations ..............................................................
-  validates :user_card_name, :due_date, :min_spend, :credit_limit, :active,
+  validates :user_card_name, :due_date_day, :min_spend, :credit_limit, :active,
             :user_id, :card_id, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
-  validates :due_date, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
+  validates :due_date_day, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create

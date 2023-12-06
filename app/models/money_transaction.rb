@@ -2,23 +2,23 @@
 
 # == Schema Information
 #
-# Table name: transactions
+# Table name: money_transactions
 #
 #  id                   :integer          not null, primary key
-#  t_description        :string           not null
-#  t_comment            :string
+#  mt_description       :string           not null
+#  mt_comment           :string
 #  date                 :date             not null
-#  user_id              :integer          not null
-#  category_id          :integer          not null
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
 #  month                :integer          not null
 #  year                 :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  user_id              :integer          not null
+#  category_id          :integer          not null
+#  user_bank_account_id :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
-#  user_bank_account_id :integer          not null
 #
-class Transaction < ApplicationRecord
+class MoneyTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include MonthYear
@@ -34,7 +34,7 @@ class Transaction < ApplicationRecord
   has_many :investments
 
   # @validations ..............................................................
-  validates :t_description, :date, :user_id, :category_id, :starting_price,
+  validates :mt_description, :date, :user_id, :category_id, :starting_price,
             :user_bank_account_id, :price, :month, :year, presence: true
 
   # @callbacks ................................................................

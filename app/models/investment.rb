@@ -12,7 +12,7 @@
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
-#  transaction_id       :integer          not null
+#  money_transaction_id :integer          not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -26,12 +26,14 @@ class Investment < ApplicationRecord
   belongs_to :user
   belongs_to :category
   belongs_to :user_bank_account
+  belongs_to :money_transaction, optional: true
 
   # @validations ..............................................................
   validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
 
   # @callbacks ................................................................
-  after_save :calculate_transaction_by_ref_month_year
+  before_save :increment_transaction
+  after_destroy :decrement_transaction
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -39,22 +41,39 @@ class Investment < ApplicationRecord
 
   protected
 
-  def calculate_transaction_by_ref_month_year
-    transaction = Transaction.first_or_create(
-      t_description:, date: end_of_month, month:, year:,
-      user_id:, category_id:, user_bank_account_id:
+  def increment_transaction
+    transaction = MoneyTransaction.first_or_create_by(
+      mt_description:, date: end_of_month, month:, year:, user_id:, category_id:, user_bank_account_id:
     )
 
-    new_price = transaction.price.nil? ? price : (transaction.price + price)
-    transaction.update(price: new_price, t_comment:)
+    transaction.investments << self
+    update_transaction(transaction)
   end
 
-  def t_description
+  def decrement_transaction
+    transaction = MoneyTransaction.find_by(mt_description:, month:, year:, user_id:, category_id:,
+                                           user_bank_account_id:)
+
+    transaction.investments.reject! { |i| i == self }
+    if transaction.investments.empty?
+      transaction.destroy
+    else
+      update_transaction(transaction)
+    end
+  end
+
+  def update_transaction(transaction)
+    price = transaction.investments.sum(:price)
+    mt_comment = investment_days_comment(transaction.investments)
+    transaction.update(price:, mt_comment:)
+  end
+
+  def mt_description
     "Investment #{user_bank_account.bank.bank_name} #{month_year}"
   end
 
-  def t_comment
-    "Last Day Checked: #{date.day}"
+  def investment_days_comment(investments)
+    "Days: [#{investments.pluck(:date.day).join(', ')}]"
   end
   # @private_instance_methods .................................................
 end

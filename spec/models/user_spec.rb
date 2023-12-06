@@ -11,13 +11,12 @@
 #  reset_password_sent_at :datetime
 #  remember_created_at    :datetime
 #  confirmation_token     :string
+#  confirmed_at           :datetime
+#  confirmation_sent_at   :datetime
 #  first_name             :string           not null
 #  last_name              :string           not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
-#  confirmed_at           :datetime
-#  confirmation_sent_at   :datetime
-#  unconfirmed_email      :string
 #
 require 'rails_helper'
 
@@ -52,12 +51,12 @@ RSpec.describe User, type: :model do
   describe 'custom validations' do
     it 'requires a matching password confirmation' do
       expect(with_different_password_confirmation).to_not be_valid
-      expect(with_different_password_confirmation.errors[:password_confirmation]).to include("doesn't match Password")
+      expect(with_different_password_confirmation.errors[:password_confirmation]).to include('doesn\'t match Password')
     end
   end
 
   describe 'associations' do
-    %i[user_cards card_transactions user_bank_accounts transactions categories entities].each do |model|
+    %i[user_cards card_transactions user_bank_accounts money_transactions categories entities].each do |model|
       it "has_many #{model}" do
         expect(john).to respond_to model
       end
