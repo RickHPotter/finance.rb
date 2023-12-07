@@ -37,7 +37,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      price { Faker::Number.decimal(l_digits: 2) }
+      price { Faker::Number.decimal(l_digits: rand(0..1)) }
       date { Faker::Date.between(from: 1.months.ago, to: Date.today) }
 
       association :user, :random

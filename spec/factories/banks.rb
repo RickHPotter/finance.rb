@@ -21,7 +21,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      bank_name { Faker::Bank.unique.name.split(' ').first }
+      bank_name { Faker::Bank.name.split(' ').sample }
       bank_code { Faker::Bank.unique.bsb_number }
     end
   end

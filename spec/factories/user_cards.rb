@@ -36,7 +36,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      user_card_name { "#{Faker::Color.unique.color_name} #{%w[Bronze Silver Gold Platinum Premium Black].sample}" }
+      user_card_name { "#{card.card_name} - #{user.first_name}" }
       due_date_day { rand(1..31) }
       min_spend { [0.00, 100.00, 200.00].sample }
       credit_limit { Faker::Number.decimal(l_digits: rand(3..4)).ceil + 200.00 }

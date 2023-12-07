@@ -43,6 +43,7 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
+      association :user, :different
       category { custom_create(model: :category, traits: [:different], reference: { user: }) }
       entity { custom_create(model: :entity, traits: [:different], reference: { user: }) }
       user_card { custom_create(model: :user_card, traits: [:different], reference: { user: }) }
@@ -55,7 +56,7 @@ FactoryBot.define do
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
       installments_count { [1, 1, 1, 2, rand(1..10)].sample }
 
-      user { FactoryBot.create(:user, :random) }
+      association :user, :random
       category { custom_create(model: :category, traits: [:random], reference: { user: }) }
       entity { custom_create(model: :entity, traits: [:random], reference: { user: }) }
       user_card { custom_create(model: :user_card, traits: [:random], reference: { user: }) }

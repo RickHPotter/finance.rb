@@ -49,7 +49,7 @@ FactoryBot.define do
       mt_comment { [Faker::Lorem.sentence, nil, nil, nil, nil].sample }
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
 
-      user { FactoryBot.create(:user, :random) }
+      association :user, :random
       category { custom_create(model: :category, traits: [:random], reference: { user: }) }
       user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
     end

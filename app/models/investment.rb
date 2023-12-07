@@ -32,8 +32,9 @@ class Investment < ApplicationRecord
   validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
 
   # @callbacks ................................................................
-  before_save :increment_transaction
-  after_destroy :decrement_transaction
+  before_save :attach_money_transaction
+  before_commit :update_money_transaction, unless: -> { destroyed? }
+  before_commit :destroy_money_transaction, if: -> { destroyed? }
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -41,31 +42,21 @@ class Investment < ApplicationRecord
 
   protected
 
-  def increment_transaction
-    transaction = MoneyTransaction.first_or_create_by(
+  def attach_money_transaction
+    self.money_transaction = MoneyTransaction.create_with(price:).find_or_create_by(
       mt_description:, date: end_of_month, month:, year:, user_id:, category_id:, user_bank_account_id:
     )
-
-    transaction.investments << self
-    update_transaction(transaction)
   end
 
-  def decrement_transaction
-    transaction = MoneyTransaction.find_by(mt_description:, month:, year:, user_id:, category_id:,
-                                           user_bank_account_id:)
-
-    transaction.investments.reject! { |i| i == self }
-    if transaction.investments.empty?
-      transaction.destroy
-    else
-      update_transaction(transaction)
-    end
+  def perform_destroy_if_last
+    money_transaction.destroy if money_transaction.investments.count.zero?
   end
 
-  def update_transaction(transaction)
-    price = transaction.investments.sum(:price)
-    mt_comment = investment_days_comment(transaction.investments)
-    transaction.update(price:, mt_comment:)
+  def update_money_transaction
+    price = money_transaction.investments.sum(:price)
+    mt_comment = investment_days_comment(money_transaction.investments)
+
+    money_transaction.update(price:, mt_comment:)
   end
 
   def mt_description
@@ -73,7 +64,7 @@ class Investment < ApplicationRecord
   end
 
   def investment_days_comment(investments)
-    "Days: [#{investments.pluck(:date.day).join(', ')}]"
+    "Days: [#{investments.pluck(:date).map(&:day).join(', ')}]"
   end
   # @private_instance_methods .................................................
 end
