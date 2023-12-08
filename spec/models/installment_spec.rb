@@ -16,6 +16,7 @@ require 'rails_helper'
 
 RSpec.describe Installment, type: :model do
   shared_examples 'it creates the right amount of installments' do |installments_no|
+    # FIXME: this should be a let and before the shared_examples
     card_transaction = FactoryBot.create(:card_transaction, :random, installments_count: installments_no)
 
     it 'creates the expected amount of installments' do

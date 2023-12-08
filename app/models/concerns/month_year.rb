@@ -21,6 +21,14 @@ module MonthYear
     RefMonthYear.new(month, year).month_year
   end
 
+  # Fetch the day of given date
+  #
+  # @return [Integer]
+  #
+  def day
+    date&.day
+  end
+
   # Fetch the last day of given MonthYear
   #
   # @return [Date]
@@ -40,7 +48,7 @@ module MonthYear
   def set_month_year
     # FIXME: Card Transactions dont work this way,
     #        remember to shift year when month is 12
-    self.month ||= date.month
-    self.year ||= date.year
+    self.month ||= date&.month
+    self.year ||= date&.year
   end
 end

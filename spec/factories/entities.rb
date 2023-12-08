@@ -21,7 +21,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      entity_name { "#{Faker::Book.unique.title} #{Faker::Book.unique.author}" }
+      sequence(:entity_name) { |n| "#{Faker::Book.unique.title} #{Faker::Book.unique.author} #{n}" }
       association :user, :random
     end
   end

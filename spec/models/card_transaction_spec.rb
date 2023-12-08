@@ -52,7 +52,7 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   describe 'public methods' do
-    it 'return a formatted date' do
+    it 'returns a formatted date' do
       expect(card_transaction.month_year).to eq 'DEC <23>'
     end
   end

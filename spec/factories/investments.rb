@@ -24,7 +24,6 @@ FactoryBot.define do
     association :user
     category { custom_create(model: :category, reference: { user: }) }
     user_bank_account { custom_create(model: :user_bank_account, reference: { user: }) }
-    money_transaction { custom_create(model: :money_transaction, reference: { user: }) }
 
     trait :different do
       price { 0.52 }
@@ -33,7 +32,6 @@ FactoryBot.define do
       association :user, :different
       category { custom_create(model: :category, traits: [:different], reference: { user: }) }
       user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
-      money_transaction { custom_create(model: :money_transaction, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -43,7 +41,6 @@ FactoryBot.define do
       association :user, :random
       category { custom_create(model: :category, traits: [:random], reference: { user: }) }
       user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
-      money_transaction { custom_create(model: :money_transaction, traits: [:random], reference: { user: }) }
     end
   end
 end

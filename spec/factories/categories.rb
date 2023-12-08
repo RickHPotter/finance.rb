@@ -21,7 +21,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      category_name { "#{Faker::Hobby.unique.activity} Level #{rand(1..10)}" }
+      sequence(:category_name) { |n| "#{Faker::Hobby.unique.activity} #{n}" }
       association :user, :random
     end
   end

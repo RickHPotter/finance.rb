@@ -33,8 +33,8 @@ class Investment < ApplicationRecord
 
   # @callbacks ................................................................
   before_save :attach_money_transaction
-  before_commit :update_money_transaction, unless: -> { destroyed? }
-  before_commit :destroy_money_transaction, if: -> { destroyed? }
+  after_commit :update_money_transaction, on: %i[create update]
+  after_commit :update_or_destroy_money_transaction, on: :destroy
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -48,23 +48,24 @@ class Investment < ApplicationRecord
     )
   end
 
-  def perform_destroy_if_last
-    money_transaction.destroy if money_transaction.investments.count.zero?
+  def update_money_transaction
+    money_transaction.update(price: money_transaction.investments.sum(:price), mt_comment: investment_days_comment)
   end
 
-  def update_money_transaction
-    price = money_transaction.investments.sum(:price)
-    mt_comment = investment_days_comment(money_transaction.investments)
-
-    money_transaction.update(price:, mt_comment:)
+  def update_or_destroy_money_transaction
+    if money_transaction.investments.count.zero?
+      money_transaction.destroy
+    else
+      update_money_transaction
+    end
   end
 
   def mt_description
     "Investment #{user_bank_account.bank.bank_name} #{month_year}"
   end
 
-  def investment_days_comment(investments)
-    "Days: [#{investments.pluck(:date).map(&:day).join(', ')}]"
+  def investment_days_comment
+    "Days: [#{money_transaction.investments.order(:date).map(&:day).join(', ')}]"
   end
   # @private_instance_methods .................................................
 end
