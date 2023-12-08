@@ -16,8 +16,8 @@
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
-require 'awesome_print'
 require 'rails_helper'
+
 include FactoryHelper
 
 RSpec.describe Investment, type: :model do
@@ -28,14 +28,13 @@ RSpec.describe Investment, type: :model do
 
   let(:investment) { FactoryBot.create(:investment, :random) }
 
-  let(:inv1) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 1))) }
+  let!(:inv1) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 1))) }
   let!(:inv2) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 2))) }
   let!(:inv3) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 3))) }
-  let(:money_transaction) { inv1.money_transaction }
+  let!(:money_transaction) { inv1.money_transaction }
 
   shared_examples 'investment cop' do
     it 'sums the investments correctly' do
-      ap money_transaction.investments.pluck(:id, :price)
       expect(money_transaction.price).to be_within(0.01).of money_transaction.investments.sum(:price)
     end
 
@@ -44,33 +43,64 @@ RSpec.describe Investment, type: :model do
     end
   end
 
+  describe '[ activerecord validations ]' do
+    context '( presence, uniquness, etc )' do
+      it 'is valid with valid attributes' do
+        expect(investment).to be_valid
+      end
+
+      %i[price date].each do |attribute|
+        it_behaves_like 'validate_nil', :investment, attribute
+        it_behaves_like 'validate_blank', :investment, attribute
+      end
+    end
+
+    context '( associations )' do
+      %i[user user_bank_account category money_transaction].each do |model|
+        it "belongs_to #{model}" do
+          expect(investment).to respond_to model
+        end
+      end
+    end
+
+    context '( public methods )' do
+      it 'returns a formatted date' do
+        investment.update(date: Date.new(2023, 12))
+        expect(investment.month_year).to eq 'DEC <23>'
+      end
+    end
+  end
+
   describe '[ manipulating investments ]' do
-    context 'when new investments are created' do
-      it 'attachs the same money_transaction for all investments' do
-        money_transaction.reload
+    context '( when new investments are created )' do
+      before { money_transaction.reload }
+
+      it 'applies the right relationship to the money_transaction' do
         expect(inv1.money_transaction).to eq inv2.money_transaction
         expect(inv1.money_transaction).to eq inv3.money_transaction
       end
 
-      # FIXME: these dont work, lol
       include_examples 'investment cop'
     end
 
-    context 'when existing investments are updated' do
-      it 'updates the investments' do
-        [inv1, inv2, inv3].each do |inv|
-          inv.update(price: Faker::Number.decimal(l_digits: rand(1..3)))
-          money_transaction.reload
+    context '( when existing investments are updated )' do
+      before do
+        [inv1, inv2].each do |inv|
+          inv.update(price: Faker::Number.decimal(l_digits: rand(0..1)))
         end
+        money_transaction.reload
       end
 
       include_examples 'investment cop'
     end
 
-    context 'when most investments are deleted' do
-      it 'deletes two investment and only one is found in money_transaction.investments' do
+    context '( when most investments are deleted )' do
+      before do
         [inv1, inv2].each(&:destroy)
+        money_transaction.reload
+      end
 
+      it 'finds in money_transaction.investments only the third element' do
         expect(money_transaction.investments).not_to include(inv1)
         expect(money_transaction.investments).not_to include(inv2)
         expect(money_transaction.investments).to include(inv3)
@@ -79,39 +109,20 @@ RSpec.describe Investment, type: :model do
       include_examples 'investment cop'
     end
 
-    context 'when all investments are deleted' do
-      it 'deletes all elements and money_transaction ceases to exist' do
-        [inv1, inv2, inv3].each(&:destroy)
-        # TODO: check if MoneyTransaction was purged
+    context '( when all investments are deleted )' do
+      before { [inv1, inv2, inv3].each(&:destroy)  }
+
+      it 'deletes all investments' do
+        %i[inv1 inv2 inv3].each do |model|
+          expect(public_send(model)).to be_destroyed
+        end
       end
 
-      include_examples 'investment cop'
-    end
-  end
-
-  describe 'presence validations' do
-    it 'is valid with valid attributes' do
-      expect(investment).to be_valid
-    end
-
-    %i[price date].each do |attribute|
-      it_behaves_like 'validate_nil', :investment, attribute
-      it_behaves_like 'validate_blank', :investment, attribute
-    end
-  end
-
-  describe 'associations' do
-    %i[user user_bank_account category money_transaction].each do |model|
-      it "belongs_to #{model}" do
-        expect(investment).to respond_to model
+      it 'deletes the corresponding money_transaction' do
+        expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
       end
     end
-  end
 
-  describe 'public methods' do
-    it 'returns a formatted date' do
-      investment.update(date: Date.new(2023, 12))
-      expect(investment.month_year).to eq 'DEC <23>'
-    end
+    # TODO: Test when one of the FKS are changed (should create/use another money_transaction)
   end
 end

@@ -31,6 +31,7 @@ class UserCard < ApplicationRecord
   validates :user_card_name, :due_date_day, :min_spend, :credit_limit, :active,
             :user_id, :card_id, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
+  # FIXME: Fix the billing cycle by first adding a closing_date
   validates :due_date_day, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
 
   # @callbacks ................................................................
