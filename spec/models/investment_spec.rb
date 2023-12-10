@@ -21,7 +21,7 @@ require 'rails_helper'
 include FactoryHelper
 
 RSpec.describe Investment, type: :model do
-  user = User.last
+  user = FactoryBot.create(:user, :random)
   category = FactoryHelper.custom_create(model: :category, traits: [:random], reference: { user: })
   user_bank_account = FactoryHelper.custom_create(model: :user_bank_account, traits: [:random], reference: { user: })
   options = { user:, category:, user_bank_account: }
@@ -71,7 +71,7 @@ RSpec.describe Investment, type: :model do
     end
   end
 
-  describe '[ manipulating investments ]' do
+  describe '[ business logic ]' do
     context '( when new investments are created )' do
       before { money_transaction.reload }
 

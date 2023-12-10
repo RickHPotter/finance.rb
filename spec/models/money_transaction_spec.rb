@@ -23,28 +23,32 @@ require 'rails_helper'
 RSpec.describe MoneyTransaction, type: :model do
   let(:money_transaction) { FactoryBot.create(:money_transaction) }
 
-  describe 'presence validations' do
-    it 'is valid with valid attributes' do
-      expect(money_transaction).to be_valid
+  describe '[ activerecord validations ]' do
+    context '( presence, uniquness, etc )' do
+      it 'is valid with valid attributes' do
+        expect(money_transaction).to be_valid
+      end
+
+      %i[mt_description date price].each do |attribute|
+        it_behaves_like 'validate_nil', :money_transaction, attribute
+        it_behaves_like 'validate_blank', :money_transaction, attribute
+      end
     end
 
-    %i[mt_description date price].each do |attribute|
-      it_behaves_like 'validate_nil', :money_transaction, attribute
-      it_behaves_like 'validate_blank', :money_transaction, attribute
-    end
-  end
-
-  describe 'associations' do
-    %i[user user_bank_account category].each do |model|
-      it "belongs_to #{model}" do
-        expect(money_transaction).to respond_to model
+    context '( associations )' do
+      %i[user user_bank_account category].each do |model|
+        it "belongs_to #{model}" do
+          expect(money_transaction).to respond_to model
+        end
       end
     end
   end
 
-  describe 'public methods' do
-    it 'returns a formatted date' do
-      expect(money_transaction.month_year).to eq 'DEC <23>'
+  describe '[ business logic ]' do
+    context '( public methods )' do
+      it 'returns a formatted date' do
+        expect(money_transaction.month_year).to eq 'DEC <23>'
+      end
     end
   end
 end
