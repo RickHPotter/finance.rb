@@ -3,9 +3,9 @@
 # Helper for Translations with i18n for model / attributes
 module TranslateHelper
   # This method takes a collection of model instances, extracts the model class,
-  # counts the instances, and returns a pluralized human-readable model name.
+  # counts the instances, and returns a pluralised human-readable model name.
   #
-  # @example Get pluralized model name based on instance count
+  # @example Get pluralised model name based on instance count
   #   model_on_count(@users) # @users = User.all
   #   # => "Users" or "User" (depending on the count)
   #
@@ -13,17 +13,18 @@ module TranslateHelper
   #
   # @param instances [ActiveRecord::Relation] Collection of model instances.
   #
-  # @return [String] Pluralized human-readable model name based on the count of instances.
+  # @return [String] Pluralised human-readable model name based on the count of instances.
+  #
   def model_on_count(instances)
     model = instances.first.class
     count = instances.count
     model.model_name.human.pluralize(count)
   end
 
-  # This method takes a model class and a count, and returns a pluralized
+  # This method takes a model class and a count, and returns a pluralised
   # human-readable model name based on the count.
   #
-  # @example Get pluralized model name based on count
+  # @example Get pluralised model name based on count
   #   pluralise_model(User, 5)
   #   # => "Users"
   #
@@ -32,7 +33,8 @@ module TranslateHelper
   # @param model [Class] Model class.
   # @param count [Integer] Count of instances.
   #
-  # @return [String] Pluralized human-readable model name based on the count.
+  # @return [String] Pluralised human-readable model name based on the count.
+  #
   def pluralise_model(model, count)
     model.model_name.human.pluralize(count)
   end
@@ -50,6 +52,7 @@ module TranslateHelper
   # @param attribute [Symbol] Attribute name.
   #
   # @return [String] Human-readable attribute name based on the model and attribute.
+  #
   def attribute_model(model, attribute)
     model = model.class if model.class.is_a?(Class)
     model = model.model_name.singular
@@ -57,13 +60,14 @@ module TranslateHelper
   end
 
   # This method dynamically generates a panel title based on the current controller
-  # action and the singularized capitalized name of the controller.
+  # action and the singularised capitalised name of the controller.
   #
   # @example Get panel title
   #   panel_title
   #   # => "Creating User" or "Editing Post" (depending on the controller action)
   #
   # @return [String] Panel title for the current controller action.
+  #
   def panel_title
     "#{I18n.t("gerund.#{action_name}")} #{controller_name.singularize.capitalize}"
   end
@@ -76,6 +80,7 @@ module TranslateHelper
   #   # => "Create" or "Update" (depending on the controller action)
   #
   # @return [String] Submit button label for the current controller action.
+  #
   def submit
     I18n.t("actions.#{action_name}")
   end

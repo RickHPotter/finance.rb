@@ -60,9 +60,8 @@ class CardTransaction < ApplicationRecord
   # Create default installments for the CardTransaction when not previously created.
   #
   # This method calculates and creates a specified number of default installments for
-  # a CardTransaction, distributing the total price evenly among the installments.
-  #
-  # @return [void]
+  # a CardTransaction, distributing the total price evenly among the installments, and.
+  # then calls {#create_installments} to create the actual Installments.
   #
   # @example Create default installments for a CardTransaction
   #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
@@ -70,6 +69,8 @@ class CardTransaction < ApplicationRecord
   #
   # @note The method uses the `installments_count` attribute to determine the number
   #   of installments to create and distributes the total `price` evenly among them.
+  #
+  # @return [void]
   #
   def create_default_installments
     return if installments.present?
@@ -93,6 +94,8 @@ class CardTransaction < ApplicationRecord
   # @param prices_arr [Array<BigDecimal>] An array containing the prices for each installment.
   #
   # @return [void]
+  #
+  # @see Installment
   #
   def create_installments(prices_arr)
     prices_arr.each_with_index do |price, number|

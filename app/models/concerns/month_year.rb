@@ -13,7 +13,7 @@ module MonthYear
   #
   # @return [String] Formatted month and year string in the format "MONTH <YEAR>"
   #
-  # @note This method internally uses the RefMonthYear#month_year.
+  # @see RefMonthYear#month_year
   #
   def month_year
     month ||= date.month
@@ -27,6 +27,15 @@ module MonthYear
   #
   def day
     date&.day
+  end
+
+  # Fetch the next month given a day
+  #
+  # @return [Date]
+  #
+  def next_month_this(day: Date.current.day)
+    today = Date.current
+    Date.new(today.year, today.month, day) + 1.month
   end
 
   # Fetch the last day of given MonthYear
@@ -46,9 +55,14 @@ module MonthYear
   # @return [void]
   #
   def set_month_year
-    # FIXME: Card Transactions dont work this way,
-    #        remember to shift year when month is 12
-    self.month ||= date&.month
-    self.year ||= date&.year
+    return unless respond_to?(:month)
+
+    if instance_of?(CardTransaction)
+      self.month ||= current_due_date.month
+      self.year ||= current_due_date.year
+    else
+      self.month ||= date&.month
+      self.year ||= date&.year
+    end
   end
 end

@@ -10,7 +10,7 @@ class TextFieldComponent < ViewComponent::Base
   attr_reader :form, :object, :field, :options, :wrapper
 
   # @public_instance_methods ..................................................
-  # Initializes a Component of Type TextField
+  # Initialises a Component of Type TextField
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object.
   # @param object [Object] The model object associated with the form.

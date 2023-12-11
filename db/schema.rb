@@ -125,7 +125,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
 
   create_table "user_cards", force: :cascade do |t|
     t.string "user_card_name", null: false
-    t.integer "due_date_day", null: false
+    t.integer "days_until_due_date", null: false
+    t.date "current_due_date", null: false
+    t.date "current_closing_date", null: false
     t.decimal "min_spend", null: false
     t.decimal "credit_limit", null: false
     t.boolean "active", null: false

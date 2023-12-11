@@ -18,6 +18,7 @@ module StartingPriceCallback
   # @note This is a callback that is called before_create.
   #
   # @return [void]
+  #
   def fix_price
     self.price = price&.round(2)
   end
@@ -27,6 +28,7 @@ module StartingPriceCallback
   # @note This is a callback that is called before_create.
   #
   # @return [void]
+  #
   def set_starting_price
     return unless respond_to? :starting_price
 

@@ -47,6 +47,7 @@ class User < ApplicationRecord
   # Helper methods to return a full name based on first_name and last_name
   #
   # @return [String]
+  #
   def full_name
     "#{first_name} #{last_name}"
   end

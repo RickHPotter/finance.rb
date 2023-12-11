@@ -17,6 +17,7 @@ module ActiveCallback
   # @note This is a callback that is called before_validation.
   #
   # @return [void]
+  #
   def set_active
     self.active ||= true
   end

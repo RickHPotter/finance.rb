@@ -7,7 +7,7 @@ class TabsComponent < ViewComponent::Base
   attr_reader :items
 
   # @public_instance_methods ..................................................
-  # Initializes a Component of Type Tab
+  # Initialises a Component of Type Tab
   #
   # @param items [Array] Array of Item Structs.
   # @param dependents [Array] Array of dependent items.
