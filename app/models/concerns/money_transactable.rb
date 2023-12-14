@@ -38,10 +38,8 @@ module MoneyTransactable
   #
   def money_transaction_params
     params = {
-      money_transaction_type: model_name.name,
-      mt_description:,
-      date: end_of_month, month:, year:,
-      user_id:, category_id:
+      mt_description:, month:, year:, user_id:, category_id:,
+      date: money_transaction_date, money_transaction_type: model_name.name
     }
     params[:user_card_id] = user_card_id if respond_to? :user_card_id
     params[:user_bank_account_id] = user_bank_account_id if respond_to? :user_bank_account_id

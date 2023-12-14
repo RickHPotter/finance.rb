@@ -32,10 +32,6 @@ class Investment < ApplicationRecord
   validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
 
   # @callbacks ................................................................
-  # before_save :attach_money_transaction
-  after_commit :update_money_transaction, on: %i[create update]
-  after_commit :update_or_destroy_money_transaction, on: :destroy
-
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
@@ -50,6 +46,16 @@ class Investment < ApplicationRecord
   #
   def mt_description
     "Investment #{user_bank_account.bank.bank_name} #{month_year}"
+  end
+
+  # Generates a date for the associated MoneyTransaction.
+  #
+  # This method picks the end of given month for the MoneyTransaction.
+  #
+  # @return [Date]
+  #
+  def money_transaction_date
+    end_of_month
   end
 
   # Generates a comment for the associated MoneyTransaction based on investment days.

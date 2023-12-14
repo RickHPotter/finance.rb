@@ -118,18 +118,21 @@ RSpec.describe CardTransaction, type: :model do
       include_examples 'card_transaction cop'
     end
 
-    # context '( when all investments are deleted )' do
-    #   before { [inv1, inv2, inv3].each(&:destroy)  }
-    #
-    #   it 'deletes all investments' do
-    #     %i[inv1 inv2 inv3].each do |model|
-    #       expect(public_send(model)).to be_destroyed
-    #     end
-    #   end
-    #
-    #   it 'deletes the corresponding money_transaction' do
-    #     expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
-    #   end
-    # end
+    context '( when all card_transactions are deleted )' do
+      before do
+        card_transaction.destroy
+        card_transactions.each(&:destroy)
+      end
+
+      it 'deletes all card_transactions' do
+        [card_transaction, *card_transactions].each do |ct|
+          expect(ct).to be_destroyed
+        end
+      end
+
+      it 'deletes the corresponding money_transaction' do
+        expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
+      end
+    end
   end
 end

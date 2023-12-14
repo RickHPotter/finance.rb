@@ -115,6 +115,16 @@ class CardTransaction < ApplicationRecord
     "Card #{user_card.user_card_name} #{month_year}"
   end
 
+  # Generates a date for the associated MoneyTransaction.
+  #
+  # This method picks the due_date for the MoneyTransaction.
+  #
+  # @return [Date]
+  #
+  def money_transaction_date
+    user_card.current_due_date
+  end
+
   # TODO: what comment should be made
   #
   # This method generates a comment ?
