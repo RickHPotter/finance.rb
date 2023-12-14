@@ -5,8 +5,8 @@ require 'rails_helper'
 RSpec.describe 'Pages#Home', type: :request do
   let(:user) { FactoryBot.create(:user) }
 
-  describe 'GET /' do
-    context 'when not logged in' do
+  describe '[ GET / ]' do
+    context '( when not logged in )' do
       it 'redirects to sign-in page on request to /' do
         get '/'
 
@@ -15,8 +15,8 @@ RSpec.describe 'Pages#Home', type: :request do
       end
     end
 
-    context 'when logged in' do
-      before(:each) { sign_in user }
+    context '( when logged in )' do
+      before { sign_in user }
 
       it 'succeeds on request to /' do
         get '/'

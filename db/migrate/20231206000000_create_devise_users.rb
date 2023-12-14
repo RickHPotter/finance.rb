@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-class DeviseCreateUsers < ActiveRecord::Migration[7.0]
+# Devise User Migration
+class CreateDeviseUsers < ActiveRecord::Migration[7.0]
   def change
     create_table :users do |t|
       ## Database authenticatable
@@ -16,6 +17,8 @@ class DeviseCreateUsers < ActiveRecord::Migration[7.0]
 
       ## Confirmable
       t.string :confirmation_token
+      t.datetime :confirmed_at
+      t.datetime :confirmation_sent_at
 
       t.string :first_name, null: false
       t.string :last_name, null: false

@@ -18,7 +18,7 @@ class Category < ApplicationRecord
   belongs_to :user
 
   has_many :card_transactions
-  has_many :transactions
+  has_many :money_transactions
   has_many :investments
 
   # @validations ..............................................................

@@ -11,13 +11,12 @@
 #  reset_password_sent_at :datetime
 #  remember_created_at    :datetime
 #  confirmation_token     :string
+#  confirmed_at           :datetime
+#  confirmation_sent_at   :datetime
 #  first_name             :string           not null
 #  last_name              :string           not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
-#  confirmed_at           :datetime
-#  confirmation_sent_at   :datetime
-#  unconfirmed_email      :string
 #
 class User < ApplicationRecord
   # @extends ..................................................................
@@ -31,7 +30,7 @@ class User < ApplicationRecord
   has_many :user_cards
   has_many :card_transactions
   has_many :user_bank_accounts
-  has_many :transactions
+  has_many :money_transactions
   has_many :categories
   has_many :entities
 
@@ -48,6 +47,7 @@ class User < ApplicationRecord
   # Helper methods to return a full name based on first_name and last_name
   #
   # @return [String]
+  #
   def full_name
     "#{first_name} #{last_name}"
   end

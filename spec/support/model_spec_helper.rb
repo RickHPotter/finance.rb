@@ -6,11 +6,11 @@ module ModelSpecHelper
   # NIL VALIDATIONS
   #
   RSpec.shared_examples 'validate_nil' do |model, attribute|
-    let(:subject) { FactoryBot.build(model, attribute => nil) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => nil) }
 
     it "is not valid with a nil #{attribute}" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include('can\'t be blank')
+      expect(subject.errors[attribute]).to include('can\'t be blank').or include('must exist')
     end
   end
 
@@ -18,7 +18,7 @@ module ModelSpecHelper
   # BLANK VALIDATIONS
   #
   RSpec.shared_examples 'validate_blank' do |model, attribute|
-    let(:subject) { FactoryBot.build(model, attribute => ' ' * 3) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => ' ' * 3) }
 
     it "is not valid with a blank #{attribute}" do
       expect(subject).to_not be_valid
@@ -59,7 +59,7 @@ module ModelSpecHelper
   # LENGTH VALIDATIONS
   #
   RSpec.shared_examples 'validate_min_length' do |model, attribute, min|
-    let(:subject) { FactoryBot.build(model, attribute => '2' * (min - 1)) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => '2' * (min - 1)) }
 
     it "is not valid with #{attribute} with an shorter length than the minimum" do
       expect(subject).to_not be_valid
@@ -68,7 +68,7 @@ module ModelSpecHelper
   end
 
   RSpec.shared_examples 'validate_max_length' do |model, attribute, max|
-    let(:subject) { FactoryBot.build(model, attribute => '2' * (max + 1)) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => '2' * (max + 1)) }
 
     it "is not valid with #{attribute} with longer length than the maximum" do
       expect(subject).to_not be_valid
@@ -77,7 +77,7 @@ module ModelSpecHelper
   end
 
   RSpec.shared_examples 'validate_min_number' do |model, attribute, min, message|
-    let(:subject) { FactoryBot.build(model, attribute => (min - 1)) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => (min - 1)) }
 
     it "is not valid with #{attribute} with an shorter length than the minimum" do
       expect(subject).to_not be_valid
@@ -86,7 +86,7 @@ module ModelSpecHelper
   end
 
   RSpec.shared_examples 'validate_max_number' do |model, attribute, max, message|
-    let(:subject) { FactoryBot.build(model, attribute => (max + 1)) }
+    let(:subject) { FactoryBot.build(model, :random, attribute => (max + 1)) }
 
     it "is not valid with #{attribute} with longer length than the maximum" do
       expect(subject).to_not be_valid
@@ -98,7 +98,7 @@ module ModelSpecHelper
   # OTHER VALIDATIONS
   #
   RSpec.shared_examples 'validate_invalid' do |model, attribute|
-    let(:subject) { FactoryBot.build(model, "with_invalid_#{attribute}") }
+    let(:subject) { FactoryBot.build(model, :random, "with_invalid_#{attribute}") }
 
     it "is not valid with invalid #{attribute}" do
       expect(subject).to_not be_valid

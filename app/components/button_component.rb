@@ -9,7 +9,7 @@ class ButtonComponent < ViewComponent::Base
   attr_reader :form, :link, :options
 
   # @public_instance_methods ..................................................
-  # Initializes a Component of Type Button
+  # Initialises a Component of Type Button
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
   # @param link [String] The link possibly associated with the form (default is nil).

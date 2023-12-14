@@ -13,29 +13,27 @@
 require 'rails_helper'
 
 RSpec.describe Bank, type: :model do
-  let(:bank) { FactoryBot.create(:bank) }
+  let!(:bank) { FactoryBot.create(:bank, :random) }
 
-  describe 'valid validations' do
-    it 'is valid with valid attributes' do
-      expect(bank).to be_valid
+  describe '[ activerecord validations ]' do
+    context '( presence, uniquness, etc )' do
+      it 'is valid with valid attributes' do
+        expect(bank).to be_valid
+      end
+
+      %i[bank_name bank_code].each do |attribute|
+        it_behaves_like 'validate_nil', :bank, attribute
+        it_behaves_like 'validate_blank', :bank, attribute
+      end
+
+      it_behaves_like 'validate_uniqueness_combination', :bank, :bank_name, :bank_code
     end
-  end
 
-  describe 'presence validations' do
-    %i[bank_name bank_code].each do |attribute|
-      it_behaves_like 'validate_nil', :bank, attribute
-      it_behaves_like 'validate_blank', :bank, attribute
-    end
-  end
-
-  describe 'uniqueness validations' do
-    it_behaves_like 'validate_uniqueness_combination', :bank, :bank_name, :bank_code
-  end
-
-  describe 'associations' do
-    %i[cards user_bank_accounts].each do |model|
-      it "has_many #{model}" do
-        expect(bank).to respond_to model
+    context '( associations )' do
+      %i[cards user_bank_accounts].each do |model|
+        it "has_many #{model}" do
+          expect(bank).to respond_to model
+        end
       end
     end
   end

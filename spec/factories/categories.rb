@@ -15,13 +15,14 @@ FactoryBot.define do
     category_name { 'Food' }
     association :user
 
-    # VALID
     trait :different do
       category_name { 'Transport' }
+      association :user, :different
     end
 
     trait :random do
-      category_name { Faker::Hobby.unique.activity }
+      sequence(:category_name) { |n| "#{Faker::Hobby.unique.activity} #{n}" }
+      association :user, :random
     end
   end
 end

@@ -4,22 +4,23 @@
 #
 # Table name: card_transactions
 #
-#  id                 :integer          not null, primary key
-#  date               :date             not null
-#  ct_description     :string           not null
-#  ct_comment         :text
-#  category_id        :integer          not null
-#  category2_id       :integer
-#  entity_id          :integer          not null
-#  starting_price     :decimal(, )      not null
-#  price              :decimal(, )      not null
-#  month              :integer          not null
-#  year               :integer          not null
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
-#  installments_count :integer          default(0), not null
-#  card_id            :integer          not null
-#  user_id            :integer          not null
+#  id                   :integer          not null, primary key
+#  ct_description       :string           not null
+#  ct_comment           :text
+#  date                 :date             not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  installments_count   :integer          default(0), not null
+#  user_id              :integer          not null
+#  user_card_id         :integer          not null
+#  category_id          :integer          not null
+#  category2_id         :integer
+#  entity_id            :integer          not null
+#  money_transaction_id :integer
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 FactoryBot.define do
   factory :card_transaction do
@@ -32,9 +33,9 @@ FactoryBot.define do
     installments_count { 1 }
 
     association :user
-    category { user.categories.sample || FactoryBot.create(:category, user:) }
-    entity { user.entities.sample || FactoryBot.create(:entity, user:) }
-    user_card { user.user_cards.sample || FactoryBot.create(:user_card, user:) }
+    category { custom_create model: :category, reference: { user: } }
+    entity { custom_create model: :entity, reference: { user: } }
+    user_card { custom_create model: :user_card, reference: { user: } }
 
     trait :different do
       ct_description { 'Sitpass' }
@@ -43,8 +44,10 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      category { user.categories.sample || FactoryBot.create(:category, :different, user:) }
-      entity { user.entities.sample || FactoryBot.create(:entity, :different, user:) }
+      association :user, :different
+      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
+      entity { custom_create(model: :entity, traits: [:different], reference: { user: }) }
+      user_card { custom_create(model: :user_card, traits: [:different], reference: { user: }) }
     end
 
     trait :random do
@@ -54,10 +57,10 @@ FactoryBot.define do
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
       installments_count { [1, 1, 1, 2, rand(1..10)].sample }
 
-      user { FactoryBot.create(:user, :random) }
-      category { user.categories.sample || FactoryBot.create(:category, :random, user:) }
-      entity { user.entities.sample || FactoryBot.create(:entity, :random, user:) }
-      user_card { user.user_cards.sample || FactoryBot.create(:user_card, :random, user:) }
+      association :user, :random
+      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
+      entity { custom_create(model: :entity, traits: [:random], reference: { user: }) }
+      user_card { custom_create(model: :user_card, traits: [:random], reference: { user: }) }
     end
   end
 end

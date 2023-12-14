@@ -17,31 +17,31 @@
 require 'rails_helper'
 
 RSpec.describe UserBankAccount, type: :model do
-  let(:user_bank_account) { FactoryBot.create(:user_bank_account) }
+  let!(:user_bank_account) { FactoryBot.create(:user_bank_account) }
 
-  describe 'valid validations' do
-    it 'is valid with valid attributes' do
-      expect(user_bank_account).to be_valid
-    end
-  end
-
-  describe 'presence validations' do
-    %i[balance user_id bank_id].each do |attribute|
-      it_behaves_like 'validate_nil', :user_bank_account, attribute
-      it_behaves_like 'validate_blank', :user_bank_account, attribute
-    end
-  end
-
-  describe 'associations' do
-    %i[user bank].each do |model|
-      it "belongs_to #{model}" do
-        expect(user_bank_account).to respond_to model
+  describe '[ activerecord validations ]' do
+    context '( presence, uniquness, etc )' do
+      it 'is valid with valid attributes' do
+        expect(user_bank_account).to be_valid
       end
-    end
 
-    %i[investments].each do |model|
-      it "has_many #{model}" do
-        expect(user_bank_account).to respond_to model
+      %i[balance user_id bank_id].each do |attribute|
+        it_behaves_like 'validate_nil', :user_bank_account, attribute
+        it_behaves_like 'validate_blank', :user_bank_account, attribute
+      end
+
+      context '( associations )' do
+        %i[user bank].each do |model|
+          it "belongs_to #{model}" do
+            expect(user_bank_account).to respond_to model
+          end
+        end
+
+        %i[investments].each do |model|
+          it "has_many #{model}" do
+            expect(user_bank_account).to respond_to model
+          end
+        end
       end
     end
   end

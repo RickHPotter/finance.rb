@@ -4,37 +4,40 @@
 #
 # Table name: user_cards
 #
-#  id             :integer          not null, primary key
-#  user_id        :integer          not null
-#  card_id        :integer          not null
-#  user_card_name :string           not null
-#  due_date       :integer          not null
-#  min_spend      :decimal(, )      not null
-#  credit_limit   :decimal(, )      not null
-#  active         :boolean          not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
+#  id                   :integer          not null, primary key
+#  user_card_name       :string           not null
+#  days_until_due_date  :integer          not null
+#  current_due_date     :date             not null
+#  current_closing_date :date             not null
+#  min_spend            :decimal(, )      not null
+#  credit_limit         :decimal(, )      not null
+#  active               :boolean          not null
+#  user_id              :integer          not null
+#  card_id              :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 class UserCard < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include ActiveCallback
+  include MonthYear
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
   belongs_to :card
 
-  has_many :card_transactions, foreign_key: :card_id
+  has_many :card_transactions
 
   # @validations ..............................................................
-  validates :user_card_name, :due_date, :min_spend, :credit_limit, :active,
-            :user_id, :card_id, presence: true
+  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date,
+            :min_spend, :credit_limit, :active, :user_id, :card_id, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
-  validates :due_date, inclusion: { in: 1..31, message: 'must be between 1 and 31' }
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
+  before_validation :set_current_dates
 
   # @scopes ...................................................................
   scope :active, -> { where(active: true) }
@@ -51,8 +54,45 @@ class UserCard < ApplicationRecord
   # @note This is a callback that is called before_validation.
   #
   # @return [void]
+  #
   def set_user_card_name
     self.user_card_name ||= card.card_name
+  end
+
+  # Sets the current closing and due dates based on days_until_due_date.
+  #
+  # This method is a `before_validation` callback that ensures the current_due_date
+  # and current_closing_date attributes are appropriately set; current_closing_date
+  # and current_due_date are then set based on the provided days_until_due_date and
+  # current_due_date attributes.
+  #
+  # @note The method returns false if current_due_date or days_until_due_date is nil,
+  #   otherwise, returns true or nil which indicates success.
+  #
+  # @return [Boolean]
+  #
+  # @example
+  #   credit_card = CreditCard.new(current_due_date: Date.new(2023, 12, 1), days_until_due_date: 3)
+  #   # considering today is not before current_due_date (2023-12-01 or after)
+  #   p "#{credit_card.current_closing_date} <-> #{credit_card.current_due_date}"
+  #   => 2023-12-28 <-> 2024-01-01
+  #
+  # @example
+  #   credit_card = CreditCard.new(current_due_date: Date.new(2023, 12, 1), days_until_due_date: 3)
+  #   # considering today is before current_due_date (2023-12-01)
+  #   p "#{credit_card.current_closing_date} <-> #{credit_card.current_due_date}"
+  #   => 2023-11-28 <-> 2023-12-01
+  #
+  # @see MonthYear#next_month_this
+  #
+  # FIXME: in seeds, I found a card_transaction that had a due date a year later than it should
+  # see #set_month_year, it only sets the month and year on create
+  def set_current_dates
+    return false if current_due_date.nil? || days_until_due_date.nil?
+
+    today = Date.current
+    self.current_due_date = next_month_this(day: current_due_date.day) if today >= current_due_date
+    self.current_closing_date = current_due_date - days_until_due_date
   end
 
   # @private_instance_methods .................................................

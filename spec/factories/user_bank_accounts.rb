@@ -28,7 +28,8 @@ FactoryBot.define do
       account_number { '564122' }
       balance { 0.00 }
 
-      bank { FactoryBot.create(:bank, :different) }
+      association :user, :different
+      association :bank, :different
     end
 
     trait :random do
@@ -36,8 +37,8 @@ FactoryBot.define do
       account_number { Faker::Number.number(digits: 6) }
       balance { Faker::Number.decimal(l_digits: 2) }
 
-      user { FactoryBot.create(:user, :random) }
-      bank { FactoryBot.create(:bank, :random) }
+      association :user, :random
+      association :bank, :random
     end
   end
 end
