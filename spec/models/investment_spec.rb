@@ -12,7 +12,7 @@
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
-#  money_transaction_id :integer          not null
+#  money_transaction_id :integer
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -21,21 +21,22 @@ require 'rails_helper'
 include FactoryHelper
 
 RSpec.describe Investment, type: :model do
-  user = FactoryBot.create(:user, :random)
-  category = FactoryHelper.custom_create(model: :category, traits: [:random], reference: { user: })
-  user_bank_account = FactoryHelper.custom_create(model: :user_bank_account, traits: [:random], reference: { user: })
-  options = { user:, category:, user_bank_account: }
+  # FIXME: Test when one of the FKS are changed (should create/use another money_transaction)
+  let!(:investment) { FactoryBot.create(:investment, :random, date: Date.new(2023, 7, 1)) }
 
-  let(:investment) { FactoryBot.create(:investment, :random) }
-
-  let!(:inv1) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 1))) }
-  let!(:inv2) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 2))) }
-  let!(:inv3) { FactoryBot.create(:investment, :random, options.merge(date: Date.new(2023, 7, 3))) }
-  let!(:money_transaction) { inv1.money_transaction }
+  # NOTE: remove { date: investment.date } when changing date creates a new money_transaction
+  let!(:investments) do
+    FactoryBot.create_list(
+      :investment, 3, :random,
+      user: investment.user, user_bank_account: investment.user_bank_account,
+      category: investment.category, date: investment.date
+    ) { |inv, i| inv.update(date: investment.date + i + 1) }
+  end
+  let!(:money_transaction) { investment.money_transaction }
 
   shared_examples 'investment cop' do
     it 'sums the investments correctly' do
-      expect(money_transaction.price).to be_within(0.01).of money_transaction.investments.sum(:price)
+      expect(money_transaction.price).to be_within(0.01).of money_transaction.investments.sum(:price).round(2)
     end
 
     it 'generates the comment that references every investments day' do
@@ -76,8 +77,9 @@ RSpec.describe Investment, type: :model do
       before { money_transaction.reload }
 
       it 'applies the right relationship to the money_transaction' do
-        expect(inv1.money_transaction).to eq inv2.money_transaction
-        expect(inv1.money_transaction).to eq inv3.money_transaction
+        2.times do |i|
+          expect(investments[i].money_transaction).to eq investments[i + 1].money_transaction
+        end
       end
 
       include_examples 'investment cop'
@@ -85,9 +87,10 @@ RSpec.describe Investment, type: :model do
 
     context '( when existing investments are updated )' do
       before do
-        [inv1, inv2].each do |inv|
+        investments.each do |inv|
           inv.update(price: Faker::Number.decimal(l_digits: rand(0..1)))
         end
+
         money_transaction.reload
       end
 
@@ -96,25 +99,26 @@ RSpec.describe Investment, type: :model do
 
     context '( when most investments are deleted )' do
       before do
-        [inv1, inv2].each(&:destroy)
+        investments.each(&:destroy)
         money_transaction.reload
       end
 
       it 'finds in money_transaction.investments only the third element' do
-        expect(money_transaction.investments).not_to include(inv1)
-        expect(money_transaction.investments).not_to include(inv2)
-        expect(money_transaction.investments).to include(inv3)
+        investments.each do |inv|
+          expect(money_transaction.investments).not_to include(inv)
+        end
+        expect(money_transaction.investments).to include(investment)
       end
 
       include_examples 'investment cop'
     end
 
     context '( when all investments are deleted )' do
-      before { [inv1, inv2, inv3].each(&:destroy)  }
+      before { [investment, *investments].each(&:destroy) }
 
       it 'deletes all investments' do
-        %i[inv1 inv2 inv3].each do |model|
-          expect(public_send(model)).to be_destroyed
+        [investment, *investments].each do |inv|
+          expect(inv).to be_destroyed
         end
       end
 
@@ -122,7 +126,5 @@ RSpec.describe Investment, type: :model do
         expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
       end
     end
-
-    # TODO: Test when one of the FKS are changed (should create/use another money_transaction)
   end
 end

@@ -4,27 +4,29 @@
 #
 # Table name: card_transactions
 #
-#  id                 :integer          not null, primary key
-#  ct_description     :string           not null
-#  ct_comment         :text
-#  date               :date             not null
-#  month              :integer          not null
-#  year               :integer          not null
-#  starting_price     :decimal(, )      not null
-#  price              :decimal(, )      not null
-#  installments_count :integer          default(0), not null
-#  user_id            :integer          not null
-#  user_card_id       :integer          not null
-#  category_id        :integer          not null
-#  category2_id       :integer
-#  entity_id          :integer          not null
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
+#  id                   :integer          not null, primary key
+#  ct_description       :string           not null
+#  ct_comment           :text
+#  date                 :date             not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  installments_count   :integer          default(0), not null
+#  user_id              :integer          not null
+#  user_card_id         :integer          not null
+#  category_id          :integer          not null
+#  category2_id         :integer
+#  entity_id            :integer          not null
+#  money_transaction_id :integer
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include MonthYear
+  include MoneyTransactable
   include StartingPriceCallback
 
   # @security (i.e. attr_accessible) ..........................................
@@ -101,6 +103,26 @@ class CardTransaction < ApplicationRecord
     prices_arr.each_with_index do |price, number|
       installments << Installment.create(number: number + 1, price:)
     end
+  end
+
+  # Generates a description for the associated MoneyTransaction.
+  #
+  # This method generates a description for the MoneyTransaction based on the user's card name and month_year.
+  #
+  # @return [String] The generated description.
+  #
+  def mt_description
+    "Card #{user_card.user_card_name} #{month_year}"
+  end
+
+  # TODO: what comment should be made
+  #
+  # This method generates a comment ?
+  #
+  # @return [String] The generated comment.
+  #
+  def mt_comment
+    money_transaction.card_transactions.count.to_s
   end
 
   # @private_instance_methods .................................................
