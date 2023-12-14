@@ -20,7 +20,7 @@
 require 'rails_helper'
 
 RSpec.describe UserCard, type: :model do
-  let(:user_card) { FactoryBot.create(:user_card) }
+  let!(:user_card) { FactoryBot.create(:user_card) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do

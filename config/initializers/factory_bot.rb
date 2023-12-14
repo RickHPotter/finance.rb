@@ -17,12 +17,12 @@ module FactoryHelper
   #
   # @example Creating an object with a reference that has records linked to model:
   #   user_reference = FactoryBot.create(:user)
-  #   custom_create(model: :user_bank_account, reference: user_reference, traits: [:random])
+  #   custom_create(model: :user_bank_account, reference: { user: user_reference }, traits: [:random])
   #   => existing <UserBankAccount> that belongs to the <User> object
   #
   # @example Creating an object with a reference that has no records linked to model:
   #   user_reference = FactoryBot.create(:user)
-  #   custom_create(model: :user_bank_account, reference: user_reference, traits: [:random])
+  #   custom_create(model: :user_bank_account, reference:  { user: user_reference  }, traits: [:random])
   #   => created <UserBankAccount> that belongs to the <User> object
   #
   # @return [Object] The created FactoryBot object.

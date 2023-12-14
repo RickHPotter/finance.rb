@@ -32,11 +32,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.integer "category_id", null: false
     t.integer "category2_id"
     t.integer "entity_id", null: false
+    t.integer "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
     t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["entity_id"], name: "index_card_transactions_on_entity_id"
+    t.index ["money_transaction_id"], name: "index_card_transactions_on_money_transaction_id"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
   end
@@ -83,7 +85,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.integer "user_id", null: false
     t.integer "category_id", null: false
     t.integer "user_bank_account_id", null: false
-    t.integer "money_transaction_id", null: false
+    t.integer "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_investments_on_category_id"
@@ -100,13 +102,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.integer "year", null: false
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
+    t.string "money_transaction_type"
     t.integer "user_id", null: false
     t.integer "category_id", null: false
-    t.integer "user_bank_account_id", null: false
+    t.integer "user_card_id"
+    t.integer "user_bank_account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_money_transactions_on_category_id"
     t.index ["user_bank_account_id"], name: "index_money_transactions_on_user_bank_account_id"
+    t.index ["user_card_id"], name: "index_money_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_money_transactions_on_user_id"
   end
 
@@ -160,6 +165,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
   add_foreign_key "card_transactions", "categories"
   add_foreign_key "card_transactions", "categories", column: "category2_id"
   add_foreign_key "card_transactions", "entities"
+  add_foreign_key "card_transactions", "money_transactions"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
@@ -171,6 +177,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
   add_foreign_key "investments", "users"
   add_foreign_key "money_transactions", "categories"
   add_foreign_key "money_transactions", "user_bank_accounts"
+  add_foreign_key "money_transactions", "user_cards"
   add_foreign_key "money_transactions", "users"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"

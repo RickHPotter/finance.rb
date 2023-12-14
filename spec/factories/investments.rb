@@ -12,7 +12,7 @@
 #  user_id              :integer          not null
 #  category_id          :integer          not null
 #  user_bank_account_id :integer          not null
-#  money_transaction_id :integer          not null
+#  money_transaction_id :integer
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #

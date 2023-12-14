@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Card, type: :model do
-  let(:card) { FactoryBot.create(:card) }
+  let!(:card) { FactoryBot.create(:card, :random) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do

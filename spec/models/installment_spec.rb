@@ -15,7 +15,8 @@
 require 'rails_helper'
 
 RSpec.describe Installment, type: :model do
-  # FIXME: move shared_examples to be used in money_transaction as well
+  # FIXME: should be able to change the amount of installments,
+  # change build for create in the line below
   let(:card_transaction) { FactoryBot.build(:card_transaction, :random, installments_count: 1) }
 
   shared_examples 'installments cop' do
@@ -31,7 +32,7 @@ RSpec.describe Installment, type: :model do
     end
 
     it 'sums the installments correctly' do
-      expect(card_transaction.installments.sum(:price)).to eq card_transaction.price
+      expect(card_transaction.installments.sum(:price).round(2)).to eq card_transaction.price
     end
   end
 

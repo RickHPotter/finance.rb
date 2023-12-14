@@ -4,19 +4,21 @@
 #
 # Table name: money_transactions
 #
-#  id                   :integer          not null, primary key
-#  mt_description       :string           not null
-#  mt_comment           :string
-#  date                 :date             not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
-#  user_id              :integer          not null
-#  category_id          :integer          not null
-#  user_bank_account_id :integer          not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
+#  id                     :integer          not null, primary key
+#  mt_description         :string           not null
+#  mt_comment             :string
+#  date                   :date             not null
+#  month                  :integer          not null
+#  year                   :integer          not null
+#  starting_price         :decimal(, )      not null
+#  price                  :decimal(, )      not null
+#  money_transaction_type :string
+#  user_id                :integer          not null
+#  category_id            :integer          not null
+#  user_bank_account_id   :integer
+#  user_card_id           :integer
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
 #
 require 'rails_helper'
 

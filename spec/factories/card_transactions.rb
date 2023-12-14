@@ -4,22 +4,23 @@
 #
 # Table name: card_transactions
 #
-#  id                 :integer          not null, primary key
-#  ct_description     :string           not null
-#  ct_comment         :text
-#  date               :date             not null
-#  month              :integer          not null
-#  year               :integer          not null
-#  starting_price     :decimal(, )      not null
-#  price              :decimal(, )      not null
-#  installments_count :integer          default(0), not null
-#  user_id            :integer          not null
-#  user_card_id       :integer          not null
-#  category_id        :integer          not null
-#  category2_id       :integer
-#  entity_id          :integer          not null
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
+#  id                   :integer          not null, primary key
+#  ct_description       :string           not null
+#  ct_comment           :text
+#  date                 :date             not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  installments_count   :integer          default(0), not null
+#  user_id              :integer          not null
+#  user_card_id         :integer          not null
+#  category_id          :integer          not null
+#  category2_id         :integer
+#  entity_id            :integer          not null
+#  money_transaction_id :integer
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 FactoryBot.define do
   factory :card_transaction do

@@ -21,8 +21,8 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
-  let(:john) { FactoryBot.create(:user) }
-  let(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
+  let!(:john) { FactoryBot.create(:user) }
+  let!(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do

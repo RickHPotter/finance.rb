@@ -11,10 +11,12 @@ class CreateMoneyTransactions < ActiveRecord::Migration[7.0]
       t.integer :year, null: false
       t.decimal :starting_price, null: false
       t.decimal :price, null: false
+      t.string :money_transaction_type, null: true
 
       t.references :user, null: false, foreign_key: true
       t.references :category, null: false, foreign_key: true
-      t.references :user_bank_account, null: false, foreign_key: true
+      t.references :user_card, null: true, foreign_key: true
+      t.references :user_bank_account, null: true, foreign_key: true
 
       t.timestamps
     end

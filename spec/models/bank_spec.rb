@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Bank, type: :model do
-  let(:bank) { FactoryBot.create(:bank) }
+  let!(:bank) { FactoryBot.create(:bank, :random) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do
