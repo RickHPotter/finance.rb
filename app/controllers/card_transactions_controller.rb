@@ -73,7 +73,7 @@ class CardTransactionsController < ApplicationController
   end
 
   def set_categories
-    @categories = @user.categories.order(:description).pluck(:id, :category_name)
+    @categories = @user.categories.order(:category_name).pluck(:id, :category_name)
   end
 
   # Only allow a list of trusted parameters through.

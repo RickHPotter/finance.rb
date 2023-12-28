@@ -10,7 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
+ActiveRecord::Schema[7.1].define(version: 2023_12_28_130546) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
+
   create_table "banks", force: :cascade do |t|
     t.string "bank_name", null: false
     t.string "bank_code", null: false
@@ -27,12 +30,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
     t.integer "installments_count", default: 0, null: false
-    t.integer "user_id", null: false
-    t.integer "user_card_id", null: false
-    t.integer "category_id", null: false
-    t.integer "category2_id"
-    t.integer "entity_id", null: false
-    t.integer "money_transaction_id"
+    t.bigint "user_id", null: false
+    t.bigint "user_card_id", null: false
+    t.bigint "category_id", null: false
+    t.bigint "category2_id"
+    t.bigint "entity_id", null: false
+    t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
@@ -45,7 +48,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
 
   create_table "cards", force: :cascade do |t|
     t.string "card_name", null: false
-    t.integer "bank_id", null: false
+    t.bigint "bank_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_cards_on_bank_id"
@@ -53,7 +56,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
 
   create_table "categories", force: :cascade do |t|
     t.string "category_name", null: false
-    t.integer "user_id", null: false
+    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_categories_on_user_id"
@@ -61,7 +64,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
 
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
-    t.integer "user_id", null: false
+    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_entities_on_user_id"
@@ -69,7 +72,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
 
   create_table "installments", force: :cascade do |t|
     t.string "installable_type", null: false
-    t.integer "installable_id", null: false
+    t.bigint "installable_id", null: false
     t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
     t.integer "number", default: 1, null: false
     t.datetime "created_at", null: false
@@ -82,10 +85,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.integer "user_id", null: false
-    t.integer "category_id", null: false
-    t.integer "user_bank_account_id", null: false
-    t.integer "money_transaction_id"
+    t.bigint "user_id", null: false
+    t.bigint "category_id", null: false
+    t.bigint "user_bank_account_id", null: false
+    t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_investments_on_category_id"
@@ -103,10 +106,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
     t.string "money_transaction_type"
-    t.integer "user_id", null: false
-    t.integer "category_id", null: false
-    t.integer "user_card_id"
-    t.integer "user_bank_account_id"
+    t.bigint "user_id", null: false
+    t.bigint "category_id", null: false
+    t.bigint "user_card_id"
+    t.bigint "user_bank_account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_money_transactions_on_category_id"
@@ -118,8 +121,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
   create_table "user_bank_accounts", force: :cascade do |t|
     t.integer "agency_number"
     t.integer "account_number"
-    t.integer "user_id", null: false
-    t.integer "bank_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "bank_id", null: false
     t.boolean "active", default: true, null: false
     t.decimal "balance", default: "0.0", null: false
     t.datetime "created_at", null: false
@@ -136,8 +139,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_06_000010) do
     t.decimal "min_spend", null: false
     t.decimal "credit_limit", null: false
     t.boolean "active", null: false
-    t.integer "user_id", null: false
-    t.integer "card_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "card_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["card_id"], name: "index_user_cards_on_card_id"
