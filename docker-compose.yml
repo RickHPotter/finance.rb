@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16.1-alpine
+    environment:
+      POSTGRES_USER: ${DOCKER_POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${DOCKER_POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  finance:
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -p 3000 -b '0.0.0.0'"
+    environment:
+      POSTGRES_HOST: ${DOCKER_POSTGRES_HOST}
+      POSTGRES_DATABASE: ${DOCKER_POSTGRES_DATABASE}
+      POSTGRES_USERNAME: ${DOCKER_POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${DOCKER_POSTGRES_PASSWORD}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+volumes:
+  db_data:

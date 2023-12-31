@@ -43,3 +43,4 @@
 # Ignore doc - You can use 'yardoc' and 'yard server' locally
 /doc
 .yardoc
+.env
