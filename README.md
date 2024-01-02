@@ -79,6 +79,7 @@ sprint. The reasons are:
   - ✅ Add Docker to the project with Docker Compose for development.
 - Extra:
   - ✅ Added neovim to generated Docker.
+  - ✅ Made it possible to run app in production mode in and outside of Docker.
 
 ## GAARA-05/be-04: Create TransactionParticipant Model; Installments in MoneyTransaction
 

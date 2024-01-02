@@ -1,19 +1,19 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-
   host: <%= ENV["POSTGRES_HOST"] %>
-  database: <%= "#{ENV.fetch("POSTGRES_DATABASE") { 'finance' }}_#{Rails.env}" %>
   username: <%= ENV["POSTGRES_USERNAME"] %>
   password: <%= ENV["POSTGRES_PASSWORD"] %>
-
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
   <<: *default
+  database: <%= ENV["POSTGRES_DATABASE"] %>_development
 
 test:
   <<: *default
+  database: <%= ENV["POSTGRES_DATABASE"] %>_test
 
 production:
   <<: *default
+  database: <%= ENV["POSTGRES_DATABASE"] %>

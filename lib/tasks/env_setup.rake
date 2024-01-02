@@ -2,12 +2,12 @@
 
 def prepare_database
   hash = {
-    development: `rails db:prepare`,
-    test: `rails db:drop db:create db:migrate`,
-    production: `rails db:create db:migrate`
+    development: -> { `bin/rails db:drop db:create db:migrate db:seed` },
+    test: -> { `bin/rails db:drop db:create db:migrate` },
+    production: -> { `bin/rails db:create db:migrate` }
   }
 
-  hash[Rails.env.to_sym]
+  hash[Rails.env.to_sym].call
 end
 
 namespace :env do
