@@ -5,10 +5,6 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby '3.3.0'
 
-# NEOVIM IDE / REMEMBER TO UPDATE MASON
-gem 'neovim'
-gem 'solargraph'
-
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem 'rails', '~> 7.1.2'
 
@@ -78,6 +74,10 @@ group :development do
   gem 'awesome_print'
   gem 'hotwire-livereload'
   gem 'web-console'
+
+  # NEOVIM IDE / REMEMBER TO UPDATE MASON
+  gem 'neovim'
+  gem 'solargraph'
 
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
