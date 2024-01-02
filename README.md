@@ -80,6 +80,7 @@ sprint. The reasons are:
 - Extra:
   - ✅ Added neovim to generated Docker.
   - ✅ Made it possible to run app in production mode in and outside of Docker.
+  - ✅ Added and configured Bullet gem for development.
 
 ## GAARA-05/be-04: Create TransactionParticipant Model; Installments in MoneyTransaction
 
@@ -116,13 +117,12 @@ sprint. The reasons are:
   - ⌛ When a transaction_participant is not a payer:
     - 1 ⌛ The transaction_participant should have `is_payer: false, status = 'finished'`.
 
-## GAARA-08/be-07: Calculate transactions based on Exchange and configure Bullet
+## GAARA-08/be-07: Calculate transactions based on Exchange
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ New money_transactions should be created automatically based on Exchange.
   - ⌛ Removing should also impact these money_transactions.
-  - ⌛ Add Bullet gem to the project and configure it. Next task is frontend.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 
