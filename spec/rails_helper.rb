@@ -37,10 +37,6 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 
 RSpec.configure do |config|
-  # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  config.fixture_path = Rails.root.join('spec/fixtures')
-  config.global_fixtures = :all
-
   config.include ActiveJob::TestHelper
   config.include ActionMailbox::TestHelper
   config.include Devise::Test::IntegrationHelpers, type: :feature

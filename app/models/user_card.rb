@@ -85,13 +85,10 @@ class UserCard < ApplicationRecord
   #
   # @see MonthYear#next_month_this
   #
-  # FIXME: in seeds, I found a card_transaction that had a due date a year later than it should
-  # see #set_month_year, it only sets the month and year on create
   def set_current_dates
     return false if current_due_date.nil? || days_until_due_date.nil?
 
-    today = Date.current
-    self.current_due_date = next_month_this(day: current_due_date.day) if today >= current_due_date
+    self.current_due_date = next_month_this(day: current_due_date.day)
     self.current_closing_date = current_due_date - days_until_due_date
   end
 
