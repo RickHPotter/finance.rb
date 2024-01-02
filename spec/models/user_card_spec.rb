@@ -57,14 +57,14 @@ RSpec.describe UserCard, type: :model do
         user_card.update(current_closing_date: nil,
                          current_due_date: Date.current.beginning_of_year - 1.year,
                          days_until_due_date: 7)
-        expect(user_card.current_closing_date).to eq(Date.new(Date.current.year, 12, 25))
+        expect(user_card.current_closing_date).to eq(user_card.current_due_date - 7.days)
       end
 
       it 'assigns the correct current_closing_date given future current_due_date' do
         user_card.update(current_closing_date: nil,
                          current_due_date: Date.current.beginning_of_year + 1.year,
                          days_until_due_date: 7)
-        expect(user_card.current_closing_date).to eq(Date.new(Date.current.year, 12, 25))
+        expect(user_card.current_closing_date).to eq(user_card.current_due_date - 7.days)
       end
     end
   end

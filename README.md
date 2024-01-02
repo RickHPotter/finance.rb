@@ -1,6 +1,6 @@
 <!--toc:start-->
 - [INTRODUCTION](#introduction)
-- [SPRINT PLANNING I - GAARA](#sprint-planning-i-gaara)
+- [SPRINT PLANNING I: GAARA](#sprint-planning-i-gaara)
   - [GAARA-01/be-01: Finish late Model Specs](#gaara-01be-01-finish-late-model-specs)
   - [GAARA-02/be-02: Create models that revolve around MoneyTransaction](#gaara-02be-02-create-models-that-revolve-around-moneytransaction)
   - [GAARA-03/be-03: Implement 'buy now, pay later' system](#gaara-03be-03-implement-buy-now-pay-later-system)
@@ -8,34 +8,34 @@
   - [GAARA-05/be-04: Create TransactionParticipant Model; Installments in MoneyTransaction](#gaara-05be-04-create-transactionparticipant-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
   - [GAARA-07/be-06: Refine TransactionParticipant and Exchange Models](#gaara-07be-06-refine-transactionparticipant-and-exchange-models)
-  - [GAARA-08/be-07: Calculate transactions based on Exchange and configure Bullet](#gaara-08be-07-calculate-transactions-based-on-exchange-and-configure-bullet)
+  - [GAARA-08/be-07: Calculate transactions based on Exchange](#gaara-08be-07-calculate-transactions-based-on-exchange)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
-  - [GAARA-12/fe-04: Finish Component Specs for the remaining and some form todos](#gaara-12fe-04-finish-component-specs-for-the-remaining-and-some-form-todos)
+  - [GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs](#gaara-12fe-04-finish-component-specs-for-the-remaining-and-some-form-todos)
 <!--toc:end-->
 
 # INTRODUCTION
 
-The creation of this app came from the need to evaluate financial habbits not as
+The creation of this app came from the need to evaluate financial habits not as
 a hobby, but as a necessity. I plan on making an easy-to-use app that will swift
 into your life and help you take care of what comes harder in life: stability and
 peace.
 
-# SPRINT PLANNING I - GAARA
+# SPRINT PLANNING I: GAARA
 
 Starting point for a v0.1 release of my app called finance.rb (yeah, finance.rb).
 
 This milestone includes covering much of the product logic and providing enough
 visual resources to use the logic so far applied. As it's the first sprint, it
-also means we have a lot of TODOs and fixmes to recognise during development
+also means we have a lot of TODOs and FIXMEs to recognise during development
 for next sprints.
 
 Gaara is the first sprint and it is supposed to take longer than the average
 sprint. The reasons are:
 
 1. I'm starting just now, this is, after all, the first sprint.
-2. Like most projects at their kickstart, it is just one person: me.
+2. Like most projects at their kick-start, it is just one person: me.
 3. I had a 2-week holiday and didn't touch the project whatsoever.
 
 ## GAARA-01/be-01: Finish late Model Specs
@@ -129,14 +129,14 @@ sprint. The reasons are:
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ When typing, the first option should be rendered in the input, but with font-light.
-  - ⌛ Add option to use a round-colour or an icon or a picure on the far-left
+  - ⌛ Add option to use a round-colour or an icon or a picture on the far-left
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
 ## GAARA-10/fe-02: Create MultiCheckBoxComponent
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Grant many options and add turbo-frame to it as these options are relavant.
+  - ⌛ Grant many options and add turbo-frame to it as these options are relevant.
 
 ## GAARA-11/fe-03: Refine TabComponent
 
@@ -146,7 +146,7 @@ sprint. The reasons are:
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
-## GAARA-12/fe-04: Finish Component Specs for the remaining and some form todos
+## GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs
 
 - Subtasks:
   - ⌛ Use TDD approach (better late than never).
