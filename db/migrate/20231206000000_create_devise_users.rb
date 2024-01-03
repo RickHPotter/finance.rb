@@ -17,6 +17,7 @@ class CreateDeviseUsers < ActiveRecord::Migration[7.0]
 
       ## Confirmable
       t.string :confirmation_token
+      t.string :unconfirmed_email
       t.datetime :confirmed_at
       t.datetime :confirmation_sent_at
 

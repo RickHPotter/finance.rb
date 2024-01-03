@@ -20,8 +20,7 @@
 #
 class User < ApplicationRecord
   # @extends ..................................................................
-  # @TODO: Add :confirmable
-  devise :database_authenticatable, :registerable,
+  devise :database_authenticatable, :registerable, :confirmable,
          :recoverable, :rememberable, :validatable
 
   # @includes .................................................................

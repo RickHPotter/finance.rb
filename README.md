@@ -90,6 +90,9 @@ sprint. The reasons are:
   - ⌛ The table should include the fields: [id, timestamps, is_payer as boolean,
        amount_to_be_returned and amount_returned as decimal, status (pending, finished)].
   - ⌛ Remove entity_id from (Card/Money)Transaction.
+- Extra:
+  - ✅ APP: Enabled YJIT by with an initialiser.
+  - ✅ APP: Added Confirmable in Devise.
 
 ## GAARA-06/be-05: Create Exchange Model
 

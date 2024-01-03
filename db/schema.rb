@@ -154,6 +154,7 @@ ActiveRecord::Schema[7.1].define(version: 2023_12_28_130546) do
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
     t.string "confirmation_token"
+    t.string "unconfirmed_email"
     t.datetime "confirmed_at"
     t.datetime "confirmation_sent_at"
     t.string "first_name", null: false
