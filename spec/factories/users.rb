@@ -4,13 +4,14 @@
 #
 # Table name: users
 #
-#  id                     :integer          not null, primary key
+#  id                     :bigint           not null, primary key
 #  email                  :string           default(""), not null
 #  encrypted_password     :string           default(""), not null
 #  reset_password_token   :string
 #  reset_password_sent_at :datetime
 #  remember_created_at    :datetime
 #  confirmation_token     :string
+#  unconfirmed_email      :string
 #  confirmed_at           :datetime
 #  confirmation_sent_at   :datetime
 #  first_name             :string           not null
@@ -25,6 +26,7 @@ FactoryBot.define do
     email { 'john@example.com' }
     password { '123123' }
     password_confirmation { '123123' }
+    confirmed_at { Date.today }
 
     trait :different do
       first_name { 'Jane' }

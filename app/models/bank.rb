@@ -4,7 +4,7 @@
 #
 # Table name: banks
 #
-#  id         :integer          not null, primary key
+#  id         :bigint           not null, primary key
 #  bank_name  :string           not null
 #  bank_code  :string           not null
 #  created_at :datetime         not null

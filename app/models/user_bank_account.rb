@@ -4,11 +4,11 @@
 #
 # Table name: user_bank_accounts
 #
-#  id             :integer          not null, primary key
+#  id             :bigint           not null, primary key
 #  agency_number  :integer
 #  account_number :integer
-#  user_id        :integer          not null
-#  bank_id        :integer          not null
+#  user_id        :bigint           not null
+#  bank_id        :bigint           not null
 #  active         :boolean          default(TRUE), not null
 #  balance        :decimal(, )      default(0.0), not null
 #  created_at     :datetime         not null

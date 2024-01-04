@@ -2,25 +2,28 @@
 
 # == Schema Information
 #
-# Table name: cards
+# Table name: transaction_entities
 #
-#  id         :bigint           not null, primary key
-#  card_name  :string           not null
-#  bank_id    :bigint           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
+#  id                    :bigint           not null, primary key
+#  is_payer              :boolean          default(FALSE), not null
+#  status                :integer          default(0), not null
+#  amount_to_be_returned :decimal(, )      not null
+#  amount_returned       :decimal(, )      not null
+#  transactable_type     :string           not null
+#  transactable_id       :bigint           not null
+#  entity_id             :bigint           not null
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
 #
-class Card < ApplicationRecord
+class TransactionEntity < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :bank
-  has_many :user_cards
+  belongs_to :transactable, polymorphic: true
+  belongs_to :entity
 
   # @validations ..............................................................
-  validates :card_name, presence: true, uniqueness: true
-
   # @callbacks ................................................................
   # @scopes ...................................................................
   # @additional_config ........................................................

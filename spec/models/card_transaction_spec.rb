@@ -4,7 +4,7 @@
 #
 # Table name: card_transactions
 #
-#  id                   :integer          not null, primary key
+#  id                   :bigint           not null, primary key
 #  ct_description       :string           not null
 #  ct_comment           :text
 #  date                 :date             not null
@@ -13,12 +13,11 @@
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
 #  installments_count   :integer          default(0), not null
-#  user_id              :integer          not null
-#  user_card_id         :integer          not null
-#  category_id          :integer          not null
-#  category2_id         :integer
-#  entity_id            :integer          not null
-#  money_transaction_id :integer
+#  user_id              :bigint           not null
+#  user_card_id         :bigint           not null
+#  category_id          :bigint           not null
+#  category2_id         :bigint
+#  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -57,7 +56,7 @@ RSpec.describe CardTransaction, type: :model do
     end
 
     context '( associations )' do
-      %i[user user_card category category2 entity].each do |model|
+      %i[user user_card category category2].each do |model|
         it "belongs_to #{model}" do
           expect(card_transaction).to respond_to model
         end

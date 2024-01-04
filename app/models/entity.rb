@@ -4,11 +4,11 @@
 #
 # Table name: entities
 #
-#  id          :integer          not null, primary key
+#  id          :bigint           not null, primary key
 #  entity_name :string           not null
+#  user_id     :bigint           not null
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
-#  user_id     :integer          not null
 #
 class Entity < ApplicationRecord
   # @extends ..................................................................
@@ -16,8 +16,10 @@ class Entity < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-
-  has_many :card_transactions
+  # has_many :card_transactions
+  has_many :transaction_entities
+  has_many :card_transactions, through: :transaction_entities, source: :transactable, source_type: 'CardTransaction'
+  has_many :money_transactions, through: :transaction_entities, source: :transactable, source_type: 'MoneyTransaction'
 
   # @validations ..............................................................
   validates :entity_name, presence: true
