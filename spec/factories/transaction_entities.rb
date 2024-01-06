@@ -17,5 +17,14 @@
 #
 FactoryBot.define do
   factory :transaction_entity do
+    is_payer { true }
+    status { :pending }
+    amount_to_be_returned { 100.0 }
+    amount_returned { 0.0 }
+    # TODO: this does not seem like the right thing
+    association :user
+    category { custom_create model: :category, reference: { user: } }
+    association :transactable, factory: %i[card_transaction money_transaction], strategy: :create
+    association :entity
   end
 end

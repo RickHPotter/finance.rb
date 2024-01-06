@@ -16,7 +16,7 @@ class Entity < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  # has_many :card_transactions
+
   has_many :transaction_entities
   has_many :card_transactions, through: :transaction_entities, source: :transactable, source_type: 'CardTransaction'
   has_many :money_transactions, through: :transaction_entities, source: :transactable, source_type: 'MoneyTransaction'
