@@ -21,10 +21,25 @@ FactoryBot.define do
     status { :pending }
     amount_to_be_returned { 100.0 }
     amount_returned { 0.0 }
-    # TODO: this does not seem like the right thing
-    association :user
-    category { custom_create model: :category, reference: { user: } }
-    association :transactable, factory: %i[card_transaction money_transaction], strategy: :create
-    association :entity
+    transactable { custom_create_polymorphic models: %i[card_transaction money_transaction] }
+    entity { custom_create model: :entity, reference: { user: transactable.user } }
+
+    trait :different do
+      is_payer { true }
+      status { :finished }
+      amount_to_be_returned { 0.01 }
+      amount_returned { 0.01 }
+      transactable { different_custom_create_polymorphic models: %i[card_transaction money_transaction] }
+      entity { different_custom_create model: :entity, reference: { user: transactable.user } }
+    end
+
+    trait :random do
+      is_payer { Faker::Boolean.boolean }
+      status { %i[pending finished] }
+      amount_to_be_returned { Faker::Number.decimal(l_digits: 2) }
+      amount_returned { status.finished? ? amount_to_be_returned : 0.00 }
+      transactable { random_custom_create_polymorphic models: %i[card_transaction money_transaction] }
+      entity { random_custom_create model: :entity, reference: { user: transactable.user } }
+    end
   end
 end

@@ -124,14 +124,18 @@ class CardTransaction < ApplicationRecord
     user_card.current_due_date
   end
 
-  # TODO: what comment should be made
+  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
   #
-  # This method generates a comment ?
+  # This method generates a comment specifying the card and RefMonthYear.
   #
   # @return [String] The generated comment.
   #
   def mt_comment
-    money_transaction.card_transactions.count.to_s
+    a, b = money_transaction.card_transactions.partition { |ct| ct.installments_count == 1 }
+    in_one = a.sum(&:price).round(2)
+    spread = b.sum(&:price).round(2)
+
+    "Upfront: #{in_one}, Installments: #{spread}"
   end
 
   # @private_instance_methods .................................................
