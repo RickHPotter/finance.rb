@@ -18,7 +18,7 @@
 FactoryBot.define do
   factory :transaction_entity do
     is_payer { true }
-    status { :pending }
+    status { 'pending' }
     amount_to_be_returned { 100.0 }
     amount_returned { 0.0 }
     transactable { custom_create_polymorphic models: %i[card_transaction money_transaction] }
@@ -26,7 +26,7 @@ FactoryBot.define do
 
     trait :different do
       is_payer { true }
-      status { :finished }
+      status { 'finished' }
       amount_to_be_returned { 0.01 }
       amount_returned { 0.01 }
       transactable { different_custom_create_polymorphic models: %i[card_transaction money_transaction] }
@@ -35,9 +35,9 @@ FactoryBot.define do
 
     trait :random do
       is_payer { Faker::Boolean.boolean }
-      status { %i[pending finished] }
+      status { %w[pending finished].sample }
       amount_to_be_returned { Faker::Number.decimal(l_digits: 2) }
-      amount_returned { status.finished? ? amount_to_be_returned : 0.00 }
+      amount_returned { status == 'finished' ? amount_to_be_returned : 0.00 }
       transactable { random_custom_create_polymorphic models: %i[card_transaction money_transaction] }
       entity { random_custom_create model: :entity, reference: { user: transactable.user } }
     end

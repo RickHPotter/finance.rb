@@ -70,7 +70,7 @@ module FactoryHelper
     #
     # @see {#custom_create}
     #
-    define_method("#{trait}_custom_create") do |model: {}, reference: []|
+    define_method("#{trait}_custom_create") do |model:, reference: {}|
       custom_create(model:, reference:, traits: [trait.to_sym])
     end
 
@@ -84,8 +84,8 @@ module FactoryHelper
     #
     # @see {#custom_create_polymorphic}
     #
-    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: []|
-      custom_create(models:, reference:, traits: [trait.to_sym])
+    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: {}|
+      custom_create_polymorphic(models:, reference:, traits: [trait.to_sym])
     end
   end
 end
