@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 # MoneyTransaction Migration
-class CreateMoneyTransactions < ActiveRecord::Migration[7.0]
+class CreateMoneyTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :money_transactions do |t|
       t.string :mt_description, null: false
-      t.string :mt_comment
+      t.text :mt_comment
       t.date :date, null: false
       t.integer :month, null: false
       t.integer :year, null: false

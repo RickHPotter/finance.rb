@@ -4,9 +4,9 @@
 #
 # Table name: installments
 #
-#  id               :integer          not null, primary key
+#  id               :bigint           not null, primary key
 #  installable_type :string           not null
-#  installable_id   :integer          not null
+#  installable_id   :bigint           not null
 #  price            :decimal(10, 2)   default(0.0), not null
 #  number           :integer          default(1), not null
 #  created_at       :datetime         not null

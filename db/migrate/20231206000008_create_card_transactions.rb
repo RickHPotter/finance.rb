@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # CardTransaction Migration
-class CreateCardTransactions < ActiveRecord::Migration[7.0]
+class CreateCardTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :card_transactions do |t|
       t.string :ct_description, null: false
@@ -17,7 +17,6 @@ class CreateCardTransactions < ActiveRecord::Migration[7.0]
       t.references :user_card, null: false, foreign_key: true
       t.references :category, null: false, foreign_key: true
       t.references :category2, null: true
-      t.references :entity, null: false, foreign_key: true
       t.references :money_transaction, foreign_key: true, null: true
 
       t.timestamps

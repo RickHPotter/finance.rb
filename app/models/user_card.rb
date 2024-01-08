@@ -4,7 +4,7 @@
 #
 # Table name: user_cards
 #
-#  id                   :integer          not null, primary key
+#  id                   :bigint           not null, primary key
 #  user_card_name       :string           not null
 #  days_until_due_date  :integer          not null
 #  current_due_date     :date             not null
@@ -12,8 +12,8 @@
 #  min_spend            :decimal(, )      not null
 #  credit_limit         :decimal(, )      not null
 #  active               :boolean          not null
-#  user_id              :integer          not null
-#  card_id              :integer          not null
+#  user_id              :bigint           not null
+#  card_id              :bigint           not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #

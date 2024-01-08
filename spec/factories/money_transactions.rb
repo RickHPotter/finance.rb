@@ -4,19 +4,19 @@
 #
 # Table name: money_transactions
 #
-#  id                     :integer          not null, primary key
+#  id                     :bigint           not null, primary key
 #  mt_description         :string           not null
-#  mt_comment             :string
+#  mt_comment             :text
 #  date                   :date             not null
 #  month                  :integer          not null
 #  year                   :integer          not null
 #  starting_price         :decimal(, )      not null
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
-#  user_id                :integer          not null
-#  category_id            :integer          not null
-#  user_bank_account_id   :integer
-#  user_card_id           :integer
+#  user_id                :bigint           not null
+#  category_id            :bigint           not null
+#  user_card_id           :bigint
+#  user_bank_account_id   :bigint
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
 #
@@ -41,8 +41,8 @@ FactoryBot.define do
       year { 2024 }
 
       association :user, :different
-      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
-      user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
+      category { different_custom_create(model: :category, reference: { user: }) }
+      user_bank_account { different_custom_create(model: :user_bank_account, reference: { user: }) }
     end
 
     trait :random do
@@ -52,8 +52,8 @@ FactoryBot.define do
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
 
       association :user, :random
-      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
-      user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
+      category { random_custom_create(model: :category, reference: { user: }) }
+      user_bank_account { random_custom_create(model: :user_bank_account, reference: { user: }) }
     end
   end
 end

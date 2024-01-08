@@ -39,7 +39,9 @@ User.all.each do |user|
     FactoryBot.create(:investment, :random, user:, date: Date.current - index)
   end
 
-  # p 'Creating Exchanges...'
+  # p 'Creating TransactionEntities...' do
+  ### p 'Creating Exchanges...'
+  # end
 end
 
 p 'Done!'

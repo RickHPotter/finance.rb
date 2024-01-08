@@ -4,11 +4,11 @@
 #
 # Table name: cards
 #
-#  id         :integer          not null, primary key
+#  id         :bigint           not null, primary key
 #  card_name  :string           not null
+#  bank_id    :bigint           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
-#  bank_id    :integer          not null
 #
 require 'rails_helper'
 

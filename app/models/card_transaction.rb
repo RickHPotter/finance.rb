@@ -4,7 +4,7 @@
 #
 # Table name: card_transactions
 #
-#  id                   :integer          not null, primary key
+#  id                   :bigint           not null, primary key
 #  ct_description       :string           not null
 #  ct_comment           :text
 #  date                 :date             not null
@@ -13,12 +13,11 @@
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
 #  installments_count   :integer          default(0), not null
-#  user_id              :integer          not null
-#  user_card_id         :integer          not null
-#  category_id          :integer          not null
-#  category2_id         :integer
-#  entity_id            :integer          not null
-#  money_transaction_id :integer
+#  user_id              :bigint           not null
+#  user_card_id         :bigint           not null
+#  category_id          :bigint           not null
+#  category2_id         :bigint
+#  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -35,12 +34,13 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card
   belongs_to :category
   belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
-  belongs_to :entity
 
   has_many :installments, as: :installable
+  has_many :transaction_entities, as: :transactable
+  has_many :entities, through: :transaction_entities
 
   # @validations ..............................................................
-  validates :date, :user_card_id, :ct_description, :category_id, :entity_id, :starting_price,
+  validates :date, :user_card_id, :ct_description, :category_id, :starting_price,
             :price, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
@@ -50,7 +50,6 @@ class CardTransaction < ApplicationRecord
   scope :by_user, ->(user_id) { where(user_id:) }
   scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
   scope :by_category, ->(category_id, user_id) { where(category_id:).or(where(category2_id:)).by_user(user_id:) }
-  scope :by_entity, ->(entity_id, user_id) { where(entity_id:).by_user(user_id:) }
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
   scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
 
@@ -125,14 +124,18 @@ class CardTransaction < ApplicationRecord
     user_card.current_due_date
   end
 
-  # TODO: what comment should be made
+  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
   #
-  # This method generates a comment ?
+  # This method generates a comment specifying the card and RefMonthYear.
   #
   # @return [String] The generated comment.
   #
   def mt_comment
-    money_transaction.card_transactions.count.to_s
+    a, b = money_transaction.card_transactions.partition { |ct| ct.installments_count == 1 }
+    in_one = a.sum(&:price).round(2)
+    spread = b.sum(&:price).round(2)
+
+    "Upfront: #{in_one}, Installments: #{spread}"
   end
 
   # @private_instance_methods .................................................

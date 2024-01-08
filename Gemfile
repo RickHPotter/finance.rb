@@ -76,6 +76,7 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem 'annotate'
   gem 'awesome_print'
+  gem 'guard-rspec', require: false
   gem 'hotwire-livereload'
   gem 'web-console'
 
@@ -95,4 +96,5 @@ group :test do
   gem 'capybara'
   gem 'database_cleaner-active_record'
   gem 'selenium-webdriver'
+  gem 'simplecov', require: false
 end

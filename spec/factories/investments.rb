@@ -4,15 +4,15 @@
 #
 # Table name: investments
 #
-#  id                   :integer          not null, primary key
+#  id                   :bigint           not null, primary key
 #  price                :decimal(, )      not null
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null
-#  user_id              :integer          not null
-#  category_id          :integer          not null
-#  user_bank_account_id :integer          not null
-#  money_transaction_id :integer
+#  user_id              :bigint           not null
+#  category_id          :bigint           not null
+#  user_bank_account_id :bigint           not null
+#  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -30,8 +30,8 @@ FactoryBot.define do
       date { Date.new(2023, 11, 26) }
 
       association :user, :different
-      category { custom_create(model: :category, traits: [:different], reference: { user: }) }
-      user_bank_account { custom_create(model: :user_bank_account, traits: [:different], reference: { user: }) }
+      category { different_custom_create(model: :category, reference: { user: }) }
+      user_bank_account { different_custom_create(model: :user_bank_account, reference: { user: }) }
     end
 
     trait :random do
@@ -39,8 +39,8 @@ FactoryBot.define do
       date { Faker::Date.between(from: 1.months.ago, to: Date.today) }
 
       association :user, :random
-      category { custom_create(model: :category, traits: [:random], reference: { user: }) }
-      user_bank_account { custom_create(model: :user_bank_account, traits: [:random], reference: { user: }) }
+      category { random_custom_create(model: :category, reference: { user: }) }
+      user_bank_account { random_custom_create(model: :user_bank_account, reference: { user: }) }
     end
   end
 end

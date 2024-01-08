@@ -1,13 +1,16 @@
+# SUMMARY
+
 <!--toc:start-->
+- [SUMMARY](#summary)
 - [INTRODUCTION](#introduction)
 - [SPRINT PLANNING I: GAARA](#sprint-planning-i-gaara)
   - [GAARA-01/be-01: Finish late Model Specs](#gaara-01be-01-finish-late-model-specs)
   - [GAARA-02/be-02: Create models that revolve around MoneyTransaction](#gaara-02be-02-create-models-that-revolve-around-moneytransaction)
   - [GAARA-03/be-03: Implement 'buy now, pay later' system](#gaara-03be-03-implement-buy-now-pay-later-system)
   - [GAARA-04/app-01: Update stack and add Docker](#gaara-04app-01-update-stack-and-add-docker)
-  - [GAARA-05/be-04: Create TransactionParticipant Model; Installments in MoneyTransaction](#gaara-05be-04-create-transactionparticipant-model-installments-in-moneytransaction)
+  - [GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction](#gaara-05be-04-create-transactionentity-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
-  - [GAARA-07/be-06: Refine TransactionParticipant and Exchange Models](#gaara-07be-06-refine-transactionparticipant-and-exchange-models)
+  - [GAARA-07/be-06: Refine TransactionEntity and Exchange Models](#gaara-07be-06-refine-transactionentity-and-exchange-models)
   - [GAARA-08/be-07: Calculate transactions based on Exchange](#gaara-08be-07-calculate-transactions-based-on-exchange)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
@@ -82,40 +85,46 @@ sprint. The reasons are:
   - ✅ Made it possible to run app in production mode in and outside of Docker.
   - ✅ Added and configured Bullet gem for development.
 
-## GAARA-05/be-04: Create TransactionParticipant Model; Installments in MoneyTransaction
+## GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
-  - ⌛ The table should include the fields: [id, timestamps, is_payer as boolean,
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
+  - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
        amount_to_be_returned and amount_returned as decimal, status (pending, finished)].
-  - ⌛ Remove entity_id from (Card/Money)Transaction.
+  - ✅ Remove entity_id from (Card/Money)Transaction.
+  - ✅ When a transaction_entity is not a payer:
+    - 1 ✅ The transaction_entity should have `is_payer: false, status = 'finished'`,
+           amount_to_be_returned and amount_returned should be 0.00.
+- Extra:
+  - ✅ APP: Enabled YJIT by with an initialiser.
+  - ✅ APP: Added Confirmable in Devise.
+  - ✅ APP: Added SimpleCov for tracking test coverage.
+  - ✅ APP: Added Guard-Rspec for safer development.
 
 ## GAARA-06/be-05: Create Exchange Model
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Create Model that will reference a transaction_participant.
-  - ⌛ TransactionParticipant should `has_many exchanges, optional: true`.
+  - ⌛ Create Model that will reference a transaction_entity.
+  - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
   - ⌛ The table should include the fields: [id, timestamps,
        reason ('currency' card <-> money, 'favour' non-monetary, 'time' same currency),
        exchange_type (monetary, non-monetary), amount (default 0 - non-monetary)].
   - ⌛ Implement in (Card/Money)Transaction the `has_many :exchanges, optional: true`.
   - ⌛ Exchange Model should have a `belongs_to :exchangable, polymorphic: true`.
 
-## GAARA-07/be-06: Refine TransactionParticipant and Exchange Models
+## GAARA-07/be-06: Refine TransactionEntity and Exchange Models
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ When a transaction_participant is a payer:
+  - ⌛ When a transaction_entity is a payer:
     - 1 ⌛ It should generate `is_payer: true, status: 'pending'`.
     - 2 ⌛ The amount_to_be_returned and amount_returned should be filled in.
-    - 3 ⌛ An Exchange should be created for this transaction_participant.
+    - 3 ⌛ An Exchange should be created for this transaction_entity.
     - 4 ⌛ The returning transaction should reference this exchange.
     - 5 ⌛ This new transaction should have a builtin `category = 'Exchange Return'`,
-          and no transaction_participant.
-  - ⌛ When a transaction_participant is not a payer:
-    - 1 ⌛ The transaction_participant should have `is_payer: false, status = 'finished'`.
+          and no transaction_entity.
 
 ## GAARA-08/be-07: Calculate transactions based on Exchange
 
@@ -152,4 +161,4 @@ sprint. The reasons are:
   - ⌛ Use TDD approach (better late than never).
   - ⌛ Remove Entity from the form.
   - ⌛ Create a Component for the refMonthYear.
-  - ⌛ Start a draft on the TransactionParticipant and Exchange references.
+  - ⌛ Start a draft on the TransactionEntity and Exchange references.

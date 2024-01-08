@@ -7,7 +7,7 @@ module FactoryHelper
   # This method creates a FactoryBot object based on the specified model with optional traits and a reference.
   # It supports creating objects with specific attributes from a reference object, and it can handle associations.
   #
-  # @param model [Symbol] The symbol representing the FactoryBot model to create.
+  # @param model [Symbol] The symbol representing the FactoryBot model to use/create.
   # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
   # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
   #
@@ -27,16 +27,66 @@ module FactoryHelper
   #
   # @return [Object] The created FactoryBot object.
   #
-  def custom_create(model:, reference:, traits: [])
+  def custom_create(model:, reference: {}, traits: [])
+    raise ArgumentError, 'You must specify a valid reference to use' unless reference.is_a?(Hash)
+
+    return FactoryBot.create(model, *traits) if reference.empty?
+
     key = reference.keys.first
     value = reference.values.first
-
-    return FactoryBot.create(model, *traits) if value.nil?
 
     model_plural = model.to_s.pluralize
     return value.public_send(model_plural).sample if value&.public_send(model_plural)&.present?
 
     FactoryBot.create(model, *traits, key => value)
+  end
+
+  # Prepares a polymorphic setting to be used in a Custom FactoryBot method.
+  #
+  # This method random selects one of the given models and forwards it to the original
+  # {#custom_create} method.
+  #
+  # @param models [Array<Symbol>] Array of symbols, each representing a valid FactoryBot model to use/create.
+  # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
+  # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+  #
+  # @return [Object] The created FactoryBot object.
+  #
+  # @see {#custom_create}
+  #
+  def custom_create_polymorphic(models:, reference: {}, traits: [])
+    model = models.sample if models.is_a?(Array)
+    custom_create(model:, reference:, traits:)
+  end
+
+  %w[different random].map do |trait|
+    # Metaprogramming to shorten method calls with traits.
+    #
+    # @param model [Symbol] The symbol representing the FactoryBot model to use/create.
+    # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
+    # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+    #
+    # @return [Object] The created FactoryBot object with the specified trait.
+    #
+    # @see {#custom_create}
+    #
+    define_method("#{trait}_custom_create") do |model:, reference: {}|
+      custom_create(model:, reference:, traits: [trait.to_sym])
+    end
+
+    # Metaprogramming to shorten method calls with traits.
+    #
+    # @param models [Array<Symbol>] Array of symbols, each representing a valid FactoryBot model to use/create.
+    # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
+    # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+    #
+    # @return [Object] The created FactoryBot object with the specified trait.
+    #
+    # @see {#custom_create_polymorphic}
+    #
+    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: {}|
+      custom_create_polymorphic(models:, reference:, traits: [trait.to_sym])
+    end
   end
 end
 
