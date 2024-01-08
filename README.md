@@ -1,4 +1,7 @@
+# SUMMARY
+
 <!--toc:start-->
+- [SUMMARY](#summary)
 - [INTRODUCTION](#introduction)
 - [SPRINT PLANNING I: GAARA](#sprint-planning-i-gaara)
   - [GAARA-01/be-01: Finish late Model Specs](#gaara-01be-01-finish-late-model-specs)
@@ -85,13 +88,14 @@ sprint. The reasons are:
 ## GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
+  - ✅ Use TDD approach; create the tests before.
   - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
        amount_to_be_returned and amount_returned as decimal, status (pending, finished)].
   - ✅ Remove entity_id from (Card/Money)Transaction.
   - ✅ When a transaction_entity is not a payer:
-    - 1 ✅ The transaction_entity should have `is_payer: false, status = 'finished'`.
+    - 1 ✅ The transaction_entity should have `is_payer: false, status = 'finished'`,
+           amount_to_be_returned and amount_returned should be 0.00.
 - Extra:
   - ✅ APP: Enabled YJIT by with an initialiser.
   - ✅ APP: Added Confirmable in Devise.

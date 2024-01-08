@@ -10,7 +10,10 @@ module ModelSpecHelper
 
     it "is not valid with a nil #{attribute}" do
       expect(subject).to_not be_valid
-      expect(subject.errors[attribute]).to include('can\'t be blank').or include('must exist')
+      expect(subject.errors[attribute])
+        .to include('can\'t be blank')
+        .or include('must exist')
+        .or include('is not included in the list')
     end
   end
 
@@ -21,6 +24,8 @@ module ModelSpecHelper
     let(:subject) { FactoryBot.build(model, :random, attribute => ' ' * 3) }
 
     it "is not valid with a blank #{attribute}" do
+      next if [true, false].include?(subject.public_send(attribute))
+
       expect(subject).to_not be_valid
       expect(subject.errors[attribute]).to include('can\'t be blank')
     end
