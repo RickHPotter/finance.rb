@@ -91,7 +91,7 @@ sprint. The reasons are:
   - ✅ Use TDD approach; create the tests before.
   - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
-       amount_to_be_returned and amount_returned as decimal, status (pending, finished)].
+       price as decimal, status (pending, finished)].
   - ✅ Remove entity_id from (Card/Money)Transaction.
   - ✅ When a transaction_entity is not a payer:
     - 1 ✅ The transaction_entity should have `is_payer: false, status = 'finished'`,
@@ -109,8 +109,7 @@ sprint. The reasons are:
   - ⌛ Create Model that will reference a transaction_entity.
   - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
   - ⌛ The table should include the fields: [id, timestamps,
-       reason ('currency' card <-> money, 'favour' non-monetary, 'time' same currency),
-       exchange_type (monetary, non-monetary), amount (default 0 - non-monetary)].
+       exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
   - ⌛ Implement in (Card/Money)Transaction the `has_many :exchanges, optional: true`.
   - ⌛ Exchange Model should have a `belongs_to :exchangable, polymorphic: true`.
 
