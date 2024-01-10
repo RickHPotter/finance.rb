@@ -105,13 +105,12 @@ sprint. The reasons are:
 ## GAARA-06/be-05: Create Exchange Model
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Create Model that will reference a transaction_entity.
-  - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
-  - ⌛ The table should include the fields: [id, timestamps,
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ Create Model that will reference a transaction_entity.
+  - ✅ The table should include the fields: [id, timestamps,
        exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
-  - ⌛ Implement in (Card/Money)Transaction the `has_many :exchanges, optional: true`.
-  - ⌛ Exchange Model should have a `belongs_to :exchangable, polymorphic: true`.
+  - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
+  - ⌛ Exchange should `has_many :money_transactions`.
 
 ## GAARA-07/be-06: Refine TransactionEntity and Exchange Models
 

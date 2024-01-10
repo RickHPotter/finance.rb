@@ -9,7 +9,6 @@ class CreateExchanges < ActiveRecord::Migration[7.1]
       t.decimal :amount_returned, null: false
 
       t.references :transaction_entity, null: false, foreign_key: true
-      t.references :money_transaction, null: false, foreign_key: true
 
       t.timestamps
     end

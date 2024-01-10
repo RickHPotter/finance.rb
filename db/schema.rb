@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
+ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -68,6 +68,16 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
 
+  create_table "exchanges", force: :cascade do |t|
+    t.integer "exchange_type", default: 0, null: false
+    t.decimal "amount_to_be_returned", null: false
+    t.decimal "amount_returned", null: false
+    t.bigint "transaction_entity_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["transaction_entity_id"], name: "index_exchanges_on_transaction_entity_id"
+  end
+
   create_table "installments", force: :cascade do |t|
     t.string "installable_type", null: false
     t.bigint "installable_id", null: false
@@ -119,8 +129,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
   create_table "transaction_entities", force: :cascade do |t|
     t.boolean "is_payer", default: false, null: false
     t.integer "status", default: 0, null: false
-    t.decimal "amount_to_be_returned", null: false
-    t.decimal "amount_returned", null: false
+    t.decimal "price", default: "0.0", null: false
     t.string "transactable_type", null: false
     t.bigint "transactable_id", null: false
     t.bigint "entity_id", null: false
@@ -186,6 +195,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
   add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
   add_foreign_key "entities", "users"
+  add_foreign_key "exchanges", "transaction_entities"
   add_foreign_key "investments", "categories"
   add_foreign_key "investments", "money_transactions"
   add_foreign_key "investments", "user_bank_accounts"

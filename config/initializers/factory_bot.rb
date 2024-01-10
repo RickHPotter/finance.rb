@@ -27,7 +27,7 @@ module FactoryHelper
   #
   # @return [Object] The created FactoryBot object.
   #
-  def custom_create(model:, reference: {}, traits: [])
+  def custom_create(model:, reference: {}, traits: [], options: {})
     raise ArgumentError, 'You must specify a valid reference to use' unless reference.is_a?(Hash)
 
     return FactoryBot.create(model, *traits) if reference.empty?
@@ -38,7 +38,8 @@ module FactoryHelper
     model_plural = model.to_s.pluralize
     return value.public_send(model_plural).sample if value&.public_send(model_plural)&.present?
 
-    FactoryBot.create(model, *traits, key => value)
+    options = options.merge(key => value)
+    FactoryBot.create(model, *traits, options)
   end
 
   # Prepares a polymorphic setting to be used in a Custom FactoryBot method.
@@ -54,12 +55,12 @@ module FactoryHelper
   #
   # @see {#custom_create}
   #
-  def custom_create_polymorphic(models:, reference: {}, traits: [])
+  def custom_create_polymorphic(models:, reference: {}, traits: [], options: {})
     model = models.sample if models.is_a?(Array)
-    custom_create(model:, reference:, traits:)
+    custom_create(model:, reference:, traits:, options:)
   end
 
-  %w[different random].map do |trait|
+  %i[different random].map do |trait|
     # Metaprogramming to shorten method calls with traits.
     #
     # @param model [Symbol] The symbol representing the FactoryBot model to use/create.
@@ -70,8 +71,8 @@ module FactoryHelper
     #
     # @see {#custom_create}
     #
-    define_method("#{trait}_custom_create") do |model:, reference: {}|
-      custom_create(model:, reference:, traits: [trait.to_sym])
+    define_method("#{trait}_custom_create") do |model:, reference: {}, options: {}|
+      custom_create(model:, reference:, traits: [trait], options:)
     end
 
     # Metaprogramming to shorten method calls with traits.
@@ -84,8 +85,8 @@ module FactoryHelper
     #
     # @see {#custom_create_polymorphic}
     #
-    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: {}|
-      custom_create_polymorphic(models:, reference:, traits: [trait.to_sym])
+    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: {}, options: {}|
+      custom_create_polymorphic(models:, reference:, traits: [trait], options:)
     end
   end
 end
