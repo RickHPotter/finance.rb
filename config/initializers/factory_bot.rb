@@ -4,30 +4,37 @@
 module FactoryHelper
   # Creates a FactoryBot object with customisation options.
   #
-  # This method creates a FactoryBot object based on the specified model with optional traits and a reference.
-  # It supports creating objects with specific attributes from a reference object, and it can handle associations.
+  # This method creates a FactoryBot object based on the specified model
+  # given a reference (fk), traits and additional optionals.
+  # It supports creating objects with specific attributes from a reference
+  # object, and it can handle associations.
   #
   # @param model [Symbol] The symbol representing the FactoryBot model to use/create.
   # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
   # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+  # @param options [Hash] A hash of options to apply to the created object.
   #
-  # @example Creating an object without reference.
-  #   custom_create(model: :user_bank_account, traits: [:random])
-  #   => created <UserBankAccount> without any reference
+  # @example Creating an object without reference, and additional options.
+  #   custom_create(:user_bank_account, traits: [:random], options: { first_name: 'Joseph' })
+  #   => created <UserBankAccount> with first_name = 'Joseph' without any reference
   #
   # @example Creating an object with a reference that has records linked to model:
   #   user_reference = FactoryBot.create(:user)
-  #   custom_create(model: :user_bank_account, reference: { user: user_reference }, traits: [:random])
+  #   custom_create(:user_bank_account, reference: { user: user_reference }, traits: [:random])
   #   => existing <UserBankAccount> that belongs to the <User> object
   #
   # @example Creating an object with a reference that has no records linked to model:
   #   user_reference = FactoryBot.create(:user)
-  #   custom_create(model: :user_bank_account, reference:  { user: user_reference  }, traits: [:random])
+  #   custom_create(:user_bank_account, reference:  { user: user_reference  }, traits: [:random])
   #   => created <UserBankAccount> that belongs to the <User> object
+  #
+  # @raise ArgumentError if model is nil
+  # @raise ArgumentError if reference is not a Hash
   #
   # @return [Object] The created FactoryBot object.
   #
-  def custom_create(model:, reference: {}, traits: [], options: {})
+  def custom_create(model, reference: {}, traits: [], options: {})
+    raise ArgumentError, 'You must specify a model to use' if model.nil?
     raise ArgumentError, 'You must specify a valid reference to use' unless reference.is_a?(Hash)
 
     return FactoryBot.create(model, *traits) if reference.empty?
@@ -50,14 +57,18 @@ module FactoryHelper
   # @param models [Array<Symbol>] Array of symbols, each representing a valid FactoryBot model to use/create.
   # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
   # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+  # @param options [Hash] A hash of options to apply to the created object.
+  #
+  # @raise ArgumentError if models is not an array or is empty
   #
   # @return [Object] The created FactoryBot object.
   #
   # @see {#custom_create}
   #
-  def custom_create_polymorphic(models:, reference: {}, traits: [], options: {})
-    model = models.sample if models.is_a?(Array)
-    custom_create(model:, reference:, traits:, options:)
+  def custom_create_polymorphic(models, reference: {}, traits: [], options: {})
+    raise ArgumentError, 'You must provide a non-empty array' unless models.is_a?(Array) && !models.empty?
+
+    custom_create(models.sample, reference:, traits:, options:)
   end
 
   %i[different random].map do |trait|
@@ -66,13 +77,14 @@ module FactoryHelper
     # @param model [Symbol] The symbol representing the FactoryBot model to use/create.
     # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
     # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+    # @param options [Hash] A hash of options to apply to the created object.
     #
     # @return [Object] The created FactoryBot object with the specified trait.
     #
     # @see {#custom_create}
     #
-    define_method("#{trait}_custom_create") do |model:, reference: {}, options: {}|
-      custom_create(model:, reference:, traits: [trait], options:)
+    define_method("#{trait}_custom_create") do |model, reference: {}, options: {}|
+      custom_create(model, reference:, traits: [trait], options:)
     end
 
     # Metaprogramming to shorten method calls with traits.
@@ -80,13 +92,14 @@ module FactoryHelper
     # @param models [Array<Symbol>] Array of symbols, each representing a valid FactoryBot model to use/create.
     # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
     # @param traits [Array<Symbol>] An array of FactoryBot traits to apply to the created object.
+    # @param options [Hash] A hash of options to apply to the created object.
     #
     # @return [Object] The created FactoryBot object with the specified trait.
     #
     # @see {#custom_create_polymorphic}
     #
-    define_method("#{trait}_custom_create_polymorphic") do |models: [], reference: {}, options: {}|
-      custom_create_polymorphic(models:, reference:, traits: [trait], options:)
+    define_method("#{trait}_custom_create_polymorphic") do |models, reference: {}, options: {}|
+      custom_create_polymorphic(models, reference:, traits: [trait], options:)
     end
   end
 end

@@ -32,8 +32,8 @@ FactoryBot.define do
     installments_count { 1 }
 
     association :user
-    category { custom_create model: :category, reference: { user: } }
-    user_card { custom_create model: :user_card, reference: { user: } }
+    category { custom_create(:category, reference: { user: }) }
+    user_card { custom_create(:user_card, reference: { user: }) }
 
     trait :different do
       ct_description { 'Sitpass' }
@@ -43,8 +43,8 @@ FactoryBot.define do
       year { 2024 }
 
       association :user, :different
-      category { different_custom_create(model: :category, reference: { user: }) }
-      user_card { different_custom_create(model: :user_card, reference: { user: }) }
+      category { different_custom_create(:category, reference: { user: }) }
+      user_card { different_custom_create(:user_card, reference: { user: }) }
     end
 
     trait :random do
@@ -55,8 +55,8 @@ FactoryBot.define do
       installments_count { [1, 1, 1, 2, rand(1..10)].sample }
 
       association :user, :random
-      category { random_custom_create(model: :category, reference: { user: }) }
-      user_card { random_custom_create(model: :user_card, reference: { user: }) }
+      category { random_custom_create(:category, reference: { user: }) }
+      user_card { random_custom_create(:user_card, reference: { user: }) }
     end
   end
 end

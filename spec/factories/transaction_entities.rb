@@ -18,23 +18,23 @@ FactoryBot.define do
   factory :transaction_entity do
     is_payer { true }
     status { 'pending' }
-    transactable { custom_create_polymorphic models: %i[card_transaction money_transaction] }
-    entity { custom_create model: :entity, reference: { user: transactable.user } }
+    transactable { custom_create_polymorphic(%i[card_transaction money_transaction]) }
+    entity { custom_create(:entity, reference: { user: transactable.user }) }
     price { transactable.price }
 
     trait :different do
       is_payer { true }
       status { 'finished' }
       price { 0.01 }
-      transactable { different_custom_create_polymorphic models: %i[card_transaction money_transaction] }
-      entity { different_custom_create model: :entity, reference: { user: transactable.user } }
+      transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction]) }
+      entity { different_custom_create(:entity, reference: { user: transactable.user }) }
     end
 
     trait :random do
       is_payer { Faker::Boolean.boolean }
       status { %w[pending finished].sample }
-      transactable { random_custom_create_polymorphic models: %i[card_transaction money_transaction] }
-      entity { random_custom_create model: :entity, reference: { user: transactable.user } }
+      transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
+      entity { random_custom_create(:entity, reference: { user: transactable.user }) }
 
       price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
     end
