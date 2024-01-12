@@ -109,27 +109,37 @@ sprint. The reasons are:
   - ✅ Create Model that will reference a transaction_entity.
   - ✅ The table should include the fields: [id, timestamps,
        exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
-  - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
-  - ⌛ Exchange should `has_many :money_transactions`.
+  - ✅ TransactionEntity should `has_many exchanges` and
+       Exchange should `has_many :money_transactions`.
+  - ⌛ New transaction_entities with is_payer = true should create exchanges.
+  - ⌛ One exchange should be created for every paying transaction_entity.
+  - ⌛ One money_transaction should be created for every monetary exchange.
+  - ⌛ Removing or updating a transaction_entity or exchange
+       should also make the necessary changes to the whole process.
+  - Extra:
+    - ⌛ Fix Installments:
+      - 1 ⌛ CardTransaction that has installments should have some flag.
+      - 2 ⌛ Installments created should then create card_transactions.
+    - ⌛ Make an Installable Concern to be used by both Transactions and Exchange.
 
 ## GAARA-07/be-06: Refine TransactionEntity and Exchange Models
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ When a transaction_entity is a payer:
-    - 1 ⌛ It should generate `is_payer: true, status: 'pending'`.
-    - 2 ⌛ The amount_to_be_returned and amount_returned should be filled in.
+    - 1 ⌛ Its price should be filled in.
     - 3 ⌛ An Exchange should be created for this transaction_entity.
-    - 4 ⌛ The returning transaction should reference this exchange.
-    - 5 ⌛ This new transaction should have a builtin `category = 'Exchange Return'`,
+    - 4 ⌛ The exchange amount_to_be_returned should be same as its price.
+    - 5 ⌛ The exchange amount_returned default value should be 0.
+    - 6 ⌛ This new transaction should have a builtin `category = 'Exchange Return'`,
           and no transaction_entity.
 
-## GAARA-08/be-07: Calculate transactions based on Exchange
+## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ New money_transactions should be created automatically based on Exchange.
-  - ⌛ Removing should also impact these money_transactions.
+  - ⌛ Refine seeds to include all models.
+  - ⌛ Fix possible bugs found at this stage.
+  - ⌛ Review current specs and refactor if possible.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

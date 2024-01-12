@@ -30,10 +30,23 @@ RSpec.describe Exchange, type: :model do
     end
 
     context '( associations )' do
-      %i[transaction_entity].each do |model|
+      %i[transaction_entity money_transaction].each do |model|
         it "belongs_to #{model}" do
           expect(exchange).to respond_to model
         end
+      end
+    end
+  end
+
+  describe '[ business logic ]' do
+    context '( when new exchanges are created )' do
+      before do
+        exchange.update(exchange_type: 1)
+        # exchange.reload
+      end
+
+      it 'creates a single money_transaction' do
+        expect(exchange.money_transaction).to_not be(nil)
       end
     end
   end

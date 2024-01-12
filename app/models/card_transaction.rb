@@ -54,6 +54,10 @@ class CardTransaction < ApplicationRecord
   scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
 
   # @public_instance_methods ..................................................
+  def to_s
+    ct_description
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

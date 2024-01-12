@@ -24,6 +24,8 @@ class TransactionEntity < ApplicationRecord
   belongs_to :transactable, polymorphic: true
   belongs_to :entity
 
+  has_many :exchanges
+
   # @validations ..............................................................
   validates :status, :price, :transactable_type, :transactable_id, :entity_id, presence: true
   validates :is_payer, inclusion: { in: [true, false] }

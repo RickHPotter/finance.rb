@@ -40,6 +40,12 @@ RSpec.describe CardTransaction, type: :model do
           expect(transaction_entity).to respond_to model
         end
       end
+
+      %i[exchanges].each do |model|
+        it "has_many #{model}" do
+          expect(transaction_entity).to respond_to model
+        end
+      end
     end
   end
 end

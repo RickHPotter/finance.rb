@@ -73,8 +73,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.decimal "amount_to_be_returned", null: false
     t.decimal "amount_returned", null: false
     t.bigint "transaction_entity_id", null: false
+    t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["money_transaction_id"], name: "index_exchanges_on_money_transaction_id"
     t.index ["transaction_entity_id"], name: "index_exchanges_on_transaction_entity_id"
   end
 
@@ -195,6 +197,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
   add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
   add_foreign_key "entities", "users"
+  add_foreign_key "exchanges", "money_transactions"
   add_foreign_key "exchanges", "transaction_entities"
   add_foreign_key "investments", "categories"
   add_foreign_key "investments", "money_transactions"
