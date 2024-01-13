@@ -13,16 +13,16 @@
 FactoryBot.define do
   factory :category do
     category_name { 'Food' }
-    association :user
+    user { custom_create(:user) }
 
     trait :different do
       category_name { 'Transport' }
-      association :user, :different
+      user { different_custom_create(:user) }
     end
 
     trait :random do
       sequence(:category_name) { |n| "#{Faker::Hobby.unique.activity} #{n}" }
-      association :user, :random
+      user { random_custom_create(:user) }
     end
   end
 end

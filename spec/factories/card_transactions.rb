@@ -15,8 +15,6 @@
 #  installments_count   :integer          default(1), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
-#  category_id          :bigint           not null
-#  category2_id         :bigint
 #  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
@@ -31,8 +29,7 @@ FactoryBot.define do
     year { 2023 }
     installments_count { 1 }
 
-    association :user
-    category { custom_create(:category, reference: { user: }) }
+    user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
     trait :different do
@@ -42,8 +39,7 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      association :user, :different
-      category { different_custom_create(:category, reference: { user: }) }
+      user { different_custom_create(:user) }
       user_card { different_custom_create(:user_card, reference: { user: }) }
     end
 
@@ -54,8 +50,7 @@ FactoryBot.define do
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
       installments_count { [1, 1, 1, 2, rand(1..10)].sample }
 
-      association :user, :random
-      category { random_custom_create(:category, reference: { user: }) }
+      user { random_custom_create(:user) }
       user_card { random_custom_create(:user_card, reference: { user: }) }
     end
   end

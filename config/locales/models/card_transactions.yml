@@ -14,8 +14,7 @@ en:
         starting_price: Original Price
         card_id: Card
         entity_id: Entity
-        category_id: Primary Category
-        category2_id: Secondary Category
+        category: Category
         month: Month
         year: Year
         installment: Installment

@@ -24,8 +24,8 @@ class EntityTransaction < ApplicationRecord
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :transactable, polymorphic: true
   belongs_to :entity
+  belongs_to :transactable, polymorphic: true
 
   # @validations ..............................................................
   validates :status, :price, :transactable_type, :transactable_id, :entity_id, presence: true

@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
 #  user_id                :bigint           not null
-#  category_id            :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
 #  created_at             :datetime         not null
@@ -29,8 +28,7 @@ FactoryBot.define do
     month { 12 }
     year { 2023 }
 
-    association :user
-    category { custom_create(:category, reference: { user: }) }
+    user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
     trait :different do
@@ -40,8 +38,7 @@ FactoryBot.define do
       month { 1 }
       year { 2024 }
 
-      association :user, :different
-      category { different_custom_create(:category, reference: { user: }) }
+      user { different_custom_create(:user) }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
     end
 
@@ -51,8 +48,7 @@ FactoryBot.define do
       mt_comment { [Faker::Lorem.sentence, nil, nil, nil, nil].sample }
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
 
-      association :user, :random
-      category { random_custom_create(:category, reference: { user: }) }
+      user { random_custom_create(:user) }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
     end
   end

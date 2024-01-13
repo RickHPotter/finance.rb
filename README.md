@@ -123,6 +123,11 @@ sprint. The reasons are:
   - ✅ One entity_transaction should be created for every entity card_transaction.
   - ✅ One exchange should be created for every paying entity_transaction.
 - Extra:
+  - ✅ Made a join table for Transaction and Category (like EntityTransaction).
+  - ⌛ Made an Installable Concern to be used by both Transactions and Exchange.
+  - ⌛ Fixed Installments:
+    - 1 ⌛ CardTransaction that has installments should have some flag.
+    - 2 ⌛ Installments created should then create card_transactions.
 
 ## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
 

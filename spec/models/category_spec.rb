@@ -13,7 +13,7 @@
 require 'rails_helper'
 
 RSpec.describe Category, type: :model do
-  let!(:category) { FactoryBot.create(:category) }
+  let!(:category) { FactoryBot.create(:category, :random) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do

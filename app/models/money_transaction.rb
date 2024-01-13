@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
 #  user_id                :bigint           not null
-#  category_id            :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
 #  created_at             :datetime         not null
@@ -25,12 +24,12 @@ class MoneyTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
+  include CategoryTransactable
   include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  belongs_to :category
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, optional: true
 
@@ -38,7 +37,7 @@ class MoneyTransaction < ApplicationRecord
   has_many :investments
 
   # @validations ..............................................................
-  validates :mt_description, :date, :user_id, :category_id, :starting_price,
+  validates :mt_description, :date, :user_id, :starting_price,
             :price, :month, :year, presence: true
 
   # @callbacks ................................................................

@@ -15,13 +15,9 @@ class CreateCardTransactions < ActiveRecord::Migration[7.1]
 
       t.references :user, null: false, foreign_key: true
       t.references :user_card, null: false, foreign_key: true
-      t.references :category, null: false, foreign_key: true
-      t.references :category2, null: true
       t.references :money_transaction, foreign_key: true, null: true
 
       t.timestamps
     end
-
-    add_foreign_key 'card_transactions', 'categories', column: 'category2_id'
   end
 end

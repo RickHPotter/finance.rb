@@ -15,8 +15,6 @@
 #  installments_count   :integer          default(1), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
-#  category_id          :bigint           not null
-#  category2_id         :bigint
 #  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
@@ -27,23 +25,20 @@ class CardTransaction < ApplicationRecord
   include MonthYear
   include StartingPriceCallback
   include MoneyTransactable
+  include CategoryTransactable
   include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card
-  # TODO: fix
-  belongs_to :category
-  # TODO: fix
-  belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
 
   # TODO: fix
   has_many :installments, as: :installable
 
   # @validations ..............................................................
-  validates :date, :user_card_id, :ct_description, :category_id, :starting_price,
-            :price, :month, :year, :installments_count, presence: true
+  validates :date, :user_card_id, :ct_description, :starting_price, :price,
+            :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
   # TODO: fix
@@ -52,7 +47,6 @@ class CardTransaction < ApplicationRecord
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
   scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
-  scope :by_category, ->(category_id, user_id) { where(category_id:).or(where(category2_id:)).by_user(user_id:) }
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
   scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
 

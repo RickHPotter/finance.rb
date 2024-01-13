@@ -19,7 +19,7 @@ require 'rails_helper'
 
 include FactoryHelper
 
-RSpec.describe CardTransaction, type: :model do
+RSpec.describe EntityTransaction, type: :model do
   # TODO: add tests for status = :pending after the implementation of Exchange
   let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: false) }
 

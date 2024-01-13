@@ -13,7 +13,7 @@ module EntityTransactable
     has_many :entities, through: :entity_transactions
 
     # @callbacks ...............................................................
-    before_save :create_entity_transactions
+    before_commit :create_entity_transactions
   end
 
   # @protected_instance_methods ...............................................

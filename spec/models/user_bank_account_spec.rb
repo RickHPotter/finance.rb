@@ -17,7 +17,7 @@
 require 'rails_helper'
 
 RSpec.describe UserBankAccount, type: :model do
-  let!(:user_bank_account) { FactoryBot.create(:user_bank_account) }
+  let!(:user_bank_account) { FactoryBot.create(:user_bank_account, :random) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniquness, etc )' do

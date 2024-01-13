@@ -25,5 +25,7 @@ module Exchangable
     exchange_attributes.each_with_index do |attributes, index|
       exchanges << Exchange.create(attributes.merge(number: index + 1))
     end
+
+    self.exchanges_count = exchange_attributes.count
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
+ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -32,13 +32,9 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.integer "installments_count", default: 1, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
-    t.bigint "category_id", null: false
-    t.bigint "category2_id"
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
-    t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["money_transaction_id"], name: "index_card_transactions_on_money_transaction_id"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
@@ -58,6 +54,16 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_categories_on_user_id"
+  end
+
+  create_table "category_transactions", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.string "transactable_type", null: false
+    t.bigint "transactable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_category_transactions_on_category_id"
+    t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
   end
 
   create_table "entities", force: :cascade do |t|
@@ -111,12 +117,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.integer "month", null: false
     t.integer "year", null: false
     t.bigint "user_id", null: false
-    t.bigint "category_id", null: false
     t.bigint "user_bank_account_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_investments_on_category_id"
     t.index ["money_transaction_id"], name: "index_investments_on_money_transaction_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
@@ -132,12 +136,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.decimal "price", null: false
     t.string "money_transaction_type"
     t.bigint "user_id", null: false
-    t.bigint "category_id", null: false
     t.bigint "user_card_id"
     t.bigint "user_bank_account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_money_transactions_on_category_id"
     t.index ["user_bank_account_id"], name: "index_money_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_money_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_money_transactions_on_user_id"
@@ -191,22 +193,19 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "card_transactions", "categories"
-  add_foreign_key "card_transactions", "categories", column: "category2_id"
   add_foreign_key "card_transactions", "money_transactions"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
+  add_foreign_key "category_transactions", "categories"
   add_foreign_key "entities", "users"
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "entity_transactions"
   add_foreign_key "exchanges", "money_transactions"
-  add_foreign_key "investments", "categories"
   add_foreign_key "investments", "money_transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
-  add_foreign_key "money_transactions", "categories"
   add_foreign_key "money_transactions", "user_bank_accounts"
   add_foreign_key "money_transactions", "user_cards"
   add_foreign_key "money_transactions", "users"

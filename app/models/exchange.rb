@@ -69,7 +69,7 @@ class Exchange < ApplicationRecord
     mt_comment = ''
     # month = entity_transaction.transactable.month
     params = {
-      mt_description:, mt_comment:, month:, year:, user_id:, category_id:,
+      mt_description:, mt_comment:, month:, year:, user_id:,
       date: transactable_date, money_transaction_type: model_name.name
     }
     params[:user_card_id] = user_card_id if respond_to? :user_card_id
