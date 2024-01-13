@@ -12,7 +12,7 @@
 #  year                 :integer          not null
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
-#  installments_count   :integer          default(0), not null
+#  installments_count   :integer          default(1), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
 #  category_id          :bigint           not null
@@ -25,27 +25,29 @@ class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include MonthYear
-  include MoneyTransactable
   include StartingPriceCallback
+  include MoneyTransactable
+  include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card
+  # TODO: fix
   belongs_to :category
+  # TODO: fix
   belongs_to :category2, class_name: 'Category', foreign_key: 'category2_id', optional: true
 
+  # TODO: fix
   has_many :installments, as: :installable
-  has_many :transaction_entities, as: :transactable
-  has_many :entities, through: :transaction_entities
 
   # @validations ..............................................................
   validates :date, :user_card_id, :ct_description, :category_id, :starting_price,
             :price, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
-  # FIXME: this should be an after_save / Fix the docs
-  after_create :create_default_installments, unless: installments.present?
+  # TODO: fix
+  after_save :create_default_installments
 
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
@@ -74,7 +76,7 @@ class CardTransaction < ApplicationRecord
   #   => card_transaction.create_default_installments is run
   #   => 3 new installments are created, each with price 33.33, but the last: 33.34
   #
-  # @note This is a callback that is called after_create.
+  # @note This is a callback that is called after_save.
   #
   # @note The method uses the `installments_count` attribute to determine the number
   #   of installments to create and distributes the total `price` evenly among them.
@@ -82,7 +84,9 @@ class CardTransaction < ApplicationRecord
   # @return [void]
   #
   def create_default_installments
-    calculate_installments(price, installments_count)
+    return if installments.present?
+
+    prices_arr = calculate_installments(price, installments_count)
     create_installments(prices_arr)
   end
 

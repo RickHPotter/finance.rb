@@ -6,9 +6,11 @@
 #
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
+#  number                :integer          default(1), not null
 #  amount_to_be_returned :decimal(, )      not null
 #  amount_returned       :decimal(, )      not null
-#  transaction_entity_id :bigint           not null
+#  entity_transaction_id :bigint           not null
+#  money_transaction_id  :bigint
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
@@ -19,16 +21,15 @@ class Exchange < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :transaction_entity
-  # FIXME: maybe there is no need for an optional: true here as long as mt is created before
+  belongs_to :entity_transaction
   belongs_to :money_transaction, optional: true
 
   # @validations ..............................................................
   validates :exchange_type, :amount_to_be_returned, :amount_returned,
-            :transaction_entity, presence: true
+            :entity_transaction, presence: true
 
   # @callbacks ................................................................
-  after_commit :handle_money_transaction
+  # after_commit :handle_money_transaction
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -39,6 +40,8 @@ class Exchange < ApplicationRecord
   protected
 
   def handle_money_transaction
+    return create_money_transaction if created?
+
     if changes[:exchange_type].present?
       create_money_transaction if monetary?
       delete_money_transaction if non_monetary?
@@ -49,16 +52,9 @@ class Exchange < ApplicationRecord
     update_money_transaction
   end
 
+  # TODO: docs
   def create_money_transaction
-    self.money_transaction = MoneyTransaction
-                             .create_with(price:)
-                             .find_or_create_by(money_transaction_params)
-
-    MoneyTransaction.create(
-      exchange: self,
-      price: amount_to_be_returned,
-      mt_comment: "Exchange for #{transaction_entity.name}"
-    )
+    self.money_transaction = MoneyTransaction.create(money_transaction_params)
   end
 
   # Generates the params for the associated MoneyTransaction.
@@ -67,11 +63,13 @@ class Exchange < ApplicationRecord
   #
   # @see MoneyTransaction
   #
+
   def money_transaction_params
-    mt_description = "Exchange - #{transaction_entity.transactable}"
-    # month = transaction_entity.month
+    mt_description = "Exchange - #{entity_transaction.transactable}"
+    mt_comment = ''
+    # month = entity_transaction.transactable.month
     params = {
-      mt_description:, month:, year:, user_id:, category_id:,
+      mt_description:, mt_comment:, month:, year:, user_id:, category_id:,
       date: transactable_date, money_transaction_type: model_name.name
     }
     params[:user_card_id] = user_card_id if respond_to? :user_card_id

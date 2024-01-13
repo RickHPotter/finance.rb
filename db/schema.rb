@@ -30,7 +30,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
     t.integer "installments_count", default: 1, null: false
-    t.integer "exchanges_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
     t.bigint "category_id", null: false
@@ -69,20 +68,31 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
 
+  create_table "entity_transactions", force: :cascade do |t|
+    t.boolean "is_payer", default: false, null: false
+    t.integer "status", default: 0, null: false
+    t.decimal "price", default: "0.0", null: false
+    t.integer "exchanges_count", default: 0, null: false
+    t.bigint "entity_id", null: false
+    t.string "transactable_type", null: false
+    t.bigint "transactable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["entity_id"], name: "index_entity_transactions_on_entity_id"
+    t.index ["transactable_type", "transactable_id"], name: "index_entity_transactions_on_transactable"
+  end
+
   create_table "exchanges", force: :cascade do |t|
     t.integer "exchange_type", default: 0, null: false
     t.integer "number", default: 1, null: false
     t.decimal "amount_to_be_returned", null: false
     t.decimal "amount_returned", null: false
-    t.string "exchangable_type", null: false
-    t.bigint "exchangable_id", null: false
-    t.bigint "transaction_entity_id", null: false
+    t.bigint "entity_transaction_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["exchangable_type", "exchangable_id"], name: "index_exchanges_on_exchangable"
+    t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
     t.index ["money_transaction_id"], name: "index_exchanges_on_money_transaction_id"
-    t.index ["transaction_entity_id"], name: "index_exchanges_on_transaction_entity_id"
   end
 
   create_table "installments", force: :cascade do |t|
@@ -131,19 +141,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.index ["user_bank_account_id"], name: "index_money_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_money_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_money_transactions_on_user_id"
-  end
-
-  create_table "transaction_entities", force: :cascade do |t|
-    t.boolean "is_payer", default: false, null: false
-    t.integer "status", default: 0, null: false
-    t.decimal "price", default: "0.0", null: false
-    t.string "transactable_type", null: false
-    t.bigint "transactable_id", null: false
-    t.bigint "entity_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["entity_id"], name: "index_transaction_entities_on_entity_id"
-    t.index ["transactable_type", "transactable_id"], name: "index_transaction_entities_on_transactable"
   end
 
   create_table "user_bank_accounts", force: :cascade do |t|
@@ -202,8 +199,9 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
   add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
   add_foreign_key "entities", "users"
+  add_foreign_key "entity_transactions", "entities"
+  add_foreign_key "exchanges", "entity_transactions"
   add_foreign_key "exchanges", "money_transactions"
-  add_foreign_key "exchanges", "transaction_entities"
   add_foreign_key "investments", "categories"
   add_foreign_key "investments", "money_transactions"
   add_foreign_key "investments", "user_bank_accounts"
@@ -212,7 +210,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
   add_foreign_key "money_transactions", "user_bank_accounts"
   add_foreign_key "money_transactions", "user_cards"
   add_foreign_key "money_transactions", "users"
-  add_foreign_key "transaction_entities", "entities"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"
 end

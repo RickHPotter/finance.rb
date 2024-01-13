@@ -2,19 +2,20 @@
 
 # == Schema Information
 #
-# Table name: transaction_entities
+# Table name: entity_transactions
 #
 #  id                :bigint           not null, primary key
 #  is_payer          :boolean          default(FALSE), not null
 #  status            :integer          default("pending"), not null
 #  price             :decimal(, )      default(0.0), not null
+#  exchanges_count   :integer          default(0), not null
+#  entity_id         :bigint           not null
 #  transactable_type :string           not null
 #  transactable_id   :bigint           not null
-#  entity_id         :bigint           not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #
-class TransactionEntity < ApplicationRecord
+class EntityTransaction < ApplicationRecord
   # @extends ..................................................................
   enum status: { pending: 0, finished: 1 }
 
@@ -26,14 +27,12 @@ class TransactionEntity < ApplicationRecord
   belongs_to :transactable, polymorphic: true
   belongs_to :entity
 
-  has_many :exchanges
-
   # @validations ..............................................................
   validates :status, :price, :transactable_type, :transactable_id, :entity_id, presence: true
   validates :is_payer, inclusion: { in: [true, false] }
 
   # @callbacks ................................................................
-  before_validation :set_amounts, unless: :is_payer
+  before_validation :set_status
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -49,8 +48,8 @@ class TransactionEntity < ApplicationRecord
   #
   # @return [void]
   #
-  def set_amounts
-    self.status = :finished
+  def set_status
+    self.status = is_payer ? :finished : :pending
   end
 
   # @private_instance_methods .................................................

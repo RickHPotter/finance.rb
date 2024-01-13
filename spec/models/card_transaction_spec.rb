@@ -12,7 +12,7 @@
 #  year                 :integer          not null
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
-#  installments_count   :integer          default(0), not null
+#  installments_count   :integer          default(1), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
 #  category_id          :bigint           not null

@@ -25,6 +25,7 @@ class MoneyTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
+  include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -35,9 +36,6 @@ class MoneyTransaction < ApplicationRecord
 
   has_many :card_transactions
   has_many :investments
-
-  has_many :transaction_entities, as: :transactable
-  has_many :entities, through: :transaction_entities
 
   # @validations ..............................................................
   validates :mt_description, :date, :user_id, :category_id, :starting_price,

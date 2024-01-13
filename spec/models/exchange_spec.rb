@@ -6,9 +6,11 @@
 #
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
+#  number                :integer          default(1), not null
 #  amount_to_be_returned :decimal(, )      not null
 #  amount_returned       :decimal(, )      not null
-#  transaction_entity_id :bigint           not null
+#  entity_transaction_id :bigint           not null
+#  money_transaction_id  :bigint
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
@@ -30,7 +32,7 @@ RSpec.describe Exchange, type: :model do
     end
 
     context '( associations )' do
-      %i[transaction_entity money_transaction].each do |model|
+      %i[entity_transaction money_transaction].each do |model|
         it "belongs_to #{model}" do
           expect(exchange).to respond_to model
         end

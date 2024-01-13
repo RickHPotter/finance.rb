@@ -2,20 +2,21 @@
 
 # == Schema Information
 #
-# Table name: transaction_entities
+# Table name: entity_transactions
 #
 #  id                :bigint           not null, primary key
 #  is_payer          :boolean          default(FALSE), not null
 #  status            :integer          default("pending"), not null
 #  price             :decimal(, )      default(0.0), not null
+#  exchanges_count   :integer          default(0), not null
+#  entity_id         :bigint           not null
 #  transactable_type :string           not null
 #  transactable_id   :bigint           not null
-#  entity_id         :bigint           not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #
 FactoryBot.define do
-  factory :transaction_entity do
+  factory :entity_transaction do
     is_payer { true }
     status { 'pending' }
     transactable { custom_create_polymorphic(%i[card_transaction money_transaction]) }
