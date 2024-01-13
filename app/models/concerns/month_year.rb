@@ -5,6 +5,7 @@ module MonthYear
   extend ActiveSupport::Concern
 
   included do
+    # @callbacks ..............................................................
     before_validation :set_month_year, on: :create
   end
 

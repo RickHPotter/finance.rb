@@ -5,6 +5,7 @@ module StartingPriceCallback
   extend ActiveSupport::Concern
 
   included do
+    # @callbacks ..............................................................
     before_validation :fix_price
     before_validation :set_starting_price, on: :create
   end

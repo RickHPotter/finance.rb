@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Shared functionality for models with audited price.
+# Shared functionality for models that are accumulated to a single MoneyTransaction.
 module MoneyTransactable
   extend ActiveSupport::Concern
 
@@ -19,8 +19,8 @@ module MoneyTransactable
   # Attachs a MoneyTransaction to the self model (by finding one or creating it).
   #
   # This method is a `before_save` callback that associates a MoneyTransaction with the self model.
-  # It creates or finds a MoneyTransaction based on certain attributes and sets it to the `money_transaction`
-  # attribute of the self model.
+  # It creates or finds a MoneyTransaction based on certain attributes and sets it to the
+  # `money_transaction` relation of the self model.
   #
   # @return [void]
   #

@@ -5,6 +5,7 @@ module ActiveCallback
   extend ActiveSupport::Concern
 
   included do
+    # @callbacks ..............................................................
     before_validation :set_active, on: :create
   end
 

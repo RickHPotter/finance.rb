@@ -29,7 +29,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
     t.integer "year", null: false
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
-    t.integer "installments_count", default: 0, null: false
+    t.integer "installments_count", default: 1, null: false
+    t.integer "exchanges_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
     t.bigint "category_id", null: false
@@ -70,21 +71,25 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_09_132021) do
 
   create_table "exchanges", force: :cascade do |t|
     t.integer "exchange_type", default: 0, null: false
+    t.integer "number", default: 1, null: false
     t.decimal "amount_to_be_returned", null: false
     t.decimal "amount_returned", null: false
+    t.string "exchangable_type", null: false
+    t.bigint "exchangable_id", null: false
     t.bigint "transaction_entity_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["exchangable_type", "exchangable_id"], name: "index_exchanges_on_exchangable"
     t.index ["money_transaction_id"], name: "index_exchanges_on_money_transaction_id"
     t.index ["transaction_entity_id"], name: "index_exchanges_on_transaction_entity_id"
   end
 
   create_table "installments", force: :cascade do |t|
-    t.string "installable_type", null: false
-    t.bigint "installable_id", null: false
     t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
     t.integer "number", default: 1, null: false
+    t.string "installable_type", null: false
+    t.bigint "installable_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"

@@ -44,7 +44,8 @@ class CardTransaction < ApplicationRecord
             :price, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
-  after_create :create_default_installments
+  # FIXME: this should be an after_save / Fix the docs
+  after_create :create_default_installments, unless: installments.present?
 
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
@@ -69,8 +70,11 @@ class CardTransaction < ApplicationRecord
   # then calls {#create_installments} to create the actual Installments.
   #
   # @example Create default installments for a CardTransaction
-  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
-  #   card_transaction.create_default_installments
+  #   card_transaction = CardTransaction.create(installments_count: 3, price: 100, ...)
+  #   => card_transaction.create_default_installments is run
+  #   => 3 new installments are created, each with price 33.33, but the last: 33.34
+  #
+  # @note This is a callback that is called after_create.
   #
   # @note The method uses the `installments_count` attribute to determine the number
   #   of installments to create and distributes the total `price` evenly among them.
@@ -78,20 +82,23 @@ class CardTransaction < ApplicationRecord
   # @return [void]
   #
   def create_default_installments
-    return if installments.present?
-
-    prices_arr = (0..installments_count - 2).map { (price / installments_count).round(2) }
-    prices_arr << (price - prices_arr.sum)
-
+    calculate_installments(price, installments_count)
     create_installments(prices_arr)
+  end
+
+  # TODO: needs doc
+  def calculate_installments(price, count)
+    prices = (0..count - 2).map { (price / count).round(2) }
+    prices << (price - prices.sum)
+    prices
   end
 
   # Create installments based on the provided prices array.
   #
   # @example Create installments for a CardTransaction
-  #   card_transaction = CardTransaction.new(installments_count: 3, price: 100)
-  #   prices_arr = [33, 33, 34]
-  #   card_transaction.create_installments(prices_arr)
+  #   card_transaction = CardTransaction.create(installments_count: 3, price: 100, ...)
+  #   => prices_arr = [33, 33, 34]
+  #   => card_transaction.create_installments(prices_arr)
   #
   # @note The method uses the `installable_id` and `installable_type` attributes
   #   along with the provided `prices_arr` to create installments for the CardTransaction.

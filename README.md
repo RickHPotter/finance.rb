@@ -11,11 +11,11 @@
   - [GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction](#gaara-05be-04-create-transactionentity-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
   - [GAARA-07/be-06: Refine TransactionEntity and Exchange Models](#gaara-07be-06-refine-transactionentity-and-exchange-models)
-  - [GAARA-08/be-07: Calculate transactions based on Exchange](#gaara-08be-07-calculate-transactions-based-on-exchange)
+  - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
-  - [GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs](#gaara-12fe-04-finish-component-specs-for-the-remaining-and-some-form-todos)
+  - [GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
 <!--toc:end-->
 
 # INTRODUCTION
@@ -87,6 +87,9 @@ sprint. The reasons are:
 
 ## GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction
 
+- Issues:
+  - [#6](https://github.com/RickHPotter/finance.rb/issues/6)
+
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
   - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
@@ -104,35 +107,31 @@ sprint. The reasons are:
 
 ## GAARA-06/be-05: Create Exchange Model
 
+- Issues:
+  - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
+  - [#14](https://github.com/RickHPotter/finance.rb/issues/14)
+  - [#15](https://github.com/RickHPotter/finance.rb/issues/15)
+
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
   - ✅ Create Model that will reference a transaction_entity.
   - ✅ The table should include the fields: [id, timestamps,
        exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
-  - ✅ TransactionEntity should `has_many exchanges` and
-       Exchange should `has_many :money_transactions`.
-  - ⌛ New transaction_entities with is_payer = true should create exchanges.
+  - ✅ CardTransaction should `has_many :exchanges`, Exchange should `belongs_to :money_transaction`.
   - ⌛ One exchange should be created for every paying transaction_entity.
-  - ⌛ One money_transaction should be created for every monetary exchange.
-  - ⌛ Removing or updating a transaction_entity or exchange
-       should also make the necessary changes to the whole process.
-  - Extra:
-    - ⌛ Fix Installments:
-      - 1 ⌛ CardTransaction that has installments should have some flag.
-      - 2 ⌛ Installments created should then create card_transactions.
-    - ⌛ Make an Installable Concern to be used by both Transactions and Exchange.
 
 ## GAARA-07/be-06: Refine TransactionEntity and Exchange Models
 
+- Issues:
+  - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
+
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ When a transaction_entity is a payer:
-    - 1 ⌛ Its price should be filled in.
-    - 3 ⌛ An Exchange should be created for this transaction_entity.
-    - 4 ⌛ The exchange amount_to_be_returned should be same as its price.
-    - 5 ⌛ The exchange amount_returned default value should be 0.
-    - 6 ⌛ This new transaction should have a builtin `category = 'Exchange Return'`,
-          and no transaction_entity.
+  - ⌛ One money_transaction should be created for every monetary exchange,
+       with a builtin `category = 'Exchange Return'` and no transaction_entity.
+  - ⌛ Removing or updating one of the models that belong to the exchange flow
+       [card_transaction -> transaction_entity / exchange -> money_transaction]
+       should also reflect on the corresponding money_transaction.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 
@@ -143,6 +142,9 @@ sprint. The reasons are:
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 
+- Issues:
+  - [#10](https://github.com/RickHPotter/finance.rb/issues/10)
+
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ When typing, the first option should be rendered in the input, but with font-light.
@@ -151,11 +153,17 @@ sprint. The reasons are:
 
 ## GAARA-10/fe-02: Create MultiCheckBoxComponent
 
+- Issues:
+  - [#11](https://github.com/RickHPotter/finance.rb/issues/11)
+
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ Grant many options and add turbo-frame to it as these options are relevant.
 
 ## GAARA-11/fe-03: Refine TabComponent
+
+- Issues:
+  - [#12](https://github.com/RickHPotter/finance.rb/issues/12)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
@@ -163,7 +171,10 @@ sprint. The reasons are:
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
-## GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs
+## GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs
+
+- Issues:
+  - [#13](https://github.com/RickHPotter/finance.rb/issues/13)
 
 - Subtasks:
   - ⌛ Use TDD approach (better late than never).
