@@ -28,8 +28,9 @@ class EntityTransaction < ApplicationRecord
   belongs_to :transactable, polymorphic: true
 
   # @validations ..............................................................
-  validates :status, :price, :transactable_type, :transactable_id, :entity_id, presence: true
+  validates :status, :price, presence: true
   validates :is_payer, inclusion: { in: [true, false] }
+  validates :entity, uniqueness: { scope: :transactable }
 
   # @callbacks ................................................................
   before_validation :set_status

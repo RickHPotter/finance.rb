@@ -37,7 +37,7 @@ class CardTransaction < ApplicationRecord
   has_many :installments, as: :installable
 
   # @validations ..............................................................
-  validates :date, :user_card_id, :ct_description, :starting_price, :price,
+  validates :date, :ct_description, :starting_price, :price,
             :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
@@ -48,7 +48,7 @@ class CardTransaction < ApplicationRecord
   scope :by_user, ->(user_id) { where(user_id:) }
   scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
-  scope :by_installments, ->(user_id) { where('installments_count > 1').by_user(user_id:) }
+  scope :by_installments, ->(user_id) { where(installments_count: 1..).by_user(user_id:) }
 
   # @public_instance_methods ..................................................
   def to_s

@@ -20,7 +20,7 @@ RSpec.describe Exchange, type: :model do
   let!(:exchange) { FactoryBot.create(:exchange, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(exchange).to be_valid
       end

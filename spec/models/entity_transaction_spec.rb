@@ -24,7 +24,7 @@ RSpec.describe EntityTransaction, type: :model do
   let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: false) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(entity_transaction).to be_valid
       end
@@ -33,6 +33,8 @@ RSpec.describe EntityTransaction, type: :model do
         it_behaves_like 'validate_nil', :entity_transaction, attribute
         it_behaves_like 'validate_blank', :entity_transaction, attribute
       end
+
+      it_behaves_like 'validate_uniqueness_combination', :entity_transaction, :entity, :transactable
     end
 
     context '( associations )' do

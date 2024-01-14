@@ -20,15 +20,17 @@ RSpec.describe UserBankAccount, type: :model do
   let!(:user_bank_account) { FactoryBot.create(:user_bank_account, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(user_bank_account).to be_valid
       end
 
-      %i[balance user_id bank_id].each do |attribute|
+      %i[balance].each do |attribute|
         it_behaves_like 'validate_nil', :user_bank_account, attribute
         it_behaves_like 'validate_blank', :user_bank_account, attribute
       end
+
+      it_behaves_like 'validate_uniqueness_combination', :user_bank_account, :bank, :agency_number, :account_number
 
       context '( associations )' do
         %i[user bank].each do |model|

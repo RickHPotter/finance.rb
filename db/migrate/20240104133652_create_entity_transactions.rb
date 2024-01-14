@@ -14,5 +14,10 @@ class CreateEntityTransactions < ActiveRecord::Migration[7.1]
 
       t.timestamps
     end
+
+    add_index :entity_transactions,
+              %i[entity_id transactable_type transactable_id],
+              unique: true,
+              name: 'index_entity_transactions_on_composite_key'
   end
 end

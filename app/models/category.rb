@@ -23,8 +23,7 @@ class Category < ApplicationRecord
   has_many :investments, through: :category_transactions, source: :transactable, source_type: 'Investment'
 
   # @validations ..............................................................
-  validates :category_name, presence: true
-  validates :category_name, uniqueness: true
+  validates :category_name, presence: true, uniqueness: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

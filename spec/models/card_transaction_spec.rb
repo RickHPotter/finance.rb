@@ -43,7 +43,7 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(card_transaction).to be_valid
       end

@@ -25,7 +25,7 @@ RSpec.describe MoneyTransaction, type: :model do
   let(:money_transaction) { FactoryBot.create(:money_transaction, :random, date: Date.new(2023, 12, 16)) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(money_transaction).to be_valid
       end

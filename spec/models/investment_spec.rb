@@ -45,7 +45,7 @@ RSpec.describe Investment, type: :model do
   end
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(investment).to be_valid
       end

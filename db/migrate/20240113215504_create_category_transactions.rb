@@ -9,5 +9,10 @@ class CreateCategoryTransactions < ActiveRecord::Migration[7.1]
 
       t.timestamps
     end
+
+    add_index :category_transactions,
+              %i[category_id transactable_type transactable_id],
+              unique: true,
+              name: 'index_category_transactions_on_composite_key'
   end
 end

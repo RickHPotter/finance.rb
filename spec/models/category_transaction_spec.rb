@@ -19,10 +19,12 @@ RSpec.describe CategoryTransaction, type: :model do
   let!(:category_transaction) { FactoryBot.create(:category_transaction, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(category_transaction).to be_valid
       end
+
+      it_behaves_like 'validate_uniqueness_combination', :category_transaction, :category, :transactable
     end
 
     context '( associations )' do

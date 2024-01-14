@@ -22,8 +22,7 @@ class Entity < ApplicationRecord
   has_many :money_transactions, through: :entity_transactions, source: :transactable, source_type: 'MoneyTransaction'
 
   # @validations ..............................................................
-  validates :entity_name, presence: true
-  validates :entity_name, uniqueness: true
+  validates :entity_name, presence: true, uniqueness: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

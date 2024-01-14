@@ -62,6 +62,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.bigint "transactable_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["category_id", "transactable_type", "transactable_id"], name: "index_category_transactions_on_composite_key", unique: true
     t.index ["category_id"], name: "index_category_transactions_on_category_id"
     t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
   end
@@ -84,6 +85,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.bigint "transactable_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["entity_id", "transactable_type", "transactable_id"], name: "index_entity_transactions_on_composite_key", unique: true
     t.index ["entity_id"], name: "index_entity_transactions_on_entity_id"
     t.index ["transactable_type", "transactable_id"], name: "index_entity_transactions_on_transactable"
   end

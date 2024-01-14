@@ -37,8 +37,7 @@ class MoneyTransaction < ApplicationRecord
   has_many :investments
 
   # @validations ..............................................................
-  validates :mt_description, :date, :user_id, :starting_price,
-            :price, :month, :year, presence: true
+  validates :mt_description, :date, :starting_price, :price, :month, :year, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

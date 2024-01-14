@@ -25,8 +25,7 @@ class Exchange < ApplicationRecord
   belongs_to :money_transaction, optional: true
 
   # @validations ..............................................................
-  validates :exchange_type, :amount_to_be_returned, :amount_returned,
-            :entity_transaction, presence: true
+  validates :exchange_type, :number, :amount_to_be_returned, :amount_returned, presence: true
 
   # @callbacks ................................................................
   # after_commit :handle_money_transaction

@@ -16,7 +16,7 @@ module StartingPriceCallback
 
   # Fixes price with scale 2
   #
-  # @note This is a callback that is called before_create.
+  # @note This is a callback that is called before_validation.
   #
   # @return [void]
   #
@@ -26,7 +26,7 @@ module StartingPriceCallback
 
   # Sets starting_price based on the price on create.
   #
-  # @note This is a callback that is called before_create.
+  # @note This is a callback that is called before_validation.
   #
   # @return [void]
   #

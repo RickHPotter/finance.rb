@@ -12,7 +12,7 @@ module Exchangable
     has_many :exchanges
 
     # @callbacks ..............................................................
-    before_save :create_exchanges
+    before_create :create_exchanges
   end
 
   # @protected_instance_methods ...............................................
@@ -20,7 +20,7 @@ module Exchangable
   protected
 
   def create_exchanges
-    return if exchange_attributes.blank? || persisted?
+    return if exchange_attributes.blank?
 
     exchange_attributes.each_with_index do |attributes, index|
       exchanges << Exchange.create(attributes.merge(number: index + 1))
