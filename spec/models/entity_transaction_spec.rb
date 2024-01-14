@@ -51,4 +51,22 @@ RSpec.describe EntityTransaction, type: :model do
       end
     end
   end
+
+  describe '[ business logic ]' do
+    context '( card_transaction creation with entity_transaction_attributes )' do
+      # TODO: move this to card_transaction factory like exchange was moved to entity_transaction factory
+      # TODO: do the same for category_transaction
+      it 'creates the corresponding entity_transaction' do
+        entity_transaction_attributes = [{
+          entity_id: User.first.entities.ids.sample, is_payer: true, price: 4.00,
+          exchange_attributes: [
+            { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 },
+            { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 }
+          ]
+        }]
+        card_transaction = FactoryBot.create(:card_transaction, entity_transaction_attributes:)
+        expect(card_transaction.entity_transactions.count).to eq(1)
+      end
+    end
+  end
 end

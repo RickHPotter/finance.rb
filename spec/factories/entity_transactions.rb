@@ -22,6 +22,22 @@ FactoryBot.define do
     transactable { custom_create_polymorphic(%i[card_transaction money_transaction]) }
     entity { custom_create(:entity, reference: { user: transactable.user }) }
     price { transactable.price }
+    exchanges_count { 1 }
+
+    after(:build) do |entity_transaction, _evaluator|
+      next unless entity_transaction.is_payer
+
+      price = entity_transaction.price
+
+      entity_transaction.exchange_attributes ||= []
+      entity_transaction.exchanges_count.times do
+        entity_transaction.exchange_attributes << {
+          exchange_type: %i[monetary non_monetary].sample,
+          amount_to_be_returned: [price, price / 2, price / 3].sample.round(2),
+          amount_returned: 0.00
+        }
+      end
+    end
 
     trait :different do
       is_payer { true }
@@ -29,6 +45,7 @@ FactoryBot.define do
       price { 0.01 }
       transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { different_custom_create(:entity, reference: { user: transactable.user }) }
+      exchanges_count { 2 }
     end
 
     trait :random do
@@ -37,6 +54,7 @@ FactoryBot.define do
       price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
       transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { random_custom_create(:entity, reference: { user: transactable.user }) }
+      exchanges_count { [*0..3].sample }
     end
   end
 end

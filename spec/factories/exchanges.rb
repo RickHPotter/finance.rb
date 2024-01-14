@@ -31,7 +31,7 @@ FactoryBot.define do
     trait :random do
       exchange_type { [0, 1].sample }
       amount_to_be_returned { Faker::Number.decimal(l_digits: 2, r_digits: 2) }
-      amount_returned { [0, amount_to_be_returned].sample }
+      amount_returned { exchange_type == 0 ? 0 : [0, amount_to_be_returned].sample }
       entity_transaction { random_custom_create(:entity_transaction, options: { is_payer: true }) }
     end
   end

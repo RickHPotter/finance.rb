@@ -17,8 +17,8 @@
 require 'rails_helper'
 
 RSpec.describe Exchange, type: :model do
-  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: true) }
-  let!(:exchange) { entity_transaction.exchange }
+  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: true, exchanges_count: 1) }
+  let!(:exchange) { entity_transaction.exchanges.first }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniqueness, etc )' do
@@ -42,10 +42,26 @@ RSpec.describe Exchange, type: :model do
   end
 
   describe '[ business logic ]' do
+    context '( card_transaction creation with entity_transaction_attributes )' do
+      it 'creates the corresponding exchange' do
+        expect(entity_transaction.exchanges.count).to eq(1)
+      end
+    end
+
+    # FIXME: create method for this
+    context '( card_transaction update with entity_transaction_attributes )' do
+      before do
+        # entity_transaction.update(exchanges_count: 2)
+      end
+      it 'creates the corresponding exchange' do
+        # expect(entity_transaction.exchanges.count).to eq(2)
+      end
+    end
+
+    # FIXME: create method for this
     context '( when new exchanges are created )' do
       before do
-        exchange.update(exchange_type: 1)
-        # exchange.reload
+        # exchange.update(exchange_type: 1)
       end
 
       it 'creates a single money_transaction' do
