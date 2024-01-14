@@ -45,12 +45,12 @@ class EntityTransaction < ApplicationRecord
 
   # Sets amounts and status based on :is_payer in case it was not previously set.
   #
-  # @note This is a callback that is called before_validation.
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #
   def set_status
-    self.status = is_payer ? :finished : :pending
+    self.status = is_payer ? :pending : :finished
   end
 
   # @private_instance_methods .................................................

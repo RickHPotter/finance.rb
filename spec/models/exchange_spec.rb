@@ -17,7 +17,8 @@
 require 'rails_helper'
 
 RSpec.describe Exchange, type: :model do
-  let!(:exchange) { FactoryBot.create(:exchange, :random) }
+  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: true) }
+  let!(:exchange) { entity_transaction.exchange }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniqueness, etc )' do

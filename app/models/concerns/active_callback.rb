@@ -15,7 +15,7 @@ module ActiveCallback
 
   # Sets active state in case it was not previously set.
   #
-  # @note This is a callback that is called before_validation.
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #

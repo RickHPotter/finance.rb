@@ -13,6 +13,7 @@
 #  starting_price         :decimal(, )      not null
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
+#  installments_count     :integer          default(1), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint

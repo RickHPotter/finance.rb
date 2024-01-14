@@ -106,6 +106,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
   create_table "installments", force: :cascade do |t|
     t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
     t.integer "number", default: 1, null: false
+    t.boolean "paid", default: false, null: false
     t.string "installable_type", null: false
     t.bigint "installable_id", null: false
     t.datetime "created_at", null: false
@@ -137,6 +138,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
     t.string "money_transaction_type"
+    t.integer "installments_count", default: 1, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id"
     t.bigint "user_bank_account_id"

@@ -34,10 +34,9 @@ FactoryBot.define do
     trait :random do
       is_payer { Faker::Boolean.boolean }
       status { %w[pending finished].sample }
+      price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
       transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { random_custom_create(:entity, reference: { user: transactable.user }) }
-
-      price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
     end
   end
 end

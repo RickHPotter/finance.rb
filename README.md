@@ -124,10 +124,11 @@ sprint. The reasons are:
   - ✅ One exchange should be created for every paying entity_transaction.
 - Extra:
   - ✅ Made a join table for Transaction and Category (like EntityTransaction).
-  - ⌛ Made an Installable Concern to be used by both Transactions and Exchange.
-  - ⌛ Fixed Installments:
-    - 1 ⌛ CardTransaction that has installments should have some flag.
-    - 2 ⌛ Installments created should then create card_transactions.
+  - ✅ Made a Concern for CategoryTransaction (like EntityTransactable).
+  - ✅ Made an Installable Concern to be used by both Transactions.
+  - ✅ Made possible to change the amount of installments in a Transactable.
+  - ⌛ Added EntityTransaction specs for is_payer = true and status = :pending.
+  - ⌛ Added CategoryTransaction specs for callbacks.
 
 ## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
 
@@ -141,6 +142,9 @@ sprint. The reasons are:
   - ⌛ Removing or updating one of the models that belong to the exchange flow
        [card_transaction -> entity_transaction / exchange -> money_transaction]
        should also reflect on the corresponding money_transaction.
+- Extra:
+  - ⌛ Added factory and model-based specs for Installment.
+  - ⌛ Added Exchange specs for both exchange_types.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 
@@ -148,6 +152,9 @@ sprint. The reasons are:
   - ⌛ Refine seeds to include all models.
   - ⌛ Fix possible bugs found at this stage.
   - ⌛ Review current specs and refactor if possible.
+- Extra:
+  - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
+  - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

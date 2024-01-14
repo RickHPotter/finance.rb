@@ -5,10 +5,11 @@
 # Table name: installments
 #
 #  id               :bigint           not null, primary key
-#  installable_type :string           not null
-#  installable_id   :bigint           not null
 #  price            :decimal(10, 2)   default(0.0), not null
 #  number           :integer          default(1), not null
+#  paid             :boolean          default(FALSE), not null
+#  installable_type :string           not null
+#  installable_id   :bigint           not null
 #  created_at       :datetime         not null
 #  updated_at       :datetime         not null
 #
@@ -20,6 +21,9 @@ class Installment < ApplicationRecord
   belongs_to :installable, polymorphic: true
 
   # @validations ..............................................................
+  validates :price, :number, presence: true
+  validates :paid, inclusion: { in: [true, false] }
+
   # @callbacks ................................................................
   # @scopes ...................................................................
   # @additional_config ........................................................

@@ -13,6 +13,7 @@
 #  starting_price         :decimal(, )      not null
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
+#  installments_count     :integer          default(1), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
@@ -26,6 +27,7 @@ class MoneyTransaction < ApplicationRecord
   include StartingPriceCallback
   include CategoryTransactable
   include EntityTransactable
+  include Installable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -42,6 +44,10 @@ class MoneyTransaction < ApplicationRecord
   # @callbacks ................................................................
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
+  # Defaults description column to a single {#to_s} call.
+  #
+  # @return [String] The description for an associated transactable.
+  #
   def to_s
     mt_description
   end

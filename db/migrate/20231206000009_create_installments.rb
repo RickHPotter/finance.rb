@@ -6,6 +6,7 @@ class CreateInstallments < ActiveRecord::Migration[7.0]
     create_table :installments do |t|
       t.decimal :price, default: 0.00, precision: 10, scale: 2, null: false
       t.integer :number, default: 1, null: false
+      t.boolean :paid, default: false, null: false
 
       t.references :installable, polymorphic: true, null: false
 

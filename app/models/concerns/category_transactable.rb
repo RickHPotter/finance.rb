@@ -20,6 +20,29 @@ module CategoryTransactable
 
   protected
 
+  # Create category transactions based on the provided `category_transaction_attributes` array of hashes.
+  #
+  # @example Create category transactions for a CardTransaction
+  #   card_transaction = CardTransaction.create(
+  #     date: Date.current, user_id: User.first.id,
+  #     user_card_id: User.first.user_cards.ids.sample,
+  #     ct_description: 'testing', price: 4.00,
+  #     month: Date.current.month, year: Date.current.year,
+  #     category_transaction_attributes: [
+  #       { category_id: User.first.categories.first.id },
+  #       { category_id: User.first.categories.second.id }
+  #     ]
+  #   )
+  #   => create_category_transactions is run before_commit
+  #   => two new category transactions are created
+  #
+  # @note The method uses the  provided `category_transaction_attributes` to create category transactions
+  #   for the transactable.
+  #
+  # @return [void]
+  #
+  # @see CategoryTransaction
+  #
   def create_category_transactions
     return if category_transaction_attributes.blank?
 

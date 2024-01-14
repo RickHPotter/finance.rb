@@ -18,9 +18,11 @@ module MoneyTransactable
 
   # Attachs a MoneyTransaction to the self model (by finding one or creating it).
   #
-  # This method is a `before_save` callback that associates a MoneyTransaction with the self model.
+  # This method associates a MoneyTransaction with the self model.
   # It creates or finds a MoneyTransaction based on certain attributes and sets it to the
   # `money_transaction` relation of the self model.
+  #
+  # @note This is a method that is called before_save.
   #
   # @return [void]
   #
@@ -32,7 +34,7 @@ module MoneyTransactable
 
   # Generates the params for the associated MoneyTransaction.
   #
-  # @return [Hash]
+  # @return [Hash] The params for the associated MoneyTransaction.
   #
   # @see MoneyTransaction
   #
@@ -49,9 +51,10 @@ module MoneyTransactable
 
   # Updates the associated MoneyTransaction with self model details.
   #
-  # This method is an `after_commit` callback triggered on `create` and `update` actions.
-  # It updates the associated MoneyTransaction with the sum of self instances prices and
-  # a comment describing the days of associated self instances.
+  # This method updates the associated MoneyTransaction with the sum of self instances prices
+  # and a comment describing the days of associated self instances.
+  #
+  # @note This is a method that is called after_commit.
   #
   # @return [void]
   #
@@ -66,9 +69,11 @@ module MoneyTransactable
 
   # Updates or destroys the associated MoneyTransaction based on self instances count.
   #
-  # This method is an `after_commit` callback triggered on `destroy` actions.
-  # It checks the count of associated self instances, and if zero, destroys the associated MoneyTransaction.
-  # Otherwise, it updates the MoneyTransaction using {#update_money_transaction}.
+  # This method checks the count of associated self instances, and if zero, destroys the
+  # associated MoneyTransaction. Otherwise, it updates the MoneyTransaction using
+  # {#update_money_transaction}.
+  #
+  # @note This is a method that is called after_commit.
   #
   # @return [void]
   #
