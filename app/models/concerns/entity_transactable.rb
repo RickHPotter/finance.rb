@@ -9,11 +9,12 @@ module EntityTransactable
     attr_accessor :entity_transaction_attributes
 
     # @relationships ...........................................................
-    has_many :entity_transactions, as: :transactable
+    has_many :entity_transactions, as: :transactable, dependent: :destroy
     has_many :entities, through: :entity_transactions
 
     # @callbacks ...............................................................
-    before_commit :create_entity_transactions
+    before_commit :create_entity_transactions, on: :create
+    before_update :update_entity_transactions
   end
 
   # @protected_instance_methods ...............................................
@@ -44,6 +45,7 @@ module EntityTransactable
   #
   # @note The method uses the  provided `entity_transaction_attributes` to create entity transactions
   #   for the transactable.
+  # @note This is a method that is called before_commit.
   #
   # @return [void]
   #
@@ -55,5 +57,27 @@ module EntityTransactable
     entity_transaction_attributes.each do |attributes|
       entity_transactions << EntityTransaction.create(attributes.merge(transactable: self))
     end
+  end
+
+  # Update entity transactions based on the provided `entity_transaction_attributes` array of hashes.
+  #
+  # In case there were entity transactions, these get destroyed, and then created again.
+  # Otherwise, then nothing happens unless `entity_transaction_attributes` is present.
+  #
+  # @note This is a method that is called before_update.
+  #
+  # @return [void]
+  #
+  def update_entity_transactions
+    entity_transactions.destroy_all if entity_transactions.present?
+    create_entity_transactions if entity_transaction_attributes.present?
+  end
+
+  # Checks whether the model should have entity transactions.
+  #
+  # @return [Boolean] true if `entity_transaction_attributes` is present.
+  #
+  def should_have_entity_transactions?
+    entity_transaction_attributes.present?
   end
 end

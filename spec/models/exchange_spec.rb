@@ -64,6 +64,21 @@ RSpec.describe Exchange, type: :model do
       end
     end
 
+    context '( entity_transaction creation with exchanges under updates in exchange_attributes )' do
+      it 'destroys the existing exchanges when emptying exchange_attributes' do
+        entity_transaction.update(is_payer: false, exchange_attributes: [])
+        expect(entity_transaction.exchanges).to be_empty
+      end
+
+      it 'destroys the existing exchanges and then creates them again' do
+        exchange_attributes = entity_transaction.exchange_attributes
+
+        entity_transaction.update(is_payer: false, exchange_attributes: [])
+        entity_transaction.update(is_payer: true, exchange_attributes:)
+        expect(entity_transaction.exchanges).to_not be_empty
+      end
+    end
+
     context '( entity_transaction creation with exchanges under updates in is_payer )' do
       before do
         entity_transaction.update(is_payer: false)

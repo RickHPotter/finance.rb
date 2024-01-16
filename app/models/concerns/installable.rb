@@ -69,9 +69,9 @@ module Installable
 
   # Update installments based on the provided `installment_attributes` array of hashes.
   #
-  # In all cases, there were installments, so all is done is to destroy, and then
-  # create. But in case, the amount of installments was not changed in such
-  # update, then nothing gets done unless `installment_attributes` is not blank.
+  # In all cases, there were installments, so these get destroyed, and then created again.
+  # But if the amount of installments was not updated, then nothing happens unless
+  # `installment_attributes` is not blank.
   #
   # @note This is a method that is called before_update.
   #
@@ -86,7 +86,7 @@ module Installable
 
   # Create default installments for the CardTransaction when not previously created.
   #
-  # This method uses {#calculate_installments} to generate an array of prices evenly
+  # This method uses {Backend::MathsHelper#spread_installments_evenly} to generate an array of prices evenly
   # distributed among the installments that are then created.
   #
   # @example Create default installments for a CardTransaction

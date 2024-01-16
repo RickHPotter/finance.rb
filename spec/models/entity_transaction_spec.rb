@@ -20,8 +20,8 @@ require 'rails_helper'
 include FactoryHelper
 
 RSpec.describe EntityTransaction, type: :model do
-  # TODO: add tests for status = :pending after the implementation of Exchange
-  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random, is_payer: false) }
+  let!(:card_transaction) { FactoryBot.create(:card_transaction, :random, :with_entity_transactions) }
+  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random) }
 
   describe '[ activerecord validations ]' do
     context '( presence, uniqueness, etc )' do
@@ -54,18 +54,23 @@ RSpec.describe EntityTransaction, type: :model do
 
   describe '[ business logic ]' do
     context '( card_transaction creation with entity_transaction_attributes )' do
-      # TODO: move this to card_transaction factory like exchange was moved to entity_transaction factory
-      # TODO: do the same for category_transaction
       it 'creates the corresponding entity_transaction' do
-        entity_transaction_attributes = [{
-          entity_id: User.first.entities.ids.sample, is_payer: true, price: 4.00,
-          exchange_attributes: [
-            { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 },
-            { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 }
-          ]
-        }]
-        card_transaction = FactoryBot.create(:card_transaction, entity_transaction_attributes:)
         expect(card_transaction.entity_transactions.count).to eq(1)
+      end
+    end
+
+    context '( card_transaction creation with entity_transactions under updates in entity_transaction_attributes )' do
+      it 'destroys the existing entity_transactions when emptying entity_transaction_attributes' do
+        card_transaction.update(entity_transaction_attributes: [])
+        expect(card_transaction.entity_transactions).to be_empty
+      end
+
+      it 'destroys the existing entity_transactions and then creates them again' do
+        entity_transaction_attributes = card_transaction.entity_transaction_attributes
+
+        card_transaction.update(entity_transaction_attributes: [])
+        card_transaction.update(entity_transaction_attributes:)
+        expect(card_transaction.entity_transactions).to_not be_empty
       end
     end
   end

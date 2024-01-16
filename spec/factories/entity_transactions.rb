@@ -24,6 +24,7 @@ FactoryBot.define do
     price { transactable.price }
     exchanges_count { 1 }
 
+    # TODO: should this be a trait like in card_transaction factory
     after(:build) do |entity_transaction, _evaluator|
       next unless entity_transaction.is_payer
 

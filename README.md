@@ -127,7 +127,10 @@ sprint. The reasons are:
   - ✅ Made a Concern for CategoryTransaction (like EntityTransactable).
   - ✅ Made an Installable Concern to be used by both Transactions.
   - ✅ Made possible to change the amount of installments in a Transactable.
-  - ⌛ Added EntityTransaction specs for is_payer = true and status = :pending.
+  - ✅ Made possible to change the amount of entity_transactions in a Transactable.
+  - ✅ Made possible to change the amount of exchanges in a EntityTransaction.
+  - ✅ Added EntityTransaction specs for updates in entity_transaction_attributes.
+  - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
   - ⌛ Added CategoryTransaction specs for callbacks.
 
 ## GAARA-07/be-06: Refine EntityTransaction and Exchange Models

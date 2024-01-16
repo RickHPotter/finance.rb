@@ -76,10 +76,9 @@ module Exchangable
 
   # Update exchanges based on a set of conditions.
   #
-  # In case, there were no exchanges to begin with, they are created instead
-  # of updated. In case, there were exchanges, they are deleted and then updated.
-  # In case there were exchanges and the `is_payer` was set to false, then the
-  # creation of new exchanges is avoided.
+  # In case there were no exchanges to begin with, they are created instead of updated.
+  # In case there were exchanges, they are deleted and then updated.
+  # In case there were exchanges, `is_payer` == false, then the creation of exchanges is avoided.
   #
   # @note This is a method that is called before_update.
   #

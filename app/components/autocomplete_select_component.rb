@@ -12,12 +12,14 @@ class AutocompleteSelectComponent < ViewComponent::Base
   # Initialises a Component of Type Button
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
-  # @param link [String] The link possibly associated with the form (default is nil).
+  # @param object [Object] The object associated with the form (default is nil).
+  # @param field [Symbol] The field associated with the form (default is nil).
+  # @param items [Array] Array of Item Structs.
   # @param options [Hash] Additional options for customizing the autocomplete select.
   #
   # @option options [String] :id The HTML ID attribute for the autocomplete select (default is method input_id).
   # @option options [String] :label The label for the autocomplete select (default is i18n translation).
-  # @option options [String] :colour The colour of the button (default is 'select').
+  # @option options [String] :type The HTML type attribute for the autocomplete select (default is 'select').
   # @option options [Hash] :data Additional data attributes for the autocomplete select.
   #
   # @return [ButtonComponent] A new instance of ButtonComponent.
