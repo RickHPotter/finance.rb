@@ -36,8 +36,9 @@ module CategoryTransactable
   #   => create_category_transactions is run before_commit
   #   => two new category transactions are created
   #
-  # @note The method uses the  provided `category_transaction_attributes` to create category transactions
+  # @note The method uses the provided `category_transaction_attributes` to create category transactions
   #   for the transactable.
+  # @note This is a method that is called before_commit.
   #
   # @return [void]
   #

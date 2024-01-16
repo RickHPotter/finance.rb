@@ -2,6 +2,7 @@
 
 # Shared functionality for models that can produce Installments.
 module Installable
+  include Backend::MathsHelper
   extend ActiveSupport::Concern
 
   included do
@@ -13,14 +14,20 @@ module Installable
 
     # @callbacks ..............................................................
     before_validation :set_installments_count
-    after_save :create_installments
-    after_update :update_installments
+    before_create :create_installments
+    before_update :update_installments
   end
 
   # @protected_instance_methods ...............................................
 
   protected
 
+  # Set `installments_count` to 1 if `installment_attributes` is blank.
+  #
+  # @note This is a method that is called before_validation.
+  #
+  # @return [void]
+  #
   def set_installments_count
     self.installments_count ||= 1 if installment_attributes.blank?
   end
@@ -44,6 +51,7 @@ module Installable
   #
   # @note The method uses the `installable` attribute along with the provided
   #   `installment_attributes` to create installments for the transactable.
+  # @note This is a method that is called before_create.
   #
   # @return [void]
   #
@@ -59,13 +67,21 @@ module Installable
     self.installments_count = installment_attributes.count
   end
 
+  # Update installments based on the provided `installment_attributes` array of hashes.
+  #
+  # In all cases, there were installments, so all is done is to destroy, and then
+  # create. But in case, the amount of installments was not changed in such
+  # update, then nothing gets done unless `installment_attributes` is not blank.
+  #
+  # @note This is a method that is called before_update.
+  #
+  # @return [void]
+  #
   def update_installments
-    return if installments.count == installments_count
+    return if installments.count == installments_count && installment_attributes.blank?
 
     installments.destroy_all
-    return create_default_installments if installment_attributes.blank?
-
-    create_installments
+    create_default_installments
   end
 
   # Create default installments for the CardTransaction when not previously created.
@@ -86,23 +102,9 @@ module Installable
   def create_default_installments
     return if installments.present?
 
-    prices_arr = calculate_installments(price, installments_count)
+    prices_arr = spread_installments_evenly(price, installments_count)
     prices_arr.each_with_index do |price, number|
       installments << Installment.create(number: number + 1, price:, paid: false)
     end
-  end
-
-  # Calculate the prices for each installment.
-  #
-  # @param price [BigDecimal] The total price of the CardTransaction.
-  # @param count [Integer] The number of installments to create.
-  #
-  # @return [Array<BigDecimal>] An array containing the prices for each installment.
-  #
-  def calculate_installments(price, count)
-    base = (price / count.to_f).round(2)
-    remainder = (base + (price - (base * count))).round(2)
-
-    [base] * (count - 1) + [remainder]
   end
 end
