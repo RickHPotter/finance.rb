@@ -131,7 +131,7 @@ sprint. The reasons are:
   - ✅ Made possible to change the amount of exchanges in a EntityTransaction.
   - ✅ Added EntityTransaction specs for updates in entity_transaction_attributes.
   - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
-  - ⌛ Added CategoryTransaction specs for callbacks.
+  - ✅ Added CategoryTransaction specs for callbacks.
 
 ## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
 
@@ -190,7 +190,7 @@ sprint. The reasons are:
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
-## GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs
+## GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
 
 - Issues:
   - [#13](https://github.com/RickHPotter/finance.rb/issues/13)

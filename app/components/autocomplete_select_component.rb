@@ -56,6 +56,8 @@ class AutocompleteSelectComponent < ViewComponent::Base
     }
   end
 
+  # @return [String] The HTML ID attribute for the autocomplete select.
+  #
   def input_id
     "#{@object.model_name.singular}_#{@field}"
   end

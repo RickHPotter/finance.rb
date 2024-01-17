@@ -55,6 +55,14 @@ class ButtonComponent < ViewComponent::Base
     "#{form.object.model_name.singular}_submit_button"
   end
 
+  # Set the colour for the button based on the colour option.
+  #
+  # @param colour [Symbol] The colour of the button.
+  # @option colour [Symbol] :indigo
+  # @option colour [Symbol] :red
+  #
+  # @return [Hash] The colour of the button.
+  #
   def colours(colour)
     case colour
     when nil, :indigo

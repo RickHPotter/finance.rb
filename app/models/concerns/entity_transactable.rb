@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Shared functionality for models that can produce EntityTransactions.
+# Shared functionality for models that can have entities through EntityTransaction.
 module EntityTransactable
   extend ActiveSupport::Concern
 

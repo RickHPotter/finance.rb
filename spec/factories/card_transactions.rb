@@ -57,11 +57,20 @@ FactoryBot.define do
     trait :with_entity_transactions do
       entity_transaction_attributes do
         [{
-          entity_id: random_custom_create(:entity, reference: { user: }).id,
+          entity: random_custom_create(:entity, reference: { user: }),
           is_payer: true,
           status: 'pending',
           price: [price, price / 2, price / 3].sample.round(2),
           exchanges_count: 1,
+          transactable: self
+        }]
+      end
+    end
+
+    trait :with_category_transactions do
+      category_transaction_attributes do
+        [{
+          category: random_custom_create(:category, reference: { user: }),
           transactable: self
         }]
       end

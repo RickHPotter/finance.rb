@@ -38,6 +38,7 @@ class Exchange < ApplicationRecord
 
   protected
 
+  # TODO: docs
   def handle_money_transaction
     return create_money_transaction if created?
 
@@ -62,7 +63,6 @@ class Exchange < ApplicationRecord
   #
   # @see MoneyTransaction
   #
-
   def money_transaction_params
     mt_description = "Exchange - #{entity_transaction.transactable}"
     mt_comment = ''
