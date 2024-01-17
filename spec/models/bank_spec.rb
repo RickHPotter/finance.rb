@@ -16,7 +16,7 @@ RSpec.describe Bank, type: :model do
   let!(:bank) { FactoryBot.create(:bank, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(bank).to be_valid
       end

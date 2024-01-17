@@ -26,7 +26,7 @@ RSpec.describe User, type: :model do
   let!(:with_different_password_confirmation) { FactoryBot.build(:user, :with_different_password_confirmation) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(john).to be_valid
       end
@@ -47,7 +47,7 @@ RSpec.describe User, type: :model do
     context '( custom validations )' do
       it 'requires a matching password confirmation' do
         expect(with_different_password_confirmation).to_not be_valid
-        expect(with_different_password_confirmation.errors[:password_confirmation]).to include('doesn\'t match Password')
+        expect(with_different_password_confirmation.errors[:password_confirmation]).to include("doesn't match Password")
       end
     end
 

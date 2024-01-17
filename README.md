@@ -8,14 +8,14 @@
   - [GAARA-02/be-02: Create models that revolve around MoneyTransaction](#gaara-02be-02-create-models-that-revolve-around-moneytransaction)
   - [GAARA-03/be-03: Implement 'buy now, pay later' system](#gaara-03be-03-implement-buy-now-pay-later-system)
   - [GAARA-04/app-01: Update stack and add Docker](#gaara-04app-01-update-stack-and-add-docker)
-  - [GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction](#gaara-05be-04-create-transactionentity-model-installments-in-moneytransaction)
+  - [GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction](#gaara-05be-04-create-entitytransaction-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
-  - [GAARA-07/be-06: Refine TransactionEntity and Exchange Models](#gaara-07be-06-refine-transactionentity-and-exchange-models)
-  - [GAARA-08/be-07: Calculate transactions based on Exchange](#gaara-08be-07-calculate-transactions-based-on-exchange)
+  - [GAARA-07/be-06: Refine EntityTransaction and Exchange Models](#gaara-07be-06-refine-entitytransaction-and-exchange-models)
+  - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
-  - [GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs](#gaara-12fe-04-finish-component-specs-for-the-remaining-and-some-form-todos)
+  - [GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
 <!--toc:end-->
 
 # INTRODUCTION
@@ -85,16 +85,19 @@ sprint. The reasons are:
   - ✅ Made it possible to run app in production mode in and outside of Docker.
   - ✅ Added and configured Bullet gem for development.
 
-## GAARA-05/be-04: Create TransactionEntity Model; Installments in MoneyTransaction
+## GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction
+
+- Issues:
+  - [#6](https://github.com/RickHPotter/finance.rb/issues/6)
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
   - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
-       amount_to_be_returned and amount_returned as decimal, status (pending, finished)].
+       price as decimal, status (pending, finished)].
   - ✅ Remove entity_id from (Card/Money)Transaction.
-  - ✅ When a transaction_entity is not a payer:
-    - 1 ✅ The transaction_entity should have `is_payer: false, status = 'finished'`,
+  - ✅ When a entity_transaction is not a payer:
+    - 1 ✅ The entity_transaction should have `is_payer: false, status = 'finished'`,
            amount_to_be_returned and amount_returned should be 0.00.
 - Extra:
   - ✅ APP: Enabled YJIT by with an initialiser.
@@ -104,36 +107,62 @@ sprint. The reasons are:
 
 ## GAARA-06/be-05: Create Exchange Model
 
-- Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Create Model that will reference a transaction_entity.
-  - ⌛ TransactionEntity should `has_many exchanges, optional: true`.
-  - ⌛ The table should include the fields: [id, timestamps,
-       reason ('currency' card <-> money, 'favour' non-monetary, 'time' same currency),
-       exchange_type (monetary, non-monetary), amount (default 0 - non-monetary)].
-  - ⌛ Implement in (Card/Money)Transaction the `has_many :exchanges, optional: true`.
-  - ⌛ Exchange Model should have a `belongs_to :exchangable, polymorphic: true`.
-
-## GAARA-07/be-06: Refine TransactionEntity and Exchange Models
+- Issues:
+  - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
+  - [#14](https://github.com/RickHPotter/finance.rb/issues/14)
+  - [#15](https://github.com/RickHPotter/finance.rb/issues/15)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ When a transaction_entity is a payer:
-    - 1 ⌛ It should generate `is_payer: true, status: 'pending'`.
-    - 2 ⌛ The amount_to_be_returned and amount_returned should be filled in.
-    - 3 ⌛ An Exchange should be created for this transaction_entity.
-    - 4 ⌛ The returning transaction should reference this exchange.
-    - 5 ⌛ This new transaction should have a builtin `category = 'Exchange Return'`,
-          and no transaction_entity.
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ Create Model that will reference a entity_transaction and generate a money_transaction.
+  - ✅ The table should include the fields: [id, timestamps,
+       exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
+  - ✅ CardTransaction should `has_many :entity_transactions`,
+       EntityTransaction should `has_many :exchanges`,
+       Exchange should `belongs_to :money_transaction, optional: true`.
+  - ✅ One entity_transaction should be created for every entity card_transaction.
+  - ✅ One exchange should be created for every paying entity_transaction.
+- Extra:
+  - ✅ Made a join table for Transaction and Category (like EntityTransaction).
+  - ✅ Made a Concern for CategoryTransaction (like EntityTransactable).
+  - ✅ Made an Installable Concern to be used by both Transactions.
+  - ✅ Made possible to change the amount of installments in a Transactable.
+  - ✅ Made possible to change the amount of entity_transactions in a Transactable.
+  - ✅ Made possible to change the amount of exchanges in a EntityTransaction.
+  - ✅ Added EntityTransaction specs for updates in entity_transaction_attributes.
+  - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
+  - ✅ Added CategoryTransaction specs for callbacks.
 
-## GAARA-08/be-07: Calculate transactions based on Exchange
+## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
+
+- Issues:
+  - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ New money_transactions should be created automatically based on Exchange.
-  - ⌛ Removing should also impact these money_transactions.
+  - ⌛ One money_transaction should be created for every monetary exchange,
+       with a builtin `category = 'Exchange Return'` and no entity_transaction.
+  - ⌛ Removing or updating one of the models that belong to the exchange flow
+       [card_transaction -> entity_transaction / exchange -> money_transaction]
+       should also reflect on the corresponding money_transaction.
+- Extra:
+  - ⌛ Added factory and model-based specs for Installment.
+  - ⌛ Added Exchange specs for both exchange_types.
+
+## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
+
+- Subtasks:
+  - ⌛ Refine seeds to include all models.
+  - ⌛ Fix possible bugs found at this stage.
+  - ⌛ Review current specs and refactor if possible.
+- Extra:
+  - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
+  - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
+
+- Issues:
+  - [#10](https://github.com/RickHPotter/finance.rb/issues/10)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
@@ -143,11 +172,17 @@ sprint. The reasons are:
 
 ## GAARA-10/fe-02: Create MultiCheckBoxComponent
 
+- Issues:
+  - [#11](https://github.com/RickHPotter/finance.rb/issues/11)
+
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ Grant many options and add turbo-frame to it as these options are relevant.
 
 ## GAARA-11/fe-03: Refine TabComponent
+
+- Issues:
+  - [#12](https://github.com/RickHPotter/finance.rb/issues/12)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
@@ -155,10 +190,13 @@ sprint. The reasons are:
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
-## GAARA-12/fe-04: Finish Component Specs for the remaining and some form TODOs
+## GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
+
+- Issues:
+  - [#13](https://github.com/RickHPotter/finance.rb/issues/13)
 
 - Subtasks:
   - ⌛ Use TDD approach (better late than never).
   - ⌛ Remove Entity from the form.
   - ⌛ Create a Component for the refMonthYear.
-  - ⌛ Start a draft on the TransactionEntity and Exchange references.
+  - ⌛ Start a draft on the EntityTransaction and Exchange references.

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# It will prepare the database for the environment
+#
 def prepare_database
   hash = {
     development: -> { `bin/rails db:drop db:create db:migrate db:seed` },

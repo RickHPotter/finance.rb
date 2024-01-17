@@ -5,6 +5,7 @@ module MonthYear
   extend ActiveSupport::Concern
 
   included do
+    # @callbacks ..............................................................
     before_validation :set_month_year, on: :create
   end
 
@@ -58,8 +59,8 @@ module MonthYear
     return unless respond_to?(:month)
 
     if instance_of?(CardTransaction)
-      self.month ||= current_due_date.month
-      self.year ||= current_due_date.year
+      self.month ||= user_card.current_due_date.month
+      self.year ||= user_card.current_due_date.year
     else
       self.month ||= date&.month
       self.year ||= date&.year

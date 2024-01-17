@@ -12,11 +12,9 @@
 #  year                 :integer          not null
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
-#  installments_count   :integer          default(0), not null
+#  installments_count   :integer          default(1), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
-#  category_id          :bigint           not null
-#  category2_id         :bigint
 #  money_transaction_id :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
@@ -31,8 +29,9 @@ RSpec.describe CardTransaction, type: :model do
   let!(:card_transactions) do
     FactoryBot.create_list(
       :card_transaction, 5, :random,
-      user: card_transaction.user, user_card: card_transaction.user_card,
-      category: card_transaction.category, date: card_transaction.date
+      user: card_transaction.user,
+      user_card: card_transaction.user_card,
+      date: card_transaction.date
     )
   end
   let!(:money_transaction) { card_transaction.money_transaction }
@@ -44,25 +43,25 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(card_transaction).to be_valid
       end
 
-      %i[date ct_description price installments_count].each do |attribute|
+      %i[date ct_description price].each do |attribute|
         it_behaves_like 'validate_nil', :card_transaction, attribute
         it_behaves_like 'validate_blank', :card_transaction, attribute
       end
     end
 
     context '( associations )' do
-      %i[user user_card category category2].each do |model|
+      %i[user user_card].each do |model|
         it "belongs_to #{model}" do
           expect(card_transaction).to respond_to model
         end
       end
 
-      %i[installments].each do |model|
+      %i[categories installments].each do |model|
         it "has_many #{model}" do
           expect(card_transaction).to respond_to model
         end

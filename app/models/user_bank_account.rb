@@ -27,7 +27,8 @@ class UserBankAccount < ApplicationRecord
   has_many :investments
 
   # @validations ..............................................................
-  validates :user_id, :bank_id, :active, :balance, presence: true
+  validates :active, :balance, presence: true
+  validates :bank, uniqueness: { scope: %i[agency_number account_number] }
 
   # @callbacks ................................................................
   # @scopes ...................................................................

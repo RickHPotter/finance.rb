@@ -31,8 +31,8 @@ class UserCard < ApplicationRecord
   has_many :card_transactions
 
   # @validations ..............................................................
-  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date,
-            :min_spend, :credit_limit, :active, :user_id, :card_id, presence: true
+  validates :user_card_name, :current_due_date, :current_closing_date,
+            :days_until_due_date, :min_spend, :credit_limit, :active, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
 
   # @callbacks ................................................................
@@ -51,7 +51,7 @@ class UserCard < ApplicationRecord
 
   # Sets user_card_name in case it was not previously set.
   #
-  # @note This is a callback that is called before_validation.
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #

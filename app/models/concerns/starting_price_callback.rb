@@ -5,6 +5,7 @@ module StartingPriceCallback
   extend ActiveSupport::Concern
 
   included do
+    # @callbacks ..............................................................
     before_validation :fix_price
     before_validation :set_starting_price, on: :create
   end
@@ -15,7 +16,7 @@ module StartingPriceCallback
 
   # Fixes price with scale 2
   #
-  # @note This is a callback that is called before_create.
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #
@@ -25,7 +26,7 @@ module StartingPriceCallback
 
   # Sets starting_price based on the price on create.
   #
-  # @note This is a callback that is called before_create.
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #

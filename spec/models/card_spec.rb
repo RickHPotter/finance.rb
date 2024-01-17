@@ -16,7 +16,7 @@ RSpec.describe Card, type: :model do
   let!(:card) { FactoryBot.create(:card, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(card).to be_valid
       end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
+ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -29,16 +29,12 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.integer "year", null: false
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
-    t.integer "installments_count", default: 0, null: false
+    t.integer "installments_count", default: 1, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
-    t.bigint "category_id", null: false
-    t.bigint "category2_id"
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category2_id"], name: "index_card_transactions_on_category2_id"
-    t.index ["category_id"], name: "index_card_transactions_on_category_id"
     t.index ["money_transaction_id"], name: "index_card_transactions_on_money_transaction_id"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
@@ -60,6 +56,17 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.index ["user_id"], name: "index_categories_on_user_id"
   end
 
+  create_table "category_transactions", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.string "transactable_type", null: false
+    t.bigint "transactable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id", "transactable_type", "transactable_id"], name: "index_category_transactions_on_composite_key", unique: true
+    t.index ["category_id"], name: "index_category_transactions_on_category_id"
+    t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
+  end
+
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.bigint "user_id", null: false
@@ -68,11 +75,40 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
 
+  create_table "entity_transactions", force: :cascade do |t|
+    t.boolean "is_payer", default: false, null: false
+    t.integer "status", default: 0, null: false
+    t.decimal "price", default: "0.0", null: false
+    t.integer "exchanges_count", default: 0, null: false
+    t.bigint "entity_id", null: false
+    t.string "transactable_type", null: false
+    t.bigint "transactable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["entity_id", "transactable_type", "transactable_id"], name: "index_entity_transactions_on_composite_key", unique: true
+    t.index ["entity_id"], name: "index_entity_transactions_on_entity_id"
+    t.index ["transactable_type", "transactable_id"], name: "index_entity_transactions_on_transactable"
+  end
+
+  create_table "exchanges", force: :cascade do |t|
+    t.integer "exchange_type", default: 0, null: false
+    t.integer "number", default: 1, null: false
+    t.decimal "amount_to_be_returned", null: false
+    t.decimal "amount_returned", null: false
+    t.bigint "entity_transaction_id", null: false
+    t.bigint "money_transaction_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
+    t.index ["money_transaction_id"], name: "index_exchanges_on_money_transaction_id"
+  end
+
   create_table "installments", force: :cascade do |t|
-    t.string "installable_type", null: false
-    t.bigint "installable_id", null: false
     t.decimal "price", precision: 10, scale: 2, default: "0.0", null: false
     t.integer "number", default: 1, null: false
+    t.boolean "paid", default: false, null: false
+    t.string "installable_type", null: false
+    t.bigint "installable_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["installable_type", "installable_id"], name: "index_installments_on_installable"
@@ -84,12 +120,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.integer "month", null: false
     t.integer "year", null: false
     t.bigint "user_id", null: false
-    t.bigint "category_id", null: false
     t.bigint "user_bank_account_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_investments_on_category_id"
     t.index ["money_transaction_id"], name: "index_investments_on_money_transaction_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
@@ -104,30 +138,15 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
     t.string "money_transaction_type"
+    t.integer "installments_count", default: 1, null: false
     t.bigint "user_id", null: false
-    t.bigint "category_id", null: false
     t.bigint "user_card_id"
     t.bigint "user_bank_account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_money_transactions_on_category_id"
     t.index ["user_bank_account_id"], name: "index_money_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_money_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_money_transactions_on_user_id"
-  end
-
-  create_table "transaction_entities", force: :cascade do |t|
-    t.boolean "is_payer", default: false, null: false
-    t.integer "status", default: 0, null: false
-    t.decimal "amount_to_be_returned", null: false
-    t.decimal "amount_returned", null: false
-    t.string "transactable_type", null: false
-    t.bigint "transactable_id", null: false
-    t.bigint "entity_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["entity_id"], name: "index_transaction_entities_on_entity_id"
-    t.index ["transactable_type", "transactable_id"], name: "index_transaction_entities_on_transactable"
   end
 
   create_table "user_bank_accounts", force: :cascade do |t|
@@ -178,23 +197,22 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_04_133652) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "card_transactions", "categories"
-  add_foreign_key "card_transactions", "categories", column: "category2_id"
   add_foreign_key "card_transactions", "money_transactions"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
   add_foreign_key "categories", "users"
+  add_foreign_key "category_transactions", "categories"
   add_foreign_key "entities", "users"
-  add_foreign_key "investments", "categories"
+  add_foreign_key "entity_transactions", "entities"
+  add_foreign_key "exchanges", "entity_transactions"
+  add_foreign_key "exchanges", "money_transactions"
   add_foreign_key "investments", "money_transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
-  add_foreign_key "money_transactions", "categories"
   add_foreign_key "money_transactions", "user_bank_accounts"
   add_foreign_key "money_transactions", "user_cards"
   add_foreign_key "money_transactions", "users"
-  add_foreign_key "transaction_entities", "entities"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"
 end

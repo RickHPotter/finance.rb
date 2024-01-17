@@ -6,7 +6,9 @@ class CardTransactionsController < ApplicationController
   before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    @card_transactions = CardTransaction.all.eager_load(:user_card, :category, :entity, :installments)
+    @card_transactions = CardTransaction.all.eager_load(
+      :user_card, :installments, category_transactions: :category, entity_transactions: :entity
+    )
   end
 
   def show; end
@@ -79,8 +81,11 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      :date, :card_id, :ct_description, :ct_comment, :category_id, :category2_id, :entity_id,
-      :price, :month, :year, :installments, :installments_count
+      :date, :user_card_id, :ct_description, :ct_comment, :price, :month, :year, :installments_count,
+      entity_transaction_attributes: [
+        :is_payer, :price,
+        { exchange_attributes: %i[exchange_type amount_to_be_returned amount_returned] }
+      ]
     )
   end
 end

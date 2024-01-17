@@ -26,16 +26,16 @@ FactoryBot.define do
     credit_limit { 2000.00 }
     active { true }
 
-    association :user
-    association :card
+    user { custom_create(:user) }
+    card { custom_create(:card) }
 
     trait :different do
       user_card_name { 'MyCard' }
       days_until_due_date { 9 }
       current_due_date { Date.today - 20 }
 
-      association :user, :different
-      association :card, :different
+      user { different_custom_create(:user) }
+      card { different_custom_create(:card) }
     end
 
     trait :random do
@@ -46,8 +46,8 @@ FactoryBot.define do
       credit_limit { Faker::Number.decimal(l_digits: rand(3..4)).ceil + 200.00 }
       active { true }
 
-      association :user, :random
-      association :card, :random
+      user { random_custom_create(:user) }
+      card { random_custom_create(:card) }
     end
   end
 end

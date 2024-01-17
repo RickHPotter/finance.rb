@@ -10,7 +10,6 @@
 #  month                :integer          not null
 #  year                 :integer          not null
 #  user_id              :bigint           not null
-#  category_id          :bigint           not null
 #  user_bank_account_id :bigint           not null
 #  money_transaction_id :bigint
 #  created_at           :datetime         not null
@@ -21,15 +20,15 @@ class Investment < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include MoneyTransactable
+  include CategoryTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  belongs_to :category
   belongs_to :user_bank_account
 
   # @validations ..............................................................
-  validates :price, :date, :user_id, :category_id, :user_bank_account_id, presence: true
+  validates :price, :date, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

@@ -10,7 +10,6 @@
 #  month                :integer          not null
 #  year                 :integer          not null
 #  user_id              :bigint           not null
-#  category_id          :bigint           not null
 #  user_bank_account_id :bigint           not null
 #  money_transaction_id :bigint
 #  created_at           :datetime         not null
@@ -28,8 +27,9 @@ RSpec.describe Investment, type: :model do
   let!(:investments) do
     FactoryBot.create_list(
       :investment, 3, :random,
-      user: investment.user, user_bank_account: investment.user_bank_account,
-      category: investment.category, date: investment.date
+      user: investment.user,
+      user_bank_account: investment.user_bank_account,
+      date: investment.date
     ) { |inv, i| inv.update(date: investment.date + i + 1) }
   end
   let!(:money_transaction) { investment.money_transaction }
@@ -45,7 +45,7 @@ RSpec.describe Investment, type: :model do
   end
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(investment).to be_valid
       end
@@ -57,8 +57,14 @@ RSpec.describe Investment, type: :model do
     end
 
     context '( associations )' do
-      %i[user user_bank_account category money_transaction].each do |model|
+      %i[user user_bank_account money_transaction].each do |model|
         it "belongs_to #{model}" do
+          expect(investment).to respond_to model
+        end
+      end
+
+      %i[categories].each do |model|
+        it "has_many #{model}" do
           expect(investment).to respond_to model
         end
       end

@@ -13,8 +13,8 @@
 #  starting_price         :decimal(, )      not null
 #  price                  :decimal(, )      not null
 #  money_transaction_type :string
+#  installments_count     :integer          default(1), not null
 #  user_id                :bigint           not null
-#  category_id            :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
 #  created_at             :datetime         not null
@@ -23,10 +23,10 @@
 require 'rails_helper'
 
 RSpec.describe MoneyTransaction, type: :model do
-  let(:money_transaction) { FactoryBot.create(:money_transaction) }
+  let(:money_transaction) { FactoryBot.create(:money_transaction, :random, date: Date.new(2023, 12, 16)) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(money_transaction).to be_valid
       end
@@ -38,8 +38,14 @@ RSpec.describe MoneyTransaction, type: :model do
     end
 
     context '( associations )' do
-      %i[user user_bank_account category].each do |model|
+      %i[user user_bank_account].each do |model|
         it "belongs_to #{model}" do
+          expect(money_transaction).to respond_to model
+        end
+      end
+
+      %i[categories].each do |model|
+        it "has_many #{model}" do
           expect(money_transaction).to respond_to model
         end
       end

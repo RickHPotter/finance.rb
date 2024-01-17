@@ -17,13 +17,12 @@ class Entity < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
 
-  has_many :transaction_entities
-  has_many :card_transactions, through: :transaction_entities, source: :transactable, source_type: 'CardTransaction'
-  has_many :money_transactions, through: :transaction_entities, source: :transactable, source_type: 'MoneyTransaction'
+  has_many :entity_transactions
+  has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: 'CardTransaction'
+  has_many :money_transactions, through: :entity_transactions, source: :transactable, source_type: 'MoneyTransaction'
 
   # @validations ..............................................................
-  validates :entity_name, presence: true
-  validates :entity_name, uniqueness: true
+  validates :entity_name, presence: true, uniqueness: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................

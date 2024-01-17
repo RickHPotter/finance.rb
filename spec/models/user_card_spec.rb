@@ -20,15 +20,15 @@
 require 'rails_helper'
 
 RSpec.describe UserCard, type: :model do
-  let!(:user_card) { FactoryBot.create(:user_card) }
+  let!(:user_card) { FactoryBot.create(:user_card, :random) }
 
   describe '[ activerecord validations ]' do
-    context '( presence, uniquness, etc )' do
+    context '( presence, uniqueness, etc )' do
       it 'is valid with valid attributes' do
         expect(user_card).to be_valid
       end
 
-      %i[current_due_date days_until_due_date min_spend credit_limit user_id card_id].each do |attribute|
+      %i[current_due_date days_until_due_date min_spend credit_limit].each do |attribute|
         it_behaves_like 'validate_nil', :user_card, attribute
         it_behaves_like 'validate_blank', :user_card, attribute
       end

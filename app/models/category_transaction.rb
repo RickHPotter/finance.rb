@@ -2,28 +2,25 @@
 
 # == Schema Information
 #
-# Table name: categories
+# Table name: category_transactions
 #
-#  id            :bigint           not null, primary key
-#  category_name :string           not null
-#  user_id       :bigint           not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
+#  id                :bigint           not null, primary key
+#  category_id       :bigint           not null
+#  transactable_type :string           not null
+#  transactable_id   :bigint           not null
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
 #
-class Category < ApplicationRecord
+class CategoryTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :user
-
-  has_many :category_transactions
-  has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: 'CardTransaction'
-  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: 'MoneyTransaction'
-  has_many :investments, through: :category_transactions, source: :transactable, source_type: 'Investment'
+  belongs_to :category
+  belongs_to :transactable, polymorphic: true
 
   # @validations ..............................................................
-  validates :category_name, presence: true, uniqueness: true
+  validates :category, uniqueness: { scope: :transactable }
 
   # @callbacks ................................................................
   # @scopes ...................................................................
