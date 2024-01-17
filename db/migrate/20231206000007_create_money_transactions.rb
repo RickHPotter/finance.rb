@@ -11,6 +11,7 @@ class CreateMoneyTransactions < ActiveRecord::Migration[7.1]
       t.integer :year, null: false
       t.decimal :starting_price, null: false
       t.decimal :price, null: false
+      t.boolean :paid, default: false
       t.string :money_transaction_type, null: true
       t.integer :installments_count, default: 1, null: false
 

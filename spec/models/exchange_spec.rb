@@ -7,8 +7,8 @@
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
 #  number                :integer          default(1), not null
-#  amount_to_be_returned :decimal(, )      not null
-#  amount_returned       :decimal(, )      not null
+#  starting_price        :decimal(, )      not null
+#  price                 :decimal(, )      not null
 #  entity_transaction_id :bigint           not null
 #  money_transaction_id  :bigint
 #  created_at            :datetime         not null
@@ -27,7 +27,7 @@ RSpec.describe Exchange, type: :model do
         expect(exchange).to be_valid
       end
 
-      %i[exchange_type amount_to_be_returned amount_returned].each do |attribute|
+      %i[exchange_type price].each do |attribute|
         it_behaves_like 'validate_nil', :exchange, attribute
         it_behaves_like 'validate_blank', :exchange, attribute
       end

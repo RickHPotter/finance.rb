@@ -12,6 +12,7 @@
 #  year                   :integer          not null
 #  starting_price         :decimal(, )      not null
 #  price                  :decimal(, )      not null
+#  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
 #  installments_count     :integer          default(1), not null
 #  user_id                :bigint           not null
@@ -25,9 +26,9 @@ FactoryBot.define do
     mt_description { 'Meat' }
     mt_comment { 'Barbecue at Aunt\'s' }
     date { Date.new 2023, 12, 16 }
-    price { 29.72 }
     month { 12 }
     year { 2023 }
+    price { 29.72 }
 
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
@@ -35,18 +36,19 @@ FactoryBot.define do
     trait :different do
       mt_description { 'HotWheels' }
       mt_comment { 'Toy for brother-in-law' }
-      price { 6.50 }
+      date { Date.new 2024, 1, 16 }
       month { 1 }
       year { 2024 }
+      price { 6.50 }
 
       user { different_custom_create(:user) }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
     end
 
     trait :random do
-      date { Faker::Date.between(from: 3.months.ago, to: Date.today) }
       mt_description { Faker::Lorem.sentence }
       mt_comment { [Faker::Lorem.sentence, nil, nil, nil, nil].sample }
+      date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
 
       user { random_custom_create(:user) }

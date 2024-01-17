@@ -19,6 +19,8 @@ RSpec.describe Installment, type: :model do
   let(:card_transaction) { FactoryBot.create(:card_transaction, :random, installments_count: 1) }
   let(:money_transaction) { FactoryBot.create(:money_transaction, :random, installments_count: 1) }
 
+  # validate paid inclusion, etc
+
   shared_examples 'installments cop' do
     it 'creates the expected amount of installments' do
       expect(card_transaction.installments_count).to eq card_transaction.installments.count

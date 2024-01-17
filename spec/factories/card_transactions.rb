@@ -44,7 +44,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      date { Faker::Date.between(from: 3.months.ago, to: Date.today) }
+      date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
       ct_description { Faker::Lorem.sentence }
       ct_comment { [Faker::Lorem.sentence, nil, nil, nil, nil].sample }
       price { Faker::Number.decimal(l_digits: rand(1..3)) }

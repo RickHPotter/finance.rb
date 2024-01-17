@@ -34,8 +34,8 @@ module EntityTransactable
   #         entity_id: User.first.entities.ids.sample,
   #         is_payer: true, price: 4.00,
   #         exchange_attributes: [
-  #           { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 },
-  #           { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 }
+  #           { exchange_type: :monetary, price: 2.00 },
+  #           { exchange_type: :monetary, price: 2.00 }
   #         ]
   #       }
   #     ]

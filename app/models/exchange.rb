@@ -7,8 +7,8 @@
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
 #  number                :integer          default(1), not null
-#  amount_to_be_returned :decimal(, )      not null
-#  amount_returned       :decimal(, )      not null
+#  starting_price        :decimal(, )      not null
+#  price                 :decimal(, )      not null
 #  entity_transaction_id :bigint           not null
 #  money_transaction_id  :bigint
 #  created_at            :datetime         not null
@@ -19,13 +19,15 @@ class Exchange < ApplicationRecord
   enum exchange_type: { non_monetary: 0, monetary: 1 }
 
   # @includes .................................................................
+  include StartingPriceCallback
+  include MoneyTransactable
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :entity_transaction
-  belongs_to :money_transaction, optional: true
 
   # @validations ..............................................................
-  validates :exchange_type, :number, :amount_to_be_returned, :amount_returned, presence: true
+  validates :exchange_type, :number, :starting_price, :price, presence: true
 
   # @callbacks ................................................................
   # after_commit :handle_money_transaction
@@ -40,22 +42,24 @@ class Exchange < ApplicationRecord
 
   # TODO: docs
   def handle_money_transaction
-    return create_money_transaction if created?
-
-    if changes[:exchange_type].present?
-      create_money_transaction if monetary?
-      delete_money_transaction if non_monetary?
-    end
-
-    return unless changes.keys.intersect? %w[amount_to_be_returned amount_returned]
-
-    update_money_transaction
+    # return create_money_transaction if created?
+    #
+    # if changes[:exchange_type].present?
+    #   create_money_transaction if monetary?
+    #   delete_money_transaction if non_monetary?
+    # end
+    #
+    # return unless changes.keys.intersect? %w[amount_to_be_returned amount_returned]
+    #
+    # update_money_transaction
   end
 
   # TODO: docs
   def create_money_transaction
-    self.money_transaction = MoneyTransaction.create(money_transaction_params)
+    # self.money_transaction = MoneyTransaction.create(money_transaction_params)
   end
+
+  def mt_comment = ''
 
   # Generates the params for the associated MoneyTransaction.
   #
@@ -64,25 +68,17 @@ class Exchange < ApplicationRecord
   # @see MoneyTransaction
   #
   def money_transaction_params
-    mt_description = "Exchange - #{entity_transaction.transactable}"
-    mt_comment = ''
-    # month = entity_transaction.transactable.month
-    params = {
-      mt_description:, mt_comment:, month:, year:, user_id:,
-      date: transactable_date, money_transaction_type: model_name.name
+    transactable = entity_transaction.transactable
+
+    {
+      mt_description: "Exchange - #{entity_transaction.transactable} #{number}/#{entity_transaction.exchanges.count}",
+      date: transactable.date,
+      month: transactable.month,
+      year: transactable.year,
+      user_id: transactable.user_id,
+      money_transaction_type: model_name.name,
+      user_bank_account_id: transactable.user.user_bank_accounts.ids.sample
     }
-    params[:user_card_id] = user_card_id if respond_to? :user_card_id
-    params[:user_bank_account_id] = user_bank_account_id if respond_to? :user_bank_account_id
-
-    params
-  end
-
-  def delete_money_transaction
-    money_transaction.destroy
-  end
-
-  def update_money_transaction
-    money_transaction.update(price: amount_to_be_returned)
   end
 
   # @private_instance_methods .................................................

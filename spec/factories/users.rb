@@ -26,7 +26,7 @@ FactoryBot.define do
     email { 'john@example.com' }
     password { '123123' }
     password_confirmation { '123123' }
-    confirmed_at { Date.today }
+    confirmed_at { Date.current }
 
     trait :different do
       first_name { 'Jane' }

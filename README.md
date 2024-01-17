@@ -10,12 +10,12 @@
   - [GAARA-04/app-01: Update stack and add Docker](#gaara-04app-01-update-stack-and-add-docker)
   - [GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction](#gaara-05be-04-create-entitytransaction-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
-  - [GAARA-07/be-06: Refine EntityTransaction and Exchange Models](#gaara-07be-06-refine-entitytransaction-and-exchange-models)
+  - [GAARA-07/be-06: Refine Exchange Model](#gaara-07be-06-refine-exchange-model)
   - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
-  - [GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
+  - [GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
 <!--toc:end-->
 
 # INTRODUCTION
@@ -133,7 +133,7 @@ sprint. The reasons are:
   - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
   - ✅ Added CategoryTransaction specs for callbacks.
 
-## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
+## GAARA-07/be-06: Refine Exchange Model
 
 - Issues:
   - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
@@ -146,10 +146,16 @@ sprint. The reasons are:
        [card_transaction -> entity_transaction / exchange -> money_transaction]
        should also reflect on the corresponding money_transaction.
 - Extra:
+  - ✅ Removed amount_returned and amount_to_be_returned from Exchange Model.
+  - ✅ Added price and starting_price attributes to Exchange Model.
+  - ✅ Added paid boolean method to MoneyTransaction Model.
   - ⌛ Added factory and model-based specs for Installment.
   - ⌛ Added Exchange specs for both exchange_types.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
+
+- Issues:
+  - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
   - ⌛ Refine seeds to include all models.

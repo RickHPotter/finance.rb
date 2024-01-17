@@ -21,7 +21,7 @@ FactoryBot.define do
   factory :user_card do
     user_card_name { 'Azul' }
     days_until_due_date { 7 }
-    current_due_date { Date.today }
+    current_due_date { Date.current }
     min_spend { 100.00 }
     credit_limit { 2000.00 }
     active { true }
@@ -32,7 +32,7 @@ FactoryBot.define do
     trait :different do
       user_card_name { 'MyCard' }
       days_until_due_date { 9 }
-      current_due_date { Date.today - 20 }
+      current_due_date { Date.current - 20 }
 
       user { different_custom_create(:user) }
       card { different_custom_create(:card) }
