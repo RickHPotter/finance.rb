@@ -17,6 +17,10 @@ module CategoryTransactable
     before_update :update_category_transactions
   end
 
+  # @public_class_methods .....................................................
+  def custom_categories
+    categories.where.not(category_name: ['Exchange', 'Exchange Return'])
+  end
   # @protected_instance_methods ...............................................
 
   protected
@@ -46,7 +50,7 @@ module CategoryTransactable
   # @see CategoryTransaction
   #
   def create_category_transactions
-    return if category_transaction_attributes.blank?
+    return unless category_transaction_attributes&.present?
 
     category_transaction_attributes.each do |attributes|
       category_transactions << CategoryTransaction.create(attributes.merge(transactable: self))
@@ -63,6 +67,8 @@ module CategoryTransactable
   # @return [void]
   #
   def update_category_transactions
+    return unless category_transaction_attributes
+
     category_transactions.destroy_all if category_transactions.present?
     create_category_transactions if category_transaction_attributes.present?
   end

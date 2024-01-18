@@ -40,25 +40,6 @@ class Exchange < ApplicationRecord
 
   protected
 
-  # TODO: docs
-  def handle_money_transaction
-    # return create_money_transaction if created?
-    #
-    # if changes[:exchange_type].present?
-    #   create_money_transaction if monetary?
-    #   delete_money_transaction if non_monetary?
-    # end
-    #
-    # return unless changes.keys.intersect? %w[amount_to_be_returned amount_returned]
-    #
-    # update_money_transaction
-  end
-
-  # TODO: docs
-  def create_money_transaction
-    # self.money_transaction = MoneyTransaction.create(money_transaction_params)
-  end
-
   def mt_comment = ''
 
   # Generates the params for the associated MoneyTransaction.
@@ -69,15 +50,18 @@ class Exchange < ApplicationRecord
   #
   def money_transaction_params
     transactable = entity_transaction.transactable
+    category_id = transactable.user.categories.find_by(category_name: 'Exchange Return').id
 
     {
-      mt_description: "Exchange - #{entity_transaction.transactable} #{number}/#{entity_transaction.exchanges.count}",
+      mt_description: "Exchange - #{entity_transaction.transactable} #{number}/#{entity_transaction.exchanges_count}",
       date: transactable.date,
       month: transactable.month,
       year: transactable.year,
       user_id: transactable.user_id,
       money_transaction_type: model_name.name,
-      user_bank_account_id: transactable.user.user_bank_accounts.ids.sample
+      user_bank_account_id: transactable.user.user_bank_accounts.ids.sample,
+      category_transaction_attributes: [{ category_id: }],
+      entity_transaction_attributes: []
     }
   end
 

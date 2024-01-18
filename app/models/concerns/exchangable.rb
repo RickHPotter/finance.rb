@@ -13,7 +13,6 @@ module Exchangable
     has_many :exchanges, dependent: :destroy
 
     # @callbacks ..............................................................
-    before_validation :set_exchange_attributes
     before_create :create_exchanges
     before_update :update_exchanges
   end
@@ -21,16 +20,6 @@ module Exchangable
   # @protected_instance_methods ...............................................
 
   protected
-
-  # Set `exchange_attributes` to an empty array if `is_payer` is false.
-  #
-  # @note This is a method that is called before_validation.
-  #
-  # @return [void]
-  #
-  def set_exchange_attributes
-    self.exchange_attributes = [] if is_payer == false
-  end
 
   # Create exchanges based on the provided `exchange_attributes` array of hashes.
   #
@@ -63,15 +52,14 @@ module Exchangable
   # @see Exchange
   #
   def create_exchanges
-    return unless should_have_exchanges?
-
-    exchange_attributes ||= create_default_exchange_attributes
+    return unless exchange_attributes&.present?
 
     exchange_attributes.each_with_index do |attributes, index|
       exchanges << Exchange.create(attributes.merge(number: index + 1))
     end
 
-    self.exchanges_count = exchange_attributes.count
+    category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
+    transactable.update(category_transaction_attributes: [{ category_id: }])
   end
 
   # Update exchanges based on a set of conditions.
@@ -85,28 +73,14 @@ module Exchangable
   # @return [void]
   #
   def update_exchanges
-    return create_exchanges if exchanges.blank? && is_payer
+    exchanges.destroy_all if !is_payer && changes[:is_payer]
 
-    exchanges.destroy_all
-    create_exchanges if should_have_exchanges?
-  end
-
-  # Checks whether the model should have exchanges.
-  #
-  # @return [Boolean] true if the model is the payer and exchanges should be present, false otherwise.
-  #
-  def should_have_exchanges?
-    is_payer && exchanges_count.positive? || exchange_attributes.present?
-  end
-
-  # Creates default exchange attributes based on the `price` and `exchanges_count` values.
-  #
-  # @return [Array<Hash>] an array of default exchange attributes.
-  #
-  def create_default_exchange_attributes
-    prices_array = spread_installments_evenly(price, exchanges_count)
-    prices_array.each_with_object [] do |price, array|
-      array << { exchange_type: :monetary, price: }
+    if exchange_attributes.present? && is_payer
+      exchanges.destroy_all
+      create_exchanges
     end
+
+    # TODO: refactor this in favour of counter_cache
+    self.exchanges_count = exchanges.count
   end
 end

@@ -70,7 +70,7 @@ FactoryBot.define do
     trait :with_category_transactions do
       category_transaction_attributes do
         [{
-          category: random_custom_create(:category, reference: { user: }),
+          category: create(:category, :random, user:),
           transactable: self
         }]
       end

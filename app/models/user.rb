@@ -40,6 +40,8 @@ class User < ApplicationRecord
   validates :password, length: { in: 6..22 }
 
   # @callbacks ................................................................
+  after_commit :create_built_ins, on: :create
+
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
@@ -53,5 +55,15 @@ class User < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
+
+  protected
+
+  def create_built_ins
+    # TODO: add built-in flag for all categories that are here
+    categories << [
+      Category.create(category_name: 'Exchange'),
+      Category.create(category_name: 'Exchange Return')
+    ]
+  end
   # @private_instance_methods .................................................
 end

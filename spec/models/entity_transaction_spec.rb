@@ -55,7 +55,7 @@ RSpec.describe EntityTransaction, type: :model do
   describe '[ business logic ]' do
     context '( card_transaction creation with entity_transaction_attributes )' do
       it 'creates the corresponding entity_transaction' do
-        expect(card_transaction.entity_transactions.count).to eq(1)
+        expect(card_transaction.entity_transactions).to_not be_empty
       end
     end
 

@@ -15,11 +15,18 @@ module EntityTransactable
     # @callbacks ...............................................................
     before_commit :create_entity_transactions, on: :create
     before_update :update_entity_transactions
+    after_commit :update_category
   end
 
   # @protected_instance_methods ...............................................
 
   protected
+
+  def update_category
+    # category_transactions << CategoryTransaction.find_or_create_by(
+    #   category: user.categories.find_by(category_name: 'Exchange')
+    # )
+  end
 
   # Create entity transactions based on the provided `entity_transaction_attributes` array of hashes.
   #
@@ -52,7 +59,7 @@ module EntityTransactable
   # @see EntityTransaction
   #
   def create_entity_transactions
-    return if entity_transaction_attributes.blank?
+    return unless entity_transaction_attributes&.present?
 
     entity_transaction_attributes.each do |attributes|
       entity_transactions << EntityTransaction.create(attributes.merge(transactable: self))
@@ -69,15 +76,9 @@ module EntityTransactable
   # @return [void]
   #
   def update_entity_transactions
+    return unless entity_transaction_attributes
+
     entity_transactions.destroy_all if entity_transactions.present?
     create_entity_transactions if entity_transaction_attributes.present?
-  end
-
-  # Checks whether the model should have entity transactions.
-  #
-  # @return [Boolean] true if `entity_transaction_attributes` is present.
-  #
-  def should_have_entity_transactions?
-    entity_transaction_attributes.present?
   end
 end

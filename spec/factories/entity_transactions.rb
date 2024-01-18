@@ -54,7 +54,11 @@ FactoryBot.define do
       price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
       transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { random_custom_create(:entity, reference: { user: transactable.user }) }
-      exchanges_count { [*0..3].sample }
+      exchanges_count { is_payer ? [*1..3].sample : 0 }
+    end
+
+    trait :transactable_card_transaction do
+      transactable { random_custom_create(:card_transaction) }
     end
   end
 end

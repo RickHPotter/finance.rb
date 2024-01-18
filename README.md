@@ -137,10 +137,11 @@ sprint. The reasons are:
 
 - Issues:
   - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
+  - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
-  - ⌛ One money_transaction should be created for every monetary exchange,
+  - ✅ One money_transaction should be created for every monetary exchange,
        with a builtin `category = 'Exchange Return'` and no entity_transaction.
   - ⌛ Removing or updating one of the models that belong to the exchange flow
        [card_transaction -> entity_transaction / exchange -> money_transaction]

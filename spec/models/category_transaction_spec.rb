@@ -47,7 +47,7 @@ RSpec.describe CategoryTransaction, type: :model do
     context '( card_transaction creation with category_transactions under updates in category_transaction_attributes )' do
       it 'destroys the existing category_transactions when emptying category_transaction_attributes' do
         card_transaction.update(category_transaction_attributes: [])
-        expect(card_transaction.category_transactions).to be_empty
+        expect(card_transaction.custom_categories).to be_empty
       end
 
       it 'destroys the existing category_transactions and then creates them again' do
@@ -55,7 +55,7 @@ RSpec.describe CategoryTransaction, type: :model do
 
         card_transaction.update(category_transaction_attributes: [])
         card_transaction.update(category_transaction_attributes:)
-        expect(card_transaction.category_transactions).to_not be_empty
+        expect(card_transaction.custom_categories).to_not be_empty
       end
     end
   end

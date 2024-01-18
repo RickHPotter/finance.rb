@@ -26,7 +26,7 @@ RSpec.describe Category, type: :model do
         it_behaves_like 'validate_blank', :category, attribute
       end
 
-      it_behaves_like 'validate_uniqueness', :category, :category_name
+      it_behaves_like 'validate_uniqueness_combination', :category, :category_name, :user
     end
 
     context '( associations )' do
