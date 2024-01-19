@@ -59,7 +59,8 @@ module Exchangable
     end
 
     category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
-    transactable.update(category_transaction_attributes: [{ category_id: }])
+    category_transaction_attributes = (transactable.category_transaction_attributes || []) + [{ category_id: }]
+    transactable.category_transaction_attributes = category_transaction_attributes
   end
 
   # Update exchanges based on a set of conditions.
@@ -73,14 +74,24 @@ module Exchangable
   # @return [void]
   #
   def update_exchanges
-    exchanges.destroy_all if !is_payer && changes[:is_payer]
+    destroy_exchanges if !is_payer && changes[:is_payer]
 
     if exchange_attributes.present? && is_payer
       exchanges.destroy_all
       create_exchanges
     end
 
-    # TODO: refactor this in favour of counter_cache
+    # TODO: in favour of counter_cache
     self.exchanges_count = exchanges.count
   end
+
+  def destroy_exchanges
+    exchanges.destroy_all
+
+    category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
+    category_transaction_attributes = (transactable.category_transaction_attributes || []) - [{ category_id: }]
+    transactable.category_transaction_attributes = category_transaction_attributes
+  end
 end
+
+# FIXME: REFACTOR

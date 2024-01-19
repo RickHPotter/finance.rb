@@ -15,18 +15,11 @@ module EntityTransactable
     # @callbacks ...............................................................
     before_commit :create_entity_transactions, on: :create
     before_update :update_entity_transactions
-    after_commit :update_category
   end
 
   # @protected_instance_methods ...............................................
 
   protected
-
-  def update_category
-    # category_transactions << CategoryTransaction.find_or_create_by(
-    #   category: user.categories.find_by(category_name: 'Exchange')
-    # )
-  end
 
   # Create entity transactions based on the provided `entity_transaction_attributes` array of hashes.
   #

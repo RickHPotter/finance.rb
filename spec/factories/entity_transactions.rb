@@ -29,11 +29,12 @@ FactoryBot.define do
       next unless entity_transaction.is_payer
 
       price = entity_transaction.price
+      status = entity_transaction.status
 
       entity_transaction.exchange_attributes ||= []
       entity_transaction.exchanges_count.times do
         entity_transaction.exchange_attributes << {
-          exchange_type: %i[monetary non_monetary].sample,
+          exchange_type: status == 'finished' ? :non_monetary : %i[monetary non_monetary].sample,
           price: [price, price / 2, price / 3].sample.round(2)
         }
       end

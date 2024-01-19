@@ -143,9 +143,14 @@ sprint. The reasons are:
   - ⌛ Use TDD approach; create the tests before.
   - ✅ One money_transaction should be created for every monetary exchange,
        with a builtin `category = 'Exchange Return'` and no entity_transaction.
-  - ⌛ Removing or updating one of the models that belong to the exchange flow
-       [card_transaction -> entity_transaction / exchange -> money_transaction]
-       should also reflect on the corresponding money_transaction.
+  - ✅ Given the flow of [card_transaction -> entity_transaction <-> exchange -> money_transaction]:
+    - 1 ✅ if card_transaction has entity_transaction with exchanges, it should have
+        `Exchange` category.
+    - 2 ⌛ if card_transaction has no entity_transaction with exchanges, its category
+        `Exchange` is dropped.
+    - 3 ⌛ if card_transaction wipes entity_transaction, everything dies.
+    - 4 ✅ if entity_transaction is not a payer, the exchange should cease to exist.
+    - 5 ✅ if exchange is non_monetary, the money_transaction should cease to exist.
 - Extra:
   - ✅ Removed amount_returned and amount_to_be_returned from Exchange Model.
   - ✅ Added price and starting_price attributes to Exchange Model.

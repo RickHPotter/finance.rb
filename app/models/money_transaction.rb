@@ -38,7 +38,7 @@ class MoneyTransaction < ApplicationRecord
 
   has_many :card_transactions
   has_many :investments
-  has_many :exchanges
+  has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
   validates :mt_description, :date, :starting_price, :price, :month, :year, presence: true
@@ -48,6 +48,8 @@ class MoneyTransaction < ApplicationRecord
   before_validation :set_paid, on: :create
 
   # @scopes ...................................................................
+  scope :by_user, ->(user) { where(user:) }
+
   # @public_instance_methods ..................................................
   # Defaults description column to a single {#to_s} call.
   #

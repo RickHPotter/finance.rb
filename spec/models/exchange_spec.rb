@@ -108,15 +108,13 @@ RSpec.describe Exchange, type: :model do
     end
 
     context '( exchange creation with exchange_type monetary )' do
+      before do
+        exchange.monetary!
+      end
+
       it 'categories are set correctly for the beginning of the flow (transactable) and end (money_transaction) ' do
         expect(exchange.entity_transaction.transactable.categories.pluck(:category_name)).to include('Exchange')
         expect(exchange.money_transaction.categories.pluck(:category_name)).to include('Exchange Return')
-      end
-    end
-
-    context '( exchange creation with exchange_type monetary )' do
-      before do
-        exchange.update(exchange_type: 1)
       end
 
       it 'generates a money_transaction' do
@@ -124,23 +122,27 @@ RSpec.describe Exchange, type: :model do
       end
 
       it 'generates no money_transaction after another update to non_monetary' do
-        exchange.update(exchange_type: 0)
+        exchange.non_monetary!
         expect(exchange.money_transaction).to be(nil)
       end
     end
 
     context '( exchange switching exchange_type to non_monetary )' do
       before do
-        exchange.update(exchange_type: 0)
+        exchange.non_monetary!
       end
 
       it 'generates no money_transaction' do
-        # expect(exchange.money_transaction).to be(nil)
+        expect(exchange.money_transaction).to be(nil)
       end
 
       it 'generates a money_transaction after another update to monetary' do
-        # exchange.update(exchange_type: 1)
-        # expect(exchange.money_transaction).to_not be(nil)
+        exchange.monetary!
+        expect(exchange.money_transaction).to_not be(nil)
+      end
+
+      it 'changes entity_transaction status to finished' do
+        expect(exchange.entity_transaction.finished?).to be(true)
       end
     end
   end
