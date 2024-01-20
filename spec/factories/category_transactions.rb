@@ -14,6 +14,7 @@
 FactoryBot.define do
   factory :category_transaction do
     transactable { custom_create_polymorphic(%i[card_transaction money_transaction investment]) }
+    # FIXME: create custom_create_on_uniqueness to avoid Category has already been taken, and shit like that
     category { custom_create(:category, reference: { user: transactable.user }) }
 
     trait :different do

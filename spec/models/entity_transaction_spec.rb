@@ -55,22 +55,29 @@ RSpec.describe EntityTransaction, type: :model do
   describe '[ business logic ]' do
     context '( card_transaction creation with entity_transaction_attributes )' do
       it 'creates the corresponding entity_transaction' do
-        expect(card_transaction.entity_transactions).to_not be_empty
+        expect(card_transaction.entities).to_not be_empty
+        expect(card_transaction.paying_entities).to_not be_empty
       end
     end
 
     context '( card_transaction creation with entity_transactions under updates in entity_transaction_attributes )' do
       it 'destroys the existing entity_transactions when emptying entity_transaction_attributes' do
         card_transaction.update(entity_transaction_attributes: [])
-        expect(card_transaction.entity_transactions).to be_empty
+        expect(card_transaction.entities).to be_empty
+        expect(card_transaction.paying_entities).to be_empty
       end
 
       it 'destroys the existing entity_transactions and then creates them again' do
-        entity_transaction_attributes = card_transaction.entity_transaction_attributes
-
         card_transaction.update(entity_transaction_attributes: [])
-        card_transaction.update(entity_transaction_attributes:)
-        expect(card_transaction.entity_transactions).to_not be_empty
+        card_transaction.update(
+          entity_transaction_attributes: [{
+            entity: FactoryBot.create(:entity, :random, user: card_transaction.user),
+            transactable: card_transaction,
+            is_payer: false
+          }]
+        )
+        expect(card_transaction.entities).to_not be_empty
+        expect(card_transaction.paying_entities).to be_empty
       end
     end
   end

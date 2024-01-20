@@ -62,10 +62,8 @@ FactoryBot.define do
           status: 'pending',
           price: [price, price / 2, price / 3].sample.round(2),
           exchanges_count: 1,
-          transactable: self
-          # FIXME: WHY THE FUCK DOES THIS NOT WORK
-          # ,
-          # exchange_attributes: [{ exchange_type: :monetary, price: price / 3 }]
+          transactable: self,
+          exchange_attributes: [{ exchange_type: :monetary, price: price / 3 }]
         }]
       end
     end

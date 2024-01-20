@@ -13,13 +13,52 @@ module EntityTransactable
     has_many :entities, through: :entity_transactions
 
     # @callbacks ...............................................................
-    before_commit :create_entity_transactions, on: :create
+    before_validation :check_consistency
+    after_validation :update_parent
+    before_create :create_entity_transactions
     before_update :update_entity_transactions
+  end
+
+  # @public_class_methods .....................................................
+  def paying_entities
+    entity_transactions.where(is_payer: true).map(&:entity)
   end
 
   # @protected_instance_methods ...............................................
 
   protected
+
+  # FIXME: DRY
+  def check_consistency
+    return unless entity_transaction_attributes&.present?
+
+    unless entity_transaction_attributes.is_a?(Array)
+      errors.add(:entity_transactions, 'should be an array')
+      return false
+    end
+
+    entity_transaction_attributes.each do |entity_transaction|
+      unless entity_transaction.is_a?(Hash)
+        errors.add(:entity_transactions, 'should be an array of hashes')
+        return false
+      end
+
+      unless EntityTransaction.new(entity: entity_transaction[:entity], transactable: self).valid?
+        errors.add(:entity_transactions, 'should be an array of hashes of valid entity transactions')
+        return false
+      end
+    end
+  end
+
+  def update_parent
+    nil if errors.any? || entity_transaction_attributes&.pluck(:is_payer)&.none?
+
+    exchange_category_id = user.categories.find_by(category_name: 'Exchange').id
+    return if category_transactions.pluck(:category_id).any?(exchange_category_id)
+
+    cat = CategoryTransaction.new(category_id: exchange_category_id, transactable: self)
+    category_transactions.push(cat) unless category_transactions.include?(cat)
+  end
 
   # Create entity transactions based on the provided `entity_transaction_attributes` array of hashes.
   #
@@ -45,7 +84,7 @@ module EntityTransactable
   #
   # @note The method uses the  provided `entity_transaction_attributes` to create entity transactions
   #   for the transactable.
-  # @note This is a method that is called before_commit.
+  # @note This is a method that is called before_create.
   #
   # @return [void]
   #
@@ -55,8 +94,11 @@ module EntityTransactable
     return unless entity_transaction_attributes&.present?
 
     entity_transaction_attributes.each do |attributes|
-      entity_transactions << EntityTransaction.create(attributes.merge(transactable: self))
+      enc = EntityTransaction.new(attributes.merge(transactable: self))
+      entity_transactions.push(enc) unless entity_transactions.include?(enc)
     end
+
+    destroy_entity_transaction_attributes
   end
 
   # Update entity transactions based on the provided `entity_transaction_attributes` array of hashes.
@@ -73,5 +115,12 @@ module EntityTransactable
 
     entity_transactions.destroy_all if entity_transactions.present?
     create_entity_transactions if entity_transaction_attributes.present?
+    # entities.reload # Forgive me for I have sinned, touch: true does not work
+
+    destroy_entity_transaction_attributes
+  end
+
+  def destroy_entity_transaction_attributes
+    self.entity_transaction_attributes = nil
   end
 end

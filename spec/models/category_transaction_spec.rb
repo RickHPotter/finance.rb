@@ -40,7 +40,7 @@ RSpec.describe CategoryTransaction, type: :model do
   describe '[ business logic ]' do
     context '( card_transaction creation with category_transaction_attributes )' do
       it 'creates the corresponding category_transaction' do
-        expect(card_transaction.category_transactions.count).to eq(1)
+        expect(card_transaction.custom_categories.count).to eq(1)
       end
     end
 

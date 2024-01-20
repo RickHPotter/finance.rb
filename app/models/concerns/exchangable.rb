@@ -57,10 +57,6 @@ module Exchangable
     exchange_attributes.each_with_index do |attributes, index|
       exchanges << Exchange.create(attributes.merge(number: index + 1))
     end
-
-    category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
-    category_transaction_attributes = (transactable.category_transaction_attributes || []) + [{ category_id: }]
-    transactable.category_transaction_attributes = category_transaction_attributes
   end
 
   # Update exchanges based on a set of conditions.

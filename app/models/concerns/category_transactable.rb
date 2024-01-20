@@ -22,10 +22,12 @@ module CategoryTransactable
   def custom_categories
     categories.where.not(category_name: ['Exchange', 'Exchange Return'])
   end
+
   # @protected_instance_methods ...............................................
 
   protected
 
+  # FIXME: DRY
   def check_consistency
     return unless category_transaction_attributes&.present?
 
