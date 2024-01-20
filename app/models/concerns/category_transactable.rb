@@ -13,7 +13,8 @@ module CategoryTransactable
     has_many :categories, through: :category_transactions
 
     # @callbacks ...............................................................
-    before_commit :create_category_transactions, on: :create
+    before_validation :check_consistency
+    before_create :create_category_transactions
     before_update :update_category_transactions
   end
 
@@ -24,6 +25,27 @@ module CategoryTransactable
   # @protected_instance_methods ...............................................
 
   protected
+
+  def check_consistency
+    return unless category_transaction_attributes&.present?
+
+    unless category_transaction_attributes.is_a?(Array)
+      errors.add(:category_transactions, 'should be an array')
+      return false
+    end
+
+    category_transaction_attributes.each do |category_transaction|
+      unless category_transaction.is_a?(Hash)
+        errors.add(:category_transactions, 'should be an array of hashes')
+        return false
+      end
+
+      unless CategoryTransaction.new(category: category_transaction[:category], transactable: self).valid?
+        errors.add(:category_transactions, 'should be an array of hashes of valid category transactions')
+        return false
+      end
+    end
+  end
 
   # Create category transactions based on the provided `category_transaction_attributes` array of hashes.
   #
@@ -43,7 +65,7 @@ module CategoryTransactable
   #
   # @note The method uses the provided `category_transaction_attributes` to create category transactions
   #   for the transactable.
-  # @note This is a method that is called before_commit.
+  # @note This is a method that is called before_create.
   #
   # @return [void]
   #
@@ -53,8 +75,11 @@ module CategoryTransactable
     return unless category_transaction_attributes&.present?
 
     category_transaction_attributes.each do |attributes|
-      category_transactions << CategoryTransaction.create(attributes.merge(transactable: self))
+      cat = CategoryTransaction.new(attributes.merge(transactable: self))
+      category_transactions.push(cat) unless category_transactions.include?(cat)
     end
+
+    destroy_category_transaction_attributes
   end
 
   # Update category transactions based on the provided `category_transaction_attributes` array of hashes.
@@ -71,5 +96,12 @@ module CategoryTransactable
 
     category_transactions.destroy_all if category_transactions.present?
     create_category_transactions if category_transaction_attributes.present?
+    categories.reload # Forgive me for I have sinned, touch: true does not work
+
+    destroy_category_transaction_attributes
+  end
+
+  def destroy_category_transaction_attributes
+    self.category_transaction_attributes = nil
   end
 end

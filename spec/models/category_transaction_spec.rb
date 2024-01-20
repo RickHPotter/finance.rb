@@ -51,10 +51,13 @@ RSpec.describe CategoryTransaction, type: :model do
       end
 
       it 'destroys the existing category_transactions and then creates them again' do
-        category_transaction_attributes = card_transaction.category_transaction_attributes
-
         card_transaction.update(category_transaction_attributes: [])
-        card_transaction.update(category_transaction_attributes:)
+        card_transaction.update(
+          category_transaction_attributes: [{
+            category: FactoryBot.create(:category, :random, user: card_transaction.user),
+            transactable: card_transaction
+          }]
+        )
         expect(card_transaction.custom_categories).to_not be_empty
       end
     end
