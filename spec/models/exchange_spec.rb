@@ -73,10 +73,8 @@ RSpec.describe Exchange, type: :model do
       end
 
       it 'destroys the existing exchanges and then creates them again' do
-        exchange_attributes = entity_transaction.exchange_attributes
-
         entity_transaction.update(is_payer: false, exchange_attributes: [])
-        entity_transaction.update(is_payer: true, exchange_attributes:)
+        entity_transaction.update(is_payer: true, exchange_attributes: [{ exchange_type: :monetary, price: 0.04 }])
         expect(entity_transaction.exchanges).to_not be_empty
       end
     end
@@ -91,7 +89,7 @@ RSpec.describe Exchange, type: :model do
       end
 
       it 'creates exchanges after updating is_payer again' do
-        entity_transaction.update(is_payer: true)
+        entity_transaction.update(is_payer: true, exchange_attributes: [{ exchange_type: :monetary, price: 0.16 }])
         expect(entity_transaction.exchanges.count).to eq(1)
       end
     end

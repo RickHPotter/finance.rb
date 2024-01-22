@@ -51,7 +51,9 @@ module EntityTransactable
   end
 
   def update_parent
-    nil if errors.any? || entity_transaction_attributes&.pluck(:is_payer)&.none?
+    return if errors.any?
+    return if entity_transaction_attributes.blank?
+    return if entity_transaction_attributes&.pluck(:is_payer)&.none?
 
     exchange_category_id = user.categories.find_by(category_name: 'Exchange').id
     return if category_transactions.pluck(:category_id).any?(exchange_category_id)
@@ -94,8 +96,8 @@ module EntityTransactable
     return unless entity_transaction_attributes&.present?
 
     entity_transaction_attributes.each do |attributes|
-      enc = EntityTransaction.new(attributes.merge(transactable: self))
-      entity_transactions.push(enc) unless entity_transactions.include?(enc)
+      ent = EntityTransaction.new(attributes.merge(transactable: self))
+      entity_transactions.push(ent) unless entity_transactions.include?(ent)
     end
 
     destroy_entity_transaction_attributes

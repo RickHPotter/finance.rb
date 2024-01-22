@@ -13,13 +13,48 @@ module Exchangable
     has_many :exchanges, dependent: :destroy
 
     # @callbacks ..............................................................
+    before_validation :check_consistency
+    after_validation :update_parent
     before_create :create_exchanges
     before_update :update_exchanges
+  end
+
+  # @public_class_methods .....................................................
+  def monetary_exchanges
+    exchanges.monetary
   end
 
   # @protected_instance_methods ...............................................
 
   protected
+
+  def check_consistency
+    return unless exchange_attributes&.present? && is_payer
+
+    unless exchange_attributes.is_a?(Array)
+      errors.add(:exchanges, 'should be an array')
+      return false
+    end
+
+    exchange_attributes.each do |exchange|
+      unless exchange.is_a?(Hash)
+        errors.add(:exchanges, 'should be an array of hashes')
+        return false
+      end
+
+      unless Exchange.new(exchange.merge(entity_transaction: self)).valid?
+        errors.add(:exchanges, 'should be an array of hashes of valid exchanges')
+        return false
+      end
+    end
+  end
+
+  def update_parent
+    return if exchange_attributes.blank?
+    return unless exchange_attributes.pluck(:exchange_type).uniq == [:non_monetary]
+
+    self.status = :finished
+  end
 
   # Create exchanges based on the provided `exchange_attributes` array of hashes.
   #
@@ -55,8 +90,11 @@ module Exchangable
     return unless exchange_attributes&.present?
 
     exchange_attributes.each_with_index do |attributes, index|
-      exchanges << Exchange.create(attributes.merge(number: index + 1))
+      exc = Exchange.new(attributes.merge(number: index + 1))
+      exchanges.push(exc) unless exchanges.include?(exc)
     end
+
+    destroy_exchange_attributes
   end
 
   # Update exchanges based on a set of conditions.
@@ -69,6 +107,7 @@ module Exchangable
   #
   # @return [void]
   #
+  # FIXME: REFACTOR
   def update_exchanges
     destroy_exchanges if !is_payer && changes[:is_payer]
 
@@ -84,10 +123,14 @@ module Exchangable
   def destroy_exchanges
     exchanges.destroy_all
 
-    category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
-    category_transaction_attributes = (transactable.category_transaction_attributes || []) - [{ category_id: }]
-    transactable.category_transaction_attributes = category_transaction_attributes
+    # FIXME: this can be done in a better way, I suppose
+    # plus it should only happen IF none of the transactionEntities are payers
+    # category_id = transactable.user.categories.find_by(category_name: 'Exchange').id
+    # category_transaction_attributes = (transactable.category_transaction_attributes || []) - [{ category_id: }]
+    # transactable.category_transaction_attributes = category_transaction_attributes
+  end
+
+  def destroy_exchange_attributes
+    self.exchange_attributes = nil
   end
 end
-
-# FIXME: REFACTOR

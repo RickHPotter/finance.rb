@@ -47,7 +47,6 @@ class Exchange < ApplicationRecord
     return if changes[:exchange_type].blank?
     return if monetary?
 
-    entity_transaction.status = :finished
     self.money_transaction_id = nil
   end
 
@@ -88,7 +87,8 @@ class Exchange < ApplicationRecord
       user_id: transactable.user_id,
       money_transaction_type: model_name.name,
       user_bank_account_id: transactable.user.user_bank_accounts.ids.sample,
-      category_transaction_attributes: [{ category_id: exchange_return_category_id }]
+      category_transaction_attributes: [{ category_id: exchange_return_category_id }],
+      entity_transaction_attributes: []
     }
   end
 
