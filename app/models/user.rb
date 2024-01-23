@@ -40,13 +40,13 @@ class User < ApplicationRecord
   validates :password, length: { in: 6..22 }
 
   # @callbacks ................................................................
-  after_commit :create_built_ins, on: :create
+  before_create :create_built_ins
 
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-  # Helper methods to return a full name based on first_name and last_name
+  # Helper methods to return a full name based on `first_name` and `last_name`.
   #
   # @return [String]
   #
@@ -54,16 +54,28 @@ class User < ApplicationRecord
     "#{first_name} #{last_name}"
   end
 
+  # Helper method to return a built-in `category` based on a given `category_name`.
+  #
+  # @return [Category]
+  #
+  def built_in_category(category_name)
+    categories.find_by(built_in: true, category_name:)
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
 
+  # Creates built-in `categories` for given user.
+  #
+  # @return [void]
+  #
   def create_built_ins
-    # TODO: add built-in flag for all categories that are here
-    categories << [
-      Category.create(category_name: 'Exchange'),
-      Category.create(category_name: 'Exchange Return')
-    ]
+    categories.push(
+      Category.new(built_in: true, category_name: 'Exchange'),
+      Category.new(built_in: true, category_name: 'Exchange Return')
+    )
   end
+
   # @private_instance_methods .................................................
 end

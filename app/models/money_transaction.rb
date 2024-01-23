@@ -63,7 +63,9 @@ class MoneyTransaction < ApplicationRecord
 
   protected
 
-  # Sets the default value for the paid field.
+  # Sets `paid` based on current date in case it was not previously set.
+  #
+  # @note This is a method that is called before_validation.
   #
   # @return [void]
   #

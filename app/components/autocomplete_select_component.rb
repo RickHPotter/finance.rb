@@ -38,7 +38,7 @@ class AutocompleteSelectComponent < ViewComponent::Base
 
   Item = Struct.new(:id, :label)
 
-  # Set default options for the autocomplete select.
+  # Sets default options for the autocomplete select.
   #
   # @param options [Hash] Additional options for customizing the autocomplete select.
   #

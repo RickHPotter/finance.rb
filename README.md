@@ -156,6 +156,8 @@ sprint. The reasons are:
   - ✅ Added price and starting_price attributes to Exchange Model.
   - ✅ Added paid boolean method to MoneyTransaction Model.
   - ✅ Added Exchange specs for both exchange_types.
+  - ✅ Added built_in boolean attribute for Category.
+  - ✅ Created a helper for Nested Attributes.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 

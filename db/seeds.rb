@@ -10,7 +10,6 @@ FactoryBot.create(:user, :random)
 p 'Creating Banks...'
 FactoryBot.create_list(:bank, 5, :random)
 
-# TODO: make defaults for user_card and user_bank_account;
 Bank.all.each do |bank|
   p "BANK #{bank.bank_name} - Creating UserBankAccounts..."
   FactoryBot.create_list(:user_bank_account, 3, :random, user: User.all.sample, bank:)

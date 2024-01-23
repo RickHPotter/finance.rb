@@ -50,6 +50,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
 
   create_table "categories", force: :cascade do |t|
     t.string "category_name", null: false
+    t.boolean "built_in", default: false, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

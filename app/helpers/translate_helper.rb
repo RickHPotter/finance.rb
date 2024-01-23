@@ -9,9 +9,9 @@ module TranslateHelper
   #   model_on_count(@users) # @users = User.all
   #   # => "Users" or "User" (depending on the count)
   #
-  # @note One needs to fill in the i18n keys one and other for the model in question.
-  #
   # @param instances [ActiveRecord::Relation] Collection of model instances.
+  #
+  # @note One needs to fill in the i18n keys one and other for the model in question.
   #
   # @return [String] Pluralised human-readable model name based on the count of instances.
   #
@@ -28,10 +28,10 @@ module TranslateHelper
   #   pluralise_model(User, 5)
   #   # => "Users"
   #
-  # @note One needs to fill in the i18n keys one and other for the model in question.
-  #
   # @param model [Class] Model class.
   # @param count [Integer] Count of instances.
+  #
+  # @note One needs to fill in the i18n keys one and other for the model in question.
   #
   # @return [String] Pluralised human-readable model name based on the count.
   #
@@ -46,10 +46,10 @@ module TranslateHelper
   #   attribute_model(User, :first_name)
   #   # => "First Name"
   #
-  # @note One needs to fill in the i18n attribute keys of the model in question.
-  #
   # @param model [ActiveRecord::Base] Model instance or class.
   # @param attribute [Symbol] Attribute name.
+  #
+  # @note One needs to fill in the i18n attribute keys of the model in question.
   #
   # @return [String] Human-readable attribute name based on the model and attribute.
   #

@@ -38,10 +38,10 @@ module ComponentsHelper
   #   produces
   #   `<div data-form-validate-target="field" data-action="click->modal#close">`
   #
+  # @param args [Hash] Variable number of hash arguments containing data attributes.
+  #
   # @note The resulting String is to be used dynamically in HTML tags for rendering.
   # @note The elements of latter args override elements of former args in case of repetition.
-  #
-  # @param args [Hash] Variable number of hash arguments containing data attributes.
   #
   # @return [String] HTML_SAFE data attributes converted from hash
   #

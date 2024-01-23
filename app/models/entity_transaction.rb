@@ -43,7 +43,7 @@ class EntityTransaction < ApplicationRecord
 
   protected
 
-  # Sets amounts and status based on :is_payer in case it was not previously set.
+  # Sets `status` based on `is_payer` in case it was not previously set.
   #
   # @note This is a method that is called before_validation.
   #

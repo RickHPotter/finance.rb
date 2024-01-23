@@ -6,6 +6,7 @@
 #
 #  id            :bigint           not null, primary key
 #  category_name :string           not null
+#  built_in      :boolean          default(FALSE), not null
 #  user_id       :bigint           not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null

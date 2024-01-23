@@ -10,11 +10,11 @@ module MonthYear
   end
 
   # @public_instance_methods ..................................................
-  # Get the formatted month and year string.
+  # Gets the formatted month and year string.
   #
-  # @return [String] Formatted month and year string in the format "MONTH <YEAR>"
+  # @see {RefMonthYear#month_year}
   #
-  # @see RefMonthYear#month_year
+  # @return [String] Formatted month and year string in the format "MONTH <YEAR>".
   #
   def month_year
     month ||= date.month
@@ -22,7 +22,7 @@ module MonthYear
     RefMonthYear.new(month, year).month_year
   end
 
-  # Fetch the day of given date
+  # Fetches the day of set attribute `date`.
   #
   # @return [Integer]
   #
@@ -30,7 +30,9 @@ module MonthYear
     date&.day
   end
 
-  # Fetch the next month given a day
+  # Fetches the date in the next month given a certain day.
+  #
+  # @param day [Integer] The day of the next month.
   #
   # @return [Date]
   #
@@ -39,7 +41,7 @@ module MonthYear
     Date.new(today.year, today.month, day) + 1.month
   end
 
-  # Fetch the last day of given MonthYear
+  # Fetches the last day of given MonthYear.
   #
   # @return [Date]
   #
@@ -51,7 +53,7 @@ module MonthYear
 
   protected
 
-  # Sets Month and Year from Date
+  # Sets Month and Year from based on `date` or `user_card.current_due_date`.
   #
   # @return [void]
   #
