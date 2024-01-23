@@ -14,7 +14,7 @@ module EntityTransactable
 
     # @callbacks ...............................................................
     before_validation :check_consistency
-    after_validation :update_parent
+    after_validation :update_card_transaction_categories
     before_create :create_entity_transactions
     before_update :update_entity_transactions
   end
@@ -43,23 +43,29 @@ module EntityTransactable
         return false
       end
 
-      unless EntityTransaction.new(entity: entity_transaction[:entity], transactable: self).valid?
-        errors.add(:entity_transactions, 'should be an array of hashes of valid entity transactions')
-        return false
-      end
+      ent = EntityTransaction.find_or_initialize_by(entity: entity_transaction[:entity], transactable: self)
+      next if ent.valid? || entity_transactions.include?(ent)
+
+      errors.add(:entity_transactions, 'should be an array of hashes of valid entity transactions')
+      return false
     end
   end
 
-  def update_parent
-    return if errors.any?
-    return if entity_transaction_attributes.blank?
-    return if entity_transaction_attributes&.pluck(:is_payer)&.none?
+  # FIXME: i dont even know how, but it looks a bit shit
+  def update_card_transaction_categories
+    return if errors.any? || entity_transaction_attributes.nil?
 
     exchange_category_id = user.categories.find_by(category_name: 'Exchange').id
-    return if category_transactions.pluck(:category_id).any?(exchange_category_id)
 
-    cat = CategoryTransaction.new(category_id: exchange_category_id, transactable: self)
-    category_transactions.push(cat) unless category_transactions.include?(cat)
+    exchange_category_transaction = category_transactions.find do |category_transaction|
+      category_transaction.category_id == exchange_category_id
+    end
+
+    return exchange_category_transaction&.destroy if entity_transaction_attributes.pluck(:is_payer).none?
+
+    return if exchange_category_transaction
+
+    category_transactions.push(CategoryTransaction.new(category_id: exchange_category_id, transactable: self))
   end
 
   # Create entity transactions based on the provided `entity_transaction_attributes` array of hashes.

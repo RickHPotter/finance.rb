@@ -33,7 +33,7 @@ class EntityTransaction < ApplicationRecord
   validates :entity, uniqueness: { scope: :transactable }
 
   # @callbacks ................................................................
-  before_validation :set_status
+  before_validation :set_status, on: :create
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -50,7 +50,7 @@ class EntityTransaction < ApplicationRecord
   # @return [void]
   #
   def set_status
-    self.status = is_payer ? :pending : :finished
+    self.status ||= is_payer ? :pending : :finished
   end
 
   # @private_instance_methods .................................................

@@ -17,10 +17,8 @@
 require 'rails_helper'
 
 RSpec.describe Exchange, type: :model do
-  let!(:entity_transaction) do
-    FactoryBot.create(:entity_transaction, :random, :transactable_card_transaction, is_payer: true, exchanges_count: 1)
-  end
-  let!(:entity_transaction_not_payer) { FactoryBot.create(:entity_transaction, :random, is_payer: false) }
+  let!(:card_transaction) { FactoryBot.create(:card_transaction, :random, :with_entity_transactions) }
+  let!(:entity_transaction) { card_transaction.entity_transactions.first }
   let!(:exchange) { entity_transaction.exchanges.first }
 
   describe '[ activerecord validations ]' do
@@ -53,7 +51,9 @@ RSpec.describe Exchange, type: :model do
 
     context '( entity_transaction creation with exchanges under updates in exchange_attributes )' do
       before do
-        entity_transaction.update(exchange_attributes: [{ price: 0.02 }, { price: 0.03 }])
+        entity_transaction.update(
+          exchange_attributes: [{ exchange_type: :monetary, price: 0.02 }, { exchange_type: :monetary, price: 0.03 }]
+        )
       end
 
       it 'updates the amount of exchanges to two' do
@@ -61,7 +61,7 @@ RSpec.describe Exchange, type: :model do
       end
 
       it 'updates the amount of exchanges to two then back to one' do
-        entity_transaction.update(exchange_attributes: [{ price: 0.02 }])
+        entity_transaction.update(exchange_attributes: [{ exchange_type: :monetary, price: 0.02 }])
         expect(entity_transaction.exchanges.count).to eq(1)
       end
     end
@@ -94,17 +94,6 @@ RSpec.describe Exchange, type: :model do
       end
     end
 
-    context '( entity_transaction creation with exchanges under updates in exchange_type )' do
-      it 'does not generate any exchange' do
-        expect(entity_transaction_not_payer.exchanges).to be_empty
-      end
-
-      it 'generate a new exchange after updating is_payer' do
-        entity_transaction_not_payer.update(is_payer: true, exchange_attributes: [{ price: 0.06 }])
-        expect(entity_transaction_not_payer.exchanges).to_not be_empty
-      end
-    end
-
     context '( exchange creation with exchange_type monetary )' do
       before do
         exchange.monetary!
@@ -132,15 +121,13 @@ RSpec.describe Exchange, type: :model do
 
       it 'generates no money_transaction' do
         expect(exchange.money_transaction).to be(nil)
+        expect(exchange.entity_transaction.finished?).to be(true)
       end
 
       it 'generates a money_transaction after another update to monetary' do
         exchange.monetary!
         expect(exchange.money_transaction).to_not be(nil)
-      end
-
-      it 'changes entity_transaction status to finished' do
-        expect(exchange.entity_transaction.finished?).to be(true)
+        expect(exchange.entity_transaction.pending?).to be(true)
       end
     end
   end

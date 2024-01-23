@@ -80,5 +80,35 @@ RSpec.describe EntityTransaction, type: :model do
         expect(card_transaction.paying_entities).to be_empty
       end
     end
+
+    context '( card_transaction update to zero entitiy_transactions )' do
+      before do
+        card_transaction.update(entity_transaction_attributes: [])
+      end
+
+      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
+        expect(card_transaction.entities).to be_empty
+        expect(card_transaction.paying_entities).to be_empty
+        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
+      end
+    end
+
+    context '( card_transaction update to zero paying entitiy_transactions )' do
+      before do
+        card_transaction.update(
+          entity_transaction_attributes: [{
+            entity: card_transaction.entities.first,
+            transactable: card_transaction,
+            is_payer: false
+          }]
+        )
+      end
+
+      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
+        expect(card_transaction.entities).to_not be_empty
+        expect(card_transaction.paying_entities).to be_empty
+        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
+      end
+    end
   end
 end

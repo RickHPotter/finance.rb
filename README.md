@@ -96,11 +96,11 @@ sprint. The reasons are:
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
        price as decimal, status (pending, finished)].
   - ✅ Remove entity_id from (Card/Money)Transaction.
-  - ✅ When a entity_transaction is not a payer:
+  - ✅ When an entity_transaction is not a payer:
     - 1 ✅ The entity_transaction should have `is_payer: false, status = 'finished'`,
            amount_to_be_returned and amount_returned should be 0.00.
 - Extra:
-  - ✅ APP: Enabled YJIT by with an initialiser.
+  - ✅ APP: Enabled YJIT with an initialiser.
   - ✅ APP: Added Confirmable in Devise.
   - ✅ APP: Added SimpleCov for tracking test coverage.
   - ✅ APP: Added Guard-Rspec for safer development.
@@ -114,7 +114,7 @@ sprint. The reasons are:
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
-  - ✅ Create Model that will reference a entity_transaction and generate a money_transaction.
+  - ✅ Create Model that will reference an entity_transaction and generate a money_transaction.
   - ✅ The table should include the fields: [id, timestamps,
        exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
   - ✅ CardTransaction should `has_many :entity_transactions`,
@@ -128,7 +128,7 @@ sprint. The reasons are:
   - ✅ Made an Installable Concern to be used by both Transactions.
   - ✅ Made possible to change the amount of installments in a Transactable.
   - ✅ Made possible to change the amount of entity_transactions in a Transactable.
-  - ✅ Made possible to change the amount of exchanges in a EntityTransaction.
+  - ✅ Made possible to change the amount of exchanges in an EntityTransaction.
   - ✅ Added EntityTransaction specs for updates in entity_transaction_attributes.
   - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
   - ✅ Added CategoryTransaction specs for callbacks.
@@ -140,23 +140,22 @@ sprint. The reasons are:
   - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
+  - ✅ Use TDD approach; create the tests before.
   - ✅ One money_transaction should be created for every monetary exchange,
        with a builtin `category = 'Exchange Return'` and no entity_transaction.
   - ✅ Given the flow of [card_transaction -> entity_transaction <-> exchange -> money_transaction]:
     - 1 ✅ if card_transaction has entity_transaction with exchanges, it should have
         `Exchange` category.
-    - 2 ⌛ if card_transaction has no entity_transaction with exchanges, its category
+    - 2 ✅ if card_transaction has no entity_transaction with exchanges, its category
         `Exchange` is dropped.
-    - 3 ⌛ if card_transaction wipes entity_transaction, everything dies.
+    - 3 ✅ if card_transaction wipes entity_transaction, everything dies.
     - 4 ✅ if entity_transaction is not a payer, the exchange should cease to exist.
     - 5 ✅ if exchange is non_monetary, the money_transaction should cease to exist.
 - Extra:
   - ✅ Removed amount_returned and amount_to_be_returned from Exchange Model.
   - ✅ Added price and starting_price attributes to Exchange Model.
   - ✅ Added paid boolean method to MoneyTransaction Model.
-  - ⌛ Added factory and model-based specs for Installment.
-  - ⌛ Added Exchange specs for both exchange_types.
+  - ✅ Added Exchange specs for both exchange_types.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 
@@ -170,6 +169,7 @@ sprint. The reasons are:
 - Extra:
   - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
   - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
+  - ⌛ Added factory and model-based specs for Installment.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 
