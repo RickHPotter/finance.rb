@@ -38,7 +38,8 @@ module Exchangable
   # @return [Boolean] Returns true if all `exchanges` are valid; otherwise, it returns false with ActiveModel#errors.
   #
   def check_consistency
-    return unless exchange_attributes&.present? && is_payer
+    return if exchange_attributes.blank?
+    return unless is_payer
 
     check_array_of_hashes_of(exchanges: exchange_attributes) do |exchange|
       exc = Exchange.new(exchange.merge(entity_transaction: self))
@@ -100,7 +101,7 @@ module Exchangable
   # @return [void]
   #
   def create_exchanges
-    return unless exchange_attributes&.present?
+    return if exchange_attributes.blank?
 
     exchange_attributes.each_with_index do |attributes, index|
       exc = Exchange.new(attributes.merge(number: index + 1))

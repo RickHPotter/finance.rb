@@ -40,7 +40,7 @@ module CategoryTransactable
   # @return [Boolean] Returns true if all `category_transactions` are valid; otherwise, false with ActiveModel#errors.
   #
   def check_consistency
-    return unless category_transaction_attributes&.present?
+    return if category_transaction_attributes.blank?
 
     check_array_of_hashes_of(category_transactions: category_transaction_attributes) do |category_transaction|
       cat = CategoryTransaction.find_or_initialize_by(category: category_transaction[:category], transactable: self)
@@ -72,7 +72,7 @@ module CategoryTransactable
   # @return [void]
   #
   def create_category_transactions
-    return unless category_transaction_attributes&.present?
+    return if category_transaction_attributes.blank?
 
     category_transaction_attributes.each do |attributes|
       cat = CategoryTransaction.new(attributes.merge(transactable: self))

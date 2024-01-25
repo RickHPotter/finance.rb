@@ -41,7 +41,7 @@ module EntityTransactable
   # @return [Boolean] Returns true if all `entity_transactions` are valid; otherwise, false with ActiveModel#errors.
   #
   def check_consistency
-    return unless entity_transaction_attributes&.present?
+    return if entity_transaction_attributes.blank?
 
     check_array_of_hashes_of(entity_transactions: entity_transaction_attributes) do |entity_transaction|
       ent = EntityTransaction.find_or_initialize_by(entity: entity_transaction[:entity], transactable: self)
@@ -97,7 +97,7 @@ module EntityTransactable
   # @return [void]
   #
   def create_entity_transactions
-    return unless entity_transaction_attributes&.present?
+    return if entity_transaction_attributes.blank?
 
     entity_transaction_attributes.each do |attributes|
       ent = EntityTransaction.new(attributes.merge(transactable: self))

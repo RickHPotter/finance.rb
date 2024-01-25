@@ -36,7 +36,7 @@ module Installable
   # @return [Boolean] Returns true if all `installments` are valid; otherwise, it returns false with ActiveModel#errors.
   #
   def check_consistency
-    return unless installment_attributes&.present?
+    return if installment_attributes.blank?
 
     if installments_count != installment_attributes.size
       errors.add(:installments_count, 'The number of installments must match installments_count')

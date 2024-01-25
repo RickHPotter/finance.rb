@@ -17,8 +17,6 @@
 #
 require 'rails_helper'
 
-include FactoryHelper
-
 RSpec.describe Investment, type: :model do
   # FIXME: Test when one of the FKS are changed (should create/use another money_transaction)
   let!(:investment) { FactoryBot.create(:investment, :random, date: Date.new(2023, 7, 1)) }

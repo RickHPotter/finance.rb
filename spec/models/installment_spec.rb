@@ -18,8 +18,7 @@ require 'rails_helper'
 RSpec.describe Installment, type: :model do
   let(:card_transaction) { FactoryBot.create(:card_transaction, :random, installments_count: 1) }
   let(:money_transaction) { FactoryBot.create(:money_transaction, :random, installments_count: 1) }
-
-  # validate paid inclusion, etc
+  let(:installment) { card_transaction.installments.first }
 
   shared_examples 'installments cop' do
     it 'creates the expected amount of installments' do

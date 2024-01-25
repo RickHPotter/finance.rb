@@ -169,9 +169,9 @@ sprint. The reasons are:
   - ⌛ Fix possible bugs found at this stage.
   - ⌛ Review current specs and refactor if possible.
 - Extra:
+  - ✅ Created a new Spec file for the Exchanges flow.
   - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
   - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
-  - ⌛ Added factory and model-based specs for Installment.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

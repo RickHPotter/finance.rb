@@ -36,8 +36,8 @@ class MoneyTransaction < ApplicationRecord
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, optional: true
 
-  has_many :card_transactions
-  has_many :investments
+  has_many :card_transactions, dependent: :destroy
+  has_many :investments, dependent: :destroy
   has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
