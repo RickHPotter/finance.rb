@@ -26,7 +26,7 @@ RSpec.describe Entity, type: :model do
         it_behaves_like 'validate_blank', :entity, attribute
       end
 
-      it_behaves_like 'validate_uniqueness', :entity, :entity_name
+      it_behaves_like 'validate_uniqueness_combination', :entity, :entity_name, :user
     end
 
     context '( associations )' do

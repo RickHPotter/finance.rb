@@ -24,7 +24,7 @@ class EntityTransaction < ApplicationRecord
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :entity
+  belongs_to :entity, touch: true
   belongs_to :transactable, polymorphic: true
 
   # @validations ..............................................................
@@ -33,7 +33,7 @@ class EntityTransaction < ApplicationRecord
   validates :entity, uniqueness: { scope: :transactable }
 
   # @callbacks ................................................................
-  before_validation :set_status
+  before_validation :set_status, on: :create
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -43,14 +43,14 @@ class EntityTransaction < ApplicationRecord
 
   protected
 
-  # Sets amounts and status based on :is_payer in case it was not previously set.
+  # Sets `status` based on `is_payer` in case it was not previously set.
   #
   # @note This is a method that is called before_validation.
   #
   # @return [void]
   #
   def set_status
-    self.status = is_payer ? :pending : :finished
+    self.status ||= is_payer ? :pending : :finished
   end
 
   # @private_instance_methods .................................................

@@ -2,39 +2,77 @@
 
 # Shared functionality for models that can produce Exchanges.
 module Exchangable
-  include Backend::MathsHelper
   extend ActiveSupport::Concern
 
   included do
+    # @includes ...............................................................
+    include Backend::NestedHelper
+    include Backend::MathsHelper
+
     # @security (i.e. attr_accessible) ........................................
     attr_accessor :exchange_attributes
 
     # @relationships ..........................................................
-    has_many :exchanges, dependent: :destroy
+    has_many :exchanges, dependent: :destroy, counter_cache: :exchanges_count
 
     # @callbacks ..............................................................
+    before_validation :check_consistency
     before_validation :set_exchange_attributes
+    after_validation :update_entity_transaction_status
     before_create :create_exchanges
     before_update :update_exchanges
   end
 
+  # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
 
   protected
 
-  # Set `exchange_attributes` to an empty array if `is_payer` is false.
+  # Checks the consistency of the atributes of `exchanges` creation.
+  #
+  # This method checks if the `exchange_attributes` are present and if the object is a payer.
+  # It then uses the {Backend::NestedHelper#check_array_of_hashes_of} method with the `exchange_attributes`.
+  # For each exchange, it initialises a new {Exchange} object based on the exchange merged with
+  # the `self`, which is an {EntityTransaction}, as `entity_transaction`.
+  #
+  # @return [Boolean] Returns true if all `exchanges` are valid; otherwise, it returns false with ActiveModel#errors.
+  #
+  def check_consistency
+    return unless exchange_attributes&.present? && is_payer
+
+    check_array_of_hashes_of(exchanges: exchange_attributes) do |exchange|
+      exc = Exchange.new(exchange.merge(entity_transaction: self))
+      true if exc.valid?
+    end
+  end
+
+  # Sets the `exchange_attributes` based on `is_payer` in case it was not previously set.
   #
   # @note This is a method that is called before_validation.
   #
   # @return [void]
   #
   def set_exchange_attributes
-    self.exchange_attributes = [] if is_payer == false
+    self.exchange_attributes ||= [] unless is_payer
   end
 
-  # Create exchanges based on the provided `exchange_attributes` array of hashes.
+  # Sets the `status` of the `entity_transaction` based on the existing `exchanges`.
   #
-  # @example Create exchanges through a CardTransaction
+  # @note This is a method that is called after_validation.
+  #
+  # @return [void]
+  #
+  def update_entity_transaction_status
+    return if errors.any?
+
+    return self.status = :finished if exchanges.map(&:exchange_type).uniq == ['non_monetary']
+
+    self.status = :pending
+  end
+
+  # Creates `exchanges` based on the provided `exchange_attributes` array of hashes.
+  #
+  # @example Create `exchanges` through a {CardTransaction}
   #   card_transaction = CardTransaction.create(
   #     date: Date.current, user_id: User.first.id,
   #     user_card_id: User.first.user_cards.ids.sample,
@@ -45,72 +83,56 @@ module Exchangable
   #         entity_id: User.first.entities.ids.sample,
   #         is_payer: true, price: 4.00,
   #         exchange_attributes: [
-  #           { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 },
-  #           { exchange_type: :monetary, amount_to_be_returned: 2.00, amount_returned: 0.00 }
+  #           { exchange_type: :monetary, price: 2.00 },
+  #           { exchange_type: :monetary, price: 2.00 }
   #         ]
   #       }
   #     ]
   #   )
-  #   => create_exchanges is run before_create
-  #   => two exchanges are created for given entity
+  #   => two `exchanges` are created for this `card_transaction` through `entity_transaction`
   #
-  # @note The method uses the provided `exchange_attributes` to create exchanges
-  #   for the entity transaction.
   # @note This is a method that is called before_create.
+  # @note The method uses the provided `exchange_attributes` to create `exchanges`
+  #   for the `entity_transaction`.
+  #
+  # @see {Exchange}
   #
   # @return [void]
   #
-  # @see Exchange
-  #
   def create_exchanges
-    return unless should_have_exchanges?
-
-    exchange_attributes ||= create_default_exchange_attributes
+    return unless exchange_attributes&.present?
 
     exchange_attributes.each_with_index do |attributes, index|
-      exchanges << Exchange.create(attributes.merge(number: index + 1))
+      exc = Exchange.new(attributes.merge(number: index + 1))
+      exchanges.push(exc) unless exchanges.include?(exc)
     end
 
-    self.exchanges_count = exchange_attributes.count
+    destroy_exchange_attributes
   end
 
-  # Update exchanges based on a set of conditions.
+  # Updates `exchanges` based on a set of conditions.
   #
-  # In case there were no exchanges to begin with, they are created instead of updated.
-  # In case there were exchanges, they are deleted and then updated.
-  # In case there were exchanges, `is_payer` == false, then the creation of exchanges is avoided.
+  # In case `exchange_attributes` is nil, nothing happens.
+  # In case `exchange_attributes` is not nil, `exchanges` are deleted, then the process is
+  # delegated to {#create_exchanges} method that will only create new `exchanges` if
+  # `exchange_attributes` is not empty.
   #
   # @note This is a method that is called before_update.
+  #
+  # @see {#set_exchange_attributes} to check that exchange_attributes can be ignored in the initialisation
   #
   # @return [void]
   #
   def update_exchanges
-    return create_exchanges if exchanges.blank? && is_payer
+    return unless exchange_attributes
 
     exchanges.destroy_all
-    create_exchanges if should_have_exchanges?
+    create_exchanges
   end
 
-  # Checks whether the model should have exchanges.
+  # Destroys `exchange_attributes` so that later updates don't reuse the cached instance
   #
-  # @return [Boolean] true if the model is the payer and exchanges should be present, false otherwise.
-  #
-  def should_have_exchanges?
-    is_payer && exchanges_count.positive? || exchange_attributes.present?
-  end
-
-  # Creates default exchange attributes based on the `price` and `exchanges_count` values.
-  #
-  # @return [Array<Hash>] an array of default exchange attributes.
-  #
-  def create_default_exchange_attributes
-    prices_array = spread_installments_evenly(price, exchanges_count)
-    prices_array.each_with_object [] do |price, array|
-      array << {
-        exchange_type: :monetary,
-        amount_to_be_returned: price,
-        amount_returned: 0.00
-      }
-    end
+  def destroy_exchange_attributes
+    self.exchange_attributes = nil
   end
 end

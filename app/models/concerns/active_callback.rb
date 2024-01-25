@@ -9,11 +9,12 @@ module ActiveCallback
     before_validation :set_active, on: :create
   end
 
+  # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
 
   protected
 
-  # Sets active state in case it was not previously set.
+  # Sets `active` in case it was not previously set.
   #
   # @note This is a method that is called before_validation.
   #

@@ -6,6 +6,7 @@
 #
 #  id            :bigint           not null, primary key
 #  category_name :string           not null
+#  built_in      :boolean          default(FALSE), not null
 #  user_id       :bigint           not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
@@ -26,7 +27,7 @@ RSpec.describe Category, type: :model do
         it_behaves_like 'validate_blank', :category, attribute
       end
 
-      it_behaves_like 'validate_uniqueness', :category, :category_name
+      it_behaves_like 'validate_uniqueness_combination', :category, :category_name, :user
     end
 
     context '( associations )' do

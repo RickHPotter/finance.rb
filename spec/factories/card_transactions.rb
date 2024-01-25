@@ -44,7 +44,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      date { Faker::Date.between(from: 3.months.ago, to: Date.today) }
+      date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
       ct_description { Faker::Lorem.sentence }
       ct_comment { [Faker::Lorem.sentence, nil, nil, nil, nil].sample }
       price { Faker::Number.decimal(l_digits: rand(1..3)) }
@@ -62,7 +62,8 @@ FactoryBot.define do
           status: 'pending',
           price: [price, price / 2, price / 3].sample.round(2),
           exchanges_count: 1,
-          transactable: self
+          transactable: self,
+          exchange_attributes: [{ exchange_type: :monetary, price: (price / 3).round(2) }]
         }]
       end
     end
@@ -70,7 +71,7 @@ FactoryBot.define do
     trait :with_category_transactions do
       category_transaction_attributes do
         [{
-          category: random_custom_create(:category, reference: { user: }),
+          category: create(:category, :random, user:),
           transactable: self
         }]
       end

@@ -84,7 +84,7 @@ class CardTransactionsController < ApplicationController
       :date, :user_card_id, :ct_description, :ct_comment, :price, :month, :year, :installments_count,
       entity_transaction_attributes: [
         :is_payer, :price,
-        { exchange_attributes: %i[exchange_type amount_to_be_returned amount_returned] }
+        { exchange_attributes: %i[exchange_type price] }
       ]
     )
   end

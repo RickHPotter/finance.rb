@@ -10,12 +10,12 @@
   - [GAARA-04/app-01: Update stack and add Docker](#gaara-04app-01-update-stack-and-add-docker)
   - [GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction](#gaara-05be-04-create-entitytransaction-model-installments-in-moneytransaction)
   - [GAARA-06/be-05: Create Exchange Model](#gaara-06be-05-create-exchange-model)
-  - [GAARA-07/be-06: Refine EntityTransaction and Exchange Models](#gaara-07be-06-refine-entitytransaction-and-exchange-models)
+  - [GAARA-07/be-06: Refine Exchange Model](#gaara-07be-06-refine-exchange-model)
   - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
   - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
-  - [GAARA-12/fe-04: Finish the MVP / Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
+  - [GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
 <!--toc:end-->
 
 # INTRODUCTION
@@ -96,11 +96,11 @@ sprint. The reasons are:
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
        price as decimal, status (pending, finished)].
   - ✅ Remove entity_id from (Card/Money)Transaction.
-  - ✅ When a entity_transaction is not a payer:
+  - ✅ When an entity_transaction is not a payer:
     - 1 ✅ The entity_transaction should have `is_payer: false, status = 'finished'`,
            amount_to_be_returned and amount_returned should be 0.00.
 - Extra:
-  - ✅ APP: Enabled YJIT by with an initialiser.
+  - ✅ APP: Enabled YJIT with an initialiser.
   - ✅ APP: Added Confirmable in Devise.
   - ✅ APP: Added SimpleCov for tracking test coverage.
   - ✅ APP: Added Guard-Rspec for safer development.
@@ -114,7 +114,7 @@ sprint. The reasons are:
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
-  - ✅ Create Model that will reference a entity_transaction and generate a money_transaction.
+  - ✅ Create Model that will reference an entity_transaction and generate a money_transaction.
   - ✅ The table should include the fields: [id, timestamps,
        exchange_type (monetary, non-monetary), amount_to_be_returned, amount_returned].
   - ✅ CardTransaction should `has_many :entity_transactions`,
@@ -128,28 +128,41 @@ sprint. The reasons are:
   - ✅ Made an Installable Concern to be used by both Transactions.
   - ✅ Made possible to change the amount of installments in a Transactable.
   - ✅ Made possible to change the amount of entity_transactions in a Transactable.
-  - ✅ Made possible to change the amount of exchanges in a EntityTransaction.
+  - ✅ Made possible to change the amount of exchanges in an EntityTransaction.
   - ✅ Added EntityTransaction specs for updates in entity_transaction_attributes.
   - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
   - ✅ Added CategoryTransaction specs for callbacks.
 
-## GAARA-07/be-06: Refine EntityTransaction and Exchange Models
+## GAARA-07/be-06: Refine Exchange Model
 
 - Issues:
   - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
+  - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ One money_transaction should be created for every monetary exchange,
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ One money_transaction should be created for every monetary exchange,
        with a builtin `category = 'Exchange Return'` and no entity_transaction.
-  - ⌛ Removing or updating one of the models that belong to the exchange flow
-       [card_transaction -> entity_transaction / exchange -> money_transaction]
-       should also reflect on the corresponding money_transaction.
+  - ✅ Given the flow of [card_transaction -> entity_transaction <-> exchange -> money_transaction]:
+    - 1 ✅ if card_transaction has entity_transaction with exchanges, it should have
+        `Exchange` category.
+    - 2 ✅ if card_transaction has no entity_transaction with exchanges, its category
+        `Exchange` is dropped.
+    - 3 ✅ if card_transaction wipes entity_transaction, everything dies.
+    - 4 ✅ if entity_transaction is not a payer, the exchange should cease to exist.
+    - 5 ✅ if exchange is non_monetary, the money_transaction should cease to exist.
 - Extra:
-  - ⌛ Added factory and model-based specs for Installment.
-  - ⌛ Added Exchange specs for both exchange_types.
+  - ✅ Removed amount_returned and amount_to_be_returned from Exchange Model.
+  - ✅ Added price and starting_price attributes to Exchange Model.
+  - ✅ Added paid boolean method to MoneyTransaction Model.
+  - ✅ Added Exchange specs for both exchange_types.
+  - ✅ Added built_in boolean attribute for Category.
+  - ✅ Created a helper for Nested Attributes.
 
 ## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
+
+- Issues:
+  - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
   - ⌛ Refine seeds to include all models.
@@ -158,6 +171,7 @@ sprint. The reasons are:
 - Extra:
   - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
   - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
+  - ⌛ Added factory and model-based specs for Installment.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

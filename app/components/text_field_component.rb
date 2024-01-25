@@ -37,7 +37,7 @@ class TextFieldComponent < ViewComponent::Base
     super
   end
 
-  # Set default options for the text field.
+  # Sets default options for the text field.
   #
   # @param options [Hash] Additional options for customizing the text field.
   #

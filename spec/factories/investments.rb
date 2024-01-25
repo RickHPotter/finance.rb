@@ -33,7 +33,7 @@ FactoryBot.define do
 
     trait :random do
       price { Faker::Number.decimal(l_digits: rand(0..1)) }
-      date { Faker::Date.between(from: 1.months.ago, to: Date.today) }
+      date { Faker::Date.between(from: 1.months.ago, to: Date.current) }
 
       user { random_custom_create(:user) }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }

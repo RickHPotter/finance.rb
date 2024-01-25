@@ -29,7 +29,7 @@ class ButtonComponent < ViewComponent::Base
     super
   end
 
-  # Set default options for the button.
+  # Sets default options for the button.
   #
   # @param options [Hash] Additional options for customizing the button.
   #
@@ -45,7 +45,7 @@ class ButtonComponent < ViewComponent::Base
     }
   end
 
-  # Set html id for button based on the presence of a link.
+  # Sets html id for button based on the presence of a link.
   #
   # @return [String] HTML id for the button tag.
   #
@@ -55,7 +55,7 @@ class ButtonComponent < ViewComponent::Base
     "#{form.object.model_name.singular}_submit_button"
   end
 
-  # Set the colour for the button based on the colour option.
+  # Sets the colour for the button based on the colour option.
   #
   # @param colour [Symbol] The colour of the button.
   # @option colour [Symbol] :indigo

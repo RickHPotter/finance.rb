@@ -50,6 +50,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
 
   create_table "categories", force: :cascade do |t|
     t.string "category_name", null: false
+    t.boolean "built_in", default: false, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -93,8 +94,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
   create_table "exchanges", force: :cascade do |t|
     t.integer "exchange_type", default: 0, null: false
     t.integer "number", default: 1, null: false
-    t.decimal "amount_to_be_returned", null: false
-    t.decimal "amount_returned", null: false
+    t.decimal "starting_price", null: false
+    t.decimal "price", null: false
     t.bigint "entity_transaction_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
@@ -137,6 +138,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.integer "year", null: false
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
+    t.boolean "paid", default: false
     t.string "money_transaction_type"
     t.integer "installments_count", default: 1, null: false
     t.bigint "user_id", null: false
