@@ -12,7 +12,6 @@ class AutocompleteSelectComponent < ViewComponent::Base
   # Initialises a Component of Type Button
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
-  # @param object [Object] The object associated with the form (default is nil).
   # @param field [Symbol] The field associated with the form (default is nil).
   # @param items [Array] Array of Item Structs.
   # @param options [Hash] Additional options for customizing the autocomplete select.
@@ -24,14 +23,14 @@ class AutocompleteSelectComponent < ViewComponent::Base
   #
   # @return [ButtonComponent] A new instance of ButtonComponent.
   #
-  def initialize(form:, object:, field:, items:, options: {})
+  def initialize(form:, field:, items:, options: {})
     @form = form
-    @object = object
+    @object = form.object
     @field = field
     @options = default_options(options)
 
     @items = items.map do |item|
-      Item.new(id: item[0], label: item[1])
+      Item.new(label: item[0], id: item[1])
     end
     super
   end

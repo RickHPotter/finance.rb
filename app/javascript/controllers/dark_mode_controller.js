@@ -1,6 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// WHERE CREDITS ARE DUE:
 // https://codepen.io/kniaza/pen/xxOaZBL
 //
 // Connects to data-controller="dark-mode"

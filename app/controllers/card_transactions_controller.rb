@@ -7,7 +7,8 @@ class CardTransactionsController < ApplicationController
 
   def index
     @card_transactions = CardTransaction.all.eager_load(
-      :user_card, :installments, category_transactions: :category, entity_transactions: :entity
+      # :user_card, :installments, category_transactions: :category, entity_transactions: :entity
+      :user_card, :installments
     )
   end
 
@@ -22,14 +23,13 @@ class CardTransactionsController < ApplicationController
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
 
-    respond_to do |format|
-      if @card_transaction.save
-        format.html { redirect_to card_transactions_path }
-      else
-        format.html { render card_transactions_path, status: :unprocessable_entity }
-      end
-      format.turbo_stream
+    if @card_transaction.save
+      flash[:notice] = 'Card Transaction was successfully created.'
+    else
+      flash[:alert] = @card_transaction.errors.full_messages
     end
+
+    respond_to(&:turbo_stream)
   end
 
   def update
@@ -81,7 +81,9 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      :date, :user_card_id, :ct_description, :ct_comment, :price, :month, :year, :installments_count,
+      :ct_description, :ct_comment, :date, :month, :year, :price, :installments_count,
+      :user_id, :user_card_id,
+      installments_attributes: %i[price number paid],
       entity_transaction_attributes: [
         :is_payer, :price,
         { exchange_attributes: %i[exchange_type price] }

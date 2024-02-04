@@ -9,17 +9,17 @@ export default class extends Controller {
     useClickOutside(this)
   }
 
+  clickOutside(_event) {
+    this.close()
+  }
+
   toggle() {
     if (this.listTarget.classList.contains("hidden")) {
       this.open()
+      useClickOutside(this)
     } else {
       this.close()
     }
-  }
-
-  clickOutside(event) {
-    event.preventDefault()
-    this.close()
   }
 
   open() {

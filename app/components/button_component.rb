@@ -24,7 +24,7 @@ class ButtonComponent < ViewComponent::Base
   #
   def initialize(form: nil, link: nil, options: {})
     @form = form
-    @link = link
+    @link = link || '#'
     @options = default_options(options)
     super
   end
@@ -41,7 +41,7 @@ class ButtonComponent < ViewComponent::Base
       label: options[:label] || 'Button Without A Name',
       colour: { colour: colours(options[:colour]) },
       type: 'button',
-      data: data_attributes(options[:data])
+      data: options[:data] || {}
     }
   end
 
@@ -52,25 +52,37 @@ class ButtonComponent < ViewComponent::Base
   def button_id
     return "#{link}_button" if link
 
-    "#{form.object.model_name.singular}_submit_button"
+    return "#{form.object.model_name.singular}_submit_button" if form
+
+    'idless_button'
   end
 
   # Sets the colour for the button based on the colour option.
   #
   # @param colour [Symbol] The colour of the button.
-  # @option colour [Symbol] :indigo
-  # @option colour [Symbol] :red
+  # @option colour [Symbol] :purple
+  # @option colour [Symbol] :orange
   #
   # @return [Hash] The colour of the button.
   #
   def colours(colour)
     case colour
-    when nil, :indigo
-      { text: 'text-white', bg: 'bg-indigo-600',
-        hover: { bg: 'hover:bg-indigo-700' }, focus: { ring: 'focus:ring-black' } }
+
+    when nil, :purple
+      { text: 'text-white', bg: 'bg-purple-600', border: 'border-gray-300',
+        hover: { bg: 'hover:bg-indigo-900', text: '' } }
+    when :light
+      { text: 'text-black', bg: 'bg-gray-300', border: 'border-black',
+        hover: { bg: 'hover:bg-gray-500', text: 'hover:text-gray-50' } }
     when :red
-      { text: 'text-black', bg: 'bg-red-500',
-        hover: { bg: 'hover:bg-red-600' }, focus: { ring: 'focus:ring-black' } }
+      { text: 'text-white', bg: 'bg-red-800', border: 'border-black',
+        hover: { bg: 'hover:bg-red-700', text: 'hover:text-gray-50' } }
+    when :indigo
+      { text: 'text-white', bg: 'bg-indigo-600', border: 'border-black',
+        hover: { bg: 'hover:bg-indigo-700', text: 'hover:text-gray-50' } }
+    when :orange
+      { text: 'text-white', bg: 'bg-orange-500', border: 'rounded-md',
+        hover: { bg: 'hover:bg-red-700', text: '' } }
     end
   end
 end

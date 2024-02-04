@@ -63,6 +63,8 @@ gem 'letter_opener_web'
 # Although I like the approach of rails credentials:edit, I thinks it's harder than it should.
 gem 'dotenv-rails'
 
+gem 'dockerfile-rails'
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem 'bullet'

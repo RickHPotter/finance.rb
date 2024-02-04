@@ -14,3 +14,20 @@ en:
         password_confirmation: Password Confirmation
         created_at: Created at
         updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      user:
+        one: Usuário
+        other: Usuários
+    attributes:
+      user:
+        id: ID
+        first_name: Nome
+        last_name: Sobrenome
+        email: Email
+        password: Senha
+        password_confirmation: Confirmação de senha
+        created_at: Criado em
+        updated_at: Atualizado em

@@ -162,6 +162,9 @@ RSpec.describe 'CardTransactionFlow', class: CardTransaction, type: :model do
     # money_transaction
     #
     context '( money_transaction creation by default due to monetary exchange )' do
+      it 'generates a money_transaction' do
+        expect(exchange.money_transaction).to_not be(nil)
+      end
     end
   end
 end

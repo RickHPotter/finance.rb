@@ -25,14 +25,17 @@ class CardTransaction < ApplicationRecord
   include MonthYear
   include StartingPriceCallback
   include MoneyTransactable
-  include CategoryTransactable
-  include EntityTransactable
-  include Installable
+  # include CategoryTransactable
+  # include EntityTransactable
+  # include Installable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card
+
+  has_many :installments, as: :installable, dependent: :destroy
+  accepts_nested_attributes_for :installments, allow_destroy: true, reject_if: :all_blank
 
   # @validations ..............................................................
   validates :date, :ct_description, :starting_price, :price, :month, :year, presence: true

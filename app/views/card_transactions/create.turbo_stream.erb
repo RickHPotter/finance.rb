@@ -1,13 +1,11 @@
 <% if @card_transaction.errors.present? %>
-  <%= notice_stream(message: :error, status: 'red') %>
-
-  <%= form_card_transaction_stream(card_transaction: @card_transaction) %>
+  <%= turbo_stream.replace :new_card_transaction_form, partial: 'form', locals: {  card_transaction: @card_transaction  } %>
 <% else %>
-  <%= notice_stream(message: :create, status: 'green') %>
-
   <%= turbo_stream.replace :new_card_transaction do %>
     <%= turbo_frame_tag :new_card_transaction %>
   <% end %>
 
   <%= turbo_stream.prepend 'card_transactions', partial: 'card_transaction', locals: { card_transaction: @card_transaction } %>
 <% end %>
+
+<%= turbo_stream.update :notification, partial: 'shared/flash' %>

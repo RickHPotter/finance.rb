@@ -7,14 +7,14 @@ class TextFieldComponent < ViewComponent::Base
   include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_reader :form, :object, :field, :options, :wrapper
+  attr_reader :form, :object, :field, :items, :options, :wrapper
 
   # @public_instance_methods ..................................................
   # Initialises a Component of Type TextField
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object.
-  # @param object [Object] The model object associated with the form.
   # @param field [Symbol] The attribute name for the text field.
+  # @param items [Array] Array of Item Structs.
   # @param options [Hash] Additional options for customizing the text field.
   #
   # @option options [String] :id The HTML ID attribute for the text field.
@@ -28,9 +28,10 @@ class TextFieldComponent < ViewComponent::Base
   #
   # @return [TextFieldComponent] A new instance of TextFieldComponent.
   #
-  def initialize(form:, object:, field:, options: {}, wrapper: true)
+  def initialize(form:, field:, items: nil, options: {}, wrapper: true)
     @form = form
-    @object = object
+    @object = form.object || form.options[:parent_builder].object
+    @items = items
     @field = field
     @options = default_options(options)
     @wrapper = wrapper

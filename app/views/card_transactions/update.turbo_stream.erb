@@ -1,14 +1,11 @@
 <% if @card_transaction.errors.present? %>
-  <%= notice_stream(message: :error, status: 'red') %>
-
   <%= form_card_transaction_stream(card_transaction: @card_transaction) %>
 <% else %>
-  <%= notice_stream(message: :update, status: 'green') %>
-
   <%= turbo_stream.replace :edit_card_transaction do %>
     <%= turbo_frame_tag :edit_card_transaction %>
   <% end %>
 
   <%= turbo_stream.replace dom_id(@card_transaction), partial: 'card_transaction', locals: { card_transaction: @card_transaction } %>
-
 <% end %>
+
+<%= notice_stream %>
