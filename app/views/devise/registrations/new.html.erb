@@ -7,9 +7,9 @@
 <% end %>
 
 <%= form_for resource, as: resource_name, url: registration_path(resource_name),
-             data: { turbo: false, controller: "form-validate" } do |f| %>
+                       data: { turbo: false, controller: "form-validate" } do |f| %>
 
-  <%= render "devise/shared/error_messages", resource: resource %>
+  <%= render "devise/shared/error_messages", resource: %>
 
   <div class='mb-6'>
     <%= render TextFieldComponent.new(form: f, field: :first_name, options: { autofocus: true }) %>

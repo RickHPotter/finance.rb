@@ -24,10 +24,10 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
+  include Installable
   include MoneyTransactable
-  # include CategoryTransactable
-  # include EntityTransactable
-  # include Installable
+  include CategoryTransactable
+  include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................

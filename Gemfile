@@ -67,13 +67,13 @@ end
 group :development do
   gem "annotate"
   gem "awesome_print"
+  gem "brakeman"
+  gem "bundler-audit"
+  gem "erb_lint", require: false
   gem "guard-rspec", require: false
   gem "hotwire-livereload"
   gem "rubocop-rails-omakase", require: false
   gem "web-console"
-  gem "erb_lint", require: false
-  gem "brakeman"
-  gem "bundler-audit"
 
   # NEOVIM IDE / REMEMBER TO UPDATE MASON
   gem "neovim"

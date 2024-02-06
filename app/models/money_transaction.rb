@@ -26,9 +26,9 @@ class MoneyTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
+  include Installable
   include CategoryTransactable
   include EntityTransactable
-  include Installable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................

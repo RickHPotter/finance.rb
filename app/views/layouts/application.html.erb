@@ -14,17 +14,14 @@
 
   <body class="">
     <main class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white antialiased">
-      <div class="flex justify-between">
-        <div class="p-2">
-          <%= render "shared/dark_mode" %>
-        </div>
+      <div class="pl-4">
+        <%= render "shared/flash" %>
+        <%= render "shared/dark_mode" %>
       </div>
 
       <section class="container mx-auto mt-28 px-5 flex">
         <%= yield %>
       </section>
     </main>
-
-    <%= render "shared/flash" %>
   </body>
 </html>

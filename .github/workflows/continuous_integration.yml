@@ -32,14 +32,13 @@ jobs:
       # we'll see how long this lasts
       - name: Set up npm
         run: npm install
-      # FIXME: im doing some shit that will always break, so whats the point of running tests
-      # - name: Run tests
-      #   run: bin/rspec
+      - name: Run tests
+        run: bin/rspec
       - name: Create Coverage Artifact
         uses: actions/upload-artifact@v2
         with:
           name: code-coverage
-          path: coverage/
+          path: public/coverage/
 
   lint:
     runs-on: ubuntu-latest
