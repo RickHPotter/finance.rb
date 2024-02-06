@@ -3,7 +3,7 @@
 # Controller for Home SPA
 class PagesController < ApplicationController
   def home
-    main_items = ['New', 'Card Transaction', 'Transaction']
+    main_items = [ "New", "Card Transaction", "Transaction" ]
     main_icons = %w[plus credit_card wallet]
     main_links = %i[new_card_transaction card_transactions transactions]
 
@@ -11,7 +11,7 @@ class PagesController < ApplicationController
       TabsComponent::Item.new(item, "shared/svgs/#{main_icons[index]}", main_links[index], :center_container)
     end
 
-    @sub_tab = [new, card_transaction, transaction]
+    @sub_tab = [ new, card_transaction, transaction ]
   end
 
   private

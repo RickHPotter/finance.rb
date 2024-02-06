@@ -19,13 +19,13 @@ class Category < ApplicationRecord
   belongs_to :user
 
   has_many :category_transactions
-  has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: 'CardTransaction'
-  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: 'MoneyTransaction'
-  has_many :investments, through: :category_transactions, source: :transactable, source_type: 'Investment'
+  has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
+  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: "MoneyTransaction"
+  has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
 
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: :user }
-  validates :built_in, inclusion: { in: [true, false] }
+  validates :built_in, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_built_in

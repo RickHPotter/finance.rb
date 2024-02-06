@@ -24,7 +24,7 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.new(card_transaction_params)
 
     if @card_transaction.save
-      flash[:notice] = 'Card Transaction was successfully created.'
+      flash[:notice] = "Card Transaction was successfully created."
     else
       flash[:alert] = @card_transaction.errors.full_messages
     end
@@ -35,7 +35,7 @@ class CardTransactionsController < ApplicationController
   def update
     respond_to do |format|
       if @card_transaction.update(card_transaction_params)
-        format.html { redirect_to card_transactions_path, notice: 'Card Transaction was successfully updated.' }
+        format.html { redirect_to card_transactions_path, notice: "Card Transaction was successfully updated." }
       else
         format.html { render card_transactions_path, status: :unprocessable_entity }
       end
@@ -47,7 +47,7 @@ class CardTransactionsController < ApplicationController
     @card_transaction.destroy
     respond_to do |format|
       format.turbo_stream
-      format.html { redirect_to card_transactions_url, notice: 'Card Transaction was successfully destroyed.' }
+      format.html { redirect_to card_transactions_url, notice: "Card Transaction was successfully destroyed." }
     end
   end
 

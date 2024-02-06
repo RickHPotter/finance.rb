@@ -106,7 +106,7 @@ module ExchangeMoneyTransactable
       user_id: user.id,
       money_transaction_type: model_name.name,
       user_bank_account_id: user.user_bank_accounts.ids.sample,
-      category_transaction_attributes: [{ category_id: user.built_in_category('Exchange Return').id }]
+      category_transaction_attributes: [ { category_id: user.built_in_category("Exchange Return").id } ]
     }
   end
 end

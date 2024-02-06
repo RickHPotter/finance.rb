@@ -78,7 +78,7 @@ class CardTransaction < ApplicationRecord
   #
   def mt_comment
     siblings = money_transaction&.card_transactions
-    siblings ||= [self]
+    siblings ||= [ self ]
 
     # FIXME: this logic seems accurate, but it's not getting the installment
     # price, but the whole thing when it is installable, plus, as of now

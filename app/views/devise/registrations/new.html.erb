@@ -2,14 +2,14 @@
   <h2 class='mt-6 text-center text-3xl font-bold tracking-tight text-gray-900'>Create your account</h2>
   <p class='mt-2 text-center text-sm text-gray-600'>
     Have an account already?
-    <%= link_to 'Log in', new_session_path(resource_name), class: 'font-medium text-indigo-600 hover:text-indigo-500' %>
+    <%= link_to "Log in", new_session_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
 <% end %>
 
 <%= form_for resource, as: resource_name, url: registration_path(resource_name),
-             data: { turbo: false, controller: 'form-validate' } do |f| %>
+             data: { turbo: false, controller: "form-validate" } do |f| %>
 
-  <%= render 'devise/shared/error_messages', resource: resource %>
+  <%= render "devise/shared/error_messages", resource: resource %>
 
   <div class='mb-6'>
     <%= render TextFieldComponent.new(form: f, field: :first_name, options: { autofocus: true }) %>
@@ -36,6 +36,6 @@
   </div>
 
   <div>
-    <%= render ButtonComponent.new(form: f, options: { label: 'Sign up' }) %>
+    <%= render ButtonComponent.new(form: f, options: { label: "Sign up" }) %>
   </div>
 <% end %>

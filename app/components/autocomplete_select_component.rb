@@ -47,10 +47,10 @@ class AutocompleteSelectComponent < ViewComponent::Base
     {
       id: options[:id] || input_id,
       label: options[:label] || attribute_model(@object, @field),
-      type: 'select',
+      type: "select",
       data: {
-        autocomplete_select_target: 'selected',
-        action: 'input->autocomplete-select#filterList keydown->autocomplete-select#onKeyDown'
+        autocomplete_select_target: "selected",
+        action: "input->autocomplete-select#filterList keydown->autocomplete-select#onKeyDown"
       }
     }
   end

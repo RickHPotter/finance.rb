@@ -9,7 +9,7 @@
     </p>
 
     <div class="w-full mt-2 flex flex-wrap border shadow p-2 rounded-md">
-      <p class="flex-1 text-center font-bold text-gray-700">Created at: <%= card_transaction.created_at.strftime('%d/%m/%Y') %></p>
+      <p class="flex-1 text-center font-bold text-gray-700">Created at: <%= card_transaction.created_at.strftime("%d/%m/%Y") %></p>
     </div>
 
     <%= turbo_frame_tag "edit_card_transaction_#{card_transaction.id}" %>

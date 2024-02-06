@@ -54,7 +54,7 @@ module EntityTransactable
   def update_card_transaction_categories
     return if errors.any? || entity_transaction_attributes.nil?
 
-    exchange_category_id = user.built_in_category('Exchange').id
+    exchange_category_id = user.built_in_category("Exchange").id
 
     exchange_category_transaction = category_transactions.find do |category_transaction|
       category_transaction.category_id == exchange_category_id

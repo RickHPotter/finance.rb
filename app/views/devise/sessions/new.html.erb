@@ -9,7 +9,7 @@
 <% end %>
 
 <%= form_for resource, as: resource_name, url: session_path(resource_name),
-             data: { turbo: false, controller: 'form-validate' } do |f| %>
+             data: { turbo: false, controller: "form-validate" } do |f| %>
 
   <div class="mb-6">
     <%= render TextFieldComponent.new(form: f, field: :email, options: { type: :email, autofocus: true }) %>
@@ -35,6 +35,6 @@
   </div>
 
   <div>
-    <%= render ButtonComponent.new(form: f, options: { label: 'Log in' }) %>
+    <%= render ButtonComponent.new(form: f, options: { label: "Log in" }) %>
   </div>
 <% end %>

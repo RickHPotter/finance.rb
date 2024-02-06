@@ -15,7 +15,7 @@
   <% elsif options[:type] == :textarea %>
     <%= form.text_area field, opts %>
   <% else %>
-    <%= form.text_field field, opts.merge(placeholder: ' ', type: options[:type], step: options[:step]) %>
+    <%= form.text_field field, opts.merge(placeholder: " ", type: options[:type], step: options[:step]) %>
   <% end %>
 
   <%= form.label field, options[:label], class: label_class, for: options[:id] %>

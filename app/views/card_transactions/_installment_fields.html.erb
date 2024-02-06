@@ -7,10 +7,10 @@
       <%= render TextFieldComponent.new(form:, field: :price, options: { type: :number }) %>
     </div>
     <div class="flex w-1/4 flex-col my-6">
-      <%= form.check_box :paid  %>
+      <%= form.check_box :paid %>
     </div>
     <div class="flex w-1/4 flex-col my-6">
-      <%= render ButtonComponent.new(options: { label: action_model(:destroy, Installment), colour: :red, data: { action: 'nested-form#remove' } }) %>
+      <%= render ButtonComponent.new(options: { label: action_model(:destroy, Installment), colour: :red, data: { action: "nested-form#remove" } }) %>
     </div>
   </div>
 </div>

@@ -48,11 +48,11 @@ class TextFieldComponent < ViewComponent::Base
     {
       id: options[:id] || "#{@object.model_name.singular}_#{@field}",
       label: options[:label] || attribute_model(@object, @field),
-      type: options[:type] || 'text',
-      step: options[:step] || '',
+      type: options[:type] || "text",
+      step: options[:step] || "",
       autofocus: options[:autofocus] || false,
       autocomplete: options[:autocomplete] || @field,
-      data: { form_validate_target: 'field' }.merge(options[:data] || {})
+      data: { form_validate_target: "field" }.merge(options[:data] || {})
     }
   end
 end

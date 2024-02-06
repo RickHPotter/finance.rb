@@ -3,6 +3,6 @@
 # God Helper
 module ApplicationHelper
   def notice_stream
-    turbo_stream.append(:notification, partial: 'shared/flash')
+    turbo_stream.append(:notification, partial: "shared/flash")
   end
 end

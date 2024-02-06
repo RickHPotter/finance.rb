@@ -39,7 +39,7 @@ module Installable
     return if installment_attributes.blank?
 
     if installments_count != installment_attributes.size
-      errors.add(:installments_count, 'The number of installments must match installments_count')
+      errors.add(:installments_count, "The number of installments must match installments_count")
       return false
     end
 

@@ -72,8 +72,8 @@ class User < ApplicationRecord
   #
   def create_built_ins
     categories.push(
-      Category.new(built_in: true, category_name: 'Exchange'),
-      Category.new(built_in: true, category_name: 'Exchange Return')
+      Category.new(built_in: true, category_name: "Exchange"),
+      Category.new(built_in: true, category_name: "Exchange Return")
     )
   end
 

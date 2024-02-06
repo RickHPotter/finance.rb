@@ -42,7 +42,7 @@ class MoneyTransaction < ApplicationRecord
 
   # @validations ..............................................................
   validates :mt_description, :date, :starting_price, :price, :month, :year, presence: true
-  validates :paid, inclusion: { in: [true, false] }
+  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
