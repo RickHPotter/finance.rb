@@ -12,7 +12,7 @@
 #  year                 :integer          not null
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
-#  installments_count   :integer          default(1), not null
+#  installments_count   :integer          default(0), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
 #  money_transaction_id :bigint
@@ -32,6 +32,7 @@ FactoryBot.define do
     user_card { custom_create(:user_card, reference: { user: }) }
 
     installments { FactoryBot.build_list(:installment, 1, price:) }
+    category_transactions { FactoryBot.build_list(:category_transaction, 1, :random) }
 
     trait :different do
       ct_description { "Sitpass" }
@@ -64,15 +65,6 @@ FactoryBot.define do
           exchanges_count: 1,
           transactable: self,
           exchange_attributes: [ { exchange_type: :monetary, price: (price / 3).round(2) } ]
-        } ]
-      end
-    end
-
-    trait :with_category_transactions do
-      category_transaction_attributes do
-        [ {
-          category: create(:category, :random, user:),
-          transactable: self
         } ]
       end
     end

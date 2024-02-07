@@ -1,7 +1,6 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
-  <% data = { controller: "nested-form form-validate", nested_form_wrapper_selector_value: "#nested-form-wrapper" } %>
-  <%= form_with model: card_transaction, id: "form", class: "contents", data: do |form| %>
+  <%= form_with model: card_transaction, id: "form", class: "contents", data: { controller: "form-validate" } do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
@@ -11,9 +10,6 @@
       <%= render TextFieldComponent.new form:, field: :ct_comment, options: { type: :textarea } %>
     </div>
     <div class="w-full mb-6">
-      <%= render TextFieldComponent.new form:, field: :date, options: { type: :date } %>
-    </div>
-    <div class="w-full mb-6">
       <%= render TextFieldComponent.new form:, field: :user_card_id, items: UserCard.all.pluck(:user_card_name, :id), options: { type: :select } %>
     </div>
     <div class="flex w-full gap-4 mb-6">
@@ -21,24 +17,45 @@
         <%= render TextFieldComponent.new form:, field: :price %>
       </div>
       <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :installments_count %>
+        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, value: Date.today } %>
       </div>
     </div>
 
-    <template data-nested-form-target="template">
-      <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
+    <!-- Installments -->
+    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+      <template data-nested-form-target="template">
+        <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
+          <%= render "installment_fields", form: installment_fields %>
+        <% end %>
+      </template>
+
+      <%= form.fields_for :installments, Installment.new do |installment_fields| %>
         <%= render "installment_fields", form: installment_fields %>
       <% end %>
-    </template>
 
-    <%= form.fields_for :installments, Installment.new do |installment_fields| %>
-      <%= render "installment_fields", form: installment_fields %>
-    <% end %>
+      <!-- inserted elements -->
+      <div data-nested-form-target='target'></div>
 
-    <!-- inserted elements -->
-    <div data-nested-form-target='target'></div>
+      <%= render ButtonComponent.new(options: { label: action_model(action_name, Installment), colour: :orange, data: { action: "nested-form#add" } }) %>
+    </div>
 
-    <%= render ButtonComponent.new(options: { label: action_model(action_name, Installment), colour: :orange, data: { action: "nested-form#add" } }) %>
+    <!-- Categories -->
+    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+      <template data-nested-form-target="template">
+        <%= form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields| %>
+          <%= render "category_transaction_fields", form: category_transaction_fields %>
+        <% end %>
+      </template>
+
+      <%= form.fields_for :category_transactions, CategoryTransaction.new do |category_transaction_fields| %>
+        <%= render "category_transaction_fields", form: category_transaction_fields %>
+      <% end %>
+
+      <!-- inserted elements -->
+      <div data-nested-form-target='target'></div>
+
+      <%= render ButtonComponent.new(options: { label: action_model(action_name, CategoryTransaction), colour: :orange, data: { action: "nested-form#add" } }) %>
+    </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit" } %>
   <% end %>

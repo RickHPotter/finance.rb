@@ -84,6 +84,7 @@ class CardTransactionsController < ApplicationController
       :ct_description, :ct_comment, :date, :month, :year, :price, :installments_count,
       :user_id, :user_card_id,
       installments_attributes: %i[price number paid],
+      category_transactions_attributes: %i[category_id],
       entity_transaction_attributes: [
         :is_payer, :price,
         { exchange_attributes: %i[exchange_type price] }

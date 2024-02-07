@@ -1,0 +1,29 @@
+en:
+  activerecord:
+    models:
+      category_transaction:
+        one: Category Transaction
+        other: Category Transactions
+    attributes:
+      category_transaction:
+        id: ID
+        transactable: Transactable
+        transactable_id: Transactable
+        transactable_type: Transactable
+        category: Category
+        category_id: Category
+
+pt-BR:
+  activerecord:
+    models:
+      category_transaction:
+        one: Categoria de Transação
+        other: Categorias de Transação
+        attributes:
+          category_transaction:
+            id: ID
+            transactable: Transacionável
+            transactable_id: ID da Transacionável
+            transactable_type: Tipo da Transacionável
+            category: Categoria
+            category_id: ID da Categoria

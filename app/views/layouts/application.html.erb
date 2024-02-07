@@ -12,9 +12,9 @@
     <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
-  <body class="">
-    <main class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white antialiased">
-      <div class="pl-4">
+  <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
+    <main class="antialiased">
+      <div class="p-3">
         <%= render "shared/flash" %>
         <%= render "shared/dark_mode" %>
       </div>

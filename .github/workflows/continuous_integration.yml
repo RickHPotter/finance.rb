@@ -21,7 +21,7 @@ jobs:
       DATABASE_URL: "postgres://rails:password@localhost:5432/rails_test"
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
         with:
@@ -29,13 +29,14 @@ jobs:
 
       - name: Set up database schema
         run: bin/rails db:schema:load
-      # we'll see how long this lasts
       - name: Set up npm
         run: npm install
+      - name: Set up assets
+        run: bin/rails assets:precompile
       - name: Run tests
         run: bin/rspec
       - name: Create Coverage Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage
           path: public/coverage/
@@ -44,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
         with:

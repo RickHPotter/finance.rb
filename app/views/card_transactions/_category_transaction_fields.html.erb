@@ -1,0 +1,13 @@
+<div class="nested-form-wrapper" data-new-record="<%= form.object.new_record? %>">
+  <div class="flex space-x-12">
+    <%= form.hidden_field :transactable_type, value: "CardTransaction" %>
+    <%= form.hidden_field :transactable_id, value: form.options[:parent_builder].object.id %>
+
+    <div class="flex w-1/2 flex-col my-6">
+      <%= render TextFieldComponent.new(form:, field: :category_id, items: current_user.categories.pluck(:category_name, :id), options: { type: :select }) %>
+    </div>
+    <div class="flex w-1/2 flex-col my-6">
+      <%= render ButtonComponent.new(options: { label: action_model(:destroy, CategoryTransaction), colour: :red, data: { action: "nested-form#remove" } }) %>
+    </div>
+  </div>
+</div>
