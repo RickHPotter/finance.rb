@@ -12,8 +12,22 @@ module CategoryTransactable
   end
 
   # @public_class_methods .....................................................
+  # Helper method for finding custom categories
+  #
+  # @return [ActiveRecord::Relation]
+  #
   def custom_categories
     categories.where(built_in: false)
+  end
+
+  # Helper method for finding built-in categories
+  #
+  # @param [Hash] options
+  #
+  # @return [ActiveRecord::Relation]
+  #
+  def built_in_categories_by(options = {})
+    categories.where(options.merge(built_in: true))
   end
 
   # @protected_instance_methods ...............................................

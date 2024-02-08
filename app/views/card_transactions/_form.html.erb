@@ -1,6 +1,6 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
-  <%= form_with model: card_transaction, id: "form", class: "contents", data: { controller: "form-validate" } do |form| %>
+  <%= form_with model: card_transaction, id: "form", class: "contents text-black", data: { controller: "form-validate" } do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
@@ -10,7 +10,7 @@
       <%= render TextFieldComponent.new form:, field: :ct_comment, options: { type: :textarea } %>
     </div>
     <div class="w-full mb-6">
-      <%= render TextFieldComponent.new form:, field: :user_card_id, items: UserCard.all.pluck(:user_card_name, :id), options: { type: :select } %>
+      <%= render TextFieldComponent.new form:, field: :user_card_id, items: @user_cards, options: { type: :select } %>
     </div>
     <div class="flex w-full gap-4 mb-6">
       <div class="w-1/2">
@@ -29,7 +29,7 @@
         <% end %>
       </template>
 
-      <%= form.fields_for :installments, Installment.new do |installment_fields| %>
+      <%= form.fields_for :installments do |installment_fields| %>
         <%= render "installment_fields", form: installment_fields %>
       <% end %>
 
@@ -47,7 +47,7 @@
         <% end %>
       </template>
 
-      <%= form.fields_for :category_transactions, CategoryTransaction.new do |category_transaction_fields| %>
+      <%= form.fields_for :category_transactions do |category_transaction_fields| %>
         <%= render "category_transaction_fields", form: category_transaction_fields %>
       <% end %>
 
@@ -55,6 +55,24 @@
       <div data-nested-form-target='target'></div>
 
       <%= render ButtonComponent.new(options: { label: action_model(action_name, CategoryTransaction), colour: :orange, data: { action: "nested-form#add" } }) %>
+    </div>
+
+    <!-- Entities -->
+    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+      <template data-nested-form-target="template">
+        <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
+          <%= render "entity_transaction_fields", form: entity_transaction_fields %>
+        <% end %>
+      </template>
+
+      <%= form.fields_for :entity_transactions do |entity_transaction_fields| %>
+        <%= render "entity_transaction_fields", form: entity_transaction_fields %>
+      <% end %>
+
+      <!-- inserted elements -->
+      <div data-nested-form-target='target'></div>
+
+      <%= render ButtonComponent.new(options: { label: action_model(action_name, EntityTransaction), colour: :orange, data: { action: "nested-form#add" } }) %>
     </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit" } %>

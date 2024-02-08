@@ -40,6 +40,10 @@ sprint. The reasons are:
 1. I'm starting just now, this is, after all, the first sprint.
 2. Like most projects at their kick-start, it is just one person: me.
 3. I had a 2-week holiday and didn't touch the project whatsoever.
+4. I had a week off due to a -failed- participation in a take home challenge for
+a job interview, and I didn't touch the project.
+5. I had then a two-week span that I was participating in an internal recruitment
+at my job. I kept on working on this project, but way less.
 
 ## GAARA-01/be-01: Finish late Model Specs
 
@@ -167,9 +171,12 @@ sprint. The reasons are:
 - Subtasks:
   - ⌛ Refine seeds to include all models.
   - ⌛ Fix possible bugs found at this stage.
-  - ⌛ Review current specs and refactor if possible.
+  - ✅ Review current specs and refactor if possible.
 - Extra:
-  - ✅ Created a new Spec file for the Exchanges flow.
+  - ✅ Switched from sprockets to Prophaft.
+  - ✅ Added and tidied up rubocop and erb_lint, and added CI.
+  - ✅ Created a new request spec that tests the Exchange flow.
+  - ✅ Refactored the Exchange flow to nested-form using rails-nested-form stimulus.
   - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
   - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
 

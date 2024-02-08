@@ -1,22 +1,13 @@
-<% opts = {
-  id: options[:id],
-  value: options[:value],
-  autocomplete: options[:autocomplete],
-  autofocus: options[:autofocus],
-  class: input_class,
-  data: options[:data]
-} %>
-
 <% if wrapper %>
   <div class="relative w-full min-w-[200px]">
 <% end %>
 
   <% if options[:type] == :select && items.present? %>
-    <%= form.select field, items, {}, opts %>
+    <%= form.select field, items, {}, options %>
   <% elsif options[:type] == :textarea %>
-    <%= form.text_area field, opts %>
+    <%= form.text_area field, options %>
   <% else %>
-    <%= form.text_field field, opts.merge(placeholder: " ", type: options[:type], step: options[:step]) %>
+    <%= form.text_field field, options %>
   <% end %>
 
   <%= form.label field, options[:label], class: label_class, for: options[:id] %>

@@ -1,5 +1,5 @@
 <% if @card_transaction.errors.present? %>
-  <%= turbo_stream.replace :new_card_transaction_form, partial: 'form', locals: {  card_transaction: @card_transaction  } %>
+  <%= turbo_stream.replace :new_card_transaction_form, partial: 'form', locals: { card_transaction: @card_transaction } %>
 <% else %>
   <%= turbo_stream.replace :new_card_transaction do %>
     <%= turbo_frame_tag :new_card_transaction %>

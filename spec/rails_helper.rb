@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-require 'simplecov'
+require "simplecov"
 SimpleCov.start do
-  add_filter '/spec/'
-  coverage_dir 'public/coverage'
+  add_filter "/spec/"
+  coverage_dir "public/coverage"
 end
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'
-require 'spec_helper'
-ENV['RAILS_ENV'] ||= 'test'
-require_relative '../config/environment'
+require "spec_helper"
+ENV["RAILS_ENV"] ||= "test"
+require_relative "../config/environment"
 
 # Prevent database truncation if the environment is production
-abort('The Rails environment is running in production mode!') if Rails.env.production?
-require 'rspec/rails'
+abort("The Rails environment is running in production mode!") if Rails.env.production?
+require "rspec/rails"
 
 # Add additional requires below this line. Rails is not loaded until this point!
 
@@ -30,9 +30,9 @@ require 'rspec/rails'
 # directory. Alternatively, in the individual `*_spec.rb` files, manually
 # require only the support files necessary.
 #
-Rails.root.glob('spec/support/**/*.rb').sort.each { |f| require f }
+Rails.root.glob("spec/support/**/*.rb").sort.each { |f| require f }
 
-Capybara.default_host = 'http://localhost:3000'
+Capybara.default_host = "http://localhost:3000"
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
@@ -43,6 +43,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 
 RSpec.configure do |config|
+  config.include FactoryBot::Syntax::Methods
   config.include ActiveJob::TestHelper
   config.include ActionMailbox::TestHelper
   config.include Devise::Test::IntegrationHelpers, type: :feature

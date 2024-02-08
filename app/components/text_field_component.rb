@@ -45,15 +45,13 @@ class TextFieldComponent < ViewComponent::Base
   # @return [Hash] Merged options with default values.
   #
   def default_options(options)
+    options[:data] = { form_validate_target: "field" }.merge(options[:data] || {})
+
     {
-      id: options[:id] || "#{@object.model_name.singular}_#{@field}",
-      label: options[:label] || attribute_model(@object, @field),
-      type: options[:type] || "text",
-      step: options[:step] || "",
-      value: options[:value],
-      autofocus: options[:autofocus] || false,
-      autocomplete: options[:autocomplete] || @field,
-      data: { form_validate_target: "field" }.merge(options[:data] || {})
-    }
+      id: "#{@object.model_name.singular}_#{@field}",
+      label: attribute_model(@object, @field),
+      autocomplete: @field,
+      class: input_class
+    }.merge(options)
   end
 end
