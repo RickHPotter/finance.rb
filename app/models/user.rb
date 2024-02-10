@@ -65,6 +65,7 @@ class User < ApplicationRecord
   # Helper method to return the custom `category` instances of given `user`.
   #
   # @return [Array<Category>]
+  #
   def custom_categories
     categories.where(built_in: false)
   end

@@ -1,2 +1,2 @@
-<%= notice_stream %>
+<%= turbo_stream.update :notification, partial: "shared/flash"  %>
 <%= turbo_stream.remove @card_transaction %>

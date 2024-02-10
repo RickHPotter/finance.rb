@@ -20,6 +20,16 @@ module CategoryTransactable
     categories.where(built_in: false)
   end
 
+  # Helper method for finding built-in category transactions
+  #
+  # @param [Hash] options
+  #
+  # @return [ActiveRecord::Relation]
+  #
+  def built_in_category_transactions_by(options = {})
+    category_transactions.includes(:category).where(options).where(categories: { built_in: true })
+  end
+
   # Helper method for finding built-in categories
   #
   # @param [Hash] options

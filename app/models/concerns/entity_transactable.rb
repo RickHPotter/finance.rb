@@ -29,12 +29,12 @@ module EntityTransactable
     exchange_category_id = user.built_in_category("Exchange").id
 
     payers = entity_transactions.pluck(:is_payer)
-    exchange_cat = built_in_categories_by(id: exchange_category_id)
+    exchange_cat = built_in_category_transactions_by(category_id: exchange_category_id)
 
     if exchange_cat.present?
       return if payers.any?
 
-      exchange_cat.destroy
+      exchange_cat.map(&:destroy)
     else
       return if payers.none?
 

@@ -15,9 +15,8 @@ RSpec.describe "CardTransactions", type: :request do
         date: card_transaction.date,
         installments_attributes: build_list(:installment, 2, price: 100.0).map(&:attributes),
         category_transactions_attributes: build_list(:category_transaction, 1, :random).map(&:attributes),
-        entity_transactions_attributes: build_list(:entity_transaction, 1, :random).map(&:attributes).push(
-          exchanges_attributes: []
-        )
+        entity_transactions_attributes: build_list(:entity_transaction, 1, :random, is_payer: true)
+          .map(&:attributes).push(exchanges_attributes: [])
       }
     }
   end
@@ -62,7 +61,8 @@ RSpec.describe "CardTransactions", type: :request do
 
       context "( on #create )" do
         it "creates a new record on request to #create / without paying entities" do
-          valid_attributes[:card_transaction][:entity_transactions_attributes][0]["is_payer"] = false
+          valid_attributes[:card_transaction][:entity_transactions_attributes] =
+            build(:entity_transaction, :random, is_payer: false).attributes
 
           expect { post card_transactions_path, params: valid_attributes }.to change(CardTransaction, :count).by(1)
           expect(response.body).to include(CardTransaction.last.ct_description)
@@ -77,8 +77,6 @@ RSpec.describe "CardTransactions", type: :request do
         end
 
         it "creates a new record on request to #create / with paying entities" do
-          entity_transaction = valid_attributes[:card_transaction][:entity_transactions_attributes][0]
-          entity_transaction["is_payer"] = true
           # entity_transaction["exchanges_attributes"] =
           #   build(:exchange, :random, exchange_type: :monetary, price: entity_transaction["price"]).map(&:attributes)
 
@@ -100,8 +98,6 @@ RSpec.describe "CardTransactions", type: :request do
 
       context "( on #update )" do
         it "updates the record to include paying entities" do
-          entity_transaction = valid_attributes[:card_transaction][:entity_transactions_attributes][0]
-          entity_transaction["is_payer"] = true
           # entity_transaction["exchanges_attributes"] =
           #   build(:exchange, :random, exchange_type: :monetary, price: entity_transaction["price"]).map(&:attributes)
 
@@ -116,7 +112,8 @@ RSpec.describe "CardTransactions", type: :request do
         end
 
         it "updates the record to exclude paying entities" do
-          valid_attributes[:card_transaction][:entity_transactions_attributes][0]["is_payer"] = false
+          valid_attributes[:card_transaction][:entity_transactions_attributes].first.merge! card_transaction.entity_transactions.first.attributes
+          valid_attributes[:card_transaction][:entity_transactions_attributes].first["is_payer"] = false
 
           patch(card_transaction_path(card_transaction), params: valid_attributes)
           card_transaction.reload

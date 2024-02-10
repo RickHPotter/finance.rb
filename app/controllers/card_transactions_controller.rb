@@ -2,7 +2,7 @@
 
 # Controller for CardTransaction
 class CardTransactionsController < ApplicationController
-  before_action :set_card_transaction, only: %i[show edit update destroy]
+  before_action :set_card_transaction, only: %i[show update destroy]
   before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
@@ -17,7 +17,12 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.new
   end
 
-  def edit; end
+  def edit
+    @card_transaction =
+      CardTransaction
+      .eager_load(:installments, category_transactions: :category, entity_transactions: :entity)
+      .find(params[:id])
+  end
 
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
