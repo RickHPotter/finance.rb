@@ -14,7 +14,7 @@
 #  price                  :decimal(, )      not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
-#  installments_count     :integer          default(1), not null
+#  installments_count     :integer          default(0), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint

@@ -1,6 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// WHERE CREDITS ARE DUE:
 // https://codepen.io/kniaza/pen/xxOaZBL
 //
 // Connects to data-controller="dark-mode"
@@ -30,16 +29,16 @@ export default class extends Controller {
       this.set_dark_theme()
       localStorage.setItem('theme', 'dark')
     } else {
-      document.querySelector('body').classList.remove('dark')
+      document.querySelector('html').classList.remove('dark')
       localStorage.setItem('theme', 'light')
     }
   }
 
   set_dark_theme() {
-    document.querySelector('body').classList.add('dark')
+    document.querySelector('html').classList.add('dark')
   }
 
   set_light_theme() {
-    document.querySelector('body').classList.remove('dark')
+    document.querySelector('html').classList.remove('dark')
   }
 }

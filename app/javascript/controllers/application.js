@@ -9,10 +9,16 @@ window.Stimulus = application
 export { application }
 
 document.body.onkeydown = (e) => {
-  const isInputFocused = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)
-  if (isInputFocused) { return }
-
   const key = e.keyCode
+
+  const isInputFocused = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)
+  if (isInputFocused) {
+    if (key === 27) { // ESC
+      document.activeElement.blur()
+    }
+
+    return
+  }
 
   // NEOVIM
   const up_down_keys = [74, 75] // j, k

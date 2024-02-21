@@ -1,0 +1,29 @@
+en:
+  activerecord:
+    models:
+      installment:
+        one: Installment
+        other: Installments
+    attributes:
+      installment:
+        id: ID
+        number: Number
+        price: Price
+        paid: Paid
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      installment:
+        one: Parcela
+        other: Parcelas
+    attributes:
+      installment:
+        id: ID
+        number: Número
+        price: Valor
+        paid: Paga
+        created_at: Criado em
+        updated_at: Atualizado em

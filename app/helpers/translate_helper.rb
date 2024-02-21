@@ -84,4 +84,16 @@ module TranslateHelper
   def submit
     I18n.t("actions.#{action_name}")
   end
+
+  # This method dynamically generates an action model based on the current
+  # controller action and the singularised capitalised name of the model.
+  #
+  # @param action [String] Controller action.
+  # @param model [String] Model name.
+  #
+  # @return [String] Action model for the current controller action and model.
+  #
+  def action_model(action, model)
+    "#{I18n.t("actions.#{action}")} #{I18n.t("activerecord.models.#{model.model_name.singular}.one")}"
+  end
 end

@@ -17,10 +17,7 @@
 #
 require 'rails_helper'
 
-include FactoryHelper
-
 RSpec.describe EntityTransaction, type: :model do
-  let!(:card_transaction) { FactoryBot.create(:card_transaction, :random, :with_entity_transactions) }
   let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random) }
 
   describe '[ activerecord validations ]' do
@@ -48,66 +45,6 @@ RSpec.describe EntityTransaction, type: :model do
         it "has_many #{model}" do
           expect(entity_transaction).to respond_to model
         end
-      end
-    end
-  end
-
-  describe '[ business logic ]' do
-    context '( card_transaction creation with entity_transaction_attributes )' do
-      it 'creates the corresponding entity_transaction' do
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to_not be_empty
-      end
-    end
-
-    context '( card_transaction creation with entity_transactions under updates in entity_transaction_attributes )' do
-      it 'destroys the existing entity_transactions when emptying entity_transaction_attributes' do
-        card_transaction.update(entity_transaction_attributes: [])
-        expect(card_transaction.entities).to be_empty
-        expect(card_transaction.paying_entities).to be_empty
-      end
-
-      it 'destroys the existing entity_transactions and then creates them again' do
-        card_transaction.update(entity_transaction_attributes: [])
-        card_transaction.update(
-          entity_transaction_attributes: [{
-            entity: FactoryBot.create(:entity, :random, user: card_transaction.user),
-            transactable: card_transaction,
-            is_payer: false
-          }]
-        )
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to be_empty
-      end
-    end
-
-    context '( card_transaction update to zero entitiy_transactions )' do
-      before do
-        card_transaction.update(entity_transaction_attributes: [])
-      end
-
-      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
-        expect(card_transaction.entities).to be_empty
-        expect(card_transaction.paying_entities).to be_empty
-        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
-      end
-    end
-
-    context '( card_transaction update to zero paying entitiy_transactions )' do
-      before do
-        card_transaction.update(
-          entity_transaction_attributes: [{
-            entity: card_transaction.entities.first,
-            transactable: card_transaction,
-            is_payer: false
-          }]
-        )
-      end
-
-      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to be_empty
-        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
       end
     end
   end

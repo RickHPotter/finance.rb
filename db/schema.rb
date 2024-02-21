@@ -29,7 +29,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.integer "year", null: false
     t.decimal "starting_price", null: false
     t.decimal "price", null: false
-    t.integer "installments_count", default: 1, null: false
+    t.integer "installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
     t.bigint "money_transaction_id"
@@ -140,7 +140,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_13_215504) do
     t.decimal "price", null: false
     t.boolean "paid", default: false
     t.string "money_transaction_type"
-    t.integer "installments_count", default: 1, null: false
+    t.integer "installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id"
     t.bigint "user_bank_account_id"

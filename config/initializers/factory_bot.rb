@@ -34,10 +34,10 @@ module FactoryHelper
   # @return [Object] The created {FactoryBot} object.
   #
   def custom_create(model, reference: {}, traits: [], options: {})
-    raise ArgumentError, 'You must specify a model to use' if model.nil?
-    raise ArgumentError, 'You must specify a valid hash of references to use' unless reference.is_a?(Hash)
-    raise ArgumentError, 'You must specify valid array of traits to use' unless traits.is_a?(Array)
-    raise ArgumentError, 'You must specify a valid hash of options to use' unless options.is_a?(Hash)
+    raise ArgumentError, "You must specify a model to use" if model.nil?
+    raise ArgumentError, "You must specify a valid hash of references to use" unless reference.is_a?(Hash)
+    raise ArgumentError, "You must specify valid array of traits to use" unless traits.is_a?(Array)
+    raise ArgumentError, "You must specify a valid hash of options to use" unless options.is_a?(Hash)
 
     return FactoryBot.create(model, *traits, options) if reference.empty?
 
@@ -66,8 +66,8 @@ module FactoryHelper
   # @return [Object] The created {FactoryBot} object.
   #
   def custom_create_polymorphic(models, reference: {}, traits: [], options: {})
-    raise ArgumentError, 'You must provide an array' unless models.is_a?(Array)
-    raise ArgumentError, 'You must provide a non-empty array' if models.empty?
+    raise ArgumentError, "You must provide an array" unless models.is_a?(Array)
+    raise ArgumentError, "You must provide a non-empty array" if models.empty?
 
     custom_create(models.sample, reference:, traits:, options:)
   end
@@ -84,7 +84,7 @@ module FactoryHelper
     # @return [Object] The created {FactoryBot} object with the specified trait.
     #
     define_method("#{trait}_custom_create") do |model, reference: {}, options: {}|
-      custom_create(model, reference:, traits: [trait], options:)
+      custom_create(model, reference:, traits: [ trait ], options:)
     end
 
     # Metaprogramming to shorten method calls with traits.
@@ -98,7 +98,7 @@ module FactoryHelper
     # @return [Object] The created {FactoryBot} object with the specified trait.
     #
     define_method("#{trait}_custom_create_polymorphic") do |models, reference: {}, options: {}|
-      custom_create_polymorphic(models, reference:, traits: [trait], options:)
+      custom_create_polymorphic(models, reference:, traits: [ trait ], options:)
     end
   end
 end

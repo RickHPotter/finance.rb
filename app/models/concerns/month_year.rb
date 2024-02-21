@@ -58,6 +58,7 @@ module MonthYear
   # @return [void]
   #
   def set_month_year
+    return if errors.any?
     return unless respond_to?(:month)
 
     if instance_of?(CardTransaction)

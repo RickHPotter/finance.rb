@@ -1,0 +1,37 @@
+en:
+  activerecord:
+    models:
+      entity_transaction:
+        one: Entity Transaction
+        other: Entity Transactions
+    attributes:
+      entity_transaction:
+        id: ID
+        transactable: Transactable
+        transactable_id: Transactable
+        transactable_type: Transactable
+        entity: Entity
+        entity_id: Entity
+        is_payer: Payer
+        price: Price
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      entity_transaction:
+        one: Transação de Entidade
+        other: Transações de Entidade
+    attributes:
+      entity_transaction:
+        id: ID
+        transactable: Transacionável
+        transactable_id: ID da Transacionável
+        transactable_type: Tipo da Transacionável
+        entity: Entidade
+        entity_id: ID da Entidade
+        is_payer: Pagante
+        price: Valor
+        created_at: Criado em
+        updated_at: Atualizado em

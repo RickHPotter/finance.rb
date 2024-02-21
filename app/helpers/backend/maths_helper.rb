@@ -12,12 +12,12 @@ module Backend
     # @return [Array<BigDecimal>] An array containing the prices for each installment.
     #
     def spread_installments_evenly(price, count)
-      return [price] if count == 1
+      return [ price ] if count == 1
 
       base = (price / count.to_f).round(2)
       remainder = (base + (price - (base * count))).round(2)
 
-      [base] * (count - 1) + [remainder]
+      [ base ] * (count - 1) + [ remainder ]
     end
   end
 end

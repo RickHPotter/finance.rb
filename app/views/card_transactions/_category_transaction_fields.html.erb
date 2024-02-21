@@ -1,0 +1,14 @@
+<div class="nested-form-wrapper" data-new-record="<%= form.object.new_record? %>">
+  <% if form.object&.category&.built_in? %>
+    <%= form.hidden_field :category_id %>
+  <% else %>
+    <div class="flex space-x-12">
+      <div class="flex w-1/2 flex-col my-6">
+        <%= render TextFieldComponent.new(form:, field: :category_id, items: @categories, options: { type: :select }) %>
+      </div>
+      <div class="flex w-1/2 flex-col my-6">
+        <%= render ButtonComponent.new(options: { label: action_model(:destroy, CategoryTransaction), colour: :red, data: { action: "nested-form#remove" } }) %>
+      </div>
+    </div>
+  <% end %>
+</div>

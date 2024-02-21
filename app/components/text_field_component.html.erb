@@ -1,13 +1,16 @@
 <% if wrapper %>
-  <div class="relative h-11 w-full min-w-[200px]">
+  <div class="relative w-full min-w-[200px]">
 <% end %>
 
-<%= form.text_field field, id: options[:id], placeholder: ' ', type: options[:type],
-                    step: options[:step], autocomplete: options[:autocomplete], autofocus: options[:autofocus],
-                    data: options[:data],
-                    class: input_class %>
+  <% if options[:type] == :select && items.present? %>
+    <%= form.select field, items, {}, options %>
+  <% elsif options[:type] == :textarea %>
+    <%= form.text_area field, options %>
+  <% else %>
+    <%= form.text_field field, options %>
+  <% end %>
 
-<%= form.label field, options[:label], class: label_class, for: options[:id] %>
+  <%= form.label field, options[:label], class: label_class, for: options[:id] %>
 
 <% if wrapper %>
   </div>

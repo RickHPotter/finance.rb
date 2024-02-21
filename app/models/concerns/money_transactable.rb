@@ -36,9 +36,9 @@ module MoneyTransactable
 
   # Generates the params for the associated `money_transaction`.
   #
-  # @return [Hash] The params for the associated `money_transaction`.
-  #
   # @see {MoneyTransaction}
+  #
+  # @return [Hash] The params for the associated `money_transaction`.
   #
   def money_transaction_params
     params = {

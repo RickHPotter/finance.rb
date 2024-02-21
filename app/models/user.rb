@@ -62,6 +62,14 @@ class User < ApplicationRecord
     categories.find_by(built_in: true, category_name:)
   end
 
+  # Helper method to return the custom `category` instances of given `user`.
+  #
+  # @return [Array<Category>]
+  #
+  def custom_categories
+    categories.where(built_in: false)
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -72,8 +80,8 @@ class User < ApplicationRecord
   #
   def create_built_ins
     categories.push(
-      Category.new(built_in: true, category_name: 'Exchange'),
-      Category.new(built_in: true, category_name: 'Exchange Return')
+      Category.new(built_in: true, category_name: "Exchange"),
+      Category.new(built_in: true, category_name: "Exchange Return")
     )
   end
 

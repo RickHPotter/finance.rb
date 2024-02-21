@@ -13,7 +13,7 @@ def prepare_database
 end
 
 namespace :env do
-  desc 'Setup environment'
+  desc "Setup environment"
   task setup: :environment do
     prepare_database
   end

@@ -29,7 +29,7 @@ class EntityTransaction < ApplicationRecord
 
   # @validations ..............................................................
   validates :status, :price, presence: true
-  validates :is_payer, inclusion: { in: [true, false] }
+  validates :is_payer, inclusion: { in: [ true, false ] }
   validates :entity, uniqueness: { scope: :transactable }
 
   # @callbacks ................................................................

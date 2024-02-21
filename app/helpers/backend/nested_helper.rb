@@ -12,7 +12,7 @@ module Backend
     #
     # @ return [Boolean]
     #
-    def check_array_of_hashes_of(attributes_hash = [{}], &block)
+    def check_array_of_hashes_of(attributes_hash = [ {} ], &block)
       key = attributes_hash.keys.first
       attributes = attributes_hash.values.first
 

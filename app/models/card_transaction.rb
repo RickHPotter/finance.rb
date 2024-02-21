@@ -12,7 +12,7 @@
 #  year                 :integer          not null
 #  starting_price       :decimal(, )      not null
 #  price                :decimal(, )      not null
-#  installments_count   :integer          default(1), not null
+#  installments_count   :integer          default(0), not null
 #  user_id              :bigint           not null
 #  user_card_id         :bigint           not null
 #  money_transaction_id :bigint
@@ -24,10 +24,10 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
-  include MoneyTransactable
+  include Installable
   include CategoryTransactable
   include EntityTransactable
-  include Installable
+  include MoneyTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -67,6 +67,26 @@ class CardTransaction < ApplicationRecord
     "Card #{user_card.user_card_name} #{month_year}"
   end
 
+  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
+  #
+  # This method generates a comment specifying the card and RefMonthYear.
+  #
+  # @return [String] The generated comment.
+  #
+  def mt_comment
+    siblings = money_transaction&.card_transactions
+    siblings ||= [ self ]
+
+    # FIXME: this logic seems accurate, but it's not getting the installment
+    # price, but the whole thing when it is installable, plus, as of now
+    # it does not get other months installables that are present here
+    a, b = siblings.partition { |ct| ct.installments_count == 1 }
+    in_one = a.sum(&:price).round(2)
+    spread = b.sum(&:price).round(2)
+
+    "Upfront: #{in_one}, Installments: #{spread}"
+  end
+
   # Generates a date for the associated MoneyTransaction.
   #
   # This method picks the due_date for the MoneyTransaction.
@@ -75,20 +95,6 @@ class CardTransaction < ApplicationRecord
   #
   def money_transaction_date
     user_card.current_due_date
-  end
-
-  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
-  #
-  # This method generates a comment specifying the card and RefMonthYear.
-  #
-  # @return [String] The generated comment.
-  #
-  def mt_comment
-    a, b = money_transaction.card_transactions.partition { |ct| ct.installments_count == 1 }
-    in_one = a.sum(&:price).round(2)
-    spread = b.sum(&:price).round(2)
-
-    "Upfront: #{in_one}, Installments: #{spread}"
   end
 
   # @private_instance_methods .................................................
