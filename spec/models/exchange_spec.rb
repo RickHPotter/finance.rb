@@ -14,24 +14,24 @@
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Exchange, type: :model do
-  let!(:exchange) { FactoryBot.create(:exchange, :random) }
+  let!(:exchange) { build(:exchange, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
         expect(exchange).to be_valid
       end
 
       %i[exchange_type price].each do |attribute|
-        it_behaves_like 'validate_nil', :exchange, attribute
-        it_behaves_like 'validate_blank', :exchange, attribute
+        it_behaves_like "validate_nil", :exchange, attribute
+        it_behaves_like "validate_blank", :exchange, attribute
       end
     end
 
-    context '( associations )' do
+    context "( associations )" do
       %i[entity_transaction money_transaction].each do |model|
         it "belongs_to #{model}" do
           expect(exchange).to respond_to model

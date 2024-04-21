@@ -16,8 +16,8 @@
 require "rails_helper"
 
 RSpec.describe Installment, type: :model do
-  let(:card_transaction) { FactoryBot.create(:card_transaction, :random) }
-  let(:money_transaction) { FactoryBot.create(:money_transaction, :random) }
+  let(:card_transaction) { create(:card_transaction, :random) }
+  let(:money_transaction) { create(:money_transaction, :random) }
   let(:installment) { card_transaction.installments.first }
 
   shared_examples "installments cop" do
@@ -51,12 +51,8 @@ RSpec.describe Installment, type: :model do
 
     context "( when installments_count is 2 )" do
       before do
-        card_transaction.update(
-          installments: FactoryBot.build_list(:installment, 2, price: (card_transaction.price / 2).round(2))
-        )
-        money_transaction.update(
-          installments: FactoryBot.build_list(:installment, 2, price: (money_transaction.price / 2).round(2))
-        )
+        card_transaction.update(installments: build_list(:installment, 2, price: (card_transaction.price / 2).round(2)))
+        money_transaction.update(installments: build_list(:installment, 2, price: (money_transaction.price / 2).round(2)))
       end
 
       include_examples "installments cop"
@@ -64,12 +60,8 @@ RSpec.describe Installment, type: :model do
 
     context "( when installments_count is 3 )" do
       before do
-        card_transaction.update(
-          installments: FactoryBot.build_list(:installment, 3, price: (card_transaction.price / 3).round(2))
-        )
-        money_transaction.update(
-          installments: FactoryBot.build_list(:installment, 3, price: (money_transaction.price / 3).round(2))
-        )
+        card_transaction.update(installments: build_list(:installment, 3, price: (card_transaction.price / 3).round(2)))
+        money_transaction.update(installments: build_list(:installment, 3, price: (money_transaction.price / 3).round(2)))
       end
 
       include_examples "installments cop"

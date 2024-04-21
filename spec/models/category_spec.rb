@@ -11,26 +11,26 @@
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Category, type: :model do
-  let!(:category) { FactoryBot.create(:category, :random) }
+  let!(:category) { build(:category, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
         expect(category).to be_valid
       end
 
       %i[category_name].each do |attribute|
-        it_behaves_like 'validate_nil', :category, attribute
-        it_behaves_like 'validate_blank', :category, attribute
+        it_behaves_like "validate_nil", :category, attribute
+        it_behaves_like "validate_blank", :category, attribute
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :category, :category_name, :user
+      it_behaves_like "validate_uniqueness_combination", :category, :category_name, :user
     end
 
-    context '( associations )' do
+    context "( associations )" do
       %i[user].each do |model|
         it "belongs_to #{model}" do
           expect(category).to respond_to model

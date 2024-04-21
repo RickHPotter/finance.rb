@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "awesome_print"
 
 RSpec.describe "CardTransactions", type: :request do
   let!(:user) { create(:user) }

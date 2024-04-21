@@ -35,7 +35,12 @@ module EntityTransactable
 
   protected
 
-  # TODO: add docs
+  # Handles the `category` of such `transaction` based on the existing `exchanges`.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # return [void]
+  #
   def update_card_transaction_categories
     return unless instance_of? CardTransaction
 

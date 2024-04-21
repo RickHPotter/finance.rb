@@ -31,9 +31,9 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    installments { FactoryBot.build_list(:installment, 1, price:) }
-    category_transactions { FactoryBot.build_list(:category_transaction, 1, :random) }
-    entity_transactions { FactoryBot.build_list(:entity_transaction, 1, :random, is_payer: false) }
+    installments { build_list(:installment, 1, price:) }
+    category_transactions { build_list(:category_transaction, 1, :random) }
+    entity_transactions { build_list(:entity_transaction, 1, :random, is_payer: false) }
 
     trait :different do
       ct_description { "Sitpass" }

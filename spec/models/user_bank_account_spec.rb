@@ -14,25 +14,25 @@
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe UserBankAccount, type: :model do
-  let!(:user_bank_account) { FactoryBot.create(:user_bank_account, :random) }
+  let!(:user_bank_account) { build(:user_bank_account, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
         expect(user_bank_account).to be_valid
       end
 
       %i[balance].each do |attribute|
-        it_behaves_like 'validate_nil', :user_bank_account, attribute
-        it_behaves_like 'validate_blank', :user_bank_account, attribute
+        it_behaves_like "validate_nil", :user_bank_account, attribute
+        it_behaves_like "validate_blank", :user_bank_account, attribute
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :user_bank_account, :bank, :agency_number, :account_number
+      it_behaves_like "validate_uniqueness_combination", :user_bank_account, :bank, :agency_number, :account_number
 
-      context '( associations )' do
+      context "( associations )" do
         %i[user bank].each do |model|
           it "belongs_to #{model}" do
             expect(user_bank_account).to respond_to model

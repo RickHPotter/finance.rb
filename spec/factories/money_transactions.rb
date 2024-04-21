@@ -33,7 +33,7 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
-    installments { FactoryBot.build_list(:installment, 1, price:) }
+    installments { build_list(:installment, 1, price:) }
 
     trait :different do
       mt_description { "HotWheels" }
