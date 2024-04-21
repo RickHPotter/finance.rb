@@ -33,7 +33,7 @@ FactoryBot.define do
 
     installments { FactoryBot.build_list(:installment, 1, price:) }
     category_transactions { FactoryBot.build_list(:category_transaction, 1, :random) }
-    entity_transactions { FactoryBot.build_list(:entity_transaction, 1, :random) }
+    entity_transactions { FactoryBot.build_list(:entity_transaction, 1, :random, is_payer: false) }
 
     trait :different do
       ct_description { "Sitpass" }

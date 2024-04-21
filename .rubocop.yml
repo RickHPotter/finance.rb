@@ -24,6 +24,13 @@ AllCops:
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    default: "[]"
+
+Layout/LineLength:
+  Max: 160
+
 Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space
 

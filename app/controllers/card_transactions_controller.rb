@@ -33,7 +33,10 @@ class CardTransactionsController < ApplicationController
       flash[:alert] = @card_transaction.errors.full_messages
     end
 
-    respond_to(&:turbo_stream)
+    respond_to do |format|
+      format.turbo_stream
+      format.json { render json: @card_transaction }
+    end
   end
 
   def update
@@ -92,7 +95,7 @@ class CardTransactionsController < ApplicationController
       category_transactions_attributes: %i[id category_id],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
-        { exchange_attributes: %i[exchange_type price] }
+        { exchanges_attributes: %i[id exchange_type price] }
       ]
     )
   end

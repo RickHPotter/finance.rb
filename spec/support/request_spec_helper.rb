@@ -30,5 +30,5 @@ end
 
 RSpec.configure do |config|
   config.include RequestSpecHelper, type: :request
-  config.before(:each, type: :request) { host! 'localhost:3000' }
+  config.before(:each, type: :request) { host! "localhost:3000" }
 end

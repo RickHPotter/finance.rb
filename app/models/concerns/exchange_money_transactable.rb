@@ -40,7 +40,7 @@ module ExchangeMoneyTransactable
   def update_entity_transaction_status
     return if entity_transaction.exchanges.empty?
 
-    all_non_monetary_and_paid = entity_transaction.exchanges.all? do |exchange|
+    all_non_monetary_and_paid = [ *entity_transaction.exchanges, self ].all? do |exchange|
       exchange.non_monetary? || exchange.money_transaction.try(:paid)
     end
 

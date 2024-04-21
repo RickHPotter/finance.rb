@@ -19,10 +19,23 @@ module EntityTransactable
     entity_transactions.where(is_payer: true).map(&:entity)
   end
 
+  def paying_transactions
+    entity_transactions.where(is_payer: true)
+  end
+
+  def non_paying_transactions
+    entity_transactions.where(is_payer: false)
+  end
+
+  def non_paying_entities
+    entity_transactions.where(is_payer: false).map(&:entity)
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
 
+  # TODO: add docs
   def update_card_transaction_categories
     return unless instance_of? CardTransaction
 

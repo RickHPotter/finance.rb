@@ -6,7 +6,7 @@ module Exchangable
 
   included do
     # @relationships ..........................................................
-    has_many :exchanges, dependent: :destroy, counter_cache: :exchanges_count
+    has_many :exchanges, dependent: :destroy
     accepts_nested_attributes_for :exchanges, allow_destroy: true, reject_if: :all_blank
 
     # @callbacks ..............................................................
@@ -20,7 +20,7 @@ module Exchangable
 
   # Sets the `status` of the `entity_transaction` based on the existing `exchanges`.
   #
-  # @note This is a method that is called after_validation.
+  # @note This is a method that is called before_save.
   #
   # @return [void]
   #
