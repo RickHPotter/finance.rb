@@ -177,8 +177,8 @@ at my job. I kept on working on this project, but way less.
   - ✅ Added and tidied up rubocop and erb_lint, and added CI.
   - ✅ Created a new request spec that tests the Exchange flow.
   - ✅ Refactored the Exchange flow to nested-form using rails-nested-form stimulus.
-  - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
-  - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
+  - ✅ Made possible to change FK of CardTransaction (should create/use another money_transaction).
+  - ✅ Made possible to change FK of Investment (should create/use another money_transaction).
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

@@ -17,20 +17,16 @@
 #
 require "rails_helper"
 
-RSpec.describe Investment, type: :model do
-  # FIXME: Test when one of the FKS are changed (should create/use another money_transaction)
-  let!(:investment) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
+include FactoryHelper
 
-  # NOTE: remove { date: investment.date } when changing date creates a new money_transaction
-  let!(:investments) do
-    create_list(
-      :investment, 3, :random,
-      user: investment.user,
-      user_bank_account: investment.user_bank_account,
-      date: investment.date
-    ) { |inv, i| inv.update(date: investment.date + i + 1) }
-  end
+RSpec.describe Investment, type: :model do
+  let!(:investment) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
   let!(:money_transaction) { investment.money_transaction }
+  let!(:investments) do
+    build_list(:investment, 3, :random, user: investment.user, user_bank_account: investment.user_bank_account, date: investment.date) do |inv, i|
+      inv.save(date: investment.date + i + 1)
+    end
+  end
 
   shared_examples "investment cop" do
     it "sums the investments correctly" do
@@ -128,6 +124,24 @@ RSpec.describe Investment, type: :model do
 
       it "deletes the corresponding money_transaction" do
         expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
+      end
+    end
+
+    context "( when the user_bank_account is changed )" do
+      before { money_transaction.reload }
+
+      it "creates or uses another money_transaction that fits the FK change" do
+        expect(investment.money_transaction).to eq money_transaction
+        expect(investment.money_transaction.investments.count).to eq(investments.size + 1)
+        expect(investment.money_transaction.price).to be_within(0.01).of([ investment, *investments ].sum(&:price).round(2))
+
+        investment.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: investment.user }))
+        investments.first.money_transaction.reload
+
+        expect(investment.money_transaction).to_not eq money_transaction
+        expect(investment.money_transaction.investments.count).to eq(1)
+        expect(investments.first.money_transaction.investments.count).to eq(investments.size)
+        expect(investments.first.money_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
       end
     end
   end

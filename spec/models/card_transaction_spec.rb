@@ -24,7 +24,6 @@ require "rails_helper"
 include FactoryHelper
 
 RSpec.describe CardTransaction, type: :model do
-  # FIXME: Test when one of the FKS are changed (should create/use another money_transaction)
   let!(:card_transaction) { create(:card_transaction, :random) }
   let(:money_transaction) { card_transaction.money_transaction }
   let!(:card_transactions) do
@@ -99,12 +98,33 @@ RSpec.describe CardTransaction, type: :model do
       include_examples "card_transaction cop"
     end
 
+    context "( when an existing card_transaction changes fk )" do
+      before do
+        card_transactions.each(&:save)
+        money_transaction.reload
+      end
+
+      it "creates or uses another money_transaction that fits the FK change" do
+        expect(card_transaction.money_transaction).to eq money_transaction
+        expect(card_transaction.money_transaction.card_transactions.count).to eq(card_transactions.size + 1)
+        expect(card_transaction.money_transaction.price).to be_within(0.01).of([ card_transaction, *card_transactions ].sum(&:price).round(2))
+
+        card_transaction.update(user_card: random_custom_create(:user_card, reference: { user: card_transaction.user }))
+        card_transactions.first.money_transaction.reload
+
+        expect(card_transaction.money_transaction).to_not eq money_transaction
+        expect(card_transaction.money_transaction.card_transactions.count).to eq(1)
+        expect(card_transactions.first.money_transaction.card_transactions.count).to eq(card_transactions.size)
+        expect(card_transactions.first.money_transaction.price).to be_within(0.01).of(card_transactions.sum(&:price).round(2))
+      end
+    end
+
     context "( when most card_transactions are deleted )" do
       before do
         card_transactions.each(&:destroy)
       end
 
-      it "finds in money_transaction.investments only the third element" do
+      it "finds in money_transaction.card_transactions only the third element" do
         expect(money_transaction.card_transactions).to include(card_transaction)
         card_transactions.each do |ct|
           expect(money_transaction.card_transactions).not_to include(ct)

@@ -8,8 +8,12 @@ module MoneyTransactable
     # @relationships ..........................................................
     belongs_to :money_transaction, optional: true
 
+    # @security (i.e. attr_accessible) ........................................
+    attr_accessor :previous_money_transaction_id
+
     # @callbacks ..............................................................
     before_save :attach_money_transaction
+    after_save :fix_money_transaction
     after_commit :update_money_transaction, on: %i[create update]
     after_commit :update_or_destroy_money_transaction, on: :destroy
   end
@@ -18,6 +22,22 @@ module MoneyTransactable
   # @protected_instance_methods ...............................................
 
   protected
+
+  # Assigns a `previous_money_transaction_id` and attachs `money_transaction` to `self.money_transaction`.
+  #
+  # This method assigns a `previous_money_transaction_id` and creates or finds a `money_transaction` based on
+  # certain attributes and links it to this model.
+  #
+  # @note This is a method that is called before_save.
+  #
+  # @see {MoneyTransaction}
+  #
+  # @return [void]
+  #
+  def attach_money_transaction
+    self.previous_money_transaction_id = money_transaction&.id
+    self.money_transaction = MoneyTransaction.create_with(price:).find_or_create_by(money_transaction_params)
+  end
 
   # Attachs a `money_transaction` to `self.money_transaction` (by finding one or creating it).
   #
@@ -30,8 +50,12 @@ module MoneyTransactable
   #
   # @return [void]
   #
-  def attach_money_transaction
-    self.money_transaction = MoneyTransaction.create_with(price:).find_or_create_by(money_transaction_params)
+  def fix_money_transaction
+    previous_money_transaction = MoneyTransaction.find_by(id: previous_money_transaction_id)
+    return if previous_money_transaction.nil?
+
+    previous_money_transaction.investments&.first&.touch
+    previous_money_transaction.card_transactions&.first&.touch
   end
 
   # Generates the params for the associated `money_transaction`.
