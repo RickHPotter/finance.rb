@@ -86,10 +86,9 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      :ct_description, :ct_comment, :date, :month, :year, :price, :installments_count,
-      :user_id, :user_card_id,
-      installments_attributes: %i[id price number paid],
+      %i[id ct_description ct_comment date month year price installments_count user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
+      installments_attributes: %i[id price number month year],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
         { exchanges_attributes: %i[id exchange_type price] }

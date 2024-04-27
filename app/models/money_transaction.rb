@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
-#  installments_count     :integer          default(0), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
@@ -26,9 +25,7 @@ class MoneyTransaction < ApplicationRecord
   # @includes .................................................................
   include MonthYear
   include StartingPriceCallback
-  include Installable
   include CategoryTransactable
-  include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -36,7 +33,7 @@ class MoneyTransaction < ApplicationRecord
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, optional: true
 
-  has_many :card_transactions, dependent: :destroy
+  has_many :installments, dependent: :destroy
   has_many :investments, dependent: :destroy
   has_many :exchanges, dependent: :destroy
 

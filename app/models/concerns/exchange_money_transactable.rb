@@ -6,10 +6,7 @@ module ExchangeMoneyTransactable
 
   included do
     # @includes ...............................................................
-    include Backend::MathsHelper
-
     # @security (i.e. attr_accessible) ........................................
-    # attr_accessor :money_transaction_attributes
 
     # @relationships ..........................................................
     belongs_to :money_transaction, optional: true

@@ -4,20 +4,19 @@
 #
 # Table name: card_transactions
 #
-#  id                   :bigint           not null, primary key
-#  ct_description       :string           not null
-#  ct_comment           :text
-#  date                 :date             not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
-#  installments_count   :integer          default(0), not null
-#  user_id              :bigint           not null
-#  user_card_id         :bigint           not null
-#  money_transaction_id :bigint
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
+#  id                 :bigint           not null, primary key
+#  ct_description     :string           not null
+#  ct_comment         :text
+#  date               :date             not null
+#  month              :integer          not null
+#  year               :integer          not null
+#  starting_price     :decimal(, )      not null
+#  price              :decimal(, )      not null
+#  installments_count :integer          default(0), not null
+#  user_id            :bigint           not null
+#  user_card_id       :bigint           not null
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
 #
 FactoryBot.define do
   factory :card_transaction do
@@ -25,15 +24,15 @@ FactoryBot.define do
     ct_description { "La Plaza Paraty" }
     ct_comment { nil }
     price { 140.00 }
-    month { 12 }
-    year { 2023 }
+    month { (Date.new(date.year, date.month) + 1.month).month }
+    year { (Date.new(date.year, date.month) + 1.month).year }
 
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    installments { build_list(:installment, 1, price:) }
     category_transactions { build_list(:category_transaction, 1, :random) }
     entity_transactions { build_list(:entity_transaction, 1, :random, is_payer: false) }
+    installments { build_list(:installment, 1, :random, price:) }
 
     trait :different do
       ct_description { "Sitpass" }

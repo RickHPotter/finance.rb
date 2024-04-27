@@ -76,14 +76,14 @@ class UserCard < ApplicationRecord
   # @note This is a method that is called before_validation.
   # @note The method returns false if `current_due_date` or `days_until_due_date` is nil.
   #
-  # @see {MonthYear#next_month_this}
+  # @see {MonthYear#next_date}
   #
   # @return [Boolean]
   #
   def set_current_dates
     return false if current_due_date.nil? || days_until_due_date.nil?
 
-    self.current_due_date = next_month_this(day: current_due_date.day)
+    self.current_due_date = next_date(days: current_due_date.day)
     self.current_closing_date = current_due_date - days_until_due_date
   end
 

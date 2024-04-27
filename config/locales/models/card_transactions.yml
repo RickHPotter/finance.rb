@@ -42,3 +42,6 @@ pt-BR:
         month: Mês
         year: Ano
         installment: Parcela
+        installments_count: Quantidade de Parcelas
+        created_at: Criado em
+        updated_at: Atualizado em

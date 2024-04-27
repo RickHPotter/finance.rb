@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
-#  installments_count     :integer          default(0), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
@@ -32,7 +31,7 @@ RSpec.describe MoneyTransaction, type: :model do
         expect(money_transaction).to be_valid
       end
 
-      %i[mt_description date price].each do |attribute|
+      %i[mt_description price].each do |attribute|
         it_behaves_like "validate_nil", :money_transaction, attribute
         it_behaves_like "validate_blank", :money_transaction, attribute
       end

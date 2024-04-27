@@ -15,7 +15,6 @@ class CreateCardTransactions < ActiveRecord::Migration[7.1]
 
       t.references :user, null: false, foreign_key: true
       t.references :user_card, null: false, foreign_key: true
-      t.references :money_transaction, foreign_key: true, null: true
 
       t.timestamps
     end

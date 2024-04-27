@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
-#  installments_count     :integer          default(0), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
@@ -26,14 +25,12 @@ FactoryBot.define do
     mt_description { "Meat" }
     mt_comment { "Barbecue at Aunt's" }
     date { Date.new 2023, 12, 16 }
-    month { 12 }
-    year { 2023 }
+    month { date.month }
+    year { date.year }
     price { 29.72 }
 
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
-
-    installments { build_list(:installment, 1, price:) }
 
     trait :different do
       mt_description { "HotWheels" }

@@ -53,9 +53,9 @@ module MoneyTransactable
   def fix_money_transaction
     previous_money_transaction = MoneyTransaction.find_by(id: previous_money_transaction_id)
     return if previous_money_transaction.nil?
+    return if previous_money_transaction == money_transaction
 
     previous_money_transaction.investments&.first&.touch
-    previous_money_transaction.card_transactions&.first&.touch
   end
 
   # Generates the params for the associated `money_transaction`.

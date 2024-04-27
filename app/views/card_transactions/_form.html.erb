@@ -24,7 +24,7 @@
     <!-- Installments -->
     <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
-        <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
+        <%= form.fields_for :installments, CardTransaction.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
         <% end %>
       </template>

@@ -170,7 +170,7 @@ at my job. I kept on working on this project, but way less.
 
 - Subtasks:
   - ⌛ Refine seeds to include all models.
-  - ⌛ Fix possible bugs found at this stage.
+  - ✅ Fix possible bugs found at this stage.
   - ✅ Review current specs and refactor if possible.
 - Extra:
   - ✅ Switched from sprockets to Prophaft.
