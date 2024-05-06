@@ -81,7 +81,7 @@ module MonthYear
   end
 
   def set_month_year_installment
-    new_date = (money_transaction_date || card_transaction.date) + (number - 1).months
+    new_date = money_transaction_date
     self.month = new_date.month
     self.year = new_date.year
   end

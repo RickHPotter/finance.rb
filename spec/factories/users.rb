@@ -21,16 +21,16 @@
 #
 FactoryBot.define do
   factory :user do
-    first_name { 'John' }
-    last_name { 'Doe' }
-    email { 'john@example.com' }
-    password { '123123' }
-    password_confirmation { '123123' }
+    first_name { "John" }
+    last_name { "Doe" }
+    email { "john@example.com" }
+    password { "123123" }
+    password_confirmation { "123123" }
     confirmed_at { Date.current }
 
     trait :different do
-      first_name { 'Jane' }
-      email { 'jane@example.com' }
+      first_name { "Jane" }
+      email { "jane@example.com" }
     end
 
     trait :random do
@@ -40,15 +40,15 @@ FactoryBot.define do
 
     # INVALID
     trait :with_invalid_email do
-      email { 'not_an_email' }
+      email { "not_an_email" }
     end
 
     trait :with_invalid_password do
-      password { '1' }
+      password { "1" }
     end
 
     trait :with_different_password_confirmation do
-      password_confirmation { '123456' }
+      password_confirmation { "123456" }
     end
   end
 end

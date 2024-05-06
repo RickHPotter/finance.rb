@@ -20,17 +20,9 @@
 #
 require "rails_helper"
 
-include FactoryHelper
-
 RSpec.describe CardTransaction, type: :model do
-  let!(:card_transaction) { create(:card_transaction, :random) }
-  let!(:card_transactions) do
-    build_list(:card_transaction, 3, :random,
-               ct_comment: "Comment",
-               user: card_transaction.user,
-               user_card: card_transaction.user_card,
-               date: card_transaction.date)
-  end
+  let!(:user_card) { create(:user_card, :random, current_due_date: Date.new(2023, 12, 1)) }
+  let!(:card_transaction) { create(:card_transaction, :random, user_card:, date: Date.new(2023, 11, 30)) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -51,7 +43,7 @@ RSpec.describe CardTransaction, type: :model do
         end
       end
 
-      %i[categories installments].each do |model|
+      %i[categories category_transactions entities entity_transactions installments].each do |model|
         it "has_many #{model}" do
           expect(card_transaction).to respond_to model
         end
@@ -59,110 +51,12 @@ RSpec.describe CardTransaction, type: :model do
     end
   end
 
+  # FIXME: move this to a PORO spec
   describe "[ business logic ]" do
     context "( public methods )" do
       it "returns a formatted date" do
-        card_transaction.update(date: Date.new(2023, 12))
         expect(card_transaction.month_year).to eq "DEC <23>"
       end
     end
   end
-
-  # FIXME: move to request spec
-  #
-  #   context "( when the card_transactions are created )" do
-  #     before { card_transaction.installments.reload }
-  #
-  #     it "applies the right relationship to the installments::money_transaction" do
-  #       installments = card_transactions.map(&:installments).flatten
-  #       expect(installments.map(&:money_transaction_id).uniq.count).to eq 1
-  #     end
-  #
-  #     include_examples "card_transaction cop"
-  #   end
-  #
-  #   context "( when existing card_transactions are updated )" do
-  #     before do
-  #       card_transactions.each do |ct|
-  #         ct.update(price: Faker::Number.decimal(l_digits: rand(0..1)))
-  #       end
-  #
-  #       money_transaction.reload
-  #     end
-  #
-  #     include_examples "card_transaction cop"
-  #   end
-  #
-  #   context "( when an existing card_transaction changes fk )" do
-  #     before do
-  #       card_transactions.each(&:save)
-  #       money_transaction.reload
-  #     end
-  #
-  #     it "creates or uses another money_transaction that fits the FK change" do
-  #       expect(card_transaction.money_transaction).to eq money_transaction
-  #       expect(card_transaction.money_transaction.card_transactions.count).to eq(card_transactions.size + 1)
-  #       expect(card_transaction.money_transaction.price).to be_within(0.01).of([ card_transaction, *card_transactions ].sum(&:price).round(2))
-  #
-  #       card_transaction.update(user_card: random_custom_create(:user_card, reference: { user: card_transaction.user }))
-  #       card_transactions.first.money_transaction.reload
-  #
-  #       expect(card_transaction.money_transaction).to_not eq money_transaction
-  #       expect(card_transaction.money_transaction.card_transactions.count).to eq(1)
-  #       expect(card_transactions.first.money_transaction.card_transactions.count).to eq(card_transactions.size)
-  #       expect(card_transactions.first.money_transaction.price).to be_within(0.01).of(card_transactions.sum(&:price).round(2))
-  #     end
-  #   end
-  #
-  #   context "( when most card_transactions are deleted )" do
-  #     before do
-  #       card_transactions.each(&:destroy)
-  #     end
-  #
-  #     it "finds in money_transaction.card_transactions only the third element" do
-  #       expect(money_transaction.card_transactions).to include(card_transaction)
-  #       card_transactions.each do |ct|
-  #         expect(money_transaction.card_transactions).not_to include(ct)
-  #       end
-  #     end
-  #
-  #     include_examples "card_transaction cop"
-  #   end
-  #
-  #   context "( when all card_transactions are deleted )" do
-  #     before do
-  #       card_transaction.destroy
-  #       card_transactions.each(&:destroy)
-  #     end
-  #
-  #     it "deletes all card_transactions" do
-  #       [ *card_transactions, card_transaction ].each do |ct|
-  #         expect(ct).to be_destroyed
-  #       end
-  #     end
-  #
-  #     it "deletes the corresponding money_transaction" do
-  #       expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
-  #     end
-  #   end
-  #
-  #   # FIXME: ffs
-  #   context "( when card_transactions entries have installments overlapping a month )" do
-  #     before do
-  #       card_transactions.each_with_index do |ct, index|
-  #         ct.installments = build_list(:card_transaction, 3, :random, price: (ct.price / 3).round(2))
-  #         ct.date = Date.new(ct.date.year, ct.date.month, ct.date.day) + index.months
-  #         ct.save
-  #       end
-  #     end
-  #
-  #     # FUCK, I need to work with installments to create right MoneyTransactions
-  #     it "sums the installments correctly" do
-  #       # expect([ card_transaction, *card_transactions ].pluck(:money_transaction_id).uniq.count).to eq 3
-  #       # expect(card_transaction.money_transaction.card_transactions.count).to eq(1)
-  #       # expect(card_transactions.first.money_transaction.card_transactions.count).to eq(card_transactions.size)
-  #       # expect(card_transactions.first.money_transaction.price).to be_within(0.01).of(card_transactions.sum(&:price).round(2))
-  #     end
-  #   end
-  # end
 end

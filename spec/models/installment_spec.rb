@@ -4,17 +4,17 @@
 #
 # Table name: installments
 #
-#  id                      :bigint           not null, primary key
-#  starting_price          :decimal(, )      not null
-#  price                   :decimal(, )      not null
-#  number                  :integer          not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  card_transactions_count :integer          default(0), not null
-#  card_transaction_id     :bigint           not null
-#  money_transaction_id    :bigint           not null
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
+#  id                   :bigint           not null, primary key
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  number               :integer          not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  installments_count   :integer          default(0), not null
+#  card_transaction_id  :bigint           not null
+#  money_transaction_id :bigint           not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 require "rails_helper"
 

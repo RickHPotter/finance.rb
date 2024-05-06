@@ -56,6 +56,10 @@ module MoneyTransactable
     return if previous_money_transaction == money_transaction
 
     previous_money_transaction.investments&.first&.touch
+    previous_money_transaction.installments&.first&.touch
+
+    association = money_transaction.money_transaction_type.underscore.pluralize
+    previous_money_transaction.destroy if previous_money_transaction.public_send(association).empty?
   end
 
   # Generates the params for the associated `money_transaction`.

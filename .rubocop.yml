@@ -16,7 +16,6 @@ AllCops:
     - "Guardfile"
     - "bin/**"
     - "db/**/*"
-    - "spec/**/*"
     - "config/**/*"
     - "**/vendor/**/*"
     - "**/vendor/**/.*"
@@ -49,3 +48,8 @@ Metrics/MethodLength:
 
 Metrics/AbcSize:
   Max: 26
+
+Metrics/BlockLength:
+  Max: 22
+  Exclude:
+    - "spec/***/*"

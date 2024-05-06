@@ -3,38 +3,21 @@
 require "rails_helper"
 
 RSpec.describe "CardTransactions", type: :request do
-  let!(:user) { create(:user) }
+  let!(:bank) { create(:bank, :random) }
+  let!(:user) { create(:user, :random) }
+  let!(:card) { create(:card, :random, bank:) }
+  let!(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", current_due_date: Date.current) }
+  let!(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", current_due_date: Date.current) }
+  let!(:entity_one) { create(:entity, :random, user:) }
+  let!(:entity_two) { create(:entity, :random, user:) }
 
-  let!(:built_card_transaction) { build(:card_transaction, :random, ct_description: "Newly Added CardTransaction") }
-  let!(:built_card_transaction_attributes) do
-    { card_transaction: {
-      ct_description: built_card_transaction.ct_description,
-      price: built_card_transaction.price,
-      user_id: built_card_transaction.user_id,
-      user_card_id: built_card_transaction.user_card_id,
-      date: built_card_transaction.date,
-      installments_attributes: built_card_transaction.installments.map(&:attributes),
-      category_transactions_attributes: built_card_transaction.category_transactions.map(&:attributes),
-      entity_transactions_attributes: built_card_transaction.entity_transactions.map(&:attributes)
-    } }
+  let(:card_transaction) do
+    CardTransactionParams.new(
+      card_transaction: { price: 200.0, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
+      installments: { count: 1 }, category_transactions: [],
+      entity_transactions: [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] } ]
+    )
   end
-
-  let!(:card_transaction) { create(:card_transaction, :random, ct_description: "Existing CardTransaction") }
-  let!(:existing_attributes) do
-    { card_transaction: {
-      ct_description: card_transaction.ct_description,
-      price: card_transaction.price,
-      user_id: card_transaction.user_id,
-      user_card_id: card_transaction.user_card_id,
-      date: card_transaction.date,
-      installments_attributes: card_transaction.installments.map(&:attributes),
-      category_transactions_attributes: card_transaction.category_transactions.map(&:attributes),
-      entity_transactions_attributes: card_transaction.entity_transactions.map { |e| e.attributes.merge(exchanges_attributes: []) }
-    } }
-  end
-
-  let!(:entity_transaction_ref) { -> { existing_attributes[:card_transaction][:entity_transactions_attributes].first } }
-  let!(:exchange_ref) { -> { existing_attributes[:card_transaction][:entity_transactions_attributes].first[:exchanges_attributes]&.first } }
 
   def check_paying_entities(card_transaction)
     expect(card_transaction.paying_entities).to be_present
@@ -49,109 +32,147 @@ RSpec.describe "CardTransactions", type: :request do
     expect(card_transaction.built_in_categories_by(category_name: "Exchange")).to_not be_present
   end
 
+  def check_installments(installments)
+    installments_by_month_year = installments.group_by(&:month_year)
+
+    installments_by_month_year.each_pair do |month_year, installments_collection|
+      expect(installments_collection.pluck(:money_transaction_id).uniq.count).to eq(1)
+      expect(installments_collection.map(&:month_year).uniq).to eq([ month_year ])
+      expect(installments_collection.sum(&:price)).to be >= installments_collection.first.money_transaction.price
+    end
+  end
+
+  def check_exchanges(exchanges)
+    exchanges.each do |exchange|
+      expect(exchange.money_transaction.present?).to be(exchange.monetary?)
+    end
+  end
+
   before { sign_in user }
 
   describe "[ #create ]" do
-    it "creates a new record on request to #create / without paying entities" do
-      expect { post card_transactions_path, params: built_card_transaction_attributes }.to change(CardTransaction, :count).by(1)
+    it "creates one new record with one installment and non-paying entities" do
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [] } ]
+      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
       check_non_paying_entities(new_card_transaction)
+      check_installments(new_card_transaction.installments)
     end
 
-    it "creates a new record on request to #create / with paying entities" do
-      entity_transaction = built_card_transaction.entity_transactions.first
-      attributes = { "is_payer" => true, exchanges_attributes: build(:exchange, exchange_type: :monetary, entity_transaction:).attributes }
-      new_entity_transaction = entity_transaction.attributes.merge(attributes)
-      params = built_card_transaction_attributes
-      params[:card_transaction][:entity_transactions_attributes] = [ new_entity_transaction ]
+    it "creates one new record with two installments and two paying entities" do
+      card_transaction.installments = { count: 2 }
+      card_transaction.entity_transactions = [
+        { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
+        { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
+      ]
 
-      expect { post card_transactions_path, params: }.to change(CardTransaction, :count).by(1)
+      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
       check_paying_entities(new_card_transaction)
+      check_installments(new_card_transaction.installments)
+    end
+
+    it "creates two new records, each with two installments that overlap months, and two paying entities" do
+      card_transaction.installments = { count: 2 }
+      card_transaction.entity_transactions = [
+        { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
+        { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
+      ]
+
+      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      card_transaction_one = CardTransaction.last
+
+      sign_in user
+
+      card_transaction.date += 1.month
+      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      card_transaction_two = CardTransaction.last
+
+      check_paying_entities(card_transaction_one)
+      check_paying_entities(card_transaction_two)
+      check_installments([ *card_transaction_one.installments, *card_transaction_two.installments ])
     end
   end
 
   describe "[ #update ]" do
     before do
-      card_transaction.save
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [] } ]
+      post card_transactions_path, params: card_transaction.params
+      @existing_card_transaction = CardTransaction.last
+
+      sign_in user
     end
 
-    it "updates the record to include a paying entity" do
-      entity_transaction = card_transaction.entity_transactions.first
-      params = { "is_payer" => true, exchanges_attributes: build(:exchange, exchange_type: :monetary, entity_transaction:).attributes }
-      updated_entity_transaction = card_transaction.entity_transactions.first.attributes.merge(params)
-      entity_transaction_ref.call.merge! updated_entity_transaction
-
-      put(card_transaction_path(card_transaction), params: existing_attributes)
-
-      check_paying_entities(card_transaction)
+    it "updates the record to have a non_paying entity" do
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: false })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_non_paying_entities(@existing_card_transaction)
     end
 
-    it "updates the record to include a non_paying entity" do
-      updated_entity_transaction = card_transaction.entity_transactions.first.attributes.merge("is_payer" => false, exchanges_attributes: [])
-      entity_transaction_ref.call.merge! updated_entity_transaction
-
-      put(card_transaction_path(card_transaction), params: existing_attributes)
-
-      check_non_paying_entities(card_transaction)
-    end
-
-    it "updates the record to modify current non_paying entity to paying entity" do
-      entity_transaction = card_transaction.entity_transactions.first
-      attributes = { "is_payer" => true, exchanges_attributes: build(:exchange, exchange_type: :monetary, entity_transaction:).attributes }
-      updated_entity_transaction = entity_transaction.attributes.merge(attributes)
-      entity_transaction_ref.call.merge! updated_entity_transaction
-
-      put(card_transaction_path(card_transaction), params: existing_attributes)
-
-      check_paying_entities(card_transaction)
+    it "updates the record to have one paying entity" do
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_paying_entities(@existing_card_transaction)
     end
 
     it "updates the record to change the exchange_type to :non_monetary then to :monetary" do
-      params = existing_attributes
-      entity_transaction = params[:card_transaction][:entity_transactions_attributes].first
-      entity_transaction[:exchanges_attributes] = build(:exchange, exchange_type: :non_monetary, entity_transaction_id: entity_transaction["id"]).attributes
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :non_monetary })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
 
-      put(card_transaction_path(card_transaction), params:)
-      card_transaction.reload
+      sign_in user
 
-      exchange = card_transaction.entity_transactions.first.exchanges.first
-
-      expect(exchange.money_transaction).to be(nil)
-      expect(exchange.entity_transaction.finished?).to be(true)
-
-      exchange.monetary!
-      expect(exchange.money_transaction).to_not be(nil)
-      expect(exchange.entity_transaction.pending?).to be(true)
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
     end
 
     it "updates the record to change the exchange_type to :monetary then to :non_monetary" do
-      params = existing_attributes
-      entity_transaction = params[:card_transaction][:entity_transactions_attributes].first
-      entity_transaction.merge!("is_payer" => true)
-      entity_transaction[:exchanges_attributes] = build(:exchange, exchange_type: :monetary, entity_transaction_id: entity_transaction["id"]).attributes
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
 
-      put(card_transaction_path(card_transaction), params:)
-      card_transaction.entity_transactions.reload
+      sign_in user
 
-      exchange = card_transaction.entity_transactions.first.exchanges.first
+      card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :non_monetary })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
+    end
 
-      expect(exchange.money_transaction).to_not be(nil)
-      expect(exchange.entity_transaction.pending?).to be(true)
+    it "updates the record accordingly given a change in the card_transaction FKs" do
+      money_transaction_one = @existing_card_transaction.installments.first.money_transaction
 
-      exchange.non_monetary!
-      expect(exchange.money_transaction).to be(nil)
-      expect(exchange.entity_transaction.finished?).to be(true)
+      card_transaction.use_base(@existing_card_transaction, card_transaction_options: { user_card_id: user_card_two.id })
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+
+      money_transaction_two = @existing_card_transaction.installments.first.money_transaction
+
+      expect(money_transaction_one).to_not eq money_transaction_two
+      expect(MoneyTransaction.exists?(money_transaction_one.id)).to be_falsey
+      expect(MoneyTransaction.exists?(money_transaction_two.id)).to be_truthy
     end
   end
 
   describe "[ #destroy ]" do
-    it "succeeds on request to #destroy" do
-      card_transaction.save
+    before do
+      (1..3).each do |i|
+        sign_in user
+        card_transaction.ct_description = i
+        post card_transactions_path, params: card_transaction.params
+      end
+    end
 
-      expect { delete card_transaction_path(card_transaction) }.to change(CardTransaction, :count).by(-1)
+    it "succeeds on request to #destroy" do
+      card_transactions = CardTransaction.where(ct_description: (1..3))
+
+      card_transactions.each do |card_transaction_to_be_deleted|
+        sign_in user
+        expect { delete card_transaction_path(card_transaction_to_be_deleted) }.to change(CardTransaction, :count).by(-1)
+        expect(card_transaction_to_be_deleted.installments).to_not be_present
+        expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
+      end
     end
   end
 end

@@ -18,14 +18,14 @@ module Installable
 
   protected
 
-  # Sets the `card_transactions_count` based on the count of `installments` of given `self`.
+  # Sets the `installments_count` based on the count of `installments` of given `self`.
   #
   # @note This is a method that is called after_save.
   #
   # @return [void]
   #
   def update_card_transaction_count
-    card_transactions_count = installments.count
-    installments.each { |i| i.update(card_transactions_count:) }
+    installments_count = installments.count
+    installments.each { |i| i.update(installments_count:) }
   end
 end

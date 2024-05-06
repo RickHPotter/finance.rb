@@ -108,7 +108,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.integer "number", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "installments_count", default: 0, null: false
     t.bigint "card_transaction_id", null: false
     t.bigint "money_transaction_id", null: false
     t.datetime "created_at", null: false

@@ -17,9 +17,9 @@
 #
 require "rails_helper"
 
-include FactoryHelper
-
 RSpec.describe Investment, type: :model do
+  include FactoryHelper
+
   let!(:investment) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
   let!(:money_transaction) { investment.money_transaction }
   let!(:investments) do
@@ -72,6 +72,7 @@ RSpec.describe Investment, type: :model do
     end
   end
 
+  # FIXME: move this to request spec when the view is ready
   describe "[ business logic ]" do
     context "( when new investments are created )" do
       before { money_transaction.reload }

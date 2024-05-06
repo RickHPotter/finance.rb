@@ -44,6 +44,13 @@ sprint. The reasons are:
 a job interview, and I didn't touch the project.
 5. I had then a two-week span that I was participating in an internal recruitment
 at my job. I kept on working on this project, but way less.
+6. I started working full-time as a dev where I was an intern after getting the
+rightful promotion. This caused me to several times overwork (willingly).
+7. After studying non-stop for about a whole year, I spontaneously decided to take
+April as my luxury month to rest. I watched The Office US (I had only watched the
+UK version before).
+8. I came back in the second half of April getting more and more excited about
+continuing the project.
 
 ## GAARA-01/be-01: Finish late Model Specs
 
@@ -179,6 +186,9 @@ at my job. I kept on working on this project, but way less.
   - ✅ Refactored the Exchange flow to nested-form using rails-nested-form stimulus.
   - ✅ Made possible to change FK of CardTransaction (should create/use another money_transaction).
   - ✅ Made possible to change FK of Investment (should create/use another money_transaction).
+  - ✅ Remodelled Installment to act like Exchange. Join Table that creates 1 parent.
+  - ✅ Created a PORO for handling Card Transaction Params in request specs.
+  - ✅ Removed hard business logic from card_transaction model spec to request spec.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

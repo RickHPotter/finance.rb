@@ -4,17 +4,17 @@
 #
 # Table name: installments
 #
-#  id                      :bigint           not null, primary key
-#  starting_price          :decimal(, )      not null
-#  price                   :decimal(, )      not null
-#  number                  :integer          not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  card_transactions_count :integer          default(0), not null
-#  card_transaction_id     :bigint           not null
-#  money_transaction_id    :bigint           not null
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
+#  id                   :bigint           not null, primary key
+#  starting_price       :decimal(, )      not null
+#  price                :decimal(, )      not null
+#  number               :integer          not null
+#  month                :integer          not null
+#  year                 :integer          not null
+#  installments_count   :integer          default(0), not null
+#  card_transaction_id  :bigint           not null
+#  money_transaction_id :bigint           not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
 #
 class Installment < ApplicationRecord
   # @extends ..................................................................
@@ -29,9 +29,7 @@ class Installment < ApplicationRecord
   delegate :user, :user_id, :user_card, :user_card_id, to: :card_transaction, allow_nil: true
 
   # @validations ..............................................................
-  validates :price, :number, :month, :year, :card_transactions_count, presence: true
-  # FIXME: needs testing
-  validates :card_transaction, uniqueness: { scope: %i[month year] }
+  validates :price, :number, :month, :year, :installments_count, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -39,9 +37,9 @@ class Installment < ApplicationRecord
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Generates a date for the associated MoneyTransaction.
+  # Generates a `date` for the associated MoneyTransaction.
   #
-  # This method picks the due_date for the MoneyTransaction.
+  # This method picks the current `due_date` of `user_card` for the MoneyTransaction.
   #
   # @return [Date]
   #
@@ -49,8 +47,12 @@ class Installment < ApplicationRecord
     date = card_transaction.date
     days = user_card.current_closing_date.day
     next_closing_date = next_date(date:, days:)
+    x = if date >= next_closing_date
+          number
+        else
+          number - 1
+        end
 
-    x = date >= next_closing_date ? 1 : 0
     next_date(date:, days:, months: x)
   end
 
@@ -58,9 +60,9 @@ class Installment < ApplicationRecord
 
   protected
 
-  # Generates a description for the associated MoneyTransaction.
+  # Generates a `mt_description` for the associated MoneyTransaction.
   #
-  # This method generates a description for the MoneyTransaction based on the user's card name and month_year.
+  # This method generates a description for the MoneyTransaction based on the `user_card` name and month_year.
   #
   # @return [String] The generated description.
   #
@@ -68,18 +70,18 @@ class Installment < ApplicationRecord
     "Card #{user_card.user_card_name} #{month_year}"
   end
 
-  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
+  # Generates a `mt_comment` for the associated MoneyTransaction based on the `user_card` and RefMonthYear.
   #
-  # This method generates a comment specifying the card and RefMonthYear.
+  # This method generates a comment specifying the user_card and RefMonthYear.
   #
   # @return [String] The generated comment.
   #
   def mt_comment
     installments = Installment.includes(:money_transaction)
                               .where(month:, year:, money_transaction: { user_id:, user_card_id: })
-                              .select("money_transaction_id", "installments.price", "installments.card_transactions_count")
+                              .select("money_transaction_id", "installments.price", "installments.installments_count")
 
-    x, y = installments.partition { |installment| installment.card_transactions_count == 1 }
+    x, y = installments.partition { |installment| installment.installments_count == 1 }
     in_one = x.sum(&:price).round(2)
     spread = y.sum(&:price).round(2)
 
