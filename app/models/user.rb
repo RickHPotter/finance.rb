@@ -46,9 +46,10 @@ class User < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+
   # Helper methods to return a full name based on `first_name` and `last_name`.
   #
-  # @return [String]
+  # @return [String].
   #
   def full_name
     "#{first_name} #{last_name}"
@@ -56,10 +57,18 @@ class User < ApplicationRecord
 
   # Helper method to return a built-in `category` based on a given `category_name`.
   #
-  # @return [Category]
+  # @return [Category].
   #
   def built_in_category(category_name)
     categories.find_by(built_in: true, category_name:)
+  end
+
+  # Helper method to return the custom `category` instances of given `user`.
+  #
+  # @return [ActiveRecord::Relation].
+  #
+  def custom_categories
+    categories.where(built_in: false)
   end
 
   # @protected_instance_methods ...............................................
@@ -68,12 +77,12 @@ class User < ApplicationRecord
 
   # Creates built-in `categories` for given user.
   #
-  # @return [void]
+  # @return [void].
   #
   def create_built_ins
     categories.push(
-      Category.new(built_in: true, category_name: 'Exchange'),
-      Category.new(built_in: true, category_name: 'Exchange Return')
+      Category.new(built_in: true, category_name: "Exchange"),
+      Category.new(built_in: true, category_name: "Exchange Return")
     )
   end
 

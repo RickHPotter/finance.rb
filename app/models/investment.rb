@@ -18,7 +18,7 @@
 class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
+  include HasMonthYear
   include MoneyTransactable
   include CategoryTransactable
 
@@ -37,9 +37,7 @@ class Investment < ApplicationRecord
 
   protected
 
-  # Generates a description for the associated MoneyTransaction.
-  #
-  # This method generates a description for the MoneyTransaction based on the user's bank name and month_year.
+  # Generates an `mt_description` for the associated `money_transaction` based on the `user`'s `bank_name` and `month_year`.
   #
   # @return [String] The generated description.
   #
@@ -47,19 +45,15 @@ class Investment < ApplicationRecord
     "Investment #{user_bank_account.bank.bank_name} #{month_year}"
   end
 
-  # Generates a date for the associated MoneyTransaction.
+  # Generates a `date` for the associated `money_transaction`, picking the end of given `month` for the `money_transaction`.
   #
-  # This method picks the end of given month for the MoneyTransaction.
-  #
-  # @return [Date]
+  # @return [Date].
   #
   def money_transaction_date
     end_of_month
   end
 
-  # Generates a comment for the associated MoneyTransaction based on investment days.
-  #
-  # This method generates a comment listing the days of associated investments.
+  # Generates a comment for the associated `money_transaction` based on investment days.
   #
   # @return [String] The generated comment.
   #

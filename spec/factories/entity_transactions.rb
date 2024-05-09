@@ -18,31 +18,15 @@
 FactoryBot.define do
   factory :entity_transaction do
     is_payer { true }
-    status { 'pending' }
+    status { "pending" }
     transactable { custom_create_polymorphic(%i[card_transaction money_transaction]) }
     entity { custom_create(:entity, reference: { user: transactable.user }) }
     price { transactable.price }
     exchanges_count { 1 }
 
-    # TODO: should this be a trait like in card_transaction factory
-    after(:build) do |entity_transaction, _evaluator|
-      next unless entity_transaction.is_payer
-
-      price = entity_transaction.price
-      status = entity_transaction.status
-
-      entity_transaction.exchange_attributes ||= []
-      entity_transaction.exchanges_count.times do
-        entity_transaction.exchange_attributes << {
-          exchange_type: status == 'finished' ? :non_monetary : %i[monetary non_monetary].sample,
-          price: [price, price / 2, price / 3].sample.round(2)
-        }
-      end
-    end
-
     trait :different do
       is_payer { true }
-      status { 'finished' }
+      status { "finished" }
       price { 0.01 }
       transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { different_custom_create(:entity, reference: { user: transactable.user }) }
@@ -55,7 +39,7 @@ FactoryBot.define do
       price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
       transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { random_custom_create(:entity, reference: { user: transactable.user }) }
-      exchanges_count { is_payer ? [*1..3].sample : 0 }
+      exchanges_count { is_payer ? [ *1..3 ].sample : 0 }
     end
 
     trait :transactable_card_transaction do

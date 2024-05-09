@@ -12,16 +12,16 @@
 #
 FactoryBot.define do
   factory :entity do
-    entity_name { 'Nous' }
+    entity_name { "Nous" }
     user { custom_create(:user) }
 
     trait :different do
-      entity_name { 'Moi' }
+      entity_name { "Moi" }
       user { different_custom_create(:user) }
     end
 
     trait :random do
-      sequence(:entity_name) { |n| "#{Faker::Book.unique.title} #{Faker::Book.unique.author} #{n}" }
+      sequence(:entity_name) { |n| "#{Faker::Book.title} #{Faker::Book.author} #{n}" }
       user { random_custom_create(:user) }
     end
   end

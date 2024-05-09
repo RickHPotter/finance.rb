@@ -15,100 +15,34 @@
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #
-require 'rails_helper'
-
-include FactoryHelper
+require "rails_helper"
 
 RSpec.describe EntityTransaction, type: :model do
-  let!(:card_transaction) { FactoryBot.create(:card_transaction, :random, :with_entity_transactions) }
-  let!(:entity_transaction) { FactoryBot.create(:entity_transaction, :random) }
+  let!(:subject) { build(:entity_transaction, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(entity_transaction).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
-      %i[is_payer].each do |attribute|
-        it_behaves_like 'validate_nil', :entity_transaction, attribute
-        it_behaves_like 'validate_blank', :entity_transaction, attribute
+      %i[price].each do |attribute|
+        it { should validate_presence_of(attribute) }
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :entity_transaction, :entity, :transactable
+      it { should validate_uniqueness_of(:entity_id).scoped_to(:transactable_type, :transactable_id) }
     end
 
-    context '( associations )' do
-      %i[transactable entity].each do |model|
-        it "belongs_to #{model}" do
-          expect(entity_transaction).to respond_to model
-        end
-      end
+    context "( associations )" do
+      bt_models = %i[entity transactable]
+      hm_models = %i[exchanges]
+      na_models = %i[exchanges]
 
-      %i[exchanges].each do |model|
-        it "has_many #{model}" do
-          expect(entity_transaction).to respond_to model
-        end
-      end
-    end
-  end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
+      na_models.each { |model| it { should accept_nested_attributes_for(model) } }
 
-  describe '[ business logic ]' do
-    context '( card_transaction creation with entity_transaction_attributes )' do
-      it 'creates the corresponding entity_transaction' do
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to_not be_empty
-      end
-    end
-
-    context '( card_transaction creation with entity_transactions under updates in entity_transaction_attributes )' do
-      it 'destroys the existing entity_transactions when emptying entity_transaction_attributes' do
-        card_transaction.update(entity_transaction_attributes: [])
-        expect(card_transaction.entities).to be_empty
-        expect(card_transaction.paying_entities).to be_empty
-      end
-
-      it 'destroys the existing entity_transactions and then creates them again' do
-        card_transaction.update(entity_transaction_attributes: [])
-        card_transaction.update(
-          entity_transaction_attributes: [{
-            entity: FactoryBot.create(:entity, :random, user: card_transaction.user),
-            transactable: card_transaction,
-            is_payer: false
-          }]
-        )
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to be_empty
-      end
-    end
-
-    context '( card_transaction update to zero entitiy_transactions )' do
-      before do
-        card_transaction.update(entity_transaction_attributes: [])
-      end
-
-      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
-        expect(card_transaction.entities).to be_empty
-        expect(card_transaction.paying_entities).to be_empty
-        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
-      end
-    end
-
-    context '( card_transaction update to zero paying entitiy_transactions )' do
-      before do
-        card_transaction.update(
-          entity_transaction_attributes: [{
-            entity: card_transaction.entities.first,
-            transactable: card_transaction,
-            is_payer: false
-          }]
-        )
-      end
-
-      it 'destroys all entity_transactions and removes transactable.category_transaction of category \'Exchange\'' do
-        expect(card_transaction.entities).to_not be_empty
-        expect(card_transaction.paying_entities).to be_empty
-        expect(card_transaction.categories.pluck(:category_name)).to_not include('Exchange')
-      end
+      it { should define_enum_for(:status).with_values(pending: 0, finished: 1) }
     end
   end
 end

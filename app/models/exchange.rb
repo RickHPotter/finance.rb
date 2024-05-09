@@ -19,12 +19,12 @@ class Exchange < ApplicationRecord
   enum exchange_type: { non_monetary: 0, monetary: 1 }
 
   # @includes .................................................................
-  include StartingPriceCallback
+  include HasStartingPrice
   include ExchangeMoneyTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  belongs_to :entity_transaction
+  belongs_to :entity_transaction, counter_cache: true
 
   # @validations ..............................................................
   validates :exchange_type, :number, :starting_price, :price, presence: true

@@ -14,7 +14,6 @@
 #  price                  :decimal(, )      not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
-#  installments_count     :integer          default(1), not null
 #  user_id                :bigint           not null
 #  user_card_id           :bigint
 #  user_bank_account_id   :bigint
@@ -24,11 +23,9 @@
 class MoneyTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
-  include StartingPriceCallback
+  include HasMonthYear
+  include HasStartingPrice
   include CategoryTransactable
-  include EntityTransactable
-  include Installable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -36,13 +33,13 @@ class MoneyTransaction < ApplicationRecord
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, optional: true
 
-  has_many :card_transactions
-  has_many :investments
+  has_many :installments, dependent: :destroy
+  has_many :investments, dependent: :destroy
   has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
-  validates :mt_description, :date, :starting_price, :price, :month, :year, presence: true
-  validates :paid, inclusion: { in: [true, false] }
+  validates :mt_description, :date, :month, :year, :starting_price, :price, presence: true
+  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
@@ -51,9 +48,10 @@ class MoneyTransaction < ApplicationRecord
   scope :by_user, ->(user) { where(user:) }
 
   # @public_instance_methods ..................................................
-  # Defaults description column to a single {#to_s} call.
+
+  # Defaults `mt_description` column to a single {#to_s} call.
   #
-  # @return [String] The description for an associated transactable.
+  # @return [String] The description for an associated `transactable`.
   #
   def to_s
     mt_description
@@ -63,11 +61,11 @@ class MoneyTransaction < ApplicationRecord
 
   protected
 
-  # Sets `paid` based on current date in case it was not previously set.
+  # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_paid
     return unless date

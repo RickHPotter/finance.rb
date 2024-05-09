@@ -12,26 +12,16 @@
     <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
-  <body class="">
-    <main class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white antialiased">
-      <div class="flex justify-between">
-        <div class="p-2">
-          <%= render 'shared/dark_mode' %>
-        </div>
-        <div>
-          <!-- @TODO: Fix notice through Turbo -->
-          <%= turbo_frame_tag :notice, class: 'w-full' do %>
-          <% end %>
-        </div>
+  <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
+    <main class="antialiased">
+      <div class="p-3">
+        <%= render "shared/flash" %>
+        <%= render "shared/dark_mode" %>
       </div>
 
-      <section class="container mx-auto mt-28 px-5 flex">
+      <section class="container mx-auto mt-16 px-5 flex">
         <%= yield %>
       </section>
     </main>
-
-    <!-- WHERE CREDITS ARE DUE: The following commented scripts were converted into Stimulus Controllers
-      <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/tabs.js"></script>
-    -->
   </body>
 </html>

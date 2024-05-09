@@ -12,16 +12,16 @@
 #
 FactoryBot.define do
   factory :bank do
-    bank_name { 'Itau' }
-    bank_code { '479' }
+    bank_name { "Itau" }
+    bank_code { "479" }
 
     trait :different do
-      bank_name { 'Nubank' }
-      bank_code { '001' }
+      bank_name { "Nubank" }
+      bank_code { "001" }
     end
 
     trait :random do
-      bank_name { Faker::Bank.name.split(' ').sample }
+      bank_name { Faker::Bank.name.split.sample }
       bank_code { Faker::Bank.unique.bsb_number }
     end
   end

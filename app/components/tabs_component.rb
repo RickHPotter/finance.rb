@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-# Component to render a tab
+# Component to render a tab.
 class TabsComponent < ViewComponent::Base
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   attr_reader :items
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type Tab
+
+  # Initialises a Tab Component.
   #
   # @param items [Array] Array of Item Structs.
   # @param dependents [Array] Array of dependent items.

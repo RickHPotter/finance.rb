@@ -17,17 +17,17 @@
 FactoryBot.define do
   factory :exchange do
     exchange_type { 0 }
-    price { '9.99' }
+    price { "9.99" }
     entity_transaction { custom_create(:entity_transaction, options: { is_payer: true }) }
 
     trait :different do
       exchange_type { 1 }
-      price { '9.99' }
+      price { "9.99" }
       entity_transaction { different_custom_create(:entity_transaction, options: { is_payer: true }) }
     end
 
     trait :random do
-      exchange_type { [0, 1].sample }
+      exchange_type { [ 0, 1 ].sample }
       price { Faker::Number.decimal(l_digits: 2, r_digits: 2) }
       entity_transaction { random_custom_create(:entity_transaction, options: { is_payer: true }) }
     end

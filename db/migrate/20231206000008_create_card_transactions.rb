@@ -11,11 +11,10 @@ class CreateCardTransactions < ActiveRecord::Migration[7.1]
       t.integer :year, null: false
       t.decimal :starting_price, null: false
       t.decimal :price, null: false
-      t.integer :installments_count, default: 1, null: false
+      t.integer :installments_count, default: 0, null: false
 
       t.references :user, null: false, foreign_key: true
       t.references :user_card, null: false, foreign_key: true
-      t.references :money_transaction, foreign_key: true, null: true
 
       t.timestamps
     end

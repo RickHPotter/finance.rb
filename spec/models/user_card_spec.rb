@@ -17,54 +17,45 @@
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe UserCard, type: :model do
-  let!(:user_card) { FactoryBot.create(:user_card, :random) }
+  let!(:subject) { build(:user_card, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(user_card).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
       %i[current_due_date days_until_due_date min_spend credit_limit].each do |attribute|
-        it_behaves_like 'validate_nil', :user_card, attribute
-        it_behaves_like 'validate_blank', :user_card, attribute
+        it { should validate_presence_of(attribute) }
       end
+
+      it { should validate_uniqueness_of(:user_card_name).scoped_to(:user_id) }
     end
 
-    it_behaves_like 'validate_uniqueness_combination', :user_card, :user_card_name, :user
+    context "( associations )" do
+      bt_models = %i[user card]
+      hm_models = %i[card_transactions]
 
-    context '( associations )' do
-      %i[user card].each do |model|
-        it "belongs_to #{model}" do
-          expect(user_card).to respond_to model
-        end
-      end
-
-      %i[card_transactions].each do |model|
-        it "has_many #{model}" do
-          expect(user_card).to respond_to model
-        end
-      end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
     end
   end
 
-  describe '[ business logic ]' do
-    context '( callbacks )' do
-      it 'assigns the correct current_closing_date given past current_due_date' do
-        user_card.update(current_closing_date: nil,
-                         current_due_date: Date.current.beginning_of_year - 1.year,
-                         days_until_due_date: 7)
-        expect(user_card.current_closing_date).to eq(user_card.current_due_date - 7.days)
+  describe "[ business logic ]" do
+    context "( callbacks )" do
+      it "assigns the correct current_closing_date given past current_due_date" do
+        current_due_date = Date.current.beginning_of_year - 1.year
+        subject.update(current_closing_date: nil, current_due_date:, days_until_due_date: 7)
+        expect(subject.current_closing_date).to eq(subject.current_due_date - 7.days)
       end
 
-      it 'assigns the correct current_closing_date given future current_due_date' do
-        user_card.update(current_closing_date: nil,
-                         current_due_date: Date.current.beginning_of_year + 1.year,
-                         days_until_due_date: 7)
-        expect(user_card.current_closing_date).to eq(user_card.current_due_date - 7.days)
+      it "assigns the correct current_closing_date given future current_due_date" do
+        current_due_date = Date.current.beginning_of_year + 1.year
+        subject.update(current_closing_date: nil, current_due_date:, days_until_due_date: 7)
+        expect(subject.current_closing_date).to eq(subject.current_due_date - 7.days)
       end
     end
   end

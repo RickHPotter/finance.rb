@@ -12,19 +12,19 @@
 #
 FactoryBot.define do
   factory :card do
-    card_name { 'Azul' }
-    bank { FactoryBot.create(:bank) }
+    card_name { "Azul" }
+    bank { create(:bank) }
 
     trait :different do
-      card_name { 'Nubank' }
-      bank { FactoryBot.create(:bank, :different) }
+      card_name { "Nubank" }
+      bank { create(:bank, :different) }
     end
 
     trait :random do
       sequence(:card_name) do |n|
         "#{Faker::Color.color_name.capitalize} #{%w[Bronze Silver Gold Platinum Premium Black].sample} #{n}"
       end
-      bank { FactoryBot.create(:bank, :random) }
+      bank { create(:bank, :random) }
     end
   end
 end

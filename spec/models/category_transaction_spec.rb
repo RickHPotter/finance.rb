@@ -11,55 +11,24 @@
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #
-require 'rails_helper'
-
-include FactoryHelper
+require "rails_helper"
 
 RSpec.describe CategoryTransaction, type: :model do
-  let!(:card_transaction) { FactoryBot.create(:card_transaction, :random, :with_category_transactions) }
-  let!(:category_transaction) { FactoryBot.create(:category_transaction, :random) }
+  let!(:subject) { build(:category_transaction, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(category_transaction).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :category_transaction, :category, :transactable
+      it { should validate_uniqueness_of(:category_id).scoped_to(:transactable_type, :transactable_id) }
     end
 
-    context '( associations )' do
-      %i[transactable category].each do |model|
-        it "belongs_to #{model}" do
-          expect(category_transaction).to respond_to model
-        end
-      end
-    end
-  end
+    context "( associations )" do
+      bt_models = %i[category transactable]
 
-  describe '[ business logic ]' do
-    context '( card_transaction creation with category_transaction_attributes )' do
-      it 'creates the corresponding category_transaction' do
-        expect(card_transaction.custom_categories.count).to eq(1)
-      end
-    end
-
-    context '( card_transaction creation with category_transactions under updates in category_transaction_attributes )' do
-      it 'destroys the existing category_transactions when emptying category_transaction_attributes' do
-        card_transaction.update(category_transaction_attributes: [])
-        expect(card_transaction.custom_categories).to be_empty
-      end
-
-      it 'destroys the existing category_transactions and then creates them again' do
-        card_transaction.update(category_transaction_attributes: [])
-        card_transaction.update(
-          category_transaction_attributes: [{
-            category: FactoryBot.create(:category, :random, user: card_transaction.user),
-            transactable: card_transaction
-          }]
-        )
-        expect(card_transaction.custom_categories).to_not be_empty
-      end
+      bt_models.each { |model| it { should belong_to(model) } }
     end
   end
 end

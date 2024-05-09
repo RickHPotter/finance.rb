@@ -10,37 +10,30 @@
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Entity, type: :model do
-  let!(:entity) { FactoryBot.create(:entity, :random) }
+  let!(:subject) { build(:entity, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(entity).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
       %i[entity_name].each do |attribute|
-        it_behaves_like 'validate_nil', :entity, attribute
-        it_behaves_like 'validate_blank', :entity, attribute
+        it { should validate_presence_of(attribute) }
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :entity, :entity_name, :user
+      it { should validate_uniqueness_of(:entity_name).scoped_to(:user_id) }
     end
 
-    context '( associations )' do
-      %i[user].each do |model|
-        it "belongs_to #{model}" do
-          expect(entity).to respond_to model
-        end
-      end
+    context "( associations )" do
+      bt_models = %i[user]
+      hm_models = %i[entity_transactions card_transactions money_transactions]
 
-      %i[card_transactions].each do |model|
-        it "has_many #{model}" do
-          expect(entity).to respond_to model
-        end
-      end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Entity[Money_Card]Transaction Migration
+# Entity/Transaction Migration
 class CreateEntityTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :entity_transactions do |t|
@@ -18,6 +18,6 @@ class CreateEntityTransactions < ActiveRecord::Migration[7.1]
     add_index :entity_transactions,
               %i[entity_id transactable_type transactable_id],
               unique: true,
-              name: 'index_entity_transactions_on_composite_key'
+              name: "index_entity_transactions_on_composite_key"
   end
 end

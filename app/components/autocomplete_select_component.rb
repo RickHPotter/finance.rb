@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Component to render an autocomplete select
+# Component to render an autocomplete select.
 class AutocompleteSelectComponent < ViewComponent::Base
   # @includes .................................................................
   include TranslateHelper
@@ -9,10 +9,10 @@ class AutocompleteSelectComponent < ViewComponent::Base
   attr_reader :form, :object, :field, :options, :label, :input, :items
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type Button
+
+  # Initialises an AutoComplete Select Component.
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
-  # @param object [Object] The object associated with the form (default is nil).
   # @param field [Symbol] The field associated with the form (default is nil).
   # @param items [Array] Array of Item Structs.
   # @param options [Hash] Additional options for customizing the autocomplete select.
@@ -24,21 +24,21 @@ class AutocompleteSelectComponent < ViewComponent::Base
   #
   # @return [ButtonComponent] A new instance of ButtonComponent.
   #
-  def initialize(form:, object:, field:, items:, options: {})
+  def initialize(form:, field:, items:, options: {})
     @form = form
-    @object = object
+    @object = form.object
     @field = field
     @options = default_options(options)
 
     @items = items.map do |item|
-      Item.new(id: item[0], label: item[1])
+      Item.new(label: item[0], id: item[1])
     end
     super
   end
 
   Item = Struct.new(:id, :label)
 
-  # Sets default options for the autocomplete select.
+  # Sets default `options` for the autocomplete select.
   #
   # @param options [Hash] Additional options for customizing the autocomplete select.
   #
@@ -48,10 +48,10 @@ class AutocompleteSelectComponent < ViewComponent::Base
     {
       id: options[:id] || input_id,
       label: options[:label] || attribute_model(@object, @field),
-      type: 'select',
+      type: "select",
       data: {
-        autocomplete_select_target: 'selected',
-        action: 'input->autocomplete-select#filterList keydown->autocomplete-select#onKeyDown'
+        autocomplete_select_target: "selected",
+        action: "input->autocomplete-select#filterList keydown->autocomplete-select#onKeyDown"
       }
     }
   end

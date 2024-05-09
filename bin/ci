@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Update bundler-audit
+bin/bundler-audit --update
+
+# Run Brakeman with quiet mode and warning level set to 2
+bin/brakeman -q -w2
+
+# Run RuboCop in parallel
+bin/rubocop --parallel
+
+# Run ERBLint with lint-all option
+bin/erblint -la
+
+# Run RSpec
+bin/rspec

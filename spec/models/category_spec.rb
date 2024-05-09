@@ -11,36 +11,39 @@
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Category, type: :model do
-  let!(:category) { FactoryBot.create(:category, :random) }
+  let!(:subject) { build(:category, :random, built_in: false) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(category).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
       %i[category_name].each do |attribute|
-        it_behaves_like 'validate_nil', :category, attribute
-        it_behaves_like 'validate_blank', :category, attribute
+        it { should validate_presence_of(attribute) }
       end
 
-      it_behaves_like 'validate_uniqueness_combination', :category, :category_name, :user
+      it { should validate_uniqueness_of(:category_name).scoped_to(:user_id) }
     end
 
-    context '( associations )' do
-      %i[user].each do |model|
-        it "belongs_to #{model}" do
-          expect(category).to respond_to model
-        end
-      end
+    context "( associations )" do
+      bt_models = %i[user]
+      hm_models = %i[category_transactions card_transactions money_transactions investments]
 
-      %i[card_transactions money_transactions investments].each do |model|
-        it "has_many #{model}" do
-          expect(category).to respond_to model
-        end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
+    end
+  end
+
+  describe "[ business logic ]" do
+    context "( public methods )" do
+      it "returns built_in value" do
+        expect(subject.built_in?).to eq false
+        subject.update(built_in: true)
+        expect(subject.built_in?).to eq true
       end
     end
   end

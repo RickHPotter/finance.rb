@@ -10,31 +10,29 @@
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe Card, type: :model do
-  let!(:card) { FactoryBot.create(:card, :random) }
+  let!(:subject) { build(:card, :random) }
 
-  describe '[ activerecord validations ]' do
-    context '( presence, uniqueness, etc )' do
-      it 'is valid with valid attributes' do
-        expect(card).to be_valid
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
       end
 
       %i[card_name].each do |attribute|
-        it_behaves_like 'validate_nil', :card, attribute
-        it_behaves_like 'validate_blank', :card, attribute
+        it { should validate_presence_of(attribute) }
+        it { should validate_uniqueness_of(attribute) }
       end
-
-      it_behaves_like 'validate_uniqueness', :card, :card_name
     end
 
-    context '( associations )' do
-      %i[user_cards].each do |model|
-        it "has_many #{model}" do
-          expect(card).to respond_to model
-        end
-      end
+    context "( associations )" do
+      bt_models = %i[bank]
+      hm_models = %i[user_cards]
+
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
     end
   end
 end

@@ -1,100 +1,92 @@
 # frozen_string_literal: true
 
-source 'https://rubygems.org'
+source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '3.3.0'
+ruby "3.3.0"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem 'rails', '~> 7.1.2'
+gem "rails", "~> 7.1.2"
 
-# The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
-gem 'sprockets-rails'
+# The new Rails 8 asset pipeline for Rails [https://github.com/rails/propshaft]
+gem "propshaft"
 
 # Use pg as the database for Active Record
-gem 'pg', '~> 1.1'
+gem "pg", "~> 1.1"
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem 'puma', '~> 6.0'
+gem "puma", "~> 6.0"
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
-gem 'importmap-rails'
+gem "importmap-rails"
 
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
-gem 'turbo-rails'
+gem "turbo-rails"
 
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-gem 'stimulus-rails'
+gem "stimulus-rails"
 
 # Use Tailwind CSS [https://github.com/rails/tailwindcss-rails]
-gem 'tailwindcss-rails'
+gem "tailwindcss-rails"
 
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
-gem 'jbuilder'
+gem "jbuilder"
 
 # Use Redis adapter to run Action Cable in production
-gem 'redis', '~> 4.0'
-
-# Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
-# gem "kredis"
-
-# Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-# gem "bcrypt", "~> 3.1.7"
+gem "redis", "~> 4.0"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
+gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
 
 # Reduces boot times through caching; required in config/boot.rb
-gem 'bootsnap', require: false
+gem "bootsnap", require: false
 
 # ViewComponent
-gem 'view_component', '~> 3.7'
+gem "view_component", "~> 3.7"
 
 # Authentication
-gem 'devise'
-gem 'letter_opener_web'
-
-# Use Sass to process CSS
-# gem "sassc-rails"
+gem "devise"
+gem "letter_opener_web"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
 # Although I like the approach of rails credentials:edit, I thinks it's harder than it should.
-gem 'dotenv-rails'
+gem "dotenv-rails"
+
+gem "dockerfile-rails"
 
 group :development, :test do
-  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem 'bullet'
-  gem 'debug', platforms: %i[mri mingw x64_mingw]
-  gem 'factory_bot_rails'
-  gem 'faker'
-  gem 'rspec-rails'
+  gem "bullet"
+  gem "debug", platforms: %i[mri mingw x64_mingw]
+  gem "factory_bot_rails"
+  gem "faker"
+  gem "rspec-rails"
 end
 
 group :development do
-  # Use console on exceptions pages [https://github.com/rails/web-console]
-  gem 'annotate'
-  gem 'awesome_print'
-  gem 'guard-rspec', require: false
-  gem 'hotwire-livereload'
-  gem 'web-console'
+  gem "annotate"
+  gem "awesome_print"
+  gem "better_errors"
+  gem "binding_of_caller"
+  gem "brakeman"
+  gem "bundler-audit"
+  gem "erb_lint", require: false
+  gem "guard-rspec", require: false
+  gem "hotwire-livereload"
+  gem "rails-erd"
+  gem "rubocop-rails-omakase", require: false
+  gem "web-console"
 
   # NEOVIM IDE / REMEMBER TO UPDATE MASON
-  gem 'neovim'
-  gem 'solargraph'
-
-  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
-  # gem "rack-mini-profiler"
-
-  # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
-  # gem "spring"
+  gem "neovim"
+  gem "solargraph"
 end
 
 group :test do
-  # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
-  gem 'capybara'
-  gem 'database_cleaner-active_record'
-  gem 'selenium-webdriver'
-  gem 'simplecov', require: false
+  gem "capybara"
+  gem "database_cleaner-active_record"
+  gem "selenium-webdriver"
+  gem "shoulda-matchers"
+  gem "simplecov", require: false
 end

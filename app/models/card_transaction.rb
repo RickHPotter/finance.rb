@@ -4,30 +4,28 @@
 #
 # Table name: card_transactions
 #
-#  id                   :bigint           not null, primary key
-#  ct_description       :string           not null
-#  ct_comment           :text
-#  date                 :date             not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
-#  installments_count   :integer          default(1), not null
-#  user_id              :bigint           not null
-#  user_card_id         :bigint           not null
-#  money_transaction_id :bigint
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
+#  id                 :bigint           not null, primary key
+#  ct_description     :string           not null
+#  ct_comment         :text
+#  date               :date             not null
+#  month              :integer          not null
+#  year               :integer          not null
+#  starting_price     :decimal(, )      not null
+#  price              :decimal(, )      not null
+#  installments_count :integer          default(0), not null
+#  user_id            :bigint           not null
+#  user_card_id       :bigint           not null
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
 #
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
-  include StartingPriceCallback
-  include MoneyTransactable
+  include HasMonthYear
+  include HasStartingPrice
+  include HasInstallments
   include CategoryTransactable
   include EntityTransactable
-  include Installable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -35,61 +33,25 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card
 
   # @validations ..............................................................
-  validates :date, :ct_description, :starting_price, :price, :month, :year, presence: true
+  validates :date, :ct_description, :month, :year, presence: true
+  validates :starting_price, :price, :installments_count, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
   scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
-  scope :by_installable, ->(user_id) { where(installments_count: 2..).by_user(user_id:) }
 
   # @public_instance_methods ..................................................
-  # Defaults description column to a single {#to_s} call.
+
+  # Defaults `ct_description` column to a single {#to_s} call.
   #
-  # @return [String] The description for an associated transactable.
+  # @return [String] The description for an associated `transactable`.
   #
   def to_s
     ct_description
   end
 
   # @protected_instance_methods ...............................................
-
-  protected
-
-  # Generates a description for the associated MoneyTransaction.
-  #
-  # This method generates a description for the MoneyTransaction based on the user's card name and month_year.
-  #
-  # @return [String] The generated description.
-  #
-  def mt_description
-    "Card #{user_card.user_card_name} #{month_year}"
-  end
-
-  # Generates a date for the associated MoneyTransaction.
-  #
-  # This method picks the due_date for the MoneyTransaction.
-  #
-  # @return [Date]
-  #
-  def money_transaction_date
-    user_card.current_due_date
-  end
-
-  # Generates a comment for the associated MoneyTransaction based on the card and RefMonthYear.
-  #
-  # This method generates a comment specifying the card and RefMonthYear.
-  #
-  # @return [String] The generated comment.
-  #
-  def mt_comment
-    a, b = money_transaction.card_transactions.partition { |ct| ct.installments_count == 1 }
-    in_one = a.sum(&:price).round(2)
-    spread = b.sum(&:price).round(2)
-
-    "Upfront: #{in_one}, Installments: #{spread}"
-  end
-
   # @private_instance_methods .................................................
 end

@@ -16,16 +16,16 @@
 #
 FactoryBot.define do
   factory :user_bank_account do
-    agency_number { '1324' }
-    account_number { '123456' }
+    agency_number { "1324" }
+    account_number { "123456" }
     balance { 393.92 }
 
     user { custom_create(:user) }
     bank { custom_create(:bank) }
 
     trait :different do
-      agency_number { '3422' }
-      account_number { '564122' }
+      agency_number { "3422" }
+      account_number { "564122" }
       balance { 0.00 }
 
       user { different_custom_create(:user) }

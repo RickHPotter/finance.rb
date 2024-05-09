@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 # Shared functionality for models with audited price.
-module ActiveCallback
+module HasActive
   extend ActiveSupport::Concern
 
   included do
     # @callbacks ..............................................................
     before_validation :set_active, on: :create
+
+    # @scopes ...................................................................
+    scope :active, -> { where(active: true) }
   end
 
   # @public_class_methods .....................................................
@@ -18,7 +21,7 @@ module ActiveCallback
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_active
     self.active ||= true

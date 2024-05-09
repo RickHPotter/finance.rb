@@ -2,8 +2,8 @@ en:
   activerecord:
     models:
       card_transaction:
-        one: Card transaction
-        other: Card transactions
+        one: Card Transaction
+        other: Card Transactions
     attributes:
       card_transaction:
         id: ID
@@ -12,7 +12,7 @@ en:
         date: Date
         price: Price
         starting_price: Original Price
-        card_id: Card
+        user_card_id: Card
         entity_id: Entity
         category: Category
         month: Month
@@ -21,3 +21,27 @@ en:
         installments_count: Installments Count
         created_at: Created at
         updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      card_transaction:
+        one: Transação
+        other: Transações
+    attributes:
+      card_transaction:
+        id: ID
+        ct_description: Descricão
+        ct_comment: Comentário
+        date: Data
+        price: Preço
+        starting_price: Preço Inicial
+        user_card_id: Cartão
+        entity_id: Entidade
+        category: Categoria
+        month: Mês
+        year: Ano
+        installment: Parcela
+        installments_count: Quantidade de Parcelas
+        created_at: Criado em
+        updated_at: Atualizado em

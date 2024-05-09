@@ -40,6 +40,17 @@ sprint. The reasons are:
 1. I'm starting just now, this is, after all, the first sprint.
 2. Like most projects at their kick-start, it is just one person: me.
 3. I had a 2-week holiday and didn't touch the project whatsoever.
+4. I had a week off due to a -failed- participation in a take home challenge for
+a job interview, and I didn't touch the project.
+5. I had then a two-week span that I was participating in an internal recruitment
+at my job. I kept on working on this project, but way less.
+6. I started working full-time as a dev where I was an intern after getting the
+rightful promotion. This caused me to several times overwork (willingly).
+7. After studying non-stop for about a whole year, I spontaneously decided to take
+April as my luxury month to rest. I watched The Office US (I had only watched the
+UK version before).
+8. I came back in the second half of April getting more and more excited about
+continuing the project.
 
 ## GAARA-01/be-01: Finish late Model Specs
 
@@ -165,13 +176,22 @@ sprint. The reasons are:
   - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
-  - ⌛ Refine seeds to include all models.
-  - ⌛ Fix possible bugs found at this stage.
-  - ⌛ Review current specs and refactor if possible.
+  - ✅ Refine seeds to include all models.
+  - ✅ Fix possible bugs found at this stage.
+  - ✅ Review current specs and refactor if possible.
 - Extra:
-  - ⌛ Made possible to change FK of CardTransaction (should create/use another money_transaction).
-  - ⌛ Made possible to change FK of Investment (should create/use another money_transaction).
-  - ⌛ Added factory and model-based specs for Installment.
+  - ✅ Switched from sprockets to Prophaft.
+  - ✅ Added and tidied up rubocop and erb_lint, and added CI.
+  - ✅ Created a new request spec that tests the Exchange flow.
+  - ✅ Refactored the Exchange flow to nested-form using rails-nested-form stimulus.
+  - ✅ Made possible to change FK of CardTransaction (should create/use another money_transaction).
+  - ✅ Made possible to change FK of Investment (should create/use another money_transaction).
+  - ✅ Remodelled Installment to act like Exchange. Join Table that creates 1 parent.
+  - ✅ Created a PORO for handling Card Transaction Params in request specs.
+  - ✅ Removed hard business logic from card_transaction model spec to request spec.
+  - ✅ Migrates from much-appreciated ModelSpecHelper Custom Validation to Shoulda-Matchers.
+  - ✅ Creates CI binstub to make it easier to run CI locally before pushing.
+  - ✅ Reviews and makes necessary changes to docs.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

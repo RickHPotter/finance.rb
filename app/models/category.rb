@@ -19,13 +19,13 @@ class Category < ApplicationRecord
   belongs_to :user
 
   has_many :category_transactions
-  has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: 'CardTransaction'
-  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: 'MoneyTransaction'
-  has_many :investments, through: :category_transactions, source: :transactable, source_type: 'Investment'
+  has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
+  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: "MoneyTransaction"
+  has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
 
   # @validations ..............................................................
-  validates :category_name, presence: true, uniqueness: { scope: :user }
-  validates :built_in, inclusion: { in: [true, false] }
+  validates :category_name, presence: true, uniqueness: { scope: :user_id }
+  validates :built_in, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_built_in
@@ -36,6 +36,13 @@ class Category < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+
+  # @return [Boolean].
+  #
+  def built_in?
+    built_in
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -44,7 +51,7 @@ class Category < ApplicationRecord
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_built_in
     self.built_in ||= false

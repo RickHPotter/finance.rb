@@ -18,11 +18,11 @@ class Entity < ApplicationRecord
   belongs_to :user
 
   has_many :entity_transactions
-  has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: 'CardTransaction'
-  has_many :money_transactions, through: :entity_transactions, source: :transactable, source_type: 'MoneyTransaction'
+  has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
+  has_many :money_transactions, through: :entity_transactions, source: :transactable, source_type: "MoneyTransaction"
 
   # @validations ..............................................................
-  validates :entity_name, presence: true, uniqueness: { scope: :user }
+  validates :entity_name, presence: true, uniqueness: { scope: :user_id }
 
   # @callbacks ................................................................
   # @scopes ...................................................................

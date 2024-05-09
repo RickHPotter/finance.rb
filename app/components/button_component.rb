@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Component to render an autocomplete select
+# Component to render an autocomplete select.
 class ButtonComponent < ViewComponent::Base
   # @includes .................................................................
   include ComponentsHelper
@@ -9,7 +9,8 @@ class ButtonComponent < ViewComponent::Base
   attr_reader :form, :link, :options
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type Button
+
+  # Initialises a Button Component.
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
   # @param link [String] The link possibly associated with the form (default is nil).
@@ -24,12 +25,12 @@ class ButtonComponent < ViewComponent::Base
   #
   def initialize(form: nil, link: nil, options: {})
     @form = form
-    @link = link
+    @link = link || "#"
     @options = default_options(options)
     super
   end
 
-  # Sets default options for the button.
+  # Sets default `options` for the button.
   #
   # @param options [Hash] Additional options for customizing the button.
   #
@@ -38,39 +39,52 @@ class ButtonComponent < ViewComponent::Base
   def default_options(options)
     {
       id: options[:id] || button_id,
-      label: options[:label] || 'Button Without A Name',
+      label: options[:label] || "Button Without A Name",
       colour: { colour: colours(options[:colour]) },
-      type: 'button',
-      data: data_attributes(options[:data])
+      type: "button",
+      data: options[:data] || {}
     }
   end
 
   # Sets html id for button based on the presence of a link.
   #
-  # @return [String] HTML id for the button tag.
+  # @return [String] HTML ID for the button tag.
   #
   def button_id
     return "#{link}_button" if link
 
-    "#{form.object.model_name.singular}_submit_button"
+    return "#{form.object.model_name.singular}_submit_button" if form
+
+    "idless_button"
   end
 
-  # Sets the colour for the button based on the colour option.
+  # Sets the `colour` for the button based on the `colour` option.
   #
   # @param colour [Symbol] The colour of the button.
-  # @option colour [Symbol] :indigo
-  # @option colour [Symbol] :red
+  #
+  # @option colour [Symbol] :purple.
+  # @option colour [Symbol] :orange.
   #
   # @return [Hash] The colour of the button.
   #
   def colours(colour)
     case colour
-    when nil, :indigo
-      { text: 'text-white', bg: 'bg-indigo-600',
-        hover: { bg: 'hover:bg-indigo-700' }, focus: { ring: 'focus:ring-black' } }
+
+    when nil, :purple
+      { text: "text-white", bg: "bg-purple-600", border: "border-gray-300",
+        hover: { bg: "hover:bg-indigo-900", text: "" } }
+    when :light
+      { text: "text-black", bg: "bg-gray-300", border: "border-black",
+        hover: { bg: "hover:bg-gray-500", text: "hover:text-gray-50" } }
     when :red
-      { text: 'text-black', bg: 'bg-red-500',
-        hover: { bg: 'hover:bg-red-600' }, focus: { ring: 'focus:ring-black' } }
+      { text: "text-white", bg: "bg-red-800", border: "border-black",
+        hover: { bg: "hover:bg-red-700", text: "hover:text-gray-50" } }
+    when :indigo
+      { text: "text-white", bg: "bg-indigo-600", border: "border-black",
+        hover: { bg: "hover:bg-indigo-700", text: "hover:text-gray-50" } }
+    when :orange
+      { text: "text-white", bg: "bg-orange-500", border: "rounded-md",
+        hover: { bg: "hover:bg-red-700", text: "" } }
     end
   end
 end
