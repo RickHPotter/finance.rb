@@ -25,7 +25,7 @@ module Exchangable
   # @return [void]
   #
   def update_entity_transaction_status
-    return self.status = :finished if exchanges.map(&:exchange_type).uniq == [ "non_monetary" ]
+    return self.status = :finished if exchanges.blank? || exchanges.map(&:exchange_type).uniq == [ "non_monetary" ]
 
     self.status = :pending
   end

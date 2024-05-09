@@ -113,7 +113,6 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.bigint "money_transaction_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["card_transaction_id", "money_transaction_id", "number"], name: "index_card_transactions_money_transaction_on_composite_key", unique: true
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["money_transaction_id"], name: "index_installments_on_money_transaction_id"
   end
@@ -156,10 +155,10 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
   create_table "user_bank_accounts", force: :cascade do |t|
     t.integer "agency_number"
     t.integer "account_number"
-    t.bigint "user_id", null: false
-    t.bigint "bank_id", null: false
     t.boolean "active", default: true, null: false
     t.decimal "balance", default: "0.0", null: false
+    t.bigint "user_id", null: false
+    t.bigint "bank_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_user_bank_accounts_on_bank_id"

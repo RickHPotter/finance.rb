@@ -16,10 +16,5 @@ class CreateInstallments < ActiveRecord::Migration[7.1]
 
       t.timestamps
     end
-
-    add_index :installments,
-              %i[card_transaction_id money_transaction_id number],
-              unique: true,
-              name: "index_card_transactions_money_transaction_on_composite_key"
   end
 end

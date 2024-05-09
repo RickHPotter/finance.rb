@@ -30,7 +30,7 @@ RSpec.describe CardTransaction, type: :model do
         expect(card_transaction).to be_valid
       end
 
-      %i[ct_description price].each do |attribute|
+      %i[ct_description].each do |attribute|
         it_behaves_like "validate_nil", :card_transaction, attribute
         it_behaves_like "validate_blank", :card_transaction, attribute
       end

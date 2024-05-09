@@ -30,9 +30,14 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    category_transactions { build_list(:category_transaction, 1, :random) }
-    entity_transactions { build_list(:entity_transaction, 1, :random, is_payer: false) }
     installments { build_list(:installment, 1, :random, price:) }
+    category_transactions do
+      build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
+    end
+    entity_transactions do
+      price = price.to_i / 5
+      build_list(:entity_transaction, 1, :random, is_payer: false, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+    end
 
     trait :different do
       ct_description { "Sitpass" }
@@ -43,6 +48,16 @@ FactoryBot.define do
 
       user { different_custom_create(:user) }
       user_card { different_custom_create(:user_card, reference: { user: }) }
+
+      installments do
+        build_list(:installment, 2, :random, price: (price / 2).round(2)) do |installment, i|
+          installment.assign_attributes(number: i + 1)
+        end
+      end
+      entity_transactions do
+        price = price.to_i / 3
+        build_list(:entity_transaction, 1, :random, is_payer: true, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+      end
     end
 
     trait :random do
@@ -53,6 +68,16 @@ FactoryBot.define do
 
       user { random_custom_create(:user) }
       user_card { random_custom_create(:user_card, reference: { user: }) }
+
+      installments do
+        build_list(:installment, date.month, :random, price: (price / date.month).round(2)) do |installment, i|
+          installment.assign_attributes(number: i + 1)
+        end
+      end
+      entity_transactions do
+        price = price.to_i / 3
+        build_list(:entity_transaction, 1, :random, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+      end
     end
   end
 end
