@@ -50,6 +50,8 @@ module Finance
       g.view_specs false
     end
 
+    config.active_support.cache_format_version = 7.1
+
     # GZip all responses
     config.middleware.use Rack::Deflater
 

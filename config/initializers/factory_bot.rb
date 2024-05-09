@@ -4,9 +4,7 @@ require "awesome_print"
 
 # Creating Custom Methods for FactoryBot
 module FactoryHelper
-  # Creates a {FactoryBot} object with customisation options.
-  #
-  # This method creates a {FactoryBot} object based on the specified model given a reference (fk),
+  # Creates a {FactoryBot} object based on the specified model given a reference (fk),
   # traits (same as usual traits of {FactoryBot}) and additional options (same as usual).
   #
   # It supports creating objects with specific attributes from a reference object, as it can handle
@@ -18,7 +16,7 @@ module FactoryHelper
   # @param traits [Array<Symbol>] An array of {FactoryBot} traits to apply to the created object.
   # @param options [Hash] A hash of options to apply to the created object.
   #
-  # @example Create an object without reference, and additional options.
+  # @example Create an object without reference, and additional options:
   #   custom_create(:user_bank_account, traits: [:random], options: { first_name: 'Joseph' })
   #   => created <UserBankAccount> with first_name = 'Joseph' without any reference.
   #
@@ -28,10 +26,10 @@ module FactoryHelper
   #   => created <UserBankAccount> that first tries to find a <User> that is already linked to
   #      this user_bank_account, and if not found, it creates a new <User> object.
   #
-  # @raise ArgumentError if model is nil
-  # @raise ArgumentError if reference is not a Hash
-  # @raise ArgumentError if traits is not an Array
-  # @raise ArgumentError if options is not a Hash
+  # @raise ArgumentError if model is nil.
+  # @raise ArgumentError if reference is not a Hash.
+  # @raise ArgumentError if traits is not an Array.
+  # @raise ArgumentError if options is not a Hash.
   #
   # @return [Object] The created {FactoryBot} object.
   #
@@ -50,20 +48,18 @@ module FactoryHelper
     FactoryBot.create(model, *traits, options)
   end
 
-  # Prepares a polymorphic setting to be used in a Custom {FactoryBot} method.
-  #
-  # This method random selects one of the given models and forwards it to the original
-  # {#custom_create} method.
+  # Prepares a polymorphic setting to be used in a Custom {FactoryBot} method, by randomly selecting one of the given models
+  # and forwarding it to the original {#custom_create} method.
   #
   # @param models [Array<Symbol>] Array of symbols, each representing a model that has a factory.
   # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
   # @param traits [Array<Symbol>] An array of {FactoryBot} traits to apply to the created object.
   # @param options [Hash] A hash of options to apply to the created object.
   #
-  # @raise ArgumentError if reference is not an Array
-  # @raise ArgumentError if models is an empty Array
+  # @raise ArgumentError if reference is not an Array.
+  # @raise ArgumentError if models is an empty Array.
   #
-  # @see {#custom_create}
+  # @see {#custom_create}.
   #
   # @return [Object] The created {FactoryBot} object.
   #
@@ -81,7 +77,7 @@ module FactoryHelper
     # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
     # @param options [Hash] A hash of options to apply to the created object.
     #
-    # @see {#custom_create}
+    # @see {#custom_create}.
     #
     # @return [Object] The created {FactoryBot} object with the specified trait.
     #
@@ -95,7 +91,7 @@ module FactoryHelper
     # @param reference [Hash] A hash representing the reference object from which attributes can be copied.
     # @param options [Hash] A hash of options to apply to the created object.
     #
-    # @see {#custom_create_polymorphic}
+    # @see {#custom_create_polymorphic}.
     #
     # @return [Object] The created {FactoryBot} object with the specified trait.
     #

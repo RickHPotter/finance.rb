@@ -10,7 +10,8 @@ class TextFieldComponent < ViewComponent::Base
   attr_reader :form, :object, :field, :items, :options, :wrapper
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type TextField
+
+  # Initialises a TextField Component.
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object.
   # @param field [Symbol] The attribute name for the text field.
@@ -38,7 +39,7 @@ class TextFieldComponent < ViewComponent::Base
     super
   end
 
-  # Sets default options for the text field.
+  # Sets default `options` for the text field.
   #
   # @param options [Hash] Additional options for customizing the text field.
   #

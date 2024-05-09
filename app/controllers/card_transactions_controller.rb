@@ -6,8 +6,8 @@ class CardTransactionsController < ApplicationController
   before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    loads = [ :user_card, :installments, { category_transactions: :category, entity_transactions: :entity } ]
-    @card_transactions = CardTransaction.eager_load(loads).order(date: :desc)
+    includes = [ :user_card, :installments, { category_transactions: :category, entity_transactions: :entity } ]
+    @card_transactions = CardTransaction.includes(includes).order(date: :desc)
   end
 
   def show; end
@@ -17,8 +17,8 @@ class CardTransactionsController < ApplicationController
   end
 
   def edit
-    loads = [ :installments, { category_transactions: :category, entity_transactions: :entity } ]
-    @card_transaction = CardTransaction.eager_load(loads).find(params[:id])
+    includes = [ :installments, { category_transactions: :category, entity_transactions: :entity } ]
+    @card_transaction = CardTransaction.includes(includes).find(params[:id])
   end
 
   def create

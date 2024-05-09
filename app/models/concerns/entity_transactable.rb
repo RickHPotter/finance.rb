@@ -11,24 +11,33 @@ module EntityTransactable
     accepts_nested_attributes_for :entity_transactions, allow_destroy: true, reject_if: :all_blank
 
     # @callbacks ...............................................................
-    after_save :update_card_transaction_categories
+    after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
   end
 
   # @public_class_methods .....................................................
-  def paying_entities
-    entity_transactions.where(is_payer: true).map(&:entity)
-  end
 
+  # @return [ActiveRecord::Relation] Helper method to return the paying `entity_transactions`.
+  #
   def paying_transactions
     entity_transactions.where(is_payer: true)
   end
 
+  # @return [ActiveRecord::Relation] Helper method to return the non-paying `entity_transactions`.
+  #
   def non_paying_transactions
     entity_transactions.where(is_payer: false)
   end
 
+  # @return [ActiveRecord::Relation] Helper method to return the `entities` of paying `entity_transactions`.
+  #
+  def paying_entities
+    paying_transactions.map(&:entity)
+  end
+
+  # @return [ActiveRecord::Relation] Helper method to return the `entities` of `non-paying `entity_transactions`.
+  #
   def non_paying_entities
-    entity_transactions.where(is_payer: false).map(&:entity)
+    non_paying_transactions.map(&:entity)
   end
 
   # @protected_instance_methods ...............................................
@@ -39,24 +48,16 @@ module EntityTransactable
   #
   # @note This is a method that is called after_save.
   #
-  # return [void]
+  # return [void].
   #
   def update_card_transaction_categories
-    return unless instance_of? CardTransaction
-
     exchange_category_id = user.built_in_category("Exchange").id
 
-    payers = entity_transactions.pluck(:is_payer)
     exchange_cat = built_in_category_transactions_by(category_id: exchange_category_id)
+    payers = entity_transactions.pluck(:is_payer)
 
-    if exchange_cat.present?
-      return if payers.any?
+    return exchange_cat.map(&:destroy) if exchange_cat.present? && payers.none?
 
-      exchange_cat.map(&:destroy)
-    else
-      return if payers.none?
-
-      category_transactions << CategoryTransaction.new(category_id: exchange_category_id)
-    end
+    category_transactions << CategoryTransaction.new(category_id: exchange_category_id) if payers.any?
   end
 end

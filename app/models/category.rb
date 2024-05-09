@@ -24,7 +24,7 @@ class Category < ApplicationRecord
   has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
 
   # @validations ..............................................................
-  validates :category_name, presence: true, uniqueness: { scope: :user }
+  validates :category_name, presence: true, uniqueness: { scope: :user_id }
   validates :built_in, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
@@ -36,6 +36,9 @@ class Category < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+
+  # @return [Boolean].
+  #
   def built_in?
     built_in
   end
@@ -48,7 +51,7 @@ class Category < ApplicationRecord
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_built_in
     self.built_in ||= false

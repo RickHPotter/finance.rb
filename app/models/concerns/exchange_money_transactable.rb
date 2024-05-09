@@ -5,9 +5,6 @@ module ExchangeMoneyTransactable
   extend ActiveSupport::Concern
 
   included do
-    # @includes ...............................................................
-    # @security (i.e. attr_accessible) ........................................
-
     # @relationships ..........................................................
     belongs_to :money_transaction, optional: true
     delegate :transactable, to: :entity_transaction
@@ -15,7 +12,7 @@ module ExchangeMoneyTransactable
 
     # @callbacks ..............................................................
     after_validation :update_entity_transaction_status, on: :update
-    before_create :create_money_transaction
+    before_create :create_money_transaction, if: :monetary?
     before_update :update_money_transaction
     before_update :destroy_money_transaction, if: :non_monetary?
   end
@@ -32,7 +29,7 @@ module ExchangeMoneyTransactable
   #
   # @note This is a method that is called after_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def update_entity_transaction_status
     return if entity_transaction.exchanges.empty?
@@ -48,23 +45,21 @@ module ExchangeMoneyTransactable
   #
   # @note This is a method that is called before_create.
   #
-  # @see {MoneyTransaction}
-  # @see {#money_transaction_params}
+  # @see {MoneyTransaction}.
+  # @see {#money_transaction_params}.
   #
-  # @return [void]
+  # @return [void].
   #
   def create_money_transaction
-    return if non_monetary?
-
     self.money_transaction = MoneyTransaction.create(money_transaction_params)
   end
 
   # @note This is a method that is called before_update.
   #
-  # @see {#create_money_transaction}
-  # @see {#money_transaction_params}
+  # @see {#create_money_transaction}.
+  # @see {#money_transaction_params}.
   #
-  # @return [void]
+  # @return [void].
   #
   def update_money_transaction
     return create_money_transaction unless money_transaction
@@ -77,9 +72,9 @@ module ExchangeMoneyTransactable
   # Sets `money_transaction_id` to nil if `exchange_type` has changed to `non_monetary`.
   # It then proceeds to destroy the associated `money_transaction`.
   #
-  # @note This is a method that is called after_validation.
+  # @note This is a method that is called before_update.
   #
-  # @return [void]
+  # @return [void].
   #
   def destroy_money_transaction
     return if changes[:exchange_type].blank?
@@ -89,9 +84,7 @@ module ExchangeMoneyTransactable
     MoneyTransaction.find(money_transaction_id_to_be_deleted).destroy
   end
 
-  # Generates the params for the associated `money_transaction`.
-  #
-  # @see {MoneyTransaction}
+  # @see {MoneyTransaction}.
   #
   # @return [Hash] The params for the associated `money_transaction`.
   #

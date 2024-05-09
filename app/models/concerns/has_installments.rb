@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce Installments.
-module Installable
+module HasInstallments
   extend ActiveSupport::Concern
 
   included do
@@ -18,11 +18,11 @@ module Installable
 
   protected
 
-  # Sets the `installments_count` based on the count of `installments` of given `self`.
+  # Sets the `installments_count` of each record of `installments` based on the `installments_count` of given `self`.
   #
   # @note This is a method that is called after_save.
   #
-  # @return [void]
+  # @return [void].
   #
   def update_card_transaction_count
     installments_count = installments.count

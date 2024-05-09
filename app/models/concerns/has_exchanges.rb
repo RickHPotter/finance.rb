@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce Exchanges.
-module Exchangable
+module HasExchanges
   extend ActiveSupport::Concern
 
   included do
@@ -18,11 +18,11 @@ module Exchangable
 
   protected
 
-  # Sets the `status` of the `entity_transaction` based on the existing `exchanges`.
+  # Sets the `status` of the `entity_transaction` based on the existing `exchanges` and their `exchange_type`s.
   #
   # @note This is a method that is called before_save.
   #
-  # @return [void]
+  # @return [void].
   #
   def update_entity_transaction_status
     return self.status = :finished if exchanges.blank? || exchanges.map(&:exchange_type).uniq == [ "non_monetary" ]

@@ -37,18 +37,5 @@ FactoryBot.define do
       first_name { Faker::Name.unique.first_name }
       email { Faker::Internet.unique.email }
     end
-
-    # INVALID
-    trait :with_invalid_email do
-      email { "not_an_email" }
-    end
-
-    trait :with_invalid_password do
-      password { "1" }
-    end
-
-    trait :with_different_password_confirmation do
-      password_confirmation { "123456" }
-    end
   end
 end

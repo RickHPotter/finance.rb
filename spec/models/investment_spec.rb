@@ -20,11 +20,11 @@ require "rails_helper"
 RSpec.describe Investment, type: :model do
   include FactoryHelper
 
-  let!(:investment) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
-  let!(:money_transaction) { investment.money_transaction }
+  let!(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
+  let!(:money_transaction) { subject.money_transaction }
   let!(:investments) do
-    build_list(:investment, 3, :random, user: investment.user, user_bank_account: investment.user_bank_account, date: investment.date) do |inv, i|
-      inv.save(date: investment.date + i + 1)
+    build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
+      inv.save(date: subject.date + i + 1)
     end
   end
 
@@ -41,34 +41,24 @@ RSpec.describe Investment, type: :model do
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
-        expect(investment).to be_valid
+        expect(subject).to be_valid
       end
 
       %i[price date].each do |attribute|
-        it_behaves_like "validate_nil", :investment, attribute
-        it_behaves_like "validate_blank", :investment, attribute
+        it { should validate_presence_of(attribute) }
       end
     end
 
     context "( associations )" do
-      %i[user user_bank_account money_transaction].each do |model|
-        it "belongs_to #{model}" do
-          expect(investment).to respond_to model
-        end
-      end
+      ob_models = %i[money_transaction]
+      bt_models = %i[user user_bank_account]
+      hm_models = %i[category_transactions categories]
+      na_models = %i[category_transactions]
 
-      %i[categories].each do |model|
-        it "has_many #{model}" do
-          expect(investment).to respond_to model
-        end
-      end
-    end
-
-    context "( public methods )" do
-      it "returns a formatted date" do
-        investment.update(date: Date.new(2023, 12))
-        expect(investment.month_year).to eq "DEC <23>"
-      end
+      ob_models.each { |model| it { should belong_to(model).optional } }
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
+      na_models.each { |model| it { should accept_nested_attributes_for(model) } }
     end
   end
 
@@ -108,17 +98,17 @@ RSpec.describe Investment, type: :model do
         investments.each do |inv|
           expect(money_transaction.investments).not_to include(inv)
         end
-        expect(money_transaction.investments).to include(investment)
+        expect(money_transaction.investments).to include(subject)
       end
 
       include_examples "investment cop"
     end
 
     context "( when all investments are deleted )" do
-      before { [ investment, *investments ].each(&:destroy) }
+      before { [ subject, *investments ].each(&:destroy) }
 
       it "deletes all investments" do
-        [ investment, *investments ].each do |inv|
+        [ subject, *investments ].each do |inv|
           expect(inv).to be_destroyed
         end
       end
@@ -132,15 +122,15 @@ RSpec.describe Investment, type: :model do
       before { money_transaction.reload }
 
       it "creates or uses another money_transaction that fits the FK change" do
-        expect(investment.money_transaction).to eq money_transaction
-        expect(investment.money_transaction.investments.count).to eq(investments.size + 1)
-        expect(investment.money_transaction.price).to be_within(0.01).of([ investment, *investments ].sum(&:price).round(2))
+        expect(subject.money_transaction).to eq money_transaction
+        expect(subject.money_transaction.investments.count).to eq(investments.size + 1)
+        expect(subject.money_transaction.price).to be_within(0.01).of([ subject, *investments ].sum(&:price).round(2))
 
-        investment.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: investment.user }))
+        subject.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: subject.user }))
         investments.first.money_transaction.reload
 
-        expect(investment.money_transaction).to_not eq money_transaction
-        expect(investment.money_transaction.investments.count).to eq(1)
+        expect(subject.money_transaction).to_not eq money_transaction
+        expect(subject.money_transaction.investments.count).to eq(1)
         expect(investments.first.money_transaction.investments.count).to eq(investments.size)
         expect(investments.first.money_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
       end

@@ -18,34 +18,31 @@
 require "rails_helper"
 
 RSpec.describe EntityTransaction, type: :model do
-  let!(:entity_transaction) { build(:entity_transaction, :random) }
+  let!(:subject) { build(:entity_transaction, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
-        expect(entity_transaction).to be_valid
+        expect(subject).to be_valid
       end
 
-      %i[is_payer].each do |attribute|
-        it_behaves_like "validate_nil", :entity_transaction, attribute
-        it_behaves_like "validate_blank", :entity_transaction, attribute
+      %i[price].each do |attribute|
+        it { should validate_presence_of(attribute) }
       end
 
-      it_behaves_like "validate_uniqueness_combination", :entity_transaction, :entity, :transactable
+      it { should validate_uniqueness_of(:entity_id).scoped_to(:transactable_type, :transactable_id) }
     end
 
     context "( associations )" do
-      %i[transactable entity].each do |model|
-        it "belongs_to #{model}" do
-          expect(entity_transaction).to respond_to model
-        end
-      end
+      bt_models = %i[entity transactable]
+      hm_models = %i[exchanges]
+      na_models = %i[exchanges]
 
-      %i[exchanges].each do |model|
-        it "has_many #{model}" do
-          expect(entity_transaction).to respond_to model
-        end
-      end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
+      na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+
+      it { should define_enum_for(:status).with_values(pending: 0, finished: 1) }
     end
   end
 end

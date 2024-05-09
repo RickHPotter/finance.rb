@@ -19,8 +19,8 @@
 class Installment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
-  include StartingPriceCallback
+  include HasMonthYear
+  include HasStartingPrice
   include MoneyTransactable
 
   # @security (i.e. attr_accessible) ..........................................
@@ -37,11 +37,9 @@ class Installment < ApplicationRecord
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Generates a `date` for the associated MoneyTransaction.
+  # Generates a `date` for the associated `money_transaction`, picking the `current_due_date` of `user_card` based on the `current_closing_date`.
   #
-  # This method picks the current `due_date` of `user_card` for the MoneyTransaction.
-  #
-  # @return [Date]
+  # @return [Date].
   #
   def money_transaction_date
     date = card_transaction.date
@@ -60,9 +58,7 @@ class Installment < ApplicationRecord
 
   protected
 
-  # Generates a `mt_description` for the associated MoneyTransaction.
-  #
-  # This method generates a description for the MoneyTransaction based on the `user_card` name and month_year.
+  # Generates a `mt_description` for the associated `money_transaction` based on the `user_card` name and `month_year`.
   #
   # @return [String] The generated description.
   #
@@ -70,9 +66,7 @@ class Installment < ApplicationRecord
     "Card #{user_card.user_card_name} #{month_year}"
   end
 
-  # Generates a `mt_comment` for the associated MoneyTransaction based on the `user_card` and RefMonthYear.
-  #
-  # This method generates a comment specifying the user_card and RefMonthYear.
+  # Generates a `mt_comment` for the associated `money_transaction` based on the `user_card` and `month` and `year`.
   #
   # @return [String] The generated comment.
   #

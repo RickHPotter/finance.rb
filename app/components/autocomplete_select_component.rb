@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Component to render an autocomplete select
+# Component to render an autocomplete select.
 class AutocompleteSelectComponent < ViewComponent::Base
   # @includes .................................................................
   include TranslateHelper
@@ -9,7 +9,8 @@ class AutocompleteSelectComponent < ViewComponent::Base
   attr_reader :form, :object, :field, :options, :label, :input, :items
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type Button
+
+  # Initialises an AutoComplete Select Component.
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
   # @param field [Symbol] The field associated with the form (default is nil).
@@ -37,7 +38,7 @@ class AutocompleteSelectComponent < ViewComponent::Base
 
   Item = Struct.new(:id, :label)
 
-  # Sets default options for the autocomplete select.
+  # Sets default `options` for the autocomplete select.
   #
   # @param options [Hash] Additional options for customizing the autocomplete select.
   #

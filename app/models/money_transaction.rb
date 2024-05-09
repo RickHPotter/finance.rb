@@ -23,8 +23,8 @@
 class MoneyTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
-  include StartingPriceCallback
+  include HasMonthYear
+  include HasStartingPrice
   include CategoryTransactable
 
   # @security (i.e. attr_accessible) ..........................................
@@ -38,7 +38,7 @@ class MoneyTransaction < ApplicationRecord
   has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
-  validates :mt_description, :date, :starting_price, :price, :month, :year, presence: true
+  validates :mt_description, :date, :month, :year, :starting_price, :price, presence: true
   validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
@@ -48,9 +48,10 @@ class MoneyTransaction < ApplicationRecord
   scope :by_user, ->(user) { where(user:) }
 
   # @public_instance_methods ..................................................
-  # Defaults description column to a single {#to_s} call.
+
+  # Defaults `mt_description` column to a single {#to_s} call.
   #
-  # @return [String] The description for an associated transactable.
+  # @return [String] The description for an associated `transactable`.
   #
   def to_s
     mt_description
@@ -60,11 +61,11 @@ class MoneyTransaction < ApplicationRecord
 
   protected
 
-  # Sets `paid` based on current date in case it was not previously set.
+  # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_paid
     return unless date

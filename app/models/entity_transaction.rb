@@ -20,7 +20,7 @@ class EntityTransaction < ApplicationRecord
   enum status: { pending: 0, finished: 1 }
 
   # @includes .................................................................
-  include Exchangable
+  include HasExchanges
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -30,7 +30,7 @@ class EntityTransaction < ApplicationRecord
   # @validations ..............................................................
   validates :status, :price, presence: true
   validates :is_payer, inclusion: { in: [ true, false ] }
-  validates :entity, uniqueness: { scope: :transactable }
+  validates :entity_id, uniqueness: { scope: %i[transactable_type transactable_id] }
 
   # @callbacks ................................................................
   before_validation :set_status, on: :create
@@ -47,7 +47,7 @@ class EntityTransaction < ApplicationRecord
   #
   # @note This is a method that is called before_validation.
   #
-  # @return [void]
+  # @return [void].
   #
   def set_status
     self.status ||= is_payer ? :pending : :finished

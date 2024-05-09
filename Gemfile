@@ -81,14 +81,12 @@ group :development do
   # NEOVIM IDE / REMEMBER TO UPDATE MASON
   gem "neovim"
   gem "solargraph"
-
-  # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
-  # gem "spring"
 end
 
 group :test do
   gem "capybara"
   gem "database_cleaner-active_record"
   gem "selenium-webdriver"
+  gem "shoulda-matchers"
   gem "simplecov", require: false
 end

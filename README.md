@@ -176,7 +176,7 @@ continuing the project.
   - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
 
 - Subtasks:
-  - ⌛ Refine seeds to include all models.
+  - ✅ Refine seeds to include all models.
   - ✅ Fix possible bugs found at this stage.
   - ✅ Review current specs and refactor if possible.
 - Extra:
@@ -189,6 +189,9 @@ continuing the project.
   - ✅ Remodelled Installment to act like Exchange. Join Table that creates 1 parent.
   - ✅ Created a PORO for handling Card Transaction Params in request specs.
   - ✅ Removed hard business logic from card_transaction model spec to request spec.
+  - ✅ Migrates from much-appreciated ModelSpecHelper Custom Validation to Shoulda-Matchers.
+  - ✅ Creates CI binstub to make it easier to run CI locally before pushing.
+  - ✅ Reviews and makes necessary changes to docs.
 
 ## GAARA-09/fe-01: Refine AutocompleteSelect
 

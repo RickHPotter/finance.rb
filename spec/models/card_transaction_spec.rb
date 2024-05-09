@@ -21,8 +21,8 @@
 require "rails_helper"
 
 RSpec.describe CardTransaction, type: :model do
-  let!(:user_card) { create(:user_card, :random, current_due_date: Date.new(2023, 12, 1)) }
-  let!(:card_transaction) { create(:card_transaction, :random, user_card:, date: Date.new(2023, 11, 30)) }
+  let!(:user_card) { build(:user_card, :random) }
+  let!(:card_transaction) { build(:card_transaction, :random, user_card:) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -30,32 +30,26 @@ RSpec.describe CardTransaction, type: :model do
         expect(card_transaction).to be_valid
       end
 
-      %i[ct_description].each do |attribute|
-        it_behaves_like "validate_nil", :card_transaction, attribute
-        it_behaves_like "validate_blank", :card_transaction, attribute
+      %i[ct_description date month year starting_price price installments_count].each do |attribute|
+        it { should validate_presence_of(attribute) }
       end
     end
 
     context "( associations )" do
-      %i[user user_card].each do |model|
-        it "belongs_to #{model}" do
-          expect(card_transaction).to respond_to model
-        end
-      end
+      bt_models = %i[user user_card]
+      hm_models = %i[categories category_transactions entities entity_transactions installments]
+      na_models = %i[category_transactions entity_transactions installments]
 
-      %i[categories category_transactions entities entity_transactions installments].each do |model|
-        it "has_many #{model}" do
-          expect(card_transaction).to respond_to model
-        end
-      end
+      bt_models.each { |model| it { should belong_to(model) } }
+      hm_models.each { |model| it { should have_many(model) } }
+      na_models.each { |model| it { should accept_nested_attributes_for(model) } }
     end
   end
 
-  # FIXME: move this to a PORO spec
   describe "[ business logic ]" do
     context "( public methods )" do
-      it "returns a formatted date" do
-        expect(card_transaction.month_year).to eq "DEC <23>"
+      it "returns full_description" do
+        expect(subject.to_s).to eq(subject.ct_description)
       end
     end
   end

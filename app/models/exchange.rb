@@ -19,7 +19,7 @@ class Exchange < ApplicationRecord
   enum exchange_type: { non_monetary: 0, monetary: 1 }
 
   # @includes .................................................................
-  include StartingPriceCallback
+  include HasStartingPrice
   include ExchangeMoneyTransactable
 
   # @security (i.e. attr_accessible) ..........................................

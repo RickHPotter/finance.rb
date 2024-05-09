@@ -2,14 +2,13 @@
 
 # Helper for Translations with i18n for model / attributes
 module TranslateHelper
-  # This method takes a collection of model instances, extracts the model class,
-  # counts the instances, and returns a pluralised human-readable model name.
+  # Takes a collection of model instances, extracts the model class, counts the instances, and returns a pluralised human-readable model name.
   #
-  # @example Get pluralised model name based on instance count
+  # @example Get pluralised model name based on instance count:
   #   model_on_count(@users) # @users = User.all
   #   # => "Users" or "User" (depending on the count)
   #
-  # @param instances [ActiveRecord::Relation] Collection of model instances.
+  # @param instances [ActiveRecord::Relation]. Collection of model instances.
   #
   # @note One needs to fill in the i18n keys one and other for the model in question.
   #
@@ -21,10 +20,9 @@ module TranslateHelper
     model.model_name.human.pluralize(count)
   end
 
-  # This method takes a model class and a count, and returns a pluralised
-  # human-readable model name based on the count.
+  # Takes a model class and a count, and returns a pluralised human-readable model name based on the count.
   #
-  # @example Get pluralised model name based on count
+  # @example Get pluralised model name based on count:
   #   pluralise_model(User, 5)
   #   # => "Users"
   #
@@ -39,10 +37,9 @@ module TranslateHelper
     model.model_name.human.pluralize(count)
   end
 
-  # This method takes a model instance or class and an attribute name, and returns
-  # a human-readable attribute name based on the model and attribute.
+  # Takes a model instance or class and an attribute name, and returns a human-readable attribute name based on the model and attribute.
   #
-  # @example Get human-readable attribute name
+  # @example Get human-readable attribute name:
   #   attribute_model(User, :first_name)
   #   # => "First Name"
   #
@@ -59,10 +56,9 @@ module TranslateHelper
     I18n.t("activerecord.attributes.#{model}.#{attribute}")
   end
 
-  # This method dynamically generates a panel title based on the current controller
-  # action and the singularised capitalised name of the controller.
+  # Dynamically generates a panel title based on the current controller action and the singularised capitalised name of the controller.
   #
-  # @example Get panel title
+  # @example Get panel title:
   #   panel_title
   #   # => "Creating User" or "Editing Post" (depending on the controller action)
   #
@@ -72,10 +68,9 @@ module TranslateHelper
     "#{I18n.t("gerund.#{action_name}")} #{controller_name.singularize.capitalize}"
   end
 
-  # This method dynamically generates a submit button label based on the current
-  # controller action.
+  # Dynamically generates a submit button label based on the current controller action.
   #
-  # @example Get submit button label
+  # @example Get submit button label:
   #   submit
   #   # => "Create" or "Update" (depending on the controller action)
   #
@@ -85,8 +80,7 @@ module TranslateHelper
     I18n.t("actions.#{action_name}")
   end
 
-  # This method dynamically generates an action model based on the current
-  # controller action and the singularised capitalised name of the model.
+  # Dynamically generates an action model based on the current controller action and the singularised capitalised name of the model.
   #
   # @param action [String] Controller action.
   # @param model [String] Model name.

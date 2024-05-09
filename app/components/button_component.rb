@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Component to render an autocomplete select
+# Component to render an autocomplete select.
 class ButtonComponent < ViewComponent::Base
   # @includes .................................................................
   include ComponentsHelper
@@ -9,7 +9,8 @@ class ButtonComponent < ViewComponent::Base
   attr_reader :form, :link, :options
 
   # @public_instance_methods ..................................................
-  # Initialises a Component of Type Button
+
+  # Initialises a Button Component.
   #
   # @param form [ActionView::Helpers::FormBuilder] The form builder object (default is nil).
   # @param link [String] The link possibly associated with the form (default is nil).
@@ -29,7 +30,7 @@ class ButtonComponent < ViewComponent::Base
     super
   end
 
-  # Sets default options for the button.
+  # Sets default `options` for the button.
   #
   # @param options [Hash] Additional options for customizing the button.
   #
@@ -47,7 +48,7 @@ class ButtonComponent < ViewComponent::Base
 
   # Sets html id for button based on the presence of a link.
   #
-  # @return [String] HTML id for the button tag.
+  # @return [String] HTML ID for the button tag.
   #
   def button_id
     return "#{link}_button" if link
@@ -57,11 +58,12 @@ class ButtonComponent < ViewComponent::Base
     "idless_button"
   end
 
-  # Sets the colour for the button based on the colour option.
+  # Sets the `colour` for the button based on the `colour` option.
   #
   # @param colour [Symbol] The colour of the button.
-  # @option colour [Symbol] :purple
-  # @option colour [Symbol] :orange
+  #
+  # @option colour [Symbol] :purple.
+  # @option colour [Symbol] :orange.
   #
   # @return [Hash] The colour of the button.
   #

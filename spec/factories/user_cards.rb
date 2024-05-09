@@ -21,7 +21,8 @@ FactoryBot.define do
   factory :user_card do
     user_card_name { "Azul" }
     days_until_due_date { 7 }
-    current_due_date { Date.current }
+    current_closing_date { Date.current }
+    current_due_date { current_closing_date - days_until_due_date }
     min_spend { 100.00 }
     credit_limit { 2000.00 }
     active { true }
@@ -32,7 +33,7 @@ FactoryBot.define do
     trait :different do
       user_card_name { "MyCard" }
       days_until_due_date { 9 }
-      current_due_date { Date.current - 20 }
+      current_closing_date { Date.current - 2.months }
 
       user { different_custom_create(:user) }
       card { different_custom_create(:card) }
@@ -41,7 +42,7 @@ FactoryBot.define do
     trait :random do
       user_card_name { "#{card.card_name} - #{user.first_name}" }
       days_until_due_date { rand(4..10) }
-      current_due_date { Date.new(rand(2023..2024), rand(1..12), rand(1..28)) }
+      current_closing_date { Date.new(rand(2023..2024), rand(1..12), rand(1..28)) }
       min_spend { [ 0.00, 100.00, 200.00 ].sample }
       credit_limit { Faker::Number.decimal(l_digits: rand(3..4)).ceil + 200.00 }
       active { true }

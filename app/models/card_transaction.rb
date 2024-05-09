@@ -21,9 +21,9 @@
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
-  include MonthYear
-  include StartingPriceCallback
-  include Installable
+  include HasMonthYear
+  include HasStartingPrice
+  include HasInstallments
   include CategoryTransactable
   include EntityTransactable
 
@@ -33,7 +33,8 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card
 
   # @validations ..............................................................
-  validates :date, :ct_description, :starting_price, :price, :month, :year, presence: true
+  validates :date, :ct_description, :month, :year, presence: true
+  validates :starting_price, :price, :installments_count, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -42,9 +43,10 @@ class CardTransaction < ApplicationRecord
   scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
 
   # @public_instance_methods ..................................................
-  # Defaults description column to a single {#to_s} call.
+
+  # Defaults `ct_description` column to a single {#to_s} call.
   #
-  # @return [String] The description for an associated transactable.
+  # @return [String] The description for an associated `transactable`.
   #
   def to_s
     ct_description

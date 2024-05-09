@@ -17,26 +17,24 @@
 require "rails_helper"
 
 RSpec.describe Exchange, type: :model do
-  let!(:exchange) { build(:exchange, :random) }
+  let!(:subject) { build(:exchange, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
-        expect(exchange).to be_valid
+        expect(subject).to be_valid
       end
 
-      %i[exchange_type price].each do |attribute|
-        it_behaves_like "validate_nil", :exchange, attribute
-        it_behaves_like "validate_blank", :exchange, attribute
+      %i[exchange_type number price].each do |attribute|
+        it { should validate_presence_of(attribute) }
       end
     end
 
     context "( associations )" do
-      %i[entity_transaction money_transaction].each do |model|
-        it "belongs_to #{model}" do
-          expect(exchange).to respond_to model
-        end
-      end
+      it { should belong_to(:entity_transaction).counter_cache(true) }
+      it { should belong_to(:money_transaction).optional }
+
+      it { should define_enum_for(:exchange_type).with_values(non_monetary: 0, monetary: 1) }
     end
   end
 end
