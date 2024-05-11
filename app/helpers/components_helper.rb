@@ -7,13 +7,19 @@ module ComponentsHelper
   # @return [String] tailwind class for input.
   #
   def input_class
-    "peer border-1 shadow-md outline-none w-full px-2.5 pb-2.5 pt-3 appearance-none text-sm text-gray-900 transition-all focus:ring-1 focus:ring-indigo-600"
+    "block w-full ps-12 p-2.5 border-1 border-gray-300 focus:ring-1 focus:ring-indigo-600 rounded-md shadow-sm outline-none appearance-none bg-gray-700 dark:bg-white text-white dark:text-gray-900"
+  end
+
+  # @return [String] tailwind class for autosave input.
+  #
+  def autosave_input_class
+    "mx-2 mb-4 text-gray-900 text-center text-ellipsis text-4xl sm:text-5xl lg:text-6xl leading-10 sm:leading-none font-extrabold border-0 focus:border-0 focus:ring-0 focus:outline-none sm:tracking-tight"
   end
 
   # @return [String] tailwind class for label.
   #
   def label_class
-    "absolute top-1 px-2 z-10 bg-white text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 origin-[0] start-1 peer-focus:text-indigo-600 peer-focus:top-1 peer-focus:scale-100 peer-focus:-translate-y-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-2 peer-placeholder-shown:text-sm"
+    "block mb-2 text-sm font-medium dark:text-gray-900 text-white"
   end
 
   # @return [String] tailwind class for form button.

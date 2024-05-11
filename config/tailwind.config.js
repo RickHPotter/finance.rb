@@ -11,15 +11,6 @@ module.exports = {
     './node_modules/flowbite/**/*.js'
   ],
   darkMode: 'class',
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Inter var', ...defaultTheme.fontFamily.sans],
-        monospace: ['Iosevka', ...defaultTheme.fontFamily.mono],
-        source: ['Source Code Pro', ...defaultTheme.fontFamily.mono],
-      },
-    },
-  },
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/aspect-ratio'),

@@ -17,6 +17,7 @@ class TextFieldComponent < ViewComponent::Base
   # @param field [Symbol] The attribute name for the text field.
   # @param items [Array] Array of Item Structs.
   # @param options [Hash] Additional options for customizing the text field.
+  # @param wrapper [Boolean] Whether to include the wrapper for the text field (default is true).
   #
   # @option options [String] :id The HTML ID attribute for the text field.
   # @option options [String] :label The label for the text field.
@@ -25,7 +26,7 @@ class TextFieldComponent < ViewComponent::Base
   # @option options [Boolean] :autofocus Whether the text field should be autofocused (default is false).
   # @option options [String] :autocomplete The autocomplete attribute for the text field (default is the field name).
   # @option options [Hash] :data Additional data attributes for the text field.
-  # @param wrapper [Boolean] Whether to include the wrapper for the text field (default is true).
+  # @option options [String] :svg The name of the SVG partial to use for the text field.
   #
   # @return [TextFieldComponent] A new instance of TextFieldComponent.
   #

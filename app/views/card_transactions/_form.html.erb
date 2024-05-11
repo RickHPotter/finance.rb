@@ -1,30 +1,42 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
-  <%= form_with model: card_transaction, id: "form", class: "contents text-black", data: { controller: "form-validate" } do |form| %>
+  <% data = { controller: "form-validate autosave" } %>
+  <%= form_with(model: card_transaction, id: "form", class: "contents text-black", data:) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
-      <%= render TextFieldComponent.new form:, field: :ct_description, options: { autofocus: true } %>
+      <% action = form.object.persisted? ? "keyup->autosave#save" : "focus->autosave#clear_placeholder" %>
+      <% data = { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
+      <%= form.text_field :ct_description, data:, class: autosave_input_class %>
     </div>
-    <div class="w-full mb-6">
-      <%= render TextFieldComponent.new form:, field: :ct_comment, options: { type: :textarea } %>
+
+    <div class="mb-6">
+      <%= render "shared/svgs/quote" %>
+      <%= form.text_area :ct_comment, data: data.merge(placeholder: "Maybe elaborate with a comment"),
+                                      class: "text-gray-500 px-4 ps-10 w-full border-1 border-gray-300 rounded-lg focus:ring-transparent focus:outline-none" %>
     </div>
-    <div class="w-full mb-6">
-      <%= render TextFieldComponent.new form:, field: :user_card_id, items: @user_cards, options: { type: :select } %>
+
+    <div class="flex w-full gap-4 mb-6">
+      <div class="hw-cb w-1/2">
+        <%= form.combobox :user_card_id, @user_cards, render_in: { partial: "user_card" }, placeholder: "Card" %>
+      </div>
+      <div class="w-1/2">
+        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, value: Date.today, svg: :calendar } %>
+      </div>
     </div>
     <div class="flex w-full gap-4 mb-6">
       <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :price %>
+        <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
       </div>
       <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, value: Date.today } %>
+        <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
       </div>
     </div>
 
     <!-- Installments -->
     <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
-        <%= form.fields_for :installments, CardTransaction.new, child_index: "NEW_RECORD" do |installment_fields| %>
+        <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
         <% end %>
       </template>
