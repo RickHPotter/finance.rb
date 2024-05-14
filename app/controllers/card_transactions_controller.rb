@@ -13,7 +13,7 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new
+    @card_transaction = CardTransaction.new(user_card: @user.user_cards.first, date: Date.today)
   end
 
   def edit
@@ -24,15 +24,23 @@ class CardTransactionsController < ApplicationController
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
 
-    if @card_transaction.save
-      flash[:notice] = "Card Transaction was successfully created."
+    if params[:commit] == "Update"
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
+        end
+      end
     else
-      flash[:alert] = @card_transaction.errors.full_messages
-    end
+      if @card_transaction.save
+        flash[:notice] = "Card Transaction was successfully created."
+      else
+        flash[:alert] = @card_transaction.errors.full_messages
+      end
 
-    respond_to do |format|
-      format.turbo_stream
-      format.json { render json: @card_transaction }
+      respond_to do |format|
+        format.turbo_stream
+        format.json { render json: @card_transaction }
+      end
     end
   end
 
@@ -53,10 +61,6 @@ class CardTransactionsController < ApplicationController
       flash[:alert] = @card_transaction.errors.full_messages
     end
 
-    respond_to(&:turbo_stream)
-  end
-
-  def clear_message
     respond_to(&:turbo_stream)
   end
 

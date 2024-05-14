@@ -5,31 +5,45 @@
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
-      <% action = form.object.persisted? ? "keyup->autosave#save" : "focus->autosave#clear_placeholder" %>
+      <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
       <% data = { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
       <%= form.text_field :ct_description, data:, class: autosave_input_class %>
     </div>
 
-    <div class="mb-6">
+    <div class="w-full mb-6">
       <%= render "shared/svgs/quote" %>
-      <%= form.text_area :ct_comment, data: data.merge(placeholder: "Maybe elaborate with a comment"),
-                                      class: "text-gray-500 px-4 ps-10 w-full border-1 border-gray-300 rounded-lg focus:ring-transparent focus:outline-none" %>
+      <%= form.text_area :ct_comment, data: data.merge(placeholder: "Any comment about", controller: "text-area-autogrow"),
+                                      class: "text-gray-500 px-4 pt-4 ps-10 w-full border-1 border-gray-300 rounded-lg focus:ring-transparent focus:outline-none" %>
     </div>
 
     <div class="flex w-full gap-4 mb-6">
-      <div class="hw-cb w-1/2">
-        <%= form.combobox :user_card_id, @user_cards, render_in: { partial: "user_card" }, placeholder: "Card" %>
+      <div class="hw-cb w-1/3">
+        <%= form.combobox :user_card_id,
+                          @user_cards,
+                          render_in: { partial: "user_card" },
+                          include_blank: false,
+                          placeholder: "Card",
+                          onchange: "if (this.value) { this.form.requestSubmit(this.form.querySelector('#submit-update-button')) }" %>
       </div>
-      <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, value: Date.today, svg: :calendar } %>
+      <div class="w-1/3">
+        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, svg: :calendar } %>
+      </div>
+      <div class="w-1/3">
+        <%= label_tag :month_year, card_transaction.month_year, class: input_class %>
       </div>
     </div>
     <div class="flex w-full gap-4 mb-6">
-      <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
+      <div class="flex w-1/3 gap-2">
+        <div class="w-3/4">
+          <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
+        </div>
+        <div class="w-1/4">
+          <%= render TextFieldComponent.new form:, field: :installments_count, options: { type: :number, svg: :number, placeholder: "Installments" } %>
+        </div>
       </div>
-      <div class="w-1/2">
-        <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
+      <div class="w-1/3">
+      </div>
+      <div class="w-1/3">
       </div>
     </div>
 
@@ -88,5 +102,6 @@
     </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit" } %>
+    <%= form.submit "Update", id: "submit-update-button", class: "hidden" %>
   <% end %>
 <% end %>

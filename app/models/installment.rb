@@ -42,16 +42,7 @@ class Installment < ApplicationRecord
   # @return [Date].
   #
   def money_transaction_date
-    date = card_transaction.date
-    days = user_card.current_closing_date.day
-    next_closing_date = next_date(date:, days:)
-    x = if date >= next_closing_date
-          number
-        else
-          number - 1
-        end
-
-    next_date(date:, days:, months: x)
+    card_transaction.money_transaction_date + (number - 1).months
   end
 
   # @protected_instance_methods ...............................................

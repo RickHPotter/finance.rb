@@ -12,15 +12,15 @@ module HasMonthYear
 
   # @public_instance_methods ..................................................
 
-  # Gets the formatted `month` and `year` string.
+  # Gets the formatted `month` and `year` string. In case `month` or `year` is nil, it will be set first.
   #
   # @see {RefMonthYear#month_year}.
   #
   # @return [String] Formatted month and year string in the format "MONTH <YEAR>".
   #
   def month_year
-    month = self.month || date.month
-    year = self.year || date.year
+    set_month_year if month.nil? || year.nil?
+
     RefMonthYear.new(month, year).month_year
   end
 
@@ -41,7 +41,7 @@ module HasMonthYear
   #
   # @return [Date].
   #
-  def next_date(date: Date.current, days: Date.current.day, months: 0, years: 0)
+  def next_date(date: Date.current, days: date.day, months: 0, years: 0)
     Date.new(date.year, date.month) + (days - 1).days + months.month + years.years
   end
 
@@ -67,7 +67,7 @@ module HasMonthYear
     errors.add(:date, :blank)
   end
 
-  # Sets `month` and `year` based on self's `date` or `user_card.current_due_date`.
+  # Sets `month` and `year` based on self's `money_transaction_date` or `date`.
   #
   # @note This is a method that is called before_validation.
   #
@@ -77,33 +77,12 @@ module HasMonthYear
   # @return [void].
   #
   def set_month_year
-    if instance_of? CardTransaction
-      set_month_year_card_transaction
-    elsif instance_of? Installment
-      set_month_year_installment
+    if instance_of?(CardTransaction) || instance_of?(Installment)
+      self.month = money_transaction_date.month
+      self.year = money_transaction_date.year
     else
       self.month = date&.month
       self.year = date&.year
     end
-  end
-
-  # Sets `month` and `year` based on the first `installment#money_transaction_date` or self's `date` or `user_card.current_due_date`.
-  #
-  # @return [void].
-  #
-  def set_month_year_card_transaction
-    new_date = installments.first&.money_transaction_date || date
-    self.month = new_date.month || user_card.current_closing_date.month
-    self.year = new_date.year || user_card.current_closing_date.year
-  end
-
-  # Sets `month` and `year` based on `money_transaction_date`.
-  #
-  # @return [void].
-  #
-  def set_month_year_installment
-    new_date = money_transaction_date
-    self.month = new_date.month
-    self.year = new_date.year
   end
 end

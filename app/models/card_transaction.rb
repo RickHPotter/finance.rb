@@ -52,6 +52,26 @@ class CardTransaction < ApplicationRecord
     ct_description
   end
 
+  # Generates a `date` for the associated `money_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
+  #
+  # @return [Date].
+  #
+  def money_transaction_date
+    closing_days = user_card.current_closing_date.day
+    due_days     = user_card.current_due_date.day
+
+    next_closing_date = next_date(date:, days: closing_days)
+    next_due_date     = next_date(date:, days: due_days)
+
+    return next_due_date if next_closing_date > date
+
+    next_date(date: next_due_date, months: 1)
+  end
+
+  def build_month_year
+    set_month_year
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end
