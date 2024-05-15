@@ -1,10 +1,10 @@
 <div class="nested-form-wrapper" data-new-record="<%= form.object.new_record? %>">
   <div class="flex space-x-12">
     <div class="flex w-1/4 flex-col my-6">
-      <%= render TextFieldComponent.new(form:, field: :entity_id, items: @entities, options: { type: :select }) %>
+      <%= render TextFieldComponent.new(form, :entity_id, @entities, type: :select) %>
     </div>
     <div class="flex w-1/4 flex-col my-6">
-      <%= render TextFieldComponent.new(form:, field: :price, options: { type: :number }) %>
+      <%= render TextFieldComponent.new(form, :price, type: :number) %>
     </div>
     <div class="flex w-1/4 flex-col my-6">
       <%= form.check_box :is_payer %>

@@ -13,7 +13,10 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new(user_card: @user.user_cards.first, date: Date.today)
+    # FIXME: interesting, Im going to have to move to cent-based price
+    @card_transaction = CardTransaction.new(user_card: @user.user_cards.first, date: Date.today, price: 120 * 100, installments_count: 12)
+    12.times { |i| @card_transaction.installments.build(price: 10 * 100, number: i + 1) }
+    @card_transaction.build_month_year
   end
 
   def edit
@@ -23,6 +26,7 @@ class CardTransactionsController < ApplicationController
 
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
+    @card_transaction.build_month_year
 
     if params[:commit] == "Update"
       respond_to do |format|
@@ -31,6 +35,7 @@ class CardTransactionsController < ApplicationController
         end
       end
     else
+      # TODO: check if destroying_all installments and building them is necessary
       if @card_transaction.save
         flash[:notice] = "Card Transaction was successfully created."
       else

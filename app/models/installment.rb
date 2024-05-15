@@ -45,6 +45,11 @@ class Installment < ApplicationRecord
     card_transaction.money_transaction_date + (number - 1).months
   end
 
+  # TODO: add doc
+  def build_month_year
+    set_month_year
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

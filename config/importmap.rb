@@ -12,6 +12,7 @@ pin "stimulus-rails-nested-form" # @4.1.0
 pin "stimulus-textarea-autogrow" # @4.1.0
 pin "stimulus-rails-autosave" # @5.1.0
 pin "stimulus-notification" # @2.2.0
-pin "flowbite", to: "https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.turbo.min.js"
+pin "flowbite", to: "https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.turbo.min.js"
+pin "flowbite-datepicker"
 
 pin_all_from "app/javascript/controllers", under: "controllers"

@@ -42,6 +42,7 @@ gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
 gem "bootsnap", require: false
 
 gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
+gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
 
 # ViewComponent
 gem "view_component", "~> 3.7"

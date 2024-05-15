@@ -30,13 +30,13 @@ class TextFieldComponent < ViewComponent::Base
   #
   # @return [TextFieldComponent] A new instance of TextFieldComponent.
   #
-  def initialize(form:, field:, items: nil, options: {}, wrapper: true)
+  def initialize(form, field, items = nil, **options)
     @form = form
     @object = form.object || form.options[:parent_builder].object
     @items = items
     @field = field
+    @wrapper = options.delete(:wrapper) || true
     @options = default_options(options)
-    @wrapper = wrapper
     super
   end
 
@@ -48,12 +48,12 @@ class TextFieldComponent < ViewComponent::Base
   #
   def default_options(options)
     options[:data] = { form_validate_target: "field" }.merge(options[:data] || {})
+    options[:class] = [ input_class, options[:class] ].compact.join(" ")
 
     {
       id: "#{@object.model_name.singular}_#{@field}",
       label: attribute_model(@object, @field),
-      autocomplete: @field,
-      class: input_class
+      autocomplete: @field
     }.merge(options)
   end
 end

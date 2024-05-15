@@ -1,54 +1,78 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
-  <% data = { controller: "form-validate autosave" } %>
-  <%= form_with(model: card_transaction, id: "form", class: "contents text-black", data:) do |form| %>
+  <%= form_with(model: card_transaction, id: "form", class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
+    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
+
     <div class="w-full mb-6">
-      <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
-      <% data = { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
-      <%= form.text_field :ct_description, data:, class: autosave_input_class %>
+      <%= form.text_field \
+            :ct_description,
+            class: autosave_input_class,
+            data: { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
     </div>
 
     <div class="w-full mb-6">
       <%= render "shared/svgs/quote" %>
-      <%= form.text_area :ct_comment, data: data.merge(placeholder: "Any comment about", controller: "text-area-autogrow"),
-                                      class: "text-gray-500 px-4 pt-4 ps-10 w-full border-1 border-gray-300 rounded-lg focus:ring-transparent focus:outline-none" %>
+      <%= form.text_area \
+            :ct_comment,
+            class: "text-gray-500 px-4 pt-4 ps-10 w-full border-1 border-gray-300 rounded-lg focus:ring-transparent focus:outline-none",
+            data: { controller: "text-area-autogrow", autosave_target: "input", action:, placeholder: "Any comment about", placeholder_type: :word } %>
     </div>
 
-    <div class="flex w-full gap-4 mb-6">
-      <div class="hw-cb w-1/3">
-        <%= form.combobox :user_card_id,
-                          @user_cards,
-                          render_in: { partial: "user_card" },
-                          include_blank: false,
-                          placeholder: "Card",
-                          onchange: "if (this.value) { this.form.requestSubmit(this.form.querySelector('#submit-update-button')) }" %>
+    <div class="flex w-full gap-8 mb-6">
+      <div class="hw-cb w-2/5">
+        <%= form.combobox \
+              :user_card_id,
+              @user_cards,
+              render_in: { partial: "user_card" },
+              include_blank: false,
+              placeholder: "Card",
+              data: { reactive_form_target: "input", action: "hw-combobox:selection->reactive-form#requestSubmit", reactive_form_value: ".hw-combobox__input" } %>
       </div>
-      <div class="w-1/3">
-        <%= render TextFieldComponent.new form:, field: :date, options: { type: :date, svg: :calendar } %>
+
+      <div class="w-1/5">
+        <%= render TextFieldComponent.new \
+              form, :date,
+              id: :card_transaction_date,
+              type: :date, svg: :calendar,
+              class: "hidden sm:block",
+              data: { reactive_form_target: "input", action: "focusout->reactive-form#requestSubmit" } %>
+
+        <%#= tag.div \
+               "inline-datepicker": true,
+               "datepicker-format": "yyyy/mm/dd",
+               data: { controller: :datepicker,
+                       datepicker_target: :date,
+                       field_id: :card_transaction_date,
+                       action: "changeDate->datepicker#updateDate",
+                       date: @card_transaction.date.strftime("%Y-%m-%d") } %>
       </div>
-      <div class="w-1/3">
-        <%= label_tag :month_year, card_transaction.month_year, class: input_class %>
-      </div>
-    </div>
-    <div class="flex w-full gap-4 mb-6">
-      <div class="flex w-1/3 gap-2">
+
+      <div class="flex w-2/5 gap-8">
         <div class="w-3/4">
-          <%= render TextFieldComponent.new form:, field: :price, options: { type: :number, svg: :money, placeholder: "Amount" } %>
+          <%= render TextFieldComponent.new \
+                form, :price,
+                svg: :money,
+                placeholder: "Amount",
+                class: "price-input",
+                data: { reactive_form_target: "priceInput", action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
         </div>
         <div class="w-1/4">
-          <%= render TextFieldComponent.new form:, field: :installments_count, options: { type: :number, svg: :number, placeholder: "Installments" } %>
+          <%= render TextFieldComponent.new \
+                form, :installments_count,
+                type: :number,
+                svg: :number,
+                min: 1, max: 24,
+                value: [ @card_transaction.installments_count, 1 ].max,
+                placeholder: "Installments",
+                data: { reactive_form_target: "installmentsCountInput", action: "input->reactive-form#updateInstallmentsFields" } %>
         </div>
-      </div>
-      <div class="w-1/3">
-      </div>
-      <div class="w-1/3">
       </div>
     </div>
 
     <!-- Installments -->
-    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div class="grid grid-cols-6 gap-4" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
         <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
@@ -60,9 +84,7 @@
       <% end %>
 
       <!-- inserted elements -->
-      <div data-nested-form-target='target'></div>
-
-      <%= render ButtonComponent.new(options: { label: action_model(action_name, Installment), colour: :orange, data: { action: "nested-form#add" } }) %>
+      <div data-nested-form-target="target"></div>
     </div>
 
     <!-- Categories -->
@@ -102,6 +124,6 @@
     </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit" } %>
-    <%= form.submit "Update", id: "submit-update-button", class: "hidden" %>
+    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: "updateButton" } %>
   <% end %>
 <% end %>

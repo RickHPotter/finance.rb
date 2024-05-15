@@ -1,13 +1,24 @@
-<div class="nested-form-wrapper" data-new-record="<%= form.object.new_record? %>">
-  <div class="flex space-x-12">
-    <div class="flex w-1/4 flex-col my-6">
-      <%= render TextFieldComponent.new(form:, field: :number, options: { type: :number }) %>
+<% installment = form.object %>
+
+<div class="nested-form-wrapper" data-new-record="<%= installment.new_record? %>">
+  <div class="flex w-full my-1">
+    <div class="flex w-1/2">
+      <span class="inline-flex items-center text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md w-full">
+        <span class="flex items-center text-sm font-medium text-black ps-3">
+          <span class="flex w-2.5 h-2.5 bg-blue-600 rounded-full me-1.5 flex-shrink-0"></span>
+          <%= installment.month_year if installment.month %>
+        </span>
+      </span>
     </div>
-    <div class="flex w-1/4 flex-col my-6">
-      <%= render TextFieldComponent.new(form:, field: :price, options: { type: :number }) %>
-    </div>
-    <div class="flex w-1/4 flex-col my-6">
-      <%= render ButtonComponent.new(options: { label: action_model(:destroy, Installment), colour: :red, data: { action: "nested-form#remove" } }) %>
+    <div class="flex w-1/2">
+      <%= form.text_field \
+            :price,
+            class: "price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
+            data: { reactive_form_target: "priceInstallmentInput", action: "input->reactive-form#applyMask" } %>
     </div>
   </div>
+
+  <%= form.hidden_field :number %>
+  <%= form.hidden_field :month %>
+  <%= form.hidden_field :year %>
 </div>
