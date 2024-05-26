@@ -16,3 +16,4 @@ pin "flowbite", to: "https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowb
 pin "flowbite-datepicker"
 
 pin_all_from "app/javascript/controllers", under: "controllers"
+pin_all_from "app/javascript/models", under: "models"

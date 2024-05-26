@@ -34,6 +34,7 @@ body::-webkit-scrollbar { /* WebKit */
   }
 
   .hw-combobox__handle {
+    @apply hidden;
     @apply right-2;
   }
 

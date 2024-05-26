@@ -45,7 +45,10 @@ class Installment < ApplicationRecord
     card_transaction.money_transaction_date + (number - 1).months
   end
 
-  # TODO: add doc
+  # Builds `month` and `year` columns for `self`.
+  #
+  # @return [void].
+  #
   def build_month_year
     set_month_year
   end

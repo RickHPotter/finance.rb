@@ -68,7 +68,10 @@ class CardTransaction < ApplicationRecord
     next_date(date: next_due_date, months: 1)
   end
 
-  # TODO: add doc
+  # Builds `month` and `year` columns for `self` and associated `installments`.
+  #
+  # @return [void].
+  #
   def build_month_year
     set_month_year
     installments.each(&:build_month_year)
