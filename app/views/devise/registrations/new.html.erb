@@ -12,23 +12,23 @@
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :first_name, options: { autofocus: true }) %>
+    <%= render TextFieldComponent.new(f, :first_name, autofocus: true) %>
   </div>
 
   <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :last_name) %>
+    <%= render TextFieldComponent.new(f, :last_name) %>
   </div>
 
   <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :email, options: { type: :email }) %>
+    <%= render TextFieldComponent.new(f, :email, type: :email) %>
   </div>
 
   <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :password, options: { type: :password }) %>
+    <%= render TextFieldComponent.new(f, :password, type: :password) %>
   </div>
 
   <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :password_confirmation, options: { type: :password }) %>
+    <%= render TextFieldComponent.new(f, :password_confirmation, type: :password) %>
 
     <% if @minimum_password_length %>
       <em class='text-sm text-gray-500'>(<%= @minimum_password_length %> characters minimum)</em>
