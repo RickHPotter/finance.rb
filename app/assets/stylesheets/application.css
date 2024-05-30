@@ -14,7 +14,7 @@
  *= require_self
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Copse&family=Graduate&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Copse&family=Graduate&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poetsen+One&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Wellfleet&display=swap');
 
 @font-face {
   font-family: 'Monaco';
@@ -90,6 +90,10 @@
   font-family: 'Blex';
 }
 
+.font-lilex {
+  font-family: 'Lilex';
+}
+
 .font-fantasque {
   font-family: 'Fantasque';
 }
@@ -102,12 +106,28 @@
   font-family: 'SourceCodePro';
 }
 
+.font-copse {
+  font-family: 'Copse';
+}
+
 .font-graduate {
   font-family: 'Graduate';
 }
 
-.font-copse {
-  font-family: 'Copse';
+.font-plus-jakarta-sans {
+  font-family: 'Plus Jakarta Sans';
+}
+
+.font-poetsen-one {
+  font-family: 'Poetsen One';
+}
+
+.font-roboto-condensed {
+  font-family: 'Roboto Condensed';
+}
+
+.font-wellfleet {
+  font-family: 'Wellfleet';
 }
 
 body {

@@ -2,8 +2,7 @@
 
   <%= form_with(model: card_transaction, id: "form", class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
-    <!-- FIXME: might not need the whole due_date, but only the day, at least for now, based on the reactive-form#updateInstallmentsDates -->
-    <%= hidden_field_tag :due_date, card_transaction&.user_card&.current_due_date, type: :date, data: { reactive_form_target: "dueDate" } %>
+    <%= hidden_field_tag :closing_date_day, card_transaction&.user_card&.current_closing_date&.day, data: { reactive_form_target: "closingDateDay" } %>
     <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: "daysUntilDueDate" } %>
 
     <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
@@ -11,7 +10,7 @@
     <div class="w-full mb-6">
       <%= form.text_field \
             :ct_description,
-            class: autosave_input_class, autofocus: true,
+            class: autosave_input_class, autofocus: true, autocomplete: "off",
             data: { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
     </div>
 
@@ -41,7 +40,7 @@
               id: :card_transaction_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
-              data: { reactive_form_target: "dateInput", action: "focusout->reactive-form#updateInstallmentsDates" } %>
+              data: { reactive_form_target: "dateInput", action: "change->reactive-form#updateInstallmentsDates" } %>
 
         <%#= tag.div \
                "inline-datepicker": true,
@@ -62,7 +61,7 @@
                 class: "font-graduate",
                 data: { reactive_form_target: "priceInput", action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
         </div>
-        <!-- FIXME: cannot, for the love of god, press backspace on this input, which renders it useless for mobile browser, as the handler is not present. -->
+
         <div class="w-1/2 lg:w-1/4">
           <%= render TextFieldComponent.new \
                 form, :installments_count,
@@ -78,7 +77,7 @@
     </div>
 
     <!-- Installments -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-4" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-4" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
         <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
@@ -92,7 +91,7 @@
       <!-- inserted elements -->
       <div data-nested-form-target="target"></div>
 
-      <button id="add_installment" data-action="nested-form#add" class="hidden"> </button>
+      <button data-reactive-form-target="addInstallment" data-action="nested-form#add" class="hidden"> </button>
     </div>
 
     <!-- Categories -->

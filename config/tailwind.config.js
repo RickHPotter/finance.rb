@@ -11,6 +11,12 @@ module.exports = {
     './node_modules/flowbite/**/*.js'
   ],
   darkMode: 'class',
+  theme: {
+    screens: {
+      'xs': '530px',
+      ...defaultTheme.screens,
+    },
+  },
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/aspect-ratio'),

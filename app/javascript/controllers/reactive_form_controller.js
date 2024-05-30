@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import RefMonthYear from "models/refMonthYear"
+import RailsDate from "models/railsDate"
 
 // Connects to data-controller="reactive-form"
 const is_empty = (value) => {
@@ -13,9 +13,9 @@ const is_present = (value) => {
 export default class extends Controller {
   static targets = [
     "input", "dateInput", "priceInput",
-    "dueDate", "daysUntilDueDate",
-    "priceInstallmentInput", "installmentsCountInput",
-    "updateButton"
+    "closingDateDay", "daysUntilDueDate",
+    "installmentWrapper", "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
+    "addInstallment", "delInstallment", "updateButton"
   ]
 
   connect() {
@@ -25,7 +25,7 @@ export default class extends Controller {
   requestSubmit({ target }) {
     const has_value = is_present(target.value) || (target.dataset.value && is_present(target.querySelector(target.dataset.value).value))
 
-    if (has_value) target.form.requestSubmit(this.updateButtonTarget)
+    if (has_value) { target.form.requestSubmit(this.updateButtonTarget) }
   }
 
   applyMasks() {
@@ -48,94 +48,27 @@ export default class extends Controller {
     target.value = this._removeMask(target.value)
   }
 
-  // FIXME: REFACTOR, FFS
   updateInstallmentsDates() {
-    const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
-    const current_date = new Date(this.dateInputTarget.value + "T00:00")
-    const current_due_date = new Date(this.dueDateTarget.value + "T00:00")
+    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today() }
 
-    const closing_date_based_on_current_date = new Date(current_date.getFullYear(), current_date.getMonth(), current_due_date.getDate() - days_until_due_date)
-
-    const date =
-      closing_date_based_on_current_date > current_date
-        ? closing_date_based_on_current_date
-        : new Date(closing_date_based_on_current_date.getFullYear(), closing_date_based_on_current_date.getMonth() + 1)
-
-    const starting_month = date.getMonth()
-    const starting_year = date.getFullYear()
-
-    this.priceInstallmentInputTargets.forEach((target, index) => {
-      const ref_date = new Date(starting_year, starting_month + index)
-      console.table({ month: ref_date.getMonth(), year: ref_date.getFullYear() })
-      const month_year = new RefMonthYear(ref_date.getMonth(), ref_date.getFullYear()).monthYear()
-
-      const nested_form_wrapper = target.parentElement.parentElement.parentElement
-      nested_form_wrapper.querySelector(".installment_month_year").textContent = month_year
-    })
+    const rails_due_date = this._get_due_date()
+    this._update_wrappers(rails_due_date)
   }
 
-  // FIXME: REFACTOR, FFS
   updateInstallmentsPrices({ target }) {
-    if (target.value < 1) target.value = 1
-    if (target.value > 72) target.value = 72
+    if (target.value < 1) { target.value = 1 }
+    if (target.value > 72) { target.value = 72 }
 
-    const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
-    const installments_count = parseInt(this.installmentsCountInputTarget.value)
-    const installments_targets = this.priceInstallmentInputTargets
-
-    let total_remaining = total_price % installments_count
-    const remaining = Array(total_remaining).fill(1)
-    const total_divisible = total_price - total_remaining
-    const installment_price = total_divisible / installments_count
-
-    if (installments_targets.length !== installments_count) { this.updateInstallmentsFields() }
-
-    this.priceInstallmentInputTargets.forEach((target) => {
-      const value = (installment_price + (remaining.pop() || 0)).toString()
-      const maskedValue = this._applyMask(value)
-      target.value = maskedValue
-    })
+    this._update_installment_prices()
   }
 
-  updateInstallmentsFields() {
-    const document = this.priceInputTarget.ownerDocument.documentElement
-    const add_installment_button = this.element.querySelector("#add_installment")
-
-    const old_installments_count = this.priceInstallmentInputTargets.length
-    const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
-
-    if (old_installments_count > new_installments_count) {
-      const del_installment_buttons = [...document.querySelectorAll("#del_installment")].reverse()
-      const installments_to_be_deleted = del_installment_buttons.slice(0, old_installments_count - new_installments_count)
-      installments_to_be_deleted.forEach((el) => el.click())
-
-      return
-    }
-
-    // FIXME: THIS IS HORRENDOUS
-    const number_of_installments_to_add = new_installments_count - old_installments_count
-    for (let i = 0; i < number_of_installments_to_add; i++) {
-      add_installment_button.click()
-
-      const new_installment = this.priceInstallmentInputTargets[this.priceInstallmentInputTargets.length - 1]
-      const old_installment = this.priceInstallmentInputTargets[this.priceInstallmentInputTargets.length - 2]
-
-      const old_installment_month = old_installment.parentElement.parentElement.parentElement.querySelector(".installment_month").value
-      const old_installment_year = old_installment.parentElement.parentElement.parentElement.querySelector(".installment_year").value
-      const new_installment_date = new Date(parseInt(old_installment_year), parseInt(old_installment_month))
-
-      const month_year = new RefMonthYear(new_installment_date.getMonth(), new_installment_date.getFullYear()).monthYear()
-
-      const nested_form_wrapper = new_installment.parentElement.parentElement.parentElement
-      nested_form_wrapper.querySelector(".installment_number").value = this.priceInstallmentInputTargets.length
-      nested_form_wrapper.querySelector(".installment_month").value = new_installment_date.getMonth() + 1
-      nested_form_wrapper.querySelector(".installment_year").value = new_installment_date.getFullYear()
-      nested_form_wrapper.querySelector(".installment_year").value = new_installment_date.getFullYear()
-      nested_form_wrapper.querySelector(".installment_month_year").textContent = month_year
-    }
-  }
-
-  // PRIVATE
+  // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
+  // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
+  // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
+  // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒▒▓█▓▒░░▒▓████████▓▒░ ░▒▓█▓▒░   ░▒▓██████▓▒░
+  // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
+  // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
+  // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░  ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓████████▓▒░
 
   _applyMask(value) {
     value = value.replace(/\D/g, '')
@@ -147,5 +80,67 @@ export default class extends Controller {
 
   _removeMask(value) {
     return value.replace(/[^\d]/g, "")
+  }
+
+  _get_due_date() {
+    const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
+    const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
+
+    const rails_current_date = new RailsDate(this.dateInputTarget.value)
+    const rails_closing_date = new RailsDate(rails_current_date.year, rails_current_date.month, current_closing_date_day)
+    rails_closing_date.monthsForwards((rails_current_date.date() >= rails_closing_date.date()) ? 1 : 0)
+
+    return new RailsDate(rails_closing_date).daysForwards(days_until_due_date)
+  }
+
+  _update_wrappers(starting_rails_date, starting_number = 0) {
+    if (starting_number === 0 && this.monthYearInstallmentTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
+
+    starting_rails_date.monthsForwards(starting_number)
+
+    this.installmentWrapperTargets.slice(starting_number).forEach((target, index) => {
+      target.querySelector(".installment_month_year").textContent = starting_rails_date.monthYear()
+      target.querySelector(".installment_number").value = index + starting_number + 1
+      target.querySelector(".installment_month").value = starting_rails_date.month
+      target.querySelector(".installment_year").value = starting_rails_date.year
+
+      starting_rails_date.monthsForwards(1)
+    })
+  }
+
+  _update_installment_prices() {
+    const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
+    const installments_count = parseInt(this.installmentsCountInputTarget.value)
+
+    let price_that_cannot_be_divided = total_price % installments_count
+    const price_that_can_be_divided = total_price - price_that_cannot_be_divided
+    const divisible_installment_price = price_that_can_be_divided / installments_count
+
+    if (this.priceInstallmentInputTargets.length !== installments_count) { this._update_installments_fields() }
+
+    this.priceInstallmentInputTargets.forEach((target) => {
+      const value = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
+      target.value = this._applyMask(value)
+    })
+  }
+
+  _update_installments_fields() {
+    const old_installments_count = this.priceInstallmentInputTargets.length
+    const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
+
+    if (old_installments_count > new_installments_count) {
+      const installments_to_be_deleted = this.delInstallmentTargets.slice(new_installments_count)
+      installments_to_be_deleted.forEach((el) => el.click())
+
+      return
+    }
+
+    const number_of_installments_to_add = new_installments_count - old_installments_count
+    for (let i = 0; i < number_of_installments_to_add; i++) {
+      this.addInstallmentTarget.click()
+    }
+
+    const rails_due_date = this._get_due_date()
+    this._update_wrappers(rails_due_date, old_installments_count)
   }
 }

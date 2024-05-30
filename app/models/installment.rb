@@ -26,7 +26,7 @@ class Installment < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :card_transaction, counter_cache: true
-  delegate :user, :user_id, :user_card, :user_card_id, to: :card_transaction, allow_nil: true
+  delegate :user_id, :user_card, :user_card_id, :date, to: :card_transaction, allow_nil: true
 
   # @validations ..............................................................
   validates :price, :number, :month, :year, :installments_count, presence: true
@@ -42,7 +42,13 @@ class Installment < ApplicationRecord
   # @return [Date].
   #
   def money_transaction_date
-    card_transaction.money_transaction_date + (number - 1).months
+    closing_days      = user_card.current_closing_date.day
+    next_closing_date = next_date(date:, days: closing_days, months: number - 1)
+    next_due_date     = next_closing_date + user_card.days_until_due_date
+
+    return next_due_date if next_closing_date > date
+
+    next_date(date: next_due_date, months: 1)
   end
 
   # Builds `month` and `year` columns for `self`.

@@ -1,12 +1,12 @@
 <% installment = form.object %>
 
-<div class="nested-form-wrapper" data-new-record="<%= installment.new_record? %>">
+<div class="nested-form-wrapper" data-new-record="<%= installment.new_record? %>" data-reactive-form-target="installmentWrapper">
   <div class="flex w-full my-1">
     <div class="flex w-1/2">
       <span class="inline-flex items-center text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md w-full">
         <span class="flex items-center text-sm font-medium text-black ps-2">
           <span class="flex w-3 h-3 bg-orange-500 rounded-full me-2 flex-shrink-0"></span>
-          <span class="installment_month_year font-victor font-semibold text-orange-950">
+          <span class="installment_month_year font-victor font-semibold text-orange-950" data-reactive-form-target="monthYearInstallment">
             <%= installment.month_year if installment.month %>
           </span>
         </span>
@@ -24,5 +24,5 @@
   <%= form.hidden_field :month, class: "installment_month" %>
   <%= form.hidden_field :year, class: "installment_year" %>
 
-  <button id="del_installment" data-action="nested-form#remove" class="hidden"></button>
+  <button data-reactive-form-target="delInstallment" data-action="nested-form#remove" class="hidden"></button>
 </div>

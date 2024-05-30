@@ -86,7 +86,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       sign_in user
 
-      card_transaction.date += 1.month
+      card_transaction.date += 40.days # 1 month is sometimes not enough
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
       card_transaction_two = CardTransaction.last
 
