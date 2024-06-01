@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
-# rubocop:disable Layout/LineLength
-
 # Helper for Components
 module ComponentsHelper
   # @return [String] tailwind class for input.
   #
   def input_class
-    "block w-full ps-12 p-2.5 border-1 border-gray-300 focus:ring-1 focus:ring-indigo-600 rounded-md shadow-sm outline-none appearance-none bg-gray-700 dark:bg-white
+    "block w-full ps-12 p-2.5 border-1 border-gray-300 focus:ring-1 focus:ring-indigo-600 rounded-md shadow-sm outline-none appearance-none bg-white
     text-[0.8rem] sm:text-sm md:text-base
-    text-white dark:text-gray-900".squish
+    text-gray-900".squish
   end
 
   # @return [String] tailwind class for autosave input.
@@ -22,7 +20,7 @@ module ComponentsHelper
   # @return [String] tailwind class for label.
   #
   def label_class
-    "block mb-2 text-sm font-medium dark:text-gray-900 text-white"
+    "block mb-2 text-sm font-medium text-gray-900"
   end
 
   # @return [String] tailwind class for form button.
@@ -33,5 +31,3 @@ module ComponentsHelper
     shadow-sm #{options[:colour][:hover][:bg]} #{options[:colour][:hover][:text]} focus:outline-none".squish
   end
 end
-
-# rubocop:enable Layout/LineLength

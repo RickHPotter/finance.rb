@@ -13,19 +13,19 @@
   - [GAARA-07/be-06: Refine Exchange Model](#gaara-07be-06-refine-exchange-model)
   - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
   - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
-  - [GAARA-10/fe-02: Create MultiCheckBoxComponent](#gaara-10fe-02-create-multicheckboxcomponent)
+  - [GAARA-10/fe-02: Create a Component that allows to select multiple options](#gaara-10fe-02-create-a-component-that-allows-to-select-multiple-options)
   - [GAARA-11/fe-03: Refine TabComponent](#gaara-11fe-03-refine-tabcomponent)
   - [GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs](#gaara-12fe-04-finish-the-mvp-finish-remaining-request-and-system-specs)
 <!--toc:end-->
 
-# INTRODUCTION
+## INTRODUCTION
 
 The creation of this app came from the need to evaluate financial habits not as
 a hobby, but as a necessity. I plan on making an easy-to-use app that will swift
 into your life and help you take care of what comes harder in life: stability and
 peace.
 
-# SPRINT PLANNING I: GAARA
+## SPRINT PLANNING I: GAARA
 
 Starting point for a v0.1 release of my app called finance.rb (yeah, finance.rb).
 
@@ -52,12 +52,12 @@ UK version before).
 8. I came back in the second half of April getting more and more excited about
 continuing the project.
 
-## GAARA-01/be-01: Finish late Model Specs
+### GAARA-01/be-01: Finish late Model Specs
 
 - Subtasks:
   - ✅ Create Models Specs for Card Transaction and Installments.
 
-## GAARA-02/be-02: Create models that revolve around MoneyTransaction
+### GAARA-02/be-02: Create models that revolve around MoneyTransaction
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
@@ -67,7 +67,7 @@ continuing the project.
 - Extra:
   - ✅ Created concerns for MonthYear and Callbacks for StartingPrice and Active.
 
-## GAARA-03/be-03: Implement 'buy now, pay later' system
+### GAARA-03/be-03: Implement 'buy now, pay later' system
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
@@ -85,7 +85,7 @@ continuing the project.
   - ✅ Refined Installment Spec based on how the Investment spec was created.
   - ✅ Standardised the specs blocks and documentation.
 
-## GAARA-04/app-01: Update stack and add Docker
+### GAARA-04/app-01: Update stack and add Docker
 
 - Subtasks:
   - ✅ Successfully update Ruby on Rails from 7.0.8 to 7.1.2.
@@ -96,7 +96,7 @@ continuing the project.
   - ✅ Made it possible to run app in production mode in and outside of Docker.
   - ✅ Added and configured Bullet gem for development.
 
-## GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction
+### GAARA-05/be-04: Create EntityTransaction Model; Installments in MoneyTransaction
 
 - Issues:
   - [#6](https://github.com/RickHPotter/finance.rb/issues/6)
@@ -116,7 +116,7 @@ continuing the project.
   - ✅ APP: Added SimpleCov for tracking test coverage.
   - ✅ APP: Added Guard-Rspec for safer development.
 
-## GAARA-06/be-05: Create Exchange Model
+### GAARA-06/be-05: Create Exchange Model
 
 - Issues:
   - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
@@ -144,7 +144,7 @@ continuing the project.
   - ✅ Added Exchange specs for updates in exchanges_count and exchange_attributes.
   - ✅ Added CategoryTransaction specs for callbacks.
 
-## GAARA-07/be-06: Refine Exchange Model
+### GAARA-07/be-06: Refine Exchange Model
 
 - Issues:
   - [#8](https://github.com/RickHPotter/finance.rb/issues/8)
@@ -170,7 +170,7 @@ continuing the project.
   - ✅ Added built_in boolean attribute for Category.
   - ✅ Created a helper for Nested Attributes.
 
-## GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
+### GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage
 
 - Issues:
   - [#16](https://github.com/RickHPotter/finance.rb/issues/16)
@@ -180,7 +180,7 @@ continuing the project.
   - ✅ Fix possible bugs found at this stage.
   - ✅ Review current specs and refactor if possible.
 - Extra:
-  - ✅ Switched from sprockets to Prophaft.
+  - ✅ Switched from sprockets to Propshaft.
   - ✅ Added and tidied up rubocop and erb_lint, and added CI.
   - ✅ Created a new request spec that tests the Exchange flow.
   - ✅ Refactored the Exchange flow to nested-form using rails-nested-form stimulus.
@@ -193,28 +193,50 @@ continuing the project.
   - ✅ Creates CI binstub to make it easier to run CI locally before pushing.
   - ✅ Reviews and makes necessary changes to docs.
 
-## GAARA-09/fe-01: Refine AutocompleteSelect
+### GAARA-09/fe-01: Refine AutocompleteSelect
 
 - Issues:
   - [#10](https://github.com/RickHPotter/finance.rb/issues/10)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ When typing, the first option should be rendered in the input, but with font-light.
-  - ⌛ Add option to use a round-colour or an icon or a picture on the far-left
-  - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ Remove AutocompleteSelect in favour of HotwireCombobox by Jose Farias.
+    - ✅ When typing, the first option should be rendered in the input, but with font-light.
+    - ✅ Add option to use a round-colour or an icon or a picture on the far-left
+  - ✅ Fix #money_transaction_date of both Installment and CardTransaction.
+- Extra:
+  - ✅ Add rails-autosave stimulus component.
+  - ✅ Add textarea-autogrow stimulus component.
+  - ✅ Implement a blinking animation (terminal-like) for autosave component.
+  - ✅ Import flowbite-datepicker (and not use it).
+  - ✅ Create flowbite-datepicker stimulus controller (and not use it).
+  - ✅ Create hotwire-datepicker gem repo (and not develop it).
+  - ✅ Create reactive-form stimulus controller that handles card_transaction form.
+    - ✅ Add several validations client-side.
+    - ✅ Add a mask feature to prices.
+    - ✅ Add controller action to handle the amount of installments fields.
+    - ✅ Add controller actions to update dates and prices of installments.
+    - ✅ Add rails model methods to update month and year without creating object.
+  - ✅ Create a RailsDate JS model that handles date way less retarded that JS Date.
+  - ✅ Improve dramatically form html with more concise formatting.
+  - ✅ Use a more fitting concept of installments nested_fields for this project.
+  - ✅ Update TextFieldComponent to be less more rails-like.
+  - ✅ Add fonts.
+  - ✅ Improve (or rather fix) form responsiveness when creating a card_transaction.
   - ✅ Successfully update Ruby from 3.3.0 to 3.3.2.
+  - ✅ Successfully update Rails from 7.1.2 to 7.1.3.3.
 
-## GAARA-10/fe-02: Create MultiCheckBoxComponent
+### GAARA-10/fe-02: Create a Component that allows to select multiple options
 
 - Issues:
   - [#11](https://github.com/RickHPotter/finance.rb/issues/11)
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests before.
+  - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
   - ⌛ Grant many options and add turbo-frame to it as these options are relevant.
 
-## GAARA-11/fe-03: Refine TabComponent
+### GAARA-11/fe-03: Refine TabComponent
 
 - Issues:
   - [#12](https://github.com/RickHPotter/finance.rb/issues/12)
@@ -225,7 +247,7 @@ continuing the project.
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
-## GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
+### GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
 
 - Issues:
   - [#13](https://github.com/RickHPotter/finance.rb/issues/13)
