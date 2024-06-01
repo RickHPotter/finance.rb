@@ -13,7 +13,13 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new
+    # FIXME: interesting, Im going to have to move to cent-based price
+    # THIS does not seem right - regarding price and installment_price getting 200.00 instead of 20.00
+    installments_count = 6
+    @user_card = @user.user_cards.third
+    @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 120 * 100, installments_count:)
+    installments_count.times { |i| @card_transaction.installments.build(price: @card_transaction.price / 10 / installments_count, number: i + 1) }
+    @card_transaction.build_month_year
   end
 
   def edit
@@ -23,16 +29,25 @@ class CardTransactionsController < ApplicationController
 
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
+    @card_transaction.build_month_year
 
-    if @card_transaction.save
-      flash[:notice] = "Card Transaction was successfully created."
+    if params[:commit] == "Update"
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
+        end
+      end
     else
-      flash[:alert] = @card_transaction.errors.full_messages
-    end
+      if @card_transaction.save
+        flash[:notice] = "Card Transaction was successfully created."
+      else
+        flash[:alert] = @card_transaction.errors.full_messages
+      end
 
-    respond_to do |format|
-      format.turbo_stream
-      format.json { render json: @card_transaction }
+      respond_to do |format|
+        format.turbo_stream
+        format.json { render json: @card_transaction }
+      end
     end
   end
 
@@ -53,10 +68,6 @@ class CardTransactionsController < ApplicationController
       flash[:alert] = @card_transaction.errors.full_messages
     end
 
-    respond_to(&:turbo_stream)
-  end
-
-  def clear_message
     respond_to(&:turbo_stream)
   end
 

@@ -12,15 +12,15 @@
     <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
-  <body class="h-full">
+  <body class="h-full bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
     <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <img class="mx-auto h-12 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600" alt="Sept">
+        <img class="mx-auto h-48 w-auto" src="https://raw.githubusercontent.com/RickHPotter/finance.rb/rick/main/public/sept_logo_candidates/IMG-20240113-WA0018.jpg" alt="Sept">
         <%= yield(:auth_header) if content_for?(:auth_header) %>
       </div>
 
-      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div class="mt-8 xs:mx-auto xs:w-full xs:max-w-md">
+        <div class="bg-white py-8 px-4 shadow xs:rounded-lg xs:px-10">
           <%= yield %>
         </div>
       </div>

@@ -1,7 +1,10 @@
 <% if wrapper %>
-  <div class="relative w-full min-w-[200px]">
+  <div class="relative w-full">
 <% end %>
 
+  <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+    <%= render "shared/svgs/#{options[:svg]}" if options[:svg] %>
+  </div>
   <% if options[:type] == :select && items.present? %>
     <%= form.select field, items, {}, options %>
   <% elsif options[:type] == :textarea %>
@@ -9,8 +12,6 @@
   <% else %>
     <%= form.text_field field, options %>
   <% end %>
-
-  <%= form.label field, options[:label], class: label_class, for: options[:id] %>
 
 <% if wrapper %>
   </div>

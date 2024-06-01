@@ -6,32 +6,31 @@
   </p>
 <% end %>
 
-<%= form_for resource, as: resource_name, url: registration_path(resource_name),
-                       data: { turbo: false, controller: "form-validate" } do |f| %>
+<%= form_for resource, as: resource_name, url: registration_path(resource_name), data: { turbo: false, controller: "form-validate" } do |f| %>
 
   <%= render "devise/shared/error_messages", resource: %>
 
-  <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :first_name, options: { autofocus: true }) %>
+  <div class="mb-6 text-blue-700">
+    <%= render TextFieldComponent.new(f, :first_name, svg: :user, placeholder: "First Name", autofocus: true) %>
   </div>
 
-  <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :last_name) %>
+  <div class="mb-6 text-blue-700">
+    <%= render TextFieldComponent.new(f, :last_name, svg: :user_group, placeholder: "Last Name") %>
   </div>
 
-  <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :email, options: { type: :email }) %>
+  <div class="mb-6 text-blue-700">
+    <%= render TextFieldComponent.new(f, :email, type: :email, svg: :email, placeholder: "Email Address") %>
   </div>
 
-  <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :password, options: { type: :password }) %>
+  <div class="mb-6 text-blue-700">
+    <%= render TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "Password") %>
   </div>
 
-  <div class='mb-6'>
-    <%= render TextFieldComponent.new(form: f, field: :password_confirmation, options: { type: :password }) %>
+  <div class="mb-6 text-blue-700">
+    <%= render TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: "Password Confirmation") %>
 
     <% if @minimum_password_length %>
-      <em class='text-sm text-gray-500'>(<%= @minimum_password_length %> characters minimum)</em>
+      <span class='text-xs font-graduate text-gray-500'>(<%= @minimum_password_length %> characters minimum)</span>
     <% end %>
   </div>
 

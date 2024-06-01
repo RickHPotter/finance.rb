@@ -12,12 +12,9 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Inter var', ...defaultTheme.fontFamily.sans],
-        monospace: ['Iosevka', ...defaultTheme.fontFamily.mono],
-        source: ['Source Code Pro', ...defaultTheme.fontFamily.mono],
-      },
+    screens: {
+      'xs': '530px',
+      ...defaultTheme.screens,
     },
   },
   plugins: [
@@ -25,6 +22,6 @@ module.exports = {
     require('@tailwindcss/aspect-ratio'),
     require('@tailwindcss/typography'),
     require('@tailwindcss/container-queries'),
-    require('flowbite/plugin'),
+    require('flowbite/plugin')
   ]
 }

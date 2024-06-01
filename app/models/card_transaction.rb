@@ -52,6 +52,29 @@ class CardTransaction < ApplicationRecord
     ct_description
   end
 
+  # Generates a `date` for the associated `money_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
+  #
+  # @return [Date].
+  #
+  def money_transaction_date
+    closing_days      = user_card.current_closing_date.day
+    next_closing_date = next_date(date:, days: closing_days)
+    next_due_date     = next_closing_date + user_card.days_until_due_date
+
+    return next_due_date if next_closing_date > date
+
+    next_date(date: next_due_date, months: 1)
+  end
+
+  # Builds `month` and `year` columns for `self` and associated `installments`.
+  #
+  # @return [void].
+  #
+  def build_month_year
+    set_month_year
+    installments.each(&:build_month_year)
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end

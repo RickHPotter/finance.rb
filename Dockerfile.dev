@@ -1,4 +1,4 @@
-ARG RUBY_VERSION=3.3.0-bullseye
+ARG RUBY_VERSION=3.3.2-bullseye
 FROM ruby:$RUBY_VERSION
 
 RUN apt-get update -qq && \
@@ -19,7 +19,7 @@ RUN apt-get update -qq && \
 
 # Comment all of this if you do not wish to install neovim
 RUN apt-get install -y --no-install-recommends curl wget xz-utils && \
-  gem install solargraph:0.50.0 rubocop:1.59.0 neovim:0.9.1 bundler:2.5.3 && \
+  gem install solargraph:0.50.0 rubocop:1.59.0 neovim:0.9.1 bundler:2.5.9 && \
   wget -q https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.tar.gz && \
   tar -xf nvim-linux64.tar.gz && mv nvim-linux64 nvim && \
   printf "export PATH=/nvim/bin:\$PATH" >> ~/.bashrc && \

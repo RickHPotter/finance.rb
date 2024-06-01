@@ -3,21 +3,54 @@
 @tailwind utilities;
 
 body {
-    overflow-y: scroll;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  overflow-y: scroll;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
 }
+
 body::-webkit-scrollbar { /* WebKit */
-    width: 0;
-    height: 0;
+  width: 0;
+  height: 0;
 }
 
-/*
-
-@layer components {
-  .btn-primary {
-    @apply py-2 px-4 bg-blue-200;
+.hw-cb {
+  .hw-combobox {
+    @apply w-full;
   }
-}
 
-*/
+  .hw-combobox__main__wrapper {
+    @apply w-full;
+    @apply ps-10;
+    @apply py-[10px];
+  }
+
+  .hw-combobox__icon {
+    @apply absolute;
+    @apply inset-y-0;
+    @apply start-3.5;
+    @apply ps-3.5;
+    @apply flex;
+    @apply items-center;
+  }
+
+  .hw-combobox__handle {
+    @apply hidden;
+    @apply right-2;
+  }
+
+  .hw-combobox__input {
+    @apply ps-2;
+    @apply placeholder-gray-500;
+  }
+
+  .hw-combobox__listbox { }
+
+  .hw-combobox__option:hover,
+  .hw-combobox__option--navigated,
+  .hw-combobox__option--selected {
+    @apply bg-slate-600;
+    @apply text-white;
+  }
+
+  --hw-icon-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor' class='w-6 h-6'%3E%3Cpath d='M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.625A4.483 4.483 0 015.25 7.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 6H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H15a.75.75 0 00-.75.75 2.25 2.25 0 01-4.5 0A.75.75 0 009 9H5.25z' /%3E%3C/svg%3E%0A");
+}
