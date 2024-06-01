@@ -203,6 +203,7 @@ continuing the project.
   - ⌛ When typing, the first option should be rendered in the input, but with font-light.
   - ⌛ Add option to use a round-colour or an icon or a picture on the far-left
   - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
+  - ✅ Successfully update Ruby from 3.3.0 to 3.3.2.
 
 ## GAARA-10/fe-02: Create MultiCheckBoxComponent
 
