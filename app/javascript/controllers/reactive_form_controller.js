@@ -20,6 +20,7 @@ export default class extends Controller {
 
   connect() {
     this.applyMasks()
+    this._update_installment_prices()
   }
 
   requestSubmit({ target }) {
@@ -108,7 +109,7 @@ export default class extends Controller {
     })
   }
 
-  _update_installment_prices() {
+  async _update_installment_prices() {
     const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
     const installments_count = parseInt(this.installmentsCountInputTarget.value)
 
@@ -116,7 +117,7 @@ export default class extends Controller {
     const price_that_can_be_divided = total_price - price_that_cannot_be_divided
     const divisible_installment_price = price_that_can_be_divided / installments_count
 
-    if (this.priceInstallmentInputTargets.length !== installments_count) { this._update_installments_fields() }
+    if (this.priceInstallmentInputTargets.length !== installments_count) { await this._update_installments_fields() }
 
     this.priceInstallmentInputTargets.forEach((target) => {
       const value = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
@@ -124,7 +125,7 @@ export default class extends Controller {
     })
   }
 
-  _update_installments_fields() {
+  async _update_installments_fields() {
     const old_installments_count = this.priceInstallmentInputTargets.length
     const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
 
@@ -137,7 +138,10 @@ export default class extends Controller {
 
     const number_of_installments_to_add = new_installments_count - old_installments_count
     for (let i = 0; i < number_of_installments_to_add; i++) {
-      this.addInstallmentTarget.click()
+      await new Promise((resolve) => setTimeout(() => {
+        this.addInstallmentTarget.click()
+        resolve()
+      }, 2))
     }
 
     const rails_due_date = this._get_due_date()
