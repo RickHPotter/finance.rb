@@ -27,7 +27,7 @@ FactoryBot.define do
     trait :different do
       is_payer { true }
       status { "finished" }
-      price { 0.01 }
+      price { 0o01 }
       transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction]) }
       entity { different_custom_create(:entity, reference: { user: transactable.user }) }
       exchanges_count { 2 }

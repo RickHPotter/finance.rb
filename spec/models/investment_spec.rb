@@ -79,7 +79,7 @@ RSpec.describe Investment, type: :model do
     context "( when existing investments are updated )" do
       before do
         investments.each do |inv|
-          inv.update(price: Faker::Number.decimal(l_digits: rand(0..1)))
+          inv.update(price: Faker::Number.number(digits: rand(3..4)))
         end
 
         money_transaction.reload

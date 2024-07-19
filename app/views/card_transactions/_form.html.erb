@@ -68,7 +68,7 @@
                 type: :number,
                 svg: :number,
                 min: 1, max: 72,
-                value: [ @card_transaction.installments_count, 1 ].max,
+                value: [ @card_transaction.installments.size, @card_transaction.installments_count, 1 ].max,
                 class: "font-graduate",
                 placeholder: "Installments",
                 data: { reactive_form_target: "installmentsCountInput", action: "input->reactive-form#updateInstallmentsPrices" } %>
@@ -77,7 +77,8 @@
     </div>
 
     <!-- Installments -->
-    <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-4" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
+         class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-4" >
       <template data-nested-form-target="template">
         <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
@@ -91,7 +92,7 @@
       <!-- inserted elements -->
       <div data-nested-form-target="target"></div>
 
-      <button data-reactive-form-target="addInstallment" data-action="nested-form#add" class="hidden"> </button>
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: "addInstallment", action: "nested-form#add" } %>
     </div>
 
     <!-- Categories -->

@@ -13,12 +13,9 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    # FIXME: interesting, Im going to have to move to cent-based price
-    # THIS does not seem right - regarding price and installment_price getting 200.00 instead of 20.00
     installments_count = 6
     @user_card = @user.user_cards.third
     @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, installments_count:)
-    # installments_count.times { |i| @card_transaction.installments.build(price: @card_transaction.price / installments_count, number: i + 1) }
     @card_transaction.build_month_year
   end
 
@@ -28,7 +25,7 @@ class CardTransactionsController < ApplicationController
   end
 
   def create
-    @card_transaction = CardTransaction.new(card_transaction_params.except(:installments_count))
+    @card_transaction = CardTransaction.new(card_transaction_params)
     @card_transaction.build_month_year
 
     if params[:commit] == "Update"
@@ -97,7 +94,7 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      %i[id ct_description ct_comment date month year price installments_count user_id user_card_id],
+      %i[id ct_description ct_comment date month year price user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
       installments_attributes: %i[id price number month year],
       entity_transactions_attributes: [

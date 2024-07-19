@@ -18,19 +18,19 @@
 #
 FactoryBot.define do
   factory :installment do
-    price { "9.99" }
+    price { 999 }
     number { 1 }
     month { 12 }
     year { 2023 }
 
     trait :different do
-      price { "99.99" }
+      price { 9999 }
       month { 1 }
       year { 2024 }
     end
 
     trait :random do
-      price { Faker::Number.decimal(l_digits: 2, r_digits: 2) }
+      price { Faker::Number.number(digits: 5) }
     end
   end
 end
