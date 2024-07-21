@@ -17,6 +17,11 @@ class CardTransactionsController < ApplicationController
     @user_card = @user.user_cards.third
     @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, installments_count:)
     @card_transaction.build_month_year
+    @card_transaction.category_transactions.build(category_id: @categories.first[1])
+    # FIXME: move this to client-side using javascript - it breaks when updating
+    @remaining_categories = @categories.reject do |_category_name, category_id|
+      @card_transaction.category_transactions.map(&:category_id).include?(category_id)
+    end
   end
 
   def edit

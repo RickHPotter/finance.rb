@@ -10,12 +10,23 @@ const is_present = (value) => {
   return !is_empty(value)
 }
 
+const sleep = (fn, time = 0) => {
+  return new Promise((resolve) => setTimeout(resolve, time))
+    .then(fn)
+}
+
 export default class extends Controller {
   static targets = [
     "input", "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
+
     "installmentWrapper", "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
-    "addInstallment", "delInstallment", "updateButton"
+    "categoryTransactionWrapper",
+
+    "addInstallment", "delInstallment",
+    "addCategory", "delCategory",
+
+    "updateButton"
   ]
 
   connect() {
@@ -61,6 +72,42 @@ export default class extends Controller {
     if (target.value > 72) { target.value = 72 }
 
     this._update_installment_prices()
+  }
+
+  insertChip({ target }) {
+    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    let all_options = comboboxController._allOptions
+    let selected_option = comboboxController._selectedOptionElement
+    if (!selected_option) return
+
+    selected_option.classList.add("hidden")
+    selected_option.dataset.filterableAs = ""
+    let visible_options = all_options.filter((option) => { return !option.classList.contains("hidden") })
+
+    this._insertChip(selected_option)
+
+    comboboxController.clearOrToggleOnHandleClick()
+
+    if (visible_options.length === 0) {
+      comboboxController.close()
+    } else {
+      sleep(() => { comboboxController.actingCombobox.focus() })
+    }
+  }
+
+  _insertChip(selected_option) {
+    const value = selected_option.dataset.value
+    const text = selected_option.textContent
+
+    this.addCategoryTarget.click()
+
+    const wrappers = this.categoryTransactionWrapperTargets
+    const new_wrapper = wrappers[wrappers.length - 1]
+
+    new_wrapper.querySelector(".category_transaction_category_id").value = value
+    new_wrapper.querySelector(".category_transaction_category_name").textContent = text
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -138,10 +185,7 @@ export default class extends Controller {
 
     const number_of_installments_to_add = new_installments_count - old_installments_count
     for (let i = 0; i < number_of_installments_to_add; i++) {
-      await new Promise((resolve) => setTimeout(() => {
-        this.addInstallmentTarget.click()
-        resolve()
-      }, 2))
+      await sleep(() => { this.addInstallmentTarget.click() })
     }
 
     const rails_due_date = this._get_due_date()
