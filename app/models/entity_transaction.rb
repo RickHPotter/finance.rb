@@ -17,7 +17,7 @@
 #
 class EntityTransaction < ApplicationRecord
   # @extends ..................................................................
-  enum status: { pending: 0, finished: 1 }
+  enum :status, { pending: 0, finished: 1 }
 
   # @includes .................................................................
   include HasExchanges

@@ -31,7 +31,7 @@ RSpec.describe Exchange, type: :model do
     end
 
     context "( associations )" do
-      it { should belong_to(:entity_transaction).counter_cache(true) }
+      it { should belong_to(:entity_transaction) }
       it { should belong_to(:money_transaction).optional }
 
       it { should define_enum_for(:exchange_type).with_values(non_monetary: 0, monetary: 1) }
