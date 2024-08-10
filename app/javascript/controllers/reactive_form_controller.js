@@ -31,7 +31,7 @@ export default class extends Controller {
 
   connect() {
     this.applyMasks()
-    this._update_installment_prices()
+    this._updateInstallmentsPrices()
     this._updateChips()
   }
 
@@ -65,15 +65,15 @@ export default class extends Controller {
   updateInstallmentsDates() {
     if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today() }
 
-    const rails_due_date = this._get_due_date()
-    this._update_wrappers(rails_due_date)
+    const rails_due_date = this._getDueDate()
+    this._updateWrappers(rails_due_date)
   }
 
   updateInstallmentsPrices({ target }) {
     if (target.value < 1) { target.value = 1 }
     if (target.value > 72) { target.value = 72 }
 
-    this._update_installment_prices()
+    this._updateInstallmentsPrices()
   }
 
   // Categories
@@ -138,7 +138,7 @@ export default class extends Controller {
   }
 
   // Installments
-  _get_due_date() {
+  _getDueDate() {
     const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
     const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
 
@@ -149,7 +149,7 @@ export default class extends Controller {
     return new RailsDate(rails_closing_date).daysForwards(days_until_due_date)
   }
 
-  _update_wrappers(starting_rails_date, starting_number = 0) {
+  _updateWrappers(starting_rails_date, starting_number = 0) {
     if (starting_number === 0 && this.monthYearInstallmentTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
 
     starting_rails_date.monthsForwards(starting_number)
@@ -164,7 +164,7 @@ export default class extends Controller {
     })
   }
 
-  async _update_installment_prices() {
+  async _updateInstallmentsPrices() {
     const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
     const installments_count = parseInt(this.installmentsCountInputTarget.value)
 
@@ -172,7 +172,7 @@ export default class extends Controller {
     const price_that_can_be_divided = total_price - price_that_cannot_be_divided
     const divisible_installment_price = price_that_can_be_divided / installments_count
 
-    if (this.priceInstallmentInputTargets.length !== installments_count) { await this._update_installments_fields() }
+    if (this.priceInstallmentInputTargets.length !== installments_count) { await this._updateInstallmentsFields() }
 
     this.priceInstallmentInputTargets.forEach((target) => {
       const value = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
@@ -180,7 +180,7 @@ export default class extends Controller {
     })
   }
 
-  async _update_installments_fields() {
+  async _updateInstallmentsFields() {
     const old_installments_count = this.priceInstallmentInputTargets.length
     const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
 
@@ -196,8 +196,8 @@ export default class extends Controller {
       await sleep(() => { this.addInstallmentTarget.click() })
     }
 
-    const rails_due_date = this._get_due_date()
-    this._update_wrappers(rails_due_date, old_installments_count)
+    const rails_due_date = this._getDueDate()
+    this._updateWrappers(rails_due_date, old_installments_count)
   }
 
   // Categories
