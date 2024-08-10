@@ -4,22 +4,22 @@
 <div class="nested-form-wrapper" data-new-record="<%= category_transaction.new_record? %>" data-reactive-form-target="categoryTransactionWrapper">
   <div class="flex w-full my-1">
     <span class="flex items-center text-sm font-medium text-black ps-2">
-      <span id="badge-dismiss-<%= now %>" class="inline-flex items-center px-2 py-1 me-2 text-sm font-medium bg-orange-500 text-white rounded-md border border-black">
+      <span class="inline-flex items-center px-2 py-1 me-2 text-sm font-medium bg-orange-500 text-white rounded-md border border-black">
         <span class="category_transaction_category_name">
           <%= category_transaction&.category&.category_name %>
         </span>
 
-        <a type="button" class="inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-sm hover:bg-gray-800 hover:text-gray-200"
-            data-dismiss-target="#badge-dismiss-<%= now %>" aria-label="Remove">
-          <svg class="w-2 h-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+        <a type="button"
+           class="inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-sm hover:bg-gray-800 hover:text-gray-200"
+           aria-label="Remove"
+           data-action="click->reactive-form#removeChip">
+          <svg class="w-2 h-2 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"></path>
           </svg>
-
-          <span class="sr-only">Remove badge</span>
         </a>
       </span>
     </span>
-  </div>
 
-  <%= form.hidden_field :category_id, class: :category_transaction_category_id %>
+    <%= form.hidden_field :category_id, class: :category_transaction_category_id %>
+  </div>
 </div>

@@ -32,8 +32,10 @@ export default class extends Controller {
   connect() {
     this.applyMasks()
     this._update_installment_prices()
+    this._updateChips()
   }
 
+  // Installments
   requestSubmit({ target }) {
     const has_value = is_present(target.value) || (target.dataset.value && is_present(target.querySelector(target.dataset.value).value))
 
@@ -74,6 +76,7 @@ export default class extends Controller {
     this._update_installment_prices()
   }
 
+  // Categories
   insertChip({ target }) {
     const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
     if (!comboboxController) return console.error("Combobox controller not found")
@@ -97,17 +100,21 @@ export default class extends Controller {
     }
   }
 
-  _insertChip(selected_option) {
-    const value = selected_option.dataset.value
-    const text = selected_option.textContent
+  removeChip({ target }) {
+    const nested_div = target.parentElement.parentElement.parentElement
+    const chip_value = nested_div.querySelector(".category_transaction_category_id").value
 
-    this.addCategoryTarget.click()
+    const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
 
-    const wrappers = this.categoryTransactionWrapperTargets
-    const new_wrapper = wrappers[wrappers.length - 1]
+    let all_options = comboboxController._allOptions
+    let removed_option = all_options.find((option) => { return option.dataset.value === chip_value })
 
-    new_wrapper.querySelector(".category_transaction_category_id").value = value
-    new_wrapper.querySelector(".category_transaction_category_name").textContent = text
+    removed_option.classList.remove("hidden")
+    removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
+
+    nested_div.remove()
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -130,6 +137,7 @@ export default class extends Controller {
     return value.replace(/[^\d]/g, "")
   }
 
+  // Installments
   _get_due_date() {
     const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
     const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
@@ -190,5 +198,38 @@ export default class extends Controller {
 
     const rails_due_date = this._get_due_date()
     this._update_wrappers(rails_due_date, old_installments_count)
+  }
+
+  // Categories
+  _insertChip(selected_option) {
+    const value = selected_option.dataset.value
+    const text = selected_option.textContent
+
+    this.addCategoryTarget.click()
+
+    const wrappers = this.categoryTransactionWrapperTargets
+    const new_wrapper = wrappers[wrappers.length - 1]
+
+    new_wrapper.querySelector(".category_transaction_category_id").value = value
+    new_wrapper.querySelector(".category_transaction_category_name").textContent = text
+  }
+
+  _updateChips() {
+    // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
+    sleep(() => {
+      const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
+      if (!comboboxController) return console.error("Combobox controller not found")
+
+      const chip_values = this.categoryTransactionWrapperTargets.map((target) => { return target.querySelector(".category_transaction_category_id").value })
+
+      let all_options = comboboxController._allOptions
+      let to_be_hidden = all_options.filter((option) => { return chip_values.includes(option.dataset.value) })
+
+      to_be_hidden.forEach((option) => {
+        option.classList.add("hidden")
+        option.dataset.filterableAs = ""
+      })
+    })
   }
 }
