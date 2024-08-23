@@ -232,7 +232,7 @@ continuing the project.
   - [#11](https://github.com/RickHPotter/finance.rb/issues/11)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
+  - ✅ Use TDD approach; create the tests before.
   - ✅ Hack HotwireCombobox inside ReactiveForm for Continuous Selection.
   - ✅ Create Chips Component that interacts with Hotwire Combobox.
   - ✅ Grant many options and add turbo-frame to it as these options are relevant.
@@ -253,7 +253,6 @@ continuing the project.
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ Make the Item Struct cleaner on the Controller.
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
-  - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
 ### GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
 
