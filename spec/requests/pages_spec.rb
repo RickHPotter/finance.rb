@@ -33,6 +33,4 @@ RSpec.describe "Pages#Home", type: :request do
       end
     end
   end
-
-  # @TODO: Form Submission, Page Content, Flash Messages
 end
