@@ -92,3 +92,5 @@ https://h.daily-dev-tips.com/creating-day-night-css-only-toggle-switch
 <label for="theme_toggle" class="toggle--label">
   <span class="toggle--label-background"></span>
 </label>
+
+<%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %>

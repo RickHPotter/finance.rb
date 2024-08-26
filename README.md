@@ -232,9 +232,17 @@ continuing the project.
   - [#11](https://github.com/RickHPotter/finance.rb/issues/11)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
-  - ⌛ Grant many options and add turbo-frame to it as these options are relevant.
+  - ✅ Use TDD approach; create the tests before.
+  - ✅ Hack HotwireCombobox inside ReactiveForm for Continuous Selection.
+  - ✅ Create Chips Component that interacts with Hotwire Combobox.
+  - ✅ Grant many options and add turbo-frame to it as these options are relevant.
+  - ✅ Deny an option if already chosen in a previous select.
+- Extra:
+  - ✅ Fixes bugs concerning installments both on the frontend and backend.
+  - ✅ Move price-related float fields to int cent-based.
+  - ✅ Successfully update Ruby from 3.3.2 to 3.3.4.
+  - ✅ Successfully update Ruby on Rails from 7.1.2 to 7.2.
+  - ✅ Clear up current deprecation warnings based on future update to Rails 8.
 
 ### GAARA-11/fe-03: Refine TabComponent
 
@@ -245,7 +253,6 @@ continuing the project.
   - ⌛ Use TDD approach; create the tests before.
   - ⌛ Make the Item Struct cleaner on the Controller.
   - ⌛ Pass in dependents as other structure other than itself (MultiCheckBoxComponent).
-  - ⌛ Deny an option if already chosen in a previous select (Category, i.e.)
 
 ### GAARA-12/fe-04: Finish the MVP, Finish remaining Request and System Specs
 

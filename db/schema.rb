@@ -27,8 +27,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.decimal "starting_price", null: false
-    t.decimal "price", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
     t.integer "installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
@@ -77,7 +77,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
   create_table "entity_transactions", force: :cascade do |t|
     t.boolean "is_payer", default: false, null: false
     t.integer "status", default: 0, null: false
-    t.decimal "price", default: "0.0", null: false
+    t.integer "price", default: 0, null: false
     t.integer "exchanges_count", default: 0, null: false
     t.bigint "entity_id", null: false
     t.string "transactable_type", null: false
@@ -92,8 +92,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
   create_table "exchanges", force: :cascade do |t|
     t.integer "exchange_type", default: 0, null: false
     t.integer "number", default: 1, null: false
-    t.decimal "starting_price", null: false
-    t.decimal "price", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
     t.bigint "entity_transaction_id", null: false
     t.bigint "money_transaction_id"
     t.datetime "created_at", null: false
@@ -103,8 +103,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
   end
 
   create_table "installments", force: :cascade do |t|
-    t.decimal "starting_price", null: false
-    t.decimal "price", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
     t.integer "number", null: false
     t.integer "month", null: false
     t.integer "year", null: false
@@ -118,7 +118,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
   end
 
   create_table "investments", force: :cascade do |t|
-    t.decimal "price", null: false
+    t.integer "price", null: false
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
@@ -138,8 +138,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.decimal "starting_price", null: false
-    t.decimal "price", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
     t.boolean "paid", default: false
     t.string "money_transaction_type"
     t.bigint "user_id", null: false
@@ -156,7 +156,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.integer "agency_number"
     t.integer "account_number"
     t.boolean "active", default: true, null: false
-    t.decimal "balance", default: "0.0", null: false
+    t.integer "balance", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "bank_id", null: false
     t.datetime "created_at", null: false
@@ -170,8 +170,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_05_00_000003) do
     t.integer "days_until_due_date", null: false
     t.date "current_closing_date", null: false
     t.date "current_due_date", null: false
-    t.decimal "min_spend", null: false
-    t.decimal "credit_limit", null: false
+    t.integer "min_spend", null: false
+    t.integer "credit_limit", null: false
     t.boolean "active", null: false
     t.bigint "user_id", null: false
     t.bigint "card_id", null: false

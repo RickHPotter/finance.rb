@@ -23,7 +23,7 @@ FactoryBot.define do
     date { Date.new 2023, 12, 16 }
     ct_description { "La Plaza Paraty" }
     ct_comment { nil }
-    price { 140.00 }
+    price { 14_000 }
     month { (Date.new(date.year, date.month) + 1.month).month }
     year { (Date.new(date.year, date.month) + 1.month).year }
 
@@ -64,7 +64,7 @@ FactoryBot.define do
       date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
       ct_description { Faker::Lorem.sentence }
       ct_comment { [ Faker::Lorem.sentence, nil, nil, nil, nil ].sample }
-      price { Faker::Number.decimal(l_digits: rand(1..3)) }
+      price { Faker::Number.number(digits: rand(3..5)) }
 
       user { random_custom_create(:user) }
       user_card { random_custom_create(:user_card, reference: { user: }) }

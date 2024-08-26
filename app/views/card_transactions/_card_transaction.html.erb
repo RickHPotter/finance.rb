@@ -5,7 +5,7 @@
                   data: { "turbo-frame": "edit_card_transaction_#{card_transaction.id}" } %>
     </h1>
     <p class="my-5">
-      <%= card_transaction.price %>
+      <%= card_transaction.price / 100.0 %>
     </p>
 
     <div class="w-full mt-2 flex flex-wrap border shadow p-2 rounded-md">

@@ -1,29 +1,29 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
 
-  <%= form_with(model: card_transaction, id: "form", class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-    <%= form.hidden_field :user_id, value: current_user.id %>
-    <%= hidden_field_tag :closing_date_day, card_transaction&.user_card&.current_closing_date&.day, data: { reactive_form_target: "closingDateDay" } %>
-    <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: "daysUntilDueDate" } %>
+  <%= form_with(model: card_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+    <%= form.hidden_field :user_id, value: @user.id %>
+    <%= hidden_field_tag :closing_date_day, card_transaction&.user_card&.current_closing_date&.day, data: { reactive_form_target: :closingDateDay } %>
+    <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: :daysUntilDueDate } %>
 
     <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :ct_description,
-            class: autosave_input_class, autofocus: true, autocomplete: "off",
-            data: { autosave_target: "input", action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
+            class: autosave_input_class, autofocus: true, autocomplete: :off,
+            data: { autosave_target: :input, action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
     </div>
 
     <div class="w-full mb-6">
       <%= render "shared/svgs/quote" %>
       <%= form.text_area \
             :ct_comment,
-            class: "text-gray-500 px-4 pt-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
-            data: { controller: "text-area-autogrow", autosave_target: "input", action:, placeholder: "Any comment about", placeholder_type: :word } %>
+            class: "text-gray-500 px-4 pt-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
+            data: { controller: "text-area-autogrow", autosave_target: :input, action:, placeholder: "Any comment about", placeholder_type: :word } %>
     </div>
 
-    <div class="lg:flex lg:gap-8 w-full mb-3">
-      <div class="hw-cb w-full lg:w-2/5 mb-3">
+    <div class="lg:flex lg:gap-2 w-full mb-3">
+      <div class="hw-cb w-full lg:w-2/12 mb-3 wallet-icon">
         <%= form.combobox \
               :user_card_id,
               @user_cards,
@@ -31,53 +31,65 @@
               render_in: { partial: "user_card" },
               include_blank: false,
               placeholder: "Card",
-              data: { reactive_form_target: "input", action: "hw-combobox:selection->reactive-form#requestSubmit", value: ".hw-combobox__input" } %>
+              data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmit", value: ".hw-combobox__input" } %>
       </div>
 
-      <div class="w-full lg:w-1/5 mb-3 lg:mb-0">
+      <div class="hw-cb w-full lg:w-2/12 mb-3 plus-icon">
+        <%= form.combobox \
+              :category_transaction,
+              @categories,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: "Category",
+              data: { action: "hw-combobox:selection->reactive-form#insertChip", value: ".hw-combobox__input" } %>
+      </div>
+
+      <div class="hw-cb w-full lg:w-2/12 mb-3 user-icon">
+        <%= form.combobox \
+              :entity_transaction,
+              @entities,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: "Entity",
+              data: { action: "hw-combobox:selection->reactive-form#popModal", value: ".hw-combobox__input" } %>
+      </div>
+
+      <div class="w-full lg:w-3/12 mb-3 lg:mb-0">
         <%= render TextFieldComponent.new \
               form, :date,
               id: :card_transaction_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
-              data: { reactive_form_target: "dateInput", action: "change->reactive-form#updateInstallmentsDates" } %>
-
-        <%#= tag.div \
-               "inline-datepicker": true,
-               "datepicker-format": "yyyy/mm/dd",
-               data: { controller: :datepicker,
-                       datepicker_target: :date,
-                       field_id: :card_transaction_date,
-                       action: "changeDate->datepicker#updateDate",
-                       date: @card_transaction.date.strftime("%Y-%m-%d") } %>
+              data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" } %>
       </div>
 
-      <div class="flex lg:w-2/5 gap-8 lg:gap-4">
-        <div class="w-1/2 lg:w-3/4 mb-3 lg:mb-0">
+      <div class="flex lg:w-12/12">
+        <div class="w-2/3 lg:w-3/5 mb-3 lg:mb-0">
           <%= render TextFieldComponent.new \
                 form, :price,
                 svg: :money,
                 placeholder: "Amount",
                 class: "font-graduate",
-                data: { reactive_form_target: "priceInput", action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
+                data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
         </div>
 
-        <div class="w-1/2 lg:w-1/4">
+        <div class="w-1/3 lg:w-2/5">
           <%= render TextFieldComponent.new \
                 form, :installments_count,
                 type: :number,
                 svg: :number,
                 min: 1, max: 72,
-                value: [ @card_transaction.installments_count, 1 ].max,
+                value: [ @card_transaction.installments.size, @card_transaction.installments_count, 1 ].max,
                 class: "font-graduate",
                 placeholder: "Installments",
-                data: { reactive_form_target: "installmentsCountInput", action: "input->reactive-form#updateInstallmentsPrices" } %>
+                data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" } %>
         </div>
       </div>
     </div>
 
     <!-- Installments -->
-    <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-4" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
+         class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-3" >
       <template data-nested-form-target="template">
         <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
@@ -91,11 +103,11 @@
       <!-- inserted elements -->
       <div data-nested-form-target="target"></div>
 
-      <button data-reactive-form-target="addInstallment" data-action="nested-form#add" class="hidden"> </button>
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addInstallment, action: "nested-form#add" } %>
     </div>
 
     <!-- Categories -->
-    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="pb-4 xs:grid md:flex justify-center">
       <template data-nested-form-target="template">
         <%= form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields| %>
           <%= render "category_transaction_fields", form: category_transaction_fields %>
@@ -109,7 +121,7 @@
       <!-- inserted elements -->
       <div data-nested-form-target='target'></div>
 
-      <%= render ButtonComponent.new(options: { label: action_model(action_name, CategoryTransaction), colour: :orange, data: { action: "nested-form#add" } }) %>
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addCategory, action: "nested-form#add" } %>
     </div>
 
     <!-- Entities -->
@@ -127,10 +139,10 @@
       <!-- inserted elements -->
       <div data-nested-form-target='target'></div>
 
-      <%= render ButtonComponent.new(options: { label: action_model(action_name, EntityTransaction), colour: :orange, data: { action: "nested-form#add" } }) %>
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
     </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit" } %>
-    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: "updateButton" } %>
+    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

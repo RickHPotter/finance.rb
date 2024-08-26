@@ -8,8 +8,8 @@ class CreateUserCards < ActiveRecord::Migration[7.0]
       t.integer :days_until_due_date, null: false
       t.date :current_closing_date, null: false
       t.date :current_due_date, null: false
-      t.decimal :min_spend, null: false
-      t.decimal :credit_limit, null: false
+      t.integer :min_spend, null: false
+      t.integer :credit_limit, null: false
       t.boolean :active, null: false
 
       t.references :user, null: false

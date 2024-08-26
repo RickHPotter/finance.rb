@@ -23,8 +23,8 @@ FactoryBot.define do
     days_until_due_date { 7 }
     current_closing_date { Date.current }
     current_due_date { current_closing_date - days_until_due_date }
-    min_spend { 100.00 }
-    credit_limit { 2000.00 }
+    min_spend { 10_000 }
+    credit_limit { 200_000 }
     active { true }
 
     user { custom_create(:user) }
@@ -43,8 +43,8 @@ FactoryBot.define do
       user_card_name { "#{card.card_name} - #{user.first_name}" }
       days_until_due_date { rand(4..10) }
       current_closing_date { Date.new(rand(2023..2024), rand(1..12), rand(1..28)) }
-      min_spend { [ 0.00, 100.00, 200.00 ].sample }
-      credit_limit { Faker::Number.decimal(l_digits: rand(3..4)).ceil + 200.00 }
+      min_spend { [ 0o00, 10_000, 20_000 ].sample }
+      credit_limit { Faker::Number.number(digits: rand(6..7)) + 20_000 }
       active { true }
 
       user { random_custom_create(:user) }
