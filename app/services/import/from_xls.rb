@@ -5,6 +5,7 @@ module Import
     attr_reader :file_path, :xlsx, :headers, :hash_collection
 
     OBLIGATORY_HEADERS = %i[date description category category2 price reference].freeze
+    SKIPPABLE_INSTALLMENT_DESCRIPTIONS = %w[plano titulo estorno].freeze
 
     def initialize(file_path)
       @file_path = file_path
@@ -68,19 +69,25 @@ module Import
     end
 
     def additional_params(attributes)
-      *ct_description, possible_installment = attributes[:description].to_s.split
-      ct_description = ct_description.join(" ")
+      *possible_description, possible_installment = attributes[:description].to_s.split
       ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
-      if ct_description.parameterize.exclude?("titulo") && possible_installment.include?("/")
-        installment_id, installments_count = possible_installment.split("/").map(&:to_i)
-      else
-        ct_description = attributes[:description]
-        installment_id = 1
-        installments_count = 1
-      end
+      params = { ct_description: attributes[:description], installment_id: 1, installments_count: 1, ref_month: ref_month_year.month, ref_year: ref_month_year.year }
+      return params if possible_description.empty?
+      return params if not_standalone?(possible_description, possible_installment)
 
-      { ct_description:, installment_id:, installments_count:, ref_month: ref_month_year.month, ref_year: ref_month_year.year }
+      params[:ct_description] = possible_description.join(" ")
+      params[:installment_id], params[:installments_count] = possible_installment.split("/").map(&:to_i)
+
+      params
+    end
+
+    def not_standalone?(description, installments)
+      bill_or_subscription = SKIPPABLE_INSTALLMENT_DESCRIPTIONS.include?(description.first.parameterize)
+      consists_of_two_installment_parts = installments.split("/").count != 2
+      both_are_numbers = installments.split("/") != installments.split("/").map(&:to_i).map(&:to_s)
+
+      bill_or_subscription || consists_of_two_installment_parts || both_are_numbers
     end
   end
 end
