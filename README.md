@@ -257,6 +257,8 @@ continuing the project.
   - ⌛ The first form should be for `Cards`.
   - ⌛ The second form should be for `Entities`.
   - ⌛ The third form should be for `Categories`.
+- Extra:
+  - ✅ Create an import service.
 
 ### GAARA-12/fe-04: Finish the MVP
 

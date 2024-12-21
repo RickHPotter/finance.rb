@@ -63,8 +63,24 @@ module Import
           attributes[attribute] = value
         end
 
-        @hash_collection[sheet_name] << attributes
+        @hash_collection[sheet_name] << attributes.merge!(additional_params(attributes))
       end
+    end
+
+    def additional_params(attributes)
+      *ct_description, possible_installment = attributes[:description].to_s.split
+      ct_description = ct_description.join(" ")
+      ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
+
+      if ct_description.parameterize.exclude?("titulo") && possible_installment.include?("/")
+        installment_id, installments_count = possible_installment.split("/").map(&:to_i)
+      else
+        ct_description = attributes[:description]
+        installment_id = 1
+        installments_count = 1
+      end
+
+      { ct_description:, installment_id:, installments_count:, ref_month: ref_month_year.month, ref_year: ref_month_year.year }
     end
   end
 end

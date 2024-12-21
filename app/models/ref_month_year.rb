@@ -22,6 +22,24 @@ class RefMonthYear
     @year = year % 100
   end
 
+  # Initialises a new {RefMonthYear} instance from a string.
+  #
+  # @param month_year [String] The month (e.g., "May" or "NOV") and year (e.g., "2023" or "23" or even "- 23").
+  #
+  # @example Create a new RefMonthYear instance:
+  #   ref_month_year = RefMonthYear.from_string("NOV <24>")
+  #
+  # @return [RefMonthYear] A new instance of {RefMonthYear}.
+  #
+  def self.from_string(month_year)
+    month, year = month_year.split
+
+    month = [ *MONTHS_ABBR, *MONTHS_FULL ].map(&:parameterize).index(month.parameterize) + 1
+    year = year.gsub(/[^\d.-]+/, "").rjust(4, "20").to_i
+
+    RefMonthYear.new(month, year.to_i)
+  end
+
   # Gets the formatted `month` and `year` string.
   #
   # @example Get the `month` and year for a CardTransaction:
