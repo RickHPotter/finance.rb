@@ -27,10 +27,10 @@ class User < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  has_many :user_cards, dependent: :destroy
-  has_many :card_transactions, dependent: :destroy
-  has_many :user_bank_accounts, dependent: :destroy
   has_many :money_transactions, dependent: :destroy
+  has_many :user_bank_accounts, dependent: :destroy
+  has_many :card_transactions, dependent: :destroy
+  has_many :user_cards, dependent: :destroy
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
 
@@ -81,8 +81,8 @@ class User < ApplicationRecord
   #
   def create_built_ins
     categories.push(
-      Category.new(built_in: true, category_name: "Exchange"),
-      Category.new(built_in: true, category_name: "Exchange Return")
+      Category.new(built_in: true, category_name: "EXCHANGE"),
+      Category.new(built_in: true, category_name: "EXCHANGE RETURN")
     )
   end
 

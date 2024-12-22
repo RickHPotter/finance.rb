@@ -90,14 +90,14 @@ module ExchangeMoneyTransactable
   #
   def money_transaction_params
     {
-      mt_description: "Exchange - #{transactable} #{number}/#{entity_transaction.exchanges_count}",
+      mt_description: "EXCHANGE - #{transactable} #{number}/#{entity_transaction.exchanges_count}",
       starting_price:, price:,
       date: transactable.date, month: transactable.month, year: transactable.year,
       user_id: user.id,
       money_transaction_type: model_name.name,
       user_bank_account_id: user.user_bank_accounts.ids.sample,
       category_transactions: FactoryBot.build_list(
-        :category_transaction, 1, transactable: self, category: user.built_in_category("Exchange Return")
+        :category_transaction, 1, transactable: self, category: user.built_in_category("EXCHANGE RETURN")
       )
     }
   end

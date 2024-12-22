@@ -14,7 +14,7 @@ class CardTransactionsController < ApplicationController
 
   def new
     installments_count = 6
-    @user_card = @user.user_cards.third
+    @user_card = @user.user_cards.last
     @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, installments_count:)
     @card_transaction.build_month_year
     @card_transaction.category_transactions.build(category_id: @categories.first[1])
@@ -97,7 +97,7 @@ class CardTransactionsController < ApplicationController
     params.require(:card_transaction).permit(
       %i[id ct_description ct_comment date month year price user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
-      installments_attributes: %i[id price number month year],
+      installments_attributes: %i[id number price month year],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
         { exchanges_attributes: %i[id exchange_type price] }

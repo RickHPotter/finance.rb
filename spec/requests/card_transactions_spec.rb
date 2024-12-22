@@ -22,14 +22,14 @@ RSpec.describe "CardTransactions", type: :request do
   def check_paying_entities(card_transaction)
     expect(card_transaction.paying_entities).to be_present
     expect(card_transaction.paying_transactions.flat_map(&:exchanges)).to be_present
-    expect(card_transaction.built_in_categories_by(category_name: "Exchange")).to be_present
+    expect(card_transaction.built_in_categories_by(category_name: "EXCHANGE")).to be_present
   end
 
   def check_non_paying_entities(card_transaction)
     expect(card_transaction.non_paying_entities).to be_present
     expect(card_transaction.non_paying_transactions).to be_present
     expect(card_transaction.non_paying_transactions.flat_map(&:exchanges)).to be_empty
-    expect(card_transaction.built_in_categories_by(category_name: "Exchange")).to_not be_present
+    expect(card_transaction.built_in_categories_by(category_name: "EXCHANGE")).to_not be_present
   end
 
   def check_installments(installments)

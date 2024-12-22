@@ -11,13 +11,8 @@ module Import
 
     def import
       create_user
-
-      @hash_collection.each do |card, transactions|
-        user_card = create_user_card(card)
-        create_collection(user_card, transactions)
-      end
-
-      Rails.logger.info "Date creation finished."
+      create_data
+      create_transactions
     end
 
     private
@@ -31,17 +26,27 @@ module Import
     end
 
     def create_user_card(card_name)
-      Rails.logger.info "Creating card: #{card_name}."
-
       bank = Bank.find_or_create_by(bank_name: card_name, bank_code: card_name.upcase)
       card = Card.find_or_create_by(card_name: card_name, bank:)
 
-      UserCard.create(user:, card:, current_due_date: Date.current.end_of_month, days_until_due_date: 7, min_spend: 0, credit_limit: 1000, active: true)
+      UserCard.find_or_create_by(user:, card:, min_spend: 0, credit_limit: 1000, active: true) do |user_card|
+        user_card.current_due_date = Date.current.end_of_month
+        user_card.days_until_due_date = 7
+      end
+    end
+
+    def create_data
+      @hash_collection.each do |card, transactions|
+        Rails.logger.info "[START] DATA CREATION #{card}.".blue
+
+        user_card = create_user_card(card)
+        create_collection(user_card, transactions)
+
+        Rails.logger.info "[ENDED] DATA CREATION #{card}.".green
+      end
     end
 
     def create_collection(user_card, transactions)
-      Rails.logger.info "Creating data estructure for card: #{user_card.user_card_name}."
-
       @collection[user_card.user_card_name] = {}
 
       standalone_transactions, transactions_with_installments = transactions.partition { |trans| trans[:installments_count] == 1 }
@@ -51,18 +56,16 @@ module Import
     end
 
     def create_standalone_transactions(user_card, standalone_transactions)
-      Rails.logger.info "Creating standalone transactions for card: #{user_card.user_card_name}."
-
       @collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |trans|
         card_transaction = { ct_description: trans[:ct_description], price: trans[:price], date: trans[:date], user_id:, user_card_id: user_card.id }
 
-        Params::CardTransactionParamsService.new(card_transaction:, installments: { count: 1 }, category_transactions: [], entity_transactions: [])
+        category_transactions, entity_transactions = create_category_and_entity_transactions(trans)
+
+        Params::CardTransactionParamsService.new(card_transaction:, installments: { count: 1 }, category_transactions:, entity_transactions:)
       end
     end
 
     def create_transactions_with_installments(user_card, transactions_with_installments)
-      Rails.logger.info "Creating transactions with installments for card: #{user_card.user_card_name}."
-
       user_card_name = user_card.user_card_name
 
       @collection[user_card_name][:with_pending_installments] = transactions_with_installments
@@ -73,14 +76,43 @@ module Import
 
         installments = prepare_installments(user_card, transaction_zero)
         price = installments.pluck(:price).sum
+        category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero, installments)
 
         @collection[user_card_name][:with_installments] << Params::CardTransactionParamsService.new(
           card_transaction: { ct_description: transaction_zero[:ct_description], price:, date: transaction_zero[:date], user_id:, user_card_id: user_card.id },
           installments:,
-          category_transactions: [],
-          entity_transactions: []
+          category_transactions:,
+          entity_transactions:
         )
       end
+    end
+
+    def create_category_and_entity_transactions(trans, installments = [])
+      category = @user.categories.find_or_create_by(category_name: trans[:category])
+      category_transactions = [ { category_id: category.id } ]
+
+      entity = @user.entities.find_or_create_by(entity_name: trans[:entity]) if trans[:entity].present?
+      entity_transactions = create_entity_transactions(entity, trans[:is_payer], trans[:price], installments)
+
+      [ category_transactions, entity_transactions ]
+    end
+
+    def create_entity_transactions(entity, is_payer, price, installments)
+      return [] if entity.nil?
+
+      exchanges_attributes = []
+
+      if is_payer
+        installments = [ { price: } ] if installments.blank?
+
+        exchanges_attributes = installments.map do |installment|
+          { exchange_type: :monetary, price: installment[:price] }
+        end
+
+        price = exchanges_attributes.pluck(:price).sum
+      end
+
+      [ { entity_id: entity.id, is_payer:, price:, exchanges_attributes: } ]
     end
 
     def prepare_installments(user_card, transaction_zero)
@@ -94,7 +126,7 @@ module Import
       installments = indexes.map do |index|
         installment = @collection[user_card_name][:with_pending_installments][index]
 
-        { number: installment[:installment_id], price: installment[:price], month: installment[:ref_month], year: installment[:ref_year], date: installment[:date] }
+        { number: installment[:installment_id], price: installment[:price], month: installment[:ref_month], year: installment[:ref_year] }
       end
 
       indexes.reverse_each do |index|
@@ -110,7 +142,7 @@ module Import
         next if transaction[:installments_count] != installments_count
         next if transaction[:ct_description] != transaction_zero[:ct_description]
         next if transaction[:category] != transaction_zero[:category]
-        next if transaction[:category2] != transaction_zero[:category2]
+        next if transaction[:entity] != transaction_zero[:entity]
 
         index
       end.compact => indexes
@@ -174,6 +206,19 @@ module Import
 
       installments
     end
+
+    def create_transactions
+      @collection.each do |user_card_name, datum|
+        Rails.logger.info "[START] TRANSACTION CREATION #{user_card_name}.".blue
+
+        datum = datum.values.flatten
+        datum.each do |params_service|
+          CardTransaction.create(params_service.params[:card_transaction])
+        end
+
+        Rails.logger.info "[ENDED] TRANSACTION CREATION #{user_card_name}.".green
+      end
+    end
   end
 end
 
@@ -182,4 +227,9 @@ xlsx_service = Import::FromXls.new(File.open(File.join("/mnt", "c", "Users", "Ad
 xlsx_service.import
 hash_service = Import::FromHash.new(xlsx_service.hash_collection)
 hash_service.import
+
+keys = hash_service.hash_collection.keys
+keys.map do |key|
+hash_service.hash_collection[key].select { |t| t[:entity] != "EXCHANGE" }.pluck(:category)
+end.flatten.uniq
 =end
