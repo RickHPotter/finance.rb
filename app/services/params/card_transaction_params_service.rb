@@ -16,7 +16,7 @@ module Params
       {
         card_transaction: {
           ct_description: ct_description || "New CardTransaction #{DateTime.current.to_i}",
-          price:, date:, user_id:, user_card_id:,
+          price: price * 100, date:, user_id:, user_card_id:,
           installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
         }
       }
@@ -28,7 +28,7 @@ module Params
       return installments if installments.is_a? Array
 
       count = installments[:count] || 1
-      installment_price = (price / count).round(2)
+      installment_price = (price / count).round(2) * 100
 
       (1..count).map do |i|
         { number: i, price: installment_price }

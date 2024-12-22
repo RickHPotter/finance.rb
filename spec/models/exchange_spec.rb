@@ -7,8 +7,8 @@
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
 #  number                :integer          default(1), not null
-#  starting_price        :decimal(, )      not null
-#  price                 :decimal(, )      not null
+#  starting_price        :integer          not null
+#  price                 :integer          not null
 #  entity_transaction_id :bigint           not null
 #  money_transaction_id  :bigint
 #  created_at            :datetime         not null

@@ -5,7 +5,7 @@
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
-#  price                :decimal(, )      not null
+#  price                :integer          not null
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null

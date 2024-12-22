@@ -7,10 +7,10 @@
 #  id             :bigint           not null, primary key
 #  agency_number  :integer
 #  account_number :integer
+#  active         :boolean          default(TRUE), not null
+#  balance        :integer          default(0), not null
 #  user_id        :bigint           not null
 #  bank_id        :bigint           not null
-#  active         :boolean          default(TRUE), not null
-#  balance        :decimal(, )      default(0.0), not null
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
 #

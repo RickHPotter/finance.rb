@@ -10,8 +10,8 @@
 #  date                   :date             not null
 #  month                  :integer          not null
 #  year                   :integer          not null
-#  starting_price         :decimal(, )      not null
-#  price                  :decimal(, )      not null
+#  starting_price         :integer          not null
+#  price                  :integer          not null
 #  paid                   :boolean          default(FALSE)
 #  money_transaction_type :string
 #  user_id                :bigint           not null

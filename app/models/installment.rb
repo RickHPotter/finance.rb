@@ -5,8 +5,8 @@
 # Table name: installments
 #
 #  id                   :bigint           not null, primary key
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
+#  starting_price       :integer          not null
+#  price                :integer          not null
 #  number               :integer          not null
 #  month                :integer          not null
 #  year                 :integer          not null

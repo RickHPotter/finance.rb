@@ -7,7 +7,7 @@
 #  id                :bigint           not null, primary key
 #  is_payer          :boolean          default(FALSE), not null
 #  status            :integer          default("pending"), not null
-#  price             :decimal(, )      default(0.0), not null
+#  price             :integer          default(0), not null
 #  exchanges_count   :integer          default(0), not null
 #  entity_id         :bigint           not null
 #  transactable_type :string           not null
