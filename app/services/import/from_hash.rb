@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
 module Import
-  class FromHash
-    attr_reader :hash_collection, :collection
+  class FromHash # rubocop:disable Metrics/ClassLength
+    attr_reader :hash_collection, :collection, :user, :user_id
 
     def initialize(hash_collection)
       @hash_collection = hash_collection
-      @collection = []
+      @collection = {}
     end
 
     def import
       create_user
 
       @hash_collection.each do |card, transactions|
-        Rails.logger.info "STARTING data creation for card: #{card}"
-
-        user_card_id = create_user_card(card)
-        create_transactions(user_card_id, transactions)
+        user_card = create_user_card(card)
+        create_collection(user_card, transactions)
       end
+
+      Rails.logger.info "Date creation finished."
     end
 
     private
@@ -27,48 +27,85 @@ module Import
         user.password = "123123"
         user.confirmed_at = Date.current
       end
+      @user_id = @user.id
     end
 
     def create_user_card(card_name)
+      Rails.logger.info "Creating card: #{card_name}."
+
       bank = Bank.find_or_create_by(bank_name: card_name, bank_code: card_name.upcase)
       card = Card.find_or_create_by(card_name: card_name, bank:)
 
-      user_card = UserCard.new(user: @user, card:)
-      @user.user_cards << user_card
-
-      user_card
+      UserCard.create(user:, card:, current_due_date: Date.current.end_of_month, days_until_due_date: 7, min_spend: 0, credit_limit: 1000, active: true)
     end
 
-    def create_transactions(user_card, transactions)
-      transactions.each do |transaction|
-        next if transaction[:status] == :finished
+    def create_collection(user_card, transactions)
+      Rails.logger.info "Creating data estructure for card: #{user_card.user_card_name}."
 
-        create_params(transaction, user_card)
+      @collection[user_card.user_card_name] = {}
+
+      standalone_transactions, transactions_with_installments = transactions.partition { |trans| trans[:installments_count] == 1 }
+
+      create_standalone_transactions(user_card, standalone_transactions)
+      create_transactions_with_installments(user_card, transactions_with_installments)
+    end
+
+    def create_standalone_transactions(user_card, standalone_transactions)
+      Rails.logger.info "Creating standalone transactions for card: #{user_card.user_card_name}."
+
+      @collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |trans|
+        card_transaction = { ct_description: trans[:ct_description], price: trans[:price], date: trans[:date], user_id:, user_card_id: user_card.id }
+
+        Params::CardTransactionParamsService.new(card_transaction:, installments: { count: 1 }, category_transactions: [], entity_transactions: [])
       end
-
-      # @collection.each { |params| CardTransaction.create(params) }
     end
 
-    def create_params(transaction, user_card)
-      if transaction[:installments_count] == 1
-        { count: 1 }
-      else
-        prepare_installments(user_card, transaction)
-      end => installments
+    def create_transactions_with_installments(user_card, transactions_with_installments)
+      Rails.logger.info "Creating transactions with installments for card: #{user_card.user_card_name}."
 
-      price = transaction[:price]
-      price = installments.pluck(:price).sum if installments.is_a? Array
+      user_card_name = user_card.user_card_name
 
-      @collection << Params::CardTransactionParamsService.new(card_transaction: { price:, date: transaction[:date], user_id: @user.id, user_card_id: user_card.id },
-                                                              installments:,
-                                                              category_transactions: [],
-                                                              entity_transactions: [])
+      @collection[user_card_name][:with_pending_installments] = transactions_with_installments
+      @collection[user_card_name][:with_installments] = []
+
+      while @collection[user_card_name][:with_pending_installments].any?
+        transaction_zero = @collection[user_card_name][:with_pending_installments].first
+
+        installments = prepare_installments(user_card, transaction_zero)
+        price = installments.pluck(:price).sum
+
+        @collection[user_card_name][:with_installments] << Params::CardTransactionParamsService.new(
+          card_transaction: { ct_description: transaction_zero[:ct_description], price:, date: transaction_zero[:date], user_id:, user_card_id: user_card.id },
+          installments:,
+          category_transactions: [],
+          entity_transactions: []
+        )
+      end
     end
 
     def prepare_installments(user_card, transaction_zero)
+      user_card_name = user_card.user_card_name
       installments_count = transaction_zero[:installments_count]
 
-      indexes = @hash_collection[user_card.user_card_name].each_with_index.map do |transaction, index|
+      indexes = filter_indexes(user_card_name, transaction_zero, installments_count)
+      indexes = filter_indexes_again(indexes, user_card_name, transaction_zero, installments_count) if indexes.count > installments_count
+      indexes = filter_indexes_once_again(indexes, user_card_name, transaction_zero, installments_count) if indexes.count != installments_count
+
+      installments = indexes.map do |index|
+        installment = @collection[user_card_name][:with_pending_installments][index]
+
+        { number: installment[:installment_id], price: installment[:price], month: installment[:ref_month], year: installment[:ref_year], date: installment[:date] }
+      end
+
+      indexes.reverse_each do |index|
+        @collection[user_card_name][:with_pending_installments].delete_at(index)
+      end
+
+      validate_installments(transaction_zero, installments)
+    end
+
+    def filter_indexes(user_card_name, transaction_zero, installments_count)
+      @collection[user_card_name][:with_pending_installments].each_with_index.map do |transaction, index|
         next if transaction[:installments_count] == 1
         next if transaction[:installments_count] != installments_count
         next if transaction[:ct_description] != transaction_zero[:ct_description]
@@ -76,74 +113,73 @@ module Import
         next if transaction[:category2] != transaction_zero[:category2]
 
         index
-      end.compact
+      end.compact => indexes
 
-      case indexes.count <=> installments_count
-      when -1
-        debugger
-        raise StandardError, "There are #{installments_count} installments declared, but only #{indexes.count} were found for #{transaction_zero[:ct_description]}."
-      when 0
-        indexes.map do |index|
-          @hash_collection[user_card.user_card_name][index][:status] = :finished
+      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:ct_description])
+    end
 
-          transaction = @hash_collection[user_card.user_card_name][index]
+    def filter_indexes_again(indexes, user_card_name, transaction_zero, installments_count)
+      indexes.map do |index|
+        transaction = @collection[user_card_name][:with_pending_installments][index]
 
-          { number: transaction[:installment_id], price: transaction[:price], month: transaction[:ref_month], year: transaction[:ref_year], date: transaction[:date] }
-        end
-      when 1
-        debugger if indexes.count == 32
-        indexes.map do |index|
-          transaction = @hash_collection[user_card.user_card_name][index]
+        next if transaction[:price] - transaction_zero[:price] <= transaction_zero[:price] * 0.06
+        next if transaction[:price] - transaction_zero[:price] >= transaction_zero[:price] * 0.06 * -1
 
-          next if transaction[:price] - transaction_zero[:price] <= transaction_zero[:price] * 0.06
-          next if transaction[:price] - transaction_zero[:price] >= transaction_zero[:price] * 0.06 * -1
+        index
+      end.compact => indexes
 
-          @hash_collection[user_card.user_card_name][index][:status] = :finished
+      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:ct_description])
+    end
 
-          { number: transaction[:installment_id], price: transaction[:price], month: transaction[:ref_month], year: transaction[:ref_year], date: transaction[:date] }
-        end.compact
-      end => installments
+    def filter_indexes_once_again(indexes, user_card_name, transaction_zero, installments_count)
+      transaction_zero_date = transaction_zero[:date]
+      transaction_zero_reference = Date.new(2000 + transaction_zero[:ref_year], transaction_zero[:ref_month])
 
-      @old_installments = installments
+      new_indexes = []
+      indexes.each do |index|
+        installment = @collection[user_card_name][:with_pending_installments][index]
+        pos = new_indexes.count
+        next_pos = pos + 1
 
-      if installments.count != installments_count
-        transaction_zero_date = transaction_zero[:date]
-        transaction_zero_reference = Date.new(2000 + transaction_zero[:ref_year], transaction_zero[:ref_month])
+        installment_number = installment[:installment_id]
+        installment_date = installment[:date]
+        installment_reference = Date.new(2000 + installment[:ref_year], installment[:ref_month])
 
-        new_installments = [ installments.shift ]
-        installments.each do |installment|
-          pos = new_installments.count
-          next_pos = pos + 1
+        next if installment_number != next_pos
+        next if installment_date != transaction_zero_date.next_month(pos)
+        next if installment_reference != transaction_zero_reference.next_month(pos)
 
-          installment_date = installment[:date]
-          installment_reference = Date.new(2000 + installment[:year], installment[:month])
-
-          next if installment[:number] != next_pos
-          next if installment_date != transaction_zero_date.next_month(pos)
-          next if installment_reference != transaction_zero_reference.next_month(pos)
-
-          new_installments << installment
-        end
-
-        installments = new_installments
+        new_indexes << index
       end
 
-      installments = installments.sort_by { |installment| installment[:number] }
-      debugger if transaction_zero[:ct_description] == "SENDAS" && transaction_zero[:price] == -73.69
-      validate_installments(transaction_zero, installments)
+      validate_installments_count_by_indexes(new_indexes, installments_count, transaction_zero[:ct_description])
+    end
 
-      installments
+    def validate_installments_count_by_indexes(indexes, installments_count, ct_description)
+      return indexes if indexes.count >= installments_count
+
+      raise StandardError, "Expected #{installments_count} installments, got: #{indexes.count} for #{ct_description}."
     end
 
     def validate_installments(transaction_zero, installments)
+      installments.sort_by! { |installment| installment[:number] }
+
       if transaction_zero[:installments_count] != installments.count
-        debugger
         raise StandardError, "Unable to decipher these installments: #{transaction_zero}\n#{installments}"
       end
 
       installments.each_with_index do |installment, index|
         raise StandardError, "Installment no. #{installment[:number]} is not #{index + 1}: #{transaction_zero}\n#{installment}" if installment[:number] != index + 1
       end
+
+      installments
     end
   end
 end
+
+=begin # rubocop:disable all
+xlsx_service = Import::FromXls.new(File.open(File.join("/mnt", "c", "Users", "Administrator", "Downloads", "finance.xlsx")))
+xlsx_service.import
+hash_service = Import::FromHash.new(xlsx_service.hash_collection)
+hash_service.import
+=end

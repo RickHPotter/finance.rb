@@ -18,9 +18,11 @@ module Import
       @xlsx.sheets.each do |sheet_name|
         next if sheet_name == "PIX"
 
-        Rails.logger.info "STARTING data extraction from sheet: #{sheet_name}"
+        Rails.logger.info "Extracting data from sheet: #{sheet_name}."
         import_sheet(@xlsx.sheet(sheet_name), sheet_name)
       end
+
+      Rails.logger.info "Data extraction finished."
 
       # Import::FromHash.new(@hash_collection).import
     end
@@ -54,7 +56,6 @@ module Import
 
       (2..sheet.last_row).each do |row_index|
         row_array = sheet.row(row_index)
-        next if row_array.compact_blank.empty?
 
         attributes = {}
         row_array.each_with_index do |value, index|
@@ -63,6 +64,8 @@ module Import
           attribute = @headers[sheet_name][index]
           attributes[attribute] = value
         end
+
+        next if attributes.compact_blank.empty?
 
         @hash_collection[sheet_name] << attributes.merge!(additional_params(attributes))
       end
