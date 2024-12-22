@@ -27,12 +27,12 @@ class User < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  has_many :user_cards
-  has_many :card_transactions
-  has_many :user_bank_accounts
-  has_many :money_transactions
-  has_many :categories
-  has_many :entities
+  has_many :user_cards, dependent: :destroy
+  has_many :card_transactions, dependent: :destroy
+  has_many :user_bank_accounts, dependent: :destroy
+  has_many :money_transactions, dependent: :destroy
+  has_many :categories, dependent: :destroy
+  has_many :entities, dependent: :destroy
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
