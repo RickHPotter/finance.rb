@@ -15,11 +15,15 @@ module Import
     end
 
     def import
+      Rails.logger.info "[START]".blue
+
       @xlsx.sheets.each do |sheet_name|
         next if sheet_name.include? "PIX"
 
         import_sheet(@xlsx.sheet(sheet_name), sheet_name)
       end
+
+      Rails.logger.info "[ENDED]".green
 
       # Import::FromHash.new(@hash_collection).import
     end

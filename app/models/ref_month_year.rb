@@ -19,7 +19,7 @@ class RefMonthYear
   #
   def initialize(month, year)
     @month = month
-    @year = year % 100
+    @year = year.to_s.rjust(4, "20").to_i
   end
 
   # Initialises a new {RefMonthYear} instance from a string.

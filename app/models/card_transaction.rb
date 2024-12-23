@@ -28,6 +28,8 @@ class CardTransaction < ApplicationRecord
   include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :imported
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card
@@ -57,6 +59,8 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def money_transaction_date
+    return end_of_month if imported == true
+
     closing_days      = user_card.current_closing_date.day
     next_closing_date = next_date(date:, days: closing_days)
     next_due_date     = next_closing_date + user_card.days_until_due_date

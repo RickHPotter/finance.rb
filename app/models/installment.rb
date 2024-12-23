@@ -33,6 +33,8 @@ class Installment < ApplicationRecord
 
   # @callbacks ................................................................
   # @scopes ...................................................................
+  scope :by, ->(month:, year:, user_id:, user_card_id:) { joins(:card_transaction).where(month:, year:, card_transaction: { user_id:, user_card_id: }) }
+
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
@@ -42,6 +44,8 @@ class Installment < ApplicationRecord
   # @return [Date].
   #
   def money_transaction_date
+    return end_of_month if card_transaction.imported == true
+
     closing_days      = user_card.current_closing_date.day
     next_closing_date = next_date(date:, days: closing_days, months: number - 1)
     next_due_date     = next_closing_date + user_card.days_until_due_date
@@ -76,9 +80,7 @@ class Installment < ApplicationRecord
   # @return [String] The generated comment.
   #
   def mt_comment
-    installments = Installment.includes(:money_transaction)
-                              .where(month:, year:, money_transaction: { user_id:, user_card_id: })
-                              .select("money_transaction_id", "installments.price", "installments.installments_count")
+    installments = Installment.by(month:, year:, user_id:, user_card_id:)
 
     x, y = installments.partition { |installment| installment.installments_count == 1 }
     in_one = x.sum(&:price).round(2)

@@ -10,9 +10,13 @@ module Import
     end
 
     def import
+      Rails.logger.info "[START]".blue
+
       create_user
       create_data
       create_transactions
+
+      Rails.logger.info "[ENDED]".green
     end
 
     private
