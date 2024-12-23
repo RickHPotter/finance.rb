@@ -77,10 +77,7 @@ module HasMonthYear
   # @return [void].
   #
   def set_month_year
-    if instance_of?(CardTransaction)
-      self.month ||= money_transaction_date.month
-      self.year  ||= money_transaction_date.year
-    elsif instance_of?(Installment)
+    if instance_of?(CardTransaction) || instance_of?(Installment)
       self.month ||= money_transaction_date.month
       self.year  ||= money_transaction_date.year
     else

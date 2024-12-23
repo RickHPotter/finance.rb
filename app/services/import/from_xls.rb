@@ -100,7 +100,11 @@ module Import
 
       category, entity = entity, category if category == "CARD" && entity.in?(%w[PAYMENT ADVANCE ESTORNO DESCONTO])
 
-      entity = nil if category.in?(%w[APOSTA LEISURE])
+      category = "DISCOUNT" if category == "DESCONTO"
+      category = "REVERSAL" if category == "ESTORNO"
+      category = "DISCOUNT" if category == "DESCONTO"
+      category = "BET"      if category == "APOSTA"
+      category = "FEES"     if category == "IOF / TAXA"
 
       is_payer = false if entity == "MOI"
 

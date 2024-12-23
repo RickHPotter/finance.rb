@@ -1,8 +1,13 @@
 <%= turbo_frame_tag :center_container do %>
-  <div class='w-full'>
-    <div class='flex justify-between items-center'>
-      <h1 class='text-white font-bold text-4xl'>Transactions</h1>
+  <div class="w-full">
+    <div class="flex justify-between items-center">
+      <h1 class="text-white font-bold text-4xl">Transactions</h1>
     </div>
 
+    <% @transactions.each do |transaction| %>
+      <h3><%= transaction.mt_description %></h3>
+      <h2><%= from_cent_based_to_float(transaction.price) %></h2>
+      <br>
+    <% end %>
   </div>
 <% end %>

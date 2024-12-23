@@ -33,6 +33,7 @@ class User < ApplicationRecord
   has_many :user_cards, dependent: :destroy
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
+  has_many :card_transaction_installments, through: :card_transactions, source: :installments
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true

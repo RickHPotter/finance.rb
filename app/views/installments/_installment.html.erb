@@ -1,0 +1,28 @@
+<%= turbo_frame_tag dom_id installment do %>
+  <tr class="<%= installment.card_transaction.categories&.first&.bg_colour || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+    <td class="w-4 p-4">
+      <div class="flex items-center">
+        <input
+            id="checkbox-table-search-1"
+            type="checkbox"
+            class="w-4 h-4 bg-gray-100 rounded focus:ring-blue-500 focus:ring-2" >
+         <label for="checkbox-table-search-1" class="sr-only">checkbox</label>
+      </div>
+    </td>
+    <td class="px-6 py-4">
+      <%= l installment.date, format: :long %>
+    </th>
+    <th scope="row" class="px-6 py-4 whitespace-nowrap border-x text-center" >
+      <%= installment.card_transaction.ct_description %>
+    </td>
+    <td class="px-6 py-4 border-x">
+      <%= installment.card_transaction.categories.pluck(:category_name).join(", ") %>
+    </td>
+    <td class="px-6 py-4 border-x">
+      <%= installment.card_transaction.entities.pluck(:entity_name).join(", ") %>
+    </td>
+    <th scope="row" class="px-6 py-4 font-mono whitespace-nowrap text-right" >
+      <%= from_cent_based_to_float(installment.price)%>
+    </td>
+  </tr>
+<% end %>
