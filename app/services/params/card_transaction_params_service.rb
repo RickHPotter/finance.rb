@@ -2,7 +2,7 @@
 
 module Params
   class CardTransactionParamsService
-    attr_accessor :ct_description, :price, :date, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
+    attr_accessor :ct_description, :price, :date, :month, :year, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
 
     def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})
       assign_card_transaction(card_transaction)
@@ -16,8 +16,15 @@ module Params
       {
         card_transaction: {
           ct_description: ct_description || "New CardTransaction #{DateTime.current.to_i}",
-          price:, date:, user_id:, user_card_id:,
-          installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
+          price:,
+          date:,
+          month:,
+          year:,
+          user_id:,
+          user_card_id:,
+          installments_attributes:,
+          category_transactions_attributes:,
+          entity_transactions_attributes:
         }
       }
     end
@@ -31,7 +38,7 @@ module Params
       installment_price = (price / count).round(2)
 
       (1..count).map do |i|
-        { number: i, price: installment_price }
+        { number: i, price: installment_price, month:, year: }
       end
     end
 
@@ -72,6 +79,8 @@ module Params
       @date           = card_transaction_options[:date]           || card_transaction[:date]
       @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
       @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
+      @month          = card_transaction_options[:month]          || card_transaction[:month]
+      @year           = card_transaction_options[:year]           || card_transaction[:year]
     end
 
     def assign_installments(installments)

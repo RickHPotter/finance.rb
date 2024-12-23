@@ -61,8 +61,7 @@ module Import
 
     def create_standalone_transactions(user_card, standalone_transactions)
       @collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |trans|
-        card_transaction = { ct_description: trans[:ct_description], price: trans[:price], date: trans[:date], user_id:, user_card_id: user_card.id }
-
+        card_transaction = trans.slice(:ct_description, :price, :date, :month, :year).merge({ user_id:, user_card_id: user_card.id })
         category_transactions, entity_transactions = create_category_and_entity_transactions(trans)
 
         Params::CardTransactionParamsService.new(card_transaction:, installments: { count: 1 }, category_transactions:, entity_transactions:)
@@ -83,7 +82,7 @@ module Import
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero, installments)
 
         @collection[user_card_name][:with_installments] << Params::CardTransactionParamsService.new(
-          card_transaction: { ct_description: transaction_zero[:ct_description], price:, date: transaction_zero[:date], user_id:, user_card_id: user_card.id },
+          card_transaction: transaction_zero.slice(:ct_description, :date, :month, :year).merge({ price:, user_id:, user_card_id: user_card.id }),
           installments:,
           category_transactions:,
           entity_transactions:
@@ -130,7 +129,7 @@ module Import
       installments = indexes.map do |index|
         installment = @collection[user_card_name][:with_pending_installments][index]
 
-        { number: installment[:installment_id], price: installment[:price], month: installment[:ref_month], year: installment[:ref_year] }
+        { number: installment[:installment_id], price: installment[:price], month: installment[:month], year: installment[:year] }
       end
 
       indexes.reverse_each do |index|
@@ -169,7 +168,7 @@ module Import
 
     def filter_indexes_once_again(indexes, user_card_name, transaction_zero, installments_count)
       transaction_zero_date = transaction_zero[:date]
-      transaction_zero_reference = Date.new(2000 + transaction_zero[:ref_year], transaction_zero[:ref_month])
+      transaction_zero_reference = Date.new(2000 + transaction_zero[:year], transaction_zero[:month])
 
       new_indexes = []
       indexes.each do |index|
@@ -179,7 +178,7 @@ module Import
 
         installment_number = installment[:installment_id]
         installment_date = installment[:date]
-        installment_reference = Date.new(2000 + installment[:ref_year], installment[:ref_month])
+        installment_reference = Date.new(2000 + installment[:year], installment[:month])
 
         next if installment_number != next_pos
         next if installment_date != transaction_zero_date.next_month(pos)
@@ -217,7 +216,7 @@ module Import
 
         datum = datum.values.flatten
         datum.each do |params_service|
-          CardTransaction.create(params_service.params[:card_transaction])
+          CardTransaction.create(params_service.params[:card_transaction].merge(imported: true))
         end
 
         Rails.logger.info "[ENDED] TRANSACTION CREATION #{user_card_name}.".green
@@ -225,15 +224,3 @@ module Import
     end
   end
 end
-
-=begin # rubocop:disable all
-xlsx_service = Import::FromXls.new(File.open(File.join("/mnt", "c", "Users", "Administrator", "Downloads", "finance.xlsx")))
-xlsx_service.import
-hash_service = Import::FromHash.new(xlsx_service.hash_collection)
-hash_service.import
-
-keys = hash_service.hash_collection.keys
-keys.map do |key|
-hash_service.hash_collection[key].select { |t| t[:entity] != "EXCHANGE" }.pluck(:category)
-end.flatten.uniq
-=end

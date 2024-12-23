@@ -54,48 +54,44 @@ module Import
 
     def build_hash(sheet, sheet_name)
       return if @headers[sheet_name].blank?
-      return if sheet.last_row < 2
 
-      @hash_collection[sheet_name] = []
-
-      (2..sheet.last_row).each do |row_index|
+      @hash_collection[sheet_name] = (2..sheet.last_row).map do |row_index|
         row_array = sheet.row(row_index)
-
         attributes = {}
-        row_array.each_with_index do |value, index|
-          attribute = @headers[sheet_name][index]
-          next if OBLIGATORY_HEADERS.none? attribute
 
-          attributes[attribute] = value
+        @headers[sheet_name].each do |index, header|
+          next if OBLIGATORY_HEADERS.exclude? header
+
+          attributes[header] = row_array[index]
         end
 
-        next if attributes.compact_blank.empty?
-
-        attributes[:price] = (attributes[:price].to_d * 100).to_i
-        @hash_collection[sheet_name] << attributes.merge!(additional_params(attributes))
-      end
+        parse_attributes(attributes.compact_blank)
+      end.compact
     end
 
-    def additional_params(attributes)
+    def parse_attributes(attributes)
+      return nil if attributes.empty?
+      return nil if attributes.slice(:description, :entity, :category).values == [ "PAGAMENTO FATURA", "PAYMENT", "CARD" ]
+
       *possible_description, possible_installment = attributes[:description].to_s.split
-      ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
-      params = { ct_description: attributes[:description],
-                 installment_id: 1,
-                 installments_count: 1,
-                 ref_month: ref_month_year.month,
-                 ref_year: ref_month_year.year }.merge(build_category_and_entity(attributes))
+      attributes.merge!(parse_category_and_entity(attributes))
+                .merge!(parse_month_year(attributes))
+                .merge!({ ct_description: attributes[:description],
+                          installment_id: 1,
+                          installments_count: 1,
+                          price: (attributes[:price].to_d * 100).to_i })
 
-      return params if possible_description.empty?
-      return params if not_standalone?(possible_description, possible_installment)
+      return attributes if possible_description.empty?
+      return attributes if not_standalone?(possible_description, possible_installment)
 
-      params[:ct_description] = possible_description.join(" ")
-      params[:installment_id], params[:installments_count] = possible_installment.split("/").map(&:to_i)
+      attributes[:ct_description] = possible_description.join(" ")
+      attributes[:installment_id], attributes[:installments_count] = possible_installment.split("/").map(&:to_i)
 
-      params
+      attributes
     end
 
-    def build_category_and_entity(attributes)
+    def parse_category_and_entity(attributes)
       category = attributes[:category]
       entity = attributes[:entity]
       is_payer = false
@@ -109,6 +105,12 @@ module Import
       is_payer = false if entity == "MOI"
 
       { category:, entity:, is_payer: }
+    end
+
+    def parse_month_year(attributes)
+      ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
+
+      { month: ref_month_year.month, year: ref_month_year.year }
     end
 
     def not_standalone?(description, installments)

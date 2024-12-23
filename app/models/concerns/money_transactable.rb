@@ -103,8 +103,9 @@ module MoneyTransactable
   def money_transaction_params
     params = {
       mt_description:,
-      month:, year:,
       date: money_transaction_date,
+      month:,
+      year:,
       user_id:,
       money_transaction_type: model_name.name
     }
