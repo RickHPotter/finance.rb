@@ -5,7 +5,8 @@ class PagesController < ApplicationController
   def home
     main_items = [ "New", "Card Transaction", "Transaction" ]
     main_icons = %w[plus credit_card wallet]
-    main_links = %i[new_card_transaction card_transactions transactions]
+    # main_links = %i[new_card_transaction card_transactions transactions]
+    main_links = %i[card_transactions new_card_transaction transactions]
 
     @main_tab = main_items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{main_icons[index]}", main_links[index], :center_container)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Params
-  class CardTransactionParamsService
+  class CardTransactionParams
     attr_accessor :ct_description, :price, :date, :month, :year, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
 
     def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})

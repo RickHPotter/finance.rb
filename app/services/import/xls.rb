@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 module Import
-  class FromXls
+  class Xls
     attr_reader :file_path, :xlsx, :headers, :hash_collection
 
+    delegate :log_with, to: LoggerService
+
     OBLIGATORY_HEADERS = %i[date description category entity price reference].freeze
+    OPTIONAL_HEADERS = %i[bank].freeze
+    HEADERS = OBLIGATORY_HEADERS + OPTIONAL_HEADERS
     SKIPPABLE_INSTALLMENT_DESCRIPTIONS = %w[plano titulo estorno].freeze
 
     def initialize(file_path)
@@ -15,38 +19,34 @@ module Import
     end
 
     def import
-      Rails.logger.info "[START]".blue
+      log_with do
+        # @xlsx.sheets.each do |sheet_name|
+        #   next if sheet_name.include? "SKIP"
+        #
+        #   import_sheet(@xlsx.sheet(sheet_name), sheet_name)
+        # end
 
-      @xlsx.sheets.each do |sheet_name|
-        next if sheet_name.include? "PIX"
-
-        import_sheet(@xlsx.sheet(sheet_name), sheet_name)
+        import_sheet(@xlsx.sheet("PIX"), "PIX")
       end
-
-      Rails.logger.info "[ENDED]".green
-
-      # Import::FromHash.new(@hash_collection).import
     end
 
     private
 
     def import_sheet(sheet, sheet_name)
-      Rails.logger.info "[START] DATA EXTRACTION #{sheet_name}.".blue
-
-      build_headers(sheet.row(1), sheet_name)
-      build_hash(sheet, sheet_name)
-
-      Rails.logger.info "[ENDED] DATA EXTRACTION #{sheet_name}.".green
+      log_with("DATA EXTRACTION #{sheet_name}.") do
+        build_headers(sheet.row(1), sheet_name)
+        build_hash(sheet, sheet_name)
+      end
     end
 
     def build_headers(row, sheet_name)
       headers = row.map { |header| header.to_s&.downcase&.to_sym }
-      return if headers.intersection(OBLIGATORY_HEADERS).sort != OBLIGATORY_HEADERS.sort
+      return if headers.intersection(HEADERS).count < OBLIGATORY_HEADERS.count
 
       @headers[sheet_name] = {}
 
       headers.each_with_index.map do |header, index|
-        next if header.blank? || OBLIGATORY_HEADERS.exclude?(header)
+        next if header.blank? || HEADERS.exclude?(header)
 
         @headers[sheet_name][index] = header
       end
@@ -60,8 +60,7 @@ module Import
         attributes = {}
 
         @headers[sheet_name].each do |index, header|
-          next if OBLIGATORY_HEADERS.exclude? header
-
+          # next if OBLIGATORY_HEADERS.exclude?(header)
           attributes[header] = row_array[index]
         end
 
@@ -71,7 +70,6 @@ module Import
 
     def parse_attributes(attributes)
       return nil if attributes.empty?
-      return nil if attributes.slice(:description, :entity, :category).values == [ "PAGAMENTO FATURA", "PAYMENT", "CARD" ]
 
       *possible_description, possible_installment = attributes[:description].to_s.split
 
@@ -80,7 +78,7 @@ module Import
                 .merge!({ ct_description: attributes[:description],
                           installment_id: 1,
                           installments_count: 1,
-                          price: (attributes[:price].to_d * 100).to_i })
+                          price: (attributes[:price].round(2).to_d * 100).to_i })
 
       return attributes if possible_description.empty?
       return attributes if not_standalone?(possible_description, possible_installment)
@@ -94,19 +92,7 @@ module Import
     def parse_category_and_entity(attributes)
       category = attributes[:category]
       entity = attributes[:entity]
-      is_payer = false
-
-      category, entity, is_payer = entity, category, true if entity == "EXCHANGE"
-
-      category, entity = entity, category if category == "CARD" && entity.in?(%w[PAYMENT ADVANCE ESTORNO DESCONTO])
-
-      category = "DISCOUNT" if category == "DESCONTO"
-      category = "REVERSAL" if category == "ESTORNO"
-      category = "DISCOUNT" if category == "DESCONTO"
-      category = "BET"      if category == "APOSTA"
-      category = "FEES"     if category == "IOF / TAXA"
-
-      is_payer = false if entity == "MOI"
+      is_payer = category == "EXCHANGE" && entity != "MOI"
 
       { category:, entity:, is_payer: }
     end
