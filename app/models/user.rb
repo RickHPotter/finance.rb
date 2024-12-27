@@ -21,19 +21,21 @@
 #
 class User < ApplicationRecord
   # @extends ..................................................................
-  devise :database_authenticatable, :registerable, :confirmable,
-         :recoverable, :rememberable, :validatable
+  devise :database_authenticatable, :registerable, :confirmable, :recoverable, :rememberable, :validatable
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   has_many :money_transactions, dependent: :destroy
+  has_many :money_transactions_installments, through: :money_transactions, source: :installments
   has_many :user_bank_accounts, dependent: :destroy
+
   has_many :card_transactions, dependent: :destroy
+  has_many :card_transactions_installments, through: :card_transactions, source: :installments
   has_many :user_cards, dependent: :destroy
+
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
-  has_many :card_transaction_installments, through: :card_transactions, source: :installments
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
@@ -82,6 +84,10 @@ class User < ApplicationRecord
   #
   def create_built_ins
     categories.push(
+      Category.new(built_in: true, category_name: "CARD PAYMENT"),
+      Category.new(built_in: true, category_name: "CARD ADVANCE"),
+      Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
+      Category.new(built_in: true, category_name: "INVESTMENT"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN")
     )

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Import
-  class Xls
+  class Xlsx
     attr_reader :file_path, :xlsx, :headers, :hash_collection
 
     delegate :log_with, to: LoggerService
@@ -20,13 +20,13 @@ module Import
 
     def import
       log_with do
-        # @xlsx.sheets.each do |sheet_name|
-        #   next if sheet_name.include? "SKIP"
-        #
-        #   import_sheet(@xlsx.sheet(sheet_name), sheet_name)
-        # end
+        @xlsx.sheets.each do |sheet_name|
+          next if sheet_name.include? "SKIP"
 
-        import_sheet(@xlsx.sheet("PIX"), "PIX")
+          # next if sheet_name != "PIX"
+
+          import_sheet(@xlsx.sheet(sheet_name), sheet_name)
+        end
       end
     end
 
@@ -60,17 +60,17 @@ module Import
         attributes = {}
 
         @headers[sheet_name].each do |index, header|
-          # next if OBLIGATORY_HEADERS.exclude?(header)
-          attributes[header] = row_array[index]
+          attributes[header] = row_array[index] if row_array[index].present?
         end
 
-        parse_attributes(attributes.compact_blank)
+        next if attributes.empty?
+        next if attributes.slice(:category, :entity).values == %w[PAYMENT CARD]
+
+        parse_attributes(attributes)
       end.compact
     end
 
     def parse_attributes(attributes)
-      return nil if attributes.empty?
-
       *possible_description, possible_installment = attributes[:description].to_s.split
 
       attributes.merge!(parse_category_and_entity(attributes))
@@ -90,8 +90,9 @@ module Import
     end
 
     def parse_category_and_entity(attributes)
-      category = attributes[:category]
       entity = attributes[:entity]
+      category = attributes[:category]
+      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALMENT])
       is_payer = category == "EXCHANGE" && entity != "MOI"
 
       { category:, entity:, is_payer: }

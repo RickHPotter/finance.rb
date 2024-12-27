@@ -33,7 +33,8 @@ module MoneyTransactable
   #
   def attach_money_transaction
     self.previous_money_transaction_id = money_transaction&.id
-    self.money_transaction = MoneyTransaction.create_with(price:).find_or_create_by(money_transaction_params)
+    self.money_transaction = MoneyTransaction.joins(:category_transactions).find_by(money_transaction_params.merge(category_transactions:)) ||
+                             MoneyTransaction.create(money_transaction_params.merge(price:, category_transactions_attributes:, date: money_transaction_date))
   end
 
   # Deals with change of `money_transaction` due to change of self FKs, by performing necessary operations to the `previous_money_transaction`
@@ -103,7 +104,6 @@ module MoneyTransactable
   def money_transaction_params
     params = {
       mt_description:,
-      date: money_transaction_date,
       month:,
       year:,
       user_id:,

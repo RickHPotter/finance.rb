@@ -29,10 +29,13 @@ class UserCard < ApplicationRecord
   belongs_to :card
 
   has_many :card_transactions
+  has_many :installments, through: :card_transactions
+  has_many :installments_card_invoices, lambda {
+    joins(:categories).where(categories: { built_in: true, category_name: "CARD PAYMENT" })
+  }, through: :installments, source: :money_transaction
 
   # @validations ..............................................................
-  validates :user_card_name, :current_due_date, :current_closing_date,
-            :days_until_due_date, :min_spend, :credit_limit, :active, presence: true
+  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, :active, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
 
   # @callbacks ................................................................

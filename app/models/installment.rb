@@ -18,6 +18,8 @@
 #
 class Installment < ApplicationRecord
   # @extends ..................................................................
+  delegate :user, :user_id, :user_card, :user_card_id, :date, to: :card_transaction, allow_nil: true
+
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
@@ -26,7 +28,6 @@ class Installment < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :card_transaction, counter_cache: true
-  delegate :user_id, :user_card, :user_card_id, :date, to: :card_transaction, allow_nil: true
 
   # @validations ..............................................................
   validates :price, :number, :month, :year, :installments_count, presence: true
@@ -87,6 +88,22 @@ class Installment < ApplicationRecord
     spread = y.sum(&:price).round(2)
 
     "Upfront: #{in_one}, Installments: #{spread}"
+  end
+
+  # Generates a `category_transactions` for the associated `money_transaction` that mounts up the card invoice.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def category_transactions
+    { category_id: user.built_in_category("CARD PAYMENT").id }
+  end
+
+  # Generates a `category_transactions_attributes` for the associated `money_transaction` that mounts up the card invoice.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def category_transactions_attributes
+    category_transactions.merge(id: nil)
   end
 
   # @private_instance_methods .................................................

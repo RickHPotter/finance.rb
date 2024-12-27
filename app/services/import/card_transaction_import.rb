@@ -11,13 +11,15 @@ module Import
       @money_transaction_sheet = money_transaction_sheet
       @cards_collection = {}
       @money_collection = []
+      @banks = {}
+      @user_cards = {}
     end
 
     def import
       log_with do
         create_user
-        create_card_transactions_data
-        create_card_transactions
+        # create_card_transactions_data
+        # create_card_transactions
 
         create_money_transactions_date
         create_money_transactions
@@ -35,7 +37,7 @@ module Import
     def create_card_transactions_data
       @hash_collection.except(money_transaction_sheet).each do |card, transactions|
         log_with("CARD TRANSATION DATA CREATION #{card}.") do
-          user_card = create_user_card(card)
+          user_card = find_or_create_user_card(card)
           create_cards_collection(user_card, transactions)
         end
       end
@@ -53,9 +55,11 @@ module Import
     end
 
     def create_money_transactions_date
-      @hash_collection[money_transaction_sheet].each do |transactions|
+      @hash_collection[money_transaction_sheet].each do |transaction|
+        next if transaction[:price].zero?
+
         log_with("MONEY TRANSATION DATA CREATION.") do
-          create_money_collection(transactions)
+          create_money_collection(transaction)
         end
       end
     end
@@ -73,70 +77,65 @@ module Import
 
     private
 
-    def create_user_card(card_name)
+    def find_or_create_user_card(card_name)
+      return @user_cards[card_name] if @user_cards[card_name]
+
       bank = Bank.find_or_create_by(bank_name: card_name, bank_code: card_name.upcase)
       card = Card.find_or_create_by(card_name: card_name, bank:)
 
-      UserCard.find_or_create_by(user:, card:, min_spend: 0, credit_limit: 1000, active: true) do |user_card|
+      @user_cards[card_name] = UserCard.find_or_create_by(user:, card:, min_spend: 0, credit_limit: 1000, active: true) do |user_card|
         user_card.current_due_date = Date.current.end_of_month
         user_card.days_until_due_date = 7
       end
     end
 
+    def find_or_create_create_user_bank(bank_name)
+      return @banks[bank_name] if @banks[bank_name]
+
+      @banks[bank_name] = Bank.find_or_create_by(bank_name:, bank_code: bank_name.upcase)
+    end
+
     def create_cards_collection(user_card, transactions)
       @cards_collection[user_card.user_card_name] = {}
 
-      standalone_transactions, transactions_with_installments = transactions.partition { |trans| trans[:installments_count] == 1 }
+      standalone_transactions, transactions_with_installments = transactions.partition { |transaction| transaction[:installments_count] == 1 }
 
       create_standalone_transactions(user_card, standalone_transactions)
       create_transactions_with_installments(user_card, transactions_with_installments)
     end
 
     def create_money_collection(transaction)
-      card_payment_options = %w[ADVANCE PAYMENT REVERSAL]
-      # is_an_exchange    = %w[EXCHANGE]
-      # is_a_middleware   = %w[MIDDLEWARE]
-      # is_an_investment  = %w[INVESTMENT]
+      card_payment_options = [ "CARD ADVANCE", "CARD PAYMENT" ]
 
-      # [ "BET", "BENEFITS", "BILL", "DEPOSIT", "EDUCATION", "FEES", "FOOD", "GROCERY", "NEEDS", "GIFT",
-      #   "GODSEND", "LEISURE", "MORAL DEBT", "PROMO", "RENT", "SALARY", "SELL", "TRANSPORT" ]
+      user_card_id = find_or_create_user_card(transaction[:entity]).id
+      user_bank_id = find_or_create_create_user_bank(transaction[:bank])
 
-      # @money_collection << params and
-      return if transaction[:entity].in? %w[NBNK AME]
+      add_card_payment_to_collection(user_card_id, user_bank_id, transaction) and return if transaction[:category].in?(card_payment_options)
+      add_middleware_to_collection(user_card_id, user_bank_id, transaction)   and return if transaction[:category] == "MIDDLEWARE"
+      add_investment_to_collection(user_card_id, user_bank_id, transaction)   and return if transaction[:category] == "INVESTMENT"
+      add_exchange_to_collection(user_card_id, user_bank_id, transaction)     and return if transaction[:category] == "EXCHANGE"
+    end
 
-      if card_payment_options.include?(transaction[:category])
-        user_card_id = @user.user_cards.find_by(user_card_name: transaction[:entity])
-        payment = @user.money_transactions.find_by(transaction.slice(:month, :year).merge(money_transaction_type: "Installment", user_card_id:))
-        if transaction[:category].in? %w[ADVANCE REVERSAL]
-          payment = @user.card_transactions.find_by(transaction.slice(:month, :year, :ct_description, :price).merge(user_card_id:))
-        end
+    def add_card_payment_to_collection(user_card_id, _user_bank_id, transaction)
+      params = transaction.slice(:month, :year, :price).merge(user_card_id:)
 
-        params = { date: transaction[:date], user_card_id: user_card_id, month: transaction[:month], year: transaction[:year], price: transaction[:price] }
-
-        case [ payment.present?, transaction[:category] ]
-        in [ true, "PAYMENT" ]
-          debugger if payment.price != transaction[:price]
-          payment.update(date: transaction[:date]) and return
-        in [ true, "ADVANCE" ]
-          debugger if payment.price != transaction[:price]
-          payment.update(date: transaction[:date]) and return
-        in [ false, _category ]
-          params[:ct_description] = "#{transaction[:ct_description]} (MANUAL)"
-        in [ condition, category ]
-          debugger
-        else
-          debugger
-        end
-
+      case transaction[:category]
+      when "CARD PAYMENT"
+        money_transaction = @user.money_transactions.joins(:categories).find_by(params.merge(categories: { category_name: "CARD PAYMENT" }))
+        money_transaction.update(date: transaction[:date])
+      when "CARD ADVANCE"
+        params[:price] *= -1
+        card_transaction = @user.card_transactions.joins(:categories).find_by(params.merge(categories: { category_name: "CARD ADVANCE" }))
+        card_transaction.update(date: transaction[:date])
+      else
+        params[:ct_description] = "#{transaction[:ct_description]} (MANUAL)"
+        @money_collection << params
       end
-
-      # user_bank = create_user_bank(transaction[:bank])
-      entity = transaction[:entity]
     end
 
-    def create_user_bank(bank_name)
-      Bank.find_or_create_by(bank_name:, bank_code: bank_name.upcase)
-    end
+    def add_exchange_to_collection(user_card_id, user_bank_id, transaction); end
+    def add_middleware_to_collection(user_card_id, user_bank_id, transaction); end
+    def add_investment_to_collection(user_card_id, user_bank_id, transaction); end
 
     def create_standalone_transactions(user_card, standalone_transactions)
       @cards_collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |trans|
@@ -261,12 +260,12 @@ module Import
       installments
     end
 
-    def create_category_and_entity_transactions(trans, installments = [])
-      category = @user.categories.find_or_create_by(category_name: trans[:category])
+    def create_category_and_entity_transactions(transaction, installments = [])
+      category = @user.categories.find_or_create_by(category_name: transaction[:category])
       category_transactions = [ { category_id: category.id } ]
 
-      entity = @user.entities.find_or_create_by(entity_name: trans[:entity]) if trans[:entity].present?
-      entity_transactions = create_entity_transactions(entity, trans[:is_payer], trans[:price], installments)
+      entity = @user.entities.find_or_create_by(entity_name: transaction[:entity]) if transaction[:entity].present?
+      entity_transactions = create_entity_transactions(entity, transaction[:is_payer], transaction[:price], installments)
 
       [ category_transactions, entity_transactions ]
     end
