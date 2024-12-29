@@ -89,6 +89,8 @@ module MoneyTransactable
   # @return [void].
   #
   def update_or_destroy_money_transaction
+    return if money_transaction.nil?
+
     transactable = money_transaction.public_send(model_name.plural)
     if transactable.count.zero?
       money_transaction.destroy

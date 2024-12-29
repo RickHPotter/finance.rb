@@ -79,9 +79,9 @@ module ExchangeMoneyTransactable
   def destroy_money_transaction
     return if changes[:exchange_type].blank?
 
-    money_transaction_id_to_be_deleted = money_transaction_id
+    money_transaction_id_to_be_destroyed = money_transaction_id
     self.money_transaction_id = nil
-    MoneyTransaction.find(money_transaction_id_to_be_deleted).destroy
+    MoneyTransaction.find(money_transaction_id_to_be_destroyed).destroy
   end
 
   # @see {MoneyTransaction}.
