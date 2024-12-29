@@ -28,6 +28,7 @@ class User < ApplicationRecord
   # @relationships ............................................................
   has_many :card_transactions, dependent: :destroy
   has_many :card_transactions_installments, through: :card_transactions, source: :installments
+  has_many :advance_money_transactions, through: :card_transactions
 
   has_many :money_transactions, dependent: :destroy
   has_many :money_transactions_installments, through: :money_transactions, source: :installments

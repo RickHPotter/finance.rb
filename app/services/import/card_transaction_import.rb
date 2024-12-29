@@ -18,10 +18,10 @@ module Import
     def import
       log_with do
         create_user
-        # create_card_transactions_data
-        # create_card_transactions
+        create_card_transactions_data
+        create_card_transactions
 
-        create_money_transactions_date
+        create_money_transactions_data
         create_money_transactions
       end
     end
@@ -54,7 +54,7 @@ module Import
       end
     end
 
-    def create_money_transactions_date
+    def create_money_transactions_data
       @hash_collection[money_transaction_sheet].each do |transaction|
         next if transaction[:price].zero?
 
@@ -110,27 +110,29 @@ module Import
       user_card_id = find_or_create_user_card(transaction[:entity]).id
       user_bank_id = find_or_create_create_user_bank(transaction[:bank])
 
-      add_card_payment_to_collection(user_card_id, user_bank_id, transaction) and return if transaction[:category].in?(card_payment_options)
+      add_card_payment_to_collection(user_card_id, transaction)               and return if transaction[:category].in?(card_payment_options)
       add_middleware_to_collection(user_card_id, user_bank_id, transaction)   and return if transaction[:category] == "MIDDLEWARE"
       add_investment_to_collection(user_card_id, user_bank_id, transaction)   and return if transaction[:category] == "INVESTMENT"
       add_exchange_to_collection(user_card_id, user_bank_id, transaction)     and return if transaction[:category] == "EXCHANGE"
     end
 
-    def add_card_payment_to_collection(user_card_id, _user_bank_id, transaction)
-      params = transaction.slice(:month, :year, :price).merge(user_card_id:)
+    def add_card_payment_to_collection(user_card_id, transaction)
+      return if transaction[:date].blank?
 
-      case transaction[:category]
-      when "CARD PAYMENT"
-        money_transaction = @user.money_transactions.joins(:categories).find_by(params.merge(categories: { category_name: "CARD PAYMENT" }))
-        money_transaction.update(date: transaction[:date])
-      when "CARD ADVANCE"
-        params[:price] *= -1
-        card_transaction = @user.card_transactions.joins(:categories).find_by(params.merge(categories: { category_name: "CARD ADVANCE" }))
-        card_transaction.update(date: transaction[:date])
+      params = transaction.slice(:month, :year, :price).merge(user_card_id:, categories: { category_name: transaction[:category] })
+
+      if transaction[:category] == "CARD PAYMENT"
+        money_transaction = @user.money_transactions.joins(:categories).find_by(params)
+        money_transaction.update!(date: transaction[:date])
       else
-        params[:ct_description] = "#{transaction[:ct_description]} (MANUAL)"
-        @money_collection << params
+        advance_money_transaction = @user.advance_money_transactions.joins(:categories).find_by(params)
+        advance_money_transaction.update!(date: transaction[:date])
+
+        card_transaction = @user.card_transactions.joins(:categories).find_by(params.merge(price: params[:price] * -1))
+        card_transaction.update!(date: transaction[:date])
       end
+    rescue ActiveRecord::RecordInvalid
+      raise StandardError, "Transaction not found: #{transaction}. Data must be wrong in one place or another"
     end
 
     def add_exchange_to_collection(user_card_id, user_bank_id, transaction); end

@@ -23,7 +23,7 @@ module Import
         @xlsx.sheets.each do |sheet_name|
           next if sheet_name.include? "SKIP"
 
-          # next if sheet_name != "PIX"
+          # next if %w[NBNK PIX].exclude? sheet_name
 
           import_sheet(@xlsx.sheet(sheet_name), sheet_name)
         end

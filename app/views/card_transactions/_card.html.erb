@@ -3,7 +3,7 @@
 </h1>
 <hr>
 
-<% @card_transaction_installments.group_by(&:year).each do |year, year_installments| %>
+<% @card_transactions_installments.group_by(&:year).each do |year, year_installments| %>
   <% year_installments.group_by(&:month).each do |month, month_installments| %>
 
     <div class="relative overflow-x-auto shadow-lg sm:rounded-lg m-5">

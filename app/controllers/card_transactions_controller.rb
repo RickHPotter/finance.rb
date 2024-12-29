@@ -8,11 +8,11 @@ class CardTransactionsController < ApplicationController
   def index
     user_card_id = params[:user_card_id] || current_user.user_cards.first.id
     @user_card = UserCard.find(user_card_id)
-    @card_transaction_installments = current_user
-                                     .card_transaction_installments
-                                     .includes(card_transaction: %i[categories entities])
-                                     .joins(:card_transaction)
-                                     .where(card_transaction: { user_card_id: })
+    @card_transactions_installments = current_user
+                                      .card_transactions_installments
+                                      .includes(card_transaction: %i[categories entities])
+                                      .joins(:card_transaction)
+                                      .where(card_transaction: { user_card_id: })
   end
 
   def show; end

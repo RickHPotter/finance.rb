@@ -26,6 +26,7 @@ class CardTransaction < ApplicationRecord
   include HasInstallments
   include CategoryTransactable
   include EntityTransactable
+  include HasAdvancePayments
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :imported
@@ -39,6 +40,8 @@ class CardTransaction < ApplicationRecord
   validates :starting_price, :price, :installments_count, presence: true
 
   # @callbacks ................................................................
+  after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
+
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
   scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
