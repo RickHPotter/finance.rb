@@ -22,8 +22,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
   end
 
   create_table "card_transactions", force: :cascade do |t|
-    t.string "ct_description", null: false
-    t.text "ct_comment"
+    t.string "description", null: false
+    t.text "comment"
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
@@ -32,10 +32,10 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
-    t.bigint "advance_money_transaction_id"
+    t.bigint "advance_cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["advance_money_transaction_id"], name: "index_card_transactions_on_advance_money_transaction_id"
+    t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
   end
@@ -46,6 +46,26 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_cards_on_bank_id"
+  end
+
+  create_table "cash_transactions", force: :cascade do |t|
+    t.string "description", null: false
+    t.text "comment"
+    t.date "date", null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
+    t.boolean "paid", default: false
+    t.string "cash_transaction_type"
+    t.bigint "user_id", null: false
+    t.bigint "user_card_id"
+    t.bigint "user_bank_account_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
+    t.index ["user_card_id"], name: "index_cash_transactions_on_user_card_id"
+    t.index ["user_id"], name: "index_cash_transactions_on_user_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -97,11 +117,11 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "starting_price", null: false
     t.integer "price", null: false
     t.bigint "entity_transaction_id", null: false
-    t.bigint "money_transaction_id"
+    t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["cash_transaction_id"], name: "index_exchanges_on_cash_transaction_id"
     t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
-    t.index ["money_transaction_id"], name: "index_exchanges_on_money_transaction_id"
   end
 
   create_table "installments", force: :cascade do |t|
@@ -112,11 +132,11 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "year", null: false
     t.integer "installments_count", default: 0, null: false
     t.bigint "card_transaction_id", null: false
-    t.bigint "money_transaction_id", null: false
+    t.bigint "cash_transaction_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
-    t.index ["money_transaction_id"], name: "index_installments_on_money_transaction_id"
+    t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
   end
 
   create_table "investments", force: :cascade do |t|
@@ -126,32 +146,12 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "year", null: false
     t.bigint "user_id", null: false
     t.bigint "user_bank_account_id", null: false
-    t.bigint "money_transaction_id"
+    t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["money_transaction_id"], name: "index_investments_on_money_transaction_id"
+    t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
-  end
-
-  create_table "money_transactions", force: :cascade do |t|
-    t.string "mt_description", null: false
-    t.text "mt_comment"
-    t.date "date", null: false
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
-    t.boolean "paid", default: false
-    t.string "money_transaction_type"
-    t.bigint "user_id", null: false
-    t.bigint "user_card_id"
-    t.bigint "user_bank_account_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["user_bank_account_id"], name: "index_money_transactions_on_user_bank_account_id"
-    t.index ["user_card_id"], name: "index_money_transactions_on_user_card_id"
-    t.index ["user_id"], name: "index_money_transactions_on_user_id"
   end
 
   create_table "user_bank_accounts", force: :cascade do |t|
@@ -202,24 +202,24 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "card_transactions", "money_transactions", column: "advance_money_transaction_id"
+  add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
+  add_foreign_key "cash_transactions", "user_bank_accounts"
+  add_foreign_key "cash_transactions", "user_cards"
+  add_foreign_key "cash_transactions", "users"
   add_foreign_key "categories", "users"
   add_foreign_key "category_transactions", "categories"
   add_foreign_key "entities", "users"
   add_foreign_key "entity_transactions", "entities"
+  add_foreign_key "exchanges", "cash_transactions"
   add_foreign_key "exchanges", "entity_transactions"
-  add_foreign_key "exchanges", "money_transactions"
   add_foreign_key "installments", "card_transactions"
-  add_foreign_key "installments", "money_transactions"
-  add_foreign_key "investments", "money_transactions"
+  add_foreign_key "installments", "cash_transactions"
+  add_foreign_key "investments", "cash_transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
-  add_foreign_key "money_transactions", "user_bank_accounts"
-  add_foreign_key "money_transactions", "user_cards"
-  add_foreign_key "money_transactions", "users"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"
 end

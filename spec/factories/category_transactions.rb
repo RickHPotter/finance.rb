@@ -13,16 +13,16 @@
 #
 FactoryBot.define do
   factory :category_transaction do
-    transactable { custom_create_polymorphic(%i[card_transaction money_transaction investment]) }
+    transactable { custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
     category { custom_create(:category, options: { user: transactable.user }) }
 
     trait :different do
-      transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction investment]) }
+      transactable { different_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
       category { different_custom_create(:category, options: { user: transactable.user }) }
     end
 
     trait :random do
-      transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction investment]) }
+      transactable { random_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
       category { random_custom_create(:category, options: { user: transactable.user }) }
     end
   end

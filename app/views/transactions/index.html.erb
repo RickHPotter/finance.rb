@@ -5,7 +5,7 @@
     </div>
 
     <% @transactions.each do |transaction| %>
-      <h3><%= transaction.mt_description %></h3>
+      <h3><%= transaction.description %></h3>
       <h2><%= from_cent_based_to_float(transaction.price) %></h2>
       <br>
     <% end %>

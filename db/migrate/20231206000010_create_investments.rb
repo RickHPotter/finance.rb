@@ -11,7 +11,7 @@ class CreateInvestments < ActiveRecord::Migration[7.0]
 
       t.references :user, null: false, foreign_key: true
       t.references :user_bank_account, null: false, foreign_key: true
-      t.references :money_transaction, foreign_key: true, null: true
+      t.references :cash_transaction, foreign_key: true, null: true
 
       t.timestamps
     end

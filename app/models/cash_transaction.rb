@@ -2,30 +2,31 @@
 
 # == Schema Information
 #
-# Table name: money_transactions
+# Table name: cash_transactions
 #
-#  id                     :bigint           not null, primary key
-#  mt_description         :string           not null
-#  mt_comment             :text
-#  date                   :date             not null
-#  month                  :integer          not null
-#  year                   :integer          not null
-#  starting_price         :integer          not null
-#  price                  :integer          not null
-#  paid                   :boolean          default(FALSE)
-#  money_transaction_type :string
-#  user_id                :bigint           not null
-#  user_card_id           :bigint
-#  user_bank_account_id   :bigint
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
+#  id                    :bigint           not null, primary key
+#  description           :string           not null
+#  comment               :text
+#  date                  :date             not null
+#  month                 :integer          not null
+#  year                  :integer          not null
+#  starting_price        :integer          not null
+#  price                 :integer          not null
+#  paid                  :boolean          default(FALSE)
+#  cash_transaction_type :string
+#  user_id               :bigint           not null
+#  user_card_id          :bigint
+#  user_bank_account_id  :bigint
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
 #
-class MoneyTransaction < ApplicationRecord
+class CashTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
   include CategoryTransactable
+  include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -38,7 +39,7 @@ class MoneyTransaction < ApplicationRecord
   has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
-  validates :mt_description, :date, :month, :year, :starting_price, :price, presence: true
+  validates :description, :date, :month, :year, :starting_price, :price, presence: true
   validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
@@ -49,12 +50,10 @@ class MoneyTransaction < ApplicationRecord
 
   # @public_instance_methods ..................................................
 
-  # Defaults `mt_description` column to a single {#to_s} call.
-  #
-  # @return [String] The description for an associated `transactable`.
-  #
-  def to_s
-    mt_description
+  def entity_bundle
+    return user_card.user_card_name if categories.pluck(:category_name).intersect?([ "CARD ADVANCE", "CARD PAYMENT" ])
+
+    entities.order(:entity_name).pluck(:entity_name).join(", ")
   end
 
   # @protected_instance_methods ...............................................

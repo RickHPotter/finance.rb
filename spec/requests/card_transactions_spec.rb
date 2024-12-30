@@ -36,15 +36,15 @@ RSpec.describe "CardTransactions", type: :request do
     installments_by_month_year = installments.group_by(&:month_year)
 
     installments_by_month_year.each_pair do |month_year, installments_collection|
-      expect(installments_collection.pluck(:money_transaction_id).uniq.count).to eq(1)
+      expect(installments_collection.pluck(:cash_transaction_id).uniq.count).to eq(1)
       expect(installments_collection.map(&:month_year).uniq).to eq([ month_year ])
-      expect(installments_collection.sum(&:price)).to be >= installments_collection.first.money_transaction.price
+      expect(installments_collection.sum(&:price)).to be >= installments_collection.first.cash_transaction.price
     end
   end
 
   def check_exchanges(exchanges)
     exchanges.each do |exchange|
-      expect(exchange.money_transaction.present?).to be(exchange.monetary?)
+      expect(exchange.cash_transaction.present?).to be(exchange.monetary?)
     end
   end
 
@@ -142,16 +142,16 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "updates the record accordingly given a change in the card_transaction FKs" do
-      money_transaction_one = @existing_card_transaction.installments.first.money_transaction
+      cash_transaction_one = @existing_card_transaction.installments.first.cash_transaction
 
       card_transaction.use_base(@existing_card_transaction, card_transaction_options: { user_card_id: user_card_two.id })
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
 
-      money_transaction_two = @existing_card_transaction.installments.first.money_transaction
+      cash_transaction_two = @existing_card_transaction.installments.first.cash_transaction
 
-      expect(money_transaction_one).to_not eq money_transaction_two
-      expect(MoneyTransaction.exists?(money_transaction_one.id)).to be_falsey
-      expect(MoneyTransaction.exists?(money_transaction_two.id)).to be_truthy
+      expect(cash_transaction_one).to_not eq cash_transaction_two
+      expect(CashTransaction.exists?(cash_transaction_one.id)).to be_falsey
+      expect(CashTransaction.exists?(cash_transaction_two.id)).to be_truthy
     end
   end
 
@@ -159,13 +159,13 @@ RSpec.describe "CardTransactions", type: :request do
     before do
       (1..3).each do |i|
         sign_in user
-        card_transaction.ct_description = i
+        card_transaction.description = i
         post card_transactions_path, params: card_transaction.params
       end
     end
 
     it "succeeds on request to #destroy" do
-      card_transactions = CardTransaction.where(ct_description: (1..3))
+      card_transactions = CardTransaction.where(description: (1..3))
 
       card_transactions.each do |card_transaction_to_be_deleted|
         sign_in user

@@ -4,19 +4,20 @@
 #
 # Table name: card_transactions
 #
-#  id                 :bigint           not null, primary key
-#  ct_description     :string           not null
-#  ct_comment         :text
-#  date               :date             not null
-#  month              :integer          not null
-#  year               :integer          not null
-#  starting_price     :integer          not null
-#  price              :integer          not null
-#  installments_count :integer          default(0), not null
-#  user_id            :bigint           not null
-#  user_card_id       :bigint           not null
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
+#  id                          :bigint           not null, primary key
+#  description                 :string           not null
+#  comment                     :text
+#  date                        :date             not null
+#  month                       :integer          not null
+#  year                        :integer          not null
+#  starting_price              :integer          not null
+#  price                       :integer          not null
+#  installments_count          :integer          default(0), not null
+#  user_id                     :bigint           not null
+#  user_card_id                :bigint           not null
+#  advance_cash_transaction_id :bigint
+#  created_at                  :datetime         not null
+#  updated_at                  :datetime         not null
 #
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
@@ -36,7 +37,7 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card
 
   # @validations ..............................................................
-  validates :date, :ct_description, :month, :year, presence: true
+  validates :date, :description, :month, :year, presence: true
   validates :starting_price, :price, :installments_count, presence: true
 
   # @callbacks ................................................................
@@ -49,19 +50,11 @@ class CardTransaction < ApplicationRecord
 
   # @public_instance_methods ..................................................
 
-  # Defaults `ct_description` column to a single {#to_s} call.
-  #
-  # @return [String] The description for an associated `transactable`.
-  #
-  def to_s
-    ct_description
-  end
-
-  # Generates a `date` for the associated `money_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
+  # Generates a `date` for the associated `cash_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
   #
   # @return [Date].
   #
-  def money_transaction_date
+  def cash_transaction_date
     return end_of_month if imported == true
 
     closing_days      = user_card.current_closing_date.day

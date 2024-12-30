@@ -13,7 +13,7 @@
       <%= l installment.date, format: :long %>
     </th>
     <th scope="row" class="px-6 py-4 whitespace-nowrap border-x text-center" >
-      <%= installment.card_transaction.ct_description %>
+      <%= installment.card_transaction.description %>
     </td>
     <td class="px-6 py-4 border-x">
       <%= installment.card_transaction.categories.pluck(:category_name).join(", ") %>

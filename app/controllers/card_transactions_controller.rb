@@ -100,7 +100,7 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      %i[id ct_description ct_comment date month year price user_id user_card_id],
+      %i[id description comment date month year price user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
       installments_attributes: %i[id number price month year],
       entity_transactions_attributes: [

@@ -11,7 +11,7 @@
 #  year                 :integer          not null
 #  user_id              :bigint           not null
 #  user_bank_account_id :bigint           not null
-#  money_transaction_id :bigint
+#  cash_transaction_id  :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #

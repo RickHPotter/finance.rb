@@ -4,17 +4,17 @@
 #
 # Table name: installments
 #
-#  id                   :bigint           not null, primary key
-#  starting_price       :integer          not null
-#  price                :integer          not null
-#  number               :integer          not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  installments_count   :integer          default(0), not null
-#  card_transaction_id  :bigint           not null
-#  money_transaction_id :bigint           not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
+#  id                  :bigint           not null, primary key
+#  starting_price      :integer          not null
+#  price               :integer          not null
+#  number              :integer          not null
+#  month               :integer          not null
+#  year                :integer          not null
+#  installments_count  :integer          default(0), not null
+#  card_transaction_id :bigint           not null
+#  cash_transaction_id :bigint           not null
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
 #
 class Installment < ApplicationRecord
   # @extends ..................................................................
@@ -40,11 +40,11 @@ class Installment < ApplicationRecord
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Generates a `date` for the associated `money_transaction`, picking the `current_due_date` of `user_card` based on the `current_closing_date`.
+  # Generates a `date` for the associated `cash_transaction`, picking the `current_due_date` of `user_card` based on the `current_closing_date`.
   #
   # @return [Date].
   #
-  def money_transaction_date
+  def cash_transaction_date
     return end_of_month if card_transaction.imported == true
 
     closing_days      = user_card.current_closing_date.day
@@ -68,19 +68,19 @@ class Installment < ApplicationRecord
 
   protected
 
-  # Generates a `mt_description` for the associated `money_transaction` based on the `user_card` name and `month_year`.
+  # Generates a `description` for the associated `cash_transaction` based on the `user_card` name and `month_year`.
   #
   # @return [String] The generated description.
   #
-  def mt_description
-    "Card #{user_card.user_card_name} #{month_year}"
+  def description
+    "CARD PAYMENT [ #{user_card.user_card_name} - #{month_year} ]"
   end
 
-  # Generates a `mt_comment` for the associated `money_transaction` based on the `user_card` and `month` and `year`.
+  # Generates a `comment` for the associated `cash_transaction` based on the `user_card` and `month` and `year`.
   #
   # @return [String] The generated comment.
   #
-  def mt_comment
+  def comment
     installments = Installment.by(month:, year:, user_id:, user_card_id:)
 
     x, y = installments.partition { |installment| installment.installments_count == 1 }
@@ -90,7 +90,7 @@ class Installment < ApplicationRecord
     "Upfront: #{in_one}, Installments: #{spread}"
   end
 
-  # Generates a `category_transactions` for the associated `money_transaction` that mounts up the card invoice.
+  # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the card invoice.
   #
   # @return [Hash] The generated attributes.
   #
@@ -98,7 +98,7 @@ class Installment < ApplicationRecord
     { category_id: user.built_in_category("CARD PAYMENT").id }
   end
 
-  # Generates a `category_transactions_attributes` for the associated `money_transaction` that mounts up the card invoice.
+  # Generates a `category_transactions_attributes` for the associated `cash_transaction` that mounts up the card invoice.
   #
   # @return [Hash] The generated attributes.
   #

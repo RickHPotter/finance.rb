@@ -2,7 +2,7 @@
 
 module Params
   class CardTransactionParams
-    attr_accessor :ct_description, :price, :date, :month, :year, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :price, :date, :month, :year, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
 
     def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})
       assign_card_transaction(card_transaction)
@@ -15,7 +15,7 @@ module Params
     def params
       {
         card_transaction: {
-          ct_description: ct_description || "New CardTransaction #{DateTime.current.to_i}",
+          description: description || "New CardTransaction #{DateTime.current.to_i}",
           price:,
           date:,
           month:,
@@ -74,7 +74,7 @@ module Params
     private
 
     def assign_card_transaction(card_transaction, card_transaction_options: {})
-      @ct_description = card_transaction_options[:ct_description] || card_transaction[:ct_description]
+      @description    = card_transaction_options[:description]    || card_transaction[:description]
       @price          = card_transaction_options[:price]          || card_transaction[:price]
       @date           = card_transaction_options[:date]           || card_transaction[:date]
       @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]

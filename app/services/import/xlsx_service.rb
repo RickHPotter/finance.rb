@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Import
-  class Xlsx
+  class XlsxService
     attr_reader :file_path, :xlsx, :headers, :hash_collection
 
     delegate :log_with, to: LoggerService
@@ -22,8 +22,6 @@ module Import
       log_with do
         @xlsx.sheets.each do |sheet_name|
           next if sheet_name.include? "SKIP"
-
-          # next if %w[NBNK PIX].exclude? sheet_name
 
           import_sheet(@xlsx.sheet(sheet_name), sheet_name)
         end
@@ -75,15 +73,15 @@ module Import
 
       attributes.merge!(parse_category_and_entity(attributes))
                 .merge!(parse_month_year(attributes))
-                .merge!({ ct_description: attributes[:description],
-                          installment_id: 1,
-                          installments_count: 1,
-                          price: (attributes[:price].round(2).to_d * 100).to_i })
+                .merge!(description: attributes[:description],
+                        installment_id: 1,
+                        installments_count: 1,
+                        price: (attributes[:price].round(2).to_d * 100).to_i)
 
       return attributes if possible_description.empty?
       return attributes if not_standalone?(possible_description, possible_installment)
 
-      attributes[:ct_description] = possible_description.join(" ")
+      attributes[:description] = possible_description.join(" ")
       attributes[:installment_id], attributes[:installments_count] = possible_installment.split("/").map(&:to_i)
 
       attributes

@@ -12,7 +12,12 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :card_transactions
+  resources :card_transactions do
+    collection do
+      get :cash
+    end
+  end
+
   resources :transactions
 
   root "pages#home"

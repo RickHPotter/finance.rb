@@ -67,7 +67,7 @@ module HasMonthYear
     errors.add(:date, :blank)
   end
 
-  # Sets `month` and `year` based on self's `money_transaction_date` or `date`.
+  # Sets `month` and `year` based on self's `cash_transaction_date` or `date`.
   #
   # @note This is a method that is called before_validation.
   #
@@ -78,8 +78,8 @@ module HasMonthYear
   #
   def set_month_year
     if instance_of?(CardTransaction) || instance_of?(Installment)
-      self.month ||= money_transaction_date.month
-      self.year  ||= money_transaction_date.year
+      self.month ||= cash_transaction_date.month
+      self.year  ||= cash_transaction_date.year
     else
       self.month ||= date&.month
       self.year  ||= date&.year

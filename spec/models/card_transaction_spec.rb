@@ -4,19 +4,20 @@
 #
 # Table name: card_transactions
 #
-#  id                 :bigint           not null, primary key
-#  ct_description     :string           not null
-#  ct_comment         :text
-#  date               :date             not null
-#  month              :integer          not null
-#  year               :integer          not null
-#  starting_price     :integer          not null
-#  price              :integer          not null
-#  installments_count :integer          default(0), not null
-#  user_id            :bigint           not null
-#  user_card_id       :bigint           not null
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
+#  id                          :bigint           not null, primary key
+#  description                 :string           not null
+#  comment                     :text
+#  date                        :date             not null
+#  month                       :integer          not null
+#  year                        :integer          not null
+#  starting_price              :integer          not null
+#  price                       :integer          not null
+#  installments_count          :integer          default(0), not null
+#  user_id                     :bigint           not null
+#  user_card_id                :bigint           not null
+#  advance_cash_transaction_id :bigint
+#  created_at                  :datetime         not null
+#  updated_at                  :datetime         not null
 #
 require "rails_helper"
 
@@ -30,7 +31,7 @@ RSpec.describe CardTransaction, type: :model do
         expect(card_transaction).to be_valid
       end
 
-      %i[ct_description date month year starting_price price installments_count].each do |attribute|
+      %i[description date month year starting_price price installments_count].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
     end
@@ -43,14 +44,6 @@ RSpec.describe CardTransaction, type: :model do
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
-    end
-  end
-
-  describe "[ business logic ]" do
-    context "( public methods )" do
-      it "returns full_description" do
-        expect(subject.to_s).to eq(subject.ct_description)
-      end
     end
   end
 end

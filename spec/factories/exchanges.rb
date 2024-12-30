@@ -10,7 +10,7 @@
 #  starting_price        :integer          not null
 #  price                 :integer          not null
 #  entity_transaction_id :bigint           not null
-#  money_transaction_id  :bigint
+#  cash_transaction_id   :bigint
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #

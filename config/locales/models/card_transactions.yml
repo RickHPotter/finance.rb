@@ -7,8 +7,8 @@ en:
     attributes:
       card_transaction:
         id: ID
-        ct_description: Description
-        ct_comment: Comment
+        description: Description
+        comment: Comment
         date: Date
         price: Price
         starting_price: Original Price
@@ -31,8 +31,8 @@ pt-BR:
     attributes:
       card_transaction:
         id: ID
-        ct_description: Descricão
-        ct_comment: Comentário
+        description: Descricão
+        comment: Comentário
         date: Data
         price: Preço
         starting_price: Preço Inicial

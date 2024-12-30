@@ -4,8 +4,8 @@
 class CreateCardTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :card_transactions do |t|
-      t.string :ct_description, null: false
-      t.text :ct_comment
+      t.string :description, null: false
+      t.text :comment
       t.date :date, null: false
       t.integer :month, null: false
       t.integer :year, null: false
@@ -15,7 +15,7 @@ class CreateCardTransactions < ActiveRecord::Migration[7.1]
 
       t.references :user, null: false, foreign_key: true
       t.references :user_card, null: false, foreign_key: true
-      t.references :advance_money_transaction, foreign_key: { to_table: :money_transactions }
+      t.references :advance_cash_transaction, foreign_key: { to_table: :cash_transactions }
 
       t.timestamps
     end

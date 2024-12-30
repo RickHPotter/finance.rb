@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Category[Money_Card]Transaction Migration
+# Category[Cash_Card]Transaction Migration
 class CreateCategoryTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :category_transactions do |t|
@@ -13,6 +13,6 @@ class CreateCategoryTransactions < ActiveRecord::Migration[7.1]
     add_index :category_transactions,
               %i[category_id transactable_type transactable_id],
               unique: true,
-              name: 'index_category_transactions_on_composite_key'
+              name: "index_category_transactions_on_composite_key"
   end
 end

@@ -1,0 +1,87 @@
+<h1 class="font-bold text-black text-4xl text-center">
+  PIX
+</h1>
+<hr>
+
+<% @cash_transactions = CashTransaction.all.order :date %>
+<% @cash_transactions.group_by { |t| "#{t.date.year}/#{t.date.month}" }.each do |year_month, cash_transactions| %>
+  <div class="relative overflow-x-auto shadow-lg sm:rounded-lg m-5">
+    <div class="p-5 bg-white">
+      <div class="my-5 font-bold text-black text-4xl hover:text-blue-400 flex justify-between">
+        <h1>
+          <% year, month = year_month.split("/").map(&:to_i) %>
+          <%= l Date.new(year, month, 1), format: "%B %Y" %>
+        </h1>
+        <h1>
+          <%= "R$ #{from_cent_based_to_float(cash_transactions.sum(&:price))}" %>
+        </h1>
+      </div>
+
+      <label for="table-search" class="sr-only">Search</label>
+      <div class="relative mt-1">
+        <div class="absolute inset-y-0 rtl:inset-r-0 start-0 flex items-center ps-3 pointer-events-none" >
+          <svg class="w-4 h-4 text-gray-500 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" >
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+          </svg>
+        </div>
+
+          <input type="text"
+                  id="table-search"
+                  class="block pt-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-80 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Search for items" >
+      </div>
+    </div>
+
+    <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+      <thead class="text-xs text-black uppercase bg-gray-100">
+        <tr class="border border-gray-200">
+          <th scope="col" class="p-4">
+            <div class="flex items-center">
+              <input id="checkbox-all-search"
+                      type="checkbox"
+                      class=" w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" >
+                  <label for="checkbox-all-search" class="sr-only">checkbox</label>
+            </div>
+          </th>
+
+          <th scope="col" class="px-6 py-3"> Date </th>
+          <th scope="col" class="px-6 py-3 border-x text-center"> Description </th>
+          <th scope="col" class="px-6 py-3 border-x"> Categories </th>
+          <th scope="col" class="px-6 py-3 border-x"> Entities </th>
+          <th scope="col" class="px-6 py-3 text-right"> Price </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% cash_transactions.each do |cash_transaction| %>
+          <tr class="<%= cash_transaction.categories&.first&.bg_colour || "bg-white" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+            <td class="w-4 p-4">
+              <div class="flex items-center">
+                <input
+                    id="checkbox-table-search-1"
+                    type="checkbox"
+                    class="w-4 h-4 bg-gray-100 rounded focus:ring-blue-500 focus:ring-2" >
+                    <label for="checkbox-table-search-1" class="sr-only">checkbox</label>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <%= l cash_transaction.date, format: :long %>
+              </th>
+              <th scope="row" class="px-6 py-4 whitespace-nowrap border-x text-center" >
+                <%= cash_transaction.mt_description %>
+            </td>
+            <td class="px-6 py-4 border-x">
+              <%= cash_transaction.categories.pluck(:category_name).join(", ") %>
+            </td>
+            <td class="px-6 py-4 border-x">
+              <%= cash_transaction.entity_bundle %>
+            </td>
+            <th scope="row" class="px-6 py-4 font-mono whitespace-nowrap text-right" >
+              <%= from_cent_based_to_float(cash_transaction.price)%>
+              </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

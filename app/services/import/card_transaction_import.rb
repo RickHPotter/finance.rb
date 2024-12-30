@@ -2,13 +2,13 @@
 
 module Import
   class CardTransactionImport # rubocop:disable Metrics/ClassLength
-    attr_reader :hash_collection, :money_transaction_sheet, :cards_collection, :money_collection, :user, :user_id
+    attr_reader :hash_collection, :cash_transaction_sheet, :cards_collection, :money_collection, :user, :user_id
 
     delegate :log_with, to: LoggerService
 
-    def initialize(hash_collection, money_transaction_sheet)
+    def initialize(hash_collection, cash_transaction_sheet)
       @hash_collection = hash_collection
-      @money_transaction_sheet = money_transaction_sheet
+      @cash_transaction_sheet = cash_transaction_sheet
       @cards_collection = {}
       @money_collection = []
       @banks = {}
@@ -21,8 +21,8 @@ module Import
         create_card_transactions_data
         create_card_transactions
 
-        create_money_transactions_data
-        create_money_transactions
+        create_cash_transactions_data
+        create_cash_transactions
       end
     end
 
@@ -35,7 +35,7 @@ module Import
     end
 
     def create_card_transactions_data
-      @hash_collection.except(money_transaction_sheet).each do |card, transactions|
+      @hash_collection.except(cash_transaction_sheet).each do |card, transactions|
         log_with("CARD TRANSATION DATA CREATION #{card}.") do
           user_card = find_or_create_user_card(card)
           create_cards_collection(user_card, transactions)
@@ -54,8 +54,8 @@ module Import
       end
     end
 
-    def create_money_transactions_data
-      @hash_collection[money_transaction_sheet].each do |transaction|
+    def create_cash_transactions_data
+      @hash_collection[cash_transaction_sheet].each do |transaction|
         next if transaction[:price].zero?
 
         log_with("MONEY TRANSATION DATA CREATION.") do
@@ -64,7 +64,7 @@ module Import
       end
     end
 
-    def create_money_transactions
+    def create_cash_transactions
       log_with("MONEY TRANSACTIONS CREATION.") do
         @money_collection.each do |datum|
           datum = datum.values.flatten
@@ -122,11 +122,11 @@ module Import
       params = transaction.slice(:month, :year, :price).merge(user_card_id:, categories: { category_name: transaction[:category] })
 
       if transaction[:category] == "CARD PAYMENT"
-        money_transaction = @user.money_transactions.joins(:categories).find_by(params)
-        money_transaction.update!(date: transaction[:date])
+        cash_transaction = @user.cash_transactions.joins(:categories).find_by(params)
+        cash_transaction.update!(date: transaction[:date])
       else
-        advance_money_transaction = @user.advance_money_transactions.joins(:categories).find_by(params)
-        advance_money_transaction.update!(date: transaction[:date])
+        advance_cash_transaction = @user.advance_cash_transactions.joins(:categories).find_by(params)
+        advance_cash_transaction.update!(date: transaction[:date])
 
         card_transaction = @user.card_transactions.joins(:categories).find_by(params.merge(price: params[:price] * -1))
         card_transaction.update!(date: transaction[:date])
@@ -141,7 +141,7 @@ module Import
 
     def create_standalone_transactions(user_card, standalone_transactions)
       @cards_collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |trans|
-        card_transaction = trans.slice(:ct_description, :price, :date, :month, :year).merge({ user_id:, user_card_id: user_card.id })
+        card_transaction = trans.slice(:description, :price, :date, :month, :year).merge({ user_id:, user_card_id: user_card.id })
         category_transactions, entity_transactions = create_category_and_entity_transactions(trans)
 
         Params::CardTransactionParams.new(card_transaction:, installments: { count: 1 }, category_transactions:, entity_transactions:)
@@ -162,7 +162,7 @@ module Import
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero, installments)
 
         @cards_collection[user_card_name][:with_installments] << Params::CardTransactionParams.new(
-          card_transaction: transaction_zero.slice(:ct_description, :date, :month, :year).merge({ price:, user_id:, user_card_id: user_card.id }),
+          card_transaction: transaction_zero.slice(:description, :date, :month, :year).merge({ price:, user_id:, user_card_id: user_card.id }),
           installments:,
           category_transactions:,
           entity_transactions:
@@ -195,14 +195,14 @@ module Import
       @cards_collection[user_card_name][:with_pending_installments].each_with_index.map do |transaction, index|
         next if transaction[:installments_count] == 1
         next if transaction[:installments_count] != installments_count
-        next if transaction[:ct_description] != transaction_zero[:ct_description]
+        next if transaction[:description] != transaction_zero[:description]
         next if transaction[:category] != transaction_zero[:category]
         next if transaction[:entity] != transaction_zero[:entity]
 
         index
       end.compact => indexes
 
-      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:ct_description])
+      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:description])
     end
 
     def filter_indexes_again(indexes, user_card_name, transaction_zero, installments_count)
@@ -215,7 +215,7 @@ module Import
         index
       end.compact => indexes
 
-      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:ct_description])
+      validate_installments_count_by_indexes(indexes, installments_count, transaction_zero[:description])
     end
 
     def filter_indexes_once_again(indexes, user_card_name, transaction_zero, installments_count)
@@ -239,13 +239,13 @@ module Import
         new_indexes << index
       end
 
-      validate_installments_count_by_indexes(new_indexes, installments_count, transaction_zero[:ct_description])
+      validate_installments_count_by_indexes(new_indexes, installments_count, transaction_zero[:description])
     end
 
-    def validate_installments_count_by_indexes(indexes, installments_count, ct_description)
+    def validate_installments_count_by_indexes(indexes, installments_count, description)
       return indexes if indexes.count >= installments_count
 
-      raise StandardError, "Expected #{installments_count} installments, got: #{indexes.count} for #{ct_description}."
+      raise StandardError, "Expected #{installments_count} installments, got: #{indexes.count} for #{description}."
     end
 
     def validate_installments(transaction_zero, installments)

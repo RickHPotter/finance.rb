@@ -20,7 +20,7 @@ class Category < ApplicationRecord
 
   has_many :category_transactions, dependent: :destroy
   has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
-  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: "MoneyTransaction"
+  has_many :cash_transactions, through: :category_transactions, source: :transactable, source_type: "CashTransaction"
   has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
 
   # @validations ..............................................................

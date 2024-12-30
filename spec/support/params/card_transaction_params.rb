@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class CardTransactionParams
-  attr_accessor :ct_description, :price, :date, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
+  attr_accessor :description, :price, :date, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
 
   def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})
     assign_card_transaction(card_transaction)
@@ -14,7 +14,7 @@ class CardTransactionParams
   def params
     {
       card_transaction: {
-        ct_description: ct_description || "New CardTransaction #{DateTime.current.to_i}",
+        description: description || "New CardTransaction #{DateTime.current.to_i}",
         price:, date:, user_id:, user_card_id:,
         installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
       }
@@ -66,7 +66,7 @@ class CardTransactionParams
   private
 
   def assign_card_transaction(card_transaction, card_transaction_options: {})
-    @ct_description = card_transaction_options[:ct_description] || card_transaction[:ct_description]
+    @description    = card_transaction_options[:description]    || card_transaction[:description]
     @price          = card_transaction_options[:price]          || card_transaction[:price]
     @date           = card_transaction_options[:date]           || card_transaction[:date]
     @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
