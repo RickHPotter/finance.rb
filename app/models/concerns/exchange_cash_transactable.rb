@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce CashTransactions.
-module ExchangeMoneyTransactable
+module ExchangeCashTransactable
   extend ActiveSupport::Concern
 
   included do

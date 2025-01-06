@@ -13,6 +13,7 @@
 #  starting_price        :integer          not null
 #  price                 :integer          not null
 #  paid                  :boolean          default(FALSE)
+#  installments_count    :integer          default(0), not null
 #  cash_transaction_type :string
 #  user_id               :bigint           not null
 #  user_card_id          :bigint
@@ -25,6 +26,7 @@ class CashTransaction < ApplicationRecord
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
+  include HasInstallments
   include CategoryTransactable
   include EntityTransactable
 
@@ -47,6 +49,21 @@ class CashTransaction < ApplicationRecord
 
   # @scopes ...................................................................
   scope :by_user, ->(user) { where(user:) }
+  scope :check_helper, lambda { |year, month|
+    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
+      .order(:date)
+  }
+  scope :check_helper_by_date, lambda { |year, month|
+    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
+      .order(:date)
+      .group_by(&:date)
+  }
+  scope :check_helper_by_date_pluck, lambda { |year, month|
+    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
+      .order(:date)
+      .group_by(&:date)
+      .transform_values { |v| v.map! { |e| [ e.description, e.price ] } }
+  }
 
   # @public_instance_methods ..................................................
 
@@ -67,9 +84,11 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    return unless date
+    return if paid.present?
 
-    self.paid ||= date < Date.current
+    # FIXME: in this setting, there should be a job to check the future transactions if they were paid or not using notifications
+    self.paid = date.present? && Date.current <= date
+    self.paid = true if cash_transaction_type == "INVESTMENT"
   end
 
   # @private_instance_methods .................................................

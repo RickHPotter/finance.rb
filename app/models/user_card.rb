@@ -33,7 +33,7 @@ class UserCard < ApplicationRecord
   has_many :installments_card_invoices, lambda {
     joins(:categories).where(categories: { category_name: "CARD PAYMENT" })
   }, through: :installments, source: :cash_transaction
-  has_many :money_transactions
+  has_many :cash_transactions
 
   # @validations ..............................................................
   validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, :active, presence: true

@@ -6,8 +6,8 @@ module Import
 
     delegate :log_with, to: LoggerService
 
-    OBLIGATORY_HEADERS = %i[date description category entity price reference].freeze
-    OPTIONAL_HEADERS = %i[bank].freeze
+    OBLIGATORY_HEADERS = %i[description category entity price reference].freeze
+    OPTIONAL_HEADERS = %i[date bank].freeze
     HEADERS = OBLIGATORY_HEADERS + OPTIONAL_HEADERS
     SKIPPABLE_INSTALLMENT_DESCRIPTIONS = %w[plano titulo estorno].freeze
 

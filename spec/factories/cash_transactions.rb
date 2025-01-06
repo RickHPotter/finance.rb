@@ -13,6 +13,7 @@
 #  starting_price        :integer          not null
 #  price                 :integer          not null
 #  paid                  :boolean          default(FALSE)
+#  installments_count    :integer          default(0), not null
 #  cash_transaction_type :string
 #  user_id               :bigint           not null
 #  user_card_id          :bigint

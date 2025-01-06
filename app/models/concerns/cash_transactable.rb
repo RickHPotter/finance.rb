@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that are accumulated to a single CashTransaction.
-module MoneyTransactable
+module CashTransactable
   extend ActiveSupport::Concern
 
   included do
@@ -73,7 +73,7 @@ module MoneyTransactable
     transactable = cash_transaction.public_send(model_name.plural)
     price = transactable.sum(:price).round(2)
 
-    cash_transaction.update(price:, comment:)
+    cash_transaction.update_columns(price:, comment:)
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.

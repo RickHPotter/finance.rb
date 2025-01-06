@@ -4,6 +4,7 @@
 class CreateInvestments < ActiveRecord::Migration[7.0]
   def change
     create_table :investments do |t|
+      t.string :description, null: true
       t.integer :price, null: false
       t.date :date, null: false
       t.integer :month, null: false

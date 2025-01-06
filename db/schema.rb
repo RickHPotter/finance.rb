@@ -57,6 +57,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "starting_price", null: false
     t.integer "price", null: false
     t.boolean "paid", default: false
+    t.integer "installments_count", default: 0, null: false
     t.string "cash_transaction_type"
     t.bigint "user_id", null: false
     t.bigint "user_card_id"
@@ -140,6 +141,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
   end
 
   create_table "investments", force: :cascade do |t|
+    t.string "description"
     t.integer "price", null: false
     t.date "date", null: false
     t.integer "month", null: false

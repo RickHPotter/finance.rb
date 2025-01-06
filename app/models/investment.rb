@@ -5,6 +5,7 @@
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
+#  description          :string
 #  price                :integer          not null
 #  date                 :date             not null
 #  month                :integer          not null
@@ -19,7 +20,7 @@ class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasMonthYear
-  include MoneyTransactable
+  include CashTransactable
   include CategoryTransactable
 
   # @security (i.e. attr_accessible) ..........................................
