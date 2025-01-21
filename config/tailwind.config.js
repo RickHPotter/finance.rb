@@ -21,16 +21,17 @@ module.exports = {
         meat: "#f9906f",
         lettuce: "#93c560",
         book: "#2f7361",
-        urgency: "#ea4335",
+        urgency: "#555857",
         gift: "#ce2d46",
-        honda: "#0e4bef",
+        honda: "#cc0000",
         money: "#34a853",
-        fun: "#fbbc05" // [#f6ec95]
+        fun: "#fbbc05", // [#f6ec95]
+        greek: "#5b6794"
       }
     },
   },
   safelist: [
-    { pattern: /bg-(meat|lettuce|book|urgency|gift|honda|money|fun)/ },
+    { pattern: /bg-(meat|lettuce|book|urgency|gift|honda|money|fun|greek)/ },
     { pattern: /bg-(gray|yellow)-(400|600)/ }
   ],
   plugins: [

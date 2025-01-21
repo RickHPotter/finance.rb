@@ -78,7 +78,7 @@
                 type: :number,
                 svg: :number,
                 min: 1, max: 72,
-                value: [ @card_transaction.card_installments.size, @card_transaction.installments_count, 1 ].max,
+                value: [ @card_transaction.card_installments.size, @card_transaction.card_installments_count, 1 ].max,
                 class: "font-graduate",
                 placeholder: "Installments",
                 data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" } %>

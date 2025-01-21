@@ -22,7 +22,6 @@
 #
 class Installment < ApplicationRecord
   # @extends ..................................................................
-
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice

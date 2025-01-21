@@ -5,7 +5,7 @@
 
       <%= link_to "New Cash Transaction",
                   new_cash_transaction_path,
-                  class: "rounded-lg py-3 px-5 bg-green-600 block font-medium",
+                  class: "rounded-lg py-3 px-5 bg-money border-black block font-medium",
                   data: { turbo_frame: :new_cash_transaction } %>
     </div>
 
@@ -13,10 +13,12 @@
 
     <%= turbo_frame_tag :new_cash_transaction %>
 
-    <div class="min-w-full">
+    <div class="min-w-full pt-2">
       <%= turbo_frame_tag :cash_transactions do %>
-        <h1 class="font-bold text-black text-4xl text-center"> PIX </h1>
         <hr>
+        <h1 class="font-bold text-black text-5xl text-center p-2"> PIX </h1>
+        <hr>
+
         <%= render partial: "cash" %>
       <% end %>
     </div>

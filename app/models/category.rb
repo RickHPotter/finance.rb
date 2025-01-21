@@ -13,6 +13,31 @@
 #
 class Category < ApplicationRecord
   # @extends ..................................................................
+  BG_COLOURS = {
+    "FOOD" => "bg-meat",
+    "GROCERY" => "bg-lettuce",
+    "EDUCATION" => "bg-book",
+    "RENT" => "bg-urgency",
+    "NEEDS" => "bg-urgency",
+    "GIFT" => "bg-gift",
+    "TRANSPORT" => "bg-honda",
+    "SALARY" => "bg-money",
+    "CARD PAYMENT" => "bg-money",
+    "CARD ADVANCE" => "bg-money",
+    "CARD DISCOUNT" => "bg-money",
+    "CARD REVERSAL" => "bg-money",
+    "DEPOSIT" => "bg-money",
+    "PROMO" => "bg-money",
+    "INVEST" => "bg-money",
+    "LEISURE" => "bg-fun",
+    "BILL" => "bg-gray-400",
+    "FEES" => "bg-gray-400",
+    "BET" => "bg-gray-600",
+    "GODSEND" => "bg-greek text-white",
+    "EXCHANGE" => "bg-yellow-400",
+    "EXCHANGE RETURN" => "bg-yellow-600"
+  }.freeze
+
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -45,26 +70,7 @@ class Category < ApplicationRecord
 
   # FIXME: later there will be a colour-picker and a colour column for this table
   def bg_colour
-    {
-      "FOOD" => "bg-meat",
-      "GROCERY" => "bg-lettuce",
-      "EDUCATION" => "bg-book",
-      "NEEDS" => "bg-urgency",
-      "GIFT" => "bg-gift",
-      "TRANSPORT" => "bg-honda",
-      "PAYMENT" => "bg-money",
-      "ADVANCE" => "bg-money",
-      "DISCOUNT" => "bg-money",
-      "REVERSAL" => "bg-money",
-      "PROMO" => "bg-money",
-      "INVEST" => "bg-money",
-      "LEISURE" => "bg-fun",
-      "BILL" => "bg-gray-400",
-      "FEES" => "bg-gray-400",
-      "BET" => "bg-gray-600",
-      "EXCHANGE" => "bg-yellow-400",
-      "EXCHANGE RETURN" => "bg-yellow-600"
-    }[category_name]
+    BG_COLOURS[category_name]
   end
 
   # @protected_instance_methods ...............................................

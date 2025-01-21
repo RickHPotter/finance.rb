@@ -9,11 +9,16 @@
          <label for="checkbox-table-search-1" class="sr-only">checkbox</label>
       </div>
     </td>
-    <td class="px-6 py-4">
-      <%= l cash_installment.date, format: :long %>
+    <td class="px-6 py-4" style="width: 10%">
+      <%= l cash_installment.date, format: "%d %b %Y" %>
     </th>
     <th scope="row" class="px-6 py-4 whitespace-nowrap border-x text-center" >
       <%= cash_installment.cash_transaction.description %>
+      <% if cash_installment.cash_installments_count > 1 %>
+        <span class="inline-flex items-center px-1 rounded-sm bg-white text-gray-800">
+          <%= "#{cash_installment.number}/#{cash_installment.cash_installments_count}" %>
+        </span>
+      <% end %>
     </td>
     <td class="px-6 py-4 border-x">
       <%= cash_installment.cash_transaction.categories.pluck(:category_name).join(", ") %>
@@ -26,4 +31,3 @@
     </td>
   </tr>
 <% end %>
-

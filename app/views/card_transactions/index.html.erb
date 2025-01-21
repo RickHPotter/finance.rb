@@ -13,11 +13,13 @@
 
     <%= turbo_frame_tag :new_card_transaction %>
 
-    <div class="min-w-full">
+    <div class="min-w-full pt-2">
       <%= turbo_frame_tag :card_transactions do %>
-        <h1 class="font-bold text-black text-4xl text-center">
-          <%= @user_card.user_card_name %>
+        <hr>
+        <h1 class="font-bold text-black text-5xl text-center p-2">
+          <%= @user_card&.user_card_name %>
         </h1>
+        <hr>
 
         <%= render partial: "card" %>
       <% end %>

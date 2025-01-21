@@ -6,15 +6,22 @@ class CardTransactionsController < ApplicationController
   before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    user_card_id = params[:user_card_id] || current_user.user_cards.first.id
-    @user_card = UserCard.find(user_card_id)
-    @card_installments = current_user
-                         .card_installments
-                         .includes(card_transaction: %i[categories entities])
-                         .joins(:card_transaction)
-                         .where(card_transaction: { user_card_id: })
-                         .order("card_transactions.date DESC")
-                         .group_by { |t| "#{t.date.year}/#{format('%02d', t.date.month)}" }
+    user_card_id = params[:user_card_id]
+    redirect_to new_card_transaction_path and return if user_card_id.blank?
+
+    @user_card = UserCard.find_by(id: user_card_id)
+    redirect_to new_card_transaction_path and return if @user_card.blank?
+
+    max_date = @user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)")
+    l_date, r_date = RefMonthYear.get_span(Date.current, max_date, 6)
+
+    @card_installments = @user_card.card_installments
+                                   .includes(card_transaction: %i[categories entities])
+                                   .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", l_date, r_date)
+                                   .order("installments.date DESC")
+                                   .group_by { |t| Date.new(t.year, t.month) }
+                                   .sort
+                                   .reverse
   end
 
   def show; end
@@ -22,6 +29,9 @@ class CardTransactionsController < ApplicationController
   def new
     card_installments_count = 6
     @user_card = @user.user_cards.last
+    # FIXME: deal with case where user has not registered a card
+    @user_card ||= @user.user_cards.create(user_card_name: "Card Without a Name", active: true, days_until_due_date: 7, current_closing_date: Date.current + 3.days)
+
     @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, card_installments_count:)
     @card_transaction.build_month_year
     @card_transaction.category_transactions.build(category_id: @categories.first[1])

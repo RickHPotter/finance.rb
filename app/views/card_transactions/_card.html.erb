@@ -3,7 +3,7 @@
     <div class="p-5 bg-white">
       <div class="my-5 font-bold text-black text-4xl hover:text-blue-400 flex justify-between">
         <h1>
-          <%= l Date.new(installments.first.year, installments.first.month, 1), format: "%B %Y" %>
+          <%= l month_year, format: "%B %Y" %>
         </h1>
         <h1>
           <%= "R$ #{from_cent_based_to_float(installments.sum(&:price))}" %>
@@ -37,11 +37,11 @@
             </div>
           </th>
 
-          <th scope="col" class="px-6 py-3"> Date </th>
-          <th scope="col" class="px-6 py-3 border-x text-center"> Description </th>
-          <th scope="col" class="px-6 py-3 border-x"> Categories </th>
-          <th scope="col" class="px-6 py-3 border-x"> Entities </th>
-          <th scope="col" class="px-6 py-3 text-right"> Price </th>
+          <th scope="col" width=" 5%" class="px-6 py-3"> Date </th>
+          <th scope="col" width="40%" class="px-6 py-3 border-x text-center"> Description </th>
+          <th scope="col" width="20%" class="px-6 py-3 border-x text-center"> Categories </th>
+          <th scope="col" width="20%" class="px-6 py-3 border-x text-center"> Entities </th>
+          <th scope="col" width=" 5%" class="px-6 py-3 text-right"> Price </th>
         </tr>
       </thead>
 
