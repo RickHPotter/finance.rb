@@ -3,7 +3,8 @@
     <div class="flex justify-between items-center">
       <h1 class="text-white font-bold text-4xl">Card Transactions</h1>
 
-      <%= link_to "New Card Transaction", new_card_transaction_path,
+      <%= link_to "New Card Transaction",
+                  new_card_transaction_path,
                   class: "rounded-lg py-3 px-5 bg-blue-600 block font-medium",
                   data: { turbo_frame: :new_card_transaction } %>
     </div>
@@ -14,7 +15,11 @@
 
     <div class="min-w-full">
       <%= turbo_frame_tag :card_transactions do %>
-        <%= render partial: "cash" %>
+        <h1 class="font-bold text-black text-4xl text-center">
+          <%= @user_card.user_card_name %>
+        </h1>
+
+        <%= render partial: "card" %>
       <% end %>
     </div>
   </div>

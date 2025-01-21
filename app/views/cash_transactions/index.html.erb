@@ -1,0 +1,24 @@
+<%= turbo_frame_tag :center_container do %>
+  <div class="w-full">
+    <div class="flex justify-between items-center">
+      <h1 class="text-white font-bold text-4xl">Card Transactions</h1>
+
+      <%= link_to "New Cash Transaction",
+                  new_cash_transaction_path,
+                  class: "rounded-lg py-3 px-5 bg-green-600 block font-medium",
+                  data: { turbo_frame: :new_cash_transaction } %>
+    </div>
+
+    <%= turbo_stream_from :cash_transactions %>
+
+    <%= turbo_frame_tag :new_cash_transaction %>
+
+    <div class="min-w-full">
+      <%= turbo_frame_tag :cash_transactions do %>
+        <h1 class="font-bold text-black text-4xl text-center"> PIX </h1>
+        <hr>
+        <%= render partial: "cash" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

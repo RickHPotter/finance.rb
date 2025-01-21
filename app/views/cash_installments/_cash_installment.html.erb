@@ -1,5 +1,5 @@
-<%= turbo_frame_tag dom_id installment do %>
-  <tr class="<%= installment.card_transaction.categories&.first&.bg_colour || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+<%= turbo_frame_tag dom_id cash_installment do %>
+  <tr class="<%= cash_installment.cash_transaction.categories&.first&.bg_colour || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
     <td class="w-4 p-4">
       <div class="flex items-center">
         <input
@@ -10,19 +10,20 @@
       </div>
     </td>
     <td class="px-6 py-4">
-      <%= l installment.date, format: :long %>
+      <%= l cash_installment.date, format: :long %>
     </th>
     <th scope="row" class="px-6 py-4 whitespace-nowrap border-x text-center" >
-      <%= installment.card_transaction.description %>
+      <%= cash_installment.cash_transaction.description %>
     </td>
     <td class="px-6 py-4 border-x">
-      <%= installment.card_transaction.categories.pluck(:category_name).join(", ") %>
+      <%= cash_installment.cash_transaction.categories.pluck(:category_name).join(", ") %>
     </td>
     <td class="px-6 py-4 border-x">
-      <%= installment.card_transaction.entities.pluck(:entity_name).join(", ") %>
+      <%= cash_installment.cash_transaction.entities.pluck(:entity_name).join(", ") %>
     </td>
     <th scope="row" class="px-6 py-4 font-mono whitespace-nowrap text-right" >
-      <%= from_cent_based_to_float(installment.price)%>
+      <%= from_cent_based_to_float(cash_installment.price)%>
     </td>
   </tr>
 <% end %>
+

@@ -1,5 +1,4 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
-
   <%= form_with(model: card_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: @user.id %>
     <%= hidden_field_tag :closing_date_day, card_transaction.user_card&.current_closing_date&.day, data: { reactive_form_target: :closingDateDay } %>
@@ -9,7 +8,7 @@
 
     <div class="w-full mb-6">
       <%= form.text_field \
-            :ct_description,
+            :description,
             class: autosave_input_class, autofocus: true, autocomplete: :off,
             data: { autosave_target: :input, action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
     </div>
@@ -75,11 +74,11 @@
 
         <div class="w-1/3 lg:w-2/5">
           <%= render TextFieldComponent.new \
-                form, :installments_count,
+                form, :card_installments_count,
                 type: :number,
                 svg: :number,
                 min: 1, max: 72,
-                value: [ @card_transaction.installments.size, @card_transaction.installments_count, 1 ].max,
+                value: [ @card_transaction.card_installments.size, @card_transaction.installments_count, 1 ].max,
                 class: "font-graduate",
                 placeholder: "Installments",
                 data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" } %>
@@ -91,12 +90,12 @@
     <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
          class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-3" >
       <template data-nested-form-target="template">
-        <%= form.fields_for :installments, Installment.new, child_index: "NEW_RECORD" do |installment_fields| %>
+        <%= form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "installment_fields", form: installment_fields %>
         <% end %>
       </template>
 
-      <%= form.fields_for :installments do |installment_fields| %>
+      <%= form.fields_for :card_installments do |installment_fields| %>
         <%= render "installment_fields", form: installment_fields %>
       <% end %>
 
