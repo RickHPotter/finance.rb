@@ -5,11 +5,13 @@
 # Table name: installments
 #
 #  id                      :bigint           not null, primary key
-#  starting_price          :integer          not null
-#  price                   :integer          not null
 #  number                  :integer          not null
+#  date                    :date             not null
 #  month                   :integer          not null
 #  year                    :integer          not null
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  paid                    :boolean          default(FALSE)
 #  installment_type        :string           not null
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
@@ -28,7 +30,8 @@ class Installment < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   # @validations ..............................................................
-  validates :price, :number, :month, :year, :card_installments_count, :cash_installments_count, :installment_type, presence: true
+  validates :number, :date, :month, :year, :price, :installment_type, presence: true
+  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   # @scopes ...................................................................

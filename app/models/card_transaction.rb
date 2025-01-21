@@ -12,6 +12,7 @@
 #  year                        :integer          not null
 #  starting_price              :integer          not null
 #  price                       :integer          not null
+#  paid                        :boolean          default(FALSE)
 #  card_installments_count     :integer          default(0), not null
 #  user_id                     :bigint           not null
 #  user_card_id                :bigint           not null
@@ -39,8 +40,10 @@ class CardTransaction < ApplicationRecord
   # @validations ..............................................................
   validates :date, :description, :month, :year, presence: true
   validates :starting_price, :price, :card_installments_count, presence: true
+  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
+  before_validation :set_paid, on: :create
   after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
 
   # @scopes ...................................................................
@@ -72,10 +75,24 @@ class CardTransaction < ApplicationRecord
   #
   def build_month_year
     set_month_year
-    card_installments.each(&:build_month_year) if defined?(card_installments)
-    cash_installments.each(&:build_month_year) if defined?(cash_installments)
+    card_installments.each(&:build_month_year)
   end
 
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+
+  private
+
+  # Sets `paid` based on current `date` in case it was not previously set, on create.
+  #
+  # @note This is a method that is called before_validation.
+  #
+  # @return [void].
+  #
+  def set_paid
+    # FIXME: a card transaction should only be paid if all its installments were paid in their corresponding bill cash transactions
+    return if paid.present?
+
+    self.paid = date.present? && Date.current >= date
+  end
 end

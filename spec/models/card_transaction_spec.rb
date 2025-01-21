@@ -12,6 +12,7 @@
 #  year                        :integer          not null
 #  starting_price              :integer          not null
 #  price                       :integer          not null
+#  paid                        :boolean          default(FALSE)
 #  card_installments_count     :integer          default(0), not null
 #  user_id                     :bigint           not null
 #  user_card_id                :bigint           not null

@@ -73,9 +73,19 @@ class CashTransaction < ApplicationRecord
     entities.order(:entity_name).pluck(:entity_name).join(", ")
   end
 
-  # @protected_instance_methods ...............................................
+  # Builds `month` and `year` columns for `self` and associated `_installments`.
+  #
+  # @return [void].
+  #
+  def build_month_year
+    set_month_year
+    cash_installments.each(&:build_month_year)
+  end
 
-  protected
+  # @protected_instance_methods ...............................................
+  # @private_instance_methods .................................................
+
+  private
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
@@ -86,10 +96,7 @@ class CashTransaction < ApplicationRecord
   def set_paid
     return if paid.present?
 
-    # FIXME: in this setting, there should be a job to check the future transactions if they were paid or not using notifications
-    self.paid = date.present? && Date.current <= date
     self.paid = true if cash_transaction_type == "INVESTMENT"
+    self.paid = date.present? && Date.current >= date
   end
-
-  # @private_instance_methods .................................................
 end

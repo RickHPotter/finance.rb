@@ -29,6 +29,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "year", null: false
     t.integer "starting_price", null: false
     t.integer "price", null: false
+    t.boolean "paid", default: false
     t.integer "card_installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
@@ -126,11 +127,13 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
   end
 
   create_table "installments", force: :cascade do |t|
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
     t.integer "number", null: false
+    t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
+    t.integer "starting_price", null: false
+    t.integer "price", null: false
+    t.boolean "paid", default: false
     t.string "installment_type", null: false
     t.integer "card_installments_count", default: 0
     t.integer "cash_installments_count", default: 0
@@ -144,10 +147,10 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
 
   create_table "investments", force: :cascade do |t|
     t.string "description"
-    t.integer "price", null: false
     t.date "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
+    t.integer "price", null: false
     t.bigint "user_id", null: false
     t.bigint "user_bank_account_id", null: false
     t.bigint "cash_transaction_id"

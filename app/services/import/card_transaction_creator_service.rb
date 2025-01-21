@@ -57,7 +57,7 @@ module Import
 
     def create_standalone_transactions(user_card, standalone_transactions)
       @transactions_collection[user_card.user_card_name][:standalone] = standalone_transactions.map do |transaction|
-        card_transaction = transaction.slice(:description, :price, :date, :month, :year).merge({ user_id:, user_card_id: user_card.id })
+        card_transaction = transaction.slice(:description, :date, :month, :year, :price).merge({ user_id:, user_card_id: user_card.id })
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
         Params::CardTransactionParams.new(card_transaction:, card_installments: { count: 1 }, category_transactions:, entity_transactions:)

@@ -2,7 +2,7 @@
 
 module Params
   class CashTransactionParams
-    attr_accessor :description, :price, :date, :month, :year, :user_id, :user_card_id, :cash_installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :date, :month, :year, :price, :user_id, :user_card_id, :cash_installments, :category_transactions, :entity_transactions
 
     def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_cash_transaction(cash_transaction)
@@ -16,10 +16,10 @@ module Params
       {
         cash_transaction: {
           description: description || "New CashTransaction #{DateTime.current.to_i}",
-          price:,
           date:,
           month:,
           year:,
+          price:,
           user_id:,
           user_card_id:,
           cash_installments_attributes:,
@@ -38,7 +38,7 @@ module Params
       installment_price = (price / count).round(2)
 
       (1..count).map do |i|
-        { number: i, price: installment_price, month:, year: }
+        { number: i, date: date.next_day(i - 1), month:, year:, price: installment_price }
       end
     end
 
@@ -75,8 +75,8 @@ module Params
 
     def assign_cash_transaction(cash_transaction, cash_transaction_options: {})
       @description    = cash_transaction_options[:description]    || cash_transaction[:description]
-      @price          = cash_transaction_options[:price]          || cash_transaction[:price]
       @date           = cash_transaction_options[:date]           || cash_transaction[:date]
+      @price          = cash_transaction_options[:price]          || cash_transaction[:price]
       @user_id        = cash_transaction_options[:user_id]        || cash_transaction[:user_id]
       @user_card_id   = cash_transaction_options[:user_card_id]   || cash_transaction[:user_card_id]
       @month          = cash_transaction_options[:month]          || cash_transaction[:month]
@@ -85,7 +85,7 @@ module Params
 
     def assign_cash_installments(cash_installments)
       @cash_installments = cash_installments.map do |installment|
-        { id: installment.id, number: installment.number, price: installment.price, month: installment.month, year: installment.year, installment_type: :cash }
+        installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CashInstallment)
       end
     end
 

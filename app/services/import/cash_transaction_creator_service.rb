@@ -61,7 +61,7 @@ module Import
           next
         end
 
-        cash_transaction = transaction.slice(:description, :price, :date, :month, :year).merge({ user_id: })
+        cash_transaction = transaction.slice(:description, :date, :month, :year, :price).merge({ user_id: })
 
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
@@ -96,7 +96,7 @@ module Import
       cash_installments = indexes.map do |index|
         installment = transactions_collection[:with_pending_installments][index]
 
-        { number: installment[:installment_id], price: installment[:price], month: installment[:month], year: installment[:year] }
+        installment.slice(:number, :date, :month, :year, :price)
       end
 
       indexes.reverse_each do |index|

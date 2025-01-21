@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class CardTransactionParams
-  attr_accessor :description, :price, :date, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
+  attr_accessor :description, :date, :price, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
 
   def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
     assign_card_transaction(card_transaction)
@@ -15,7 +15,7 @@ class CardTransactionParams
     {
       card_transaction: {
         description: description || "New CardTransaction #{DateTime.current.to_i}",
-        price:, date:, user_id:, user_card_id:,
+        date:, price:, user_id:, user_card_id:,
         card_installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
       }
     }
@@ -30,7 +30,7 @@ class CardTransactionParams
     installment_price = (price / count).round(2)
 
     (1..count).map do |i|
-      { number: i, price: installment_price }
+      { number: i, date: date.next_day(i - 1), price: installment_price, installment_type: :CardInstallment }
     end
   end
 
@@ -67,15 +67,15 @@ class CardTransactionParams
 
   def assign_card_transaction(card_transaction, card_transaction_options: {})
     @description    = card_transaction_options[:description]    || card_transaction[:description]
-    @price          = card_transaction_options[:price]          || card_transaction[:price]
     @date           = card_transaction_options[:date]           || card_transaction[:date]
+    @price          = card_transaction_options[:price]          || card_transaction[:price]
     @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
     @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
   end
 
   def assign_installments(card_installments)
     @card_installments = card_installments.map do |installment|
-      { id: installment.id, number: installment.number, price: installment.price, month: installment.month, year: installment.year }
+      installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CardInstallment)
     end
   end
 

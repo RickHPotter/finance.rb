@@ -33,6 +33,8 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
+    cash_installments { build_list(:cash_installment, 1, price:) }
+
     trait :different do
       description { "HotWheels" }
       comment { "Toy for brother-in-law" }
@@ -43,6 +45,12 @@ FactoryBot.define do
 
       user { different_custom_create(:user) }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
+
+      cash_installments do
+        build_list(:cash_installment, 2, price: (price / 2).round(2)) do |installment, i|
+          installment.assign_attributes(number: i + 1)
+        end
+      end
     end
 
     trait :random do
@@ -53,6 +61,12 @@ FactoryBot.define do
 
       user { random_custom_create(:user) }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
+
+      cash_installments do
+        build_list(:cash_installment, 3, price: (price / date.month).round(2)) do |installment, i|
+          installment.assign_attributes(number: i + 1)
+        end
+      end
     end
   end
 end

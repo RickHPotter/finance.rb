@@ -75,7 +75,7 @@ module Import
       attributes.merge!(parse_category_and_entity(attributes))
                 .merge!(parse_month_year(attributes))
                 .merge!(description: attributes[:description],
-                        installment_id: 1,
+                        number: 1,
                         installments_count: 1,
                         price: (attributes[:price].round(2).to_d * 100).to_i)
 
@@ -83,7 +83,7 @@ module Import
       return attributes if not_standalone?(possible_description, possible_installment)
 
       attributes[:description] = possible_description.join(" ")
-      attributes[:installment_id], attributes[:installments_count] = possible_installment.split("/").map(&:to_i)
+      attributes[:number], attributes[:installments_count] = possible_installment.split("/").map(&:to_i)
 
       attributes
     end

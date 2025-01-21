@@ -6,6 +6,7 @@ module HasMonthYear
 
   included do
     # @callbacks ..............................................................
+    before_validation :set_date, on: :create
     before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
     before_validation :set_month_year, if: -> { errors.none? && respond_to?(:month) }
   end
@@ -57,6 +58,11 @@ module HasMonthYear
 
   protected
 
+  def set_date
+    self.date = card_transaction.date&.next_month(number - 1) if instance_of?(CardInstallment)
+    self.date = cash_transaction.date&.next_month(number - 1) if instance_of?(CashInstallment)
+  end
+
   # Checks if `date` is nil when self responds to `date`. If so, adds an error.
   #
   # @note This is a method that is called before_validation.
@@ -77,7 +83,7 @@ module HasMonthYear
   # @return [void].
   #
   def set_month_year
-    if instance_of?(CardTransaction) || instance_of?(Installment)
+    if instance_of?(CardTransaction) || instance_of?(CardInstallment)
       self.month ||= cash_transaction_date.month
       self.year  ||= cash_transaction_date.year
     else

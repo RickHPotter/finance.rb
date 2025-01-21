@@ -104,7 +104,7 @@ class CardTransactionsController < ApplicationController
     params.require(:card_transaction).permit(
       %i[id description comment date month year price user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
-      card_installments_attributes: %i[id number price month year],
+      card_installments_attributes: %i[id number date month year price],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
         { exchanges_attributes: %i[id exchange_type price] }

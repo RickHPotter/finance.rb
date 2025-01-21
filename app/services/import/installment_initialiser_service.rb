@@ -19,7 +19,7 @@ module Import
       card_installments = indexes.map do |index|
         installment = transactions_collection[user_card_name][:with_pending_installments][index]
 
-        { number: installment[:installment_id], price: installment[:price], month: installment[:month], year: installment[:year] }
+        installment.slice(:number, :date, :month, :year, :price)
       end
 
       indexes.reverse_each do |index|
@@ -65,7 +65,7 @@ module Import
         installment = transactions_collection[user_card_name][:with_pending_installments][index]
         pos = new_indexes.count
 
-        installment_number = installment[:installment_id]
+        installment_number = installment[:number]
         installment_date = installment[:date]
         installment_reference = Date.new(2000 + installment[:year], installment[:month])
 

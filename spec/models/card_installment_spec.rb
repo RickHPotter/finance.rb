@@ -20,22 +20,21 @@
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #
-FactoryBot.define do
-  factory :card_installment, class: "CardInstallment" do
-    price { 999 }
-    installment_type { "CardInstallment" }
+require "rails_helper"
 
-    trait :random do
-      price { Faker::Number.number(digits: 5) }
-    end
-  end
+RSpec.describe CardInstallment, type: :model do
+  let!(:card_transaction) { create(:card_transaction, :random) }
+  let!(:subject) { card_transaction.card_installments.first }
 
-  factory :cash_installment, class: "CashInstallment" do
-    price { 999 }
-    installment_type { "CashInstallment" }
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
+      end
 
-    trait :random do
-      price { Faker::Number.number(digits: 5) }
+      %i[price card_installments_count].each do |attribute|
+        it { should validate_presence_of(attribute) }
+      end
     end
   end
 end

@@ -31,7 +31,7 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    card_installments { build_list(:card_installment, 1, :random, price:) }
+    card_installments { build_list(:card_installment, 1, price:) }
     category_transactions do
       build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
     end
@@ -51,7 +51,7 @@ FactoryBot.define do
       user_card { different_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
-        build_list(:card_installment, 2, :random, price: (price / 2).round(2)) do |installment, i|
+        build_list(:card_installment, 2, price: (price / 2).round(2)) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
@@ -71,7 +71,7 @@ FactoryBot.define do
       user_card { random_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
-        build_list(:card_installment, date.month, :random, price: (price / date.month).round(2)) do |installment, i|
+        build_list(:card_installment, 3, price: (price / date.month).round(2)) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end

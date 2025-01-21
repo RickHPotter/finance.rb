@@ -5,11 +5,13 @@
 # Table name: installments
 #
 #  id                      :bigint           not null, primary key
-#  starting_price          :integer          not null
-#  price                   :integer          not null
 #  number                  :integer          not null
+#  date                    :date             not null
 #  month                   :integer          not null
 #  year                    :integer          not null
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  paid                    :boolean          default(FALSE)
 #  installment_type        :string           not null
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
@@ -20,7 +22,7 @@
 #
 class CardInstallment < Installment
   # @extends ..................................................................
-  delegate :user, :user_id, :user_card, :user_card_id, :date, to: :card_transaction, allow_nil: true
+  delegate :user, :user_id, :user_card, :user_card_id, to: :card_transaction, allow_nil: true
 
   # @includes .................................................................
   include CashTransactable
@@ -30,11 +32,14 @@ class CardInstallment < Installment
   belongs_to :card_transaction, counter_cache: true
 
   # @validations ..............................................................
+  validates :card_installments_count, presence: true
+
   # @callbacks ................................................................
   before_validation :set_installment_type, on: :create
+  before_validation :set_paid,             on: :create
 
   # @scopes ...................................................................
-  default_scope { where(installment_type: :card) }
+  default_scope { where(installment_type: :CardInstallment) }
   scope :by, ->(month:, year:, user_id:, user_card_id:) { joins(:card_transaction).where(month:, year:, card_transaction: { user_id:, user_card_id: }) }
 
   # @additional_config ........................................................
@@ -48,13 +53,7 @@ class CardInstallment < Installment
   def cash_transaction_date
     return end_of_month if card_transaction.imported == true
 
-    closing_days      = user_card.current_closing_date.day
-    next_closing_date = next_date(date:, days: closing_days, months: number - 1)
-    next_due_date     = next_closing_date + user_card.days_until_due_date
-
-    return next_due_date if next_closing_date > date
-
-    next_date(date: next_due_date, months: 1)
+    card_transaction.date.next_month(number)
   end
 
   # @protected_instance_methods ...............................................
@@ -104,6 +103,18 @@ class CardInstallment < Installment
   private
 
   def set_installment_type
-    self.installment_type = :card
+    self.installment_type = :CardInstallment
+  end
+
+  # Sets `paid` based on current `date` in case it was not previously set, on create.
+  #
+  # @note This is a method that is called before_validation.
+  #
+  # @return [void].
+  #
+  def set_paid
+    return if paid.present?
+
+    self.paid = date.present? && Date.current >= date
   end
 end
