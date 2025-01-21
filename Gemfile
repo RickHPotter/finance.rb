@@ -3,7 +3,7 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.3.4"
+ruby "3.4.1"
 gem "rails", "~> 7.2"
 
 gem "bootsnap", require: false
@@ -30,8 +30,8 @@ gem "letter_opener_web"
 gem "dockerfile-rails"
 gem "dotenv-rails"
 
-# import from xlsx
-gem "roo"
+# roo still does not support ruby 3.4
+gem "roo", git: "https://github.com/HashNotAdam/roo.git"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
