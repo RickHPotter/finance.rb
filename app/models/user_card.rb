@@ -29,10 +29,10 @@ class UserCard < ApplicationRecord
   belongs_to :card
 
   has_many :card_transactions
-  has_many :installments, through: :card_transactions
-  has_many :installments_card_invoices, lambda {
+  has_many :card_installments, through: :card_transactions
+  has_many :card_installments_invoices, lambda {
     joins(:categories).where(categories: { category_name: "CARD PAYMENT" })
-  }, through: :installments, source: :cash_transaction
+  }, through: :card_installments, source: :cash_transaction
   has_many :cash_transactions
 
   # @validations ..............................................................

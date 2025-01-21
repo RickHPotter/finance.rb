@@ -14,7 +14,7 @@ RSpec.describe "CardTransactions", type: :request do
   let(:card_transaction) do
     CardTransactionParams.new(
       card_transaction: { price: 200.0, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
-      installments: { count: 1 }, category_transactions: [],
+      card_installments: { count: 1 }, category_transactions: [],
       entity_transactions: [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] } ]
     )
   end
@@ -32,8 +32,8 @@ RSpec.describe "CardTransactions", type: :request do
     expect(card_transaction.built_in_categories_by(category_name: "EXCHANGE")).to_not be_present
   end
 
-  def check_installments(installments)
-    installments_by_month_year = installments.group_by(&:month_year)
+  def check_card_installments(card_installments)
+    installments_by_month_year = card_installments.group_by(&:month_year)
 
     installments_by_month_year.each_pair do |month_year, installments_collection|
       expect(installments_collection.pluck(:cash_transaction_id).uniq.count).to eq(1)
@@ -57,11 +57,11 @@ RSpec.describe "CardTransactions", type: :request do
       new_card_transaction = CardTransaction.last
 
       check_non_paying_entities(new_card_transaction)
-      check_installments(new_card_transaction.installments)
+      check_card_installments(new_card_transaction.card_installments)
     end
 
     it "creates one new record with two installments and two paying entities" do
-      card_transaction.installments = { count: 2 }
+      card_transaction.card_installments = { count: 2 }
       card_transaction.entity_transactions = [
         { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
         { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
@@ -71,11 +71,11 @@ RSpec.describe "CardTransactions", type: :request do
       new_card_transaction = CardTransaction.last
 
       check_paying_entities(new_card_transaction)
-      check_installments(new_card_transaction.installments)
+      check_card_installments(new_card_transaction.card_installments)
     end
 
     it "creates two new records, each with two installments that overlap months, and two paying entities" do
-      card_transaction.installments = { count: 2 }
+      card_transaction.card_installments = { count: 2 }
       card_transaction.entity_transactions = [
         { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
         { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
@@ -92,7 +92,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       check_paying_entities(card_transaction_one)
       check_paying_entities(card_transaction_two)
-      check_installments([ *card_transaction_one.installments, *card_transaction_two.installments ])
+      check_card_installments([ *card_transaction_one.card_installments, *card_transaction_two.card_installments ])
     end
   end
 
@@ -142,12 +142,12 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "updates the record accordingly given a change in the card_transaction FKs" do
-      cash_transaction_one = @existing_card_transaction.installments.first.cash_transaction
+      cash_transaction_one = @existing_card_transaction.card_installments.first.cash_transaction
 
       card_transaction.use_base(@existing_card_transaction, card_transaction_options: { user_card_id: user_card_two.id })
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
 
-      cash_transaction_two = @existing_card_transaction.installments.first.cash_transaction
+      cash_transaction_two = @existing_card_transaction.card_installments.first.cash_transaction
 
       expect(cash_transaction_one).to_not eq cash_transaction_two
       expect(CashTransaction.exists?(cash_transaction_one.id)).to be_falsey
@@ -170,7 +170,7 @@ RSpec.describe "CardTransactions", type: :request do
       card_transactions.each do |card_transaction_to_be_deleted|
         sign_in user
         expect { delete card_transaction_path(card_transaction_to_be_deleted) }.to change(CardTransaction, :count).by(-1)
-        expect(card_transaction_to_be_deleted.installments).to_not be_present
+        expect(card_transaction_to_be_deleted.card_installments).to_not be_present
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end
     end

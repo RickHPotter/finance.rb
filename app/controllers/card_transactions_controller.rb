@@ -8,19 +8,21 @@ class CardTransactionsController < ApplicationController
   def index
     user_card_id = params[:user_card_id] || current_user.user_cards.first.id
     @user_card = UserCard.find(user_card_id)
-    @card_transactions_installments = current_user
-                                      .card_transactions_installments
-                                      .includes(card_transaction: %i[categories entities])
-                                      .joins(:card_transaction)
-                                      .where(card_transaction: { user_card_id: })
+    @card_installments = current_user
+                         .card_installments
+                         .includes(card_transaction: %i[categories entities])
+                         .joins(:card_transaction)
+                         .where(card_transaction: { user_card_id: })
+                         .order("card_transactions.date DESC")
+                         .group_by { |t| "#{t.date.year}/#{format('%02d', t.date.month)}" }
   end
 
   def show; end
 
   def new
-    installments_count = 6
+    card_installments_count = 6
     @user_card = @user.user_cards.last
-    @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, installments_count:)
+    @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, card_installments_count:)
     @card_transaction.build_month_year
     @card_transaction.category_transactions.build(category_id: @categories.first[1])
   end
@@ -102,7 +104,7 @@ class CardTransactionsController < ApplicationController
     params.require(:card_transaction).permit(
       %i[id description comment date month year price user_id user_card_id],
       category_transactions_attributes: %i[id category_id],
-      installments_attributes: %i[id number price month year],
+      card_installments_attributes: %i[id number price month year],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
         { exchanges_attributes: %i[id exchange_type price] }

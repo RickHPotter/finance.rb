@@ -2,12 +2,12 @@
 
 module Params
   class CardTransactionParams
-    attr_accessor :description, :price, :date, :month, :year, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :price, :date, :month, :year, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
 
-    def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})
+    def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_card_transaction(card_transaction)
 
-      @installments = installments
+      @card_installments = card_installments
       @entity_transactions = entity_transactions
       @category_transactions = category_transactions
     end
@@ -22,19 +22,19 @@ module Params
           year:,
           user_id:,
           user_card_id:,
-          installments_attributes:,
+          card_installments_attributes:,
           category_transactions_attributes:,
           entity_transactions_attributes:
         }
       }
     end
 
-    # no base => installments = { count: 2 }
-    # base    => installments = [ {}, {} ]
-    def installments_attributes
-      return installments if installments.is_a? Array
+    # no base => card_installments = { count: 2 }
+    # base    => card_installments = [ {}, {} ]
+    def card_installments_attributes
+      return card_installments if card_installments.is_a? Array
 
-      count = installments[:count] || 1
+      count = card_installments[:count] || 1
       installment_price = (price / count).round(2)
 
       (1..count).map do |i|
@@ -47,8 +47,8 @@ module Params
       category_transactions
     end
 
-    # no base => installments = [ {}, {} ]
-    # base    => installments = [ {}, {} ] # includes :id
+    # no base => card_installments = [ {}, {} ]
+    # base    => card_installments = [ {}, {} ] # includes :id
     def entity_transactions_attributes
       return entity_transactions if entity_transactions&.first&.try(:id)
 
@@ -63,10 +63,10 @@ module Params
     end
 
     def use_base(card_transaction, card_transaction_options: {}, entity_transactions_options: {})
-      card_transaction = CardTransaction.includes(:installments, :entity_transactions, :category_transactions).where(id: card_transaction.id).first
+      card_transaction = CardTransaction.includes(:card_installments, :entity_transactions, :category_transactions).where(id: card_transaction.id).first
 
       assign_card_transaction(card_transaction, card_transaction_options:)
-      assign_installments(card_transaction.installments)
+      assign_card_installments(card_transaction.card_installments)
       assign_category_transactions(card_transaction.category_transactions)
       assign_entity_transactions(card_transaction.entity_transactions, entity_transactions_options:)
     end
@@ -83,9 +83,9 @@ module Params
       @year           = card_transaction_options[:year]           || card_transaction[:year]
     end
 
-    def assign_installments(installments)
-      @installments = installments.map do |installment|
-        { id: installment.id, number: installment.number, price: installment.price, month: installment.month, year: installment.year }
+    def assign_card_installments(card_installments)
+      @card_installments = card_installments.map do |installment|
+        { id: installment.id, number: installment.number, price: installment.price, month: installment.month, year: installment.year, installment_type: :card }
       end
     end
 

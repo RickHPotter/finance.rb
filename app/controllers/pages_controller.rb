@@ -6,13 +6,13 @@ class PagesController < ApplicationController
     main_items = [ "New", "Card Transaction", "Transaction" ]
     main_icons = %w[plus credit_card wallet]
     # main_links = %i[new_card_transaction card_transactions transactions]
-    main_links = %i[card_transactions new_card_transaction transactions]
+    main_links = %i[card_transactions new_card_transaction cash_transactions]
 
     @main_tab = main_items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{main_icons[index]}", main_links[index], :center_container)
     end
 
-    @sub_tab = [ new, card_transaction, transaction ]
+    @sub_tab = [ new, card_transaction, cash_transaction ]
   end
 
   private
@@ -37,12 +37,12 @@ class PagesController < ApplicationController
     end
   end
 
-  def transaction
+  def cash_transaction
     items = %w[Pix Investment]
     icons = %w[wallet wallet]
-    links = %i[transactions transactions]
+    links = %i[cash_transactions cash_transactions]
 
-    @transaction_tab = items.map.with_index do |item, index|
+    @cash_transaction_tab = items.map.with_index do |item, index|
       TabsComponent::Item.new(item, "shared/svgs/#{icons[index]}", links[index], :center_container)
     end
   end

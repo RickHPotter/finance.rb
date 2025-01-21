@@ -4,22 +4,22 @@
 #
 # Table name: cash_transactions
 #
-#  id                    :bigint           not null, primary key
-#  description           :string           not null
-#  comment               :text
-#  date                  :date             not null
-#  month                 :integer          not null
-#  year                  :integer          not null
-#  starting_price        :integer          not null
-#  price                 :integer          not null
-#  paid                  :boolean          default(FALSE)
-#  installments_count    :integer          default(0), not null
-#  cash_transaction_type :string
-#  user_id               :bigint           not null
-#  user_card_id          :bigint
-#  user_bank_account_id  :bigint
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
+#  id                      :bigint           not null, primary key
+#  description             :string           not null
+#  comment                 :text
+#  date                    :date             not null
+#  month                   :integer          not null
+#  year                    :integer          not null
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  cash_transaction_type   :string
+#  cash_installments_count :integer          default(0), not null
+#  user_id                 :bigint           not null
+#  user_card_id            :bigint
+#  user_bank_account_id    :bigint
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
 #
 require "rails_helper"
 
@@ -40,7 +40,7 @@ RSpec.describe CashTransaction, type: :model do
     context "( associations )" do
       ob_models = %i[user_card user_bank_account]
       bt_models = %i[user]
-      hm_models = %i[installments investments exchanges category_transactions categories]
+      hm_models = %i[cash_installments investments exchanges category_transactions categories]
       na_models = %i[category_transactions]
 
       ob_models.each { |model| it { should belong_to(model).optional } }

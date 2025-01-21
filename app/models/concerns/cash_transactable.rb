@@ -52,7 +52,7 @@ module CashTransactable
     return if previous_cash_transaction == cash_transaction
 
     previous_cash_transaction.investments&.first&.touch
-    previous_cash_transaction.installments&.first&.touch
+    previous_cash_transaction.card_installments&.first&.touch
 
     association = cash_transaction.cash_transaction_type.underscore.pluralize
     previous_cash_transaction.destroy if previous_cash_transaction.public_send(association).empty?

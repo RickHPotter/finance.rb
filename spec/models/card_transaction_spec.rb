@@ -12,7 +12,7 @@
 #  year                        :integer          not null
 #  starting_price              :integer          not null
 #  price                       :integer          not null
-#  installments_count          :integer          default(0), not null
+#  card_installments_count     :integer          default(0), not null
 #  user_id                     :bigint           not null
 #  user_card_id                :bigint           not null
 #  advance_cash_transaction_id :bigint
@@ -31,15 +31,15 @@ RSpec.describe CardTransaction, type: :model do
         expect(card_transaction).to be_valid
       end
 
-      %i[description date month year starting_price price installments_count].each do |attribute|
+      %i[description date month year starting_price price card_installments_count].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
     end
 
     context "( associations )" do
       bt_models = %i[user user_card]
-      hm_models = %i[categories category_transactions entities entity_transactions installments]
-      na_models = %i[category_transactions entity_transactions installments]
+      hm_models = %i[categories category_transactions entities entity_transactions card_installments]
+      na_models = %i[category_transactions entity_transactions card_installments]
 
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }

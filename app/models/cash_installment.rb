@@ -18,32 +18,32 @@
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #
-class Installment < ApplicationRecord
+class CashInstallment < Installment
   # @extends ..................................................................
+  delegate :user, :user_id, :user_card, :user_card_id, :date, to: :cash_transaction, allow_nil: true
 
   # @includes .................................................................
-  include HasMonthYear
-  include HasStartingPrice
-
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  # @validations ..............................................................
-  validates :price, :number, :month, :year, :card_installments_count, :cash_installments_count, :installment_type, presence: true
+  belongs_to :cash_transaction, counter_cache: true
 
+  # @validations ..............................................................
   # @callbacks ................................................................
+  before_validation :set_installment_type, on: :create
+
   # @scopes ...................................................................
+  default_scope { where(installment_type: :cash) }
+  scope :by, ->(month:, year:, user_id:) { joins(:cash_transaction).where(month:, year:, cash_transaction: { user_id: }) }
+
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-
-  # Builds `month` and `year` columns for `self`.
-  #
-  # @return [void].
-  #
-  def build_month_year
-    set_month_year
-  end
-
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+
+  private
+
+  def set_installment_type
+    self.installment_type = :cash
+  end
 end

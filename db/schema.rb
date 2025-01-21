@@ -29,7 +29,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "year", null: false
     t.integer "starting_price", null: false
     t.integer "price", null: false
-    t.integer "installments_count", default: 0, null: false
+    t.integer "card_installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
     t.bigint "advance_cash_transaction_id"
@@ -57,8 +57,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "starting_price", null: false
     t.integer "price", null: false
     t.boolean "paid", default: false
-    t.integer "installments_count", default: 0, null: false
     t.string "cash_transaction_type"
+    t.integer "cash_installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id"
     t.bigint "user_bank_account_id"
@@ -131,9 +131,11 @@ ActiveRecord::Schema[7.2].define(version: 2024_05_00_000003) do
     t.integer "number", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.integer "installments_count", default: 0, null: false
-    t.bigint "card_transaction_id", null: false
-    t.bigint "cash_transaction_id", null: false
+    t.string "installment_type", null: false
+    t.integer "card_installments_count", default: 0
+    t.integer "cash_installments_count", default: 0
+    t.bigint "card_transaction_id"
+    t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"

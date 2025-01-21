@@ -4,29 +4,29 @@
 #
 # Table name: cash_transactions
 #
-#  id                    :bigint           not null, primary key
-#  description           :string           not null
-#  comment               :text
-#  date                  :date             not null
-#  month                 :integer          not null
-#  year                  :integer          not null
-#  starting_price        :integer          not null
-#  price                 :integer          not null
-#  paid                  :boolean          default(FALSE)
-#  installments_count    :integer          default(0), not null
-#  cash_transaction_type :string
-#  user_id               :bigint           not null
-#  user_card_id          :bigint
-#  user_bank_account_id  :bigint
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
+#  id                      :bigint           not null, primary key
+#  description             :string           not null
+#  comment                 :text
+#  date                    :date             not null
+#  month                   :integer          not null
+#  year                    :integer          not null
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  cash_transaction_type   :string
+#  cash_installments_count :integer          default(0), not null
+#  user_id                 :bigint           not null
+#  user_card_id            :bigint
+#  user_bank_account_id    :bigint
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
 #
 class CashTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
-  include HasInstallments
+  include HasCashInstallments
   include CategoryTransactable
   include EntityTransactable
 
@@ -36,7 +36,7 @@ class CashTransaction < ApplicationRecord
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, optional: true
 
-  has_many :installments, dependent: :destroy
+  has_many :card_installments, dependent: :destroy
   has_many :investments, dependent: :destroy
   has_many :exchanges, dependent: :destroy
 

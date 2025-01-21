@@ -12,7 +12,7 @@
 #  year                        :integer          not null
 #  starting_price              :integer          not null
 #  price                       :integer          not null
-#  installments_count          :integer          default(0), not null
+#  card_installments_count     :integer          default(0), not null
 #  user_id                     :bigint           not null
 #  user_card_id                :bigint           not null
 #  advance_cash_transaction_id :bigint
@@ -24,7 +24,7 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
-  include HasInstallments
+  include HasCardInstallments
   include CategoryTransactable
   include EntityTransactable
   include HasAdvancePayments
@@ -38,7 +38,7 @@ class CardTransaction < ApplicationRecord
 
   # @validations ..............................................................
   validates :date, :description, :month, :year, presence: true
-  validates :starting_price, :price, :installments_count, presence: true
+  validates :starting_price, :price, :card_installments_count, presence: true
 
   # @callbacks ................................................................
   after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
@@ -66,13 +66,14 @@ class CardTransaction < ApplicationRecord
     next_date(date: next_due_date, months: 1)
   end
 
-  # Builds `month` and `year` columns for `self` and associated `installments`.
+  # Builds `month` and `year` columns for `self` and associated `_installments`.
   #
   # @return [void].
   #
   def build_month_year
     set_month_year
-    installments.each(&:build_month_year)
+    card_installments.each(&:build_month_year) if defined?(card_installments)
+    cash_installments.each(&:build_month_year) if defined?(cash_installments)
   end
 
   # @protected_instance_methods ...............................................

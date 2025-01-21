@@ -12,7 +12,7 @@
 #  year                        :integer          not null
 #  starting_price              :integer          not null
 #  price                       :integer          not null
-#  installments_count          :integer          default(0), not null
+#  card_installments_count     :integer          default(0), not null
 #  user_id                     :bigint           not null
 #  user_card_id                :bigint           not null
 #  advance_cash_transaction_id :bigint
@@ -31,7 +31,7 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    installments { build_list(:installment, 1, :random, price:) }
+    card_installments { build_list(:card_installment, 1, :random, price:) }
     category_transactions do
       build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
     end
@@ -50,8 +50,8 @@ FactoryBot.define do
       user { different_custom_create(:user) }
       user_card { different_custom_create(:user_card, reference: { user: }) }
 
-      installments do
-        build_list(:installment, 2, :random, price: (price / 2).round(2)) do |installment, i|
+      card_installments do
+        build_list(:card_installment, 2, :random, price: (price / 2).round(2)) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
@@ -70,8 +70,8 @@ FactoryBot.define do
       user { random_custom_create(:user) }
       user_card { random_custom_create(:user_card, reference: { user: }) }
 
-      installments do
-        build_list(:installment, date.month, :random, price: (price / date.month).round(2)) do |installment, i|
+      card_installments do
+        build_list(:card_installment, date.month, :random, price: (price / date.month).round(2)) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end

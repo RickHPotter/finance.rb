@@ -4,17 +4,19 @@
 #
 # Table name: installments
 #
-#  id                  :bigint           not null, primary key
-#  starting_price      :integer          not null
-#  price               :integer          not null
-#  number              :integer          not null
-#  month               :integer          not null
-#  year                :integer          not null
-#  installments_count  :integer          default(0), not null
-#  card_transaction_id :bigint           not null
-#  cash_transaction_id :bigint           not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
+#  id                      :bigint           not null, primary key
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  number                  :integer          not null
+#  month                   :integer          not null
+#  year                    :integer          not null
+#  installment_type        :string           not null
+#  card_installments_count :integer          default(0)
+#  cash_installments_count :integer          default(0)
+#  card_transaction_id     :bigint
+#  cash_transaction_id     :bigint
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
 #
 FactoryBot.define do
   factory :installment do
@@ -31,6 +33,14 @@ FactoryBot.define do
 
     trait :random do
       price { Faker::Number.number(digits: 5) }
+    end
+
+    factory :card_installment, class: "CardInstallment" do
+      installment_type { "CardInstallment" }
+    end
+
+    factory :cash_installment, class: "CashInstallment" do
+      installment_type { "CashInstallment" }
     end
   end
 end

@@ -17,8 +17,8 @@ en:
         category: Category
         month: Month
         year: Year
-        installment: Installment
-        installments_count: Installments Count
+        card_installment: Installment
+        card_installments_count: Installments Count
         created_at: Created at
         updated_at: Updated at
 
@@ -41,7 +41,7 @@ pt-BR:
         category: Categoria
         month: Mês
         year: Ano
-        installment: Parcela
-        installments_count: Quantidade de Parcelas
+        card_installment: Parcela
+        card_installments_count: Quantidade de Parcelas
         created_at: Criado em
         updated_at: Atualizado em

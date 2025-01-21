@@ -9,10 +9,12 @@ class CreateInstallments < ActiveRecord::Migration[7.1]
       t.integer :number, null: false
       t.integer :month, null: false
       t.integer :year, null: false
-      t.integer :installments_count, default: 0, null: false
+      t.string :installment_type, null: false
+      t.integer :card_installments_count, default: 0, null: true
+      t.integer :cash_installments_count, default: 0, null: true
 
-      t.references :card_transaction, null: false, foreign_key: true
-      t.references :cash_transaction, null: false, foreign_key: true
+      t.references :card_transaction, null: true, foreign_key: true
+      t.references :cash_transaction, null: true, foreign_key: true
 
       t.timestamps
     end

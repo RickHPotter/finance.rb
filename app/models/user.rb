@@ -27,11 +27,11 @@ class User < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   has_many :card_transactions, dependent: :destroy
-  has_many :card_transactions_installments, through: :card_transactions, source: :installments
+  has_many :card_installments, through: :card_transactions
   has_many :advance_cash_transactions, through: :card_transactions
 
   has_many :cash_transactions, dependent: :destroy
-  has_many :cash_transactions_installments, through: :cash_transactions, source: :installments
+  has_many :cash_installments, through: :cash_transactions
 
   has_many :user_cards, dependent: :destroy
   has_many :user_bank_accounts, dependent: :destroy

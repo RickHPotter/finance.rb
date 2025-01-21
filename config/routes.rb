@@ -7,8 +7,8 @@ Rails.application.routes.draw do
 
   resources :pages do
     collection do
-      get "card_transaction"
-      get "transaction"
+      get :card_transaction
+      get :transaction
     end
   end
 
@@ -18,7 +18,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :transactions
+  resources :cash_transactions
 
   root "pages#home"
 end
