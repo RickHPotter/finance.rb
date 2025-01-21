@@ -63,6 +63,7 @@ module Import
 
         next if attributes.empty?
         next if attributes.slice(:category, :entity).values == %w[PAYMENT CARD]
+        next if attributes[:price].to_d.zero?
 
         parse_attributes(attributes)
       end.compact
@@ -99,7 +100,14 @@ module Import
     def parse_month_year(attributes)
       ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
-      { month: ref_month_year.month, year: ref_month_year.year }
+      if attributes[:date].present?
+        attributes[:paid] = true
+      else
+        attributes[:paid] = false
+        attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1)
+      end
+
+      { month: ref_month_year.month, year: ref_month_year.year, date: attributes[:date] }
     end
 
     def not_standalone?(description, installments)
