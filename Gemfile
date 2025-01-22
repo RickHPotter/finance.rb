@@ -53,7 +53,7 @@ group :development do
   gem "bundler-audit"
   gem "erb_lint", require: false
   gem "guard-rspec", require: false
-  gem "hotwire-livereload"
+  gem "hotwire-spark"
   gem "rails-erd"
   gem "rubocop-rails-omakase", require: false
   gem "web-console"
