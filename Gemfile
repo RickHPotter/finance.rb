@@ -4,7 +4,7 @@ source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby "3.4.1"
-gem "rails", "~> 7.2"
+gem "rails", "~> 8.0"
 
 gem "bootsnap", require: false
 gem "importmap-rails"
@@ -19,7 +19,7 @@ gem "turbo-rails"
 
 # ViewComponent
 gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
-gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
+# gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
 gem "view_component"
 
 # Authentication
