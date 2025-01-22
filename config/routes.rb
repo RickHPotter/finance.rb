@@ -5,20 +5,12 @@ Rails.application.routes.draw do
     confirmations: "users/confirmations"
   }
 
-  resources :pages do
-    collection do
-      get :card_transaction
-      get :transaction
-    end
-  end
-
-  resources :card_transactions do
-    collection do
-      get :cash
-    end
-  end
-
+  resources :pages, only: :index
+  resources :cards
+  resources :entities
+  resources :categories
   resources :cash_transactions
+  resources :card_transactions
 
-  root "pages#home"
+  root "pages#index"
 end

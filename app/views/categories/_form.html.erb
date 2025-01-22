@@ -1,0 +1,8 @@
+<%= turbo_frame_tag dom_id category do %>
+  <%= form_with(model: category, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+    <%= form.hidden_field :user_id, value: @user.id %>
+
+    <%= render ButtonComponent.new form:, options: { label: "Submit Category" } %>
+    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
+  <% end %>
+<% end %>

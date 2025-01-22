@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Pages#Home", type: :request do
+RSpec.describe "Pages#Index", type: :request do
   let(:user) { create(:user) }
 
   describe "[ GET / ]" do

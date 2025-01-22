@@ -29,8 +29,9 @@ class CardTransactionsController < ApplicationController
   def new
     card_installments_count = 6
     @user_card = @user.user_cards.last
-    # FIXME: deal with case where user has not registered a card
-    @user_card ||= @user.user_cards.create(user_card_name: "Card Without a Name", active: true, days_until_due_date: 7, current_closing_date: Date.current + 3.days)
+
+    # FIXME: deal with case where user has not yet registered a card -> open up a modal form to create a card
+    redirect_to new_card_path and return if @user_card.blank?
 
     @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, card_installments_count:)
     @card_transaction.build_month_year
@@ -38,8 +39,7 @@ class CardTransactionsController < ApplicationController
   end
 
   def edit
-    includes = [ :installments, { category_transactions: :category, entity_transactions: :entity } ]
-    @card_transaction = CardTransaction.includes(includes).find(params[:id])
+    @card_transaction = CardTransaction.includes(:installments, category_transactions: :category, entity_transactions: :entity).find(params[:id])
   end
 
   def create
@@ -91,22 +91,6 @@ class CardTransactionsController < ApplicationController
   # Use callbacks to share common setup or constraints between actions.
   def set_card_transaction
     @card_transaction = CardTransaction.find(params[:id])
-  end
-
-  def set_user
-    @user = current_user if user_signed_in?
-  end
-
-  def set_user_cards
-    @user_cards = @user.user_cards.order(:user_card_name).pluck(:user_card_name, :id)
-  end
-
-  def set_categories
-    @categories = @user.custom_categories.order(:category_name).pluck(:category_name, :id)
-  end
-
-  def set_entities
-    @entities = @user.entities.order(:entity_name).pluck(:entity_name, :id)
   end
 
   # Only allow a list of trusted parameters through.
