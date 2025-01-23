@@ -36,7 +36,7 @@ class UserCard < ApplicationRecord
   has_many :cash_transactions
 
   # @validations ..............................................................
-  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, :active, presence: true
+  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
 
   # @callbacks ................................................................

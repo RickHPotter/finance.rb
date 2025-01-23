@@ -1,0 +1,80 @@
+<%= turbo_frame_tag dom_id user_card do %>
+  <%= form_with(model: user_card, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+
+    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
+
+    <%= form.hidden_field :user_id, value: @user.id %>
+
+    <div class="w-full mb-6">
+      <%= form.text_field \
+            :user_card_name,
+            class: autosave_input_class, autofocus: true, autocomplete: :off,
+            data: { autosave_target: :input, placeholder: "User Card Name", placeholder_type: :word } %>
+    </div>
+
+    <div class="lg:flex lg:gap-2 w-full mb-3">
+      <div class="hw-cb w-full lg:w-3/12 mb-2 wallet-icon">
+        <%= bold_label(form, :card_id) %>
+        <%= form.combobox \
+              :card_id,
+              @cards,
+              mobile_at: "360px",
+              render_in: { partial: "card" },
+              include_blank: false,
+              placeholder: "Select a Card Brand" %>
+      </div>
+
+      <div class="w-full lg:w-3/12 mb-2">
+        <%= bold_label(form, :current_closing_date) %>
+        <%= render TextFieldComponent.new \
+              form, :current_closing_date,
+              type: :date, svg: :calendar,
+              class: "font-graduate",
+              placeholder: "Current Closing Date",
+              min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
+              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d") %>
+      </div>
+
+      <div class="w-full lg:w-3/12 mb-2">
+        <%= bold_label(form, :current_due_date) %>
+        <%= render TextFieldComponent.new \
+              form, :current_due_date,
+              type: :date, svg: :calendar,
+              class: "font-graduate",
+              min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
+              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d") %>
+      </div>
+
+      <div class="w-full lg:w-2/12 mb-2">
+        <%= bold_label(form, :min_spend) %>
+        <%= render TextFieldComponent.new \
+              form, :min_spend,
+              svg: :money,
+              placeholder: "Minimun Spend",
+              class: "font-graduate",
+              data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+      </div>
+
+      <div class="w-full lg:w-2/12 mb-2">
+        <%= bold_label(form, :credit_limit) %>
+        <%= render TextFieldComponent.new \
+              form, :credit_limit,
+              svg: :money,
+              placeholder: "Credit Limit",
+              class: "font-graduate",
+              data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+      </div>
+    </div>
+
+    <div>
+      <%= bold_label(form, :active) %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.checkbox :active, class: "text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2", checked: form.object.active.presence || true %>
+    </div>
+
+    <%= render ButtonComponent.new form:, options: { label: "Submit Card" } %>
+    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
+  <% end %>
+<% end %>

@@ -22,6 +22,10 @@ class ApplicationController < ActionController::Base
     @user = current_user if user_signed_in?
   end
 
+  def set_cards
+    @cards = Card.order(:card_name).pluck(:card_name, :id)
+  end
+
   def set_user_cards
     @user_cards = @user.user_cards.order(:user_card_name).pluck(:user_card_name, :id)
   end

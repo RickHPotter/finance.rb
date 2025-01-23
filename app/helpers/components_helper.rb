@@ -30,4 +30,10 @@ module ComponentsHelper
     #{options[:colour][:border]} #{options[:colour][:bg]} text-sm font-graduate font-medium #{options[:colour][:text]}
     shadow-sm #{options[:colour][:hover][:bg]} #{options[:colour][:hover][:text]} focus:outline-none".squish
   end
+
+  def bold_label(form, field, id = nil)
+    id ||= "#{form.object.model_name.singular}_#{field}"
+
+    form.label field, attribute_model(form.object, field).downcase, class: "font-poetsen-one text-medium font-bold text-gray-500", for: id
+  end
 end

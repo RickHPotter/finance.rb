@@ -1,0 +1,39 @@
+<%= turbo_frame_tag :center_container do %>
+  <div class="flex m-3 justify-between">
+    <%= link_to "New User Card",
+                new_user_card_path,
+                class: "rounded-lg bg-gray-200 shadow py-3 px-5 block font-medium",
+                data: { turbo_frame: :center_container } %>
+
+    <% include_inactive = params[:include_inactive] == "false" %>
+    <%= link_to include_inactive ? "Show Inactive Cards" : "Hide Inactive Cards",
+                user_cards_path(include_inactive:),
+                class: "rounded-lg bg-gray-200 shadow py-3 px-5 block font-medium",
+                data: { turbo_frame: :center_container } %>
+  </div>
+
+  <%= turbo_stream_from :user_cards %>
+
+  <div class="min-w-full pt-2">
+    <%= turbo_frame_tag :user_cards do %>
+      <hr>
+
+      <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+        <thead class="text-xs text-black uppercase bg-gray-100">
+          <tr class="border border-gray-200">
+            <th scope="col" width="20%" class="px-6 py-3 border-x text-center"> Card Brand </th>
+            <th scope="col" width="20%" class="px-6 py-3 border-x text-center"> Name </th>
+            <th scope="col" width="15%" class="px-6 py-3 border-x text-center"> Closing Date </th>
+            <th scope="col" width="15%" class="px-6 py-3 border-x text-center"> Due Date </th>
+            <th scope="col" width="15%" class="px-6 py-3 border-x text-right"> Min Spend </th>
+            <th scope="col" width="15%" class="px-6 py-3 border-x text-right"> Credit Limit </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <%= render @user_cards %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+<% end %>

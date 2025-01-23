@@ -30,7 +30,7 @@ class PagesController < ApplicationController
 
   def set_new_sublinks
     @new_items = [
-      { label: "Card",             icon: "shared/svgs/credit_card", link: new_card_path },
+      { label: "Card",             icon: "shared/svgs/credit_card", link: new_user_card_path },
       { label: "Entity",           icon: "shared/svgs/user_group",  link: new_entity_path },
       { label: "Category",         icon: "shared/svgs/user_group",  link: new_category_path },
       { label: "Card Transaction", icon: "shared/svgs/credit_card", link: new_card_transaction_path },
@@ -48,7 +48,7 @@ class PagesController < ApplicationController
     end
     return unless @card_transaction_tab.empty?
 
-    @card_transaction_tab << TabsComponent::Item.new("New Card", "shared/svgs/credit_card", new_card_path, :center_container)
+    @card_transaction_tab << TabsComponent::Item.new("New Card", "shared/svgs/credit_card", new_user_card_path, :center_container)
   end
 
   def set_cash_transaction_sublinks
