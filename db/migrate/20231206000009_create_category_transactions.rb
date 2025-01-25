@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Category[Cash_Card]Transaction Migration
+# Category[Cash/Card]Transaction Migration
 class CreateCategoryTransactions < ActiveRecord::Migration[7.1]
   def change
     create_table :category_transactions do |t|

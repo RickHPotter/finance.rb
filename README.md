@@ -27,30 +27,33 @@ peace.
 
 ## SPRINT PLANNING I: GAARA
 
-Starting point for a v0.1 release of my app called __finance.rb__ (yeah, _finance.rb_).
+Starting point for a v0.1 release of my app called finance.rb (yeah, finance.rb).
 
-This milestone includes covering much of the product logic and providing enough
-visual resources to use the logic so far applied. As it's the first sprint, it
-also means we have a lot of `TODOs` and `FIXMEs` to recognise during development
-for next sprints.
+This milestone includes covering much of the product logic and providing enough visual resources to use the logic so far applied. As it's the first sprint, it also means we have a lot of TODOs and FIXMEs to recognise during development for next sprints.
 
-__Gaara__ is the first sprint and it is supposed to take longer than the average
-sprint. The reasons are:
+Gaara is the first sprint and it is supposed to take longer than the average sprint. The reasons are:
 
-1. I'm starting just now, this is, after all, the first sprint.
-2. Like most projects at their kick-start, it is just one person: me.
-3. I had a 2-week holiday and didn't touch the project whatsoever.
-4. I had a week off due to a -failed- participation in a take home challenge for
-a job interview, and I didn't touch the project.
-5. I had then a two-week span that I was participating in an internal recruitment
-at my job. I kept on working on this project, but way less.
-6. I started working full-time as a dev where I was an intern after getting the
-rightful promotion. This caused me to several times overwork (willingly).
-7. After studying non-stop for about a whole year, I spontaneously decided to take
-April as my luxury month to rest. I watched The Office US (I had only watched the
-UK version before).
-8. I came back in the second half of April getting more and more excited about
-continuing the project.
+1. I'm starting just now, this is, after all, the first sprint. Like most projects at their kickstart, it is just one person: me.
+
+2. I had a 2-week holiday and didn't touch the project whatsoever.
+
+3. I had a week off due to a -failed- participation in a take home challenge for a job interview, and I didn't touch the project.
+
+4. I had then a two-week span that I was participating in an internal recruitment at my job. I kept on working on this project, but way less.
+
+5. I started working full-time as a dev where I was an intern after getting the rightful promotion. This caused me to several times overwork (willingly).
+
+6. After studying non-stop for about a whole year, I spontaneously decided to take April as my luxury month to rest. I watched The Office US (I had only watched the UK version before).
+
+7. I had a quick come-back in the second half of April.
+
+8. I found myself finishing two issues/PR back in May through the first third June, and took a break from the project until the last third of July, when I had a quick come-back.
+
+9. In the span of August I took my little free time to finish a pending issue.
+
+10. Decided to focus more on my work and my final college months before graduation and only came back in December.
+
+11. Came back at the end of December to start the penultimate issue filling it up with many other features that were not asked in the task.
 
 ### GAARA-01/be-01: Finish late Model Specs
 
@@ -88,11 +91,11 @@ continuing the project.
 ### GAARA-04/app-01: Update stack and add Docker
 
 - Subtasks:
-  - ✅ Successfully update Ruby on Rails from 7.0.8 to 7.1.2.
-  - ✅ Successfully update Ruby from 3.2.2 to 3.3.0.
+  - ✅ Successfully update __Ruby on Rails__ from 7.0.8 to 7.1.2.
+  - ✅ Successfully update __Ruby__ from 3.2.2 to 3.3.0.
   - ✅ Add Docker to the project with Docker Compose for development.
 - Extra:
-  - ✅ Added `__neovim__` to generated Docker.
+  - ✅ Added `neovim` to generated Docker.
   - ✅ Made it possible to run app in production mode in and outside of Docker.
   - ✅ Added and configured `Bullet` gem for development.
 
@@ -103,7 +106,7 @@ continuing the project.
 
 - Subtasks:
   - ✅ Use TDD approach; create the tests before.
-  - ✅ Create Model that links a ([card/money]_)transaction to a (number of) entit(ies).
+  - ✅ Create Model that links a `([card/money]_)transaction` to a (number of) `entit(ies)`.
   - ✅ The table should include the fields: [id, timestamps, is_payer as boolean,
        price as decimal, status (pending, finished)].
   - ✅ Remove entity_id from `(Card/Money)Transaction`.
@@ -223,8 +226,8 @@ continuing the project.
   - ✅ Update `TextFieldComponent` to be less more rails-like.
   - ✅ Add fonts.
   - ✅ Improve (or rather fix) form responsiveness when creating a card_transaction.
-  - ✅ Successfully update Ruby from 3.3.0 to 3.3.2.
-  - ✅ Successfully update Rails from 7.1.2 to 7.1.3.3.
+  - ✅ Successfully update __Ruby__ from 3.3.0 to 3.3.2.
+  - ✅ Successfully update __Ruby on Rails__ from 7.1.2 to 7.1.3.3.
 
 ### GAARA-10/fe-02: Create a Component that allows to select multiple options
 
@@ -240,8 +243,8 @@ continuing the project.
 - Extra:
   - ✅ Fixes bugs concerning installments both on the `frontend` and `backend`.
   - ✅ Move price-related float fields to int cent-based.
-  - ✅ Successfully update Ruby from 3.3.2 to 3.3.4.
-  - ✅ Successfully update Ruby on Rails from 7.1.2 to 7.2.
+  - ✅ Successfully update _Ruby_ from 3.3.2 to 3.3.4.
+  - ✅ Successfully update __Ruby on Rails__ from 7.1.2 to 7.2.
   - ✅ Clear up current deprecation warnings based on future update to Rails 8.
 
 ### GAARA-11/fe-03: Refine `TabComponent`, Create 3-way Form for Category, Entity and Card
@@ -250,15 +253,23 @@ continuing the project.
   - [#12](https://github.com/RickHPotter/finance.rb/issues/12)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests before.
-  - ⌛ Make the `Item` `Struct` cleaner on the Controller.
-  - ⌛ Pass in dependents as other structure other than itself (`MultiCheckBoxComponent`).
-  - ⌛ Add a new form that contains 3 partial turbo_stream forms.
-  - ⌛ The first form should be for `Cards`.
-  - ⌛ The second form should be for `Entities`.
-  - ⌛ The third form should be for `Categories`.
+  - ⌛ Use TDD approach; create the tests ~before~.
+  - ✅ Create `:index` for `CardTransaction` and `CashTransaction`, based on `_installments`.
+  - ✅ Make the `Item` `Struct` of the `TabComponent` cleaner using a Controller Concern.
+  - ✅ Enable `TabComponent` to start with its `moving_part` at any `item` and `sub_item`.
+  - ✅ Pass in dependents `onClickEvent` of updating their parent's links.
+  - ✅ Add form and a minimum CRUD for `UserCards`.
+  - ⌛ Add form and a minimum CRUD for `Entities`.
+  - ⌛ Add form and a minimum CRUD for `Categories`.
 - Extra:
   - ✅ Create an import service.
+  - ✅ Rename `MoneyTransaction` to `CashTransaction` and STI usage of `Installemnts`.
+  - ✅ Create of `HasAdvancePayments` Concern for Card Payments in advance.
+  - ✅ Use `Hotwire` and `Tailwind` for the `:index` actions of `[Card/Cash]Transaction`.
+  - ✅ Include fixed set of colours to `categories`. Bare minimum for now.
+  - ✅ Fix the dependent relationships, so that a `User` can self-destruct.
+  - ✅ Successfully update __Ruby__ from 3.3.4 to 3.4.1.
+  - ✅ Successfully update __Ruby on Rails__ from 7.2.2 to 8.0.1.
 
 ### GAARA-12/fe-04: Finish the MVP
 
@@ -270,4 +281,5 @@ continuing the project.
   - ⌛ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
-  - ⌛ Use modern `datatables` with `Hotwire` and `Pagy` for the :index.
+  - ⌛ Add form for `CashTransaction`.
+  - ⌛ Use modern `datatables` with `Hotwire` and `Pagy` for the `:index` actions.

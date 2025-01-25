@@ -42,7 +42,6 @@ class CashTransaction < ApplicationRecord
 
   # @validations ..............................................................
   validates :description, :date, :month, :year, :starting_price, :price, presence: true
-  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create

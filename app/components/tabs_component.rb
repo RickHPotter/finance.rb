@@ -27,5 +27,5 @@ class TabsComponent < ViewComponent::Base
     super
   end
 
-  Item = Struct.new(:label, :icon, :link, :turbo_frame)
+  Item = Struct.new(:label, :icon, :link, :default, :turbo_frame)
 end

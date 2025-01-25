@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 class UserCardsController < ApplicationController
+  include TabsConcern
+
   before_action :set_user_card, only: %i[show edit update destroy]
-  before_action :set_user, :set_cards, only: %i[index new create edit update]
+  before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
@@ -18,14 +20,50 @@ class UserCardsController < ApplicationController
 
   def create
     @user_card = UserCard.new(user_card_params)
+
+    if @user_card.save
+      set_user_cards
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.replace(:center_container, partial: "card_transactions/new", locals: { card_transaction: @user_card.card_transactions.new }),
+            turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "A card has been created." }),
+            turbo_stream.replace(:tabs, partial: "shared/tabs")
+          ]
+        end
+      end
+    else
+      respond_to do |format|
+        format.turbo_stream do
+          # FIXME: when with errors, priceInput should applyMask again
+          render turbo_stream: turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." })
+        end
+      end
+    end
   end
 
-  def edit
-    # @card_transaction = CardTransaction.includes(:installments, category_transactions: :category, entity_transactions: :entity).find(params[:id])
+  def edit; end
+
+  def update
+    # if @card_transaction.update(card_transaction_params)
+    #   flash[:notice] = "Card Transaction was successfully updated."
+    # else
+    #   flash[:alert] = @card_transaction.errors.full_messages
+    # end
+
+    respond_to(&:turbo_stream)
   end
 
-  def update; end
-  def destroy; end
+  def destroy
+    # if @card_transaction.destroy
+    #   flash[:notice] = "Card Transaction was successfully destroyed."
+    # else
+    #   flash[:alert] = @card_transaction.errors.full_messages
+    # end
+
+    respond_to(&:turbo_stream)
+  end
 
   private
 

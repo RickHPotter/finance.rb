@@ -71,7 +71,10 @@ class UserCard < ApplicationRecord
   # @return [Boolean].
   #
   def set_current_dates
-    return false if current_due_date.nil? || days_until_due_date.nil?
+    # FIXME: make a decision about days_until_due_date being or not optional
+    return false if current_due_date.nil?
+
+    self.days_until_due_date ||= current_due_date - current_closing_date
 
     self.current_due_date = next_date(days: current_due_date.day)
     self.current_closing_date = current_due_date - days_until_due_date

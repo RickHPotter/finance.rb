@@ -51,7 +51,7 @@ module EntityTransactable
   # return [void].
   #
   def update_card_transaction_categories
-    return if defined?(imported) && imported == true
+    return if defined?(imported) && imported
 
     exchange_category_id = user.built_in_category("EXCHANGE").id
 

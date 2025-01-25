@@ -1,0 +1,3 @@
+<%= turbo_frame_tag :tabs, class: "w-screen  hidden sm:block" do %>
+  <%= render TabsComponent.new(items: @main_tab, default: true, dependents: @sub_tab) %>
+<% end %>

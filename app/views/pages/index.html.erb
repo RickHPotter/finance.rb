@@ -1,8 +1,6 @@
 <div class="w-full">
   <div class="flex justify-center">
-    <div class="w-screen hidden sm:block">
-      <%= render TabsComponent.new(items: @main_tab, default: true, dependents: @sub_tab) %>
-    </div>
+    <%= render "shared/tabs" %>
   </div>
 
   <div class="my-9 mx-1 break-words bg-white shadow-md dark:shadow-red-50 rounded-lg">

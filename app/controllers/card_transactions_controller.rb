@@ -2,8 +2,11 @@
 
 # Controller for CardTransaction
 class CardTransactionsController < ApplicationController
+  include TabsConcern
+
+  before_action :set_tabs
   before_action :set_card_transaction, only: %i[show update destroy]
-  before_action :set_user, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
+  before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     user_card_id = params[:user_card_id]
@@ -27,15 +30,7 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    card_installments_count = 6
-    @user_card = @user.user_cards.last
-
-    # FIXME: deal with case where user has not yet registered a card -> open up a modal form to create a card
-    redirect_to new_card_path and return if @user_card.blank?
-
-    @card_transaction = CardTransaction.new(user_card: @user_card, date: @user_card.current_closing_date - 1.day, price: 12_000, card_installments_count:)
-    @card_transaction.build_month_year
-    @card_transaction.category_transactions.build(category_id: @categories.first[1])
+    @card_transaction = CardTransaction.new
   end
 
   def edit

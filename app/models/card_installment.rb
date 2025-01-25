@@ -51,7 +51,7 @@ class CardInstallment < Installment
   # @return [Date].
   #
   def cash_transaction_date
-    return end_of_month if card_transaction.imported == true
+    return end_of_month if card_transaction.imported
 
     card_transaction.date.next_month(number)
   end

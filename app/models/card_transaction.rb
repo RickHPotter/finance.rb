@@ -40,16 +40,14 @@ class CardTransaction < ApplicationRecord
   # @validations ..............................................................
   validates :date, :description, :month, :year, presence: true
   validates :starting_price, :price, :card_installments_count, presence: true
-  validates :paid, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
-  after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
 
   # @scopes ...................................................................
   scope :by_user, ->(user_id) { where(user_id:) }
-  scope :by_user_card, ->(user_card_id, user_id) { where(user_card_id:).by_user(user_id:) }
-  scope :by_month_year, ->(month, year, user_id) { where(month:, year:).by_user(user_id:) }
+  scope :by_user_card, ->(user_card_id) { where(user_card_id:) }
+  scope :by_month_year, ->(month, year) { where(month:, year:) }
 
   # @public_instance_methods ..................................................
 
@@ -58,7 +56,7 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def cash_transaction_date
-    return end_of_month if imported == true
+    return end_of_month if imported
 
     closing_days      = user_card.current_closing_date.day
     next_closing_date = next_date(date:, days: closing_days)
@@ -74,6 +72,7 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
+    self.date ||= Date.current unless imported
     set_month_year
     card_installments.each(&:build_month_year)
   end
