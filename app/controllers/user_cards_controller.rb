@@ -3,41 +3,40 @@
 class UserCardsController < ApplicationController
   include TabsConcern
 
-  before_action :set_user_card, only: %i[show edit update destroy]
-  before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
+  before_action :set_user, only: %i[index new create edit update destroy]
+  before_action :set_user_card, only: %i[edit update destroy]
+  before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @user_cards = @user.user_cards.includes(:card).where(conditions)
+    @user_cards = current_user.user_cards.includes(:card).where(conditions)
   end
-
-  def show; end
 
   def new
     @user_card = UserCard.new
   end
 
   def create
-    @user_card = UserCard.new(user_card_params)
+    @user_card = Logic::UserCards.create(user_card_params)
+    @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
 
-    if @user_card.save
-      set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+    # FIXME: handle this monstrosity by creating .turbo_stream.erb files
+    if @card_transaction
       respond_to do |format|
+        set_user_cards
+        set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
         format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(:center_container, partial: "card_transactions/new", locals: { card_transaction: @user_card.card_transactions.new }),
-            turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "A card has been created." }),
-            turbo_stream.replace(:tabs, partial: "shared/tabs")
-          ]
+          render turbo_stream: [ turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }),
+                                 turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "Card has been created." }),
+                                 turbo_stream.replace(:tabs, partial: "shared/tabs") ]
         end
       end
     else
       respond_to do |format|
         format.turbo_stream do
-          # FIXME: when with errors, priceInput should applyMask again
-          render turbo_stream: turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." })
+          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }),
+                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) ]
         end
       end
     end
@@ -45,24 +44,49 @@ class UserCardsController < ApplicationController
 
   def edit; end
 
-  def update
-    # if @card_transaction.update(card_transaction_params)
-    #   flash[:notice] = "Card Transaction was successfully updated."
-    # else
-    #   flash[:alert] = @card_transaction.errors.full_messages
-    # end
+  def update # rubocop:disable all
+    @user_card = Logic::UserCards.update(@user_card, user_card_params)
+    @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
 
-    respond_to(&:turbo_stream)
+    # FIXME: handle this monstrosity by creating .turbo_stream.erb files
+    if @card_transaction
+      respond_to do |format|
+        format.turbo_stream do
+          set_user_cards
+          if @user_card.active?
+            set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+            render turbo_stream: [ turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }),
+                                   turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "Card has been updated." }),
+                                   turbo_stream.replace(:tabs, partial: "shared/tabs") ]
+          else
+            index
+            render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/index") ]
+          end
+        end
+      end
+    else
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }),
+                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) ]
+        end
+      end
+    end
   end
 
   def destroy
-    # if @card_transaction.destroy
-    #   flash[:notice] = "Card Transaction was successfully destroyed."
-    # else
-    #   flash[:alert] = @card_transaction.errors.full_messages
-    # end
-
-    respond_to(&:turbo_stream)
+    respond_to do |format|
+      format.turbo_stream do
+        index
+        if @user_card.card_transactions.empty?
+          @user_card.destroy
+          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/index"),
+                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Card has been deleted." }) ]
+        else
+          render turbo_stream: [ turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "User Card with transactions cannot be deleted." }) ]
+        end
+      end
+    end
   end
 
   private

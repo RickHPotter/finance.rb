@@ -33,7 +33,7 @@ class Category < ApplicationRecord
     "BILL" => "bg-gray-400",
     "FEES" => "bg-gray-400",
     "BET" => "bg-gray-600",
-    "GODSEND" => "bg-greek text-white",
+    "GODSEND" => "bg-greek",
     "EXCHANGE" => "bg-yellow-400",
     "EXCHANGE RETURN" => "bg-yellow-600"
   }.freeze

@@ -27,7 +27,7 @@
       <%= card_installment.card_transaction.entities.pluck(:entity_name).join(", ") %>
     </td>
     <th scope="row" class="px-6 py-4 font-mono whitespace-nowrap text-right" >
-      <%= from_cent_based_to_float(card_installment.price)%>
+      <%= from_cent_based_to_float(card_installment.price) %>
     </td>
   </tr>
 <% end %>

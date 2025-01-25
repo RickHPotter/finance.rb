@@ -15,10 +15,15 @@
       <%= l user_card.current_due_date, format: :long %>
     </td>
     <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
-      <%= from_cent_based_to_float(user_card.min_spend, "R$")%>
+      <%= from_cent_based_to_float(user_card.min_spend, "R$") %>
     </td>
     <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
-      <%= from_cent_based_to_float(user_card.credit_limit, "R$")%>
+      <%= from_cent_based_to_float(user_card.credit_limit, "R$") %>
+    </td>
+    <th class="px-6 py-4 whitespace-nowrap" >
+      <span class="inline-flex items-center px-1 rounded-sm bg-black text-red-600">
+        <%= link_to "DELETE", user_card, data: { turbo_method: :delete } %>
+      </span>
     </td>
   </tr>
 <% end %>

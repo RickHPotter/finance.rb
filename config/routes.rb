@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   }
 
   resources :pages, only: :index
-  resources :user_cards
+  resources :user_cards, except: :show
   resources :entities
   resources :categories
   resources :cash_transactions

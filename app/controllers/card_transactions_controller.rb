@@ -39,7 +39,7 @@ class CardTransactionsController < ApplicationController
 
   def create
     @card_transaction = CardTransaction.new(card_transaction_params)
-    @card_transaction.build_month_year
+    @card_transaction.build_month_year if @card_transaction.user_card_id
 
     if params[:commit] == "Update"
       respond_to do |format|
