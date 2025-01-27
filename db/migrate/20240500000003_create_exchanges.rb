@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Exchange Migration
-class CreateExchanges < ActiveRecord::Migration[7.1]
+class CreateExchanges < ActiveRecord::Migration[8.0]
   def change
     create_table :exchanges do |t|
       t.integer :exchange_type, null: false, default: 0

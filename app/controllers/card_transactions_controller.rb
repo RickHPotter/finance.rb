@@ -15,16 +15,16 @@ class CardTransactionsController < ApplicationController
     @user_card = UserCard.find_by(id: user_card_id)
     redirect_to new_card_transaction_path and return if @user_card.blank?
 
-    max_date = @user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)")
-    l_date, r_date = RefMonthYear.get_span(Date.current, max_date, 6)
+    @card_installments = Logic::CardInstallments.find_by_span(@user_card, 6)
 
-    @card_installments = @user_card.card_installments
-                                   .includes(card_transaction: %i[categories entities])
-                                   .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", l_date, r_date)
-                                   .order("installments.date DESC")
-                                   .group_by { |t| Date.new(t.year, t.month) }
-                                   .sort
-                                   .reverse
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        set_tabs(active_menu: :card, active_sub_menu: @user_card.user_card_name.to_sym)
+        render turbo_stream: [ turbo_stream.update(:tabs, partial: "shared/tabs"),
+                               turbo_stream.replace(:center_container, template: "card_transactions/index", locals: { card_transactions: @card_transactions }) ]
+      end
+    end
   end
 
   def show; end

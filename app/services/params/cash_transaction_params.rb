@@ -38,8 +38,7 @@ module Params
       installment_price = (price / count).round(2)
 
       (1..count).map do |i|
-        # FIXME: shouldnt this be next_month, plus paid should be here in Transaction and Installment
-        { number: i, date: date.next_day(i - 1), month:, year:, price: installment_price }
+        { number: i, date: date.next_month(i - 1), month:, year:, price: installment_price }
       end
     end
 

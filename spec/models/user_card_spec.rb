@@ -28,7 +28,7 @@ RSpec.describe UserCard, type: :model do
         expect(subject).to be_valid
       end
 
-      %i[current_due_date min_spend credit_limit].each do |attribute|
+      %i[min_spend credit_limit].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
 

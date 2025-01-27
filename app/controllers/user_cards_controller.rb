@@ -21,72 +21,33 @@ class UserCardsController < ApplicationController
     @user_card = Logic::UserCards.create(user_card_params)
     @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
 
-    # FIXME: handle this monstrosity by creating .turbo_stream.erb files
     if @card_transaction
-      respond_to do |format|
-        set_user_cards
-        set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
-        format.turbo_stream do
-          render turbo_stream: [ turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }),
-                                 turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "Card has been created." }),
-                                 turbo_stream.replace(:tabs, partial: "shared/tabs") ]
-        end
-      end
-    else
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }),
-                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) ]
-        end
-      end
+      set_user_cards
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
     end
+
+    respond_to(&:turbo_stream)
   end
 
   def edit; end
 
-  def update # rubocop:disable all
+  def update
     @user_card = Logic::UserCards.update(@user_card, user_card_params)
     @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
 
-    # FIXME: handle this monstrosity by creating .turbo_stream.erb files
     if @card_transaction
-      respond_to do |format|
-        format.turbo_stream do
-          set_user_cards
-          if @user_card.active?
-            set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
-            render turbo_stream: [ turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }),
-                                   turbo_stream.replace(:notification, partial: "shared/flash", locals: { notice: "Card has been updated." }),
-                                   turbo_stream.replace(:tabs, partial: "shared/tabs") ]
-          else
-            index
-            render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/index") ]
-          end
-        end
-      end
-    else
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }),
-                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) ]
-        end
-      end
+      set_user_cards
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @user_card.active?
     end
+
+    respond_to(&:turbo_stream)
   end
 
   def destroy
-    respond_to do |format|
-      format.turbo_stream do
-        index
-        if @user_card.card_transactions.empty?
-          @user_card.destroy
-          render turbo_stream: [ turbo_stream.replace(:center_container, template: "user_cards/index"),
-                                 turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Card has been deleted." }) ]
-        else
-          render turbo_stream: [ turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "User Card with transactions cannot be deleted." }) ]
-        end
-      end
-    end
+    @user_card.destroy if @user_card.card_transactions.empty?
+    index
+
+    respond_to(&:turbo_stream)
   end
 
   private
@@ -98,7 +59,8 @@ class UserCardsController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def user_card_params
-    params.require(:user_card).permit(:user_card_name, :days_until_due_date, :current_closing_date, :current_due_date, :min_spend,
-                                      :credit_limit, :active, :user_id, :card_id)
+    params.require(:user_card).permit(
+      :user_card_name, :current_closing_date, :current_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id
+    )
   end
 end

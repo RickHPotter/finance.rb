@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # CardTransaction Migration
-class CreateCardTransactions < ActiveRecord::Migration[7.1]
+class CreateCardTransactions < ActiveRecord::Migration[8.0]
   def change
     create_table :card_transactions do |t|
       t.string :description, null: false

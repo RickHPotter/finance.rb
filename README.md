@@ -14,7 +14,7 @@
     - [GAARA-08/be-07: Refine Seeds and fix possible bugs found at this stage](#gaara-08be-07-refine-seeds-and-fix-possible-bugs-found-at-this-stage)
     - [GAARA-09/fe-01: Refine AutocompleteSelect](#gaara-09fe-01-refine-autocompleteselect)
     - [GAARA-10/fe-02: Create a Component that allows to select multiple options](#gaara-10fe-02-create-a-component-that-allows-to-select-multiple-options)
-    - [GAARA-11/fe-03: Refine TabComponent, Create 3-way Form for Category, Entity and Card](#gaara-11fe-03-refine-tabcomponent-create-3-way-form-for-category-entity-and-card)
+    - [GAARA-11/fe-03: Refine `TabComponent`, Create CRUD for Category, Entity and Card](#gaara-11fe-03-refine-tabcomponent-create-crud-for-category-entity-and-card)
     - [GAARA-12/fe-04: Finish the MVP](#gaara-12fe-04-finish-the-mvp)
 <!--toc:end-->
 
@@ -247,7 +247,7 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
   - ✅ Successfully update __Ruby on Rails__ from 7.1.2 to 7.2.
   - ✅ Clear up current deprecation warnings based on future update to Rails 8.
 
-### GAARA-11/fe-03: Refine `TabComponent`, Create 3-way Form for Category, Entity and Card
+### GAARA-11/fe-03: Refine `TabComponent`, Create CRUD for Category, Entity and Card
 
 - Issues:
   - [#12](https://github.com/RickHPotter/finance.rb/issues/12)

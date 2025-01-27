@@ -1,5 +1,5 @@
 <%= turbo_frame_tag :center_container do %>
-  <div class="flex m-3 justify-between">
+  <div class="flex justify-between">
     <%= link_to "New User Card",
                 new_user_card_path,
                 class: "rounded-lg bg-gray-200 shadow py-3 px-5 block font-medium",
@@ -27,6 +27,7 @@
             <th scope="col" width="15%" class="px-6 py-3 border-x text-center"> Due Date </th>
             <th scope="col" width="15%" class="px-6 py-3 border-x text-right"> Min Spend </th>
             <th scope="col" width="15%" class="px-6 py-3 border-x text-right"> Credit Limit </th>
+            <th scope="col" width="15%" class="px-6 py-3 border-x text-center"> Actions </th>
           </tr>
         </thead>
 

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # CardTransaction/CashTransaction Migration
-class CreateInstallments < ActiveRecord::Migration[7.1]
+class CreateInstallments < ActiveRecord::Migration[8.0]
   def change
     create_table :installments do |t|
       t.integer :number, null: false

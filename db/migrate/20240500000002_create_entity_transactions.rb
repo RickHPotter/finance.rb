@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Entity/Transaction Migration
-class CreateEntityTransactions < ActiveRecord::Migration[7.1]
+class CreateEntityTransactions < ActiveRecord::Migration[8.0]
   def change
     create_table :entity_transactions do |t|
       t.boolean :is_payer, null: false, default: false

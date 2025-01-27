@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # CashTransaction Migration
-class CreateCashTransactions < ActiveRecord::Migration[7.1]
+class CreateCashTransactions < ActiveRecord::Migration[8.0]
   def change
     create_table :cash_transactions do |t|
       t.string :description, null: false

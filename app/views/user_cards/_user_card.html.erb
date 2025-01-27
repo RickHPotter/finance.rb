@@ -5,7 +5,7 @@
     </th>
     <th class="px-6 py-4 whitespace-nowrap border-x text-center" >
       <span class="inline-flex items-center px-1 rounded-sm bg-white text-blue-700">
-        <%= link_to user_card.user_card_name, edit_user_card_path(user_card), data: { turbo_frame: :center_container } %>
+        <%= link_to user_card.user_card_name, card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       </span>
     </th>
     <th class="px-6 py-4 whitespace-nowrap border-x text-center" >
@@ -21,9 +21,15 @@
       <%= from_cent_based_to_float(user_card.credit_limit, "R$") %>
     </td>
     <th class="px-6 py-4 whitespace-nowrap" >
-      <span class="inline-flex items-center px-1 rounded-sm bg-black text-red-600">
-        <%= link_to "DELETE", user_card, data: { turbo_method: :delete } %>
-      </span>
+      <div class="flex items-center justify-between px-2 my-1 rounded-md bg-white">
+        <%= link_to edit_user_card_path(user_card), class: "text-blue-600", data: { turbo_frame: :center_container } do %>
+          <%= render "shared/svgs/cog" %>
+        <% end %>
+
+        <%= link_to user_card, class: "text-red-600", data: { turbo_method: :delete } do %>
+          <%= render "shared/svgs/destroy" %>
+        <% end %>
+      </div>
     </td>
   </tr>
 <% end %>

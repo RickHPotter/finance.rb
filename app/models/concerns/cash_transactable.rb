@@ -34,7 +34,9 @@ module CashTransactable
   def attach_cash_transaction
     self.previous_cash_transaction_id = cash_transaction&.id
     self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params.merge(category_transactions:)) ||
-                            CashTransaction.create(cash_transaction_params.merge(price:, category_transactions_attributes:, date: cash_transaction_date))
+                            CashTransaction.create(cash_transaction_params.merge(price:, category_transactions_attributes:,
+                                                                                 cash_installments_attributes:,
+                                                                                 date: cash_transaction_date))
   end
 
   # Deals with change of `cash_transaction` due to change of self FKs, by performing necessary operations to the `previous_cash_transaction`
@@ -97,6 +99,10 @@ module CashTransactable
     else
       update_cash_transaction
     end
+  end
+
+  def cash_installments_attributes
+    [ { number: 1, price: price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
   end
 
   # @see {CashTransaction}.

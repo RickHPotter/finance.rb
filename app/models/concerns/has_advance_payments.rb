@@ -82,9 +82,8 @@ module HasAdvancePayments
       user_id:,
       cash_transaction_type: model_name.name,
       user_card_id:,
-      category_transactions: FactoryBot.build_list(
-        :category_transaction, 1, transactable: self, category: user.built_in_category("CARD ADVANCE")
-      )
+      cash_installments_attributes: [ { number: 1, price: price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ],
+      category_transactions: FactoryBot.build_list(:category_transaction, 1, transactable: self, category: user.built_in_category("CARD ADVANCE"))
     }
   end
 end

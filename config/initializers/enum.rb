@@ -4,7 +4,8 @@ MONTHS_FULL = %w[Janvier Fevrier Mars Avril Mai June Jui Août Septembre Octobre
 MONTHS_ABBR = %w[Jan Fev Mars Avril Mai June Jui Août Sept Oct Nov Dec].freeze
 
 def import_from_excel
-  User.find_by(first_name: "Rikki", last_name: "Potteru").destroy
+  user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+  user.destroy if user.present?
 
   wsl = File.join("/mnt", "c", "Users", "Administrator", "Downloads", "finance.xlsx")
   lnx = File.join("/home", "lovelace", "Downloads", "finance.xlsx")

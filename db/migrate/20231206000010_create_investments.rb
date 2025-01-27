@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Investment Migration
-class CreateInvestments < ActiveRecord::Migration[7.0]
+class CreateInvestments < ActiveRecord::Migration[8.0]
   def change
     create_table :investments do |t|
       t.string :description, null: true
