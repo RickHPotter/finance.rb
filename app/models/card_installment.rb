@@ -95,7 +95,15 @@ class CardInstallment < Installment
   # @return [Hash] The generated attributes.
   #
   def category_transactions_attributes
-    category_transactions.merge(id: nil)
+    [ category_transactions.merge(id: nil) ]
+  end
+
+  # Generates a `entity_transactions_attributes` for the associated `cash_transaction` that mounts up the card invoice.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def entity_transactions_attributes
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name).id } ]
   end
 
   # @private_instance_methods .................................................

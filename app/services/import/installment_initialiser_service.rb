@@ -12,9 +12,9 @@ module Import
       user_card_name = user_card.user_card_name
       card_installments_count = transaction_zero[:installments_count]
 
-      indexes = filter_indexes(user_card_name, transaction_zero, card_installments_count)
-      indexes = filter_indexes_again(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
-      indexes = filter_indexes_once_again(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
+      indexes = filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
+      indexes = filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
+      indexes = filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
 
       card_installments = indexes.map do |index|
         installment = transactions_collection[user_card_name][:with_pending_installments][index]
@@ -29,7 +29,7 @@ module Import
       validate_installments(transaction_zero, card_installments)
     end
 
-    def filter_indexes(user_card_name, transaction_zero, card_installments_count)
+    def filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
       transactions_collection[user_card_name][:with_pending_installments].each_with_index.map do |transaction, index|
         next if transaction[:installments_count] == 1
         next if transaction[:installments_count] != card_installments_count
@@ -43,7 +43,7 @@ module Import
       validate_installments_count_by_indexes(indexes, card_installments_count, transaction_zero[:description])
     end
 
-    def filter_indexes_again(indexes, user_card_name, transaction_zero, card_installments_count)
+    def filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count)
       indexes.map do |index|
         transaction = transactions_collection[user_card_name][:with_pending_installments][index]
 
@@ -56,7 +56,7 @@ module Import
       validate_installments_count_by_indexes(indexes, card_installments_count, transaction_zero[:description])
     end
 
-    def filter_indexes_once_again(indexes, user_card_name, transaction_zero, card_installments_count)
+    def filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count)
       transaction_zero_date = transaction_zero[:date]
       transaction_zero_reference = Date.new(2000 + transaction_zero[:year], transaction_zero[:month])
 

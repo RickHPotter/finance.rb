@@ -70,6 +70,18 @@ module HasAdvancePayments
     CashTransaction.find(cash_transaction_id_to_be_destroyed).destroy
   end
 
+  def cash_installments_attributes
+    [ { number: 1, price: price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
+  end
+
+  def entity_transactions_attributes
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name).id } ]
+  end
+
+  def category_transactions_attributes
+    [ { category_id: user.built_in_category("CARD ADVANCE").id } ]
+  end
+
   # @see {CashTransaction}.
   #
   # @return [Hash] The params for the associated `advance_cash_transaction`.
@@ -82,8 +94,9 @@ module HasAdvancePayments
       user_id:,
       cash_transaction_type: model_name.name,
       user_card_id:,
-      cash_installments_attributes: [ { number: 1, price: price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ],
-      category_transactions: FactoryBot.build_list(:category_transaction, 1, transactable: self, category: user.built_in_category("CARD ADVANCE"))
+      cash_installments_attributes:,
+      entity_transactions_attributes:,
+      category_transactions_attributes:
     }
   end
 end

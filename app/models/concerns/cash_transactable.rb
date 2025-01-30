@@ -33,10 +33,8 @@ module CashTransactable
   #
   def attach_cash_transaction
     self.previous_cash_transaction_id = cash_transaction&.id
-    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params.merge(category_transactions:)) ||
-                            CashTransaction.create(cash_transaction_params.merge(price:, category_transactions_attributes:,
-                                                                                 cash_installments_attributes:,
-                                                                                 date: cash_transaction_date))
+    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params) ||
+                            CashTransaction.create(new_cash_transaction_params)
   end
 
   # Deals with change of `cash_transaction` due to change of self FKs, by performing necessary operations to the `previous_cash_transaction`
@@ -72,10 +70,8 @@ module CashTransactable
   # @return [void].
   #
   def update_cash_transaction
-    transactable = cash_transaction.public_send(model_name.plural)
-    price = transactable.sum(:price).round(2)
-
-    cash_transaction.update_columns(price:, comment:)
+    cash_transaction.update_columns(price: full_price, comment:)
+    cash_transaction.cash_installments.first.update_columns(price: full_price)
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -101,25 +97,41 @@ module CashTransactable
     end
   end
 
-  def cash_installments_attributes
-    [ { number: 1, price: price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
-  end
-
   # @see {CashTransaction}.
   #
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    params = {
+    {
       description:,
       month:,
       year:,
       user_id:,
-      cash_transaction_type: model_name.name
-    }
-    params[:user_card_id] = user_card_id if respond_to? :user_card_id
-    params[:user_bank_account_id] = user_bank_account_id if respond_to? :user_bank_account_id
+      cash_transaction_type: model_name.name,
+      category_transactions:,
+      user_card_id: (user_card_id if respond_to? :user_card_id),
+      user_bank_account_id: (user_bank_account_id if respond_to? :user_bank_account_id)
+    }.compact_blank
+  end
 
-    params
+  def new_cash_transaction_params
+    cash_transaction_params
+      .without(:category_transactions)
+      .merge(price:,
+             date: cash_transaction_date,
+             category_transactions_attributes:,
+             entity_transactions_attributes:,
+             cash_installments_attributes:)
+  end
+
+  def cash_installments_attributes
+    [ { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
+  end
+
+  def full_price
+    return price if cash_transaction.nil?
+
+    transactable = cash_transaction.public_send(model_name.plural)
+    transactable.sum(:price).round(2)
   end
 end

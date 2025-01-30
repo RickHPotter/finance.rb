@@ -31,7 +31,7 @@ class UserCard < ApplicationRecord
   has_many :card_transactions
   has_many :card_installments, through: :card_transactions
   has_many :card_installments_invoices, lambda {
-    joins(:categories).where(categories: { category_name: "CARD PAYMENT" })
+    joins(:categories).where(categories: { category_name: "CARD PAYMENT" }).distinct
   }, through: :card_installments, source: :cash_transaction
   has_many :cash_transactions
 

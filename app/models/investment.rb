@@ -62,7 +62,7 @@ class Investment < ApplicationRecord
     "Days: [#{cash_transaction.investments.order(:date).map(&:day).join(', ')}]"
   end
 
-  # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the card invoice.
+  # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the investment entries.
   #
   # @return [Hash] The generated attributes.
   #
@@ -70,12 +70,20 @@ class Investment < ApplicationRecord
     { category_id: user.built_in_category("INVESTMENT").id }
   end
 
-  # Generates a `category_transactions_attributes` for the associated `cash_transaction` that mounts up the card invoice.
+  # Generates a `category_transactions_attributes` for the associated `cash_transaction` that mounts up the investment entries.
   #
   # @return [Hash] The generated attributes.
   #
   def category_transactions_attributes
     category_transactions.merge(id: nil)
+  end
+
+  # Generates a `entity_transactions_attributes` for the associated `cash_transaction` that mounts up the investment entries.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def entity_transactions_attributes
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_bank_account.bank.bank_name).id } ]
   end
 
   # @private_instance_methods .................................................
