@@ -253,7 +253,6 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
   - [#12](https://github.com/RickHPotter/finance.rb/issues/12)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests ~before~.
   - ✅ Create `:index` for `CardTransaction` and `CashTransaction`, based on `_installments`.
   - ✅ Make the `Item` `Struct` of the `TabComponent` cleaner using a Controller Concern.
   - ✅ Enable `TabComponent` to start with its `moving_part` at any `item` and `sub_item`.
@@ -277,6 +276,7 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
   - [#13](https://github.com/RickHPotter/finance.rb/issues/13)
 
 - Subtasks:
+  - ⌛ Use TDD approach; create the tests ~before~ after.
   - ⌛ Fix `FIXMEs` concerning `Devise` views.
   - ⌛ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.

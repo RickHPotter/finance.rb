@@ -47,6 +47,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_cards_on_bank_id"
+    t.index ["card_name"], name: "index_cards_on_card_name", unique: true
   end
 
   create_table "cash_transactions", force: :cascade do |t|
@@ -73,9 +74,11 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "categories", force: :cascade do |t|
     t.string "category_name", null: false
     t.boolean "built_in", default: false, null: false
+    t.boolean "active", default: true, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id", "category_name"], name: "index_category_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_categories_on_user_id"
   end
 
@@ -92,9 +95,12 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
 
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
+    t.boolean "active", default: true, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["entity_name"], name: "index_entities_on_entity_name", unique: true
+    t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
 
@@ -181,12 +187,13 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.date "current_due_date", null: false
     t.integer "min_spend", null: false
     t.integer "credit_limit", null: false
-    t.boolean "active", null: false
+    t.boolean "active", default: true, null: false
     t.bigint "user_id", null: false
     t.bigint "card_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["card_id"], name: "index_user_cards_on_card_id"
+    t.index ["user_card_name"], name: "index_user_cards_on_user_card_name", unique: true
     t.index ["user_id"], name: "index_user_cards_on_user_id"
   end
 

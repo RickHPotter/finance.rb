@@ -4,7 +4,7 @@
     <%= hidden_field_tag :closing_date_day, card_transaction.user_card&.current_closing_date&.day, data: { reactive_form_target: :closingDateDay } %>
     <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: :daysUntilDueDate } %>
 
-    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
+    <% action = card_transaction.persisted? ? "keyup->autosave#save" : "" %>
 
     <div class="w-full mb-6">
       <%= form.text_field \

@@ -1,0 +1,29 @@
+en:
+  activerecord:
+    models:
+      category:
+        one: Category
+        other: Categories
+    attributes:
+      category:
+        id: ID
+        category_name: Category Name
+        active: Active
+        user_id: User
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      category:
+        one: Categoria
+        other: Categorias
+    attributes:
+      category:
+        id: ID
+        category_name: Nome da Categoria
+        active: Ativo
+        user_id: Usuário
+        created_at: Criado em
+        updated_at: Atualizado em

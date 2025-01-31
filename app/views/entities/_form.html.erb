@@ -1,6 +1,24 @@
 <%= turbo_frame_tag dom_id entity do %>
   <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+
+    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
+
     <%= form.hidden_field :user_id, value: @user.id %>
+
+    <div class="w-full mb-6">
+      <%= form.text_field \
+            :entity_name,
+            class: autosave_input_class, autofocus: true, autocomplete: :off,
+            data: { autosave_target: :input, placeholder: "Entity Name", placeholder_type: :word } %>
+    </div>
+
+    <div>
+      <%= bold_label(form, :active) %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.checkbox :active, class: "text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2", checked: entity.new_record? || entity.active %>
+    </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit Entity" } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>

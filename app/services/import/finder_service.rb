@@ -20,7 +20,7 @@ module Import
       return @main_service.user_cards[card_name] if @main_service.user_cards[card_name]
 
       bank = Bank.find_or_create_by(bank_name: card_name, bank_code: card_name.upcase)
-      card = Card.find_or_create_by(card_name: card_name, bank:)
+      card = Card.find_or_create_by(card_name:, bank:)
 
       @main_service.user_cards[card_name] = UserCard.find_or_create_by(user:, card:, min_spend: 0, credit_limit: 1000, active: true) do |user_card|
         user_card.current_due_date = Date.current.end_of_month
