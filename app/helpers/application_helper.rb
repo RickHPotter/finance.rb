@@ -6,6 +6,6 @@ module ApplicationHelper
   #
   # @return [String]
   def from_cent_based_to_float(price, currency = "")
-    "#{currency} #{price.to_s.ljust(4, '0').insert(-3, '.')}"
+    "#{currency} #{price.to_s.rjust(4, '0').insert(-3, '.')}"
   end
 end

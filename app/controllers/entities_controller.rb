@@ -4,12 +4,13 @@ class EntitiesController < ApplicationController
   include TabsConcern
 
   before_action :set_user, only: %i[index new create edit update destroy]
-  before_action :set_entities, only: %i[new create edit update]
+  before_action :set_entity, only: %i[edit update destroy]
+  before_action :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @entities = current_user.entities.where(conditions)
+    @entities = current_user.entities.where(conditions).order(:entity_name)
   end
 
   def show; end
@@ -19,15 +20,35 @@ class EntitiesController < ApplicationController
   end
 
   def create
-    @entity = Entity.new(card_params)
+    @entity = Logic::Entities.create(entity_params)
+    @card_transaction = Logic::CardTransactions.create_from(entity: @entity) if @entity.valid?
+
+    if @card_transaction
+      set_user_cards
+      set_entities
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+    end
+
+    respond_to(&:turbo_stream)
   end
 
   def edit; end
 
-  def update; end
+  def update
+    @entity = Logic::Entities.update(@entity, entity_params)
+    @card_transaction = Logic::CardTransactions.create_from(entity: @entity) if @entity.valid?
+
+    if @card_transaction
+      set_user_cards
+      set_entities
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @entity.active?
+    end
+
+    respond_to(&:turbo_stream)
+  end
 
   def destroy
-    @entity.destroy if @entity.card_transactions.empty?
+    @entity.destroy if @entity.card_transactions.empty? && @entity.cash_transactions.empty?
     index
 
     respond_to(&:turbo_stream)
@@ -42,6 +63,6 @@ class EntitiesController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def entity_params
-    params.require(:entity).permit(:entity_name, :active)
+    params.require(:entity).permit(:entity_name, :active, :user_id)
   end
 end

@@ -16,6 +16,10 @@ module HasActive
   end
 
   # @public_class_methods .....................................................
+  def inactive?
+    !active
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

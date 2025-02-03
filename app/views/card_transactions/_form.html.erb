@@ -62,7 +62,7 @@
               data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" } %>
       </div>
 
-      <div class="flex lg:w-12/12">
+      <div class="flex">
         <div class="w-2/3 lg:w-3/5 mb-3 lg:mb-0">
           <%= render TextFieldComponent.new \
                 form, :price,
@@ -118,13 +118,13 @@
       <% end %>
 
       <!-- inserted elements -->
-      <div data-nested-form-target='target'></div>
+      <div data-nested-form-target="target"></div>
 
       <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addCategory, action: "nested-form#add" } %>
     </div>
 
     <!-- Entities -->
-    <div data-controller='nested-form' data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
           <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>
@@ -136,7 +136,7 @@
       <% end %>
 
       <!-- inserted elements -->
-      <div data-nested-form-target='target'></div>
+      <div data-nested-form-target="target"></div>
 
       <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
     </div>

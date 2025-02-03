@@ -77,18 +77,18 @@ module HasMonthYear
   #
   # @note This is a method that is called before_validation.
   #
-  # @see {#set_month_year_card_transaction}.
-  # @see {#set_month_year_installment}.
-  #
   # @return [void].
   #
   def set_month_year
+    return if defined?(imported) && imported
+    return if defined?(card_transaction) && card_transaction.imported
+
     if instance_of?(CardTransaction) || instance_of?(CardInstallment)
-      self.month ||= cash_transaction_date.month
-      self.year  ||= cash_transaction_date.year
+      self.month = cash_transaction_date.month
+      self.year  = cash_transaction_date.year
     else
-      self.month ||= date&.month
-      self.year  ||= date&.year
+      self.month ||= date.month
+      self.year  ||= date.year
     end
   end
 end

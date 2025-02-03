@@ -1,6 +1,6 @@
 <% content_for(:auth_header) do %>
-  <h2 class='mt-6 text-center text-3xl font-bold tracking-tight text-gray-900'>Create your account</h2>
-  <p class='mt-2 text-center text-sm text-gray-600'>
+  <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Create your account</h2>
+  <p class="mt-2 text-center text-sm text-gray-600">
     Have an account already?
     <%= link_to "Log in", new_session_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
@@ -30,7 +30,7 @@
     <%= render TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: "Password Confirmation") %>
 
     <% if @minimum_password_length %>
-      <span class='text-xs font-graduate text-gray-500'>(<%= @minimum_password_length %> characters minimum)</span>
+      <span class="text-xxs font-graduate text-gray-500">(<%= @minimum_password_length %> characters minimum)</span>
     <% end %>
   </div>
 

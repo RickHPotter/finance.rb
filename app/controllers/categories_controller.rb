@@ -4,12 +4,13 @@ class CategoriesController < ApplicationController
   include TabsConcern
 
   before_action :set_user, only: %i[index new create edit update destroy]
-  before_action :set_categories, only: %i[new create edit update]
+  before_action :set_category, only: %i[edit update destroy]
+  before_action :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @categories = current_user.categories.where(conditions)
+    @categories = current_user.categories.where(conditions).order(:category_name)
   end
 
   def show; end
@@ -19,15 +20,35 @@ class CategoriesController < ApplicationController
   end
 
   def create
-    @category = Category.new(card_params)
+    @category = Logic::Categories.create(category_params)
+    @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
+
+    if @card_transaction
+      set_user_cards
+      set_categories
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+    end
+
+    respond_to(&:turbo_stream)
   end
 
   def edit; end
 
-  def update; end
+  def update
+    @category = Logic::Categories.update(@category, category_params)
+    @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
+
+    if @card_transaction
+      set_user_cards
+      set_categories
+      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @category.active?
+    end
+
+    respond_to(&:turbo_stream)
+  end
 
   def destroy
-    @category.destroy if @category.card_transactions.empty?
+    @category.destroy if @category.card_transactions.empty? && @category.cash_transactions.empty? && @category.investments.empty?
     index
 
     respond_to(&:turbo_stream)
@@ -42,6 +63,6 @@ class CategoriesController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def category_params
-    params.require(:category).permit(:category_name, :active)
+    params.require(:category).permit(:category_name, :active, :user_id)
   end
 end

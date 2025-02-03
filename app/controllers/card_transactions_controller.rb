@@ -9,20 +9,14 @@ class CardTransactionsController < ApplicationController
   before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    user_card_id = params[:user_card_id]
-    redirect_to new_card_transaction_path and return if user_card_id.blank?
-
-    @user_card = UserCard.find_by(id: user_card_id)
-    redirect_to new_card_transaction_path and return if @user_card.blank?
-
-    @card_installments = Logic::CardInstallments.find_by_span(@user_card, 6)
+    @user_card = current_user.user_cards.find_by(id: params[:user_card_id])
+    @card_installments = Logic::CardInstallments.find_by_span(@user_card, 6) if @user_card
+    @card_installments ||= Logic::CardInstallments.find_by_params(current_user, params)
 
     respond_to do |format|
       format.html
       format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @user_card.user_card_name.to_sym)
-        render turbo_stream: [ turbo_stream.update(:tabs, partial: "shared/tabs"),
-                               turbo_stream.replace(:center_container, template: "card_transactions/index", locals: { card_transactions: @card_transactions }) ]
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name&.to_sym || "")
       end
     end
   end
@@ -30,7 +24,8 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new
+    @card_transaction = CardTransaction.new(user_card: current_user.user_cards.active.order(:user_card_name).first)
+    @card_transaction.build_month_year
   end
 
   def edit

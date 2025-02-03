@@ -14,5 +14,20 @@ module Logic
                .sort
                .reverse
     end
+
+    def self.find_by_params(user, params)
+      conditions = {}
+      category_transactions = { category_id: params[:category_id] } if params[:category_id]
+      entity_transactions   = { entity_id: params[:entity_id] }     if params[:entity_id]
+      conditions[:card_transaction] = { category_transactions:, entity_transactions: }.compact
+
+      user.card_installments
+          .includes(card_transaction: %i[categories entities])
+          .where(conditions)
+          .order("installments.date DESC")
+          .group_by { |t| Date.new(t.year, t.month) }
+          .sort
+          .reverse
+    end
   end
 end

@@ -128,7 +128,7 @@ module Import
       when "CARD ADVANCE"
         params[:price] *= -1
         card_transaction = user.card_transactions.joins(:categories).find_by(params)
-        card_transaction.update(date: transaction[:date])
+        card_transaction.update(date: transaction[:date], imported: true)
       end
     end
   end

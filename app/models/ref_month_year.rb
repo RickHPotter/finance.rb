@@ -32,7 +32,7 @@ class RefMonthYear
   # @return [String] Formatted `month` and `year` string in the format "MONTH <YEAR>".
   #
   def month_year
-    "#{MONTHS_ABBR[@month - 1].upcase} <#{@year}>"
+    "#{MONTHS_ABBR[@month - 1].upcase} <#{@year - 2000}>"
   end
 
   # Initialises a new {RefMonthYear} instance from a string.

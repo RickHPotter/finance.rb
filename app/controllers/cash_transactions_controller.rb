@@ -10,7 +10,9 @@ class CashTransactionsController < ApplicationController
   end
 
   def show; end
+
   def edit; end
+
   def update; end
 
   def new
@@ -28,10 +30,6 @@ class CashTransactionsController < ApplicationController
   # Use callbacks to share common setup or constraints between actions.
   def set_card_transaction
     @cash_transaction = CashTransaction.find(params[:id])
-  end
-
-  def set_user
-    @user = current_user if user_signed_in?
   end
 
   # Only allow a list of trusted parameters through.

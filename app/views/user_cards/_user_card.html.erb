@@ -4,7 +4,7 @@
       <%= user_card.card.card_name %>
     </th>
     <th class="px-6 py-4 whitespace-nowrap border-x text-center" >
-      <span class="inline-flex items-center px-1 rounded-sm bg-white text-blue-700">
+      <span class="inline-flex items-center px-1 rounded-xs bg-white text-blue-700">
         <%= link_to user_card.user_card_name, card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       </span>
     </th>

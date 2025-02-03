@@ -27,13 +27,13 @@ peace.
 
 ## SPRINT PLANNING I: GAARA
 
-Starting point for a v0.1 release of my app called finance.rb (yeah, finance.rb).
+Starting point for a `v0.1` release of my app called `finance.rb` (yeah, `finance.rb`).
 
 This milestone includes covering much of the product logic and providing enough visual resources to use the logic so far applied. As it's the first sprint, it also means we have a lot of TODOs and FIXMEs to recognise during development for next sprints.
 
-Gaara is the first sprint and it is supposed to take longer than the average sprint. The reasons are:
+__Gaara__ is the first sprint and it is supposed to take longer than the average sprint. The reasons are:
 
-1. I'm starting just now, this is, after all, the first sprint. Like most projects at their kickstart, it is just one person: me.
+1. I'm starting just now, this is, after all, the first sprint. Like most projects at their kick-start, it is just one person: me.
 
 2. I had a 2-week holiday and didn't touch the project whatsoever.
 
@@ -53,7 +53,9 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
 
 10. Decided to focus more on my work and my final college months before graduation and only came back in December.
 
-11. Came back at the end of December to start the penultimate issue filling it up with many other features that were not asked in the task.
+11. Came back in `December the 19th` to start the penultimate issue filling it up with many other features that were not asked in the task. PS: There was a problem with the `fe-03` PR, I had to rewrite Author and that caused the date of commits to all default to `January the 25th`, but they were spanning from `December the 19th`.
+
+Possible Downtime: 6 months and a half
 
 ### GAARA-01/be-01: Finish late Model Specs
 
@@ -258,8 +260,8 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
   - ✅ Enable `TabComponent` to start with its `moving_part` at any `item` and `sub_item`.
   - ✅ Pass in dependents `onClickEvent` of updating their parent's links.
   - ✅ Add form and a minimum CRUD for `UserCards`.
-  - ⌛ Add form and a minimum CRUD for `Entities`.
-  - ⌛ Add form and a minimum CRUD for `Categories`.
+  - ✅ Add form and a minimum CRUD for `Entities`.
+  - ✅ Add form and a minimum CRUD for `Categories`.
 - Extra:
   - ✅ Create an import service.
   - ✅ Rename `MoneyTransaction` to `CashTransaction` and STI usage of `Installemnts`.
@@ -269,6 +271,7 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
   - ✅ Fix the dependent relationships, so that a `User` can self-destruct.
   - ✅ Successfully update __Ruby__ from 3.3.4 to 3.4.1.
   - ✅ Successfully update __Ruby on Rails__ from 7.2.2 to 8.0.1.
+  - ✅ Successfully update __Tailwind__ from `v3` to `v4`.
 
 ### GAARA-12/fe-04: Finish the MVP
 
@@ -277,9 +280,11 @@ Gaara is the first sprint and it is supposed to take longer than the average spr
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests ~before~ after.
-  - ⌛ Fix `FIXMEs` concerning `Devise` views.
+  - ⌛ Fix `FIXMEs`, `TODOs`, and such.
   - ⌛ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
   - ⌛ Add form for `CashTransaction`.
-  - ⌛ Use modern `datatables` with `Hotwire` and `Pagy` for the `:index` actions.
+  - ⌛ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
+  - ⌛ Create search sub_link in `CardTransaction`'s `:index`.
+  - ⌛ Fix locale from end to end in whole application.

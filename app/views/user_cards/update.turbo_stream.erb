@@ -1,5 +1,5 @@
 <% if @card_transaction %>
-  <% if @user_card.ative? %>
+  <% if @user_card.active? %>
     <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
     <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Card has been updated." }) %>
     <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>

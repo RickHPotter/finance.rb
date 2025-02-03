@@ -1,5 +1,3 @@
-const defaultTheme = require("tailwindcss/defaultTheme")
-
 module.exports = {
   content: [
     "./public/*.html",
@@ -12,10 +10,6 @@ module.exports = {
   ],
   darkMode: "class",
   theme: {
-    screens: {
-      "xs": "530px",
-      ...defaultTheme.screens,
-    },
     extend: {
       colors: {
         meat: "#f9906f",
@@ -35,12 +29,5 @@ module.exports = {
   safelist: [
     { pattern: /bg-(meat|lettuce|book|urgency|gift|honda|money|oldmoney|gold|fun|greek)/ },
     { pattern: /bg-(gray|yellow)-(400|600)/ }
-  ],
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/aspect-ratio"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/container-queries"),
-    require("flowbite/plugin")
   ]
 }

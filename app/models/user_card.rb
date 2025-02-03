@@ -41,7 +41,7 @@ class UserCard < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
-  before_validation :set_current_dates
+  before_validation :set_current_dates, if: -> { active? }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -71,13 +71,19 @@ class UserCard < ApplicationRecord
   # @return [Boolean].
   #
   def set_current_dates
-    return false if [ current_closing_date, days_until_due_date ].all?(&:nil?)
-    return false if [ days_until_due_date, current_due_date ].all?(&:nil?)
-    return false if [ current_due_date, current_closing_date ].all?(&:nil?)
+    fields_that_are_not_nil = [ current_closing_date, days_until_due_date, current_due_date ].compact
+    return if fields_that_are_not_nil.count < 2
 
-    self.days_until_due_date ||= current_due_date - current_closing_date
-    self.current_due_date ||= next_date(days: current_due_date.day)
+    update_dates
+
     self.current_closing_date ||= current_due_date - days_until_due_date
+    self.days_until_due_date  ||= (current_due_date - current_closing_date).abs
+    self.current_due_date     ||= next_date(days: current_due_date.day)
+  end
+
+  def update_dates
+    self.current_closing_date = current_closing_date + 1.month if current_closing_date && current_closing_date < Date.current
+    self.current_due_date     = current_due_date     + 1.month if current_due_date     && current_due_date     < Date.current
   end
 
   # @private_instance_methods .................................................

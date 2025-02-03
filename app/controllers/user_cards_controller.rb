@@ -5,12 +5,12 @@ class UserCardsController < ApplicationController
 
   before_action :set_user, only: %i[index new create edit update destroy]
   before_action :set_user_card, only: %i[edit update destroy]
-  before_action :set_cards, :set_user_cards, only: %i[new create edit update]
+  before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @user_cards = current_user.user_cards.includes(:card).where(conditions)
+    @user_cards = current_user.user_cards.includes(:card).where(conditions).order(:user_card_name)
   end
 
   def new
@@ -19,7 +19,7 @@ class UserCardsController < ApplicationController
 
   def create
     @user_card = Logic::UserCards.create(user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
+    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
     if @card_transaction
       set_user_cards
@@ -33,7 +33,7 @@ class UserCardsController < ApplicationController
 
   def update
     @user_card = Logic::UserCards.update(@user_card, user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from_user_card(@user_card) if @user_card.valid?
+    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
     if @card_transaction
       set_user_cards
