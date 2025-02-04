@@ -31,8 +31,11 @@ export default class extends Controller {
 
   connect() {
     this.applyMasks()
-    this._updateInstallmentsPrices()
-    this._updateChips()
+
+    if (this.priceInstallmentInputTargets.length > 0) {
+      this._updateInstallmentsPrices()
+      this._updateChips()
+    }
   }
 
   // Installments

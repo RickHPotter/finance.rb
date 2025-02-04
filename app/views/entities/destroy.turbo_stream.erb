@@ -1,0 +1,6 @@
+<% if @entity.destroyed? %>
+  <%= turbo_stream.replace(:center_container, template: "entities/index") %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Entity has been deleted." }) %>
+<% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Entity with transactions cannot be deleted." }) %>
+<% end %>

@@ -5,13 +5,14 @@
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
-#  price                :decimal(, )      not null
+#  description          :string
+#  price                :integer          not null
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null
 #  user_id              :bigint           not null
 #  user_bank_account_id :bigint           not null
-#  money_transaction_id :bigint
+#  cash_transaction_id  :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -19,7 +20,7 @@ class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasMonthYear
-  include MoneyTransactable
+  include CashTransactable
   include CategoryTransactable
 
   # @security (i.e. attr_accessible) ..........................................
@@ -28,7 +29,7 @@ class Investment < ApplicationRecord
   belongs_to :user_bank_account
 
   # @validations ..............................................................
-  validates :price, :date, presence: true
+  validates :date, :price, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -37,28 +38,52 @@ class Investment < ApplicationRecord
 
   protected
 
-  # Generates an `mt_description` for the associated `money_transaction` based on the `user`'s `bank_name` and `month_year`.
+  # Generates an `description` for the associated `cash_transaction` based on the `user`'s `bank_name` and `month_year`.
   #
   # @return [String] The generated description.
   #
-  def mt_description
-    "Investment #{user_bank_account.bank.bank_name} #{month_year}"
+  def description
+    "INVESTMENT #{user_bank_account.bank.bank_name} #{month_year}"
   end
 
-  # Generates a `date` for the associated `money_transaction`, picking the end of given `month` for the `money_transaction`.
+  # Generates a `date` for the associated `cash_transaction`, picking the end of given `month` for the `cash_transaction`.
   #
   # @return [Date].
   #
-  def money_transaction_date
+  def cash_transaction_date
     end_of_month
   end
 
-  # Generates a comment for the associated `money_transaction` based on investment days.
+  # Generates a comment for the associated `cash_transaction` based on investment days.
   #
   # @return [String] The generated comment.
   #
-  def mt_comment
-    "Days: [#{money_transaction.investments.order(:date).map(&:day).join(', ')}]"
+  def comment
+    "Days: [#{cash_transaction.investments.order(:date).map(&:day).join(', ')}]"
+  end
+
+  # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the investment entries.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def category_transactions
+    { category_id: user.built_in_category("INVESTMENT").id }
+  end
+
+  # Generates a `category_transactions_attributes` for the associated `cash_transaction` that mounts up the investment entries.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def category_transactions_attributes
+    category_transactions.merge(id: nil)
+  end
+
+  # Generates a `entity_transactions_attributes` for the associated `cash_transaction` that mounts up the investment entries.
+  #
+  # @return [Hash] The generated attributes.
+  #
+  def entity_transactions_attributes
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_bank_account.bank.bank_name).id } ]
   end
 
   # @private_instance_methods .................................................

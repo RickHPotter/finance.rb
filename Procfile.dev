@@ -1,2 +1,2 @@
-web: env RUBY_DEBUG_OPEN=true bin/rails server -p 3000
+web: env RUBY_DEBUG_OPEN=true bin/rails server -p 3016
 css: bin/rails tailwindcss:watch

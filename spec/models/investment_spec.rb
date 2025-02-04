@@ -5,13 +5,14 @@
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
-#  price                :decimal(, )      not null
+#  description          :string
+#  price                :integer          not null
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null
 #  user_id              :bigint           not null
 #  user_bank_account_id :bigint           not null
-#  money_transaction_id :bigint
+#  cash_transaction_id  :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #
@@ -21,7 +22,7 @@ RSpec.describe Investment, type: :model do
   include FactoryHelper
 
   let!(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
-  let!(:money_transaction) { subject.money_transaction }
+  let!(:cash_transaction) { subject.cash_transaction }
   let!(:investments) do
     build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
       inv.save(date: subject.date + i + 1)
@@ -30,11 +31,11 @@ RSpec.describe Investment, type: :model do
 
   shared_examples "investment cop" do
     it "sums the investments correctly" do
-      expect(money_transaction.price).to be_within(0.01).of money_transaction.investments.sum(:price).round(2)
+      expect(cash_transaction.price).to be_within(0.01).of cash_transaction.investments.sum(:price).round(2)
     end
 
     it "generates the comment that references every investments day" do
-      expect(money_transaction.mt_comment).to include(money_transaction.investments.order(:date).map(&:day).join(", "))
+      expect(cash_transaction.comment).to include(cash_transaction.investments.order(:date).map(&:day).join(", "))
     end
   end
 
@@ -50,7 +51,7 @@ RSpec.describe Investment, type: :model do
     end
 
     context "( associations )" do
-      ob_models = %i[money_transaction]
+      ob_models = %i[cash_transaction]
       bt_models = %i[user user_bank_account]
       hm_models = %i[category_transactions categories]
       na_models = %i[category_transactions]
@@ -65,11 +66,11 @@ RSpec.describe Investment, type: :model do
   # FIXME: move this to request spec when the view is ready
   describe "[ business logic ]" do
     context "( when new investments are created )" do
-      before { money_transaction.reload }
+      before { cash_transaction.reload }
 
-      it "applies the right relationship to the money_transaction" do
+      it "applies the right relationship to the cash_transaction" do
         2.times do |i|
-          expect(investments[i].money_transaction).to eq investments[i + 1].money_transaction
+          expect(investments[i].cash_transaction).to eq investments[i + 1].cash_transaction
         end
       end
 
@@ -82,7 +83,7 @@ RSpec.describe Investment, type: :model do
           inv.update(price: Faker::Number.number(digits: rand(3..4)))
         end
 
-        money_transaction.reload
+        cash_transaction.reload
       end
 
       include_examples "investment cop"
@@ -91,14 +92,14 @@ RSpec.describe Investment, type: :model do
     context "( when most investments are deleted )" do
       before do
         investments.each(&:destroy)
-        money_transaction.reload
+        cash_transaction.reload
       end
 
-      it "finds in money_transaction.investments only the third element" do
+      it "finds in cash_transaction.investments only the third element" do
         investments.each do |inv|
-          expect(money_transaction.investments).not_to include(inv)
+          expect(cash_transaction.investments).not_to include(inv)
         end
-        expect(money_transaction.investments).to include(subject)
+        expect(cash_transaction.investments).to include(subject)
       end
 
       include_examples "investment cop"
@@ -113,26 +114,26 @@ RSpec.describe Investment, type: :model do
         end
       end
 
-      it "deletes the corresponding money_transaction" do
-        expect(MoneyTransaction.find_by(id: money_transaction.id)).to be_nil
+      it "deletes the corresponding cash_transaction" do
+        expect(CashTransaction.find_by(id: cash_transaction.id)).to be_nil
       end
     end
 
     context "( when the user_bank_account is changed )" do
-      before { money_transaction.reload }
+      before { cash_transaction.reload }
 
-      it "creates or uses another money_transaction that fits the FK change" do
-        expect(subject.money_transaction).to eq money_transaction
-        expect(subject.money_transaction.investments.count).to eq(investments.size + 1)
-        expect(subject.money_transaction.price).to be_within(0.01).of([ subject, *investments ].sum(&:price).round(2))
+      it "creates or uses another cash_transaction that fits the FK change" do
+        expect(subject.cash_transaction).to eq cash_transaction
+        expect(subject.cash_transaction.investments.count).to eq(investments.size + 1)
+        expect(subject.cash_transaction.price).to be_within(0.01).of([ subject, *investments ].sum(&:price).round(2))
 
         subject.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: subject.user }))
-        investments.first.money_transaction.reload
+        investments.first.cash_transaction.reload
 
-        expect(subject.money_transaction).to_not eq money_transaction
-        expect(subject.money_transaction.investments.count).to eq(1)
-        expect(investments.first.money_transaction.investments.count).to eq(investments.size)
-        expect(investments.first.money_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
+        expect(subject.cash_transaction).to_not eq cash_transaction
+        expect(subject.cash_transaction.investments.count).to eq(1)
+        expect(investments.first.cash_transaction.investments.count).to eq(investments.size)
+        expect(investments.first.cash_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
       end
     end
   end

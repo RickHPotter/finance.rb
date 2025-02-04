@@ -8,11 +8,18 @@ module HasActive
     # @callbacks ..............................................................
     before_validation :set_active, on: :create
 
+    # @validations ............................................................
+    validates :active, inclusion: { in: [ true, false ] }
+
     # @scopes ...................................................................
     scope :active, -> { where(active: true) }
   end
 
   # @public_class_methods .....................................................
+  def inactive?
+    !active
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

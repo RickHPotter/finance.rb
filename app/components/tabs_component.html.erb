@@ -1,22 +1,27 @@
 <% if @dependent %>
   <div class="opacity-<%= @default ? 100 : 0 %>" role="tabpanel" id="tab-item-<%= @dependent_no %>">
 <% else %>
-  <div <%= "data-controller=material-tailwind-tab" unless @dependent %>>
+  <div <%= "data-controller=material-tailwind-tab data-load-on-empty-content=center_container" unless @dependent %>>
 <% end %>
   <ul class="relative flex list-none flex-wrap rounded-xl p-1"
-      data-tabs="tabs" data-default='<%= @default %>' data-material-tailwind-tab-target="tabList"
+      data-tabs="tabs" data-default="<%= @default %>" data-material-tailwind-tab-target="tabList"
       role="list">
 
+    <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
     <% width = @items.count %>
     <% @items.each_with_index do |item, index| %>
-      <li class='z-30 flex-auto text-center w-1/<%= width %>'
-          data-material-tailwind-tab-target='tabItem'>
-        <%= link_to item.link, role: "tab", aria: { selected: @default, controls: "tab-item-#{index}" },
-                               class: 'z-30 mb-0 flex w-full cursor-pointer items-center justify-center
-                           rounded-lg border-0 bg-inherit px-0 py-1 transition-all ease-in-out',
-                               data: { "turbo-frame": item.turbo_frame, "tab-target": "" }, tabindex: "-1" do %>
-          <%= render item.icon %>
-            <span class='ml-1 font-bold text-slate-700 dark:text-slate-200'><%= item.label %></span>
+      <li class="z-30 flex-auto text-center w-1/<%= width %>" data-material-tailwind-tab-target="tabItem">
+        <%= link_to item.link,
+                    role: "tab",
+                    aria: { selected: item.default, controls: "tab-item-#{index}" },
+                    class: "z-30 mb-0 flex w-full cursor-pointer items-center justify-center rounded-lg border-0 bg-inherit px-0 py-1 transition-all ease-in-out",
+                    data: { turbo_frame: item.turbo_frame, material_tailwind_tab_target: "tabLink", id: index, **extra_data },
+                    tabindex: "-1" do %>
+
+            <span class="pointer-events-none">
+              <%= render item.icon %>
+            </span>
+            <span class="ml-1 font-bold text-slate-700 dark:text-slate-200 pointer-events-none"><%= item.label %></span>
           <% end %>
       </li>
     <% end %>
@@ -25,7 +30,8 @@
   <% if @dependents.present? %>
     <div data-tab-content="">
       <% @dependents.each_with_index do |partial, index| %>
-        <%= render TabsComponent.new(items: partial, default: index.zero?, dependent: true, dependent_no: index) %>
+        <% current_index_is_default = @items.index(&:default) == index %>
+        <%= render TabsComponent.new(items: partial, default: current_index_is_default, dependent: true, dependent_no: index) %>
       <% end %>
     </div>
   <% end %>

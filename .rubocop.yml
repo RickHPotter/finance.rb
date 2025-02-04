@@ -29,7 +29,7 @@ Style/PercentLiteralDelimiters:
     default: "[]"
 
 Layout/LineLength:
-  Max: 160
+  Max: 166
 
 Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space

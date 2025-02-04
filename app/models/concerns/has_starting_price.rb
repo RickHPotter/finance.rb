@@ -8,6 +8,9 @@ module HasStartingPrice
     # @callbacks ..............................................................
     before_validation :set_starting_price, on: :create
     before_validation :fix_price
+
+    # @validations ..............................................................
+    validates :paid, inclusion: { in: [ true, false ] }, if: -> { defined? paid }
   end
 
   # @public_class_methods .....................................................

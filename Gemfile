@@ -3,61 +3,38 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.3.4"
+ruby "3.4.1"
+gem "rails", "~> 8.0"
 
-# Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.2"
-
-# The new Rails 8 asset pipeline for Rails [https://github.com/rails/propshaft]
-gem "propshaft"
-
-# Use pg as the database for Active Record
-gem "pg", "~> 1.1"
-
-# Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 6.0"
-
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
+gem "bootsnap", require: false
 gem "importmap-rails"
-
-# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
+gem "jbuilder"
+gem "pg"
+gem "propshaft"
+gem "puma"
+gem "redis"
+gem "stimulus-rails"
+gem "tailwindcss-rails"
 gem "turbo-rails"
 
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-gem "stimulus-rails"
-
-# Use Tailwind CSS [https://github.com/rails/tailwindcss-rails]
-gem "tailwindcss-rails"
-
-# Build JSON APIs with ease [https://github.com/rails/jbuilder]
-gem "jbuilder"
-
-# Use Redis adapter to run Action Cable in production
-gem "redis", "~> 4.0"
-
-# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
-
-# Reduces boot times through caching; required in config/boot.rb
-gem "bootsnap", require: false
-
-gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
-gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
-
 # ViewComponent
-gem "view_component", "~> 3.7"
+gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
+# gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
+gem "view_component"
 
 # Authentication
 gem "devise"
 gem "letter_opener_web"
 
-# Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-# gem "image_processing", "~> 1.2"
-
-# Although I like the approach of rails credentials:edit, I thinks it's harder than it should.
+# CD
+gem "dockerfile-rails"
 gem "dotenv-rails"
 
-gem "dockerfile-rails"
+# roo still does not support ruby 3.4
+gem "roo", git: "https://github.com/HashNotAdam/roo.git"
+
+# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
+gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
 
 group :development, :test do
   gem "bullet"
@@ -76,12 +53,12 @@ group :development do
   gem "bundler-audit"
   gem "erb_lint", require: false
   gem "guard-rspec", require: false
-  gem "hotwire-livereload"
+  gem "hotwire-spark"
   gem "rails-erd"
   gem "rubocop-rails-omakase", require: false
   gem "web-console"
 
-  # NEOVIM IDE / REMEMBER TO UPDATE MASON
+  # NEOVIM IDE
   gem "neovim"
   gem "solargraph"
 end

@@ -7,10 +7,10 @@
 #  id                   :bigint           not null, primary key
 #  user_card_name       :string           not null
 #  days_until_due_date  :integer          not null
-#  current_due_date     :date             not null
 #  current_closing_date :date             not null
-#  min_spend            :decimal(, )      not null
-#  credit_limit         :decimal(, )      not null
+#  current_due_date     :date             not null
+#  min_spend            :integer          not null
+#  credit_limit         :integer          not null
 #  active               :boolean          not null
 #  user_id              :bigint           not null
 #  card_id              :bigint           not null
@@ -28,7 +28,7 @@ RSpec.describe UserCard, type: :model do
         expect(subject).to be_valid
       end
 
-      %i[current_due_date days_until_due_date min_spend credit_limit].each do |attribute|
+      %i[min_spend credit_limit].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
 

@@ -51,7 +51,9 @@ module EntityTransactable
   # return [void].
   #
   def update_card_transaction_categories
-    exchange_category_id = user.built_in_category("Exchange").id
+    return if defined?(imported) && imported
+
+    exchange_category_id = user.built_in_category("EXCHANGE").id
 
     exchange_cat = built_in_category_transactions_by(category_id: exchange_category_id)
     payers = entity_transactions.pluck(:is_payer)

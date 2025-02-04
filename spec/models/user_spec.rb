@@ -40,7 +40,7 @@ RSpec.describe User, type: :model do
     end
 
     context "( associations )" do
-      hm_models = %i[user_cards card_transactions user_bank_accounts money_transactions categories entities]
+      hm_models = %i[user_cards card_transactions user_bank_accounts cash_transactions categories entities]
 
       hm_models.each { |model| it { should have_many(model) } }
     end

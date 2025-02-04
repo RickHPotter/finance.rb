@@ -7,10 +7,10 @@
 #  id                   :bigint           not null, primary key
 #  user_card_name       :string           not null
 #  days_until_due_date  :integer          not null
-#  current_due_date     :date             not null
 #  current_closing_date :date             not null
-#  min_spend            :decimal(, )      not null
-#  credit_limit         :decimal(, )      not null
+#  current_due_date     :date             not null
+#  min_spend            :integer          not null
+#  credit_limit         :integer          not null
 #  active               :boolean          not null
 #  user_id              :bigint           not null
 #  card_id              :bigint           not null
@@ -29,15 +29,19 @@ class UserCard < ApplicationRecord
   belongs_to :card
 
   has_many :card_transactions
+  has_many :card_installments, through: :card_transactions
+  has_many :card_installments_invoices, lambda {
+    joins(:categories).where(categories: { category_name: "CARD PAYMENT" }).distinct
+  }, through: :card_installments, source: :cash_transaction
+  has_many :cash_transactions
 
   # @validations ..............................................................
-  validates :user_card_name, :current_due_date, :current_closing_date,
-            :days_until_due_date, :min_spend, :credit_limit, :active, presence: true
+  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, presence: true
   validates :user_card_name, uniqueness: { scope: :user_id }
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
-  before_validation :set_current_dates
+  before_validation :set_current_dates, if: -> { active? }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -67,10 +71,19 @@ class UserCard < ApplicationRecord
   # @return [Boolean].
   #
   def set_current_dates
-    return false if current_due_date.nil? || days_until_due_date.nil?
+    fields_that_are_not_nil = [ current_closing_date, days_until_due_date, current_due_date ].compact
+    return if fields_that_are_not_nil.count < 2
 
-    self.current_due_date = next_date(days: current_due_date.day)
-    self.current_closing_date = current_due_date - days_until_due_date
+    update_dates
+
+    self.current_closing_date ||= current_due_date - days_until_due_date
+    self.days_until_due_date  ||= (current_due_date - current_closing_date).abs
+    self.current_due_date     ||= next_date(days: current_due_date.day)
+  end
+
+  def update_dates
+    self.current_closing_date = current_closing_date + 1.month if current_closing_date && current_closing_date < Date.current
+    self.current_due_date     = current_due_date     + 1.month if current_due_date     && current_due_date     < Date.current
   end
 
   # @private_instance_methods .................................................

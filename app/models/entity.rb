@@ -13,13 +13,15 @@
 class Entity < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include HasActive
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
 
-  has_many :entity_transactions
+  has_many :entity_transactions, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
-  has_many :money_transactions, through: :entity_transactions, source: :transactable, source_type: "MoneyTransaction"
+  has_many :cash_transactions, through: :entity_transactions, source: :transactable, source_type: "CashTransaction"
 
   # @validations ..............................................................
   validates :entity_name, presence: true, uniqueness: { scope: :user_id }

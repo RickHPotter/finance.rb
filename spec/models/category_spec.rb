@@ -31,7 +31,7 @@ RSpec.describe Category, type: :model do
 
     context "( associations )" do
       bt_models = %i[user]
-      hm_models = %i[category_transactions card_transactions money_transactions investments]
+      hm_models = %i[category_transactions card_transactions cash_transactions investments]
 
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }

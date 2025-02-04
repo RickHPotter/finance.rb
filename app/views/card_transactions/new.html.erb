@@ -1,3 +1,8 @@
 <%= turbo_frame_tag :center_container do %>
-  <%= render "form", card_transaction: @card_transaction %>
+  <% if @user_cards.blank? %>
+    <%= render "shared/flash", alert: "You need to create a Card before creating a Card Transaction!" %>
+    <%= render "user_cards/form", user_card: @user.user_cards.new %>
+  <% else %>
+    <%= render "card_transactions/form", card_transaction: @card_transaction %>
+  <% end %>
 <% end %>

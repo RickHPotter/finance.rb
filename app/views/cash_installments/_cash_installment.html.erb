@@ -1,0 +1,33 @@
+<%= turbo_frame_tag dom_id cash_installment do %>
+  <tr class="<%= cash_installment.cash_transaction.categories&.first&.bg_colour || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+    <td class="w-4 p-4">
+      <div class="flex items-center">
+        <input
+            id="checkbox-table-search-1"
+            type="checkbox"
+            class="w-4 h-4 bg-gray-100 rounded-sm focus:ring-blue-500 focus:ring-2" >
+         <label for="checkbox-table-search-1" class="sr-only">checkbox</label>
+      </div>
+    </td>
+    <td class="px-6 py-4" style="width: 10%">
+      <%= l cash_installment.date, format: "%d %b %Y" %>
+    </th>
+    <th scope="row" class="px-6 py-4 whitespace-nowrap border-x border-gray-200 text-center" >
+      <%= cash_installment.cash_transaction.description %>
+      <% if cash_installment.cash_installments_count > 1 %>
+        <span class="inline-flex items-center px-1 rounded-xs bg-white text-gray-800">
+          <%= "#{cash_installment.number}/#{cash_installment.cash_installments_count}" %>
+        </span>
+      <% end %>
+    </td>
+    <td class="px-6 py-4 border-x border-gray-200">
+      <%= cash_installment.cash_transaction.categories.pluck(:category_name).join(", ") %>
+    </td>
+    <td class="px-6 py-4 border-x border-gray-200">
+      <%= cash_installment.cash_transaction.entities.pluck(:entity_name).join(", ") %>
+    </td>
+    <th scope="row" class="px-6 py-4 font-mono whitespace-nowrap text-right" >
+      <%= from_cent_based_to_float(cash_installment.price) %>
+    </td>
+  </tr>
+<% end %>

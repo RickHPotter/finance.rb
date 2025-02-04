@@ -1,19 +1,27 @@
 <%= turbo_frame_tag :center_container do %>
-  <div class='w-full'>
-    <div class='flex justify-between items-center'>
-      <h1 class='text-white font-bold text-4xl'>Card Transactions</h1>
-      <%= link_to "New Card Transaction", new_card_transaction_path,
+  <div class="w-full">
+    <div class="flex justify-between items-center">
+      <h1 class="text-white font-bold text-4xl">Card Transactions</h1>
+
+      <%= link_to "New Card Transaction",
+                  new_card_transaction_path,
                   class: "rounded-lg py-3 px-5 bg-blue-600 block font-medium",
-                  data: { "turbo-frame": "new_card_transaction" } %>
+                  data: { turbo_frame: :new_card_transaction } %>
     </div>
 
     <%= turbo_stream_from :card_transactions %>
 
     <%= turbo_frame_tag :new_card_transaction %>
 
-    <div class='min-w-full'>
+    <div class="min-w-full pt-2">
       <%= turbo_frame_tag :card_transactions do %>
-        <%= render @card_transactions %>
+        <hr>
+        <h1 class="font-bold text-black text-5xl text-center p-2">
+          <%= @user_card&.user_card_name %>
+        </h1>
+        <hr>
+
+        <%= render "card_transactions/card" %>
       <% end %>
     </div>
   </div>

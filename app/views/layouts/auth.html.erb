@@ -6,21 +6,18 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
   <body class="h-full bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <img class="mx-auto h-48 w-auto" src="https://raw.githubusercontent.com/RickHPotter/finance.rb/main/public/sept_logo_candidates/IMG-20240113-WA0018.jpg" alt="Sept">
-        <%= yield(:auth_header) if content_for?(:auth_header) %>
-      </div>
+    <div class="flex min-h-1.5 flex-col justify-center py-12 sm:px-6 md:px-8">
+      <img class="mx-auto h-48 w-auto" src="https://raw.githubusercontent.com/RickHPotter/finance.rb/main/public/sept_logo_candidates/IMG-20240113-WA0018.jpg" alt="Sept">
+      <%= yield(:auth_header) if content_for?(:auth_header) %>
 
-      <div class="mt-8 xs:mx-auto xs:w-full xs:max-w-md">
-        <div class="bg-white py-8 px-4 shadow xs:rounded-lg xs:px-10">
+      <div class="mt-10 sm:mx-auto sm:w-full md:max-w-md">
+        <div class="bg-white p-8 shadow-md rounded-lg xs:px-10">
           <%= yield %>
         </div>
       </div>

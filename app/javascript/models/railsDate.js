@@ -30,6 +30,9 @@ class RailsDate {
   }
 
   monthYear() {
+    if (!this.year)  { return }
+    if (!this.month) { return }
+
     return `${MONTHS_ABBR[this.month - 1].toUpperCase()} <${this.year % 100}>`
   }
 

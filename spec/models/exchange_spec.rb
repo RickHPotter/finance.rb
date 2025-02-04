@@ -7,10 +7,10 @@
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
 #  number                :integer          default(1), not null
-#  starting_price        :decimal(, )      not null
-#  price                 :decimal(, )      not null
+#  starting_price        :integer          not null
+#  price                 :integer          not null
 #  entity_transaction_id :bigint           not null
-#  money_transaction_id  :bigint
+#  cash_transaction_id   :bigint
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #
@@ -32,7 +32,7 @@ RSpec.describe Exchange, type: :model do
 
     context "( associations )" do
       it { should belong_to(:entity_transaction) }
-      it { should belong_to(:money_transaction).optional }
+      it { should belong_to(:cash_transaction).optional }
 
       it { should define_enum_for(:exchange_type).with_values(non_monetary: 0, monetary: 1) }
     end

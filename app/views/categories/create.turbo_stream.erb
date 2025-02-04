@@ -1,0 +1,8 @@
+<% if @card_transaction %>
+  <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Category has been created." }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% else %>
+  <%= turbo_stream.replace(:center_container, template: "categories/new", locals: { category: @category }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) %>
+<% end %>

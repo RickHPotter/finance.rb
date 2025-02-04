@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 class CardTransactionParams
-  attr_accessor :ct_description, :price, :date, :user_id, :user_card_id, :installments, :category_transactions, :entity_transactions
+  attr_accessor :description, :date, :price, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
 
-  def initialize(card_transaction: {}, installments: {}, category_transactions: {}, entity_transactions: {})
+  def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
     assign_card_transaction(card_transaction)
 
-    @installments = installments
+    @card_installments = card_installments
     @entity_transactions = entity_transactions
     @category_transactions = category_transactions
   end
@@ -14,23 +14,23 @@ class CardTransactionParams
   def params
     {
       card_transaction: {
-        ct_description: ct_description || "New CardTransaction #{DateTime.current.to_i}",
-        price:, date:, user_id:, user_card_id:,
-        installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
+        description: description || "New CardTransaction #{DateTime.current.to_i}",
+        date:, price:, user_id:, user_card_id:,
+        card_installments_attributes:, category_transactions_attributes:, entity_transactions_attributes:
       }
     }
   end
 
-  # no base => installments = { count: 2 }
-  # base    => installments = [ {}, {} ]
-  def installments_attributes
-    return installments if installments.is_a? Array
+  # no base => card_installments = { count: 2 }
+  # base    => card_installments = [ {}, {} ]
+  def card_installments_attributes
+    return card_installments if card_installments.is_a? Array
 
-    count = installments[:count] || 1
+    count = card_installments[:count] || 1
     installment_price = (price / count).round(2)
 
     (1..count).map do |i|
-      { number: i, price: installment_price }
+      { number: i, date: date.next_day(i - 1), price: installment_price, installment_type: :CardInstallment }
     end
   end
 
@@ -39,8 +39,8 @@ class CardTransactionParams
     category_transactions
   end
 
-  # no base => installments = [ {}, {} ]
-  # base    => installments = [ {}, {} ] # includes :id
+  # no base => card_installments = [ {}, {} ]
+  # base    => card_installments = [ {}, {} ] # includes :id
   def entity_transactions_attributes
     return entity_transactions if entity_transactions&.first&.try(:id)
 
@@ -55,10 +55,10 @@ class CardTransactionParams
   end
 
   def use_base(card_transaction, card_transaction_options: {}, entity_transactions_options: {})
-    card_transaction = CardTransaction.includes(:installments, :entity_transactions, :category_transactions).where(id: card_transaction.id).first
+    card_transaction = CardTransaction.includes(:card_installments, :entity_transactions, :category_transactions).where(id: card_transaction.id).first
 
     assign_card_transaction(card_transaction, card_transaction_options:)
-    assign_installments(card_transaction.installments)
+    assign_installments(card_transaction.card_installments)
     assign_category_transactions(card_transaction.category_transactions)
     assign_entity_transactions(card_transaction.entity_transactions, entity_transactions_options:)
   end
@@ -66,16 +66,16 @@ class CardTransactionParams
   private
 
   def assign_card_transaction(card_transaction, card_transaction_options: {})
-    @ct_description = card_transaction_options[:ct_description] || card_transaction[:ct_description]
-    @price          = card_transaction_options[:price]          || card_transaction[:price]
+    @description    = card_transaction_options[:description]    || card_transaction[:description]
     @date           = card_transaction_options[:date]           || card_transaction[:date]
+    @price          = card_transaction_options[:price]          || card_transaction[:price]
     @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
     @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
   end
 
-  def assign_installments(installments)
-    @installments = installments.map do |installment|
-      { id: installment.id, number: installment.number, price: installment.price, month: installment.month, year: installment.year }
+  def assign_installments(card_installments)
+    @card_installments = card_installments.map do |installment|
+      installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CardInstallment)
     end
   end
 

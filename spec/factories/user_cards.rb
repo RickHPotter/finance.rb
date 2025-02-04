@@ -7,10 +7,10 @@
 #  id                   :bigint           not null, primary key
 #  user_card_name       :string           not null
 #  days_until_due_date  :integer          not null
-#  current_due_date     :date             not null
 #  current_closing_date :date             not null
-#  min_spend            :decimal(, )      not null
-#  credit_limit         :decimal(, )      not null
+#  current_due_date     :date             not null
+#  min_spend            :integer          not null
+#  credit_limit         :integer          not null
 #  active               :boolean          not null
 #  user_id              :bigint           not null
 #  card_id              :bigint           not null

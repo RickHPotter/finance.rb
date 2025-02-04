@@ -7,7 +7,7 @@
 #  id                :bigint           not null, primary key
 #  is_payer          :boolean          default(FALSE), not null
 #  status            :integer          default("pending"), not null
-#  price             :decimal(, )      default(0.0), not null
+#  price             :integer          default(0), not null
 #  exchanges_count   :integer          default(0), not null
 #  entity_id         :bigint           not null
 #  transactable_type :string           not null
@@ -19,7 +19,7 @@ FactoryBot.define do
   factory :entity_transaction do
     is_payer { true }
     status { "pending" }
-    transactable { custom_create_polymorphic(%i[card_transaction money_transaction]) }
+    transactable { custom_create_polymorphic(%i[card_transaction cash_transaction]) }
     entity { custom_create(:entity, reference: { user: transactable.user }) }
     price { transactable.price }
     exchanges_count { 1 }
@@ -28,7 +28,7 @@ FactoryBot.define do
       is_payer { true }
       status { "finished" }
       price { 0o01 }
-      transactable { different_custom_create_polymorphic(%i[card_transaction money_transaction]) }
+      transactable { different_custom_create_polymorphic(%i[card_transaction cash_transaction]) }
       entity { different_custom_create(:entity, reference: { user: transactable.user }) }
       exchanges_count { 2 }
     end
@@ -37,7 +37,7 @@ FactoryBot.define do
       is_payer { Faker::Boolean.boolean }
       status { %w[pending finished].sample }
       price { is_payer ? (transactable.price / 2).round(2) : 0.00 }
-      transactable { random_custom_create_polymorphic(%i[card_transaction money_transaction]) }
+      transactable { random_custom_create_polymorphic(%i[card_transaction cash_transaction]) }
       entity { random_custom_create(:entity, reference: { user: transactable.user }) }
       exchanges_count { is_payer ? [ *1..3 ].sample : 0 }
     end

@@ -13,14 +13,42 @@
 #
 class Category < ApplicationRecord
   # @extends ..................................................................
+  BG_COLOURS = {
+    "FOOD" => "bg-meat",
+    "GROCERY" => "bg-lettuce",
+    "EDUCATION" => "bg-book",
+    "RENT" => "bg-urgency",
+    "NEEDS" => "bg-urgency",
+    "GIFT" => "bg-gift",
+    "TRANSPORT" => "bg-honda",
+    "SALARY" => "bg-money",
+    "CARD PAYMENT" => "bg-money",
+    "CARD ADVANCE" => "bg-money",
+    "CARD DISCOUNT" => "bg-money",
+    "CARD REVERSAL" => "bg-money",
+    "DEPOSIT" => "bg-money",
+    "PROMO" => "bg-money",
+    "INVESTMENT" => "bg-gold",
+    "SELL" => "bg-oldmoney",
+    "LEISURE" => "bg-fun",
+    "BILL" => "bg-gray-400",
+    "FEES" => "bg-gray-400",
+    "BET" => "bg-gray-600",
+    "GODSEND" => "bg-greek",
+    "EXCHANGE" => "bg-yellow-400",
+    "EXCHANGE RETURN" => "bg-yellow-600"
+  }.freeze
+
   # @includes .................................................................
+  include HasActive
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
 
-  has_many :category_transactions
+  has_many :category_transactions, dependent: :destroy
   has_many :card_transactions, through: :category_transactions, source: :transactable, source_type: "CardTransaction"
-  has_many :money_transactions, through: :category_transactions, source: :transactable, source_type: "MoneyTransaction"
+  has_many :cash_transactions, through: :category_transactions, source: :transactable, source_type: "CashTransaction"
   has_many :investments, through: :category_transactions, source: :transactable, source_type: "Investment"
 
   # @validations ..............................................................
@@ -41,6 +69,11 @@ class Category < ApplicationRecord
   #
   def built_in?
     built_in
+  end
+
+  # FIXME: later there will be a colour-picker and a colour column for this table
+  def bg_colour
+    BG_COLOURS[category_name]
   end
 
   # @protected_instance_methods ...............................................

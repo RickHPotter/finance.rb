@@ -30,7 +30,7 @@ RSpec.describe Entity, type: :model do
 
     context "( associations )" do
       bt_models = %i[user]
-      hm_models = %i[entity_transactions card_transactions money_transactions]
+      hm_models = %i[entity_transactions card_transactions cash_transactions]
 
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }

@@ -21,18 +21,23 @@
 #
 class User < ApplicationRecord
   # @extends ..................................................................
-  devise :database_authenticatable, :registerable, :confirmable,
-         :recoverable, :rememberable, :validatable
+  devise :database_authenticatable, :registerable, :confirmable, :recoverable, :rememberable, :validatable
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
-  has_many :user_cards
-  has_many :card_transactions
-  has_many :user_bank_accounts
-  has_many :money_transactions
-  has_many :categories
-  has_many :entities
+  has_many :card_transactions, dependent: :destroy
+  has_many :card_installments, through: :card_transactions
+  has_many :advance_cash_transactions, through: :card_transactions
+
+  has_many :cash_transactions, dependent: :destroy
+  has_many :cash_installments, through: :cash_transactions
+
+  has_many :user_cards, dependent: :destroy
+  has_many :user_bank_accounts, dependent: :destroy
+
+  has_many :categories, dependent: :destroy
+  has_many :entities, dependent: :destroy
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
@@ -81,8 +86,12 @@ class User < ApplicationRecord
   #
   def create_built_ins
     categories.push(
-      Category.new(built_in: true, category_name: "Exchange"),
-      Category.new(built_in: true, category_name: "Exchange Return")
+      Category.new(built_in: true, category_name: "CARD PAYMENT"),
+      Category.new(built_in: true, category_name: "CARD ADVANCE"),
+      Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
+      Category.new(built_in: true, category_name: "INVESTMENT"),
+      Category.new(built_in: true, category_name: "EXCHANGE"),
+      Category.new(built_in: true, category_name: "EXCHANGE RETURN")
     )
   end
 

@@ -7,8 +7,8 @@ en:
     attributes:
       card_transaction:
         id: ID
-        ct_description: Description
-        ct_comment: Comment
+        description: Description
+        comment: Comment
         date: Date
         price: Price
         starting_price: Original Price
@@ -17,8 +17,8 @@ en:
         category: Category
         month: Month
         year: Year
-        installment: Installment
-        installments_count: Installments Count
+        card_installment: Installment
+        card_installments_count: Installments Count
         created_at: Created at
         updated_at: Updated at
 
@@ -31,8 +31,8 @@ pt-BR:
     attributes:
       card_transaction:
         id: ID
-        ct_description: Descricão
-        ct_comment: Comentário
+        description: Descricão
+        comment: Comentário
         date: Data
         price: Preço
         starting_price: Preço Inicial
@@ -41,7 +41,7 @@ pt-BR:
         category: Categoria
         month: Mês
         year: Ano
-        installment: Parcela
-        installments_count: Quantidade de Parcelas
+        card_installment: Parcela
+        card_installments_count: Quantidade de Parcelas
         created_at: Criado em
         updated_at: Atualizado em

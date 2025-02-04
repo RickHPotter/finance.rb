@@ -5,13 +5,14 @@
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
-#  price                :decimal(, )      not null
+#  description          :string
+#  price                :integer          not null
 #  date                 :date             not null
 #  month                :integer          not null
 #  year                 :integer          not null
 #  user_id              :bigint           not null
 #  user_bank_account_id :bigint           not null
-#  money_transaction_id :bigint
+#  cash_transaction_id  :bigint
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #

@@ -4,30 +4,35 @@
 #
 # Table name: installments
 #
-#  id                   :bigint           not null, primary key
-#  starting_price       :decimal(, )      not null
-#  price                :decimal(, )      not null
-#  number               :integer          not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  installments_count   :integer          default(0), not null
-#  card_transaction_id  :bigint           not null
-#  money_transaction_id :bigint           not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
+#  id                      :bigint           not null, primary key
+#  number                  :integer          not null
+#  date                    :date             not null
+#  month                   :integer          not null
+#  year                    :integer          not null
+#  starting_price          :integer          not null
+#  price                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  installment_type        :string           not null
+#  card_installments_count :integer          default(0)
+#  cash_installments_count :integer          default(0)
+#  card_transaction_id     :bigint
+#  cash_transaction_id     :bigint
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
 #
 FactoryBot.define do
-  factory :installment do
+  factory :card_installment, class: "CardInstallment" do
     price { 999 }
-    number { 1 }
-    month { 12 }
-    year { 2023 }
+    installment_type { "CardInstallment" }
 
-    trait :different do
-      price { 9999 }
-      month { 1 }
-      year { 2024 }
+    trait :random do
+      price { Faker::Number.number(digits: 5) }
     end
+  end
+
+  factory :cash_installment, class: "CashInstallment" do
+    price { 999 }
+    installment_type { "CashInstallment" }
 
     trait :random do
       price { Faker::Number.number(digits: 5) }

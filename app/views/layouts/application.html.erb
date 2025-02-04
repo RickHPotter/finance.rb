@@ -6,13 +6,12 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
 
     <%= combobox_style_tag %>
 
     <%= javascript_importmap_tags %>
-    <%= hotwire_livereload_tags if Rails.env.development? %>
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">

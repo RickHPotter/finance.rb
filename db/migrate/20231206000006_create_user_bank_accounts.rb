@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # UserBankAccount Migration
-class CreateUserBankAccounts < ActiveRecord::Migration[7.0]
+class CreateUserBankAccounts < ActiveRecord::Migration[8.0]
   def change
     create_table :user_bank_accounts do |t|
       t.integer :agency_number

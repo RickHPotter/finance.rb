@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Exchange Migration
-class CreateExchanges < ActiveRecord::Migration[7.1]
+class CreateExchanges < ActiveRecord::Migration[8.0]
   def change
     create_table :exchanges do |t|
       t.integer :exchange_type, null: false, default: 0
@@ -10,7 +10,7 @@ class CreateExchanges < ActiveRecord::Migration[7.1]
       t.integer :price, null: false
 
       t.references :entity_transaction, null: false, foreign_key: true
-      t.references :money_transaction, null: true, foreign_key: true
+      t.references :cash_transaction, null: true, foreign_key: true
 
       t.timestamps
     end
