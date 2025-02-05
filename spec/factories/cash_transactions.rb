@@ -1,41 +1,8 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: cash_transactions
-#
-#  id                      :bigint           not null, primary key
-#  cash_installments_count :integer          default(0), not null
-#  cash_transaction_type   :string
-#  comment                 :text
-#  date                    :date             not null
-#  description             :string           not null
-#  month                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  price                   :integer          not null
-#  starting_price          :integer          not null
-#  year                    :integer          not null
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#  user_bank_account_id    :bigint
-#  user_card_id            :bigint
-#  user_id                 :bigint           not null
-#
-# Indexes
-#
-#  index_cash_transactions_on_user_bank_account_id  (user_bank_account_id)
-#  index_cash_transactions_on_user_card_id          (user_card_id)
-#  index_cash_transactions_on_user_id               (user_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
-#  fk_rails_...  (user_card_id => user_cards.id)
-#  fk_rails_...  (user_id => users.id)
-#
 FactoryBot.define do
   factory :cash_transaction do
-    description { "Meat" }
+    description { "MEAT" }
     comment { "Barbecue at Aunt's" }
     date { Date.new 2023, 12, 16 }
     month { date.month }
@@ -48,7 +15,7 @@ FactoryBot.define do
     cash_installments { build_list(:cash_installment, 1, price:) }
 
     trait :different do
-      description { "HotWheels" }
+      description { "HOTWHEELS" }
       comment { "Toy for brother-in-law" }
       date { Date.new 2024, 1, 16 }
       month { 1 }
@@ -82,3 +49,37 @@ FactoryBot.define do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: cash_transactions
+#
+#  id                      :bigint           not null, primary key
+#  cash_installments_count :integer          default(0), not null
+#  cash_transaction_type   :string
+#  comment                 :text
+#  date                    :date             not null
+#  description             :string           not null
+#  month                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  price                   :integer          not null
+#  starting_price          :integer          not null
+#  year                    :integer          not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_bank_account_id    :bigint           indexed
+#  user_card_id            :bigint           indexed
+#  user_id                 :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_cash_transactions_on_user_bank_account_id  (user_bank_account_id)
+#  index_cash_transactions_on_user_card_id          (user_card_id)
+#  index_cash_transactions_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_card_id => user_cards.id)
+#  fk_rails_...  (user_id => users.id)
+#

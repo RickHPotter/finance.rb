@@ -1,40 +1,12 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: investments
-#
-#  id                   :bigint           not null, primary key
-#  date                 :date             not null
-#  description          :string
-#  month                :integer          not null
-#  price                :integer          not null
-#  year                 :integer          not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#  cash_transaction_id  :bigint
-#  user_bank_account_id :bigint           not null
-#  user_id              :bigint           not null
-#
-# Indexes
-#
-#  index_investments_on_cash_transaction_id   (cash_transaction_id)
-#  index_investments_on_user_bank_account_id  (user_bank_account_id)
-#  index_investments_on_user_id               (user_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
-#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
-#  fk_rails_...  (user_id => users.id)
-#
 require "rails_helper"
 
 RSpec.describe Investment, type: :model do
   include FactoryHelper
 
-  let!(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
-  let!(:cash_transaction) { subject.cash_transaction }
+  let(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
+  let(:cash_transaction) { subject.cash_transaction }
   let!(:investments) do
     build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
       inv.save(date: subject.date + i + 1)
@@ -150,3 +122,32 @@ RSpec.describe Investment, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: investments
+#
+#  id                   :bigint           not null, primary key
+#  date                 :date             not null
+#  description          :string
+#  month                :integer          not null
+#  price                :integer          not null
+#  year                 :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  cash_transaction_id  :bigint           indexed
+#  user_bank_account_id :bigint           not null, indexed
+#  user_id              :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_user_bank_account_id  (user_bank_account_id)
+#  index_investments_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_id => users.id)
+#

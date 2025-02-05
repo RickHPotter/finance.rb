@@ -1,32 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: user_cards
-#
-#  id                   :bigint           not null, primary key
-#  active               :boolean          default(TRUE), not null
-#  credit_limit         :integer          not null
-#  current_closing_date :date             not null
-#  current_due_date     :date             not null
-#  days_until_due_date  :integer          not null
-#  min_spend            :integer          not null
-#  user_card_name       :string           not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#  card_id              :bigint           not null
-#  user_id              :bigint           not null
-#
-# Indexes
-#
-#  index_user_cards_on_card_id         (card_id)
-#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
-#  index_user_cards_on_user_id         (user_id)
-#
 require "rails_helper"
 
 RSpec.describe UserCard, type: :model do
-  let!(:subject) { build(:user_card, :random) }
+  let(:subject) { build(:user_card, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -43,7 +20,7 @@ RSpec.describe UserCard, type: :model do
 
     context "( associations )" do
       bt_models = %i[user card]
-      hm_models = %i[card_transactions]
+      hm_models = %i[card_transactions card_installments card_installments_invoices cash_transactions]
 
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }
@@ -66,3 +43,27 @@ RSpec.describe UserCard, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: user_cards
+#
+#  id                   :bigint           not null, primary key
+#  active               :boolean          default(TRUE), not null
+#  credit_limit         :integer          not null
+#  current_closing_date :date             not null
+#  current_due_date     :date             not null
+#  days_until_due_date  :integer          not null
+#  min_spend            :integer          not null
+#  user_card_name       :string           not null, indexed
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  card_id              :bigint           not null, indexed
+#  user_id              :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_user_cards_on_card_id         (card_id)
+#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
+#  index_user_cards_on_user_id         (user_id)
+#

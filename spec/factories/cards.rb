@@ -1,14 +1,33 @@
 # frozen_string_literal: true
 
+FactoryBot.define do
+  factory :card do
+    card_name { "AZUL" }
+    bank { create(:bank) }
+
+    trait :different do
+      card_name { "NBNK" }
+      bank { create(:bank, :different) }
+    end
+
+    trait :random do
+      sequence(:card_name) do |n|
+        "#{Faker::Color.color_name} #{%w[BRONZE SILVER GOLD PLATINUM PREMIUM BLACK].sample} #{n}".upcase
+      end
+      bank { create(:bank, :random) }
+    end
+  end
+end
+
 # == Schema Information
 #
 # Table name: cards
 #
 #  id         :bigint           not null, primary key
-#  card_name  :string           not null
+#  card_name  :string           not null, indexed
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
-#  bank_id    :bigint           not null
+#  bank_id    :bigint           not null, indexed
 #
 # Indexes
 #
@@ -19,21 +38,3 @@
 #
 #  fk_rails_...  (bank_id => banks.id)
 #
-FactoryBot.define do
-  factory :card do
-    card_name { "Azul" }
-    bank { create(:bank) }
-
-    trait :different do
-      card_name { "Nubank" }
-      bank { create(:bank, :different) }
-    end
-
-    trait :random do
-      sequence(:card_name) do |n|
-        "#{Faker::Color.color_name.capitalize} #{%w[Bronze Silver Gold Platinum Premium Black].sample} #{n}"
-      end
-      bank { create(:bank, :random) }
-    end
-  end
-end

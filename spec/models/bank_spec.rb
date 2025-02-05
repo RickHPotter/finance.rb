@@ -1,19 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: banks
-#
-#  id         :bigint           not null, primary key
-#  bank_name  :string           not null
-#  bank_code  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe Bank, type: :model do
-  let!(:subject) { build(:bank, :random) }
+  let(:subject) { build(:bank, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -35,3 +25,14 @@ RSpec.describe Bank, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: banks
+#
+#  id         :bigint           not null, primary key
+#  bank_code  :string           not null
+#  bank_name  :string           not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#

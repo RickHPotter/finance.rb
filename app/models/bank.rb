@@ -1,15 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: banks
-#
-#  id         :bigint           not null, primary key
-#  bank_name  :string           not null
-#  bank_code  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#
 class Bank < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -30,3 +20,14 @@ class Bank < ApplicationRecord
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: banks
+#
+#  id         :bigint           not null, primary key
+#  bank_code  :string           not null
+#  bank_name  :string           not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#

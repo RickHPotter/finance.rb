@@ -1,5 +1,31 @@
 # frozen_string_literal: true
 
+require "rails_helper"
+
+RSpec.describe CardInstallment, type: :model do
+  let(:card_transaction) { create(:card_transaction, :random) }
+  let(:subject) { card_transaction.card_installments.first }
+
+  describe "[ activerecord validations ]" do
+    context "( presence, uniqueness, etc )" do
+      it "is valid with valid attributes" do
+        expect(subject).to be_valid
+        expect(subject.installment_type).to eq "CardInstallment"
+      end
+
+      %i[number date price installment_type card_installments_count].each do |attribute|
+        it { should validate_presence_of(attribute) }
+      end
+    end
+
+    context "( associations )" do
+      bto_models = %i[cash_transaction]
+
+      bto_models.each { |model| it { should belong_to(model).optional } }
+    end
+  end
+end
+
 # == Schema Information
 #
 # Table name: installments
@@ -17,8 +43,8 @@
 #  year                    :integer          not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  card_transaction_id     :bigint
-#  cash_transaction_id     :bigint
+#  card_transaction_id     :bigint           indexed
+#  cash_transaction_id     :bigint           indexed
 #
 # Indexes
 #
@@ -30,21 +56,3 @@
 #  fk_rails_...  (card_transaction_id => card_transactions.id)
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
 #
-require "rails_helper"
-
-RSpec.describe CardInstallment, type: :model do
-  let!(:card_transaction) { create(:card_transaction, :random) }
-  let!(:subject) { card_transaction.card_installments.first }
-
-  describe "[ activerecord validations ]" do
-    context "( presence, uniqueness, etc )" do
-      it "is valid with valid attributes" do
-        expect(subject).to be_valid
-      end
-
-      %i[price card_installments_count].each do |attribute|
-        it { should validate_presence_of(attribute) }
-      end
-    end
-  end
-end

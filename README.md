@@ -280,7 +280,7 @@ Possible Downtime: 6 months and a half
 
 - Subtasks:
   - ⌛ Use TDD approach; create the tests ~before~ after.
-    - ⌛ Revisit every model spec.
+    - ✅ Revisit every model spec.
     - ⌛ Revisit params support and check if Params:: Service can be used instead.
     - ⌛ Attempt to test Hotwire SPA from `Pages` Controller or Integration spec.
   - ⌛ Fix `FIXMEs`, `TODOs`, and such.

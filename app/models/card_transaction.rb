@@ -1,37 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: card_transactions
-#
-#  id                          :bigint           not null, primary key
-#  card_installments_count     :integer          default(0), not null
-#  comment                     :text
-#  date                        :date             not null
-#  description                 :string           not null
-#  month                       :integer          not null
-#  paid                        :boolean          default(FALSE)
-#  price                       :integer          not null
-#  starting_price              :integer          not null
-#  year                        :integer          not null
-#  created_at                  :datetime         not null
-#  updated_at                  :datetime         not null
-#  advance_cash_transaction_id :bigint
-#  user_card_id                :bigint           not null
-#  user_id                     :bigint           not null
-#
-# Indexes
-#
-#  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
-#  index_card_transactions_on_user_card_id                 (user_card_id)
-#  index_card_transactions_on_user_id                      (user_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
-#  fk_rails_...  (user_card_id => user_cards.id)
-#  fk_rails_...  (user_id => users.id)
-#
 class CardTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -50,17 +18,12 @@ class CardTransaction < ApplicationRecord
   belongs_to :user_card
 
   # @validations ..............................................................
-  validates :date, :description, :month, :year, presence: true
-  validates :starting_price, :price, :card_installments_count, presence: true
+  validates :description, :card_installments_count, presence: true
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
 
   # @scopes ...................................................................
-  scope :by_user, ->(user_id) { where(user_id:) }
-  scope :by_user_card, ->(user_card_id) { where(user_card_id:) }
-  scope :by_month_year, ->(month, year) { where(month:, year:) }
-
   # @public_instance_methods ..................................................
 
   # Generates a `date` for the associated `cash_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
@@ -99,9 +62,42 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    # FIXME: a card transaction should only be paid if all its installments were paid in their corresponding bill cash transactions
+    # TODO: a card transaction should only be paid if all its installments were paid in their corresponding bill cash transactions
     return if paid.present?
 
     self.paid = date.present? && Date.current >= date
   end
 end
+
+# == Schema Information
+#
+# Table name: card_transactions
+#
+#  id                          :bigint           not null, primary key
+#  card_installments_count     :integer          default(0), not null
+#  comment                     :text
+#  date                        :date             not null
+#  description                 :string           not null
+#  month                       :integer          not null
+#  paid                        :boolean          default(FALSE)
+#  price                       :integer          not null
+#  starting_price              :integer          not null
+#  year                        :integer          not null
+#  created_at                  :datetime         not null
+#  updated_at                  :datetime         not null
+#  advance_cash_transaction_id :bigint           indexed
+#  user_card_id                :bigint           not null, indexed
+#  user_id                     :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_user_card_id                 (user_card_id)
+#  index_card_transactions_on_user_id                      (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (user_card_id => user_cards.id)
+#  fk_rails_...  (user_id => users.id)
+#

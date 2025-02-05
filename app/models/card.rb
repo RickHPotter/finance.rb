@@ -1,24 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: cards
-#
-#  id         :bigint           not null, primary key
-#  card_name  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  bank_id    :bigint           not null
-#
-# Indexes
-#
-#  index_cards_on_bank_id    (bank_id)
-#  index_cards_on_card_name  (card_name) UNIQUE
-#
-# Foreign Keys
-#
-#  fk_rails_...  (bank_id => banks.id)
-#
 class Card < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -38,3 +19,23 @@ class Card < ApplicationRecord
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: cards
+#
+#  id         :bigint           not null, primary key
+#  card_name  :string           not null, indexed
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  bank_id    :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_cards_on_bank_id    (bank_id)
+#  index_cards_on_card_name  (card_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
+#

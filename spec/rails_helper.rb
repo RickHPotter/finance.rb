@@ -5,7 +5,7 @@ SimpleCov.start do
   add_filter "/spec/"
   add_filter "/app/helpers/"
   add_filter "/app/controllers/"
-  coverage_dir "public/coverage"
+  add_filter "/config/"
 end
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'

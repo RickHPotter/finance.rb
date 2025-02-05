@@ -9,15 +9,11 @@ module HasAdvancePayments
     belongs_to :advance_cash_transaction, class_name: "CashTransaction", optional: true, dependent: :destroy
 
     # @callbacks ..............................................................
-    before_create :create_advance_cash_transaction, if: -> { card_advance_category_on_create? }
+    before_create :create_advance_cash_transaction, if: -> { card_advance_category? }
     before_update :update_advance_cash_transaction
   end
 
   # @public_class_methods .....................................................
-
-  def card_advance_category_on_create?
-    category_transactions.map(&:category).pluck(:category_name).include?("CARD ADVANCE")
-  end
 
   def card_advance_category?
     categories.find_by(category_name: "CARD ADVANCE").present?

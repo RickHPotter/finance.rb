@@ -1,28 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: cards
-#
-#  id         :bigint           not null, primary key
-#  card_name  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  bank_id    :bigint           not null
-#
-# Indexes
-#
-#  index_cards_on_bank_id    (bank_id)
-#  index_cards_on_card_name  (card_name) UNIQUE
-#
-# Foreign Keys
-#
-#  fk_rails_...  (bank_id => banks.id)
-#
 require "rails_helper"
 
 RSpec.describe Card, type: :model do
-  let!(:subject) { build(:card, :random) }
+  let(:subject) { build(:card, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -45,3 +26,23 @@ RSpec.describe Card, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: cards
+#
+#  id         :bigint           not null, primary key
+#  card_name  :string           not null, indexed
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  bank_id    :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_cards_on_bank_id    (bank_id)
+#  index_cards_on_card_name  (card_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
+#

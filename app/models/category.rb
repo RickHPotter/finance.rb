@@ -1,26 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: categories
-#
-#  id            :bigint           not null, primary key
-#  active        :boolean          default(TRUE), not null
-#  built_in      :boolean          default(FALSE), not null
-#  category_name :string           not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#  user_id       :bigint           not null
-#
-# Indexes
-#
-#  index_categories_on_user_id           (user_id)
-#  index_category_name_on_composite_key  (user_id,category_name) UNIQUE
-#
-# Foreign Keys
-#
-#  fk_rails_...  (user_id => users.id)
-#
 class Category < ApplicationRecord
   # @extends ..................................................................
   BG_COLOURS = {
@@ -102,3 +81,25 @@ class Category < ApplicationRecord
 
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: categories
+#
+#  id            :bigint           not null, primary key
+#  active        :boolean          default(TRUE), not null
+#  built_in      :boolean          default(FALSE), not null
+#  category_name :string           not null, indexed => [user_id]
+#  created_at    :datetime         not null
+#  updated_at    :datetime         not null
+#  user_id       :bigint           not null, indexed, indexed => [category_name]
+#
+# Indexes
+#
+#  index_categories_on_user_id           (user_id)
+#  index_category_name_on_composite_key  (user_id,category_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#

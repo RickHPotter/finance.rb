@@ -1,34 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: users
-#
-#  id                     :bigint           not null, primary key
-#  confirmation_sent_at   :datetime
-#  confirmation_token     :string
-#  confirmed_at           :datetime
-#  email                  :string           default(""), not null
-#  encrypted_password     :string           default(""), not null
-#  first_name             :string           not null
-#  last_name              :string           not null
-#  remember_created_at    :datetime
-#  reset_password_sent_at :datetime
-#  reset_password_token   :string
-#  unconfirmed_email      :string
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
-#
-# Indexes
-#
-#  index_users_on_confirmation_token    (confirmation_token) UNIQUE
-#  index_users_on_email                 (email) UNIQUE
-#  index_users_on_reset_password_token  (reset_password_token) UNIQUE
-#
 require "rails_helper"
 
 RSpec.describe User, type: :model do
-  let!(:subject) { build(:user) }
+  let(:subject) { build(:user) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -46,13 +21,23 @@ RSpec.describe User, type: :model do
     end
 
     context "( associations )" do
-      hm_models = %i[user_cards card_transactions user_bank_accounts cash_transactions categories entities]
+      hm_models = %i[card_transactions card_installments advance_cash_transactions
+                     cash_transactions cash_installments
+                     user_cards user_bank_accounts categories entities]
 
       hm_models.each { |model| it { should have_many(model) } }
     end
   end
 
   describe "[ business logic ]" do
+    context "( callbacks )" do
+      it "creates built_in categories on create" do
+        subject.save
+        built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE", "EXCHANGE RETURN" ]
+        expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
+      end
+    end
+
     context "( public methods )" do
       it "returns full_name" do
         expect(subject.full_name).to eq("John Doe")
@@ -60,3 +45,29 @@ RSpec.describe User, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: users
+#
+#  id                     :bigint           not null, primary key
+#  confirmation_sent_at   :datetime
+#  confirmation_token     :string           indexed
+#  confirmed_at           :datetime
+#  email                  :string           default(""), not null, indexed
+#  encrypted_password     :string           default(""), not null
+#  first_name             :string           not null
+#  last_name              :string           not null
+#  remember_created_at    :datetime
+#  reset_password_sent_at :datetime
+#  reset_password_token   :string           indexed
+#  unconfirmed_email      :string
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#
+# Indexes
+#
+#  index_users_on_confirmation_token    (confirmation_token) UNIQUE
+#  index_users_on_email                 (email) UNIQUE
+#  index_users_on_reset_password_token  (reset_password_token) UNIQUE
+#
