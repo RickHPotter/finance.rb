@@ -17,7 +17,9 @@
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
     <main class="antialiased">
       <div class="p-3">
-        <%= render "shared/flash" %>
+        <%= turbo_frame_tag :notification do %>
+          <%= render "shared/flash" %>
+        <% end %>
         <%= render "shared/dark_mode" %>
       </div>
 

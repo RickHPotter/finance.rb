@@ -23,6 +23,8 @@
       </div>
     </div>
 
-    <%= render "shared/flash" %>
+    <%= turbo_frame_tag :notification do %>
+      <%= render "shared/flash" %>
+    <% end %>
   </body>
 </html>

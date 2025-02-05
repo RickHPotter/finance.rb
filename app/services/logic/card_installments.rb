@@ -4,6 +4,8 @@ module Logic
   class CardInstallments
     def self.find_by_span(user_card, span)
       max_date = user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)")
+      return [] if max_date.nil?
+
       l_date, r_date = RefMonthYear.get_span(Date.current, max_date, span)
 
       user_card.card_installments

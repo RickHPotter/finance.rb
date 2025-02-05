@@ -88,7 +88,7 @@
 
     <!-- Installments -->
     <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
-         class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-3" >
+         class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "card_transactions/installment_fields", form: installment_fields %>
@@ -106,7 +106,7 @@
     </div>
 
     <!-- Categories -->
-    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="pb-4 xs:grid md:flex justify-center">
+    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="xs:grid md:flex justify-center">
       <template data-nested-form-target="template">
         <%= form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields| %>
           <%= render "card_transactions/category_transaction_fields", form: category_transaction_fields %>
@@ -124,7 +124,7 @@
     </div>
 
     <!-- Entities -->
-    <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
           <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>

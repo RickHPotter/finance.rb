@@ -12,8 +12,6 @@
                 data: { turbo_frame: :center_container } %>
   </div>
 
-  <%= turbo_stream_from :user_cards %>
-
   <div class="min-w-full pt-2">
     <%= turbo_frame_tag :user_cards do %>
       <hr>

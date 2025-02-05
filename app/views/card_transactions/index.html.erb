@@ -9,14 +9,12 @@
                   data: { turbo_frame: :new_card_transaction } %>
     </div>
 
-    <%= turbo_stream_from :card_transactions %>
-
     <%= turbo_frame_tag :new_card_transaction %>
 
     <div class="min-w-full pt-2">
       <%= turbo_frame_tag :card_transactions do %>
         <hr>
-        <h1 class="font-bold text-black text-5xl text-center p-2">
+        <h1 id="card_transaction_user_card_name" class="font-bold text-black text-5xl text-center p-2">
           <%= @user_card&.user_card_name %>
         </h1>
         <hr>

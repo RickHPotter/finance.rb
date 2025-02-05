@@ -1,32 +1,32 @@
 <%= turbo_frame_tag dom_id category do %>
-  <tr class="<%= Category::BG_COLOURS.to_a.sample[1] || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
-    <th class="px-6 py-4 whitespace-nowrap border-x text-center" >
+  <tr id="category_<%= category.id %>" class="<%= Category::BG_COLOURS.to_a.sample[1] || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+    <th class="px-6 py-4 whitespace-nowrap border-x text-center">
       <span class="inline-flex items-center px-1 rounded-xxs bg-white text-blue-700">
         <%= link_to category.category_name, card_transactions_path(category_id: category.id, format: :turbo_stream), data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       </span>
     </th>
-    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
+    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono">
       <%= "colour" %>
     </td>
-    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
+    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono">
       <%= category.card_transactions.count %>
     </td>
-    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
+    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono">
       <%= from_cent_based_to_float(category.card_transactions.sum(:price), "R$") %>
     </td>
-    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
+    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono">
       <%= category.cash_transactions.count %>
     </td>
-    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono" >
+    <th class="px-6 py-4 whitespace-nowrap border-x text-right font-mono">
       <%= from_cent_based_to_float(category.cash_transactions.sum(:price), "R$") %>
     </td>
-    <th class="px-6 py-4 whitespace-nowrap" >
+    <th class="px-6 py-4 whitespace-nowrap border-x">
       <div class="flex items-center justify-between px-2 my-1 rounded-md bg-white">
-        <%= link_to edit_category_path(category), class: "text-blue-600", data: { turbo_frame: :center_container } do %>
+        <%= link_to edit_category_path(category), id: "edit_category_#{category.id}", class: "text-blue-600", data: { turbo_frame: :center_container } do %>
           <%= render "shared/svgs/cog" %>
         <% end %>
 
-        <%= link_to category, class: "text-red-600", data: { turbo_method: :delete } do %>
+        <%= link_to category, id: "delete_category_#{category.id}", class: "text-red-600", data: { turbo_method: :delete } do %>
           <%= render "shared/svgs/destroy" %>
         <% end %>
       </div>

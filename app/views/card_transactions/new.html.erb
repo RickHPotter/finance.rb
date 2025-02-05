@@ -1,5 +1,6 @@
 <%= turbo_frame_tag :center_container do %>
   <% if @user_cards.blank? %>
+    <!-- FIXME: tabs are not updating, I need something else instead of this -->
     <%= render "shared/flash", alert: "You need to create a Card before creating a Card Transaction!" %>
     <%= render "user_cards/form", user_card: @user.user_cards.new %>
   <% else %>

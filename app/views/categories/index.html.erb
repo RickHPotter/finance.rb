@@ -12,8 +12,6 @@
                 data: { turbo_frame: :center_container } %>
   </div>
 
-  <%= turbo_stream_from :categories %>
-
   <div class="min-w-full pt-2">
     <%= turbo_frame_tag :categories do %>
       <hr>
@@ -21,10 +19,10 @@
       <table class="w-full text-sm text-left rtl:text-right text-gray-500">
         <thead class="text-xxs text-black uppercase bg-gray-100">
           <tr class="border border-gray-200 text-black">
-            <th colspan="2"></th>
+            <th colspan="2" class="border-x"></th>
             <th colspan="2" class="border-x text-center">Card Transaction</th>
             <th colspan="2" class="border-x text-center">Cash Transaction</th>
-            <th colspan="1"></th>
+            <th colspan="1" class="border-x"></th>
           </tr>
           <tr class="border border-gray-200">
             <th scope="col" width="30%" class="px-6 py-3 border-x text-center">Category Name</th>

@@ -1,7 +1,9 @@
 <div class="w-full">
   <div class="flex justify-center">
     <div class="w-screen hidden sm:block">
-      <%= render "shared/tabs" %>
+      <%= turbo_frame_tag :tabs do %>
+        <%= render "shared/tabs" %>
+      <% end %>
     </div>
   </div>
 
