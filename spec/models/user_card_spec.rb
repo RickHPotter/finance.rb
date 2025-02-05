@@ -5,17 +5,23 @@
 # Table name: user_cards
 #
 #  id                   :bigint           not null, primary key
-#  user_card_name       :string           not null
-#  days_until_due_date  :integer          not null
+#  active               :boolean          default(TRUE), not null
+#  credit_limit         :integer          not null
 #  current_closing_date :date             not null
 #  current_due_date     :date             not null
+#  days_until_due_date  :integer          not null
 #  min_spend            :integer          not null
-#  credit_limit         :integer          not null
-#  active               :boolean          not null
-#  user_id              :bigint           not null
-#  card_id              :bigint           not null
+#  user_card_name       :string           not null
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
+#  card_id              :bigint           not null
+#  user_id              :bigint           not null
+#
+# Indexes
+#
+#  index_user_cards_on_card_id         (card_id)
+#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
+#  index_user_cards_on_user_id         (user_id)
 #
 require "rails_helper"
 

@@ -5,20 +5,32 @@
 # Table name: card_transactions
 #
 #  id                          :bigint           not null, primary key
-#  description                 :string           not null
+#  card_installments_count     :integer          default(0), not null
 #  comment                     :text
 #  date                        :date             not null
+#  description                 :string           not null
 #  month                       :integer          not null
-#  year                        :integer          not null
-#  starting_price              :integer          not null
-#  price                       :integer          not null
 #  paid                        :boolean          default(FALSE)
-#  card_installments_count     :integer          default(0), not null
-#  user_id                     :bigint           not null
-#  user_card_id                :bigint           not null
-#  advance_cash_transaction_id :bigint
+#  price                       :integer          not null
+#  starting_price              :integer          not null
+#  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  advance_cash_transaction_id :bigint
+#  user_card_id                :bigint           not null
+#  user_id                     :bigint           not null
+#
+# Indexes
+#
+#  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_user_card_id                 (user_card_id)
+#  index_card_transactions_on_user_id                      (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (user_card_id => user_cards.id)
+#  fk_rails_...  (user_id => users.id)
 #
 require "rails_helper"
 

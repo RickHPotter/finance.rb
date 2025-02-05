@@ -5,11 +5,21 @@
 # Table name: category_transactions
 #
 #  id                :bigint           not null, primary key
-#  category_id       :bigint           not null
 #  transactable_type :string           not null
-#  transactable_id   :bigint           not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
+#  category_id       :bigint           not null
+#  transactable_id   :bigint           not null
+#
+# Indexes
+#
+#  index_category_transactions_on_category_id    (category_id)
+#  index_category_transactions_on_composite_key  (category_id,transactable_type,transactable_id) UNIQUE
+#  index_category_transactions_on_transactable   (transactable_type,transactable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (category_id => categories.id)
 #
 FactoryBot.define do
   factory :category_transaction do

@@ -5,15 +5,25 @@
 # Table name: entity_transactions
 #
 #  id                :bigint           not null, primary key
-#  is_payer          :boolean          default(FALSE), not null
-#  status            :integer          default("pending"), not null
-#  price             :integer          default(0), not null
 #  exchanges_count   :integer          default(0), not null
-#  entity_id         :bigint           not null
+#  is_payer          :boolean          default(FALSE), not null
+#  price             :integer          default(0), not null
+#  status            :integer          default("pending"), not null
 #  transactable_type :string           not null
-#  transactable_id   :bigint           not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
+#  entity_id         :bigint           not null
+#  transactable_id   :bigint           not null
+#
+# Indexes
+#
+#  index_entity_transactions_on_composite_key  (entity_id,transactable_type,transactable_id) UNIQUE
+#  index_entity_transactions_on_entity_id      (entity_id)
+#  index_entity_transactions_on_transactable   (transactable_type,transactable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (entity_id => entities.id)
 #
 require "rails_helper"
 

@@ -6,9 +6,18 @@
 #
 #  id         :bigint           not null, primary key
 #  card_name  :string           not null
-#  bank_id    :bigint           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
+#  bank_id    :bigint           not null
+#
+# Indexes
+#
+#  index_cards_on_bank_id    (bank_id)
+#  index_cards_on_card_name  (card_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
 #
 FactoryBot.define do
   factory :card do

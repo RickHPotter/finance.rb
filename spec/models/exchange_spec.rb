@@ -7,12 +7,22 @@
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
 #  number                :integer          default(1), not null
-#  starting_price        :integer          not null
 #  price                 :integer          not null
-#  entity_transaction_id :bigint           not null
-#  cash_transaction_id   :bigint
+#  starting_price        :integer          not null
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
+#  cash_transaction_id   :bigint
+#  entity_transaction_id :bigint           not null
+#
+# Indexes
+#
+#  index_exchanges_on_cash_transaction_id    (cash_transaction_id)
+#  index_exchanges_on_entity_transaction_id  (entity_transaction_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (entity_transaction_id => entity_transactions.id)
 #
 require "rails_helper"
 
