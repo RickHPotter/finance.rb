@@ -26,7 +26,8 @@ end
 
 Rails.root.glob("spec/support/**/*.rb").sort.each { |f| require f }
 
-Capybara.default_host = "http://localhost:3000"
+Capybara.default_driver = :selenium_chrome
+Capybara.default_host = "http://localhost:3016"
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
