@@ -14,12 +14,8 @@
               </svg>
             <% end %>
             <div class="ml-3 w-0 flex-1 pt-0.5">
-              <p class="text-sm font-medium text-gray-900">
-              <%= t("attention") %>
-              </p>
-              <p class="mt-1 text-sm text-gray-500">
-              <%= notice || alert %>
-              </p>
+              <p class="text-sm font-medium text-gray-900"><%= t("attention") %></p>
+              <p class="mt-1 text-sm text-gray-500" id="notification-content"><%= notice || alert %></p>
             </div>
 
             <div class="ml-4 flex-shrink-0 flex">

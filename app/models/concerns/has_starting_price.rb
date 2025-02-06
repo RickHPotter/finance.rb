@@ -10,6 +10,7 @@ module HasStartingPrice
     before_validation :fix_price
 
     # @validations ..............................................................
+    validates :starting_price, :price, presence: true
     validates :paid, inclusion: { in: [ true, false ] }, if: -> { defined? paid }
   end
 

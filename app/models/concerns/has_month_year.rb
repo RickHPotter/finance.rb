@@ -5,10 +5,16 @@ module HasMonthYear
   extend ActiveSupport::Concern
 
   included do
+    # @validations ..............................................................
+    validates :date,  presence: true
+    validates :month, presence: true, if: -> { respond_to?(:month) }
+    validates :year,  presence: true, if: -> { respond_to?(:year) }
+
     # @callbacks ..............................................................
     before_validation :set_date, on: :create
     before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
-    before_validation :set_month_year, if: -> { errors.none? && respond_to?(:month) }
+    before_validation :check_number, if: -> { respond_to?(:number) && number.nil? }
+    before_validation :set_month_year, if: -> { errors.empty? && respond_to?(:month) }
   end
 
   # @public_instance_methods ..................................................
@@ -71,6 +77,18 @@ module HasMonthYear
   #
   def check_date
     errors.add(:date, :blank)
+    false
+  end
+
+  # Checks if `date` is nil when self responds to `date`. If so, adds an error.
+  #
+  # @note This is a method that is called before_validation.
+  #
+  # @return [void].
+  #
+  def check_number
+    errors.add(:number, :blank)
+    false
   end
 
   # Sets `month` and `year` based on self's `cash_transaction_date` or `date`.

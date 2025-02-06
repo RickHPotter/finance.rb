@@ -1,21 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: investments
-#
-#  id                   :bigint           not null, primary key
-#  description          :string
-#  price                :integer          not null
-#  date                 :date             not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  user_id              :bigint           not null
-#  user_bank_account_id :bigint           not null
-#  cash_transaction_id  :bigint
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#
 class Investment < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -29,7 +13,7 @@ class Investment < ApplicationRecord
   belongs_to :user_bank_account
 
   # @validations ..............................................................
-  validates :date, :price, presence: true
+  validates :price, presence: true
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -88,3 +72,32 @@ class Investment < ApplicationRecord
 
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: investments
+#
+#  id                   :bigint           not null, primary key
+#  date                 :date             not null
+#  description          :string
+#  month                :integer          not null
+#  price                :integer          not null
+#  year                 :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  cash_transaction_id  :bigint           indexed
+#  user_bank_account_id :bigint           not null, indexed
+#  user_id              :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_user_bank_account_id  (user_bank_account_id)
+#  index_investments_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_id => users.id)
+#
