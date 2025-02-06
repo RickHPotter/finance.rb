@@ -1,11 +1,8 @@
-<% if @card_transaction.errors.present? %>
-  <%= turbo_stream.replace "edit_card_transaction_#{@card_transaction.id}", partial: "form", locals: { card_transaction: @card_transaction } %>
+<% if @card_transaction.errors.empty? %>
+  <%= turbo_stream.replace(:center_container, template: "card_transactions/index", locals: { user_card_id: @card_transaction.user_card_id }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Card Transaction has been updated." }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>
-  <%= turbo_stream.replace :edit_card_transaction do %>
-    <%= turbo_frame_tag :edit_card_transaction %>
-  <% end %>
-
-  <%= turbo_stream.replace dom_id(@card_transaction), partial: "card_transaction", locals: { card_transaction: @card_transaction } %>
+  <%= turbo_stream.replace(:center_container, template: "card_transactions/edit", locals: { card_transaction: @card_transaction }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) %>
 <% end %>
-
-<%= turbo_stream.update :notification, partial: "shared/flash" %>

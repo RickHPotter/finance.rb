@@ -4,12 +4,10 @@
       <h1 class="text-white font-bold text-4xl">Card Transactions</h1>
 
       <%= link_to "New Card Transaction",
-                  new_card_transaction_path,
-                  class: "rounded-lg py-3 px-5 bg-blue-600 block font-medium",
-                  data: { turbo_frame: :new_card_transaction } %>
+                  new_card_transaction_path(format: :turbo_stream),
+                  class: "rounded-lg py-3 px-5 bg-blue-600 shadow-sm block font-medium",
+                  data: { turbo_frame: :center_container, turbo_prefetch: false } %>
     </div>
-
-    <%= turbo_frame_tag :new_card_transaction %>
 
     <div class="min-w-full pt-2">
       <%= turbo_frame_tag :card_transactions do %>

@@ -1,20 +1,17 @@
 <%= turbo_frame_tag dom_id user_card do %>
-  <%= form_with(model: user_card, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-
-    <% action = user_card.persisted? ? "keyup->autosave#save" : "" %>
-
+  <%= form_with(model: user_card, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: @user.id %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :user_card_name,
-            class: autosave_input_class, autofocus: true, autocomplete: :off,
-            data: { autosave_target: :input, placeholder: "User Card Name", placeholder_type: :word } %>
+            class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            data: { reactive_form_target: :input, placeholder: "User Card Name", placeholder_type: :word } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
-      <div class="hw-cb w-full lg:w-3/12 mb-2 wallet-icon">
-        <%= bold_label(form, :card_id) %>
+      <div id="hw_user_card_card_id" class="hw-cb w-full lg:w-3/12 mb-2 wallet-icon">
+        <%= bold_label(form, :card_id, "user_card_card_id") %>
         <%= form.combobox \
               :card_id,
               @cards,

@@ -12,7 +12,7 @@ module ComponentsHelper
 
   # @return [String] tailwind class for autosave input.
   #
-  def autosave_input_class
+  def outdoor_input_class
     "w-full text-black text-center text-ellipsis text-lg sm:text-xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-extrabold
     border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent".squish
   end

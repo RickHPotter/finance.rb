@@ -9,8 +9,11 @@ module FeatureHelper
   end
 
   def navigate_to(menu:, sub_menu:)
-    within "turbo-frame#tabs" do
+    within "turbo-frame#tabs ul:nth-child(1)", match: :first do
       click_on menu
+    end
+
+    within "turbo-frame#tabs div[role='tabpanel'] ul" do
       click_on sub_menu
     end
   end
@@ -21,6 +24,13 @@ module FeatureHelper
 
   def match_center_container_content(turbo_frame_id)
     expect(page).to have_selector("turbo-frame#center_container turbo-frame##{turbo_frame_id}")
+  end
+
+  def hotwire_select(div_id, with:)
+    within "##{div_id} .hw-combobox__main__wrapper" do
+      page.click
+      find(".hw-combobox__listbox li[data-value='#{with}']", match: :first).click
+    end
   end
 end
 

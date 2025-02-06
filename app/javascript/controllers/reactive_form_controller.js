@@ -32,10 +32,28 @@ export default class extends Controller {
   connect() {
     this.applyMasks()
 
+    const inputs_with_placeholder = this.inputTargets.filter(e => e.dataset.placeholder)
+    inputs_with_placeholder.forEach(e => this.blink_placeholder(e))
+
     if (this.priceInstallmentInputTargets.length > 0) {
       this._updateInstallmentsPrices()
       this._updateChips()
     }
+  }
+
+  blink_placeholder(input) {
+    const symbol = "█"
+    const text = input.dataset.placeholder
+
+    const toggleBlink = () => {
+      const lastChar = input.placeholder.at(-1)
+      const cursor = lastChar === symbol ? " " : symbol
+      input.placeholder = `${text}${cursor}`
+    }
+
+    const blinkInterval = setInterval(toggleBlink, 500)
+
+    input.dataset.blinkInterval = blinkInterval;
   }
 
   // Installments

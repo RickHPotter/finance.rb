@@ -1,28 +1,26 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
-  <%= form_with(model: card_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+  <%= form_with(model: card_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: @user.id %>
     <%= hidden_field_tag :closing_date_day, card_transaction.user_card&.current_closing_date&.day, data: { reactive_form_target: :closingDateDay } %>
     <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: :daysUntilDueDate } %>
 
-    <% action = card_transaction.persisted? ? "keyup->autosave#save" : "" %>
-
     <div class="w-full mb-6">
       <%= form.text_field \
             :description,
-            class: autosave_input_class, autofocus: true, autocomplete: :off,
-            data: { autosave_target: :input, action:, placeholder: "Card Transaction Name", placeholder_type: :word } %>
+            class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            data: { reactive_form_target: :input, placeholder: "Card Transaction Name", placeholder_type: :word } %>
     </div>
 
     <div class="w-full mb-6">
       <%= render "shared/svgs/quote" %>
       <%= form.text_area \
-            :ct_comment,
+            :comment,
             class: "text-gray-500 px-4 pt-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
-            data: { controller: "text-area-autogrow", autosave_target: :input, action:, placeholder: "Any comment about", placeholder_type: :word } %>
+            data: { controller: "text-area-autogrow", reactive_form_target: :input, placeholder: "Any comment about", placeholder_type: :word } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
-      <div class="hw-cb w-full lg:w-2/12 mb-3 wallet-icon">
+      <div id="hw_card_transaction_user_card_id" class="hw-cb w-full lg:w-2/12 mb-3 wallet-icon">
         <%= form.combobox \
               :user_card_id,
               @user_cards,
@@ -33,7 +31,7 @@
               data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmit", value: ".hw-combobox__input" } %>
       </div>
 
-      <div class="hw-cb w-full lg:w-2/12 mb-3 plus-icon">
+      <div id="hw_card_transaction_category_id" class="hw-cb w-full lg:w-2/12 mb-3 plus-icon">
         <%= form.combobox \
               :category_transaction,
               @categories,
@@ -43,7 +41,7 @@
               data: { action: "hw-combobox:selection->reactive-form#insertChip", value: ".hw-combobox__input" } %>
       </div>
 
-      <div class="hw-cb w-full lg:w-2/12 mb-3 user-icon">
+      <div id="hw_card_transaction_entity_id" class="hw-cb w-full lg:w-2/12 mb-3 user-icon">
         <%= form.combobox \
               :entity_transaction,
               @entities,
@@ -113,7 +111,8 @@
         <% end %>
       </template>
 
-      <%= form.fields_for :category_transactions do |category_transaction_fields| %>
+      <% category_transactions_association = card_transaction.category_transactions.includes(:category) if card_transaction.category_transactions.count > 1 %>
+      <%= form.fields_for :category_transactions, category_transactions_association do |category_transaction_fields| %>
         <%= render "card_transactions/category_transaction_fields", form: category_transaction_fields %>
       <% end %>
 
@@ -131,7 +130,8 @@
         <% end %>
       </template>
 
-      <%= form.fields_for :entity_transactions do |entity_transaction_fields| %>
+      <% entity_transactions_association = card_transaction.entity_transactions.includes(:entity) if card_transaction.entity_transactions.count > 1 %>
+      <%= form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields| %>
         <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>
       <% end %>
 

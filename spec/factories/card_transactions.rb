@@ -12,7 +12,7 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_card { custom_create(:user_card, reference: { user: }) }
 
-    card_installments { build_list(:card_installment, 1, price:) }
+    card_installments { build_list(:card_installment, 1, price:, number: 1) }
     category_transactions do
       build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
     end

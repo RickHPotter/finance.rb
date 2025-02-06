@@ -10,10 +10,7 @@ RSpec.describe RefMonthYear, type: :model do
     end
 
     it "returns an instance of itself based on a string in the month_year format" do
-      ref_month_year = RefMonthYear.from_string("MAI <23>")
-      expect(ref_month_year.month).to eq(5)
-      expect(ref_month_year.year).to eq(2023)
-      expect(ref_month_year.month_year).to eq("MAI <23>")
+      expect(RefMonthYear.from_string("MAI <23>")).to eq(RefMonthYear.new(5, 2023))
     end
 
     it "returns a range of dates based on a pivot date, a max date it can range to and the interval" do

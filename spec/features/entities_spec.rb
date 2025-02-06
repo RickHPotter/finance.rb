@@ -22,13 +22,13 @@ RSpec.describe "Entities", type: :feature do
     scenario "jumping to card_transactions that belong to the newly-created entity" do
       _entity = create(:entity, :random, user:)
       click_on "Existing Entities"
-      first("turbo-frame#center_container table tbody th:nth-child(1) span a").click
+      find("turbo-frame#center_container table tbody th:nth-child(1) span a", match: :first).click
 
       match_center_container_content("card_transactions")
 
       # TODO: search sub_menu was not yet created
       # within "turbo-frame#center_container turbo-frame#card_transactions turbo-frame#filter_options" do
-      #   entity_name = first("#entity_filter")
+      #   entity_name = find("#entity_filter", match: :first)
       #   expect(entity_name).to have_content(entity.entity_name)
       # end
     end
@@ -42,7 +42,7 @@ RSpec.describe "Entities", type: :feature do
 
     scenario "creating an invalid entity" do
       within "turbo-frame#new_entity" do
-        first("form input[type=submit]").click
+        find("form input[type=submit]", match: :first).click
       end
 
       expect(notification).to have_content("Something is wrong.")
@@ -52,7 +52,7 @@ RSpec.describe "Entities", type: :feature do
       within "turbo-frame#new_entity form" do
         fill_in "entity_entity_name", with: "Test Entity"
 
-        first("input[type=submit]").click
+        find("input[type=submit]", match: :first).click
       end
 
       expect(notification).to have_content("Entity has been created.")
@@ -82,9 +82,9 @@ RSpec.describe "Entities", type: :feature do
 
       match_center_container_content("entities")
 
-      first("#edit_entity_#{entity.id}").click
+      find("#edit_entity_#{entity.id}", match: :first).click
       fill_in "entity_entity_name", with: ""
-      first("form input[type=submit]").click
+      find("form input[type=submit]", match: :first).click
 
       expect(notification).to have_content("Something is wrong.")
     end
@@ -94,12 +94,12 @@ RSpec.describe "Entities", type: :feature do
 
       within "turbo-frame#center_container" do
         click_on "Existing Entities"
-        first("#edit_entity_#{entity.id}").click
+        find("#edit_entity_#{entity.id}", match: :first).click
 
         within "turbo-frame#entity_#{entity.id} form" do
           fill_in "entity_entity_name", with: "Another Test Entity"
 
-          first("form input[type=submit]").click
+          find("form input[type=submit]", match: :first).click
         end
       end
 
@@ -136,7 +136,7 @@ RSpec.describe "Entities", type: :feature do
       end
 
       within "turbo-frame#entities table tbody" do
-        first("a#delete_entity_#{entity.id}").click
+        find("a#delete_entity_#{entity.id}", match: :first).click
         expect(page).to_not have_css("tr#entity_#{entity.id}")
       end
 
@@ -152,7 +152,7 @@ RSpec.describe "Entities", type: :feature do
       end
 
       within "turbo-frame#entities table tbody" do
-        first("a#delete_entity_#{entity.id}").click
+        find("a#delete_entity_#{entity.id}", match: :first).click
         expect(page).to have_css("tr#entity_#{entity.id}")
       end
 

@@ -12,7 +12,7 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
-    cash_installments { build_list(:cash_installment, 1, price:) }
+    cash_installments { build_list(:cash_installment, 1, price:, number: 1) }
 
     trait :different do
       description { "HOTWHEELS" }

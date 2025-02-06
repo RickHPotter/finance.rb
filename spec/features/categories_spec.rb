@@ -22,13 +22,13 @@ RSpec.describe "Categories", type: :feature do
     scenario "jumping to card_transactions that belong to the newly-created category" do
       _category = create(:category, :random, user:)
       click_on "Existing Categories"
-      first("turbo-frame#center_container table tbody th:nth-child(1) span a").click
+      find("turbo-frame#center_container table tbody th:nth-child(1) span a", match: :first).click
 
       match_center_container_content("card_transactions")
 
       # TODO: search sub_menu was not yet created
       # within "turbo-frame#center_container turbo-frame#card_transactions turbo-frame#filter_options" do
-      #   category_name = first("#category_filter")
+      #   category_name = find("#category_filter", match: :first)
       #   expect(category_name).to have_content(category.category_name)
       # end
     end
@@ -42,7 +42,7 @@ RSpec.describe "Categories", type: :feature do
 
     scenario "creating an invalid category" do
       within "turbo-frame#new_category" do
-        first("form input[type=submit]").click
+        find("form input[type=submit]", match: :first).click
       end
 
       expect(notification).to have_content("Something is wrong.")
@@ -52,7 +52,7 @@ RSpec.describe "Categories", type: :feature do
       within "turbo-frame#new_category form" do
         fill_in "category_category_name", with: "Test Category"
 
-        first("input[type=submit]").click
+        find("input[type=submit]", match: :first).click
       end
 
       expect(notification).to have_content("Category has been created.")
@@ -83,9 +83,9 @@ RSpec.describe "Categories", type: :feature do
 
       match_center_container_content("categories")
 
-      first("#edit_category_#{category.id}").click
+      find("#edit_category_#{category.id}", match: :first).click
       fill_in "category_category_name", with: ""
-      first("form input[type=submit]").click
+      find("form input[type=submit]", match: :first).click
 
       expect(notification).to have_content("Something is wrong.")
     end
@@ -95,12 +95,12 @@ RSpec.describe "Categories", type: :feature do
 
       within "turbo-frame#center_container" do
         click_on "Existing Categories"
-        first("#edit_category_#{category.id}").click
+        find("#edit_category_#{category.id}", match: :first).click
 
         within "turbo-frame#category_#{category.id} form" do
           fill_in "category_category_name", with: "Another Test Category"
 
-          first("form input[type=submit]").click
+          find("form input[type=submit]", match: :first).click
         end
       end
 
@@ -138,7 +138,7 @@ RSpec.describe "Categories", type: :feature do
       end
 
       within "turbo-frame#categories table tbody" do
-        first("a#delete_category_#{category.id}").click
+        find("a#delete_category_#{category.id}", match: :first).click
         expect(page).to_not have_css("tr#category_#{category.id}")
       end
 
@@ -154,7 +154,7 @@ RSpec.describe "Categories", type: :feature do
       end
 
       within "turbo-frame#categories table tbody" do
-        first("a#delete_category_#{category.id}").click
+        find("a#delete_category_#{category.id}", match: :first).click
         expect(page).to have_css("tr#category_#{category.id}")
       end
 

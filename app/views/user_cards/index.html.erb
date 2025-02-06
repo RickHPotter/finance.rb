@@ -2,13 +2,13 @@
   <div class="flex justify-between">
     <%= link_to "New User Card",
                 new_user_card_path,
-                class: "rounded-lg bg-gray-200 shadow-sm py-3 px-5 block font-medium",
+                class: "rounded-lg py-3 px-5 bg-gray-200 shadow-sm block font-medium",
                 data: { turbo_frame: :center_container } %>
 
     <% include_inactive = params[:include_inactive] == "false" %>
     <%= link_to include_inactive ? "Show Inactive Cards" : "Hide Inactive Cards",
                 user_cards_path(include_inactive:),
-                class: "rounded-lg bg-gray-200 shadow-sm py-3 px-5 block font-medium",
+                class: "rounded-lg py-3 px-5 bg-gray-200 shadow-sm block font-medium",
                 data: { turbo_frame: :center_container } %>
   </div>
 
