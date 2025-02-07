@@ -175,7 +175,9 @@ export default class extends Controller {
 
     starting_rails_date.monthsForwards(starting_number)
 
-    this.installmentWrapperTargets.slice(starting_number).forEach((target, index) => {
+    const visible_installments_wrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
+
+    visible_installments_wrappers.slice(starting_number).forEach((target, index) => {
       target.querySelector(".installment_month_year").textContent = starting_rails_date.monthYear()
       target.querySelector(".installment_number").value = index + starting_number + 1
       target.querySelector(".installment_month").value = starting_rails_date.month
@@ -186,39 +188,59 @@ export default class extends Controller {
   }
 
   async _updateInstallmentsPrices() {
-    const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
-    const installments_count = parseInt(this.installmentsCountInputTarget.value)
+    const total_price            = parseInt(this._removeMask(this.priceInputTarget.value))
+    const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
 
-    let price_that_cannot_be_divided = total_price % installments_count
-    const price_that_can_be_divided = total_price - price_that_cannot_be_divided
-    const divisible_installment_price = price_that_can_be_divided / installments_count
+    let price_that_cannot_be_divided  = total_price % new_installments_count
+    const price_that_can_be_divided   = total_price - price_that_cannot_be_divided
+    const divisible_installment_price = price_that_can_be_divided / new_installments_count
 
-    if (this.priceInstallmentInputTargets.length !== installments_count) { await this._updateInstallmentsFields() }
+    await this._updateInstallmentsFields(new_installments_count)
 
-    this.priceInstallmentInputTargets.forEach((target) => {
-      const value = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
+    const visible_installments_inputs = this.priceInstallmentInputTargets.filter((element) => element.checkVisibility())
+
+    visible_installments_inputs.forEach((target) => {
+      const value  = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
       target.value = this._applyMask(value)
     })
   }
 
-  async _updateInstallmentsFields() {
-    const old_installments_count = this.priceInstallmentInputTargets.length
-    const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
+  async _updateInstallmentsFields(new_installments_count) {
+    const all_installments           = this.priceInstallmentInputTargets
+    const all_installments_count     = all_installments.length
+    const visible_installments       = all_installments.filter((element) => element.checkVisibility())
+    const visible_installments_count = visible_installments.length
 
-    if (old_installments_count > new_installments_count) {
-      const installments_to_be_deleted = this.delInstallmentTargets.slice(new_installments_count)
-      installments_to_be_deleted.forEach((el) => el.click())
+    const should_remove_installments     = new_installments_count < visible_installments_count
+    const should_add_installments        = new_installments_count > visible_installments_count
+    const can_update_hidden_installments = all_installments_count > visible_installments_count
 
-      return
+    if (visible_installments_count === new_installments_count) { return }
+
+    if (should_remove_installments) {
+      const installments_delete_buttons_to_be_clicked = this.delInstallmentTargets.slice(new_installments_count)
+
+      installments_delete_buttons_to_be_clicked.forEach((element) => element.click())
     }
 
-    const number_of_installments_to_add = new_installments_count - old_installments_count
-    for (let i = 0; i < number_of_installments_to_add; i++) {
-      await sleep(() => { this.addInstallmentTarget.click() })
+    if (!should_add_installments) { return }
+
+    if (can_update_hidden_installments) {
+      const sliced = this.installmentWrapperTargets.slice(visible_installments_count, new_installments_count)
+
+      sliced.forEach(element => {
+        element.style.display = "block"
+        element.querySelector("input[name*='_destroy']").value = "0"
+      })
+    }
+
+    const number_of_new_installments_to_add = new_installments_count - all_installments_count
+    for (let i = 0; i < number_of_new_installments_to_add; i++) {
+      await this.addInstallmentTarget.click()
     }
 
     const rails_due_date = this._getDueDate()
-    this._updateWrappers(rails_due_date, old_installments_count)
+    this._updateWrappers(rails_due_date, visible_installments_count)
   }
 
   // Categories

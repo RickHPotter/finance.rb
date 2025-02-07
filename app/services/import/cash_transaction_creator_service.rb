@@ -65,7 +65,7 @@ module Import
 
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
-        Params::CashTransactionParams.new(cash_transaction:, cash_installments: { count: 1 }, category_transactions:, entity_transactions:)
+        Params::CashTransactions.new(cash_transaction:, cash_installments: { count: 1 }, category_transactions:, entity_transactions:)
       end.compact_blank
     end
 
@@ -81,7 +81,7 @@ module Import
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero)
 
         @transactions_collection[:with_installments] <<
-          Params::CashTransactionParams.new(
+          Params::CashTransactions.new(
             cash_transaction: transaction_zero.slice(:description, :date, :month, :year).merge({ price:, user_id: }),
             cash_installments:,
             category_transactions:,

@@ -1,40 +1,40 @@
 # frozen_string_literal: true
 
 module Params
-  class CardTransactionParams
-    attr_accessor :description, :date, :month, :year, :price, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
+  class CashTransactions
+    attr_accessor :description, :date, :month, :year, :price, :user_id, :user_card_id, :cash_installments, :category_transactions, :entity_transactions
 
-    def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
-      assign_card_transaction(card_transaction)
+    def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {})
+      assign_cash_transaction(cash_transaction)
 
-      @card_installments = card_installments
+      @cash_installments = cash_installments
       @entity_transactions = entity_transactions
       @category_transactions = category_transactions
     end
 
     def params
       {
-        card_transaction: {
-          description: description || "New CardTransaction #{DateTime.current.to_i}",
+        cash_transaction: {
+          description: description || "New CashTransaction #{DateTime.current.to_i}",
           date:,
           month:,
           year:,
           price:,
           user_id:,
           user_card_id:,
-          card_installments_attributes:,
+          cash_installments_attributes:,
           category_transactions_attributes:,
           entity_transactions_attributes:
         }
       }
     end
 
-    # no base => card_installments = { count: 2 }
-    # base    => card_installments = [ {}, {} ]
-    def card_installments_attributes
-      return card_installments if card_installments.is_a? Array
+    # no base => cash_installments = { count: 2 }
+    # base    => cash_installments = [ {}, {} ]
+    def cash_installments_attributes
+      return cash_installments if cash_installments.is_a? Array
 
-      count = card_installments[:count] || 1
+      count = cash_installments[:count] || 1
       installment_price = (price / count).round(2)
 
       (1..count).map do |i|
@@ -47,8 +47,8 @@ module Params
       category_transactions
     end
 
-    # no base => card_installments = [ {}, {} ]
-    # base    => card_installments = [ {}, {} ] # includes :id
+    # no base => cash_installments = [ {}, {} ]
+    # base    => cash_installments = [ {}, {} ] # includes :id
     def entity_transactions_attributes
       return entity_transactions if entity_transactions&.first&.try(:id)
 
@@ -58,34 +58,34 @@ module Params
         is_payer = exchanges_attributes.present?
         status = exchanges_attributes.present? ? :pending : :finished
 
-        entity_transaction.merge(is_payer:, status:, transactable_type: "CardTransaction", exchanges_attributes:)
+        entity_transaction.merge(is_payer:, status:, transactable_type: "CashTransaction", exchanges_attributes:)
       end
     end
 
-    def use_base(card_transaction, card_transaction_options: {}, entity_transactions_options: {})
-      card_transaction = CardTransaction.includes(:card_installments, :entity_transactions, :category_transactions).where(id: card_transaction.id).first
+    def use_base(cash_transaction, cash_transaction_options: {}, entity_transactions_options: {})
+      cash_transaction = CashTransaction.includes(:cash_installments, :entity_transactions, :category_transactions).where(id: cash_transaction.id).first
 
-      assign_card_transaction(card_transaction, card_transaction_options:)
-      assign_card_installments(card_transaction.card_installments)
-      assign_category_transactions(card_transaction.category_transactions)
-      assign_entity_transactions(card_transaction.entity_transactions, entity_transactions_options:)
+      assign_cash_transaction(cash_transaction, cash_transaction_options:)
+      assign_cash_installments(cash_transaction.cash_installments)
+      assign_category_transactions(cash_transaction.category_transactions)
+      assign_entity_transactions(cash_transaction.entity_transactions, entity_transactions_options:)
     end
 
     private
 
-    def assign_card_transaction(card_transaction, card_transaction_options: {})
-      @description    = card_transaction_options[:description]    || card_transaction[:description]
-      @date           = card_transaction_options[:date]           || card_transaction[:date]
-      @month          = card_transaction_options[:month]          || card_transaction[:month]
-      @year           = card_transaction_options[:year]           || card_transaction[:year]
-      @price          = card_transaction_options[:price]          || card_transaction[:price]
-      @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
-      @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
+    def assign_cash_transaction(cash_transaction, cash_transaction_options: {})
+      @description    = cash_transaction_options[:description]    || cash_transaction[:description]
+      @date           = cash_transaction_options[:date]           || cash_transaction[:date]
+      @month          = cash_transaction_options[:month]          || cash_transaction[:month]
+      @year           = cash_transaction_options[:year]           || cash_transaction[:year]
+      @price          = cash_transaction_options[:price]          || cash_transaction[:price]
+      @user_id        = cash_transaction_options[:user_id]        || cash_transaction[:user_id]
+      @user_card_id   = cash_transaction_options[:user_card_id]   || cash_transaction[:user_card_id]
     end
 
-    def assign_card_installments(card_installments)
-      @card_installments = card_installments.map do |installment|
-        installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CardInstallment)
+    def assign_cash_installments(cash_installments)
+      @cash_installments = cash_installments.map do |installment|
+        installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CashInstallment)
       end
     end
 

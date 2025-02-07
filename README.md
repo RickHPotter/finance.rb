@@ -281,7 +281,7 @@ Possible Downtime: 6 months and a half
 - Subtasks:
   - ⌛ Use TDD approach; create the tests ~before~ after.
     - ✅ Revisit every model spec.
-    - ✅ Revisit params support and check if Params:: Service can be used instead.
+    - ✅ Ditch spec helper `CardTransactionParams` in favour of `Params::CardTransaction`.
     - ✅ Create feature specs for Hotwire SPA `Pages`.
   - ⌛ Fix `FIXMEs`, `TODOs`, and such.
   - ⌛ Come to a decision regarding the change of Dark Mode to `Flowbite`.
