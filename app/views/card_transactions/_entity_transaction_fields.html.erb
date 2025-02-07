@@ -7,7 +7,7 @@
       <%= render TextFieldComponent.new(form, :price, type: :number) %>
     </div>
     <div class="flex w-1/4 flex-col my-6">
-      <%= form.check_box :is_payer %>
+      <%= form.checkbox :is_payer, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500" %>
     </div>
 
     <%= form.hidden_field :_destroy %>

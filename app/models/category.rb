@@ -60,7 +60,7 @@ class Category < ApplicationRecord
     built_in
   end
 
-  # FIXME: later there will be a colour-picker and a colour column for this table
+  # TODO: later there will be a colour-picker and a colour column for this table
   def bg_colour
     BG_COLOURS[category_name]
   end

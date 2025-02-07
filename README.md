@@ -271,7 +271,7 @@ Possible Downtime: 6 months and a half
   - ✅ Fix the dependent relationships, so that a `User` can self-destruct.
   - ✅ Successfully update __Ruby__ from 3.3.4 to 3.4.1.
   - ✅ Successfully update __Ruby on Rails__ from 7.2.2 to 8.0.1.
-  - ✅ Successfully update __Tailwind__ from `v3` to `v4` [CI is breaking for now, maintainers are fixing it].
+  - ✅ Successfully update __Tailwind__ from `v3` to `v4`.
 
 ### GAARA-12/fe-04: Finish the MVP
 
@@ -283,8 +283,8 @@ Possible Downtime: 6 months and a half
     - ✅ Revisit every model spec.
     - ✅ Ditch spec helper `CardTransactionParams` in favour of `Params::CardTransaction`.
     - ✅ Create feature specs for Hotwire SPA `Pages`.
-  - ⌛ Fix `FIXMEs`, `TODOs`, and such.
-  - ⌛ Come to a decision regarding the change of Dark Mode to `Flowbite`.
+  - ✅ Fix `FIXMEs`, `TODOs`, and such.
+  - ✅ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
   - ⌛ Add form for `UserBankAccount`.

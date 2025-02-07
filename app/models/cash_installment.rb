@@ -13,8 +13,7 @@ class CashInstallment < Installment
   validates :cash_installments_count, presence: true
 
   # @callbacks ................................................................
-  before_validation :set_installment_type, on: :create
-  before_validation :set_paid,             on: :create
+  before_validation :set_installment_type, :set_paid, on: :create
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }

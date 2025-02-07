@@ -15,7 +15,7 @@
     </div>
 
     <div class="mb-3">
-      <%= form.checkbox :active, class: "bg-purple-600 border-gray-300 focus:ring-blue-500 focus:ring-2", checked: category.new_record? || category.active %>
+      <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: category.new_record? || category.active %>
     </div>
 
     <%= render ButtonComponent.new form:, options: { label: "Submit Category" } %>

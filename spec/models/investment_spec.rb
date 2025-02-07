@@ -47,7 +47,7 @@ RSpec.describe Investment, type: :model do
     end
   end
 
-  # FIXME: move this to request spec when the view is ready
+  # TODO: move this to request spec when the view is ready
   describe "[ business logic ]" do
     context "( when new investments are created )" do
       before { cash_transaction.reload }
