@@ -76,11 +76,11 @@ module Params
     def assign_cash_transaction(cash_transaction, cash_transaction_options: {})
       @description    = cash_transaction_options[:description]    || cash_transaction[:description]
       @date           = cash_transaction_options[:date]           || cash_transaction[:date]
+      @month          = cash_transaction_options[:month]          || cash_transaction[:month]
+      @year           = cash_transaction_options[:year]           || cash_transaction[:year]
       @price          = cash_transaction_options[:price]          || cash_transaction[:price]
       @user_id        = cash_transaction_options[:user_id]        || cash_transaction[:user_id]
       @user_card_id   = cash_transaction_options[:user_card_id]   || cash_transaction[:user_card_id]
-      @month          = cash_transaction_options[:month]          || cash_transaction[:month]
-      @year           = cash_transaction_options[:year]           || cash_transaction[:year]
     end
 
     def assign_cash_installments(cash_installments)

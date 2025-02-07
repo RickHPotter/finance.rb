@@ -76,11 +76,11 @@ module Params
     def assign_card_transaction(card_transaction, card_transaction_options: {})
       @description    = card_transaction_options[:description]    || card_transaction[:description]
       @date           = card_transaction_options[:date]           || card_transaction[:date]
+      @month          = card_transaction_options[:month]          || card_transaction[:month]
+      @year           = card_transaction_options[:year]           || card_transaction[:year]
       @price          = card_transaction_options[:price]          || card_transaction[:price]
       @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
       @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
-      @month          = card_transaction_options[:month]          || card_transaction[:month]
-      @year           = card_transaction_options[:year]           || card_transaction[:year]
     end
 
     def assign_card_installments(card_installments)
