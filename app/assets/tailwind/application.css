@@ -2,7 +2,6 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/typography";
-@plugin "flowbite/plugin";
 
 @config "../../../config/tailwind.config.js";
 
@@ -39,9 +38,11 @@ body::-webkit-scrollbar { /* WebKit */
   height: 0;
 }
 
+/* TODO: I realised I couldnt open datepicker by clicking on the input instead of the indicator icon */
+/* Hide this again (maybe) after implmenting a real datepicker */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
+  /*display: none;*/
+  /*-webkit-appearance: none;*/
 }
 
 .hw-cb {
