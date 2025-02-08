@@ -16,6 +16,7 @@ class CardInstallment < Installment
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
+  after_save :check_paid_situation
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
@@ -101,6 +102,18 @@ class CardInstallment < Installment
     return if paid.present?
 
     self.paid = date.present? && Date.current >= date
+  end
+
+  # Sets `card_transaction.paid` as true if all its installments were paid.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # @return [void].
+  #
+  def check_paid_situation
+    return unless paid
+
+    card_transaction.update_columns(paid: true) if card_transaction.card_installments.where(paid: false).empty?
   end
 end
 

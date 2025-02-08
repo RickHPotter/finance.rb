@@ -62,10 +62,9 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    # TODO: a card transaction should only be paid if all its installments were paid in their corresponding bill cash transactions
     return if paid.present?
 
-    self.paid = date.present? && Date.current >= date
+    self.paid = false
   end
 end
 

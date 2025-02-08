@@ -282,7 +282,9 @@ Possible Downtime: 6 months and a half
   - ⌛ Use TDD approach; create the tests ~before~ after.
     - ✅ Revisit every model spec.
     - ✅ Ditch spec helper `CardTransactionParams` in favour of `Params::CardTransaction`.
-    - ✅ Create feature specs for Hotwire SPA `Pages`.
+    - ✅ Create feature specs for `Hotwire SPA` `Pages`.
+    - ✅ Create spec for `CashTransactable` Concern.
+    - ⌛ Create spec for `ExchangeCashTransactable` Concern.
   - ✅ Fix `FIXMEs`, `TODOs`, and such.
   - ✅ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.

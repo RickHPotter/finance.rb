@@ -5,7 +5,7 @@ RSpec.configure do |config|
     DatabaseCleaner.clean_with(:truncation)
   end
 
-  config.before(:each, type: :request) do
-    DatabaseCleaner.clean_with(:truncation)
-  end
+  # config.before(:each, type: :request) do
+  #   DatabaseCleaner.clean_with(:truncation)
+  # end
 end
