@@ -15,7 +15,7 @@ RSpec.describe Investment, type: :model do
 
   shared_examples "investment cop" do
     it "sums the investments correctly" do
-      expect(cash_transaction.price).to be_within(0.01).of cash_transaction.investments.sum(:price).round(2)
+      expect(cash_transaction.price).to eq cash_transaction.investments.sum(:price)
     end
 
     it "generates the comment that references every investments day" do
@@ -109,7 +109,7 @@ RSpec.describe Investment, type: :model do
       it "creates or uses another cash_transaction that fits the FK change" do
         expect(subject.cash_transaction).to eq cash_transaction
         expect(subject.cash_transaction.investments.count).to eq(investments.size + 1)
-        expect(subject.cash_transaction.price).to be_within(0.01).of([ subject, *investments ].sum(&:price).round(2))
+        expect(subject.cash_transaction.price).to eq([ subject, *investments ].sum(&:price))
 
         subject.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: subject.user }))
         investments.first.cash_transaction.reload
@@ -117,7 +117,7 @@ RSpec.describe Investment, type: :model do
         expect(subject.cash_transaction).to_not eq cash_transaction
         expect(subject.cash_transaction.investments.count).to eq(1)
         expect(investments.first.cash_transaction.investments.count).to eq(investments.size)
-        expect(investments.first.cash_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
+        expect(investments.first.cash_transaction.price).to eq investments.sum(&:price)
       end
     end
   end

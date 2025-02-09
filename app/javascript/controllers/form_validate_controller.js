@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// FIXME: form-validate does not work anymore probably due to the nature of is-invalid not existing or maybe turbo
+// TODO: form-validate does not work anymore, fix it or leave it, probably not important
 // Connects to data-controller="form-validate"
 export default class extends Controller {
   static targets = ["field"]

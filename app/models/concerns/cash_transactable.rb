@@ -132,6 +132,6 @@ module CashTransactable
     return price if cash_transaction.nil?
 
     transactable = cash_transaction.public_send(model_name.plural)
-    transactable.sum(:price).round(2)
+    transactable.sum(:price)
   end
 end

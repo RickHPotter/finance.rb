@@ -35,7 +35,7 @@ module Params
       return card_installments if card_installments.is_a? Array
 
       count = card_installments[:count] || 1
-      installment_price = (price / count).round(2)
+      installment_price = price / count
 
       (1..count).map do |i|
         { number: i, date: date.next_month(i - 1), month:, year:, price: installment_price }

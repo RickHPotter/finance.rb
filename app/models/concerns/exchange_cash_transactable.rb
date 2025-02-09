@@ -5,16 +5,36 @@ module ExchangeCashTransactable
   extend ActiveSupport::Concern
 
   included do
-    # @relationships ..........................................................
-    belongs_to :cash_transaction, optional: true
+    # @extends ..................................................................
     delegate :transactable, to: :entity_transaction
     delegate :user, to: :transactable
+
+    # @relationships ..........................................................
+    belongs_to :cash_transaction, optional: true
 
     # @callbacks ..............................................................
     after_validation :update_entity_transaction_status, on: :update
     before_create :create_cash_transaction, if: :monetary?
-    before_update :update_cash_transaction
+    before_update :update_cash_transaction, if: :monetary?
     before_update :destroy_cash_transaction, if: :non_monetary?
+    before_destroy :update_or_destroy_cash_transaction
+  end
+
+  # @class_methods ............................................................
+  # TODO: needs testing
+  def self.join_exchanges(exchanges_ids, cash_transaction_id)
+    exchanges = Exchange.where(id: exchanges_ids)
+    cash_transaction = CashTransaction.find(cash_transaction_id)
+
+    comment = exchanges.map { |exchange| "#{exchange.number}/#{exchange.entity_transaction.exchanges_count}" }.join(", ")
+    cash_transaction.update_columns(price: exchanges.sum(:price), comment:)
+
+    exchanges.update_all(cash_transaction_id:)
+  end
+
+  # TODO: needs testing
+  def self.undo_join_exchanges(exchanges_ids)
+    raise NotImplementedError
   end
 
   # @public_class_methods .....................................................
@@ -84,13 +104,28 @@ module ExchangeCashTransactable
     CashTransaction.find(cash_transaction_id_to_be_destroyed).destroy
   end
 
+  # Sets `cash_transaction_id` to nil if the `EXCHANGE RETURN` category has been removed.
+  # It then proceeds to destroy the associated `cash_transaction`.
+  #
+  # @note This is a method that is called before_update.
+  #
+  # @return [void].
+  #
+  def update_or_destroy_cash_transaction
+    exchanges_that_belong_to_cash_transaction = Exchange.where(cash_transaction_id:).where.not(id:)
+
+    cash_transaction.destroy and return if exchanges_that_belong_to_cash_transaction.empty?
+
+    cash_transaction.update_columns(price: exchanges_that_belong_to_cash_transaction.sum(:price))
+  end
+
   # @see {CashTransaction}.
   #
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
     {
-      description: "EXCHANGE - #{transactable} #{number}/#{entity_transaction.exchanges_count}",
+      description: "EXCHANGE RETURN - #{transactable} #{number}/#{entity_transaction.exchanges_count}",
       starting_price:, price:,
       date: transactable.date, month: transactable.month, year: transactable.year,
       user_id: user.id,

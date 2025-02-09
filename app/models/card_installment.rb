@@ -54,8 +54,8 @@ class CardInstallment < Installment
     installments = CardInstallment.by(month:, year:, user_id:, user_card_id:)
 
     x, y = installments.partition { |installment| installment.card_installments_count == 1 }
-    in_one = x.sum(&:price).round(2)
-    spread = y.sum(&:price).round(2)
+    in_one = x.sum(&:price)
+    spread = y.sum(&:price)
 
     "Upfront: #{in_one}, Installments: #{spread}"
   end

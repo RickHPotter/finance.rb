@@ -124,6 +124,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.integer "number", default: 1, null: false
     t.integer "starting_price", null: false
     t.integer "price", null: false
+    t.integer "exchanges_count", default: 0, null: false
     t.bigint "entity_transaction_id", null: false
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false

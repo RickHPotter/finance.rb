@@ -284,13 +284,13 @@ Possible Downtime: 6 months and a half
     - ✅ Ditch spec helper `CardTransactionParams` in favour of `Params::CardTransaction`.
     - ✅ Create feature specs for `Hotwire SPA` `Pages`.
     - ✅ Create spec for `CashTransactable` Concern.
-    - ⌛ Create spec for `ExchangeCashTransactable` Concern.
+    - ✅ Create spec for `ExchangeCashTransactable` Concern.
   - ✅ Fix `FIXMEs`, `TODOs`, and such.
   - ✅ Come to a decision regarding the change of Dark Mode to `Flowbite`.
+  - ⌛ Fix locale from end to end in the application.
+  - ⌛ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
+  - ⌛ Create search sub_menu in `CardTransaction`'s `:index`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
   - ⌛ Add form for `UserBankAccount`.
   - ⌛ Add form for `CashTransaction`.
-  - ⌛ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
-  - ⌛ Create search sub_menu in `CardTransaction`'s `:index`.
-  - ⌛ Fix locale from end to end in the application.

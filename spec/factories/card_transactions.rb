@@ -5,7 +5,7 @@ FactoryBot.define do
     date { Date.new 2023, 12, 16 }
     description { "LA PLAZA PARATY" }
     comment { nil }
-    price { 14_000 }
+    price { -14_000 }
     month { (Date.new(date.year, date.month) + 1.month).month }
     year { (Date.new(date.year, date.month) + 1.month).year }
 
@@ -17,14 +17,14 @@ FactoryBot.define do
       build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
     end
     entity_transactions do
-      price = price.to_i / 5
+      self.price = price = 5
       build_list(:entity_transaction, 1, :random, is_payer: false, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
     end
 
     trait :different do
       description { "SITPASS" }
       comment { "Home -> Leve Supermarket" }
-      price { 4.3 }
+      price { -430 }
       month { 1 }
       year { 2024 }
 
@@ -32,12 +32,12 @@ FactoryBot.define do
       user_card { different_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
-        build_list(:card_installment, 2, price: (price / 2).round(2)) do |installment, i|
+        build_list(:card_installment, 2, price: (price / 2)) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
       entity_transactions do
-        price = price.to_i / 3
+        self.price = price = 3
         build_list(:entity_transaction, 1, :random, is_payer: true, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
       end
     end
@@ -46,18 +46,18 @@ FactoryBot.define do
       date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
       description { Faker::Lorem.sentence }
       comment { [ Faker::Lorem.sentence, nil, nil, nil, nil ].sample }
-      price { Faker::Number.number(digits: rand(3..5)) }
+      price { Faker::Number.number(digits: rand(3..5)) * -1 }
 
       user { random_custom_create(:user) }
       user_card { random_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
-        build_list(:card_installment, 3, price: (price / date.month).round(2)) do |installment, i|
+        build_list :card_installment, 3, price: (price / date.month) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
       entity_transactions do
-        price = price.to_i / 3
+        self.price = price = 3
         build_list(:entity_transaction, 1, :random, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
       end
     end

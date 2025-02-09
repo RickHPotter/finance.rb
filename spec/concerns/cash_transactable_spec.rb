@@ -28,6 +28,7 @@ RSpec.describe CashTransactable, type: :concern do
 
     cash_transactions.each_with_index do |cash_transaction, index|
       expect(cash_transaction.comment).to eq "Upfront: 0, Installments: #{installments_prices[index]}"
+      expect(cash_transaction.price).to eq installments_prices[index]
     end
   end
 
@@ -74,7 +75,7 @@ RSpec.describe CashTransactable, type: :concern do
       validate(card_transaction_one, [ -100, -100 ])
     end
 
-    context "when multiple transactions exist" do
+    context "( when multiple transactions exist )" do
       before { card_transaction_two.save }
 
       it "updates cash_transaction on destroy as one of the card_installments" do
@@ -91,6 +92,21 @@ RSpec.describe CashTransactable, type: :concern do
         card_transaction_two.card_installments.third.destroy
 
         validate_multiple(CardTransaction.all, [ -200, -200 ])
+      end
+    end
+
+    context "( destroying card_transaction )" do
+      before { card_transaction_one.save }
+
+      it "ceases to exist" do
+        cash_transactions_ids = card_transaction_one.card_installments.map(&:cash_transaction).compact.pluck(:id)
+        cash_installments_ids = card_transaction_one.card_installments.map(&:cash_transaction).compact.map(&:cash_installments).flatten.pluck(:id)
+
+        card_transaction_one.destroy
+
+        expect(card_transaction_one).to be_destroyed
+        expect(CashTransaction.where(id: cash_transactions_ids)).to be_empty
+        expect(CashInstallment.where(id: cash_installments_ids)).to be_empty
       end
     end
   end

@@ -30,6 +30,7 @@ end
 #
 #  id                    :bigint           not null, primary key
 #  exchange_type         :integer          default("non_monetary"), not null
+#  exchanges_count       :integer          default(0), not null
 #  number                :integer          default(1), not null
 #  price                 :integer          not null
 #  starting_price        :integer          not null

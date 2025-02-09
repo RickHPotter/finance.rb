@@ -7,7 +7,6 @@ module HasStartingPrice
   included do
     # @callbacks ..............................................................
     before_validation :set_starting_price, on: :create
-    before_validation :fix_price
 
     # @validations ..............................................................
     validates :starting_price, :price, presence: true
@@ -29,15 +28,5 @@ module HasStartingPrice
     return unless respond_to? :starting_price
 
     self.starting_price ||= price
-  end
-
-  # Fixes `price` with scale 2.
-  #
-  # @note This is a method that is called before_validation.
-  #
-  # @return [void].
-  #
-  def fix_price
-    self.price = price&.round(2)
   end
 end
