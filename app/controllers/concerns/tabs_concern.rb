@@ -31,11 +31,15 @@ module TabsConcern
   end
 
   def set_new_sublinks
+    can_create_card_transaction = current_user.user_cards.active.present?
+    card_transaction_link = can_create_card_transaction ? new_card_transaction_path : new_user_card_path(no_user_card: true, format: :turbo_stream)
+    @active_sub_menu = :user_card if @active_sub_menu == :card_transaction && !can_create_card_transaction
+
     @new_items = [
       { label: "Card",             icon: "shared/svgs/credit_card", link: new_user_card_path,        default: @active_sub_menu == :user_card },
       { label: "Entity",           icon: "shared/svgs/user_group",  link: new_entity_path,           default: @active_sub_menu == :entity },
       { label: "Category",         icon: "shared/svgs/user_group",  link: new_category_path,         default: @active_sub_menu == :category },
-      { label: "Card Transaction", icon: "shared/svgs/credit_card", link: new_card_transaction_path, default: @active_sub_menu == :card_transaction },
+      { label: "Card Transaction", icon: "shared/svgs/credit_card", link: card_transaction_link,     default: @active_sub_menu == :card_transaction },
       { label: "Cash Transaction", icon: "shared/svgs/wallet",      link: new_cash_transaction_path, default: @active_sub_menu == :cash_transaction }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 

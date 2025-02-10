@@ -15,6 +15,13 @@ class UserCardsController < ApplicationController
 
   def new
     @user_card = UserCard.new
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        set_tabs(active_menu: :new, active_sub_menu: :user_card) if params[:no_user_card]
+      end
+    end
   end
 
   def create

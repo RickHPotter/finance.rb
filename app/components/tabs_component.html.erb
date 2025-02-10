@@ -15,7 +15,7 @@
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },
                     class: "z-30 mb-0 flex w-full cursor-pointer items-center justify-center rounded-lg border-0 bg-inherit px-0 py-1 transition-all ease-in-out",
-                    data: { turbo_frame: item.turbo_frame, material_tailwind_tab_target: "tabLink", id: index, **extra_data },
+                    data: { turbo_frame: item.turbo_frame, turbo_prefetch: false, material_tailwind_tab_target: "tabLink", id: index, **extra_data },
                     tabindex: "-1" do %>
 
             <span class="pointer-events-none">

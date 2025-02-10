@@ -15,6 +15,9 @@
         <h1 id="card_transaction_user_card_name" class="font-bold text-black text-5xl text-center p-2">
           <%= @user_card&.user_card_name %>
         </h1>
+        <h1 id="card_transaction_user_card_name" class="font-medium text-black text-2xl text-center p-2 animate-pulse opacity-80 w-full py-2 px-3 mb-5 rounded-lg inline-block">
+          <%= I18n.l(@user_card&.current_due_date, format: :long) if @user_card %>
+        </h1>
         <hr>
 
         <%= render "card_transactions/card" %>
