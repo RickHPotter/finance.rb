@@ -31,7 +31,7 @@ RSpec.describe "UserCards", type: :feature do
       match_center_container_content("card_transactions")
 
       within "turbo-frame#center_container turbo-frame#card_transactions" do
-        expect(page).to have_selector("#card_transaction_user_card_name", text: user_card.user_card_name)
+        expect(page).to have_selector("#month_year_selector_title", text: user_card.user_card_name)
       end
     end
   end

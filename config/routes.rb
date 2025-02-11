@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   resources :entities
   resources :categories
   resources :cash_transactions
-  resources :card_transactions
+  resources :card_transactions do
+    collection { get :month_year }
+  end
 
   root "pages#index"
 end

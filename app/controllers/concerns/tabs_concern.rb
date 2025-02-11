@@ -3,7 +3,7 @@
 module TabsConcern
   extend ActiveSupport::Concern
 
-  def set_tabs(active_menu: :new, active_sub_menu: :user_card)
+  def set_tabs(active_menu: :card, active_sub_menu: :WILL)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 

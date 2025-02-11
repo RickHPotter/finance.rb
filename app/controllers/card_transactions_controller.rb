@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 # Controller for CardTransaction
-class CardTransactionsController < ApplicationController
+# FIXME: fix Metrics/ClassLength
+class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
   before_action :set_tabs
@@ -11,15 +12,31 @@ class CardTransactionsController < ApplicationController
   def index
     @user_card ||= current_user.user_cards.find_by(id: params[:user_card_id])                  if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
-    @card_installments = Logic::CardInstallments.find_by_span(@user_card, 6) if @user_card
-    @card_installments ||= Logic::CardInstallments.find_by_params(current_user, params)
 
+    new_index_variables
     respond_to do |format|
       format.html
       format.turbo_stream do
         set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
       end
     end
+  end
+
+  # FIXME: fix me later
+  def new_index_variables
+    min_date = @user_card.card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    max_date = @user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    @years = (min_date.year..max_date.year)
+    @active_month_year = Date.current.strftime("%Y%m")
+    @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
+    @entities = current_user.entities.active.order(:entity_name).pluck(:entity_name, :id)
+  end
+
+  def month_year
+    @month_year = params[:month_year]
+    @month_year_str = Date.parse("#{@month_year[0..3]}-#{@month_year[4..]}-01").strftime("%B %Y")
+
+    @card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, params)
   end
 
   def show; end

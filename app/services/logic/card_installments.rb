@@ -18,10 +18,7 @@ module Logic
     end
 
     def self.find_by_params(user, params)
-      conditions = {}
-      category_transactions = { category_id: params[:category_id] } if params[:category_id]
-      entity_transactions   = { entity_id: params[:entity_id] }     if params[:entity_id]
-      conditions[:card_transaction] = { category_transactions:, entity_transactions: }.compact
+      conditions = get_conditions_from_params(params)
 
       user.card_installments
           .includes(card_transaction: %i[categories entities])
@@ -30,6 +27,37 @@ module Logic
           .group_by { |t| Date.new(t.year, t.month) }
           .sort
           .reverse
+    end
+
+    def self.find_ref_month_year_by_params(user, params)
+      month_year = params.delete(:month_year)
+      conditions = get_conditions_from_params(params)
+
+      user.card_installments
+          .includes(card_transaction: %i[categories entities])
+          .where(conditions)
+          .where("TO_CHAR(installments.date, 'YYYYMM') = ?", month_year)
+          .order("installments.date DESC")
+          .sort
+          .reverse
+    end
+
+    def self.get_conditions_from_params(params)
+      params.delete(:controller)
+      params.delete(:action)
+
+      return {} if params.blank?
+
+      category_id = params.delete(:category_id)
+      entity_id   = params.delete(:entity_id)
+
+      {
+        card_transaction: {
+          **params.to_unsafe_h,
+          category_transactions: { category_id: }.compact_blank,
+          entity_transactions: { entity_id: }.compact_blank
+        }.compact_blank
+      }
     end
   end
 end

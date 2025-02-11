@@ -65,7 +65,7 @@ RSpec.describe "CardTransactions", type: :feature do
       match_center_container_content("card_transactions")
 
       within "turbo-frame#card_transactions" do
-        expect(page).to have_css("#card_transaction_user_card_name", text: user_card.user_card_name)
+        expect(page).to have_css("#month_year_selector_title", text: user_card.user_card_name)
       end
     end
   end
@@ -95,7 +95,7 @@ RSpec.describe "CardTransactions", type: :feature do
       match_center_container_content("card_transactions")
 
       within "turbo-frame#card_transactions" do
-        expect(page).to have_css("#card_transaction_user_card_name", text: user.user_cards.first.user_card_name)
+        expect(page).to have_css("#month_year_selector_title", text: user.user_cards.first.user_card_name)
       end
     end
   end
