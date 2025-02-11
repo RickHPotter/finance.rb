@@ -8,6 +8,16 @@ export default class extends Controller {
   }
 
   initialise() {
+    document.addEventListener("dragover", (event) => {
+      event.preventDefault()
+    })
+
+    document.addEventListener("drop", (event) => {
+      const transactionId = event.dataTransfer.getData("text/plain")
+      const monthBtn = event.target.closest("[data-month-year-selector-target='monthYear']")
+      // TODO: implement dragging to another month, or maybe even to another card
+      // implement also a toast with undo button and, obviously the undo functionality
+    })
   }
 
   filter(event) {
@@ -41,5 +51,21 @@ export default class extends Controller {
         entityField.parentElement.style.display = "none"
       }
     })
+  }
+
+  start(event) {
+    event.dataTransfer.setData("text/plain", event.target.dataset.id)
+    event.target.classList.add("opacity-50")
+    console.log("penis")
+  }
+
+  activate(event) {
+    event.preventDefault()
+    console.log("ac")
+  }
+
+  drop(event) {
+    event.preventDefault()
+    event.target.classList.remove("opacity-50")
   }
 }

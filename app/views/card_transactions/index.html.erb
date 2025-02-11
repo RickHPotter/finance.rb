@@ -14,13 +14,13 @@
                                  class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                                  data: { action: "input->datatable#filter" } %>
 
-              <%= select_tag :search, options_for_select(@categories),
-                             class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white",
+              <%= select_tag :categories_search, options_for_select(@categories),
+                             class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                              include_blank: "All Categories",
                              data: { action: "change->datatable#filterCategory" } %>
  
-              <%= select_tag :search, options_for_select(@entities),
-                             class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white",
+              <%= select_tag :entities_search, options_for_select(@entities),
+                             class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                              include_blank: "All Entities",
                              data: { action: "change->datatable#filterEntity" } %>
             </div>
