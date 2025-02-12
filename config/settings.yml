@@ -1,0 +1,13 @@
+development:
+  site:
+    name: Finance.rb
+    short_name: Finance.rb
+    description: A simple way to manage your finances
+    keywords: Finance, Budget, Money
+
+production:
+  site:
+    name: Finance.rb
+    short_name: Finance.rb
+    description: A simple way to manage your finances
+    keywords: Finance, Budget, Money
