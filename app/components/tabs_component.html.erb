@@ -3,25 +3,27 @@
 <% else %>
   <div <%= "data-controller=material-tailwind-tab data-load-on-empty-content=center_container" unless @dependent %>>
 <% end %>
-  <ul class="relative flex list-none flex-wrap rounded-xl p-1"
+  <ul class="relative flex list-none rounded-xl p-1 overflow-x-auto"
       data-tabs="tabs" data-default="<%= @default %>" data-material-tailwind-tab-target="tabList"
       role="list">
 
     <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
-    <% width = @items.count %>
+    <% width = @mobile ? "" : "w-1/#{@items.count}" %>
     <% @items.each_with_index do |item, index| %>
-      <li class="z-30 flex-auto text-center w-1/<%= width %>" data-material-tailwind-tab-target="tabItem">
+      <li class="z-30 flex-auto text-center <%= width %>" data-material-tailwind-tab-target="tabItem">
         <%= link_to item.link,
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },
-                    class: "z-30 mb-0 flex w-full cursor-pointer items-center justify-center rounded-lg border-0 bg-inherit px-0 py-1 transition-all ease-in-out",
+                    class: "z-30 mb-0 flex items-center justify-center rounded-lg border-0 bg-inherit px-4 py-1 transition-all ease-in-out",
                     data: { turbo_frame: item.turbo_frame, turbo_prefetch: false, material_tailwind_tab_target: "tabLink", id: index, **extra_data },
                     tabindex: "-1" do %>
 
-            <span class="pointer-events-none">
+            <%= content_tag :span, class: "pointer-events-none" do %>
               <%= render item.icon %>
-            </span>
-            <span class="ml-1 font-bold text-slate-700 dark:text-slate-200 pointer-events-none"><%= item.label %></span>
+            <% end %>
+
+            <% class_html = @mobile ? "text-nowrap text-sm font-light" : "text-md font-bold" %>
+            <%= content_tag :span, item.label, class: "ml-1 pointer-events-none text-slate-700 dark:text-slate-200 #{class_html}" %>
           <% end %>
       </li>
     <% end %>
@@ -31,7 +33,8 @@
     <div data-tab-content="">
       <% @dependents.each_with_index do |partial, index| %>
         <% current_index_is_default = @items.index(&:default) == index %>
-        <%= render TabsComponent.new(items: partial, default: current_index_is_default, dependent: true, dependent_no: index) %>
+
+        <%= render TabsComponent.new(items: [ partial ], default: current_index_is_default, dependent: true, dependent_no: index, mobile: @mobile) %>
       <% end %>
     </div>
   <% end %>

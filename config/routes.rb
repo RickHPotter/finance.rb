@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   resources :pages, only: :index do
     collection { get :notification }
   end
+
   resources :user_cards, except: :show
   resources :entities
   resources :categories

@@ -3,6 +3,18 @@
 module TabsConcern
   extend ActiveSupport::Concern
 
+  included do
+    before_action :set_user_agent
+  end
+
+  def set_user_agent
+    @mobile = true
+
+    return unless request.user_agent =~ /Mobile|Android|iPhone|iPad/
+
+    @mobile = true
+  end
+
   def set_tabs(active_menu: :card, active_sub_menu: :WILL)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
@@ -26,6 +38,8 @@ module TabsConcern
     @main_tab = @main_items.map do |label, icon, link, default|
       TabsComponent::Item.new(label, icon, link, default, :center_container)
     end
+
+    @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile
 
     @sub_tab = [ @new_tab, @card_transaction_tab, @cash_transaction_tab ]
   end

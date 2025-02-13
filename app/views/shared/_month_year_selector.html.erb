@@ -1,4 +1,4 @@
-<div class="w-full" data-controller="month-year-selector">
+<%= content_tag :div, class: "w-full", data: { controller: "month-year-selector" } do %>
   <% years.each do |year| %>
     <%= content_tag :div, class: ("active" if year == default_year).to_s, data: { month_year_selector_target: "monthYearContainer", year: } do %>
       <div class="flex justify-between">
@@ -7,7 +7,7 @@
                       class: "p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors #{'opacity-0 pointer-events-none' if year == years.first}",
                       data: { action: "click->month-year-selector#prevYear", year: } %>
 
-          <div class="text-lg font-semibold text-slate-800"><%= year %></div>
+          <%= content_tag :span, year, id: :month_year_selector_title, class: "text-lg font-bold rounded-md bg-transparent border-1 border-purple-600 p-1" %>
 
           <%= link_to "→", "#",
                       class: "p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors #{'opacity-0 pointer-events-none' if year == years.last}",
@@ -15,19 +15,19 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <%= content_tag :span, title, id: :month_year_selector_title, class: "text-lg font-semibold text-slate-800" %>
+          <%= content_tag :span, title, id: :month_year_selector_title, class: "text-lg font-bold rounded-md bg-transparent border-1 border-purple-600 p-1" %>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 pt-2">
+      <%= content_tag :div, class: "#{@mobile ? 'grid grid-cols-3 mt-4' : 'flex items-center pt-2'} gap-2", data: { controller: "month-year-selector" } do %>
         <% (1..12).each do |month| %>
           <% month_year = Date.new(year, month, 1).strftime("%Y%m") %>
           <%= link_to Date::MONTHNAMES[month], "#",
-                      class: "w-1/12 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors",
+                      class: "w-full w-1/12 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors",
                       data: { month_year_selector_target: "monthYear", action: "click->month-year-selector#toggleMonth", month_year:, active: active_month_years.include?(month_year) } %>
           </button>
         <% end %>
-      </div>
+      <% end %>
     <% end %>
   <% end %>
-</div>
+<% end %>
