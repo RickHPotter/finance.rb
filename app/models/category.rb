@@ -17,15 +17,15 @@ class Category < ApplicationRecord
     "CARD REVERSAL" => "bg-money",
     "DEPOSIT" => "bg-money",
     "PROMO" => "bg-money",
-    "INVESTMENT" => "bg-gold",
+    "INVESTMENT" => "bg-bronze",
     "SELL" => "bg-oldmoney",
     "LEISURE" => "bg-fun",
     "BILL" => "bg-gray-400",
     "FEES" => "bg-gray-400",
     "BET" => "bg-gray-600",
     "GODSEND" => "bg-greek",
-    "EXCHANGE" => "bg-yellow-400",
-    "EXCHANGE RETURN" => "bg-yellow-600"
+    "EXCHANGE" => "bg-yellow-600",
+    "EXCHANGE RETURN" => "bg-yellow-400"
   }.freeze
 
   # @includes .................................................................

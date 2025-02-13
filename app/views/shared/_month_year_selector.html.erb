@@ -19,7 +19,7 @@
         </div>
       </div>
 
-      <%= content_tag :div, class: "#{@mobile ? 'grid grid-cols-3 mt-4' : 'flex items-center pt-2'} gap-2", data: { controller: "month-year-selector" } do %>
+      <%= content_tag :div, class: "#{@mobile ? 'grid grid-cols-3 mt-4' : 'flex items-center pt-2'} gap-2" do %>
         <% (1..12).each do |month| %>
           <% month_year = Date.new(year, month, 1).strftime("%Y%m") %>
           <%= link_to Date::MONTHNAMES[month], "#",

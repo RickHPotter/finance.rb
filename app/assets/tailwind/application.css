@@ -4,6 +4,7 @@
 @plugin "@tailwindcss/typography";
 
 @config "../../../config/tailwind.config.js";
+@source "../../../config/safelist.txt";
 
 @theme {
   --breakpoint-xxs: 530px;

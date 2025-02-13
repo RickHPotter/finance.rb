@@ -25,9 +25,10 @@
         <%= render "shared/dark_mode" %>
       </div>
 
-      <section class="container mx-auto mt-16 px-5 flex">
-        <%= yield %>
-      </section>
+
+      <%= content_tag :section, class: "container mx-auto flex #{ @mobile ? 'p-0 mt-2' : 'px-5 mt-16' }" do %>
+        <% yield %>
+      <% end %>
     </main>
   </body>
 </html>

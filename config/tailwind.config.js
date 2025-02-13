@@ -1,3 +1,4 @@
+// FIXME: move to app.css later with new directives
 module.exports = {
   content: [
     "./public/*.html",
@@ -20,14 +21,11 @@ module.exports = {
         honda: "#cc0000",
         money: "#34a853",
         oldmoney: "#b9c58f",
-        gold: "#c9a95f",
-        fun: "#fbbc05", // [#f6ec95]
+        bronze: "#c9a95f",
+        gold: "#fbbc05",
+        fun: "#f6ec95",
         greek: "#5b6794",
       }
     },
   },
-  safelist: [
-    { pattern: /bg-(meat|lettuce|book|urgency|gift|honda|money|oldmoney|gold|fun|greek)/ },
-    { pattern: /bg-(gray|yellow)-(400|600)/ }
-  ]
 }

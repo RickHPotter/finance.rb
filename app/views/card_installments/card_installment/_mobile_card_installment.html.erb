@@ -1,0 +1,66 @@
+<%= turbo_frame_tag dom_id card_installment do %>
+  <% card_transaction = card_installment.card_transaction %>
+
+  <%= content_tag :div,
+                  class: "rounded-lg shadow-sm overflow-hidden #{card_transaction.categories&.first&.bg_colour || 'bg-zinc-50'} my-2",
+                  data: { id: card_installment.id, datatable_target: :row } do %>
+
+    <div class="p-4">
+      <div class="flex items-center justify-between gap-4 w-full text-black text-sm font-semibold">
+
+        <div class="flex-1 flex items-center justify-between gap-1 min-w-0">
+          <%= content_tag :span, card_transaction.description, class: "truncate text-md" %>
+
+          <% if card_installment.card_installments_count > 1 %>
+            <% installments_content = [format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count)].join("/") %>
+            <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0" %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between py-2">
+        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{card_installment.id}", class: "shrink-0 w-4 h-4 rounded-full border-slate-300" %>
+
+        <%= content_tag :span, l(card_installment.date, format: "%d %b %H:%M"), class: "text-xs text-start flex-1 ps-2" %>
+
+        <div class="whitespace-nowrap">
+          <%= from_cent_based_to_float(card_installment.price, "R$") %>
+        </div>
+      </div>
+
+      <%= content_tag :div, class: "text-start py-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) } do %>
+        <% card_transaction.categories.each do |category| %>
+          <%= content_tag :span, class: "px-1 py-1 rounded-full text-xs font-medium underline underline-offset-[3px]" do %>
+            <%= category.category_name %>
+          <% end %>
+        <% end %>
+      <% end %>
+
+      <%= content_tag :div, class: "flex justify-between py-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) } do %>
+        <div class="flex items-center justify-between gap-2">
+          <% card_transaction.entities.each do |entity| %>
+            <span class="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500">
+              <%= entity.entity_name %>
+            </span>
+          <% end %>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <%= link_to edit_card_transaction_path(card_transaction),
+                      id: "edit_card_transaction_#{card_transaction.id}",
+                      class: "text-white bg-blue-600 rounded-full shadow-lg",
+                      data: { turbo_frame: :center_container } do %>
+            <%= render "shared/svgs/pencil" %>
+          <% end %>
+
+          <%= link_to card_transaction,
+                      id: "delete_card_transaction_#{card_transaction.id}",
+                      class: "text-red-600 bg-white rounded-full shadow-lg",
+                      data: { turbo_method: :delete } do %>
+            <%= render "shared/svgs/destroy" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

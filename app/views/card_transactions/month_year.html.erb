@@ -1,20 +1,4 @@
 <%= turbo_frame_tag "month_year_container_#{@month_year}" do %>
-  <div class="mb-8" data-datatable-target="table">
-    <fieldset class="border border-slate-200 rounded-lg p-4 mb-4">
-      <%= content_tag :legend, @month_year_str, class: "px-2 text-lg text-slate-800 text-start" %>
-
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div class="grid grid-cols-8 bg-slate-50 border-b border-slate-200">
-          <div class="p-4 font-bold text-slate-900 text-center">Date</div>
-          <div class="p-4 font-bold text-slate-900 col-span-3">Description</div>
-          <div class="p-4 font-bold text-slate-900">Categories</div>
-          <div class="p-4 font-bold text-slate-900">Entities</div>
-          <div class="p-4 font-bold text-slate-900">Price</div>
-          <div class="p-4 font-bold text-slate-900">Actions</div>
-        </div>
-
-        <%= render @card_installments %>
-      </div>
-    </fieldset>
-  </div>
+  <% path = @mobile ? "mobile_month_year" : "month_year" %>
+  <%= render "card_transactions/month_year/#{path}" %>
 <% end %>
