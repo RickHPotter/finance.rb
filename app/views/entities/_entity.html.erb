@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id entity do %>
-  <tr id="entity_<%= entity.id %>" class="<%= Category::BG_COLOURS.to_a.sample[1] || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+  <tr id="entity_<%= entity.id %>" class="border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
     <th class="px-6 py-4 whitespace-nowrap border-x text-center">
       <span class="inline-flex items-center px-1 rounded-xs bg-white text-blue-700">
         <%= link_to entity.entity_name, card_transactions_path(entity_id: entity.id, format: :turbo_stream), data: { turbo_frame: :center_container, turbo_prefetch: false } %>

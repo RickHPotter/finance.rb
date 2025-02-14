@@ -6,7 +6,7 @@ module.exports = {
     "./app/javascript/**/*.js",
     "./app/components/**/*.rb",
     "./app/components/**/*.html.erb",
-    "./app/views/**/*.{erb,haml,html,slim}",
+    "./app/views/**/*.{erb,rb,haml,html,slim}",
     "./node_modules/flowbite/**/*.js"
   ],
   darkMode: "class",
@@ -22,7 +22,7 @@ module.exports = {
         money: "#34a853",
         oldmoney: "#b9c58f",
         bronze: "#c9a95f",
-        gold: "#fbbc05",
+        gold: "#eab308",
         fun: "#f6ec95",
         greek: "#5b6794",
       }

@@ -44,7 +44,7 @@ User.find_each do |user|
 
   user.user_bank_accounts.each do |user_bank_account|
     FactoryBot.create_list(:cash_transaction, rand(2..4), :random, user:, user_bank_account:)
-    puts "Created CashTransaction - USERBANKACCOUNT #{user_bank_account.agency_number}-#{user_bank_account.account_number} / #{user.full_name}.yellow."
+    puts "Created CashTransaction - USERBANKACCOUNT #{user_bank_account.agency_number}-#{user_bank_account.account_number} / #{user.full_name}.".yellow
   end
 
   user_bank_account = user.user_bank_accounts.sample

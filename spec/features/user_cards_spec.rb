@@ -25,7 +25,7 @@ RSpec.describe "UserCards", type: :feature do
     scenario "jumping to card_transactions that belong to the newly-created user_card" do
       user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
 
-      click_on "Existing User Cards"
+      click_on "User Cards"
       find("turbo-frame#center_container table tbody th:nth-child(2) span a", match: :first).click
 
       match_center_container_content("card_transactions")
@@ -89,7 +89,7 @@ RSpec.describe "UserCards", type: :feature do
       user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing User Cards"
+        click_on "User Cards"
       end
 
       match_center_container_content("user_cards")
@@ -105,7 +105,7 @@ RSpec.describe "UserCards", type: :feature do
       user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing User Cards"
+        click_on "User Cards"
         find("#edit_user_card_#{user_card.id}", match: :first).click
 
         within "turbo-frame#user_card_#{user_card.id} form" do
@@ -135,7 +135,7 @@ RSpec.describe "UserCards", type: :feature do
 
       navigate_to(menu: "New", sub_menu: "Card")
 
-      click_on "Existing User Cards"
+      click_on "User Cards"
 
       within "turbo-frame#center_container table tbody #user_card_#{user_card.id}" do
         expect(page).to have_selector("th:nth-child(2) span a", text: "Another Test Entity")
@@ -154,7 +154,7 @@ RSpec.describe "UserCards", type: :feature do
       user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing User Cards"
+        click_on "User Cards"
       end
 
       within "turbo-frame#user_cards table tbody" do
@@ -170,7 +170,7 @@ RSpec.describe "UserCards", type: :feature do
       create_list(:card_transaction, 2, :random, user:, date: Date.current, user_card:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing User Cards"
+        click_on "User Cards"
       end
 
       within "turbo-frame#user_cards table tbody" do

@@ -21,6 +21,7 @@ module Import
       service.import
 
       fix_user_card_dates
+      set_category_colours
     rescue StandardError
       debugger if Rails.env.development? # rubocop:disable Lint/Debugger
 
@@ -38,6 +39,30 @@ module Import
       UserCard.find_by(user_card_name: "CLICK").update(days_until_due_date: 6, current_due_date: Date.new(today.year, today.month, 1), current_closing_date: nil)
       UserCard.find_by(user_card_name: "NBNK").update(days_until_due_date: 7, current_due_date: Date.new(today.year, today.month, 13), current_closing_date: nil)
       UserCard.find_by(user_card_name: "WILL").update(days_until_due_date: 6, current_due_date: Date.new(today.year, today.month, 10), current_closing_date: nil)
+    end
+
+    def self.set_category_colours
+      user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+      colours = { "FOOD" => :meat,
+                  "GROCERY" => :lettuce,
+                  "EDUCATION" => :book,
+                  "RENT" => :urgency, "NEEDS" => :urgency,
+                  "GIFT" => :gift,
+                  "TRANSPORT" => :honda,
+                  "SALARY" => :gold,
+                  "CARD PAYMENT" => :money, "CARD ADVANCE" => :money, "CARD DISCOUNT" => :money, "CARD REVERSAL" => :money, "DEPOSIT" => :money, "PROMO" => :money,
+                  "INVESTMENT" => :bronze,
+                  "SELL" => :oldmoney,
+                  "LEISURE" => :fun,
+                  "BILL" => :gray, "FEES" => :gray,
+                  "BET" => :silver,
+                  "GODSEND" => :greek,
+                  "EXCHANGE" => :dirt,
+                  "EXCHANGE RETURN" => :yellow }
+
+      user.categories.find_each do |category|
+        category.update(colour: colours[category.category_name]) if colours.key?(category.category_name)
+      end
     end
   end
 end

@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id user_card do %>
-  <tr id="user_card_<%= user_card.id %>" class="<%= Category::BG_COLOURS.to_a.sample[1] || "bg-black" %> border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
+  <tr id="user_card_<%= user_card.id %>" class="border-b hover:bg-white border-gray-200 font-semibold text-md text-black">
     <th class="px-6 py-4 whitespace-nowrap border-x text-center">
       <%= user_card.card.card_name %>
     </th>

@@ -21,7 +21,7 @@ RSpec.describe "Entities", type: :feature do
 
     scenario "jumping to card_transactions that belong to the newly-created entity" do
       _entity = create(:entity, :random, user:)
-      click_on "Existing Entities"
+      click_on "Entities"
       find("turbo-frame#center_container table tbody th:nth-child(1) span a", match: :first).click
 
       match_center_container_content("card_transactions")
@@ -77,7 +77,7 @@ RSpec.describe "Entities", type: :feature do
       entity = create(:entity, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Entities"
+        click_on "Entities"
       end
 
       match_center_container_content("entities")
@@ -93,7 +93,7 @@ RSpec.describe "Entities", type: :feature do
       entity = create(:entity, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Entities"
+        click_on "Entities"
         find("#edit_entity_#{entity.id}", match: :first).click
 
         within "turbo-frame#entity_#{entity.id} form" do
@@ -115,7 +115,7 @@ RSpec.describe "Entities", type: :feature do
 
       navigate_to(menu: "New", sub_menu: "Entity")
 
-      click_on "Existing Entities"
+      click_on "Entities"
 
       within "turbo-frame#center_container table tbody #entity_#{entity.id}" do
         expect(page).to have_selector("th:nth-child(1) span a", text: "Another Test Entity")
@@ -132,7 +132,7 @@ RSpec.describe "Entities", type: :feature do
       entity = create(:entity, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Entities"
+        click_on "Entities"
       end
 
       within "turbo-frame#entities table tbody" do
@@ -148,7 +148,7 @@ RSpec.describe "Entities", type: :feature do
       create_list(:card_transaction, 2, :random, user:, date: Date.current, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
 
       within "turbo-frame#center_container" do
-        click_on "Existing Entities"
+        click_on "Entities"
       end
 
       within "turbo-frame#entities table tbody" do

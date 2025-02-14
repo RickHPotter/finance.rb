@@ -297,3 +297,4 @@ Possible Downtime: 6 months and a half
 - Extra:
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.
+  - ✅ Add colour column for `Category` and `ColourPicker` Component for its form.

@@ -3,13 +3,16 @@
 
     <%= form.hidden_field :user_id, value: @user.id %>
 
-    <%= ColourPicker.new %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :category_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
             data: { reactive_form_target: :input, placeholder: "Category Name", placeholder_type: :word } %>
+    </div>
+
+    <div class="inline-block mx-auto py-2">
+      <%= render Components::ColourPicker.new(form:, field: :category_name) %>
     </div>
 
     <div>

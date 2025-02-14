@@ -25,6 +25,7 @@ end
 #  active        :boolean          default(TRUE), not null
 #  built_in      :boolean          default(FALSE), not null
 #  category_name :string           not null, indexed => [user_id]
+#  colour        :string           default("white"), not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
 #  user_id       :bigint           not null, indexed, indexed => [category_name]

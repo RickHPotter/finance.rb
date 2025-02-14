@@ -2,32 +2,6 @@
 
 class Category < ApplicationRecord
   # @extends ..................................................................
-  BG_COLOURS = {
-    "FOOD" => "bg-meat",
-    "GROCERY" => "bg-lettuce",
-    "EDUCATION" => "bg-book",
-    "RENT" => "bg-urgency",
-    "NEEDS" => "bg-urgency",
-    "GIFT" => "bg-gift",
-    "TRANSPORT" => "bg-honda",
-    "SALARY" => "bg-money",
-    "CARD PAYMENT" => "bg-money",
-    "CARD ADVANCE" => "bg-money",
-    "CARD DISCOUNT" => "bg-money",
-    "CARD REVERSAL" => "bg-money",
-    "DEPOSIT" => "bg-money",
-    "PROMO" => "bg-money",
-    "INVESTMENT" => "bg-bronze",
-    "SELL" => "bg-oldmoney",
-    "LEISURE" => "bg-fun",
-    "BILL" => "bg-gray-400",
-    "FEES" => "bg-gray-400",
-    "BET" => "bg-gray-600",
-    "GODSEND" => "bg-greek",
-    "EXCHANGE" => "bg-yellow-600",
-    "EXCHANGE RETURN" => "bg-yellow-400"
-  }.freeze
-
   # @includes .................................................................
   include HasActive
 
@@ -60,9 +34,12 @@ class Category < ApplicationRecord
     built_in
   end
 
-  # TODO: later there will be a colour-picker and a colour column for this table
   def bg_colour
-    BG_COLOURS[category_name]
+    COLOURS.dig(colour, :bg) || "bg-white"
+  end
+
+  def text_colour
+    COLOURS.dig(colour, :text) || "text-black"
   end
 
   # @protected_instance_methods ...............................................
@@ -90,6 +67,7 @@ end
 #  active        :boolean          default(TRUE), not null
 #  built_in      :boolean          default(FALSE), not null
 #  category_name :string           not null, indexed => [user_id]
+#  colour        :string           default("white"), not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
 #  user_id       :bigint           not null, indexed, indexed => [category_name]

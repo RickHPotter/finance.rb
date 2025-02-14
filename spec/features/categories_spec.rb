@@ -21,7 +21,7 @@ RSpec.describe "Categories", type: :feature do
 
     scenario "jumping to card_transactions that belong to the newly-created category" do
       _category = create(:category, :random, user:)
-      click_on "Existing Categories"
+      click_on "Categories"
       find("turbo-frame#center_container table tbody th:nth-child(1) span a", match: :first).click
 
       match_center_container_content("card_transactions")
@@ -78,7 +78,7 @@ RSpec.describe "Categories", type: :feature do
       category = create(:category, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Categories"
+        click_on "Categories"
       end
 
       match_center_container_content("categories")
@@ -94,7 +94,7 @@ RSpec.describe "Categories", type: :feature do
       category = create(:category, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Categories"
+        click_on "Categories"
         find("#edit_category_#{category.id}", match: :first).click
 
         within "turbo-frame#category_#{category.id} form" do
@@ -117,7 +117,7 @@ RSpec.describe "Categories", type: :feature do
 
       navigate_to(menu: "New", sub_menu: "Category")
 
-      click_on "Existing Categories"
+      click_on "Categories"
 
       within "turbo-frame#center_container table tbody #category_#{category.id}" do
         expect(page).to have_selector("th:nth-child(1) span a", text: "Another Test Category")
@@ -134,7 +134,7 @@ RSpec.describe "Categories", type: :feature do
       category = create(:category, :random, user:)
 
       within "turbo-frame#center_container" do
-        click_on "Existing Categories"
+        click_on "Categories"
       end
 
       within "turbo-frame#categories table tbody" do
@@ -150,7 +150,7 @@ RSpec.describe "Categories", type: :feature do
       create_list(:card_transaction, 2, :random, user:, date: Date.current, category_transactions: [ build(:category_transaction, :random, category:) ])
 
       within "turbo-frame#center_container" do
-        click_on "Existing Categories"
+        click_on "Categories"
       end
 
       within "turbo-frame#categories table tbody" do

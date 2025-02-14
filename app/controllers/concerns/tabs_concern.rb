@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :new, active_sub_menu: :category)
+  def set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
