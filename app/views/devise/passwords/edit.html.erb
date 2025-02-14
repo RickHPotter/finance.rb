@@ -5,15 +5,15 @@
   <%= f.hidden_field :reset_password_token %>
 
   <div class="mb-6 text-blue-700">
-    <%= render TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "New Password (leave blank if you don't want to change it)") %>
+    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "New Password (leave blank if you don't want to change it)") %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: "New Password Confirmation") %>
+    <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: "New Password Confirmation") %>
   </div>
 
   <div>
-    <%= render ButtonComponent.new(form: f, options: { label: "Change my password" }) %>
+    <%= render Components::ButtonComponent.new(form: f, options: { label: "Change my password" }) %>
   </div>
 <% end %>
 

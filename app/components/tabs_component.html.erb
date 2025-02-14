@@ -34,7 +34,7 @@
       <% @dependents.each_with_index do |partial, index| %>
         <% current_index_is_default = @items.index(&:default) == index %>
 
-        <%= render TabsComponent.new(items: [ partial ], default: current_index_is_default, dependent: true, dependent_no: index, mobile: @mobile) %>
+        <%= render Components::TabsComponent.new(items: [ partial ], default: current_index_is_default, dependent: true, dependent_no: index, mobile: @mobile) %>
       <% end %>
     </div>
   <% end %>

@@ -23,7 +23,7 @@
 
       <div class="w-full lg:w-3/12 mb-2">
         <%= bold_label(form, :current_closing_date) %>
-        <%= render TextFieldComponent.new \
+        <%= render Components::TextFieldComponent.new \
               form, :current_closing_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
@@ -34,7 +34,7 @@
 
       <div class="w-full lg:w-3/12 mb-2">
         <%= bold_label(form, :current_due_date) %>
-        <%= render TextFieldComponent.new \
+        <%= render Components::TextFieldComponent.new \
               form, :current_due_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
@@ -44,7 +44,7 @@
 
       <div class="w-full lg:w-2/12 mb-2">
         <%= bold_label(form, :min_spend) %>
-        <%= render TextFieldComponent.new \
+        <%= render Components::TextFieldComponent.new \
               form, :min_spend,
               svg: :money,
               placeholder: "Minimum Spend",
@@ -54,7 +54,7 @@
 
       <div class="w-full lg:w-2/12 mb-2">
         <%= bold_label(form, :credit_limit) %>
-        <%= render TextFieldComponent.new \
+        <%= render Components::TextFieldComponent.new \
               form, :credit_limit,
               svg: :money,
               placeholder: "Credit Limit",
@@ -71,7 +71,7 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>
     </div>
 
-    <%= render ButtonComponent.new form:, options: { label: "Submit Card" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: "Submit Card" } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

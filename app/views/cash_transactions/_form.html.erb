@@ -2,7 +2,7 @@
   <%= form_with(model: cash_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: @user.id %>
 
-    <%= render ButtonComponent.new form:, options: { label: "Submit Cash Transaction" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: "Submit Cash Transaction" } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

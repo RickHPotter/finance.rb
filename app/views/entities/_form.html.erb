@@ -18,7 +18,7 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active %>
     </div>
 
-    <%= render ButtonComponent.new form:, options: { label: "Submit Entity" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: "Submit Entity" } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

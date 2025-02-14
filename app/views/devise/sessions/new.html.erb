@@ -10,11 +10,11 @@
 
 <%= form_for resource, as: resource_name, url: session_path(resource_name), data: { turbo: false, controller: "form-validate" } do |f| %>
   <div class="mb-6 text-blue-700">
-    <%= render TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: "Email Address") %>
+    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: "Email Address") %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "Password") %>
+    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "Password") %>
   </div>
 
   <div class="flex items-center justify-between mb-6">
@@ -33,6 +33,6 @@
   </div>
 
   <div>
-    <%= render ButtonComponent.new(form: f, options: { label: "Log in" }) %>
+    <%= render Components::ButtonComponent.new(form: f, options: { label: "Log in" }) %>
   </div>
 <% end %>

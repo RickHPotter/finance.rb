@@ -8,14 +8,14 @@ module TabsConcern
   end
 
   def set_user_agent
-    @mobile = true
+    # @mobile = true
 
     return unless request.user_agent =~ /Mobile|Android|iPhone|iPad/
 
     @mobile = true
   end
 
-  def set_tabs(active_menu: :card, active_sub_menu: :WILL)
+  def set_tabs(active_menu: :new, active_sub_menu: :category)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -36,7 +36,7 @@ module TabsConcern
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @main_tab = @main_items.map do |label, icon, link, default|
-      TabsComponent::Item.new(label, icon, link, default, :center_container)
+      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
     end
 
     @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile
@@ -58,7 +58,7 @@ module TabsConcern
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @new_tab = @new_items.map do |label, icon, link, default|
-      TabsComponent::Item.new(label, icon, link, default, :center_container)
+      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
     end
   end
 
@@ -67,11 +67,11 @@ module TabsConcern
 
     @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      TabsComponent::Item.new(user_card_name, "shared/svgs/credit_card", card_transactions_path(user_card_id:), default, :center_container)
+      Components::TabsComponent::Item.new(user_card_name, "shared/svgs/credit_card", card_transactions_path(user_card_id:), default, :center_container)
     end
     return unless @card_transaction_tab.empty?
 
-    @card_transaction_tab << TabsComponent::Item.new("New Card", "shared/svgs/credit_card", new_user_card_path, false, :center_container)
+    @card_transaction_tab << Components::TabsComponent::Item.new("New Card", "shared/svgs/credit_card", new_user_card_path, false, :center_container)
   end
 
   def set_cash_transaction_sublinks
@@ -81,7 +81,7 @@ module TabsConcern
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @cash_transaction_tab = @cash_transaction_items.map do |label, icon, link, default|
-      TabsComponent::Item.new(label, icon, link, default, :center_container)
+      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
     end
   end
 end

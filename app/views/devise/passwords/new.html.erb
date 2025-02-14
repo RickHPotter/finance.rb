@@ -4,11 +4,11 @@
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class="mb-6 text-blue-700">
-    <%= render TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: "Email Address") %>
+    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: "Email Address") %>
   </div>
 
   <div>
-    <%= render ButtonComponent.new(form: f, options: { label: "Send me reset password instructions" }) %>
+    <%= render Components::ButtonComponent.new(form: f, options: { label: "Send me reset password instructions" }) %>
   </div>
 <% end %>
 
