@@ -12,7 +12,7 @@
           <%= content_tag :span, card_transaction.description, class: "truncate text-md" %>
 
           <% if card_installment.card_installments_count > 1 %>
-            <% installments_content = [format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count)].join("/") %>
+            <% installments_content = [ format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count) ].join("/") %>
             <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0" %>
           <% end %>
         </div>

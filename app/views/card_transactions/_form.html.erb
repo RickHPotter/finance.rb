@@ -3,6 +3,7 @@
     <%= form.hidden_field :user_id, value: @user.id %>
     <%= hidden_field_tag :closing_date_day, card_transaction.user_card&.current_closing_date&.day, data: { reactive_form_target: :closingDateDay } %>
     <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, data: { reactive_form_target: :daysUntilDueDate } %>
+    <%= hidden_field_tag :category_colours, current_user.categories.to_h { |c| [ c.id, c.bg_colour ] }.to_json, data: { reactive_form_target: :categoryColours } %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
@@ -104,7 +105,8 @@
     </div>
 
     <!-- Categories -->
-    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="xs:grid md:flex justify-center">
+    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
+         class="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 pb-2">
       <template data-nested-form-target="template">
         <%= form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields| %>
           <%= render "card_transactions/category_transaction_fields", form: category_transaction_fields %>

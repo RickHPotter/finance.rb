@@ -21,7 +21,7 @@ export default class extends Controller {
     "closingDateDay", "daysUntilDueDate",
 
     "installmentWrapper", "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
-    "categoryTransactionWrapper",
+    "categoryTransactionWrapper", "categoryColours",
 
     "addInstallment", "delInstallment",
     "addCategory", "delCategory",
@@ -38,6 +38,10 @@ export default class extends Controller {
     if (this.priceInstallmentInputTargets.length > 0) {
       this._updateInstallmentsPrices()
       this._updateChips()
+    }
+
+    if (this.categoryColoursTarget) {
+      this.categoryColours = JSON.parse(this.categoryColoursTarget.value)
     }
   }
 
@@ -253,6 +257,7 @@ export default class extends Controller {
     const wrappers = this.categoryTransactionWrapperTargets
     const new_wrapper = wrappers[wrappers.length - 1]
 
+    new_wrapper.querySelector(".category_transaction_container").classList.add(this.categoryColours[value])
     new_wrapper.querySelector(".category_transaction_category_id").value = value
     new_wrapper.querySelector(".category_transaction_category_name").textContent = text
   }

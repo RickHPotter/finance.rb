@@ -6,15 +6,16 @@ module Components
       super
       @form = form
       @field = field
-      @value = form.object.send(field) || ::COLOURS.first.second[:bg]
+      @value = form.object.send(field) || :white
+      @colour = ::COLOURS.dig(@value, :bg)
     end
 
     def view_template
       div(class: "relative", data: { controller: "colour-picker" }) do
         div(class: "relative", data: { action: "click->colour-picker#toggle" }) do
-          raw @form.text_field(@field, type: :hidden, readonly: true, data: { colour_picker_target: "selectedColour" })
+          raw @form.text_field(@field, type: :hidden, value: @value, readonly: true, data: { colour_picker_target: "selectedColour" })
 
-          div(class: "w-6 h-6 rounded-full border-0 #{@value}", data: { colour_picker_target: "colourIndicator" })
+          div(class: "w-6 h-6 rounded-full border-1 #{@colour}", data: { colour_picker_target: "colourIndicator" })
         end
 
         div(class: "hidden absolute z-50 w-32 mt-2 p-2 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-zinc-300 grid grid-cols-4 gap-2",

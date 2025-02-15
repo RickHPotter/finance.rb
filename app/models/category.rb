@@ -16,6 +16,7 @@ class Category < ApplicationRecord
 
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: :user_id }
+  validates :colour, presence: true
   validates :built_in, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
