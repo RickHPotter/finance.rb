@@ -10,7 +10,8 @@ class CategoriesController < ApplicationController
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @categories = current_user.categories.where(conditions).order(:category_name)
+
+    @categories = Logic::Categories.find_by(current_user, conditions)
   end
 
   def show; end
@@ -63,6 +64,6 @@ class CategoriesController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def category_params
-    params.require(:category).permit(:category_name, :active, :user_id)
+    params.require(:category).permit(:category_name, :colour, :active, :user_id)
   end
 end

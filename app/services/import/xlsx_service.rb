@@ -91,7 +91,7 @@ module Import
     def parse_category_and_entity(attributes)
       entity = attributes[:entity]
       category = attributes[:category]
-      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALMENT DISCOUNT REVERSAL])
+      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
       is_payer = category == "EXCHANGE" && entity != "MOI"
 
       { category:, entity:, is_payer: }

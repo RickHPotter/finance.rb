@@ -39,6 +39,18 @@ class Category < ApplicationRecord
     COLOURS.dig(colour, :bg) || "bg-white"
   end
 
+  def from_bg
+    COLOURS.dig(colour, :from) || "from-white"
+  end
+
+  def via_bg
+    COLOURS.dig(colour, :via) || "via-white"
+  end
+
+  def to_bg
+    COLOURS.dig(colour, :to) || "to-white"
+  end
+
   def text_colour
     COLOURS.dig(colour, :text) || "text-black"
   end

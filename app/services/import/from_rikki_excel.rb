@@ -43,26 +43,37 @@ module Import
 
     def self.set_category_colours
       user = User.find_by(first_name: "Rikki", last_name: "Potteru")
-      colours = { "FOOD" => :meat,
-                  "GROCERY" => :lettuce,
-                  "EDUCATION" => :book,
-                  "RENT" => :urgency, "NEEDS" => :urgency,
-                  "GIFT" => :gift,
-                  "TRANSPORT" => :honda,
-                  "SALARY" => :gold,
-                  "CARD PAYMENT" => :money, "CARD ADVANCE" => :money, "CARD DISCOUNT" => :money, "CARD REVERSAL" => :money, "DEPOSIT" => :money, "PROMO" => :money,
-                  "INVESTMENT" => :bronze,
-                  "SELL" => :oldmoney,
-                  "LEISURE" => :fun,
-                  "BILL" => :gray, "FEES" => :gray,
-                  "BET" => :silver,
-                  "GODSEND" => :greek,
-                  "EXCHANGE" => :dirt,
-                  "EXCHANGE RETURN" => :yellow }
 
       user.categories.find_each do |category|
-        category.update(colour: colours[category.category_name]) if colours.key?(category.category_name)
+        category.update(colour: RIKKI_COLOURS[category.category_name]) if RIKKI_COLOURS.key?(category.category_name)
       end
     end
+
+    RIKKI_COLOURS = {
+      "FOOD" => :meat,
+      "GROCERY" => :lettuce,
+      "EDUCATION" => :book,
+      "RENT" => :urgency,
+      "NEEDS" => :urgency,
+      "GIFT" => :gift,
+      "TRANSPORT" => :honda,
+      "SALARY" => :gold,
+      "CARD PAYMENT" => :money,
+      "CARD ADVANCE" => :money,
+      "CARD DISCOUNT" => :money,
+      "CARD REVERSAL" => :money,
+      "CARD INSTALLMENT" => :money,
+      "DEPOSIT" => :money,
+      "PROMO" => :money,
+      "INVESTMENT" => :bronze,
+      "SELL" => :oldmoney,
+      "LEISURE" => :fun,
+      "BILL" => :gray,
+      "FEES" => :gray,
+      "BET" => :silver,
+      "GODSEND" => :greek,
+      "EXCHANGE" => :dirt,
+      "EXCHANGE RETURN" => :yellow
+    }.freeze
   end
 end

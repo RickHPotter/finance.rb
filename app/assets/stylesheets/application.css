@@ -14,122 +14,134 @@
  *= require_self
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Copse&family=Graduate&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poetsen+One&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Wellfleet&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Anonymous+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Lekton:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Copse&family=Graduate&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poetsen+One&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Wellfleet&display=swap");
 
 @font-face {
-  font-family: 'Monaco';
-  src: url('Monaco_for_Powerline.otf') format('opentype');
+  font-family: "Monaco";
+  src: url("Monaco_for_Powerline.otf") format("opentype");
 }
 
 @font-face {
-  font-family: 'FiraCode';
-  src: url('FiraCode-Regular.ttf') format('truetype');
+  font-family: "FiraCode";
+  src: url("FiraCode-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'FiraCodeRetina';
-  src: url('FiraCode-Retina.ttf') format('truetype');
+  font-family: "FiraCodeRetina";
+  src: url("FiraCode-Retina.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'Iosevka';
-  src: url('IosevkaTermSlabNerdFont-Regular.ttf') format('truetype');
+  font-family: "Iosevka";
+  src: url("IosevkaTermSlabNerdFont-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'Victor';
-  src: url('VictorMonoNerdFont-Regular.ttf') format('truetype');
+  font-family: "Victor";
+  src: url("VictorMonoNerdFont-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'Blex';
-  src: url('BlexMonoNerdFont-Regular.ttf') format('truetype');
+  font-family: "Blex";
+  src: url("BlexMonoNerdFont-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'Lilex';
-  src: url('LilexNerdFont-Regular.ttf') format('truetype');
+  font-family: "Lilex";
+  src: url("LilexNerdFont-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'Fantasque';
-  src: url('FantasqueSansMNerdFont-Regular.ttf') format('truetype');
+  font-family: "Fantasque";
+  src: url("FantasqueSansMNerdFont-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'InputMono';
-  src: url('InputMono-Regular.ttf') format('truetype');
+  font-family: "InputMono";
+  src: url("InputMono-Regular.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: 'SourceCodePro';
-  src: url('SourceCodePro-Medium.ttf') format('truetype');
+  font-family: "SourceCodePro";
+  src: url("SourceCodePro-Medium.ttf") format("truetype");
 }
 
 .font-monaco {
-  font-family: 'Monaco';
+  font-family: "Monaco";
 }
 
 .font-firacode {
-  font-family: 'FiraCode';
+  font-family: "FiraCode";
 }
 
 .font-firacode-retina {
-  font-family: 'FiraCodeRetina';
+  font-family: "FiraCodeRetina";
 }
 
 .font-iosevka {
-  font-family: 'Iosevka';
+  font-family: "Iosevka";
 }
 
 .font-victor {
-  font-family: 'Victor';
+  font-family: "Victor";
 }
 
 .font-blex {
-  font-family: 'Blex';
+  font-family: "Blex";
 }
 
 .font-lilex {
-  font-family: 'Lilex';
+  font-family: "Lilex";
 }
 
 .font-fantasque {
-  font-family: 'Fantasque';
+  font-family: "Fantasque";
 }
 
 .font-input-mono {
-  font-family: 'InputMono';
+  font-family: "InputMono";
 }
 
 .font-source-code-pro {
-  font-family: 'SourceCodePro';
+  font-family: "SourceCodePro";
 }
 
 .font-copse {
-  font-family: 'Copse';
+  font-family: "Copse";
 }
 
 .font-graduate {
-  font-family: 'Graduate';
+  font-family: "Graduate";
 }
 
 .font-plus-jakarta-sans {
-  font-family: 'Plus Jakarta Sans';
+  font-family: "Plus Jakarta Sans";
 }
 
 .font-poetsen-one {
-  font-family: 'Poetsen One';
+  font-family: "Poetsen One";
 }
 
 .font-roboto-condensed {
-  font-family: 'Roboto Condensed';
+  font-family: "Roboto Condensed";
 }
 
 .font-wellfleet {
-  font-family: 'Wellfleet';
+  font-family: "Wellfleet";
+}
+
+.font-garamond {
+  font-family: "EB Garamond";
+}
+
+.font-anonymous {
+  font-family: "Anonymous Pro";
+}
+
+.font-lekton {
+  font-family: "Lekton";
 }
 
 body {
-  font-family: 'Iosevka';
+  font-family: "Iosevka";
 }

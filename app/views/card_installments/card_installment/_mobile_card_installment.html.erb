@@ -2,7 +2,7 @@
   <% card_transaction = card_installment.card_transaction %>
 
   <%= content_tag :div,
-                  class: "rounded-lg shadow-sm overflow-hidden #{card_transaction.categories&.first&.bg_colour || 'bg-zinc-50'} my-2",
+                  class: "rounded-lg shadow-sm overflow-hidden #{card_transaction.categories&.first&.bg_colour} my-2",
                   data: { id: card_installment.id, datatable_target: :row } do %>
 
     <div class="p-4">

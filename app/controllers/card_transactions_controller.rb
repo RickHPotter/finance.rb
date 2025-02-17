@@ -12,6 +12,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def index
     @user_card ||= current_user.user_cards.find_by(id: params[:user_card_id])                  if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
+    # FIXME: not always there will be a user_card # or maybe there should be a search action on its owns
+    @user_card ||= current_user.user_cards.active.order(:user_card_name).first
 
     new_index_variables
     respond_to do |format|

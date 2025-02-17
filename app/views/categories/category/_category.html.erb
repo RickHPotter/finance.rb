@@ -1,0 +1,63 @@
+<%= content_tag :div,
+                id: "category_#{category.id}",
+                class: "grid grid-cols-7 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')}",
+                data: { id: category.id, datatable_target: :row } do %>
+
+    <div class="px-2 flex items-center justify-between">
+        <%= checkbox_tag :checkbox, false, false,
+                         id: "checkbox_#{category.id}",
+                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
+    </div>
+
+    <div class="px-1 flex items-center mx-auto font-semibold">
+      <%= content_tag :span, category.category_name, class: "px-4 whitespace-nowrap border-1 border-zinc-600 rounded-full #{category.bg_colour} #{category.text_colour}" %>
+    </div>
+
+    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+      <% if category.card_transactions_count > 0 %>
+        <%= link_to category.card_transactions_count,
+                    card_transactions_path(category_id: category.id, format: :turbo_stream),
+                    class: "hover:text-indigo-600 hover:underline",
+                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+      <% else %>
+        <%= content_tag :span, category.card_transactions_count %>
+      <% end %>
+    </div>
+
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, from_cent_based_to_float(category.card_transactions_total, "R$") %>
+    </div>
+
+    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+      <% if category.cash_transactions_count > 0 %>
+        <%= link_to category.cash_transactions_count,
+                    cash_transactions_path(category_id: category.id, format: :turbo_stream),
+                    class: "hover:text-indigo-600 hover:underline",
+                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+      <% else %>
+        <%= content_tag :span, category.cash_transactions_count %>
+      <% end %>
+    </div>
+
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, from_cent_based_to_float(category.cash_transactions_total, "R$") %>
+    </div>
+
+    <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center px-2 my-1 rounded-md">
+        <%= link_to edit_category_path(category),
+                    id: "edit_category_#{category.id}",
+                    class: "text-blue-600 hover:text-blue-800 m-2 bg-sky-200 rounded-4xl",
+                    data: { turbo_frame: :center_container } do %>
+          <%= render "shared/svgs/pencil" %>
+        <% end %>
+
+        <%= link_to category,
+                    id: "delete_category_#{category.id}",
+                    class: "text-red-600 hover:text-red-800 m-2 bg-rose-200 rounded-4xl",
+                    data: { turbo_method: :delete } do %>
+          <%= render "shared/svgs/destroy" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
