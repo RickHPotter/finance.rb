@@ -10,7 +10,8 @@ class UserCardsController < ApplicationController
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @user_cards = current_user.user_cards.includes(:card).where(conditions).order(:user_card_name)
+
+    @user_cards = Logic::UserCards.find_by(current_user, conditions)
   end
 
   def new

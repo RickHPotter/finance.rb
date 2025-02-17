@@ -30,8 +30,7 @@ gem "letter_opener_web"
 gem "dockerfile-rails"
 gem "dotenv-rails"
 
-# roo still does not support ruby 3.4
-gem "roo", git: "https://github.com/HashNotAdam/roo.git"
+gem "roo", git: "https://github.com/roo-rb/roo.git"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]

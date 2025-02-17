@@ -16,7 +16,7 @@
     <div class="flex items-center justify-between gap-3 w-full py-2 text-black text-sm font-semibold">
       <%= link_to card_transactions_path(entity_id: entity.id, format: :turbo_stream),
                   class: "shrink-0 w-4 h-4 mb-3 mr-1 rounded-full border-slate-300 shadow-lg #{'opacity-0' if entity.card_transactions_count.zero?}",
-                  data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+                  data: { turbo_frame: :center_container } do %>
         <%= render "shared/svgs/jump_to" %>
       <% end %>
 
@@ -30,7 +30,7 @@
     <div class="flex items-center justify-between gap-3 w-full py-2 text-black text-sm font-semibold">
       <%= link_to cash_transactions_path(entity_id: entity.id, format: :turbo_stream),
                   class: "shrink-0 w-4 h-4 mb-3 mr-1 rounded-full border-slate-300 shadow-lg #{'opacity-0' if entity.cash_transactions_count.zero?}",
-                  data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+                  data: { turbo_frame: :center_container } do %>
         <%= render "shared/svgs/jump_to" %>
       <% end %>
 

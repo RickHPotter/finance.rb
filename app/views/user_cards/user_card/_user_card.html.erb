@@ -1,0 +1,67 @@
+<%= content_tag :div,
+                id: "user_card_#{user_card.id}",
+                class: "grid grid-cols-9 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')}",
+                data: { id: user_card.id, datatable_target: :row } do %>
+
+    <div class="px-2 flex items-center justify-between">
+        <%= checkbox_tag :checkbox, false, false,
+                         id: "checkbox_#{user_card.id}",
+                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
+    </div>
+
+    <div class="px-1 flex items-center mx-auto font-semibold">
+      <% brand_name = user_card.card.card_name  %>
+      <% brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}" %>
+      <%= content_tag :span, brand_and_name, class: "px-4 whitespace-nowrap" %>
+    </div>
+
+    <div class="px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap">
+      <% if user_card.card_transactions_count > 0 %>
+        <%= link_to user_card.card_transactions_count,
+                    card_transactions_path(user_card_id: user_card.id, format: :turbo_stream),
+                    class: "text-indigo-600 hover:underline",
+                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+      <% else %>
+        <%= content_tag :span, user_card.card_transactions_count %>
+      <% end %>
+    </div>
+
+    <div class="flex items-center justify-center text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, from_cent_based_to_float(user_card.card_transactions_total, "R$") %>
+    </div>
+
+
+    <div class="flex items-center justify-center text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, l(user_card.current_closing_date, format: "%b %d") %>
+    </div>
+
+    <div class="flex items-center justify-center text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, l(user_card.current_due_date, format: "%b %d") %>
+    </div>
+
+    <div class="flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, from_cent_based_to_float(user_card.min_spend, "R$") %>
+    </div>
+
+    <div class="flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto">
+      <%= content_tag :span, from_cent_based_to_float(user_card.credit_limit, "R$") %>
+    </div>
+
+    <div class="flex items-center justify-center">
+      <div class="flex items-center justify-center px-2 my-1 rounded-md">
+        <%= link_to edit_user_card_path(user_card),
+                    id: "edit_user_card_#{user_card.id}",
+                    class: "text-blue-600 hover:text-blue-800 m-2 bg-sky-200 rounded-4xl",
+                    data: { turbo_frame: :center_container } do %>
+          <%= render "shared/svgs/pencil" %>
+        <% end %>
+
+        <%= link_to user_card,
+                    id: "delete_user_card_#{user_card.id}",
+                    class: "text-red-600 hover:text-red-800 m-2 bg-rose-200 rounded-4xl",
+                    data: { turbo_method: :delete } do %>
+          <%= render "shared/svgs/destroy" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
