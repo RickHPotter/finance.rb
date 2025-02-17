@@ -1,0 +1,32 @@
+<div class="flex justify-between mb-8">
+  <%= link_to "New Entity",
+              new_entity_path,
+              class: "py-2 px-3 rounded-xs border border-sky-600 bg-sky-500 text-white shadow-md font-thin",
+              data: { turbo_frame: :center_container } %>
+
+  <% include_inactive = params[:include_inactive] == "false" %>
+  <%= link_to include_inactive ? "Show Inactive Entities" : "Hide Inactive Entities",
+              entities_path(include_inactive:),
+              class: "py-2 px-3 rounded-xs border border-sky-600 bg-sky-500 text-white shadow-md font-thin",
+              data: { turbo_frame: :center_container } %>
+</div>
+
+<div class="min-w-full pt-2">
+  <%= turbo_frame_tag :entities do %>
+    <div class="mb-8" data-datatable-target="table">
+      <div class="bg-slate-300 rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
+        <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+          <div></div>
+          <div class="text-center">ENTITY NAME</div>
+          <div class="text-end">CARD COUNT</div>
+          <div class="text-end">CARD SPENT</div>
+          <div class="text-end">CASH COUNT</div>
+          <div class="text-end">CASH SPENT</div>
+          <div class="text-center">ACTIONS</div>
+        </div>
+
+        <%= render @entities %>
+      </div>
+    </div>
+  <% end %>
+</div>

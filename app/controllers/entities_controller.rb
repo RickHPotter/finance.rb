@@ -10,7 +10,8 @@ class EntitiesController < ApplicationController
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @entities = current_user.entities.where(conditions).order(:entity_name)
+
+    @entities = Logic::Entities.find_by(current_user, conditions)
   end
 
   def show; end
