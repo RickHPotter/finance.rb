@@ -1,0 +1,10 @@
+en:
+  tabs:
+    basic: Basic
+    card_transaction: Card Transaction
+    cash_transaction: Cash Transaction
+    user_card: User Card
+    category: Category
+    entity: Entity
+    pix: Pix
+    investment: Investment

@@ -3,6 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "UserCards", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:user_card_submenu) { FeatureHelper::USERCARD }
+
   let(:user) { create(:user, :random) }
   let(:card) { build(:card, :random) }
   let(:current_closing_date) { Date.current + 4.days }
@@ -12,14 +15,14 @@ RSpec.describe "UserCards", type: :feature do
 
   feature "/user_cards" do
     scenario "center_container is swapped for correct form" do
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
       match_center_container_content("new_user_card")
     end
   end
 
   feature "/user_cards/show" do
     background do
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "jumping to card_transactions that belong to the newly-created user_card" do
@@ -39,7 +42,7 @@ RSpec.describe "UserCards", type: :feature do
   feature "/user_cards/new" do
     background do
       card.save
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "creating an invalid user_card" do
@@ -47,7 +50,7 @@ RSpec.describe "UserCards", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_created, UserCard))
     end
 
     scenario "creating a valid user_card and getting redirected to card_transaction creation with user_card already preselected" do
@@ -62,7 +65,7 @@ RSpec.describe "UserCards", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Card has been created.")
+      expect(notification).to have_content(notification_model(:created, UserCard))
 
       match_center_container_content("new_card_transaction")
 
@@ -82,7 +85,7 @@ RSpec.describe "UserCards", type: :feature do
   feature "/user_cards/edit" do
     background do
       card.save
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "editing an invalid user_card" do
@@ -98,7 +101,7 @@ RSpec.describe "UserCards", type: :feature do
       fill_in "user_card_user_card_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_updated, UserCard))
     end
 
     scenario "editing a valid user_card and getting redirected to card_transaction creation with user_card already preselected" do
@@ -119,7 +122,7 @@ RSpec.describe "UserCards", type: :feature do
         end
       end
 
-      expect(notification).to have_content("Card has been updated.")
+      expect(notification).to have_content(notification_model(:updated, UserCard))
 
       match_center_container_content("new_card_transaction")
 
@@ -133,7 +136,7 @@ RSpec.describe "UserCards", type: :feature do
         end
       end
 
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
 
       click_on "User Cards"
 
@@ -147,7 +150,7 @@ RSpec.describe "UserCards", type: :feature do
 
   feature "/user_cards/destroy" do
     background do
-      navigate_to(menu: "New", sub_menu: "Card")
+      navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "destroying a user_card that has no card_transactions" do
@@ -162,7 +165,7 @@ RSpec.describe "UserCards", type: :feature do
         expect(page).to_not have_css("tr#user_card_#{user_card.id}")
       end
 
-      expect(notification).to have_content("Card has been deleted.")
+      expect(notification).to have_content(notification_model(:destroyed, UserCard))
     end
 
     scenario "failing to destroy a user_card that has card_transactions" do

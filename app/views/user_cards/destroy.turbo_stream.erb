@@ -1,7 +1,7 @@
 <% if @user_card.destroyed? %>
   <%= turbo_stream.replace(:center_container, template: "user_cards/index") %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Card has been deleted." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyed, UserCard) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "User Card with transactions cannot be deleted." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyed_because_has_transactions, UserCard) }) %>
 <% end %>

@@ -3,6 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "CashTransactions", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:cash_transaction_menu) { FeatureHelper::CASH }
+
   let(:user) { create(:user, :random) }
   let(:bank) { build(:bank, :random) }
   let(:user_bank_account) { build(:user_bank_account, :random, user:, bank:) }
@@ -13,14 +16,16 @@ RSpec.describe "CashTransactions", type: :feature do
 
   feature "/cash_transactions" do
     scenario "center_container is swapped for correct form" do
-      navigate_to(menu: "New", sub_menu: "Cash Transaction")
+      navigate_to(menu: cash_transaction_menu)
+      find("#new_cash_transaction_link").click
+
       match_center_container_content("new_cash_transaction")
     end
   end
 
   feature "/cash_transactions/show" do
     background do
-      navigate_to(menu: "Cash Transaction", sub_menu: :PIX)
+      navigate_to(menu: cash_transaction_menu, sub_menu: :PIX)
     end
 
     scenario "checking cash_transactions index page" do
@@ -30,7 +35,8 @@ RSpec.describe "CashTransactions", type: :feature do
 
   # feature "/cash_transactions/new" do
   #   background do
-  #     navigate_to(menu: "New", sub_menu: "Cash Transaction")
+  #     navigate_to(menu: cash_transaction_menu)
+  #     find("#new_cash_transaction_link").click
   #   end
   #
   #   scenario "creating an invalid cash_transaction" do
@@ -38,7 +44,7 @@ RSpec.describe "CashTransactions", type: :feature do
   #       find("form input[type=submit]", match: :first).click
   #     end
   #
-  #     expect(notification).to have_content("Something is wrong.")
+  #     expect(notification).to have_content(notification_model(:not_created, CashTransaction))
   #   end
   #
   #   scenario "creating a valid cash_transaction and getting redirected to cash_transactions/index" do
@@ -59,7 +65,7 @@ RSpec.describe "CashTransactions", type: :feature do
   #       find("input[type=submit]", match: :first).click
   #     end
   #
-  #     expect(notification).to have_content("Cash Transaction has been created.")
+  #     expect(notification).to have_content(notification_model(:created, CashTransaction))
   #
   #     match_center_container_content("cash_transactions")
   #
@@ -72,7 +78,7 @@ RSpec.describe "CashTransactions", type: :feature do
   # feature "/cash_transactions/edit" do
   #   background do
   #     create(:cash_transaction, :random, user:, user_bank_account:)
-  #     navigate_to(menu: "Cash Transaction", sub_menu: :PIX)
+  #     navigate_to(menu: cash_transaction_menu, sub_menu: :PIX)
   #   end
   #
   #   scenario "editing an invalid cash_transaction" do
@@ -80,7 +86,7 @@ RSpec.describe "CashTransactions", type: :feature do
   #     fill_in "cash_transaction_description", with: ""
   #     find("form input[type=submit]", match: :first).click
   #
-  #     expect(notification).to have_content("Something is wrong.")
+  #     expect(notification).to have_content(notification_model(:not_updated, CashTransaction))
   #   end
   #
   #   scenario "editing a valid cash_transaction and getting redirected to cash_transactions/index" do
@@ -89,7 +95,7 @@ RSpec.describe "CashTransactions", type: :feature do
   #     fill_in "cash_transaction_date",        with: Date.current + 1.days
   #     find("form input[type=submit]", match: :first).click
   #
-  #     expect(notification).to have_content("Cash Transaction has been updated.")
+  #     expect(notification).to have_content(notification_model(:updated, CashTransaction))
   #
   #     match_center_container_content("cash_transactions")
   #
@@ -103,13 +109,13 @@ RSpec.describe "CashTransactions", type: :feature do
   #   scenario "destroying a cash_transaction that is not from a particular category" do
   #     cash_transaction = create(:cash_transaction, user:, user_bank_account:, date: Date.current)
   #
-  #     navigate_to(menu: "Cash Transaction", sub_menu: user_card.user_cash_name)
+  #     navigate_to(menu: cash_transaction_menu, sub_menu: user_card.user_cash_name)
   #
   #     within "turbo-frame#cash_transactions table tbody #cash_installment_#{cash_transaction.cash_installments.first.id}" do
   #       click_link("delete_cash_transaction_#{cash_transaction.id}")
   #     end
   #
-  #     expect(notification).to have_content("Cash Transaction has been deleted.")
+  #     expect(notification).to have_content(notification_model(:destroyed, CashTransaction))
   #   end
   #
   #   scenario "failing to destroy a cash_transaction that is from a particular category" do

@@ -1,9 +1,0 @@
-en:
-  notification:
-    alert: "Attention!"
-    notice: "Notice"
-
-pt-BR:
-  notification:
-    alert: "Atenção!"
-    notice: "Aviso"

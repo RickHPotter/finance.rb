@@ -6,6 +6,10 @@ en:
     not_updated: "%{model} was not updated."
     destroyed: "%{model} was successfully destroyed."
     not_destroyed: "%{model} was not destroyed."
+    not_destroyed_because_has_transactions: "%{model} with transactions cannot be deleted."
+    user_card_need_for_card_transaction: Please add a user card before creating a card transaction.
+    alert: "Attention!"
+    notice: "Notice"
   confirmation:
     sure: "Are you sure?"
     yes: "Yes"
@@ -51,6 +55,10 @@ pt-BR:
     not_updated: "%{model} não foi atualizado."
     destroyed: "%{model} foi excluído com sucesso."
     not_destroyed: "%{model} não foi excluído."
+    not_destroyed_because_has_transactions: "%{model} com transações não pode ser excluído."
+    user_card_need_for_card_transaction: Por favor, adicione um cartão antes de criar uma transação.
+    alert: "Atenção!"
+    notice: "Aviso"
   gerund:
     index: "Listando"
     show: "Detalhes de"

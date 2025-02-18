@@ -3,20 +3,23 @@
 require "rails_helper"
 
 RSpec.describe "Entities", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:entity_submenu) { FeatureHelper::ENTITY }
+
   let(:user) { create(:user, :random) }
 
   before { sign_in_as(user:) }
 
   feature "/entities" do
     scenario "center_container is swapped for correct form" do
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
       match_center_container_content("new_entity")
     end
   end
 
   feature "/entities/show" do
     background do
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "jumping to card_transactions that belong to the newly-created entity" do
@@ -37,7 +40,7 @@ RSpec.describe "Entities", type: :feature do
   feature "/entities/new" do
     background do
       create(:user_card, :random, user:)
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "creating an invalid entity" do
@@ -45,7 +48,7 @@ RSpec.describe "Entities", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_created, Entity))
     end
 
     scenario "creating a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -55,7 +58,7 @@ RSpec.describe "Entities", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Entity has been created.")
+      expect(notification).to have_content(notification_model(:created, Entity))
 
       match_center_container_content("new_card_transaction")
 
@@ -70,7 +73,7 @@ RSpec.describe "Entities", type: :feature do
   feature "/entities/edit" do
     background do
       create(:user_card, :random, user:)
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "editing an invalid entity" do
@@ -86,7 +89,7 @@ RSpec.describe "Entities", type: :feature do
       fill_in "entity_entity_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_updated, Entity))
     end
 
     scenario "editing a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -103,7 +106,7 @@ RSpec.describe "Entities", type: :feature do
         end
       end
 
-      expect(notification).to have_content("Entity has been updated.")
+      expect(notification).to have_content(notification_model(:updated, Entity))
 
       match_center_container_content("new_card_transaction")
 
@@ -113,7 +116,7 @@ RSpec.describe "Entities", type: :feature do
         end
       end
 
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
 
       click_on "Entities"
 
@@ -125,7 +128,7 @@ RSpec.describe "Entities", type: :feature do
 
   feature "/entities/destroy" do
     background do
-      navigate_to(menu: "New", sub_menu: "Entity")
+      navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "destroying a entity that has no card_transactions" do
@@ -140,7 +143,7 @@ RSpec.describe "Entities", type: :feature do
         expect(page).to_not have_css("tr#entity_#{entity.id}")
       end
 
-      expect(notification).to have_content("Entity has been deleted.")
+      expect(notification).to have_content(notification_model(:destroyed, Entity))
     end
 
     scenario "failing to destroy a entity that has card_transactions" do

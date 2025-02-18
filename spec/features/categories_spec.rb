@@ -3,20 +3,23 @@
 require "rails_helper"
 
 RSpec.describe "Categories", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:category_submenu) { FeatureHelper::CATEGORY }
+
   let(:user) { create(:user, :random) }
 
   before { sign_in_as(user:) }
 
   feature "/categories" do
     scenario "center_container is swapped for correct form" do
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
       match_center_container_content("new_category")
     end
   end
 
   feature "/categories/show" do
     background do
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
     end
 
     scenario "jumping to card_transactions that belong to the newly-created category" do
@@ -37,7 +40,7 @@ RSpec.describe "Categories", type: :feature do
   feature "/categories/new" do
     background do
       create(:user_card, :random, user:)
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
     end
 
     scenario "creating an invalid category" do
@@ -45,7 +48,7 @@ RSpec.describe "Categories", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_created, Category))
     end
 
     scenario "creating a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -55,7 +58,7 @@ RSpec.describe "Categories", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Category has been created.")
+      expect(notification).to have_content(notification_model(:created, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -71,7 +74,7 @@ RSpec.describe "Categories", type: :feature do
   feature "/categories/edit" do
     background do
       create(:user_card, :random, user:)
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
     end
 
     scenario "editing an invalid category" do
@@ -87,7 +90,7 @@ RSpec.describe "Categories", type: :feature do
       fill_in "category_category_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_updated, Category))
     end
 
     scenario "editing a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -104,7 +107,7 @@ RSpec.describe "Categories", type: :feature do
         end
       end
 
-      expect(notification).to have_content("Category has been updated.")
+      expect(notification).to have_content(notification_model(:updated, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -115,7 +118,7 @@ RSpec.describe "Categories", type: :feature do
         end
       end
 
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
 
       click_on "Categories"
 
@@ -127,7 +130,7 @@ RSpec.describe "Categories", type: :feature do
 
   feature "/categories/destroy" do
     background do
-      navigate_to(menu: "New", sub_menu: "Category")
+      navigate_to(menu: basic, sub_menu: category_submenu)
     end
 
     scenario "destroying a category that has no card_transactions" do
@@ -142,7 +145,7 @@ RSpec.describe "Categories", type: :feature do
         expect(page).to_not have_css("tr#category_#{category.id}")
       end
 
-      expect(notification).to have_content("Category has been deleted.")
+      expect(notification).to have_content(notification_model(:destroyed, Category))
     end
 
     scenario "failing to destroy a category that has card_transactions" do

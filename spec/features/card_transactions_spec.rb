@@ -3,6 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "CardTransactions", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:card_transaction_menu) { FeatureHelper::CARD }
+
   let(:user) { create(:user, :random) }
   let(:card) { build(:card, :random) }
   let(:user_card) { build(:user_card, :random, user:, card:, current_closing_date: Date.current + 4.days, current_due_date: Date.current + 9.days) }
@@ -14,14 +17,16 @@ RSpec.describe "CardTransactions", type: :feature do
 
   feature "/card_transactions" do
     scenario "center_container is swapped for correct form" do
-      navigate_to(menu: "New", sub_menu: "Card Transaction")
+      navigate_to(menu: card_transaction_menu)
+      find("#new_card_transaction_link").click
+
       match_center_container_content("new_card_transaction")
     end
   end
 
   feature "/card_transactions/show" do
     background do
-      navigate_to(menu: "Card Transaction", sub_menu: user_card.user_card_name)
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
     end
 
     scenario "checking card_transactions index page" do
@@ -31,7 +36,8 @@ RSpec.describe "CardTransactions", type: :feature do
 
   feature "/card_transactions/new" do
     background do
-      navigate_to(menu: "New", sub_menu: "Card Transaction")
+      navigate_to(menu: card_transaction_menu)
+      find("#new_card_transaction_link").click
     end
 
     scenario "creating an invalid card_transaction" do
@@ -39,7 +45,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_created, CardTransaction))
     end
 
     scenario "creating a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
@@ -60,7 +66,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content("Card Transaction has been created.")
+      expect(notification).to have_content(notification_model(:created, CardTransaction))
 
       match_center_container_content("card_transactions")
 
@@ -73,7 +79,7 @@ RSpec.describe "CardTransactions", type: :feature do
   feature "/card_transactions/edit" do
     background do
       create(:card_transaction, :random, user:, user_card:)
-      navigate_to(menu: "Card Transaction", sub_menu: user_card.user_card_name)
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
     end
 
     scenario "editing an invalid card_transaction" do
@@ -81,7 +87,7 @@ RSpec.describe "CardTransactions", type: :feature do
       fill_in "card_transaction_description", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content("Something is wrong.")
+      expect(notification).to have_content(notification_model(:not_updated, CardTransaction))
     end
 
     scenario "editing a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
@@ -90,7 +96,7 @@ RSpec.describe "CardTransactions", type: :feature do
       fill_in "card_transaction_date",        with: Date.current + 1.days
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content("Card Transaction has been updated.")
+      expect(notification).to have_content(notification_model(:updated, CardTransaction))
 
       match_center_container_content("card_transactions")
 
@@ -104,13 +110,13 @@ RSpec.describe "CardTransactions", type: :feature do
     scenario "destroying a card_transaction" do
       card_transaction = create(:card_transaction, user:, user_card:, date: Date.current)
 
-      navigate_to(menu: "Card Transaction", sub_menu: user_card.user_card_name)
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
 
       within "turbo-frame#card_transactions table tbody #card_installment_#{card_transaction.card_installments.first.id}" do
         click_link("delete_card_transaction_#{card_transaction.id}")
       end
 
-      expect(notification).to have_content("Card Transaction has been deleted.")
+      expect(notification).to have_content(notification_model(:destroyed, CardTransaction))
     end
   end
 end
