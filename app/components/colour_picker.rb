@@ -23,8 +23,7 @@ module Components
           ::COLOURS.each_pair do |name, classes|
             button type: "button",
                    class: "w-6 h-6 rounded shadow-lg border hover:scale-125 transition-all ease-in-out duration-100 cursor-pointer
-                          hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-600 dark:focus:ring-gray-400
-                          dark:border-0 dark:hover:ring-2 #{classes[:bg]} #{classes[:text]} #{classes[:from]} #{classes[:via]} #{classes[:to]}",
+                          hover:border-black focus:outline-none #{classes[:bg]} #{classes[:text]} #{classes[:from]} #{classes[:via]} #{classes[:to]}",
                    title: name,
                    data: { action: "click->colour-picker#selectColour", colour_picker_target: "colourOption", name: name, bg: classes[:bg] }
           end

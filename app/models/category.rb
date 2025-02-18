@@ -36,23 +36,23 @@ class Category < ApplicationRecord
   end
 
   def bg_colour
-    COLOURS.dig(colour, :bg) || "bg-white"
+    COLOURS.dig(colour, :bg)
   end
 
   def from_bg
-    COLOURS.dig(colour, :from) || "from-white"
+    COLOURS.dig(colour, :from)
   end
 
   def via_bg
-    COLOURS.dig(colour, :via) || "via-white"
+    COLOURS.dig(colour, :via)
   end
 
   def to_bg
-    COLOURS.dig(colour, :to) || "to-white"
+    COLOURS.dig(colour, :to)
   end
 
   def text_colour
-    COLOURS.dig(colour, :text) || "text-black"
+    COLOURS.dig(colour, :text)
   end
 
   # @protected_instance_methods ...............................................

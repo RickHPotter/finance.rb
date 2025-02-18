@@ -1,7 +1,7 @@
 <div class="w-full">
   <div class="min-w-full pt-2">
     <%= turbo_frame_tag :entities do %>
-      <div class="min-h-screen mx-1" data-controller="datatable">
+      <div class="min-h-screen" data-controller="datatable">
         <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
           <%= text_field_tag :search, nil,
                              type: :text, placeholder: "Search transactions...",

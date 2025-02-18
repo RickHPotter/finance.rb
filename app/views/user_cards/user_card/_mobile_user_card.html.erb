@@ -1,7 +1,4 @@
-<%= content_tag :div,
-                class: "rounded-lg shadow-sm overflow-hidden bg-slate-100 my-3",
-                data: { id: user_card.id, datatable_target: :row } do %>
-
+<%= content_tag :div, class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_card.id, datatable_target: :row } do %>
   <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-700">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -19,11 +16,11 @@
   </div>
 
   <div class="p-4">
-    <div class="grid grid-cols-2 gap-4 pt-2">
+    <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/number" %>
-          <%= content_tag :span, "Transactions Count", class: "text-xs font-medium text-slate-500" %>
+          <%= content_tag :span, "Card Transactions", class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -34,7 +31,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/money" %>
-          <%= content_tag :span, "Total Amount", class: "text-xs font-medium text-slate-500" %>
+          <%= content_tag :span, "Total Amount", class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -43,11 +40,11 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 my-4">
+    <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/calendar" %>
-          <%= content_tag :span, "Closing Date", class: "text-xs font-medium text-slate-500" %>
+          <%= content_tag :span, "Closing Date", class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -58,7 +55,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/calendar" %>
-          <%= content_tag :span, "Due Date", class: "text-xs font-medium text-slate-500" %>
+          <%= content_tag :span, "Due Date", class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
