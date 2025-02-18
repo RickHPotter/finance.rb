@@ -20,7 +20,7 @@ class UserCardsController < ApplicationController
     respond_to do |format|
       format.html
       format.turbo_stream do
-        set_tabs(active_menu: :new, active_sub_menu: :user_card) if params[:no_user_card]
+        set_tabs(active_menu: :basic, active_sub_menu: :user_card) if params[:no_user_card]
       end
     end
   end
@@ -31,7 +31,7 @@ class UserCardsController < ApplicationController
 
     if @card_transaction
       set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
     end
 
     respond_to(&:turbo_stream)
@@ -45,7 +45,7 @@ class UserCardsController < ApplicationController
 
     if @card_transaction
       set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @user_card.active?
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @user_card.active?
     end
 
     respond_to(&:turbo_stream)
@@ -53,6 +53,7 @@ class UserCardsController < ApplicationController
 
   def destroy
     @user_card.destroy if @user_card.card_transactions.empty?
+    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
     index
 
     respond_to(&:turbo_stream)

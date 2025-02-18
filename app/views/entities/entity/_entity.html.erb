@@ -13,7 +13,7 @@
       <%= content_tag :span, entity.entity_name, class: "px-4 whitespace-nowrap border-1 border-zinc-600 rounded-full" %>
     </div>
 
-    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.card_transactions_count > 0 %>
         <%= link_to entity.card_transactions_count,
                     card_transactions_path(entity_id: entity.id, format: :turbo_stream),
@@ -24,11 +24,11 @@
       <% end %>
     </div>
 
-    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap">
       <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$") %>
     </div>
 
-    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.cash_transactions_count > 0 %>
         <%= link_to entity.cash_transactions_count,
                     cash_transactions_path(entity_id: entity.id, format: :turbo_stream),
@@ -39,7 +39,7 @@
       <% end %>
     </div>
 
-    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap">
       <%= content_tag :span, from_cent_based_to_float(entity.cash_transactions_total, "R$") %>
     </div>
 

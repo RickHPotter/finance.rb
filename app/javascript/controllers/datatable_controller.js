@@ -56,12 +56,10 @@ export default class extends Controller {
   start(event) {
     event.dataTransfer.setData("text/plain", event.target.dataset.id)
     event.target.classList.add("opacity-50")
-    console.log("penis")
   }
 
   activate(event) {
     event.preventDefault()
-    console.log("ac")
   }
 
   drop(event) {

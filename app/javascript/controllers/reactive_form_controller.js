@@ -35,12 +35,12 @@ export default class extends Controller {
     const inputs_with_placeholder = this.inputTargets.filter(e => e.dataset.placeholder)
     inputs_with_placeholder.forEach(e => this.blink_placeholder(e))
 
-    if (this.priceInstallmentInputTargets.length > 0) {
+    if (this.hasPriceInstallmentInputTargets) {
       this._updateInstallmentsPrices()
       this._updateChips()
     }
 
-    if (this.categoryColoursTarget) {
+    if (this.hasCategoryColoursTarget) {
       this.categoryColours = JSON.parse(this.categoryColoursTarget.value)
     }
   }

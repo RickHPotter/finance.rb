@@ -2,7 +2,7 @@
 
 # Controller for CardTransaction
 # FIXME: fix Metrics/ClassLength
-class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
+class CardTransactionsController < ApplicationController
   include TabsConcern
 
   before_action :set_tabs
@@ -44,14 +44,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new(user_card: current_user.user_cards.active.order(:user_card_name).first)
+    @card_transaction = CardTransaction.new(user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id)
     @card_transaction.build_month_year
 
     respond_to do |format|
       format.html
-      format.turbo_stream do
-        set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
-      end
+      format.turbo_stream
     end
   end
 

@@ -13,7 +13,7 @@
       <%= content_tag :span, category.category_name, class: "px-4 whitespace-nowrap border-1 border-zinc-600 rounded-full #{category.bg_colour} #{category.text_colour}" %>
     </div>
 
-    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if category.card_transactions_count > 0 %>
         <%= link_to category.card_transactions_count,
                     card_transactions_path(category_id: category.id, format: :turbo_stream),
@@ -24,11 +24,11 @@
       <% end %>
     </div>
 
-    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap">
       <%= content_tag :span, from_cent_based_to_float(category.card_transactions_total, "R$") %>
     </div>
 
-    <div class="px-1 flex items-center justify-center ml-auto font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if category.cash_transactions_count > 0 %>
         <%= link_to category.cash_transactions_count,
                     cash_transactions_path(category_id: category.id, format: :turbo_stream),
@@ -39,7 +39,7 @@
       <% end %>
     </div>
 
-    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap ml-auto">
+    <div class="flex items-center justify-center font-lekton font-normal text-lg whitespace-nowrap">
       <%= content_tag :span, from_cent_based_to_float(category.cash_transactions_total, "R$") %>
     </div>
 

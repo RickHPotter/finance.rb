@@ -27,7 +27,7 @@ class CategoriesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_categories
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
     end
 
     respond_to(&:turbo_stream)
@@ -42,7 +42,7 @@ class CategoriesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_categories
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @category.active?
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @category.active?
     end
 
     respond_to(&:turbo_stream)
