@@ -1,8 +1,8 @@
 <% content_for(:auth_header) do %>
-  <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Create your account</h2>
-  <p class="mt-2 text-center text-sm text-gray-600">
-    Have an account already?
-    <%= link_to "Log in", new_session_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
+  <%= content_tag :h2, t(:create_your_account), class: "mt-6 text-center text-3xl font-bold tracking-tight text-gray-900" %>
+  <p class="mt-2 mb-6 text-center text-sm text-gray-600">
+    <%= t(:already_have_an_account) %>
+    <%= link_to t(:sign_in), new_session_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
 <% end %>
 
@@ -11,30 +11,30 @@
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :first_name, svg: :user, placeholder: "First Name", autofocus: true) %>
+    <%= render Components::TextFieldComponent.new(f, :first_name, svg: :user, placeholder: attribute_model(resource, :first_name), autofocus: true) %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :last_name, svg: :user_group, placeholder: "Last Name") %>
+    <%= render Components::TextFieldComponent.new(f, :last_name, svg: :user_group, placeholder: attribute_model(resource, :last_name)) %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, placeholder: "Email Address") %>
+    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, placeholder: attribute_model(resource, :email)) %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: "Password") %>
+    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: attribute_model(resource, :password)) %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: "Password Confirmation") %>
+    <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: attribute_model(resource, :password_confirmation)) %>
 
     <% if @minimum_password_length %>
-      <span class="text-xxs font-graduate text-gray-500">(<%= @minimum_password_length %> characters minimum)</span>
+      <%= content_tag :span, t(:minimum_characters, count: @minimum_password_length), class: "text-xs font-graduate text-gray-500" %>
     <% end %>
   </div>
 
   <div>
-    <%= render Components::ButtonComponent.new(form: f, options: { label: "Sign up" }) %>
+    <%= render Components::ButtonComponent.new(form: f, options: { label: t(:sign_up) }) %>
   </div>
 <% end %>

@@ -42,6 +42,10 @@ en:
   create_free_account: "create your account for FREE"
   already_have_an_account: "Already have an account?"
   or: "Or"
+  forgot_password: "Forgot your password?"
+  request_password_instructions: "Send me reset password instructions"
+  waiting_confirmation: "Currently waiting confirmation for: %{email}"
+  minimum_characters: "( at least %{count} characters )"
 
 pt-BR:
   confirmation:
@@ -87,5 +91,9 @@ pt-BR:
   edit_profile: "Editar perfil"
   create_your_account: "Crie sua conta"
   create_free_account: "crie sua conta GRATUITAMENTE"
-  already_have_an_account: "Ja possui uma conta?"
+  already_have_an_account: "Já possui uma conta?"
   or: "Ou"
+  forgot_password: "Esqueceu sua senha?"
+  request_password_instructions: "Enviar instruções de redefinição de senha"
+  waiting_confirmation: "Aguardando confirmação para: %{email}"
+  minimum_characters: "( no mínimo %{count} caracteres )"

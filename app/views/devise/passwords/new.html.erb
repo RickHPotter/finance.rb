@@ -1,14 +1,12 @@
-<h2>Forgot your password?</h2>
-
 <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post }) do |f| %>
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: "Email Address") %>
+    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: notification_model(resource, :email)) %>
   </div>
 
   <div>
-    <%= render Components::ButtonComponent.new(form: f, options: { label: "Send me reset password instructions" }) %>
+    <%= render Components::ButtonComponent.new(form: f, options: { label: t(:request_password_instructions) }) %>
   </div>
 <% end %>
 
