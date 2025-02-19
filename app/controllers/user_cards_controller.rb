@@ -10,11 +10,19 @@ class UserCardsController < ApplicationController
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @user_cards = current_user.user_cards.includes(:card).where(conditions).order(:user_card_name)
+
+    @user_cards = Logic::UserCards.find_by(current_user, conditions)
   end
 
   def new
     @user_card = UserCard.new
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :user_card) if params[:no_user_card]
+      end
+    end
   end
 
   def create
@@ -23,7 +31,7 @@ class UserCardsController < ApplicationController
 
     if @card_transaction
       set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
     end
 
     respond_to(&:turbo_stream)
@@ -37,7 +45,7 @@ class UserCardsController < ApplicationController
 
     if @card_transaction
       set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @user_card.active?
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @user_card.active?
     end
 
     respond_to(&:turbo_stream)
@@ -45,6 +53,7 @@ class UserCardsController < ApplicationController
 
   def destroy
     @user_card.destroy if @user_card.card_transactions.empty?
+    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
     index
 
     respond_to(&:turbo_stream)

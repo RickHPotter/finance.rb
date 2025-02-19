@@ -60,7 +60,7 @@ module Import
         card_transaction = transaction.slice(:description, :date, :month, :year, :price).merge({ user_id:, user_card_id: user_card.id })
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
-        Params::CardTransactionParams.new(card_transaction:, card_installments: { count: 1 }, category_transactions:, entity_transactions:)
+        Params::CardTransactions.new(card_transaction:, card_installments: { count: 1 }, category_transactions:, entity_transactions:)
       end
     end
 
@@ -78,7 +78,7 @@ module Import
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero)
 
         @transactions_collection[user_card_name][:with_installments] <<
-          Params::CardTransactionParams.new(
+          Params::CardTransactions.new(
             card_transaction: transaction_zero.slice(:description, :date, :month, :year).merge({ price:, user_id:, user_card_id: user_card.id }),
             card_installments:,
             category_transactions:,

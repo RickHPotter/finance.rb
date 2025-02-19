@@ -75,6 +75,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.string "category_name", null: false
     t.boolean "built_in", default: false, null: false
     t.boolean "active", default: true, null: false
+    t.string "colour", default: "white", null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -124,6 +125,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.integer "number", default: 1, null: false
     t.integer "starting_price", null: false
     t.integer "price", null: false
+    t.integer "exchanges_count", default: 0, null: false
     t.bigint "entity_transaction_id", null: false
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false

@@ -37,6 +37,30 @@ module TranslateHelper
     model.model_name.human.pluralize(count)
   end
 
+  # Takes a notification key and returns the translated notification message.
+  #
+  # @example Get notification message:
+  #   notification(:user_card_need_for_card_transaction)
+  #   # => "Please add a user card before creating a card transaction."
+  #
+  # @return [String] Translated notification message.
+  #
+  def notification(notification)
+    I18n.t("notification.#{notification}")
+  end
+
+  # Takes a notification key and a model class and returns the translated notification message.
+  #
+  # @example Get notification message:
+  #   notification_model(:created, UserCard)
+  #   # => "User Card was successfully created."
+  #
+  # @return [String] Translated notification message.
+  #
+  def notification_model(notification, model)
+    I18n.t("notification.#{notification}", model: model.model_name.human)
+  end
+
   # Takes a model instance or class and an attribute name, and returns a human-readable attribute name based on the model and attribute.
   #
   # @example Get human-readable attribute name:

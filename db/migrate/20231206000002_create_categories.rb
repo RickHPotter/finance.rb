@@ -7,6 +7,7 @@ class CreateCategories < ActiveRecord::Migration[8.0]
       t.string :category_name, null: false
       t.boolean :built_in, null: false, default: false
       t.boolean :active, null: false, default: true
+      t.string :colour, null: false, default: :white
 
       t.references :user, null: false, foreign_key: true
 

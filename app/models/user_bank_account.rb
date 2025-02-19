@@ -1,19 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: user_bank_accounts
-#
-#  id             :bigint           not null, primary key
-#  agency_number  :integer
-#  account_number :integer
-#  active         :boolean          default(TRUE), not null
-#  balance        :integer          default(0), not null
-#  user_id        :bigint           not null
-#  bank_id        :bigint           not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
-#
 class UserBankAccount < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -24,6 +10,7 @@ class UserBankAccount < ApplicationRecord
   belongs_to :user
   belongs_to :bank
 
+  has_many :cash_transactions, dependent: :destroy
   has_many :investments, dependent: :destroy
 
   # @validations ..............................................................
@@ -38,3 +25,28 @@ class UserBankAccount < ApplicationRecord
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: user_bank_accounts
+#
+#  id             :bigint           not null, primary key
+#  account_number :integer
+#  active         :boolean          default(TRUE), not null
+#  agency_number  :integer
+#  balance        :integer          default(0), not null
+#  created_at     :datetime         not null
+#  updated_at     :datetime         not null
+#  bank_id        :bigint           not null, indexed
+#  user_id        :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_user_bank_accounts_on_bank_id  (bank_id)
+#  index_user_bank_accounts_on_user_id  (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
+#  fk_rails_...  (user_id => users.id)
+#

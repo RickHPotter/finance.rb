@@ -1,8 +1,8 @@
 <% if @card_transaction %>
   <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Entity has been created." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Entity) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>
   <%= turbo_stream.replace(:center_container, template: "entities/new", locals: { entity: @entity }) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Something is wrong." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Entity) }) %>
 <% end %>

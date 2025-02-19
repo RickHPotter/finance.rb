@@ -1,29 +1,34 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Finance</title>
+    <title><%= t("pages.title") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/pwa_logos/ios/128.png" type="image/png">
+    <link rel="apple-touch-icon" href="/pwa_logos/ios/512.png">
+
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-
-    <%= combobox_style_tag %>
-
     <%= javascript_importmap_tags %>
+    <%= combobox_style_tag %>
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
     <main class="antialiased">
       <div class="p-3">
-        <%= render "shared/flash" %>
+        <%= turbo_frame_tag :notification do %>
+          <%= render "shared/flash" %>
+        <% end %>
         <%= render "shared/dark_mode" %>
       </div>
 
-      <section class="container mx-auto mt-16 px-5 flex">
-        <%= yield %>
-      </section>
+
+      <%= content_tag :section, class: "container mx-auto flex #{@mobile ? 'p-0 mt-2' : 'px-5 mt-16'}" do %>
+        <% yield %>
+      <% end %>
     </main>
   </body>
 </html>

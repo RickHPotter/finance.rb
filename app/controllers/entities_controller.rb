@@ -10,7 +10,8 @@ class EntitiesController < ApplicationController
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @entities = current_user.entities.where(conditions).order(:entity_name)
+
+    @entities = Logic::Entities.find_by(current_user, conditions)
   end
 
   def show; end
@@ -26,7 +27,7 @@ class EntitiesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_entities
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
     end
 
     respond_to(&:turbo_stream)
@@ -41,7 +42,7 @@ class EntitiesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_entities
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @entity.active?
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @entity.active?
     end
 
     respond_to(&:turbo_stream)
