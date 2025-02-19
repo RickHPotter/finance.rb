@@ -7,7 +7,7 @@
   <% end %>
 
   <%= content_tag :div,
-                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient}",
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient} hover:opacity-60",
                   draggable: true,
                   data: { id: card_installment.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 
