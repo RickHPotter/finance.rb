@@ -48,7 +48,7 @@ RSpec.describe "Entities", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_created, Entity))
+      expect(notification).to have_content(notification_model(:not_createda, Entity))
     end
 
     scenario "creating a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -58,7 +58,7 @@ RSpec.describe "Entities", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:created, Entity))
+      expect(notification).to have_content(notification_model(:createda, Entity))
 
       match_center_container_content("new_card_transaction")
 
@@ -89,7 +89,7 @@ RSpec.describe "Entities", type: :feature do
       fill_in "entity_entity_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updated, Entity))
+      expect(notification).to have_content(notification_model(:not_updateda, Entity))
     end
 
     scenario "editing a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -106,7 +106,7 @@ RSpec.describe "Entities", type: :feature do
         end
       end
 
-      expect(notification).to have_content(notification_model(:updated, Entity))
+      expect(notification).to have_content(notification_model(:updateda, Entity))
 
       match_center_container_content("new_card_transaction")
 
@@ -143,7 +143,7 @@ RSpec.describe "Entities", type: :feature do
         expect(page).to_not have_css("tr#entity_#{entity.id}")
       end
 
-      expect(notification).to have_content(notification_model(:destroyed, Entity))
+      expect(notification).to have_content(notification_model(:destroyeda, Entity))
     end
 
     scenario "failing to destroy a entity that has card_transactions" do

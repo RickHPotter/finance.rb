@@ -1,6 +1,6 @@
 <% if @entity.destroyed? %>
   <%= turbo_stream.replace(:center_container, template: "entities/index") %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyed, Entity) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyeda, Entity) }) %>
 <% else %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyed_because_has_transactions, Entity) }) %>
 <% end %>

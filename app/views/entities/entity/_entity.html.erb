@@ -4,9 +4,7 @@
                 data: { id: entity.id, datatable_target: :row } do %>
 
     <div class="px-2 flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false,
-                         id: "checkbox_#{entity.id}",
-                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
+      <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{entity.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
     </div>
 
     <div class="px-1 flex items-center mx-auto font-semibold">

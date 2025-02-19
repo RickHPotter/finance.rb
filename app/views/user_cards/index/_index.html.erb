@@ -1,11 +1,11 @@
 <div class="flex justify-between mb-8">
-  <%= link_to "New User Card",
+  <%= link_to action_model(:new, UserCard),
               new_user_card_path,
               class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
               data: { turbo_frame: :center_container } %>
 
   <% include_inactive = params[:include_inactive] == "false" %>
-  <%= link_to include_inactive ? "Show Inactive User Cards" : "Hide Inactive User Cards",
+  <%= link_to include_inactive ? action_message(:show_inactive) : action_message(:hide_inactive),
               user_cards_path(include_inactive:),
               class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
               data: { turbo_frame: :center_container } %>
@@ -17,20 +17,21 @@
       <div class="bg-slate-300 rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
         <div class="grid grid-cols-9 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
           <div class="col-span-2"></div>
-          <div class="text-center col-span-2 text-slate-600">TRANSACTIONS</div>
+          <%= content_tag :div, pluralise_model(CardTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
           <div class="col-span-5"></div>
         </div>
 
-        <div class="grid grid-cols-9 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+        <div class="grid grid-cols-9 py-1 gap-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
           <div></div>
-          <div class="text-center">NAME</div>
-          <div class="text-center">COUNT</div>
-          <div class="text-center">SPENT</div>
-          <div class="text-end">CLOSING DATE</div>
-          <div class="text-end">DUE DATE</div>
-          <div class="text-end">MIN SPEND</div>
-          <div class="text-end">CREDIT LIMIT</div>
-          <div class="text-center">ACTIONS</div>
+          <%= content_tag :div, model_attribute(UserCard, :user_card_name), class: "text-center" %>
+          <%= content_tag :div, model_attribute(UserCard, :count), class: "text-center" %>
+          <%= content_tag :div, model_attribute(UserCard, :spent), class: "text-center" %>
+          <%= content_tag :div, model_attribute(UserCard, :closing_date), class: "text-end text-lime-800 pr-2" %>
+          <%= content_tag :div, model_attribute(UserCard, :due_date), class: "text-start text-red-800" %>
+          <%= content_tag :div, model_attribute(UserCard, :min_spend), class: "text-end" %>
+          <%= content_tag :div, model_attribute(UserCard, :credit_limit), class: "text-end" %>
+
+          <%= content_tag :div, t(:datatable_actions), class: "text-center" %>
         </div>
 
         <%= render @user_cards %>

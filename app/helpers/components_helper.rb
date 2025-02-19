@@ -34,6 +34,6 @@ module ComponentsHelper
   def bold_label(form, field, id = nil)
     id ||= "#{form.object.model_name.singular}_#{field}"
 
-    form.label field, attribute_model(form.object, field).downcase, class: "font-poetsen-one text-medium font-bold text-gray-500", for: id
+    form.label field, model_attribute(form.object, field).downcase, class: "font-poetsen-one text-medium font-bold text-gray-500", for: id
   end
 end

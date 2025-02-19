@@ -6,7 +6,7 @@
       <%= form.text_field \
             :user_card_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
-            data: { reactive_form_target: :input, placeholder: "User Card Name", placeholder_type: :word } %>
+            data: { reactive_form_target: :input, placeholder: model_attribute(user_card, :user_card_name), placeholder_type: :word } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
@@ -18,7 +18,7 @@
               mobile_at: "360px",
               render_in: { partial: "user_cards/card" },
               include_blank: false,
-              placeholder: "Select a Card Brand" %>
+              placeholder: action_attribute(:select, user_card, :card_id) %>
       </div>
 
       <div class="w-full lg:w-3/12 mb-2">
@@ -27,7 +27,6 @@
               form, :current_closing_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
-              placeholder: "Current Closing Date",
               min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
               max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d") %>
       </div>
@@ -47,7 +46,6 @@
         <%= render Components::TextFieldComponent.new \
               form, :min_spend,
               svg: :money,
-              placeholder: "Minimum Spend",
               class: "font-graduate",
               data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
       </div>
@@ -57,7 +55,6 @@
         <%= render Components::TextFieldComponent.new \
               form, :credit_limit,
               svg: :money,
-              placeholder: "Credit Limit",
               class: "font-graduate",
               data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
       </div>
@@ -71,7 +68,7 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: "Submit Card" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, user_card) } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

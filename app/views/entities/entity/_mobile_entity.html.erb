@@ -13,8 +13,8 @@
       <div class="space-y-1">
         <%= link_to card_transactions_path(entity_id: entity.id, format: :turbo_stream), class: "flex items-center text-sm font-medium text-slate-500", data: { turbo_frame: :center_container } do %>
           <%= render "shared/svgs/number" %>
-          <%= content_tag :span, "Card Transactions", class: "ml-2" %>
-        <% end  %>
+          <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "ml-2" %>
+        <% end %>
 
         <div class="flex items-center">
           <%= content_tag :span, entity.card_transactions_count, class: "text-sm font-semibold text-slate-800" %>
@@ -24,7 +24,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/money" %>
-          <%= content_tag :span, "Total Amount", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -41,7 +41,7 @@
       <div class="space-y-1">
         <%= link_to cash_transactions_path(entity_id: entity.id, format: :turbo_stream), class: "flex items-center text-sm font-medium text-slate-500", data: { turbo_frame: :center_container } do %>
           <%= render "shared/svgs/number" %>
-          <%= content_tag :span, "Cash Transactions", class: "ml-2" %>
+          <%= content_tag :span, pluralise_model(CashTransaction, 2), class: "ml-2 truncate" %>
         <% end  %>
 
         <div class="flex items-center">
@@ -52,7 +52,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/money" %>
-          <%= content_tag :span, "Total Amount", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, model_attribute(CashTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -66,9 +66,7 @@
     </div>
 
     <details>
-      <summary class="flex items-center justify-between py-2">
-        Actions
-      </summary>
+      <%= content_tag :summary, t(:datatable_actions), class: "flex items-center justify-between py-2" %>
 
       <%= content_tag :div, class: "flex justify-between py-2" do %>
         <div class="flex items-center gap-3 ml-auto">

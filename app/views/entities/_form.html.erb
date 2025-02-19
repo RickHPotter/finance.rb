@@ -7,7 +7,7 @@
       <%= form.text_field \
             :entity_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
-            data: { reactive_form_target: :input, placeholder: "Entity Name", placeholder_type: :word } %>
+            data: { reactive_form_target: :input, placeholder: model_attribute(entity, :entity_name), placeholder_type: :word } %>
     </div>
 
     <div>
@@ -18,7 +18,7 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: "Submit Entity" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, entity) } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

@@ -48,7 +48,7 @@ RSpec.describe "Categories", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_created, Category))
+      expect(notification).to have_content(notification_model(:not_createda, Category))
     end
 
     scenario "creating a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -58,7 +58,7 @@ RSpec.describe "Categories", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:created, Category))
+      expect(notification).to have_content(notification_model(:createda, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -90,7 +90,7 @@ RSpec.describe "Categories", type: :feature do
       fill_in "category_category_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updated, Category))
+      expect(notification).to have_content(notification_model(:not_updateda, Category))
     end
 
     scenario "editing a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -107,7 +107,7 @@ RSpec.describe "Categories", type: :feature do
         end
       end
 
-      expect(notification).to have_content(notification_model(:updated, Category))
+      expect(notification).to have_content(notification_model(:updateda, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -145,7 +145,7 @@ RSpec.describe "Categories", type: :feature do
         expect(page).to_not have_css("tr#category_#{category.id}")
       end
 
-      expect(notification).to have_content(notification_model(:destroyed, Category))
+      expect(notification).to have_content(notification_model(:destroyeda, Category))
     end
 
     scenario "failing to destroy a category that has card_transactions" do

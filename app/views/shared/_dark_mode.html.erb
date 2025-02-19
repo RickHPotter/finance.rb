@@ -108,7 +108,7 @@ https://h.daily-dev-tips.com/creating-day-night-css-only-toggle-switch
           <dialog data-pwa-installation-target="dialog" data-action="click->pwa-installation#clickOutside" class="p-4">
             <%= turbo_frame_tag :pwa_installation_instructions %>
 
-            <%= link_to "Close", "#", class: "bg-transparent", data: { action: "click->pwa-installation#closeDialog" } %>
+            <%= link_to t("navigation.close"), "#", class: "bg-transparent", data: { action: "click->pwa-installation#closeDialog" } %>
           </dialog>
         </div>
       </div>
@@ -116,4 +116,4 @@ https://h.daily-dev-tips.com/creating-day-night-css-only-toggle-switch
   </div>
 </div>
 
-<%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %>
+<%= link_to t(:sign_out), destroy_user_session_path, data: { turbo_method: :delete } %>

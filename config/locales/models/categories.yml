@@ -10,6 +10,8 @@ en:
         category_name: Category Name
         active: Active
         user_id: User
+        count: Count
+        spent: Spent
         created_at: Created at
         updated_at: Updated at
 
@@ -25,5 +27,7 @@ pt-BR:
         category_name: Nome da Categoria
         active: Ativo
         user_id: Usuário
+        count: Quantidade
+        spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em

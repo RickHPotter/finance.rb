@@ -61,8 +61,13 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.new(card_transaction_params)
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
-    case params[:commit]
-    when "Submit", nil
+    if params[:commit] == "Update"
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
+        end
+      end
+    else
       if @card_transaction.save
         @user_card = @card_transaction.user_card
         index
@@ -70,12 +75,6 @@ class CardTransactionsController < ApplicationController
       end
 
       respond_to(&:turbo_stream)
-    when "Update"
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
-        end
-      end
     end
   end
 
@@ -83,8 +82,13 @@ class CardTransactionsController < ApplicationController
     @card_transaction.assign_attributes(card_transaction_params)
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
-    case params[:commit]
-    when "Submit", nil
+    if params[:commit] == "Update"
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
+        end
+      end
+    else
       if @card_transaction.save
         @user_card = @card_transaction.user_card
         index
@@ -92,12 +96,6 @@ class CardTransactionsController < ApplicationController
       end
 
       respond_to(&:turbo_stream)
-    when "Update"
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
-        end
-      end
     end
   end
 

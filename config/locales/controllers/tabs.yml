@@ -8,3 +8,14 @@ en:
     entity: Entity
     pix: Pix
     investment: Investment
+
+pt-BR:
+  tabs:
+    basic: Básico
+    card_transaction: Transação de Cartão
+    cash_transaction: Transação de Dinheiro
+    user_card: Cartão
+    category: Categoria
+    entity: Entidade
+    pix: Pix
+    investment: Investimento

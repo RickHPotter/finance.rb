@@ -45,7 +45,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_created, CardTransaction))
+      expect(notification).to have_content(notification_model(:not_createda, CardTransaction))
     end
 
     scenario "creating a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
@@ -66,7 +66,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:created, CardTransaction))
+      expect(notification).to have_content(notification_model(:createda, CardTransaction))
 
       match_center_container_content("card_transactions")
 
@@ -87,7 +87,7 @@ RSpec.describe "CardTransactions", type: :feature do
       fill_in "card_transaction_description", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updated, CardTransaction))
+      expect(notification).to have_content(notification_model(:not_updateda, CardTransaction))
     end
 
     scenario "editing a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
@@ -96,7 +96,7 @@ RSpec.describe "CardTransactions", type: :feature do
       fill_in "card_transaction_date",        with: Date.current + 1.days
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:updated, CardTransaction))
+      expect(notification).to have_content(notification_model(:updateda, CardTransaction))
 
       match_center_container_content("card_transactions")
 
@@ -116,7 +116,7 @@ RSpec.describe "CardTransactions", type: :feature do
         click_link("delete_card_transaction_#{card_transaction.id}")
       end
 
-      expect(notification).to have_content(notification_model(:destroyed, CardTransaction))
+      expect(notification).to have_content(notification_model(:destroyeda, CardTransaction))
     end
   end
 end

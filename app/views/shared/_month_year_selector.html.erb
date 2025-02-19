@@ -19,11 +19,12 @@
         </div>
       </div>
 
-      <%= content_tag :div, class: "#{@mobile ? 'grid grid-cols-3 mt-4' : 'flex items-center pt-2'} gap-2" do %>
+      <% date_key = @mobile ? "date.abbr_month_names" : "date.month_names" %>
+      <%= content_tag :div, class: "#{@mobile ? 'grid grid-cols-4 mt-4' : 'flex items-center pt-2'} gap-2" do %>
         <% (1..12).each do |month| %>
           <% month_year = Date.new(year, month, 1).strftime("%Y%m") %>
-          <%= link_to Date::MONTHNAMES[month], "#",
-                      class: "w-full w-1/12 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors",
+          <%= link_to I18n.t(date_key)[month], "#",
+                      class: "w-full px-3 py-2 rounded-lg font-medium text-lg hover:bg-blue-100 transition-colors",
                       data: { month_year_selector_target: "monthYear", action: "click->month-year-selector#toggleMonth", month_year:, active: active_month_years.include?(month_year) } %>
           </button>
         <% end %>

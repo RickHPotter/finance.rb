@@ -1,8 +1,8 @@
 <% if @card_transaction %>
   <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Category) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, Category) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>
   <%= turbo_stream.replace(:center_container, template: "categories/new", locals: { category: @category }) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Category) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, Category) }) %>
 <% end %>

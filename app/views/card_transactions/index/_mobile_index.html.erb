@@ -10,17 +10,17 @@
           <div class="flex gap-3 mb-2">
             <%= select_tag :categories_search, options_for_select(@categories),
                            class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                           include_blank: "All Categories",
+                           include_blank: action_model(:alla, Category, 2),
                            data: { action: "change->datatable#filterCategory" } %>
 
             <%= select_tag :entities_search, options_for_select(@entities),
                            class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                           include_blank: "All Entities",
+                           include_blank: action_model(:alla, Entity, 2),
                            data: { action: "change->datatable#filterEntity" } %>
           </div>
 
           <%= text_field_tag :search, nil,
-                             type: :text, placeholder: "Search transactions...",
+                             type: :text, placeholder: "#{action_message(:search)}...",
                              class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                              data: { action: "input->datatable#filter" } %>
         </div>

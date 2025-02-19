@@ -53,7 +53,7 @@ module Components
 
       {
         id: "#{@object.model_name.singular}_#{@field}",
-        label: attribute_model(@object, @field),
+        label: model_attribute(@object, @field),
         autocomplete: @field
       }.merge(options)
     end

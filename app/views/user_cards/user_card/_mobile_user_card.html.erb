@@ -20,7 +20,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/number" %>
-          <%= content_tag :span, "Card Transactions", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -31,7 +31,7 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/money" %>
-          <%= content_tag :span, "Total Amount", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
@@ -44,30 +44,28 @@
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/calendar" %>
-          <%= content_tag :span, "Closing Date", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, model_attribute(UserCard, :current_closing_date), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
-          <%= content_tag :span, l(user_card.current_closing_date, format: "%b %d") %>
+          <%= content_tag :span, l(user_card.current_closing_date, format: :short) %>
         </div>
       </div>
 
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
           <%= render "shared/svgs/calendar" %>
-          <%= content_tag :span, "Due Date", class: "text-sm font-medium text-slate-500" %>
+          <%= content_tag :span, model_attribute(UserCard, :current_due_date), class: "text-sm font-medium text-slate-500" %>
         </div>
 
         <div class="flex items-center">
-          <%= content_tag :span, l(user_card.current_due_date, format: "%b %d") %>
+          <%= content_tag :span, l(user_card.current_due_date, format: :short) %>
         </div>
       </div>
     </div>
 
     <details>
-      <summary class="flex items-center justify-between py-2">
-        Actions
-      </summary>
+      <%= content_tag :summary, t(:datatable_actions), class: "flex items-center justify-between py-2" %>
 
       <%= content_tag :div, class: "flex justify-between py-2" do %>
         <div class="flex items-center gap-3 ml-auto text-gray-900">

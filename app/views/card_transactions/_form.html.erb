@@ -143,7 +143,7 @@
       <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: "Submit" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, card_transaction) } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

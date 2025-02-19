@@ -11,13 +11,17 @@ en:
         id: ID
         user_card_name: User Card Name
         days_until_due_date: Days Until Due Date
-        current_closing_date: Current Closing Date
-        current_due_date: Current Due Date
+        current_closing_date: Closing Date
+        current_due_date: Due Date
+        closing_date: Closing Date
+        due_date: Due Date
         min_spend: Minimun Spend
         credit_limit: Credit Limit
         active: Active
         user_id: User
         card_id: Card Brand
+        count: Count
+        spent: Spent
         created_at: Created at
         updated_at: Updated at
 
@@ -25,8 +29,8 @@ pt-BR:
   activerecord:
     models:
       user_card:
-        one: Cartão de Usuário
-        other: Cartões de Usuários
+        one: Cartão de Crédito
+        other: Cartões de Crédito
     attributes:
       user_card:
         id: ID
@@ -34,10 +38,14 @@ pt-BR:
         days_until_due_date: Dias Até o Vencimento
         current_closing_date: Data de Fechamento
         current_due_date: Data de Vencimento
-        min_spend: Gastar Mínimo
-        credit_limit: Limite de Crédito
+        closing_date: Fechamento
+        due_date: Vencimento
+        min_spend: Gasto Mínimo
+        credit_limit: Limite
         active: Ativo
         user_id: Usuário
         card_id: Cartão
+        count: Quantidade
+        spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em

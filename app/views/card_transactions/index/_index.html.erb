@@ -9,22 +9,22 @@
         <div class="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
           <div class="flex gap-4 flex-wrap">
             <%= text_field_tag :search, nil,
-                               type: :text, placeholder: "Search transactions...",
+                               type: :text, placeholder: "#{action_message(:search)}...",
                                class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                                data: { action: "input->datatable#filter" } %>
 
             <%= select_tag :categories_search, options_for_select(@categories),
                            class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                           include_blank: "All Categories",
+                           include_blank: action_model(:alla, Category, 2),
                            data: { action: "change->datatable#filterCategory" } %>
 
             <%= select_tag :entities_search, options_for_select(@entities),
                            class: "px-7 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                           include_blank: "All Entities",
+                           include_blank: action_model(:alla, Entity, 2),
                            data: { action: "change->datatable#filterEntity" } %>
           </div>
 
-          <%= link_to "New Card Transaction",
+          <%= link_to action_model(:newa, CardTransaction),
                       new_card_transaction_path(user_card_id: @user_card.id, format: :turbo_stream),
                       id: :new_card_transaction_link,
                       class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",

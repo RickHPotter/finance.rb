@@ -1,11 +1,11 @@
 en:
   activerecord:
     models:
-      card_transaction:
-        one: Card Transaction
-        other: Card Transactions
+      cash_transaction:
+        one: Cash Transaction
+        other: Cash Transactions
     attributes:
-      card_transaction:
+      cash_transaction:
         id: ID
         description: Description
         comment: Comment
@@ -17,8 +17,8 @@ en:
         category: Category
         month: Month
         year: Year
-        card_installment: Installment
-        card_installments_count: Installments Count
+        cash_installment: Installment
+        cash_installments_count: Installments Count
         total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
@@ -26,11 +26,11 @@ en:
 pt-BR:
   activerecord:
     models:
-      card_transaction:
-        one: Transação
-        other: Transações
+      cash_transaction:
+        one: Movimentação
+        other: Movimentações
     attributes:
-      card_transaction:
+      cash_transaction:
         id: ID
         description: Descricão
         comment: Comentário
@@ -42,8 +42,8 @@ pt-BR:
         category: Categoria
         month: Mês
         year: Ano
-        card_installment: Parcela
-        card_installments_count: Quantidade de Parcelas
+        cash_installment: Parcela
+        cash_installments_count: Quantidade de Parcelas
         total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em
