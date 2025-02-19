@@ -1,6 +1,6 @@
 <%= content_tag :div,
                 id: "category_#{category.id}",
-                class: "grid grid-cols-7 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')}",
+                class: "grid grid-cols-7 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
                 data: { id: category.id, datatable_target: :row } do %>
 
     <div class="px-2 flex items-center justify-between">
