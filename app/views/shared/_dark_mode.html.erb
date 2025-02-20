@@ -86,34 +86,13 @@ https://h.daily-dev-tips.com/creating-day-night-css-only-toggle-switch
   }
 </style>
 
-<div class="flex w-full flex-wrap">
+<section class="flex">
   <div class="flex w-full justify-between">
-    <div>
-      <input type="checkbox" id="theme_toggle" class="toggle--checkbox hidden" data-controller="dark-mode" data-dark-mode-target="checkbox" data-action="click->dark-mode#toggle">
-      <label for="theme_toggle" class="toggle--label">
-        <span class="toggle--label-background"></span>
-      </label>
-    </div>
-    <div>
-      <div data-controller="pwa-installation">
-        <div class="flex items-start flex-col space-col-4 grid-cols-12 md:items-center md:flex-row md:space-row-4">
-          <%= button_tag class: "text-white bg-transparent rounded-sm scale-120", data: { pwa_installation_target: "installButton", action: "click->pwa-installation#install" } do %>
-            <span class="pointer-events-none">
-              <%= render "shared/svgs/install" %>
-            </span>
-          <% end %>
+    <input type="checkbox" id="theme_toggle" class="toggle--checkbox hidden" data-controller="dark-mode" data-dark-mode-target="checkbox" data-action="click->dark-mode#toggle">
+    <label for="theme_toggle" class="toggle--label">
+      <span class="toggle--label-background"></span>
+    </label>
 
-          <%= link_to "", "/pwa/installation_instructions", hidden: true, data: { pwa_installation_target: "infoButton", action: "click->pwa-installation#openDialog", turbo_frame: :pwa_installation_instructions } %>
-
-          <dialog data-pwa-installation-target="dialog" data-action="click->pwa-installation#clickOutside" class="p-4">
-            <%= turbo_frame_tag :pwa_installation_instructions %>
-
-            <%= link_to t("navigation.close"), "#", class: "bg-transparent", data: { action: "click->pwa-installation#closeDialog" } %>
-          </dialog>
-        </div>
-      </div>
-    </div>
+    <%= render "shared/pwa_installation" %>
   </div>
-</div>
-
-<%= link_to t(:sign_out), destroy_user_session_path, data: { turbo_method: :delete } %>
+</section>

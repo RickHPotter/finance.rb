@@ -9,7 +9,7 @@
       <%= form.text_field \
             :description,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
-            data: { reactive_form_target: :input, placeholder: "Card Transaction Name", placeholder_type: :word } %>
+            data: { reactive_form_target: :input, placeholder: model_attribute(card_transaction, :description_placeholder), placeholder_type: :word } %>
     </div>
 
     <div class="w-full mb-6">
@@ -17,7 +17,7 @@
       <%= form.text_area \
             :comment,
             class: "text-gray-500 px-4 pt-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
-            data: { controller: "text-area-autogrow", reactive_form_target: :input, placeholder: "Any comment about", placeholder_type: :word } %>
+            data: { controller: "text-area-autogrow", reactive_form_target: :input, placeholder: model_attribute(card_transaction, :comment_placeholder), placeholder_type: :word } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
@@ -28,7 +28,7 @@
               mobile_at: "360px",
               render_in: { partial: "card_transactions/user_card" },
               include_blank: false,
-              placeholder: "Card",
+              placeholder: model_attribute(card_transaction, :user_card_id),
               data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmit", value: ".hw-combobox__input" } %>
       </div>
 
@@ -38,7 +38,7 @@
               @categories,
               mobile_at: "360px",
               include_blank: false,
-              placeholder: "Category",
+              placeholder: model_attribute(card_transaction, :category_id),
               data: { action: "hw-combobox:selection->reactive-form#insertChip", value: ".hw-combobox__input" } %>
       </div>
 
@@ -48,7 +48,7 @@
               @entities,
               mobile_at: "360px",
               include_blank: false,
-              placeholder: "Entity",
+              placeholder: model_attribute(card_transaction, :entity_id),
               data: { action: "hw-combobox:selection->reactive-form#popModal", value: ".hw-combobox__input" } %>
       </div>
 
@@ -66,7 +66,6 @@
           <%= render Components::TextFieldComponent.new \
                 form, :price,
                 svg: :money,
-                placeholder: "Amount",
                 class: "font-graduate",
                 data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
         </div>
@@ -79,7 +78,6 @@
                 min: 1, max: 72,
                 value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
                 class: "font-graduate",
-                placeholder: "Installments",
                 data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" } %>
         </div>
       </div>

@@ -21,7 +21,7 @@
       <div class="flex items-center justify-between py-2">
         <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{card_installment.id}", class: "shrink-0 w-4 h-4 rounded-full border-slate-300" %>
 
-        <%= content_tag :span, l(card_installment.date, format: "%d %b %H:%M"), class: "text-xs text-start flex-1 ps-2" %>
+        <%= content_tag :span, l(card_installment.date, format: :short), class: "text-xs text-start flex-1 ps-2" %>
 
         <div class="whitespace-nowrap">
           <%= from_cent_based_to_float(card_installment.price, "R$") %>

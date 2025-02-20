@@ -3,6 +3,8 @@
 module TabsConcern
   extend ActiveSupport::Concern
 
+  include TranslateHelper
+
   included do
     before_action :set_user_agent
   end
@@ -13,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+  def set_tabs(active_menu: :card, active_sub_menu: :WILL)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -61,9 +63,11 @@ module TabsConcern
       default = @active_sub_menu.to_sym == user_card_name.to_sym
       Components::TabsComponent::Item.new(user_card_name, "shared/svgs/credit_card", card_transactions_path(user_card_id:), default, :center_container)
     end
+
     return unless @card_transaction_tab.empty?
 
-    @card_transaction_tab << Components::TabsComponent::Item.new(t("user_cards.new"), "shared/svgs/credit_card", new_user_card_path, false, :center_container)
+    @card_transaction_tab <<
+      Components::TabsComponent::Item.new(action_model(:new, UserCard), "shared/svgs/credit_card", new_user_card_path, false, :center_container)
   end
 
   def set_cash_transaction_sublinks

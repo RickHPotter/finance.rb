@@ -1,21 +1,21 @@
 en:
   tabs:
-    basic: Basic
-    card_transaction: Card Transaction
-    cash_transaction: Cash Transaction
-    user_card: User Card
-    category: Category
-    entity: Entity
+    basic: Basics
+    card_transaction: Card Transactions
+    cash_transaction: Cash Transactions
+    user_card: User Cards
+    category: Categories
+    entity: Entities
     pix: Pix
     investment: Investment
 
 pt-BR:
   tabs:
-    basic: Básico
-    card_transaction: Transação de Cartão
-    cash_transaction: Transação de Dinheiro
-    user_card: Cartão
-    category: Categoria
-    entity: Entidade
+    basic: Básicos
+    card_transaction: Lançamentos de Cartão
+    cash_transaction: Pagamentos de Dinheiro
+    user_card: Cartões
+    category: Categorias
+    entity: Entidades
     pix: Pix
     investment: Investimento

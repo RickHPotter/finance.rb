@@ -17,17 +17,19 @@
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <main class="antialiased">
-      <div class="p-3">
-        <%= turbo_frame_tag :notification do %>
-          <%= render "shared/flash" %>
-        <% end %>
-        <%= render "shared/dark_mode" %>
-      </div>
+    <%= content_tag :main, class: "antialiased container pt-4 px-1 mx-auto" do %>
+      <%= turbo_frame_tag :notification do %>
+        <%= render "shared/flash" %>
+      <% end %>
+      <%= render "shared/dark_mode" %>
 
-      <%= content_tag :section, class: "container mx-auto flex #{@mobile ? 'p-0 mt-2' : 'px-5 mt-16'}" do %>
+      <%= content_tag :section, class: "flex mt-10" do %>
         <% yield %>
       <% end %>
-    </main>
+    <% end %>
   </body>
 </html>
+
+<script>
+  window.APP_LOCALE = "<%= I18n.locale %>"
+</script>

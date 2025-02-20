@@ -13,13 +13,11 @@
 
     <div class="p-2 flex items-center justify-between">
       <div class="flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false,
-                         id: "checkbox_#{card_installment.id}",
-                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
+        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{card_installment.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
 
         <span class="ml-2 cursor-move">↕</span>
       </div>
-      <div class="py-2 text-slate-900 flex items-center justify-center"><%= l card_installment.date, format: "%d %b %Y" %></div>
+      <div class="py-2 text-slate-900 flex items-center justify-center"><%= l card_installment.date, format: :short %></div>
     </div>
 
     <div class="py-2 col-span-3 flex items-center justify-center font-semibold whitespace-nowrap">
@@ -47,7 +45,7 @@
       <% end %>
     <% end %>
 
-    <div class="py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap text-right">
+    <div class="py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto">
       <%= from_cent_based_to_float(card_installment.price, "R$") %>
     </div>
 

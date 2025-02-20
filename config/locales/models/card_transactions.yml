@@ -8,17 +8,21 @@ en:
       card_transaction:
         id: ID
         description: Description
+        description_placeholder: Card Transaction Name
         comment: Comment
+        comment_placeholder: Any comment about?
         date: Date
         price: Price
         starting_price: Original Price
         user_card_id: Card
-        entity_id: Entity
-        category: Category
         month: Month
         year: Year
         card_installment: Installment
         card_installments_count: Installments Count
+        category_id: Category
+        entity_id: Entity
+        categories: Categories
+        entities: Entities
         total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
@@ -33,17 +37,21 @@ pt-BR:
       card_transaction:
         id: ID
         description: Descricão
+        description_placeholder: Nome da Transação
         comment: Comentário
+        comment_placeholder: Algum comentário?
         date: Data
         price: Preço
         starting_price: Preço Inicial
         user_card_id: Cartão
-        entity_id: Entidade
-        category: Categoria
         month: Mês
         year: Ano
         card_installment: Parcela
         card_installments_count: Quantidade de Parcelas
+        category_id: Categoria
+        entity_id: Entidade
+        categories: Categorias
+        entities: Entidades
         total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em

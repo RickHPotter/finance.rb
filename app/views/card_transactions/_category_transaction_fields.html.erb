@@ -7,7 +7,7 @@
       <%= content_tag :div, class: "category_transaction_container inline-flex items-center px-2 py-1 me-2 text-sm font-medium rounded-md border border-black #{category_transaction&.category&.bg_colour}" do %>
         <%= content_tag :span, category_transaction&.category&.category_name, class: "category_transaction_category_name" %>
 
-        <%= button_tag "Remove",
+        <%= button_tag "",
                        type: :button,
                        class: "inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
                        aria_label: "Remove",
