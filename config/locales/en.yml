@@ -1,0 +1,7 @@
+en:
+  date:
+    formats:
+      shorter: "%d %b"
+  time:
+    formats:
+      shorter: "%d %b, %H:%M"

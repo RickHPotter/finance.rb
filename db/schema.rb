@@ -76,6 +76,10 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.boolean "built_in", default: false, null: false
     t.boolean "active", default: true, null: false
     t.string "colour", default: "white", null: false
+    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "card_transactions_total", default: 0, null: false
+    t.integer "cash_transactions_count", default: 0, null: false
+    t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -97,6 +101,10 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.boolean "active", default: true, null: false
+    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "card_transactions_total", default: 0, null: false
+    t.integer "cash_transactions_count", default: 0, null: false
+    t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -174,6 +182,8 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.integer "account_number"
     t.boolean "active", default: true, null: false
     t.integer "balance", default: 0, null: false
+    t.integer "cash_transactions_count", default: 0, null: false
+    t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "bank_id", null: false
     t.datetime "created_at", null: false
@@ -190,6 +200,8 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.integer "min_spend", null: false
     t.integer "credit_limit", null: false
     t.boolean "active", default: true, null: false
+    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "card_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "card_id", null: false
     t.datetime "created_at", null: false

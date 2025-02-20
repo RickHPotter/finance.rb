@@ -55,6 +55,14 @@ class Category < ApplicationRecord
     COLOURS.dig(colour, :text)
   end
 
+  def update_card_transactions_count_and_total
+    update_columns(card_transactions_count: card_transactions.count, card_transactions_total: card_transactions.sum(:price))
+  end
+
+  def update_cash_transactions_count_and_total
+    update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -76,14 +84,18 @@ end
 #
 # Table name: categories
 #
-#  id            :bigint           not null, primary key
-#  active        :boolean          default(TRUE), not null
-#  built_in      :boolean          default(FALSE), not null
-#  category_name :string           not null, indexed => [user_id]
-#  colour        :string           default("white"), not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#  user_id       :bigint           not null, indexed, indexed => [category_name]
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  built_in                :boolean          default(FALSE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  category_name           :string           not null, indexed => [user_id]
+#  colour                  :string           default("white"), not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed, indexed => [category_name]
 #
 # Indexes
 #

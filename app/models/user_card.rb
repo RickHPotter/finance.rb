@@ -29,6 +29,10 @@ class UserCard < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def update_card_transactions_total
+    update_columns(card_transactions_total: card_transactions.sum(:price))
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -75,18 +79,20 @@ end
 #
 # Table name: user_cards
 #
-#  id                   :bigint           not null, primary key
-#  active               :boolean          default(TRUE), not null
-#  credit_limit         :integer          not null
-#  current_closing_date :date             not null
-#  current_due_date     :date             not null
-#  days_until_due_date  :integer          not null
-#  min_spend            :integer          not null
-#  user_card_name       :string           not null, indexed
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#  card_id              :bigint           not null, indexed
-#  user_id              :bigint           not null, indexed
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  credit_limit            :integer          not null
+#  current_closing_date    :date             not null
+#  current_due_date        :date             not null
+#  days_until_due_date     :integer          not null
+#  min_spend               :integer          not null
+#  user_card_name          :string           not null, indexed
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  card_id                 :bigint           not null, indexed
+#  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #

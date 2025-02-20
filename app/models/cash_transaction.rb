@@ -13,7 +13,7 @@ class CashTransaction < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, optional: true
-  belongs_to :user_bank_account, optional: true
+  belongs_to :user_bank_account, counter_cache: true, optional: true
 
   has_many :card_installments, dependent: :destroy
   has_many :investments, dependent: :destroy
@@ -24,6 +24,8 @@ class CashTransaction < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
+  after_save :update_associations_count_and_total
+  after_destroy :update_associations_count_and_total
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -41,6 +43,12 @@ class CashTransaction < ApplicationRecord
   def build_month_year
     set_month_year
     cash_installments.each(&:build_month_year)
+  end
+
+  def update_associations_count_and_total
+    user_bank_account&.update_cash_transactions_total
+    categories.each(&:update_cash_transactions_count_and_total)
+    entities.each(&:update_cash_transactions_count_and_total)
   end
 
   # @protected_instance_methods ...............................................

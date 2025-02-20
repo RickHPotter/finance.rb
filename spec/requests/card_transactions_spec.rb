@@ -13,9 +13,9 @@ RSpec.describe "CardTransactions", type: :request do
 
   let(:card_transaction) do
     Params::CardTransactions.new(
-      card_transaction: { price: -200.0, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
+      card_transaction: { price: -20_000, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
       card_installments: { count: 1 }, category_transactions: [],
-      entity_transactions: [ { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] } ]
+      entity_transactions: [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] } ]
     )
   end
 

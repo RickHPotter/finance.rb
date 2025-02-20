@@ -53,7 +53,7 @@ module Import
 
       entity = find_or_create_entity(transaction[:entity]) if transaction[:entity].present?
       entity_transactions = []
-      entity_transactions << { entity_id: entity.id, is_payer: false, price: 0.00, exchanges_attributes: [] } if entity.present?
+      entity_transactions << { entity_id: entity.id, is_payer: false, price: 0, exchanges_attributes: [] } if entity.present?
 
       [ category_transactions, entity_transactions ]
     end

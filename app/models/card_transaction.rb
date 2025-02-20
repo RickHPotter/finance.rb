@@ -15,13 +15,15 @@ class CardTransaction < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
-  belongs_to :user_card
+  belongs_to :user_card, counter_cache: true
 
   # @validations ..............................................................
   validates :description, :card_installments_count, presence: true
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
+  after_save :update_associations_count_and_total
+  after_destroy :update_associations_count_and_total
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -65,6 +67,12 @@ class CardTransaction < ApplicationRecord
     return if paid.present?
 
     self.paid = false
+  end
+
+  def update_associations_count_and_total
+    user_card.update_card_transactions_total
+    categories.each(&:update_card_transactions_count_and_total)
+    entities.each(&:update_card_transactions_count_and_total)
   end
 end
 

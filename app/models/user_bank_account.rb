@@ -22,6 +22,10 @@ class UserBankAccount < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def update_cash_transactions_total
+    update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end
@@ -30,15 +34,17 @@ end
 #
 # Table name: user_bank_accounts
 #
-#  id             :bigint           not null, primary key
-#  account_number :integer
-#  active         :boolean          default(TRUE), not null
-#  agency_number  :integer
-#  balance        :integer          default(0), not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
-#  bank_id        :bigint           not null, indexed
-#  user_id        :bigint           not null, indexed
+#  id                      :bigint           not null, primary key
+#  account_number          :integer
+#  active                  :boolean          default(TRUE), not null
+#  agency_number           :integer
+#  balance                 :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  bank_id                 :bigint           not null, indexed
+#  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #

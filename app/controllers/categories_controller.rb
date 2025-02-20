@@ -11,7 +11,7 @@ class CategoriesController < ApplicationController
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
 
-    @categories = Logic::Categories.find_by(current_user, conditions)
+    @categories = current_user.categories.where(conditions).order(category_name: :asc)
   end
 
   def show; end

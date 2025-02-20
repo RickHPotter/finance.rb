@@ -8,6 +8,10 @@ class CreateCategories < ActiveRecord::Migration[8.0]
       t.boolean :built_in, null: false, default: false
       t.boolean :active, null: false, default: true
       t.string :colour, null: false, default: :white
+      t.integer :card_transactions_count, null: false, default: 0
+      t.integer :card_transactions_total, null: false, default: 0
+      t.integer :cash_transactions_count, null: false, default: 0
+      t.integer :cash_transactions_total, null: false, default: 0
 
       t.references :user, null: false, foreign_key: true
 

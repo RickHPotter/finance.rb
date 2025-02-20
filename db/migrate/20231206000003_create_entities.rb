@@ -6,6 +6,10 @@ class CreateEntities < ActiveRecord::Migration[8.0]
     create_table :entities do |t|
       t.string :entity_name, null: false
       t.boolean :active, null: false, default: true
+      t.integer :card_transactions_count, null: false, default: 0
+      t.integer :card_transactions_total, null: false, default: 0
+      t.integer :cash_transactions_count, null: false, default: 0
+      t.integer :cash_transactions_total, null: false, default: 0
 
       t.references :user, null: false, foreign_key: true
 

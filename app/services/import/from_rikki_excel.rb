@@ -22,7 +22,8 @@ module Import
 
       fix_user_card_dates
       set_category_colours
-    rescue StandardError
+    rescue StandardError => e
+      Rails.logger.error("ERROR: #{e.message}")
       debugger if Rails.env.development? # rubocop:disable Lint/Debugger
 
       raise
