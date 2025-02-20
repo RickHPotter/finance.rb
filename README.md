@@ -287,7 +287,7 @@ Possible Downtime: 6 months and a half
     - ✅ Create spec for `ExchangeCashTransactable` Concern.
   - ✅ Fix `FIXMEs`, `TODOs`, and such.
   - ✅ Come to a decision regarding the change of Dark Mode to `Flowbite`.
-  - ⌛ Fix locale from end to end in the application.
+  - ✅ Fix locale from end to end in the application.
   - ✅ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
   - ⌛ Create search sub_menu in `CardTransaction`'s `:index`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
@@ -298,3 +298,4 @@ Possible Downtime: 6 months and a half
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.
   - ✅ Add colour column for `Category` and `ColourPicker` Component for its form.
+  - ✅ Add icon column for `Entity` and `IconPicker` Component for its form.

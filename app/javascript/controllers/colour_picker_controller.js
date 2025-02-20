@@ -14,7 +14,7 @@ export default class extends Controller {
     const bg = target.dataset.bg
 
     this.selectedColourTarget.value = name
-    this.colourIndicatorTarget.className = `w-6 h-6 rounded-full border border-slate-200 ${bg}`
+    this.colourIndicatorTarget.className = `w-10 h-10 rounded-full border border-slate-200 ${bg}`
 
     this.colourOptionContainerTarget.classList.add("hidden")
   }

@@ -101,6 +101,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.boolean "active", default: true, null: false
+    t.string "avatar_name", default: "0.png", null: false
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "card_transactions_total", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false

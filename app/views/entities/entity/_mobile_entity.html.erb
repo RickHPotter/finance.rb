@@ -2,7 +2,7 @@
   <div class="p-4 bg-gradient-to-r from-slate-700 via-slate-400 to-white">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <%= render "shared/svgs/user" %> <!-- # TODO: create icons for entities -->
+        <%= image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full" %>
         <%= content_tag :span, entity.entity_name, class: "text-lg font-semibold text-black" %>
       </div>
     </div>

@@ -1,32 +1,32 @@
 <% content_for(:auth_header) do %>
-  <%= content_tag :h2, t(:create_your_account), class: "mt-6 text-center text-3xl font-bold tracking-tight text-gray-900" %>
-  <p class="mt-2 mb-6 text-center text-sm text-gray-600">
+  <%= content_tag :h2, t(:create_your_account), class: "mt-3 text-center text-5xl font-bold tracking-tight text-gray-900" %>
+  <p class="mt-3 text-center text-gray-600">
     <%= t(:already_have_an_account) %>
     <%= link_to t(:sign_in), new_session_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
 <% end %>
 
-<%= form_for resource, as: resource_name, url: registration_path(resource_name), data: { turbo: false, controller: "form-validate" } do |f| %>
+<%= form_for resource, as: resource_name, url: registration_path(resource_name), class: "text-lg", data: { turbo: false, controller: "form-validate" } do |f| %>
 
   <%= render "devise/shared/error_messages", resource: %>
 
-  <div class="mb-6 text-blue-700">
+  <div class="mb-4 text-blue-700">
     <%= render Components::TextFieldComponent.new(f, :first_name, svg: :user, placeholder: model_attribute(resource, :first_name), autofocus: true) %>
   </div>
 
-  <div class="mb-6 text-blue-700">
+  <div class="mb-4 text-blue-700">
     <%= render Components::TextFieldComponent.new(f, :last_name, svg: :user_group, placeholder: model_attribute(resource, :last_name)) %>
   </div>
 
-  <div class="mb-6 text-blue-700">
+  <div class="mb-4 text-blue-700">
     <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, placeholder: model_attribute(resource, :email)) %>
   </div>
 
-  <div class="mb-6 text-blue-700">
+  <div class="mb-4 text-blue-700">
     <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :password)) %>
   </div>
 
-  <div class="mb-6 text-blue-700">
+  <div class="mb-4 text-blue-700">
     <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :password_confirmation)) %>
 
     <% if @minimum_password_length %>

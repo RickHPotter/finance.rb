@@ -16,11 +16,11 @@
   </head>
 
   <body class="bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <div class="flex min-h-1.5 flex-col justify-center py-12 sm:px-6 md:px-8">
-      <img class="mx-auto h-48 w-auto" src="https://raw.githubusercontent.com/RickHPotter/finance.rb/main/public/sept_logo_candidates/IMG-20240113-WA0018.jpg" alt="Sept">
+    <div class="flex min-h-1 flex-col justify-center pt-10 sm:px-6 md:px-8">
+      <%= content_tag :img, nil, src: asset_path("logo.jpg"), class: "mx-auto h-72 w-auto", alt: "Sept Mizu" %>
       <%= yield(:auth_header) if content_for?(:auth_header) %>
 
-      <div class="mt-10 sm:mx-auto sm:w-full md:max-w-md lg:scale-125">
+      <div class="mt-10 sm:mx-auto sm:w-full md:max-w-md">
         <div class="bg-white p-8 shadow-md rounded-lg xs:px-10">
           <%= yield %>
         </div>

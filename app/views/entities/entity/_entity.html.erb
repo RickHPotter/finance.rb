@@ -7,8 +7,9 @@
       <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{entity.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
     </div>
 
-    <div class="px-1 flex items-center mx-auto font-semibold">
-      <%= content_tag :span, entity.entity_name, class: "px-4 whitespace-nowrap border-1 border-zinc-600 rounded-full" %>
+    <div class="px-1 flex items-center justify-between font-semibold">
+      <%= image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full" %>
+      <%= content_tag :span, entity.entity_name, class: "px-4 whitespace-nowrap" %>
     </div>
 
     <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">

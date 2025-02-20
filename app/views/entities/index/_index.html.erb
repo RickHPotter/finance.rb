@@ -13,27 +13,34 @@
 
 <div class="min-w-full pt-2">
   <%= turbo_frame_tag :entities do %>
-    <div class="mb-8" data-datatable-target="table">
-      <div class="bg-slate-300 rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
-        <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
-          <div class="col-span-2"></div>
-          <%= content_tag :div, pluralise_model(CardTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
-          <%= content_tag :div, pluralise_model(CashTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
-          <div></div>
+    <div class="min-h-screen" data-controller="datatable">
+      <%= text_field_tag :search, nil,
+                          type: :text, placeholder: "#{action_message(:search)}...",
+                          class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                          data: { action: "input->datatable#filter" } %>
+
+      <div class="my-4" data-datatable-target="table">
+        <div class="bg-slate-300 rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
+          <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+            <div class="col-span-2"></div>
+            <%= content_tag :div, pluralise_model(CardTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
+            <%= content_tag :div, pluralise_model(CashTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
+            <div></div>
+          </div>
+
+          <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+            <div></div>
+            <%= content_tag :div, model_attribute(Entity, :entity_name), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
+
+            <%= content_tag :div, t(:datatable_actions), class: "text-center" %>
+          </div>
+
+          <%= render @entities %>
         </div>
-
-        <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
-          <div></div>
-          <%= content_tag :div, model_attribute(Entity, :entity_name), class: "text-center" %>
-          <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
-          <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
-          <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
-          <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
-
-          <%= content_tag :div, t(:datatable_actions), class: "text-center" %>
-        </div>
-
-        <%= render @entities %>
       </div>
     </div>
   <% end %>

@@ -1,6 +1,5 @@
 <%= turbo_frame_tag dom_id entity do %>
   <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-
     <%= form.hidden_field :user_id, value: @user.id %>
 
     <div class="w-full mb-6">
@@ -8,6 +7,10 @@
             :entity_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
             data: { reactive_form_target: :input, placeholder: model_attribute(entity, :entity_name), placeholder_type: :word } %>
+    </div>
+
+    <div class="inline-block mx-auto py-2">
+      <%= render Components::IconPicker.new(form:, field: :avatar_name) %>
     </div>
 
     <div>
@@ -22,3 +25,8 @@
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>
+
+<div class="title-sm font-thin text-slate-300 pt-3">
+  <span>Person icons created by </span>
+  <a class="underline" href="https://www.flaticon.com/free-icons/person" title="person icons">Vitaly Gorbachev - Flaticon</a>
+</div>
