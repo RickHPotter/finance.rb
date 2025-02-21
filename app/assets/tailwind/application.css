@@ -5,9 +5,11 @@
 
 @config "../../../config/tailwind.config.js";
 @source "../../../config/safelist.txt";
+@source "../stylesheets/components/tom-select.css";
+@source "../stylesheets/components/select.css";
 
 @theme {
-  --breakpoint-xxs: 530px;
+  --breakpoint-xxs: 390px;
 
   --color-meat: oklch(75.81% 0.1357 38.2);
   --color-lettuce: oklch(76.59% 0.1419 130.84);
@@ -67,7 +69,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .hw-combobox__main__wrapper {
     @apply w-full;
     @apply ps-10;
-    @apply py-[10px];
   }
 
   .hw-combobox__icon {
@@ -109,4 +110,48 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .user-icon {
   --hw-icon-image: url("data:image/svg+xml,%3Csvg class='w-6 h-6 text-gray-800 dark:text-white' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='currentColor' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 6a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm-1.5 8a4 4 0 0 0-4 4 2 2 0 0 0 2 2h7a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-3Zm6.82-3.096a5.51 5.51 0 0 0-2.797-6.293 3.5 3.5 0 1 1 2.796 6.292ZM19.5 18h.5a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-1.1a5.503 5.503 0 0 1-.471.762A5.998 5.998 0 0 1 19.5 18ZM4 7.5a3.5 3.5 0 0 1 5.477-2.889 5.5 5.5 0 0 0-2.796 6.293A3.501 3.501 0 0 1 4 7.5ZM7.1 12H6a4 4 0 0 0-4 4 2 2 0 0 0 2 2h.5a5.998 5.998 0 0 1 3.071-5.238A5.505 5.505 0 0 1 7.1 12Z' clip-rule='evenodd'/%3E%3C/svg%3E%0A");
+}
+
+.ts-wrapper {
+  @apply !p-0
+}
+
+.ts-wrapper .ts-control {
+  @apply border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent shadow-none
+}
+
+.ts-wrapper.plugin-remove_button .item {
+  @apply rounded bg-gray-100 px-1.5
+}
+
+.ts-wrapper.multi .ts-control > div {
+  @apply p-0 m-0 pl-1
+}
+
+.ts-wrapper.plugin-remove_button .item .remove {
+  @apply border-none text-lg leading-none py-1 rounded-r-lg
+}
+
+.ts-dropdown {
+  @apply rounded-md border border-solid border-t border-gray-300
+}
+
+.ts-dropdown [data-selectable].option:first-child {
+  @apply rounded-t-md
+}
+
+.ts-dropdown [data-selectable].option:last-child {
+  @apply rounded-b-md
+}
+.ts-dropdown .create:hover, .ts-dropdown .option:hover, .ts-dropdown .active {
+  @apply bg-blue-100 text-blue-900
+}
+
+.plugin-clear_button .clear-button {
+  @apply opacity-100 !bg-transparent !text-black my-auto
+}
+
+.ts-wrapper.multi .ts-control>div {
+  margin: 0 !important;
+  padding: 0 !important;
 }

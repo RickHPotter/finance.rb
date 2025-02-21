@@ -8,9 +8,8 @@
       role="list">
 
     <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
-    <% width = @mobile ? "" : "w-1/#{@items.count}" %>
     <% @items.each_with_index do |item, index| %>
-      <li class="z-30 flex-auto text-center <%= width %>" data-material-tailwind-tab-target="tabItem">
+      <%= content_tag :li, class: "z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
         <%= link_to item.link,
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },
@@ -22,10 +21,9 @@
               <%= render item.icon %>
             <% end %>
 
-            <% class_html = @mobile ? "text-nowrap text-sm font-light" : "text-md font-bold" %>
-            <%= content_tag :span, item.label, class: "ml-1 pointer-events-none text-slate-700 dark:text-slate-200 #{class_html}" %>
+            <%= content_tag :span, item.label, class: "ml-1 pointer-events-none text-slate-700 dark:text-slate-200 md:text-md md:font-bold text-nowrap text-sm font-light" %>
           <% end %>
-      </li>
+        <% end %>
     <% end %>
   </ul>
 

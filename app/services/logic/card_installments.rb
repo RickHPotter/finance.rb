@@ -32,9 +32,11 @@ module Logic
     def self.find_ref_month_year_by_params(user, params)
       month_year = params.delete(:month_year)
       conditions = get_conditions_from_params(params)
+      inclusions = { card_transaction: %i[categories entities] }
+      inclusions[:card_transaction] << :user_card if params[:user_card_id].blank?
 
       user.card_installments
-          .includes(card_transaction: %i[categories entities])
+          .includes(inclusions)
           .where(conditions)
           .where("TO_CHAR(installments.date, 'YYYYMM') = ?", month_year)
           .order("installments.date DESC")

@@ -33,7 +33,7 @@ module Components
     #
     def initialize(form, field, items = nil, **options)
       @form = form
-      @object = form.object || form.options[:parent_builder].object
+      @object = form.object || form.options[:parent_builder]&.object
       @items = items
       @field = field
       @wrapper = options.delete(:wrapper) || true

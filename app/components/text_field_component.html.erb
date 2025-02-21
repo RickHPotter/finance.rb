@@ -2,7 +2,7 @@
   <div class="relative w-full">
 <% end %>
 
-  <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+  <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1">
     <%= render "shared/svgs/#{options[:svg]}" if options[:svg] %>
   </div>
   <% if options[:type] == :select && items.present? %>

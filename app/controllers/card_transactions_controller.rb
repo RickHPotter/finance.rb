@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 # Controller for CardTransaction
-# FIXME: fix Metrics/ClassLength
 class CardTransactionsController < ApplicationController
   include TabsConcern
 
@@ -12,10 +11,8 @@ class CardTransactionsController < ApplicationController
   def index
     @user_card ||= current_user.user_cards.find_by(id: params[:user_card_id])                  if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
-    # FIXME: not always there will be a user_card # or maybe there should be a search action on its owns
-    @user_card ||= current_user.user_cards.active.order(:user_card_name).first
 
-    new_index_variables
+    index_variables(@user_card.card_installments)
     respond_to do |format|
       format.html
       format.turbo_stream do
@@ -24,10 +21,19 @@ class CardTransactionsController < ApplicationController
     end
   end
 
-  # FIXME: fix me later
-  def new_index_variables
-    min_date = @user_card.card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    max_date = @user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+  def search
+    index_variables(current_user.card_installments)
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        set_tabs(active_menu: :card, active_sub_menu: :search)
+      end
+    end
+  end
+
+  def index_variables(card_installments)
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     @years = (min_date.year..max_date.year)
     @active_month_year = Date.current.strftime("%Y%m")
     @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
@@ -37,6 +43,7 @@ class CardTransactionsController < ApplicationController
   def month_year
     @month_year = params[:month_year]
     @month_year_str = I18n.l(Date.parse("#{@month_year[0..3]}-#{@month_year[4..]}-01"), format: "%B %Y")
+    @user_card_id = params[:user_card_id]
 
     @card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, params)
   end

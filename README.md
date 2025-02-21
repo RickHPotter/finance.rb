@@ -289,11 +289,12 @@ Possible Downtime: 6 months and a half
   - ✅ Come to a decision regarding the change of Dark Mode to `Flowbite`.
   - ✅ Fix locale from end to end in the application.
   - ✅ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
-  - ⌛ Create search sub_menu in `CardTransaction`'s `:index`.
+  - ✅ Create search sub_menu in `CardTransaction`'s `:index`.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
   - ⌛ Add form for `UserBankAccount`.
   - ⌛ Add form for `CashTransaction`.
+  - ⌛ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
 - Extra:
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.

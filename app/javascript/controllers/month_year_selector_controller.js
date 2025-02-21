@@ -73,8 +73,13 @@ export default class extends Controller {
 
     const parentFrame = document.querySelector("turbo-frame#month_year_container")
     const frame = document.createElement("turbo-frame")
+    let src = `/card_transactions/month_year?month_year=${month}`
+    if(this.userCardId) {
+      src += `&user_card_id=${this.userCardId}`
+    }
+
     frame.id = `month_year_container_${month}`
-    frame.src = `/card_transactions/month_year?month_year=${month}&user_card_id=${this.userCardId}`
+    frame.src = src
 
     const currentFrames = Array.from(parentFrame.children)
                                .map(e => e.id.replace("month_year_container_", ""))

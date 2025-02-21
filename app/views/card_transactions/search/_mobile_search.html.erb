@@ -1,0 +1,57 @@
+<div class="w-full">
+  <div class="min-w-full pt-2">
+    <%= turbo_frame_tag :card_transactions do %>
+      <div class="min-h-screen" data-controller="datatable">
+        <div class="flex flex-auto justify-center gap-4 mb-4">
+          <%= render "shared/month_year_selector", default_year: Date.current.year, years: @years, active_month_years: [ @active_month_year ], title: action_message(:search) %>
+        </div>
+
+        <div class="mb-6 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
+          <%= form_with model: CardTransaction.new, url: search_card_transactions_path, class: "w-full", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" } do |form| %>
+            <div class="grid grid-cols-1 gap-y-2 mb-2">
+              <%= render Components::TextFieldComponent.new(form, :search_term, svg: :magnifying_glass, placeholder: "#{action_message(:search)}...") %>
+              <%= render Components::TextFieldComponent.new(form, :category_ids, @categories, type: :select, multiple: true, data: { controller: "select", placeholder: pluralise_model(Category, 2) }) %>
+              <%= render Components::TextFieldComponent.new(form, :entity_ids, @entities, type: :select, multiple: true, data: { controller: "select", placeholder: pluralise_model(Entity, 2) }) %>
+            </div>
+
+            <div class="grid grid-cols-12 gap-2 font-graduate">
+              <div class="col-span-5">
+                <%= render Components::TextFieldComponent.new form, :from_price, svg: :money, value: from_cent_based_to_float(0, "R$"), data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+              </div>
+              <div class="col-span-2 flex flex-col items-center justify-self-center scale-80 mt-[-0.5rem]">
+                <%= thin_label(form, :price) %>
+                <%= render "shared/svgs/exchange" %>
+              </div>
+              <div class="col-span-5">
+                <%= render Components::TextFieldComponent.new form, :to_price, svg: :money, value: from_cent_based_to_float(0, "R$"), data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+              </div>
+
+              <div class="col-span-5">
+                <%= render Components::TextFieldComponent.new form, :from_installments_count, type: :number, svg: :number, min: 1, max: 72, value: 1 %>
+              </div>
+              <div class="col-span-2 flex flex-col items-center justify-self-center scale-80 mt-[-0.5rem]">
+                <%= thin_label(form, :card_installments_count_short) %>
+                <%= render "shared/svgs/exchange" %>
+              </div>
+              <div class="col-span-5">
+                <%= render Components::TextFieldComponent.new form, :to_installments_count, type: :number, svg: :number, min: 1, max: 72, value: 1 %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+
+        <%= turbo_frame_tag :month_year_container do %>
+          <%= turbo_frame_tag "month_year_container_#{@active_month_year}", src: month_year_card_transactions_path(month_year: @active_month_year) %>
+        <% end %>
+      </div>
+
+      <%= link_to new_card_transaction_path(format: :turbo_stream),
+                  style: "margin: 30px",
+                  class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
+                  data: { turbo_frame: :center_container } do %>
+        <%= render "shared/svgs/bigger_plus" %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

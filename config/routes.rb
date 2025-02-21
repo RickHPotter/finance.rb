@@ -17,7 +17,10 @@ Rails.application.routes.draw do
   resources :categories
   resources :cash_transactions
   resources :card_transactions do
-    collection { get :month_year }
+    collection do
+      get :month_year
+      get :search
+    end
   end
 
   root "pages#index"

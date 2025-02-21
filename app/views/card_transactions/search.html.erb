@@ -1,0 +1,4 @@
+<%= turbo_frame_tag :center_container do %>
+  <% path = @mobile ? "mobile_search" : "search" %>
+  <%= render "card_transactions/search/#{path}" %>
+<% end %>

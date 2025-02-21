@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// TODO: form-validate does not work anymore, fix it or leave it, probably not important
+// TODO: form-validate only works for input fields, no hotwire-combobox
 // Connects to data-controller="form-validate"
 export default class extends Controller {
   static targets = ["field"]

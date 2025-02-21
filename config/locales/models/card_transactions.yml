@@ -19,6 +19,7 @@ en:
         year: Year
         card_installment: Installment
         card_installments_count: Installments Count
+        card_installments_count_short: Installments
         category_id: Category
         entity_id: Entity
         categories: Categories
@@ -48,6 +49,7 @@ pt-BR:
         year: Ano
         card_installment: Parcela
         card_installments_count: Quantidade de Parcelas
+        card_installments_count_short: Parcelas
         category_id: Categoria
         entity_id: Entidade
         categories: Categorias

@@ -1,7 +1,7 @@
 <%= turbo_frame_tag dom_id card_installment do %>
   <% card_transaction = card_installment.card_transaction %>
 
-  <% solid_colour_or_gradient = card_transaction.categories.first.bg_colour %>
+  <% solid_colour_or_gradient = card_transaction.categories.first&.bg_colour %>
   <% if card_transaction.categories.count > 1 %>
     <% solid_colour_or_gradient = [ card_transaction.categories.first.from_bg, *card_transaction.categories[1..-2].map(&:via_bg), card_transaction.categories.last.to_bg ].join(" ") %>
   <% end %>
@@ -17,15 +17,21 @@
 
         <span class="ml-2 cursor-move">↕</span>
       </div>
-      <div class="py-2 text-slate-900 flex items-center justify-center"><%= l card_installment.date, format: :short %></div>
+      <%= content_tag :span, l(card_installment.date, format: :shorter), class: "px-1 rounded-sm text-slate-900 mx-auto" %>
     </div>
 
-    <div class="py-2 col-span-3 flex items-center justify-center font-semibold whitespace-nowrap">
-      <%= card_transaction.description %>
-      <% if card_installment.card_installments_count > 1 %>
-        <span class="inline-flex items-center justify-center px-1 m-1 rounded-sm bg-white">
-          <%= "#{card_installment.number}/#{card_installment.card_installments_count}" %>
-        </span>
+    <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2">
+      <% if @user_card_id.nil? %>
+        <%= link_to card_transaction.user_card.user_card_name,
+                    card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-950 border-1 border-slate-200 text-slate-200",
+                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+      <% end %>
+
+      <%= content_tag :span, card_transaction.description, class: "flex-1 truncate text-md" %>
+      <% if card_installment.card_installments_count > 0 %>
+        <% installments_content = [ format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count) ].join("/") %>
+        <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-20' if card_transaction.card_installments_count == 1}" %>
       <% end %>
     </div>
 
