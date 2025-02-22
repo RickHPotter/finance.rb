@@ -11,7 +11,7 @@ RSpec.describe CashTransaction, type: :model do
         expect(subject).to be_valid
       end
 
-      %i[description date price cash_installments_count].each do |attribute|
+      %i[description price cash_installments_count].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
     end

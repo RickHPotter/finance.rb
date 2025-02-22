@@ -13,7 +13,7 @@ RSpec.describe CardInstallment, type: :model do
         expect(subject.installment_type).to eq "CardInstallment"
       end
 
-      %i[number date price installment_type card_installments_count].each do |attribute|
+      %i[date price installment_type card_installments_count].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
     end

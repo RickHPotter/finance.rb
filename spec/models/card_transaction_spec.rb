@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe CardTransaction, type: :model do
-  let(:user_card) { build(:user_card, :random) }
+  let(:user_card) { create(:user_card, :random) }
   let(:card_transaction) { build(:card_transaction, :random, user_card:) }
 
   describe "[ activerecord validations ]" do

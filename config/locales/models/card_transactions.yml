@@ -6,6 +6,8 @@ en:
         other: Card Transactions
     attributes:
       card_transaction:
+        self: Card Transaction
+        count: Count
         id: ID
         description: Description
         description_placeholder: Card Transaction Name
@@ -27,6 +29,13 @@ en:
         total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
+        search_term: Search Term
+        from_ct_price: Card Transaction Price 1
+        to_ct_price: Card Transaction Price 2
+        from_price: Card Installment Price 1
+        to_price: Card Installment Price 2
+        from_installments_count: Card Installments Count 1
+        to_installments_count: Card Installments Count 2
 
 pt-BR:
   activerecord:
@@ -36,6 +45,8 @@ pt-BR:
         other: Transações
     attributes:
       card_transaction:
+        self: Transação
+        count: Quantidade
         id: ID
         description: Descricão
         description_placeholder: Nome da Transação
@@ -57,3 +68,10 @@ pt-BR:
         total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em
+        search_term: Termo de Busca
+        from_ct_price: Preço da Transação 1
+        to_ct_price: Preço da Transação 2
+        from_price: Preço da Parcela 1
+        to_price: Preço da Parcela 2
+        from_installments_count: Quantidade de Parcelas 1
+        to_installments_count: Quantidade de Parcelas 2

@@ -9,8 +9,10 @@ class CardTransactionsController < ApplicationController
   before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
+    search_variables
     @user_card ||= current_user.user_cards.find_by(id: params[:user_card_id])                  if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
+    @user_card_id = @user_card&.id
 
     index_variables(@user_card.card_installments)
     respond_to do |format|
@@ -23,6 +25,8 @@ class CardTransactionsController < ApplicationController
 
   def search
     index_variables(current_user.card_installments)
+    search_variables
+
     respond_to do |format|
       format.html
       format.turbo_stream do
@@ -35,9 +39,23 @@ class CardTransactionsController < ApplicationController
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     @years = (min_date.year..max_date.year)
-    @active_month_year = Date.current.strftime("%Y%m")
+    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]) : [ Date.current.strftime("%Y%m") ]
     @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
     @entities = current_user.entities.active.order(:entity_name).pluck(:entity_name, :id)
+  end
+
+  def search_variables
+    @user_card_id = search_card_transaction_params[:user_card_id]
+    @user_card = current_user.user_cards.find_by(id: @user_card_id)
+    @search_term = search_card_transaction_params[:search_term]
+    @category_ids = search_card_transaction_params[:category_ids]
+    @entity_ids = search_card_transaction_params[:entity_ids]
+    @from_ct_price = search_card_transaction_params[:from_ct_price]
+    @to_ct_price = search_card_transaction_params[:to_ct_price]
+    @from_price = search_card_transaction_params[:from_price]
+    @to_price = search_card_transaction_params[:to_price]
+    @from_installments_count = search_card_transaction_params[:from_installments_count]
+    @to_installments_count = search_card_transaction_params[:to_installments_count]
   end
 
   def month_year
@@ -119,6 +137,14 @@ class CardTransactionsController < ApplicationController
   # Use callbacks to share common setup or constraints between actions.
   def set_card_transaction
     @card_transaction = CardTransaction.find(params[:id])
+  end
+
+  def search_card_transaction_params
+    return {} if params[:card_transaction].blank?
+
+    params.require(:card_transaction).permit(
+      %i[search_term from_ct_price to_ct_price from_price to_price from_installments_count to_installments_count], category_ids: [], entity_ids: []
+    )
   end
 
   # Only allow a list of trusted parameters through.

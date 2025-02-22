@@ -4,7 +4,7 @@ const active_bg = [ "bg-blue-200", "text-blue-800" ]
 const inactive_bg = [ "bg-slate-100", "text-gray-800" ]
 
 export default class extends Controller {
-  static targets = ["monthYearContainer", "monthYear"]
+  static targets = ["monthYearContainer", "monthYear", "monthYears"]
 
   connect() {
     this.initialise()
@@ -71,32 +71,45 @@ export default class extends Controller {
     target.classList.remove(...inactive_bg)
     target.classList.add(...active_bg)
 
-    const parentFrame = document.querySelector("turbo-frame#month_year_container")
-    const frame = document.createElement("turbo-frame")
-    let src = `/card_transactions/month_year?month_year=${month}`
-    if(this.userCardId) {
-      src += `&user_card_id=${this.userCardId}`
-    }
+    this.monthYearsTarget.value = JSON.stringify(Array.from(document.activeMonths))
 
-    frame.id = `month_year_container_${month}`
-    frame.src = src
+    const formId = this.element.dataset.formId
+    const form = document.getElementById(formId)
+    form.requestSubmit()
 
-    const currentFrames = Array.from(parentFrame.children)
-                               .map(e => e.id.replace("month_year_container_", ""))
-                               .map(Number)
-
-    currentFrames.push(month)
-    currentFrames.sort((a, b) => a - b)
-
-    const index = currentFrames.indexOf(month)
-
-    const nextSibling = parentFrame.querySelector(`#month_year_container_${currentFrames[index + 1]}`)
-
-    if (nextSibling) {
-      nextSibling.insertAdjacentElement("beforeBegin", frame)
-    } else {
-      parentFrame.appendChild(frame)
-    }
+    // let src = `/card_transactions/month_year?month_year=${month}`
+    // if(this.userCardId) {
+    //   src += `&user_card_id=${this.userCardId}`
+    // }
+    //
+    // const parentFrame = document.querySelector("turbo-frame#month_year_container")
+    //
+    // frames.forEach(frame => {
+    //   frame.src = src
+    //   frame.reload
+    // })
+    //
+    // const frame = document.createElement("turbo-frame")
+    //
+    // frame.id = `month_year_container_${month}`
+    // frame.src = src
+    //
+    // const currentFrames = Array.from(parentFrame.children)
+    //                            .map(e => e.id.replace("month_year_container_", ""))
+    //                            .map(Number)
+    //
+    // currentFrames.push(month)
+    // currentFrames.sort((a, b) => a - b)
+    //
+    // const index = currentFrames.indexOf(month)
+    //
+    // const nextSibling = parentFrame.querySelector(`#month_year_container_${currentFrames[index + 1]}`)
+    //
+    // if (nextSibling) {
+    //   nextSibling.insertAdjacentElement("beforeBegin", frame)
+    // } else {
+    //   parentFrame.appendChild(frame)
+    // }
   }
 
   _removeMonthYearContainer(target, month) {

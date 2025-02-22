@@ -1,0 +1,110 @@
+<%= form_with model: CardTransaction.new,
+              url:,
+              id: :search_form,
+              class: "w-full",
+              data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" } do |form| %>
+
+  <div class="mb-6 flex gap-4 flex-wrap">
+    <%= render "shared/month_year_selector", form_id: :search_form,
+                                             default_year: Date.current.year,
+                                             years: @years,
+                                             active_month_years: @active_month_years,
+                                             title: @user_card&.user_card_name || action_message(:search) %>
+  </div>
+
+  <%= form.text_field :user_card_id, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || @user_card_id, class: :hidden %>
+
+  <div class="grid grid-cols-1 gap-y-2 mb-2">
+    <%= render Components::TextFieldComponent.new(form, :search_term,
+                                                  svg: :magnifying_glass,
+                                                  autofocus: true,
+                                                  placeholder: "#{action_message(:search)}...",
+                                                  value: @search_term,
+                                                  data: { action: "input->reactive-form#submit" }) %>
+
+    <div class="relative w-full">
+      <%= form.select :category_ids, @categories,
+                      { multiple: true, selected: @category_ids },
+                      { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } } %>
+    </div>
+
+    <%= form.select :entity_ids, @entities,
+                    { multiple: true, selected: @entity_ids },
+                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } } %>
+
+  </div>
+
+  <div class="grid grid-cols-38 gap-x-2 font-graduate">
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :from_ct_price,
+            svg: :money,
+            value: @from_ct_price || from_cent_based_to_float(0, "R$"),
+            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+    </div>
+
+    <div class="col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75">
+      <%= thin_label(form, :price) %>
+      <%= render "shared/svgs/exchange" %>
+      <%= thin_label(form, :self) %>
+    </div>
+
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :to_ct_price,
+            svg: :money,
+            value: @to_ct_price || nil,
+            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+    </div>
+
+    <hr class="hidden lg:block transform rotate-90 my-auto border-1 border-slate-300">
+
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :from_price,
+            svg: :money,
+            value: @from_price || from_cent_based_to_float(0, "R$"),
+            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+    </div>
+
+    <div class="col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]">
+      <%= thin_label(form, :price) %>
+      <%= render "shared/svgs/exchange" %>
+      <%= thin_label(form, :card_installment) %>
+    </div>
+
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :to_price,
+            svg: :money,
+            value: @to_price || nil,
+            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+    </div>
+
+    <hr class="hidden lg:block transform rotate-90 my-auto border-1 border-slate-300">
+
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :from_installments_count,
+            type: :number,
+            svg: :number,
+            min: 1, max: 72, value: @from_installments_count || 1,
+            data: { action: "input->reactive-form#submit" } %>
+    </div>
+
+    <div class="col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]">
+      <%= thin_label(form, :count) %>
+      <%= render "shared/svgs/exchange" %>
+      <%= thin_label(form, :card_installment) %>
+    </div>
+
+    <div class="col-span-16 lg:col-span-5 my-auto">
+      <%= render Components::TextFieldComponent.new \
+            form, :to_installments_count,
+            type: :number,
+            svg: :number,
+            min: 1, max: 72, value: @to_installments_count || 72,
+            data: { action: "input->reactive-form#submit" } %>
+    </div>
+  </div>
+<% end %>

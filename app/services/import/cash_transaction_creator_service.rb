@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Import
-  class CashTransactionCreatorService # rubocop:disable Metrics/ClassLength
+  class CashTransactionCreatorService
     attr_reader :hash_collection
     attr_accessor :transactions_collection
 

@@ -1,2 +1,8 @@
 <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-<%= turbo_stream.replace(:center_container, template: "card_transactions/index") %>
+<%= turbo_stream.replace("month_year_container",
+                         partial: "card_transactions/month_year_container",
+                         locals: { user_card_id: @user_card_id, search_term: @search_term, category_ids: @category_ids, entity_ids: @entity_ids,
+                                   from_ct_price: @from_ct_price, to_ct_price: @to_ct_price,
+                                   from_price: @from_price, to_price: @to_price,
+                                   from_installments_count: @from_installments_count, to_installments_count: @to_installments_count,
+                                   active_month_years: @active_month_years }) %>

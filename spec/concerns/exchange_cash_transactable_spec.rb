@@ -132,18 +132,18 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
 
         non_exchangable_card_transaction.category_transactions = exchangable_card_transaction.category_transactions
         non_exchangable_card_transaction.entity_transactions   = exchangable_card_transaction.entity_transactions
-        non_exchangable_card_transaction.entity_transactions.first.exchanges.each { |exchange| exchange.exchange_type = :non_monetary }
       end
 
       it "attaches Exchanges when categories.include?(exchange_category) && entity_transaction.is_payer && exchange.non_monetary?" do
-        non_exchangable_card_transaction.save
+        non_exchangable_card_transaction.entity_transactions.first.exchanges.each { |exchange| exchange.exchange_type = :non_monetary }
+        non_exchangable_card_transaction.reload
 
         expect(non_exchangable_card_transaction.entity_transactions.first.exchanges).to be_present
       end
 
       it "attaches EXCHANGE RETURN CashTransactions when categories.include?(exchange_category) && entity_transaction.is_payer && exchange.monetary?" do
         non_exchangable_card_transaction.entity_transactions.first.exchanges.each { |exchange| exchange.exchange_type = :monetary }
-        non_exchangable_card_transaction.save
+        non_exchangable_card_transaction.reload
 
         expect(non_exchangable_card_transaction.categories).to include(exchange_category)
         validate(non_exchangable_card_transaction, 180, 2)

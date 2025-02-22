@@ -1,4 +1,32 @@
 <%= turbo_frame_tag :center_container do %>
-  <% path = @mobile ? "mobile_search" : "search" %>
-  <%= render "card_transactions/search/#{path}" %>
+  <div class="w-full">
+    <div class="min-w-full pt-2">
+      <%= turbo_frame_tag :card_transactions do %>
+        <div class="min-h-screen" data-controller="datatable">
+          <div class="mb-6 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
+            <%= render "card_transactions/shared/index_search_form", url: search_card_transactions_path %>
+          </div>
+
+          <%= render "card_transactions/month_year_container", user_card_id: @user_card_id,
+                                                               search_term: @search_term,
+                                                               category_ids: @category_ids,
+                                                               entity_ids: @entity_ids,
+                                                               from_ct_price: @from_ct_price,
+                                                               to_ct_price: @to_ct_price,
+                                                               from_price: @from_price,
+                                                               to_price: @to_price,
+                                                               from_installments_count: @from_installments_count,
+                                                               to_installments_count: @to_installments_count,
+                                                               active_month_years: @active_month_years %>
+        </div>
+
+        <%= link_to new_card_transaction_path(format: :turbo_stream),
+                    style: "margin: 30px",
+                    class: "block md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
+                    data: { turbo_frame: :center_container } do %>
+          <%= render "shared/svgs/bigger_plus" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
 <% end %>

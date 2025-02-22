@@ -142,6 +142,16 @@ export default class extends Controller {
     nested_div.remove()
   }
 
+  // search
+  submit() {
+    this.debounceTimeout = null
+    clearTimeout(this.debounceTimeout)
+    this.debounceTimeout = setTimeout(() => {
+      this.element.requestSubmit()
+      sleep(() => { this.applyMasks() })
+    }, 500)
+  }
+
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
@@ -150,16 +160,18 @@ export default class extends Controller {
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░  ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓████████▓▒░
 
-  _applyMask(value) {
-    value = value.replace(/\D/g, '')
-    value = (value / 100).toFixed(2).toString()
-    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+_applyMask(value) {
+  const isNegative = value.startsWith("-")
 
-    return "R$ " + value
-  }
+  value = value.replace(/[^\d]/g, "")
+  value = (value / 100).toFixed(2).toString()
+  value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+  return (isNegative ? "-R$ " : "R$ ") + value
+}
 
   _removeMask(value) {
-    return value.replace(/[^\d]/g, "")
+    return value.replace(/[^\d-]/g, "")
   }
 
   // Installments

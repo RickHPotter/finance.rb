@@ -1,4 +1,6 @@
-<%= content_tag :div, class: "w-full", data: { controller: "month-year-selector" } do %>
+<%= content_tag :div, class: "w-full", data: { controller: "month-year-selector", form_id: } do %>
+  <%= text_field_tag :active_month_years, active_month_years.to_json, id: :month_years_array, class: "hidden", data: { month_year_selector_target: "monthYears" } %>
+
   <% years.each do |year| %>
     <%= content_tag :div, class: ("active" if year == default_year).to_s, data: { month_year_selector_target: "monthYearContainer", year: } do %>
       <div class="flex justify-between">
@@ -22,9 +24,11 @@
       <%= content_tag :div, class: "grid 2xl:grid-cols-12 xl:grid-cols-6 lg:grid-cols-4 grid-cols-3 pt-3 gap-2" do %>
         <% (1..12).each do |month| %>
           <% month_year = Date.new(year, month, 1).strftime("%Y%m") %>
-          <%= link_to "#",
-                      class: "w-full px-3 py-2 rounded-lg font-medium text-lg hover:bg-blue-100 transition-colors",
-                      data: { month_year_selector_target: "monthYear", action: "click->month-year-selector#toggleMonth", month_year:, active: active_month_years.include?(month_year) } do %>
+          <%= link_to "#", class: "w-full px-3 py-2 rounded-lg font-medium text-lg hover:bg-blue-100 transition-colors",
+                           data: { month_year_selector_target: "monthYear",
+                                   action: "click->month-year-selector#toggleMonth click->reactive-form#applyMasks",
+                                   month_year:,
+                                   active: active_month_years.include?(month_year) } do %>
             <%= content_tag :span, I18n.t("date.abbr_month_names")[month], class: "block sm:hidden pointer-events-none" %>
             <%= content_tag :span, I18n.t("date.month_names")[month], class: "hidden sm:block pointer-events-none" %>
           <% end %>

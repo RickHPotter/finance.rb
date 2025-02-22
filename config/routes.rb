@@ -19,7 +19,8 @@ Rails.application.routes.draw do
   resources :card_transactions do
     collection do
       get :month_year
-      get :search
+      match :index, via: %i[get post]
+      match :search, via: %i[get post]
     end
   end
 

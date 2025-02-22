@@ -152,6 +152,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .ts-wrapper.multi .ts-control>div {
-  margin: 0 !important;
-  padding: 0 !important;
+  margin: 0 0 0 12px !important;
+  padding: 0 0 0 12px !important;
+}
+
+.plugin-clear_button .ts-control {
+  @apply !pl-[12px] !pr-[12px]
 }

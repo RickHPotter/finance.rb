@@ -19,5 +19,11 @@ export default class extends Controller {
       allowEmptyOption: true,
       placeholder: this.element.dataset.placeholder
     });
+
+    if (!this.element.querySelector(".clear-button")) { return }
+
+    this.element.querySelector(".clear-button").addEventListener("click", () => {
+      this.element.querySelector("select").dispatchEvent(new Event("change"))
+    })
   }
 }
