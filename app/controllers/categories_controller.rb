@@ -3,7 +3,6 @@
 class CategoriesController < ApplicationController
   include TabsConcern
 
-  before_action :set_user, only: %i[index new create edit update destroy]
   before_action :set_category, only: %i[edit update destroy]
   before_action :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 

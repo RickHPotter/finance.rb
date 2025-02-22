@@ -38,18 +38,6 @@ module TranslateHelper
     I18n.t("activerecord.models.#{model.model_name.singular}", count:)
   end
 
-  # Takes a notification key and returns the translated notification message.
-  #
-  # @example Get notification message:
-  #   notification(:user_card_need_for_card_transaction)
-  #   # => "Please add a user card before creating a card transaction."
-  #
-  # @return [String] Translated notification message.
-  #
-  def notification(notification)
-    I18n.t("notification.#{notification}")
-  end
-
   # Takes a notification key and a model class and returns the translated notification message.
   #
   # @example Get notification message:

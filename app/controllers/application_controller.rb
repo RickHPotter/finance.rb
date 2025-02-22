@@ -18,23 +18,23 @@ class ApplicationController < ActionController::Base
     devise_parameter_sanitizer.permit(:account_update, keys: %i[first_name last_name])
   end
 
-  def set_user
-    @user = current_user if user_signed_in?
-  end
-
   def set_cards
     @cards = Card.order(:card_name).pluck(:card_name, :id)
   end
 
   def set_user_cards
-    @user_cards = @user.user_cards.active.order(:user_card_name).pluck(:user_card_name, :id)
+    @user_cards = current_user.user_cards.active.order(:user_card_name).pluck(:user_card_name, :id)
   end
 
   def set_categories
-    @categories = @user.custom_categories.active.order(:category_name).pluck(:category_name, :id)
+    @categories = current_user.custom_categories.active.order(:category_name).pluck(:category_name, :id)
   end
 
   def set_entities
-    @entities = @user.entities.active.order(:entity_name).pluck(:entity_name, :id)
+    @entities = current_user.entities.active.order(:entity_name).pluck(:entity_name, :id)
+  end
+
+  def set_all_categories
+    @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
   end
 end

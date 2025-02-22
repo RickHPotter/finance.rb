@@ -1,6 +1,6 @@
 <%= turbo_frame_tag dom_id entity do %>
   <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-    <%= form.hidden_field :user_id, value: @user.id %>
+    <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
@@ -28,5 +28,8 @@
 
 <div class="title-sm font-thin text-slate-300 pt-3">
   <span>Person icons created by </span>
-  <a class="underline" href="https://www.flaticon.com/free-icons/person" title="person icons">Vitaly Gorbachev - Flaticon</a>
+  <a class="underline" href="https://www.flaticon.com/authors/vitaly-gorbachev" title="person icons">Vitaly Gorbachev - Flaticon</a>
+  <br>
+  <span>Dog icons created by </span>
+  <a class="underline" href="https://www.flaticon.com/authors/maxim-kulikov" title="person icons">Maxim Kulikov - Flaticon</a>
 </div>

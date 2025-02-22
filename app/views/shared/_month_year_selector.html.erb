@@ -9,7 +9,7 @@
                       class: "p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors #{'opacity-0 pointer-events-none' if year == years.first}",
                       data: { action: "click->month-year-selector#prevYear", year: } %>
 
-          <%= content_tag :span, year, id: :month_year_selector_title, class: "text-lg font-bold rounded-md bg-transparent border-1 border-purple-600 p-1" %>
+          <%= content_tag :span, year, id: :month_year_selector_title, class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-600 p-1" %>
 
           <%= link_to "→", "#",
                       class: "p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors #{'opacity-0 pointer-events-none' if year == years.last}",
@@ -17,16 +17,16 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <%= content_tag :span, title, id: :month_year_selector_title, class: "text-lg font-bold rounded-md bg-transparent border-1 border-purple-600 p-1" %>
+          <%= yield %>
         </div>
       </div>
 
       <%= content_tag :div, class: "grid 2xl:grid-cols-12 xl:grid-cols-6 lg:grid-cols-4 grid-cols-3 pt-3 gap-2" do %>
         <% (1..12).each do |month| %>
-          <% month_year = Date.new(year, month, 1).strftime("%Y%m") %>
-          <%= link_to "#", class: "w-full px-3 py-2 rounded-lg font-medium text-lg hover:bg-blue-100 transition-colors",
+          <% month_year = Date.new(year, month, 1).strftime("%Y%m").to_i %>
+          <%= link_to "#", class: "w-full px-3 py-2 rounded-md shadow-sm font-medium text-lg hover:bg-blue-100 transition-colors",
                            data: { month_year_selector_target: "monthYear",
-                                   action: "click->month-year-selector#toggleMonth click->reactive-form#applyMasks",
+                                   action: "click->month-year-selector#toggleMonth",
                                    month_year:,
                                    active: active_month_years.include?(month_year) } do %>
             <%= content_tag :span, I18n.t("date.abbr_month_names")[month], class: "block sm:hidden pointer-events-none" %>

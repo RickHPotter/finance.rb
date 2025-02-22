@@ -3,7 +3,7 @@
 # Controller for CashTransaction
 class CashTransactionsController < ApplicationController
   before_action :set_cash_transaction, only: %i[show update destroy]
-  before_action :set_user, :set_entities, :set_categories, only: %i[new create edit update]
+  before_action :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     @cash_installments = Logic::CashInstallments.find_by_span(current_user, 6)

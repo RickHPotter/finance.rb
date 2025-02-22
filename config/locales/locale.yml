@@ -13,7 +13,7 @@ en:
     destroyeda: "%{model} was successfully destroyed."
     not_destroyeda: "%{model} was not destroyed."
     not_destroyed_because_has_transactions: "%{model} with transactions cannot be deleted."
-    user_card_need_for_card_transaction: Please add a user card before creating a card transaction.
+    user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
   confirmation:
@@ -83,7 +83,7 @@ pt-BR:
     destroyeda: "%{model} foi excluída com sucesso."
     not_destroyeda: "%{model} não foi excluída."
     not_destroyed_because_has_transactions: "%{model} com transações não pode ser excluído."
-    user_card_need_for_card_transaction: Por favor, adicione um cartão antes de criar uma transação.
+    user_card_needed: Por favor, adicione um cartão antes de criar uma %{model}.
     alert: "Atenção!"
     notice: "Aviso"
   gerund:

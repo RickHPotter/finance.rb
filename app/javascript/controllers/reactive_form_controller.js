@@ -139,17 +139,19 @@ export default class extends Controller {
     removed_option.classList.remove("hidden")
     removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
 
-    nested_div.remove()
+    nested_div.style.display = "none"
+    nested_div.querySelector("input[name*='_destroy']").value = "true"
   }
 
   // search
   submit() {
     this.debounceTimeout = null
+
     clearTimeout(this.debounceTimeout)
     this.debounceTimeout = setTimeout(() => {
       this.element.requestSubmit()
       sleep(() => { this.applyMasks() })
-    }, 500)
+    }, 800)
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -160,15 +162,15 @@ export default class extends Controller {
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░  ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓████████▓▒░
 
-_applyMask(value) {
-  const isNegative = value.startsWith("-")
+  _applyMask(value) {
+    const isNegative = value.startsWith("-")
 
-  value = value.replace(/[^\d]/g, "")
-  value = (value / 100).toFixed(2).toString()
-  value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+    value = value.replace(/[^\d]/g, "")
+    value = (value / 100).toFixed(2).toString()
+    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 
-  return (isNegative ? "-R$ " : "R$ ") + value
-}
+    return (isNegative ? "-R$ " : "R$ ") + value
+  }
 
   _removeMask(value) {
     return value.replace(/[^\d-]/g, "")

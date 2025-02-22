@@ -1,5 +1,4 @@
 <%= content_tag :div,
-                id: "user_card_#{user_card.id}",
                 class: "grid grid-cols-9 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
                 data: { id: user_card.id, datatable_target: :row } do %>
 
@@ -15,7 +14,7 @@
       <%= content_tag :span, brand_and_name, class: "px-4 whitespace-nowrap" %>
     </div>
 
-    <div class="px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">
+    <div class="jump_to_card_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">
       <% if user_card.card_transactions_count > 0 %>
         <%= link_to user_card.card_transactions_count,
                     card_transactions_path(user_card_id: user_card.id, format: :turbo_stream),
@@ -32,11 +31,11 @@
 
 
     <div class="flex items-center justify-center text-lg whitespace-nowrap ml-auto pr-2 border-r border-black">
-      <%= content_tag :span, l(user_card.current_closing_date, format: :shorter) %>
+      <%= content_tag :span, l(user_card.current_closing_date, format: :shorter), class: "current_closing_date" %>
     </div>
 
     <div class="flex items-center justify-center text-lg whitespace-nowrap mr-auto">
-      <%= content_tag :span, l(user_card.current_due_date, format: :shorter) %>
+      <%= content_tag :span, l(user_card.current_due_date, format: :shorter), class: "current_due_date" %>
     </div>
 
     <div class="flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto">

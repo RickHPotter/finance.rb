@@ -14,7 +14,7 @@ module FeatureHelper
     visit root_path
     fill_in "user_email", with: user.email
     fill_in "user_password", with: user.password
-    click_on "Log in"
+    click_on I18n.t(:sign_in)
   end
 
   def navigate_to(menu:, sub_menu:)
@@ -41,8 +41,28 @@ module FeatureHelper
       find(".hw-combobox__listbox li[data-value='#{with}']", match: :first).click
     end
   end
+
+  def card_transactions_search_form_params(only: nil, except: [])
+    only ||= %i[category_ids entity_ids]
+    params_to_return = only - except
+
+    params = {}
+    within "turbo-frame#card_transactions #search_form" do
+      # params[:search_term] = find("#card_transaction_search_term").text if params_to_return.include?(:search_term)
+
+      within "#card_transaction_category_ids" do
+        params[:category_ids] = find("option:checked").value if params_to_return.include?(:category_ids) && page.has_css?("option:checked")
+      end
+      within "#card_transaction_entity_ids" do
+        params[:entity_ids] = find("option:checked").value if params_to_return.include?(:entity_ids) && page.has_css?("option:checked")
+      end
+    end
+
+    params
+  end
 end
 
 RSpec.configure do |config|
   config.include FeatureHelper
+  config.include TranslateHelper
 end

@@ -1,5 +1,4 @@
 <%= content_tag :div,
-                id: "entity_#{entity.id}",
                 class: "grid grid-cols-7 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
                 data: { id: entity.id, datatable_target: :row } do %>
 
@@ -12,10 +11,10 @@
       <%= content_tag :span, entity.entity_name, class: "px-4 whitespace-nowrap" %>
     </div>
 
-    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="jump_to_card_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.card_transactions_count > 0 %>
         <%= link_to entity.card_transactions_count,
-                    card_transactions_path(entity_id: entity.id, format: :turbo_stream),
+                    search_card_transactions_path(entity_id: entity.id, format: :turbo_stream),
                     class: "text-indigo-600 hover:underline",
                     data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       <% else %>
@@ -27,7 +26,7 @@
       <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$") %>
     </div>
 
-    <div class="px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
+    <div class="jump_to_cash_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.cash_transactions_count > 0 %>
         <%= link_to entity.cash_transactions_count,
                     cash_transactions_path(entity_id: entity.id, format: :turbo_stream),

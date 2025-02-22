@@ -11,10 +11,10 @@
   <div class="p-4">
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
-        <%= link_to card_transactions_path(category_id: category.id, format: :turbo_stream), class: "flex items-center text-sm font-medium text-slate-500", data: { turbo_frame: :center_container } do %>
+        <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
           <%= render "shared/svgs/number" %>
           <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "ml-2" %>
-        <% end  %>
+        <% end %>
 
         <div class="flex items-center">
           <%= content_tag :span, category.card_transactions_count, class: "text-sm font-semibold text-slate-800" %>
@@ -30,7 +30,7 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(category.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to card_transactions_path(category_id: category.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to search_card_transactions_path(category_id: category.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
             <%= render "shared/svgs/jump_to" %>
           <% end %>
         </div>
@@ -39,10 +39,10 @@
 
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
-        <%= link_to cash_transactions_path(category_id: category.id, format: :turbo_stream), class: "flex items-center text-sm font-medium text-slate-500", data: { turbo_frame: :center_container } do %>
+        <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
           <%= render "shared/svgs/number" %>
           <%= content_tag :span, pluralise_model(CashTransaction, 2), class: "ml-2" %>
-        <% end  %>
+        <% end %>
 
         <div class="flex items-center">
           <%= content_tag :span, category.cash_transactions_count, class: "text-sm font-semibold text-slate-800" %>

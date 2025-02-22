@@ -1,6 +1,6 @@
 <%= turbo_frame_tag dom_id cash_transaction do %>
   <%= form_with(model: cash_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-    <%= form.hidden_field :user_id, value: @user.id %>
+    <%= form.hidden_field :user_id, value: current_user.id %>
 
     <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, cash_transaction) } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>

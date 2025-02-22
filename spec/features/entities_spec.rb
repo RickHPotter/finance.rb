@@ -7,33 +7,31 @@ RSpec.describe "Entities", type: :feature do
   let(:entity_submenu) { FeatureHelper::ENTITY }
 
   let(:user) { create(:user, :random) }
+  let(:entity) { build(:entity, :random, user:) }
 
   before { sign_in_as(user:) }
 
   feature "/entities" do
     scenario "center_container is swapped for correct form" do
       navigate_to(menu: basic, sub_menu: entity_submenu)
-      match_center_container_content("new_entity")
+      match_center_container_content("entities")
     end
   end
 
-  feature "/entities/show" do
+  feature "/entities/index" do
     background do
+      entity.save
+      create_list(:card_transaction, 2, :random, user:, date: Date.current, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
       navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "jumping to card_transactions that belong to the newly-created entity" do
-      _entity = create(:entity, :random, user:)
-      click_on "Entities"
-      find("turbo-frame#center_container table tbody th:nth-child(1) span a", match: :first).click
+      find("#entity_#{entity.id} .jump_to_card_transactions a", match: :first).click
 
       match_center_container_content("card_transactions")
+      params = card_transactions_search_form_params
 
-      # TODO: search sub_menu was not yet created
-      # within "turbo-frame#center_container turbo-frame#card_transactions turbo-frame#filter_options" do
-      #   entity_name = find("#entity_filter", match: :first)
-      #   expect(entity_name).to have_content(entity.entity_name)
-      # end
+      expect(params[:entity_ids]).to eq(entity.id.to_s)
     end
   end
 
@@ -41,6 +39,7 @@ RSpec.describe "Entities", type: :feature do
     background do
       create(:user_card, :random, user:)
       navigate_to(menu: basic, sub_menu: entity_submenu)
+      click_on action_model(:newa, Entity)
     end
 
     scenario "creating an invalid entity" do
@@ -72,38 +71,33 @@ RSpec.describe "Entities", type: :feature do
 
   feature "/entities/edit" do
     background do
+      entity.save
       create(:user_card, :random, user:)
       navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "editing an invalid entity" do
-      entity = create(:entity, :random, user:)
-
       within "turbo-frame#center_container" do
-        click_on "Entities"
+        find("#edit_entity_#{entity.id}", match: :first).click
       end
 
-      match_center_container_content("entities")
-
-      find("#edit_entity_#{entity.id}", match: :first).click
-      fill_in "entity_entity_name", with: ""
-      find("form input[type=submit]", match: :first).click
+      within "turbo-frame#entity_#{entity.id} form" do
+        fill_in "entity_entity_name", with: ""
+        find("form input[type=submit]", match: :first).click
+      end
 
       expect(notification).to have_content(notification_model(:not_updateda, Entity))
     end
 
     scenario "editing a valid entity and getting redirected to card_transaction creation with entity already preselected" do
-      entity = create(:entity, :random, user:)
-
       within "turbo-frame#center_container" do
-        click_on "Entities"
         find("#edit_entity_#{entity.id}", match: :first).click
+      end
 
-        within "turbo-frame#entity_#{entity.id} form" do
-          fill_in "entity_entity_name", with: "Another Test Entity"
+      within "turbo-frame#entity_#{entity.id} form" do
+        fill_in "entity_entity_name", with: "Another Test Entity"
 
-          find("form input[type=submit]", match: :first).click
-        end
+        find("form input[type=submit]", match: :first).click
       end
 
       expect(notification).to have_content(notification_model(:updateda, Entity))
@@ -118,48 +112,38 @@ RSpec.describe "Entities", type: :feature do
 
       navigate_to(menu: basic, sub_menu: entity_submenu)
 
-      click_on "Entities"
-
-      within "turbo-frame#center_container table tbody #entity_#{entity.id}" do
-        expect(page).to have_selector("th:nth-child(1) span a", text: "Another Test Entity")
+      within "turbo-frame#entities turbo-frame#entity_#{entity.id}" do
+        expect(page).to have_selector("span", text: "Another Test Entity")
       end
     end
   end
 
   feature "/entities/destroy" do
     background do
+      entity.save
       navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
     scenario "destroying a entity that has no card_transactions" do
-      entity = create(:entity, :random, user:)
-
-      within "turbo-frame#center_container" do
-        click_on "Entities"
+      within "turbo-frame#entity_#{entity.id}" do
+        find("#delete_entity_#{entity.id}").click
       end
 
-      within "turbo-frame#entities table tbody" do
-        find("a#delete_entity_#{entity.id}", match: :first).click
-        expect(page).to_not have_css("tr#entity_#{entity.id}")
-      end
+      expect(page).to_not have_css("turbo-frame#entity_#{entity.id}")
 
       expect(notification).to have_content(notification_model(:destroyeda, Entity))
     end
 
     scenario "failing to destroy a entity that has card_transactions" do
-      entity = create(:entity, :random, user:)
       create_list(:card_transaction, 2, :random, user:, date: Date.current, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
 
-      within "turbo-frame#center_container" do
-        click_on "Entities"
+      within "turbo-frame#entity_#{entity.id}" do
+        find("#delete_entity_#{entity.id}").click
       end
 
-      within "turbo-frame#entities table tbody" do
-        find("a#delete_entity_#{entity.id}", match: :first).click
-        expect(page).to have_css("tr#entity_#{entity.id}")
-      end
+      expect(page).to have_css("turbo-frame#entity_#{entity.id}")
 
-      expect(notification).to have_content("Entity with transactions cannot be deleted.")
+      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactions, Entity))
     end
   end
 end

@@ -10,26 +10,26 @@ RSpec.describe "UserCards", type: :feature do
   let(:card) { build(:card, :random) }
   let(:current_closing_date) { Date.current + 4.days }
   let(:current_due_date) { Date.current + 9.days }
+  let(:user_card) { build(:user_card, :random, user:, card:, current_closing_date:, current_due_date:) }
 
   before { sign_in_as(user:) }
 
   feature "/user_cards" do
     scenario "center_container is swapped for correct form" do
       navigate_to(menu: basic, sub_menu: user_card_submenu)
-      match_center_container_content("new_user_card")
+      match_center_container_content("user_cards")
     end
   end
 
-  feature "/user_cards/show" do
+  feature "/user_cards/index" do
     background do
+      user_card.save
+      create_list(:card_transaction, 2, :random, user:, date: Date.current, user_card:)
       navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "jumping to card_transactions that belong to the newly-created user_card" do
-      user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
-
-      click_on "User Cards"
-      find("turbo-frame#center_container table tbody th:nth-child(2) span a", match: :first).click
+      find("#user_card_#{user_card.id} .jump_to_card_transactions a", match: :first).click
 
       match_center_container_content("card_transactions")
 
@@ -43,6 +43,7 @@ RSpec.describe "UserCards", type: :feature do
     background do
       card.save
       navigate_to(menu: basic, sub_menu: user_card_submenu)
+      click_on action_model(:new, UserCard)
     end
 
     scenario "creating an invalid user_card" do
@@ -85,18 +86,11 @@ RSpec.describe "UserCards", type: :feature do
   feature "/user_cards/edit" do
     background do
       card.save
+      user_card.save
       navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "editing an invalid user_card" do
-      user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
-
-      within "turbo-frame#center_container" do
-        click_on "User Cards"
-      end
-
-      match_center_container_content("user_cards")
-
       find("#edit_user_card_#{user_card.id}", match: :first).click
       fill_in "user_card_user_card_name", with: ""
       find("form input[type=submit]", match: :first).click
@@ -105,10 +99,7 @@ RSpec.describe "UserCards", type: :feature do
     end
 
     scenario "editing a valid user_card and getting redirected to card_transaction creation with user_card already preselected" do
-      user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
-
       within "turbo-frame#center_container" do
-        click_on "User Cards"
         find("#edit_user_card_#{user_card.id}", match: :first).click
 
         within "turbo-frame#user_card_#{user_card.id} form" do
@@ -138,50 +129,40 @@ RSpec.describe "UserCards", type: :feature do
 
       navigate_to(menu: basic, sub_menu: user_card_submenu)
 
-      click_on "User Cards"
-
-      within "turbo-frame#center_container table tbody #user_card_#{user_card.id}" do
-        expect(page).to have_selector("th:nth-child(2) span a", text: "Another Test Entity")
-        expect(page).to have_selector("th:nth-child(3)", text: I18n.l(current_closing_date + 2.days, format: :long))
-        expect(page).to have_selector("th:nth-child(4)", text: I18n.l(current_due_date     + 2.days, format: :long))
+      within "turbo-frame#user_cards turbo-frame#user_card_#{user_card.id}" do
+        expect(page).to have_selector("span", text: "Another Test Entity")
+        expect(page).to have_selector("span.current_closing_date", text: I18n.l(current_closing_date + 2.days, format: :shorter))
+        expect(page).to have_selector("span.current_due_date",     text: I18n.l(current_due_date     + 2.days, format: :shorter))
       end
     end
   end
 
   feature "/user_cards/destroy" do
     background do
+      user_card.save
       navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
     scenario "destroying a user_card that has no card_transactions" do
-      user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
-
-      within "turbo-frame#center_container" do
-        click_on "User Cards"
+      within "turbo-frame#user_card_#{user_card.id}" do
+        find("#delete_user_card_#{user_card.id}").click
       end
 
-      within "turbo-frame#user_cards table tbody" do
-        find("a#delete_user_card_#{user_card.id}", match: :first).click
-        expect(page).to_not have_css("tr#user_card_#{user_card.id}")
-      end
+      expect(page).to_not have_css("turbo-frame#user_card_#{user_card.id}")
 
       expect(notification).to have_content(notification_model(:destroyed, UserCard))
     end
 
     scenario "failing to destroy a user_card that has card_transactions" do
-      user_card = create(:user_card, :random, user:, card:, current_closing_date:, current_due_date:)
       create_list(:card_transaction, 2, :random, user:, date: Date.current, user_card:)
 
-      within "turbo-frame#center_container" do
-        click_on "User Cards"
+      within "turbo-frame#user_card_#{user_card.id}" do
+        find("#delete_user_card_#{user_card.id}").click
       end
 
-      within "turbo-frame#user_cards table tbody" do
-        find("a#delete_user_card_#{user_card.id}", match: :first).click
-        expect(page).to have_css("tr#user_card_#{user_card.id}")
-      end
+      expect(page).to have_css("turbo-frame#user_card_#{user_card.id}")
 
-      expect(notification).to have_content("User Card with transactions cannot be deleted.")
+      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactions, UserCard))
     end
   end
 end

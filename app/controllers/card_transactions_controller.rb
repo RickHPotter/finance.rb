@@ -6,7 +6,7 @@ class CardTransactionsController < ApplicationController
 
   before_action :set_tabs
   before_action :set_card_transaction, only: %i[edit update destroy]
-  before_action :set_user, :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
+  before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     search_variables
@@ -39,17 +39,15 @@ class CardTransactionsController < ApplicationController
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     @years = (min_date.year..max_date.year)
-    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]) : [ Date.current.strftime("%Y%m") ]
-    @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
-    @entities = current_user.entities.active.order(:entity_name).pluck(:entity_name, :id)
+    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : [ Date.current.strftime("%Y%m").to_i ]
+    set_all_categories
+    set_entities
   end
 
   def search_variables
-    @user_card_id = search_card_transaction_params[:user_card_id]
-    @user_card = current_user.user_cards.find_by(id: @user_card_id)
     @search_term = search_card_transaction_params[:search_term]
-    @category_ids = search_card_transaction_params[:category_ids]
-    @entity_ids = search_card_transaction_params[:entity_ids]
+    @category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
+    @entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
     @from_ct_price = search_card_transaction_params[:from_ct_price]
     @to_ct_price = search_card_transaction_params[:to_ct_price]
     @from_price = search_card_transaction_params[:from_price]
@@ -151,11 +149,12 @@ class CardTransactionsController < ApplicationController
   def card_transaction_params
     params.require(:card_transaction).permit(
       %i[id description comment date month year price user_id user_card_id],
-      category_transactions_attributes: %i[id category_id],
-      card_installments_attributes: %i[id number date month year price],
+      category_transactions_attributes: %i[id category_id _destroy],
+      card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price,
-        { exchanges_attributes: %i[id exchange_type price] }
+        { exchanges_attributes: %i[id exchange_type price _destroy] },
+        :_destroy
       ]
     )
   end
