@@ -14,6 +14,9 @@ en:
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        people: People
+        dogs: Dogs
+        cats: Cats
 
 pt-BR:
   activerecord:
@@ -31,3 +34,6 @@ pt-BR:
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        people: Pessoas
+        dogs: Cachorros
+        cats: Gatos

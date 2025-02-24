@@ -3,7 +3,7 @@
     <%= link_to t(:sign_out), destroy_user_session_path, data: { turbo_method: :delete } %>
     <%= button_tag class: "text-white bg-transparent rounded-sm scale-120", data: { pwa_installation_target: "installButton", action: "click->pwa-installation#install" } do %>
       <span class="pointer-events-none">
-        <%= render "shared/svgs/install" %>
+        <%= render_icon :install %>
       </span>
     <% end %>
 

@@ -18,7 +18,7 @@
                     tabindex: "-1" do %>
 
             <%= content_tag :span, class: "pointer-events-none" do %>
-              <%= render item.icon %>
+              <%= helpers.render_icon item.icon %>
             <% end %>
 
             <%= content_tag :span, item.label, class: "ml-1 pointer-events-none text-slate-700 dark:text-slate-200 md:text-md md:font-bold text-nowrap text-sm font-light" %>

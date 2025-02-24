@@ -488,6 +488,10 @@ GEM
       thor (~> 1.0)
       tilt (~> 2.0)
       yard (~> 0.9, >= 0.9.24)
+    solid_cache (1.0.7)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.4)
@@ -585,6 +589,7 @@ DEPENDENCIES
   shoulda-matchers
   simplecov
   solargraph
+  solid_cache
   stimulus-rails
   tailwindcss-rails
   turbo-rails

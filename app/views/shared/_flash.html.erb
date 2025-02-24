@@ -4,9 +4,9 @@
       <div class="max-w-sm w-full bg-white pointer-events-auto rounded-lg shadow-xs overflow-hidden p-4">
         <div class="flex items-start">
           <% if notice %>
-            <%= render "shared/svgs/check" %>
+            <%= render_icon :check %>
           <% else %>
-            <%= render "shared/svgs/destroy" %>
+            <%= render_icon :destroy %>
           <% end %>
 
           <div class="ml-3 w-0 flex-1 pt-0.5">

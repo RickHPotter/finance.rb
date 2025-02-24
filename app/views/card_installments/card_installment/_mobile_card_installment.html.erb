@@ -55,14 +55,14 @@
                       id: "edit_card_transaction_#{card_transaction.id}",
                       class: "text-white bg-blue-600 rounded-full shadow-lg",
                       data: { turbo_frame: :center_container } do %>
-            <%= render "shared/svgs/pencil" %>
+            <%= render_icon :pencil %>
           <% end %>
 
           <%= link_to card_transaction,
                       id: "delete_card_transaction_#{card_transaction.id}",
                       class: "text-red-600 bg-white rounded-full shadow-lg",
                       data: { turbo_method: :delete } do %>
-            <%= render "shared/svgs/destroy" %>
+            <%= render_icon :destroy %>
           <% end %>
         </div>
       <% end %>

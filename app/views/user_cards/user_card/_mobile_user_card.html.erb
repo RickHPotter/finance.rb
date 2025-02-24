@@ -2,7 +2,7 @@
   <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-700">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <%= render "shared/svgs/credit_card" %>
+        <%= render_icon :credit_card %>
         <% brand_name = user_card.card.card_name %>
         <% brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}" %>
 
@@ -10,7 +10,7 @@
       </div>
 
       <%= link_to card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container } do %>
-        <%= render "shared/svgs/jump_to" %>
+        <%= render_icon :jump_to %>
       <% end %>
     </div>
   </div>
@@ -19,7 +19,7 @@
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/number" %>
+          <%= render_icon :number %>
           <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -30,7 +30,7 @@
 
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/money" %>
+          <%= render_icon :money %>
           <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -43,7 +43,7 @@
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/calendar" %>
+          <%= render_icon :calendar %>
           <%= content_tag :span, model_attribute(UserCard, :current_closing_date), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -54,7 +54,7 @@
 
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/calendar" %>
+          <%= render_icon :calendar %>
           <%= content_tag :span, model_attribute(UserCard, :current_due_date), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -70,11 +70,11 @@
       <%= content_tag :div, class: "flex justify-between py-2" do %>
         <div class="flex items-center gap-3 ml-auto text-gray-900">
           <%= link_to edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}", data: { turbo_frame: :center_container } do %>
-            <%= render "shared/svgs/pencil" %>
+            <%= render_icon :pencil %>
           <% end %>
 
           <%= link_to user_card, id: "delete_user_card_#{user_card.id}", data: { turbo_method: :delete } do %>
-            <%= render "shared/svgs/rubbish" %>
+            <%= render_icon :rubbish %>
           <% end %>
         </div>
       <% end %>

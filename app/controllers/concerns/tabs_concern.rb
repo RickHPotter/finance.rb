@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :card, active_sub_menu: :WILL)
+  def set_tabs(active_menu: :basic, active_sub_menu: :entity)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -30,9 +30,9 @@ module TabsConcern
     set_cash_transaction_sublinks
 
     @main_items = [
-      { label: t("tabs.basic"),            icon: "shared/svgs/exchange", link: @new_tab.first.link,              default: @active_menu == :basic },
-      { label: t("tabs.card_transaction"), icon: "shared/svgs/wallet",   link: @card_transaction_tab.first.link, default: @active_menu == :card },
-      { label: t("tabs.cash_transaction"), icon: "shared/svgs/cash",     link: @cash_transaction_tab.first.link, default: @active_menu == :cash }
+      { label: t("tabs.basic"),            icon: :exchange, link: @new_tab.first.link,              default: @active_menu == :basic },
+      { label: t("tabs.card_transaction"), icon: :wallet,   link: @card_transaction_tab.first.link, default: @active_menu == :card },
+      { label: t("tabs.cash_transaction"), icon: :cash,     link: @cash_transaction_tab.first.link, default: @active_menu == :cash }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @main_tab = @main_items.map do |label, icon, link, default|
@@ -46,9 +46,9 @@ module TabsConcern
 
   def set_new_sublinks
     @new_items = [
-      { label: t("tabs.user_card"), icon: "shared/svgs/credit_card", link: user_cards_path, default: @active_sub_menu == :user_card },
-      { label: t("tabs.category"),  icon: "shared/svgs/category",    link: categories_path, default: @active_sub_menu == :category },
-      { label: t("tabs.entity"),    icon: "shared/svgs/user",        link: entities_path,   default: @active_sub_menu == :entity }
+      { label: t("tabs.user_card"), icon: :credit_card, link: user_cards_path, default: @active_sub_menu == :user_card },
+      { label: t("tabs.category"),  icon: :category,    link: categories_path, default: @active_sub_menu == :category },
+      { label: t("tabs.entity"),    icon: :user,        link: entities_path,   default: @active_sub_menu == :entity }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @new_tab = @new_items.map do |label, icon, link, default|
@@ -61,12 +61,12 @@ module TabsConcern
 
     @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      Components::TabsComponent::Item.new(user_card_name, "shared/svgs/credit_card", card_transactions_path(user_card_id:), default, :center_container)
+      Components::TabsComponent::Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, :center_container)
     end
 
     if @card_transaction_tab.present?
       @card_transaction_tab << Components::TabsComponent::Item.new(action_message(:search),
-                                                                   "shared/svgs/magnifying_glass",
+                                                                   :magnifying_glass,
                                                                    search_card_transactions_path,
                                                                    @active_sub_menu.to_sym == :search,
                                                                    :center_container)
@@ -74,13 +74,13 @@ module TabsConcern
     end
 
     @card_transaction_tab <<
-      Components::TabsComponent::Item.new(action_model(:new, UserCard), "shared/svgs/credit_card", new_user_card_path, false, :center_container)
+      Components::TabsComponent::Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, :center_container)
   end
 
   def set_cash_transaction_sublinks
     @cash_transaction_items = [
-      { label: t("tabs.pix"),        icon: "shared/svgs/mobile",      link: cash_transactions_path, default: @active_sub_menu == :pix },
-      { label: t("tabs.investment"), icon: "shared/svgs/trending_up", link: cash_transactions_path, default: @active_sub_menu == :investment }
+      { label: t("tabs.pix"),        icon: :mobile,      link: cash_transactions_path, default: @active_sub_menu == :pix },
+      { label: t("tabs.investment"), icon: :trending_up, link: cash_transactions_path, default: @active_sub_menu == :investment }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @cash_transaction_tab = @cash_transaction_items.map do |label, icon, link, default|

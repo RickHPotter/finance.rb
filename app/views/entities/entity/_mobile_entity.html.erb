@@ -12,7 +12,7 @@
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
-          <%= render "shared/svgs/number" %>
+          <%= render_icon :number %>
           <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "ml-2" %>
         <% end %>
 
@@ -23,7 +23,7 @@
 
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/money" %>
+          <%= render_icon :money %>
           <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -31,7 +31,7 @@
           <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
           <%= link_to search_card_transactions_path(entity_id: entity.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
-            <%= render "shared/svgs/jump_to" %>
+            <%= render_icon :jump_to %>
           <% end %>
         </div>
       </div>
@@ -40,7 +40,7 @@
     <div class="grid grid-cols-2 gap-4 my-2">
       <div class="space-y-1">
         <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
-          <%= render "shared/svgs/number" %>
+          <%= render_icon :number %>
           <%= content_tag :span, pluralise_model(CashTransaction, 2), class: "ml-2 truncate" %>
         <% end %>
 
@@ -51,7 +51,7 @@
 
       <div class="space-y-1">
         <div class="flex items-center space-x-2">
-          <%= render "shared/svgs/money" %>
+          <%= render_icon :money %>
           <%= content_tag :span, model_attribute(CashTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
         </div>
 
@@ -59,7 +59,7 @@
           <%= content_tag :span, from_cent_based_to_float(entity.cash_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
           <%= link_to cash_transactions_path(entity_id: entity.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
-            <%= render "shared/svgs/jump_to" %>
+            <%= render_icon :jump_to %>
           <% end %>
         </div>
       </div>
@@ -71,11 +71,11 @@
       <%= content_tag :div, class: "flex justify-between py-2" do %>
         <div class="flex items-center gap-3 ml-auto">
           <%= link_to edit_entity_path(entity), id: "edit_entity_#{entity.id}", data: { turbo_frame: :center_container } do %>
-            <%= render "shared/svgs/pencil" %>
+            <%= render_icon :pencil %>
           <% end %>
 
           <%= link_to entity, id: "delete_entity_#{entity.id}", data: { turbo_method: :delete } do %>
-            <%= render "shared/svgs/rubbish" %>
+            <%= render_icon :rubbish %>
           <% end %>
         </div>
       <% end %>
