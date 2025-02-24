@@ -3,7 +3,7 @@
 module Logic
   class CardInstallments
     def self.find_ref_month_year_by_params(user, params)
-      params = params.to_unsafe_h.symbolize_keys
+      params = params.symbolize_keys
       month_year = params.delete(:month_year)
       search_term = params.delete(:search_term) || ""
 
@@ -17,10 +17,8 @@ module Logic
           .includes(inclusions)
           .where(conditions)
           .where(search_term_condition)
-          .where("TO_CHAR(installments.date, 'YYYYMM') = ?", month_year)
+          .where("installments.date_year = ? AND installments.date_month = ?", month_year[0..3], month_year[4..])
           .order("installments.date DESC")
-          .sort
-          .reverse
     end
 
     def self.build_conditions_from_params(params)

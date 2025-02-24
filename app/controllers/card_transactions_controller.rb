@@ -61,7 +61,7 @@ class CardTransactionsController < ApplicationController
     @month_year_str = I18n.l(Date.parse("#{@month_year[0..3]}-#{@month_year[4..]}-01"), format: "%B %Y")
     @user_card_id = params[:user_card_id]
 
-    @card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, params)
+    @card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, params.to_unsafe_h)
   end
 
   def show; end

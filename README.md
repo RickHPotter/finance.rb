@@ -20,7 +20,7 @@
 
 ## INTRODUCTION
 
-The creation of this app came from the need to evaluate financial habits not as
+The creation of __30/Fev__ came from the need to evaluate financial habits not as
 a hobby, but as a necessity. I plan on making an easy-to-use app that will swift
 into your life and help you take care of what comes harder in life: stability and
 peace.
@@ -290,13 +290,15 @@ Possible Downtime: 6 months and a half
   - ✅ Fix locale from end to end in the application.
   - ✅ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
   - ✅ Create search sub_menu in `CardTransaction`'s `:index`.
+  - ⌛ Add form for `UserBankAccount`.
+  - ⌛ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
+  - ⌛ Create a `Budget` System.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
-  - ⌛ Add form for `UserBankAccount`.
-  - ⌛ Add form for `CashTransaction`.
-  - ⌛ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
 - Extra:
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.
   - ✅ Add colour column for `Category` and `ColourPicker` Component for its form.
   - ✅ Add icon column for `Entity` and `IconPicker` Component for its form.
+  - ✅ Create indexes on table around `CardTranscation`.
+  - ✅ Setup and use cache for static assets such as `svg icons`.

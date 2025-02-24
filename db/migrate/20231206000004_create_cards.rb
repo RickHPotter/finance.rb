@@ -9,8 +9,8 @@ class CreateCards < ActiveRecord::Migration[8.0]
       t.references :bank, null: false, foreign_key: true
 
       t.timestamps
-    end
 
-    add_index :cards, :card_name, unique: true
+      t.index [ "card_name" ], name: "index_cards_on_card_name", unique: true
+    end
   end
 end

@@ -72,10 +72,10 @@ end
 #  card_installments_count     :integer          default(0), not null
 #  comment                     :text
 #  date                        :date             not null
-#  description                 :string           not null
+#  description                 :string           not null, indexed
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
-#  price                       :integer          not null
+#  price                       :integer          not null, indexed
 #  starting_price              :integer          not null
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
@@ -86,6 +86,8 @@ end
 #
 # Indexes
 #
+#  idx_card_transactions_description_trgm                  (description) USING gin
+#  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)

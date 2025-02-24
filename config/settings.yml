@@ -1,20 +1,20 @@
 development:
   site:
-    name: Finance.rb
-    short_name: Finance.rb
+    name: 30/Fev
+    short_name: 30/Fev
     description: A simple way to manage your finances
     keywords: Finance, Budget, Money
 
 test:
   site:
-    name: Finance.rb
-    short_name: Finance.rb
+    name: 30/Fev
+    short_name: 30/Fev
     description: A simple way to manage your finances
     keywords: Finance, Budget, Money
 
 production:
   site:
-    name: Finance.rb
-    short_name: Finance.rb
+    name: 30/Fev
+    short_name: 30/Fev
     description: A simple way to manage your finances
     keywords: Finance, Budget, Money

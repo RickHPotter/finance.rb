@@ -15,13 +15,9 @@ class CreateEntities < ActiveRecord::Migration[8.0]
       t.references :user, null: false, foreign_key: true
 
       t.timestamps
+
+      t.index [ "entity_name" ], name: "index_entities_on_entity_name", unique: true
+      t.index %w[user_id entity_name], name: "index_entity_name_on_composite_key", unique: true
     end
-
-    add_index :entities, :entity_name, unique: true
-
-    add_index :entities,
-              %i[user_id entity_name],
-              unique: true,
-              name: "index_entity_name_on_composite_key"
   end
 end

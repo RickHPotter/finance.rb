@@ -39,7 +39,7 @@ end
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null
-#  avatar_name             :string           default("0.png"), not null
+#  avatar_name             :string           default("people/0.png"), not null
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null

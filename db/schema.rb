@@ -13,6 +13,7 @@
 ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "banks", force: :cascade do |t|
     t.string "bank_name", null: false
@@ -37,6 +38,8 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
+    t.index ["description"], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["price"], name: "idx_card_transactions_price"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
   end
@@ -101,7 +104,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.boolean "active", default: true, null: false
-    t.string "avatar_name", default: "0.png", null: false
+    t.string "avatar_name", default: "people/0.png", null: false
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "card_transactions_total", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false
@@ -146,6 +149,8 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "installments", force: :cascade do |t|
     t.integer "number", null: false
     t.date "date", null: false
+    t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
+    t.virtual "date_month", type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
     t.integer "month", null: false
     t.integer "year", null: false
     t.integer "starting_price", null: false
@@ -160,6 +165,8 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.datetime "updated_at", null: false
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
+    t.index ["date_year", "date_month"], name: "idx_installments_year_month"
+    t.index ["price"], name: "idx_installments_price"
   end
 
   create_table "investments", force: :cascade do |t|

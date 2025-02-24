@@ -30,7 +30,7 @@
                                                   autofocus: true,
                                                   placeholder: "#{action_message(:search)}...",
                                                   value: @search_term,
-                                                  data: { action: "input->reactive-form#submit" }) %>
+                                                  data: { controller: "cursor", action: "input->reactive-form#submit" }) %>
 
     <div class="relative w-full">
       <%= form.select :category_ids, @categories,

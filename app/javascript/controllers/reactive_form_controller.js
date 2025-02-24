@@ -30,6 +30,8 @@ export default class extends Controller {
   ]
 
   connect() {
+    this.debounceTimeout = null
+
     this.applyMasks()
 
     const inputs_with_placeholder = this.inputTargets.filter(e => e.dataset.placeholder)
@@ -145,7 +147,6 @@ export default class extends Controller {
 
   // search
   submit() {
-    this.debounceTimeout = null
 
     clearTimeout(this.debounceTimeout)
     this.debounceTimeout = setTimeout(() => {

@@ -18,8 +18,8 @@ class CreateUserCards < ActiveRecord::Migration[8.0]
       t.references :card, null: false
 
       t.timestamps
-    end
 
-    add_index :user_cards, :user_card_name, unique: true
+      t.index [ "user_card_name" ], name: "index_user_cards_on_user_card_name", unique: true
+    end
   end
 end

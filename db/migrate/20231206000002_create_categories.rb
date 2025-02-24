@@ -16,11 +16,8 @@ class CreateCategories < ActiveRecord::Migration[8.0]
       t.references :user, null: false, foreign_key: true
 
       t.timestamps
-    end
 
-    add_index :categories,
-              %i[user_id category_name],
-              unique: true,
-              name: "index_category_name_on_composite_key"
+      t.index %w[user_id category_name], name: "index_category_name_on_composite_key", unique: true
+    end
   end
 end

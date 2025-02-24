@@ -125,11 +125,13 @@ end
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
 #  date                    :date             not null
+#  date_month              :integer          not null, indexed => [date_year]
+#  date_year               :integer          not null, indexed => [date_month]
 #  installment_type        :string           not null
 #  month                   :integer          not null
 #  number                  :integer          not null
 #  paid                    :boolean          default(FALSE)
-#  price                   :integer          not null
+#  price                   :integer          not null, indexed
 #  starting_price          :integer          not null
 #  year                    :integer          not null
 #  created_at              :datetime         not null
@@ -139,6 +141,8 @@ end
 #
 # Indexes
 #
+#  idx_installments_price                     (price)
+#  idx_installments_year_month                (date_year,date_month)
 #  index_installments_on_card_transaction_id  (card_transaction_id)
 #  index_installments_on_cash_transaction_id  (cash_transaction_id)
 #
