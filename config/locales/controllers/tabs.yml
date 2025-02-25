@@ -3,7 +3,8 @@ en:
     basic: Basics
     card_transaction: Card Transactions
     cash_transaction: Cash Transactions
-    user_card: User Cards
+    user_bank_account: Accounts
+    user_card: Cards
     category: Categories
     entity: Entities
     pix: Pix
@@ -14,6 +15,7 @@ pt-BR:
     basic: Básicos
     card_transaction: Lançamentos de Cartão
     cash_transaction: Pagamentos de Dinheiro
+    user_bank_account: Contas
     user_card: Cartões
     category: Categorias
     entity: Entidades

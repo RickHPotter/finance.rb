@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   end
 
   resources :user_cards, except: :show
+  resources :user_bank_accounts, except: :show
   resources :entities
   resources :categories
   resources :cash_transactions

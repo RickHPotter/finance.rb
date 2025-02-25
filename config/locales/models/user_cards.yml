@@ -1,6 +1,4 @@
 en:
-  user_cards:
-    new: New User Card
   activerecord:
     models:
       user_card:

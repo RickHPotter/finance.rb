@@ -41,6 +41,7 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
+    self.date ||= Date.current
     set_month_year
     cash_installments.each(&:build_month_year)
   end

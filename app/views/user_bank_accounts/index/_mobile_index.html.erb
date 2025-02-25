@@ -1,0 +1,26 @@
+<div class="w-full">
+  <div class="min-w-full pt-2">
+    <%= turbo_frame_tag :user_bank_accounts do %>
+      <div class="min-h-screen" data-controller="datatable">
+        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
+          <%= text_field_tag :search, nil,
+                             type: :text, placeholder: "#{action_message(:search)}...",
+                             class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                             data: { action: "input->datatable#filter" } %>
+        </div>
+
+
+        <div class="mb-8" data-datatable-target="table">
+          <%= render @user_bank_accounts %>
+        </div>
+      </div>
+
+      <%= link_to new_user_bank_account_path,
+                  style: "margin: 30px",
+                  class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
+                  data: { turbo_frame: :center_container } do %>
+        <%= render_icon :bigger_plus %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

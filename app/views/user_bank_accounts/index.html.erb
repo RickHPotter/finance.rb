@@ -1,0 +1,4 @@
+<%= turbo_frame_tag :center_container do %>
+  <% path = @mobile ? "mobile_index" : "index" %>
+  <%= render "user_bank_accounts/index/#{path}" %>
+<% end %>
