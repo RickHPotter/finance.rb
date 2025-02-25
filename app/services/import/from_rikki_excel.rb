@@ -22,6 +22,7 @@ module Import
 
       fix_user_card_dates
       set_category_colours
+      correct_investment_dates
     rescue StandardError => e
       Rails.logger.error("ERROR: #{e.message}")
       debugger if Rails.env.development? # rubocop:disable Lint/Debugger
@@ -76,5 +77,13 @@ module Import
       "EXCHANGE" => :dirt,
       "EXCHANGE RETURN" => :yellow
     }.freeze
+  end
+
+  def self.correct_investment_dates
+    user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+    user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
+      transaction.update(date: transaction.date.beginning_of_month)
+      transaction.cash_installments.update(date: transaction.date.beginning_of_month)
+    end
   end
 end

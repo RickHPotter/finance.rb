@@ -99,7 +99,7 @@ class CardInstallment < Installment
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
     self.paid = date.present? && Date.current >= date
   end
@@ -111,9 +111,7 @@ class CardInstallment < Installment
   # @return [void].
   #
   def check_paid_situation
-    return unless paid
-
-    card_transaction.update_columns(paid: true) if card_transaction.card_installments.where(paid: false).empty?
+    card_transaction.update_columns(paid: card_transaction.card_installments.where(paid: false).empty?)
   end
 end
 

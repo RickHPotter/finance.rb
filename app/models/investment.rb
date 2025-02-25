@@ -35,7 +35,7 @@ class Investment < ApplicationRecord
   # @return [Date].
   #
   def cash_transaction_date
-    end_of_month
+    beginning_of_month
   end
 
   # Generates a comment for the associated `cash_transaction` based on investment days.

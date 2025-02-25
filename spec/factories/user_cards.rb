@@ -25,7 +25,7 @@ FactoryBot.define do
     trait :random do
       user_card_name { "#{card.card_name} - #{user.first_name} #{rand(1000)}" }
       days_until_due_date { rand(4..10) }
-      current_closing_date { Date.new(rand(2023..2024), rand(1..12), rand(1..28)) }
+      current_closing_date { Date.new(Date.current.year, Date.current.month, rand(1..28)) }
       min_spend { [ 0o00, 10_000, 20_000 ].sample }
       credit_limit { Faker::Number.number(digits: rand(6..7)) + 20_000 }
       active { true }

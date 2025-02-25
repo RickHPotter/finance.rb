@@ -6,7 +6,7 @@
               data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" } do |form| %>
 
   <div class="mb-6 flex gap-4 flex-wrap">
-    <%= render "shared/month_year_selector", form_id: :search_form, default_year: Date.current.year, years: @years, active_month_years: @active_month_years do %>
+    <%= render "shared/month_year_selector", form_id: :search_form, default_year:, years: @years, active_month_years: @active_month_years do %>
       <% if @user_card&.user_card_name %>
         <%= link_to new_card_transaction_path(user_card_id: @user_card.id, format: :turbo_stream),
                     id: "new_card_transaction",

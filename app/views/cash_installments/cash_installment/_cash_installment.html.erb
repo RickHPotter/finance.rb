@@ -1,0 +1,64 @@
+<%= turbo_frame_tag dom_id cash_installment do %>
+  <% cash_transaction = cash_installment.cash_transaction %>
+
+  <% solid_colour_or_gradient = cash_transaction.categories.first&.bg_colour %>
+  <% if cash_transaction.categories.count > 1 %>
+    <% solid_colour_or_gradient = [ cash_transaction.categories.first.from_bg, *cash_transaction.categories[1..-2].map(&:via_bg), cash_transaction.categories.last.to_bg ].join(" ") %>
+  <% end %>
+
+  <%= content_tag :div,
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient} hover:opacity-60",
+                  draggable: true,
+                  data: { id: cash_installment.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
+
+    <div class="p-2 flex items-center justify-between">
+      <div class="flex items-center justify-between">
+        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{cash_installment.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
+      </div>
+
+
+      <%= content_tag :span, class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto" do %>
+        <% icon = :check_square if cash_installment.paid %>
+        <% icon ||= cash_installment.date > Date.current ? :warning_octagon : :x_circle %>
+        <%= render_icon icon %>
+        <%= l(cash_installment.date, format: :shorter) %>
+      <% end %>
+    </div>
+
+    <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
+      <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
+                  id: "edit_cash_transaction_#{cash_transaction.id}",
+                  class: "flex-1 truncate text-md",
+                  data: { turbo_frame: :center_container } %>
+
+      <% if cash_installment.cash_installments_count > 0 %>
+        <% installments_content = [ format("%02d", cash_installment.number), format("%02d", cash_installment.cash_installments_count) ].join("/") %>
+        <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-20' if cash_transaction.cash_installments_count == 1}" %>
+      <% end %>
+    </div>
+
+    <%= content_tag :div, class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) } do %>
+      <% cash_transaction.categories.each do |category| %>
+        <%= content_tag :span, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm" do %>
+          <%= category.category_name %>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <%= content_tag :div, class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) } do %>
+      <% cash_transaction.entities.each do |entity| %>
+        <span class="px-4 rounded-full text-sm bg-purple-100 text-slate-800 border-1 border-black">
+          <%= entity.entity_name %>
+        </span>
+      <% end %>
+    <% end %>
+
+    <div class="py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto">
+      <%= from_cent_based_to_float(cash_installment.price, "R$") %>
+    </div>
+
+    <div class="py-2 px-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto">
+      <%= from_cent_based_to_float(cash_installment.balance, "R$") %>
+    </div>
+  <% end %>
+<% end %>

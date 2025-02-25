@@ -64,12 +64,15 @@ class UserCard < ApplicationRecord
 
     self.current_closing_date ||= current_due_date - days_until_due_date
     self.days_until_due_date  ||= (current_due_date - current_closing_date).abs
-    self.current_due_date     ||= next_date(days: current_due_date.day)
+    self.current_due_date     ||= current_closing_date + days_until_due_date
   end
 
   def update_dates
-    self.current_closing_date = current_closing_date + 1.month if current_closing_date && current_closing_date < Date.current
-    self.current_due_date     = current_due_date     + 1.month if current_due_date     && current_due_date     < Date.current
+    return if current_closing_date.present? && current_closing_date > Date.current
+    return if current_due_date.present? && days_until_due_date.present? && current_due_date - days_until_due_date > Date.current
+
+    self.current_closing_date = current_closing_date + 1.month if current_closing_date
+    self.current_due_date     = current_due_date     + 1.month if current_due_date
   end
 
   # @private_instance_methods .................................................

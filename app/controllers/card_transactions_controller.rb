@@ -38,8 +38,10 @@ class CardTransactionsController < ApplicationController
   def index_variables(card_installments)
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
     @years = (min_date.year..max_date.year)
-    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : [ Date.current.strftime("%Y%m").to_i ]
+    @default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
+    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     set_all_categories
     set_entities
   end
@@ -148,7 +150,7 @@ class CardTransactionsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def card_transaction_params
     params.require(:card_transaction).permit(
-      %i[id description comment date month year price user_id user_card_id],
+      %i[id description comment date month year price paid user_id user_card_id],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [

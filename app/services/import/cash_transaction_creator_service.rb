@@ -8,7 +8,6 @@ module Import
     def initialize(main_service, transactions_collection = {})
       @main_service = main_service
       @hash_collection = @main_service.hash_cash_collection
-
       @transactions_collection = transactions_collection
     end
 
@@ -30,7 +29,7 @@ module Import
       log_with("CASH TRANSACTIONS CREATION.") do
         @transactions_collection.each_value do |transactions|
           transactions.each do |params_service|
-            CashTransaction.create(params_service.params[:cash_transaction])
+            CashTransaction.create(params_service.params[:cash_transaction].merge(imported: true))
           end
         end
       end
@@ -46,6 +45,7 @@ module Import
     end
 
     def create_standalone_transactions(standalone_transactions)
+      # FIXME: pretty much all standalone transactions are being labelled as not paid when most were
       @transactions_collection[:standalone] = standalone_transactions.map do |transaction|
         next if transaction[:entity] == "PREDICTION"
 
@@ -57,7 +57,7 @@ module Import
 
         if transaction[:category].in?([ "CARD ADVANCE", "CARD PAYMENT" ])
           user_card_id = find_or_create_user_card(transaction[:entity]).id
-          add_card_payment_to_collection(user_card_id, transaction)
+          add_card_type_to_collection(user_card_id, transaction)
           next
         end
 
@@ -78,11 +78,12 @@ module Import
 
         cash_installments = prepare_installments(transaction_zero, transaction_zero[:installments_count])
         price = cash_installments.pluck(:price).sum
+        transaction_zero[:paid] = cash_installments.all? { |installment| installment[:paid] }
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero)
 
         @transactions_collection[:with_installments] <<
           Params::CashTransactions.new(
-            cash_transaction: transaction_zero.slice(:description, :date, :month, :year).merge({ price:, user_id: }),
+            cash_transaction: transaction_zero.slice(:description, :date, :month, :year, :paid).merge({ price:, user_id: }),
             cash_installments:,
             category_transactions:,
             entity_transactions:
@@ -96,7 +97,8 @@ module Import
       cash_installments = indexes.map do |index|
         installment = transactions_collection[:with_pending_installments][index]
 
-        installment.slice(:number, :date, :month, :year, :price)
+        paid = installment[:date].present? && Date.current >= installment[:date]
+        installment.slice(:number, :date, :month, :year, :price).merge(paid:)
       end
 
       indexes.reverse_each do |index|
@@ -118,18 +120,31 @@ module Import
       end.compact
     end
 
-    def add_card_payment_to_collection(user_card_id, transaction)
+    def add_card_type_to_collection(user_card_id, transaction)
       params = transaction.slice(:month, :year, :price).merge(user_card_id:, categories: { category_name: transaction[:category] })
 
       case transaction[:category]
       when "CARD PAYMENT"
-        cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
-        cash_transaction.update(date: transaction[:date])
+        add_card_payment(user, transaction, params)
       when "CARD ADVANCE"
-        params[:price] *= -1
-        card_transaction = user.card_transactions.joins(:categories).find_by(params)
-        card_transaction.update(date: transaction[:date], imported: true)
+        add_card_advance(user, transaction, params)
       end
+    end
+
+    def add_card_payment(user, transaction, params)
+      cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
+      cash_transaction.update(date: transaction[:date], imported: true)
+      cash_transaction.cash_installments.first.update_columns(date: transaction[:date])
+    end
+
+    def add_card_advance(user, transaction, params)
+      params[:price] *= -1
+      card_transactions = user.card_transactions.joins(:categories).where(params)
+      return if card_transactions.empty?
+
+      card_transaction = card_transactions.count == 1 ? card_transactions.first : card_transactions.find_by(transaction.slice(:date))
+      card_transaction.update(date: transaction[:date], imported: true)
+      card_transaction.card_installments.first.update_columns(date: transaction[:date])
     end
   end
 end

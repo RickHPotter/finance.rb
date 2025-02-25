@@ -179,6 +179,8 @@ export default class extends Controller {
 
   // Installments
   _getDueDate() {
+    if (!this.hasClosingDateDayTarget) { return new RailsDate(this.dateInputTarget.value) }
+
     const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
     const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
 

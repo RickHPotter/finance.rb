@@ -1,0 +1,71 @@
+<%= turbo_frame_tag dom_id cash_installment do %>
+  <% cash_transaction = cash_installment.cash_transaction %>
+
+  <%= content_tag :div,
+                  class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-2",
+                  data: { id: cash_installment.id, datatable_target: :row } do %>
+
+    <div class="p-4">
+      <div class="flex items-center justify-between gap-4 w-full text-black text-sm font-semibold">
+        <div class="flex-1 flex items-center justify-between gap-1 min-w-0">
+          <% if @user_bank_account_id.nil? && cash_transaction.user_bank_account %>
+          <%= link_to cash_transaction.user_bank_account.bank.bank_name,
+                      cash_transactions_path(user_bank_account_id: cash_transaction.user_bank_account_id, format: :turbo_stream),
+                      class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-950 border-1 border-slate-200 text-slate-200",
+                      data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+          <% end %>
+          <%= content_tag :span, cash_transaction.description, class: "truncate text-md" %>
+
+          <% if cash_installment.cash_installments_count > 1 %>
+            <% installments_content = [ format("%02d", cash_installment.number), format("%02d", cash_installment.cash_installments_count) ].join("/") %>
+            <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0" %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between py-2">
+        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{cash_installment.id}", class: "shrink-0 w-4 h-4 rounded-full border-slate-300" %>
+
+        <%= content_tag :span, l(cash_installment.date, format: :short), class: "text-xs text-start flex-1 ps-2" %>
+
+        <div class="whitespace-nowrap">
+          <%= from_cent_based_to_float(cash_installment.price, "R$") %>
+        </div>
+      </div>
+
+      <%= content_tag :div, class: "text-start py-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) } do %>
+        <% cash_transaction.categories.each do |category| %>
+          <%= content_tag :span, class: "px-1 py-1 rounded-full text-xs font-medium underline underline-offset-[3px]" do %>
+            <%= category.category_name %>
+          <% end %>
+        <% end %>
+      <% end %>
+
+      <%= content_tag :div, class: "flex justify-between py-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) } do %>
+        <div class="flex items-center justify-between gap-2">
+          <% cash_transaction.entities.each do |entity| %>
+            <span class="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500">
+              <%= entity.entity_name %>
+            </span>
+          <% end %>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <%= link_to edit_cash_transaction_path(cash_transaction),
+                      id: "edit_cash_transaction_#{cash_transaction.id}",
+                      class: "text-white bg-blue-600 rounded-full shadow-lg",
+                      data: { turbo_frame: :center_container } do %>
+            <%= render_icon :pencil %>
+          <% end %>
+
+          <%= link_to cash_transaction,
+                      id: "delete_cash_transaction_#{cash_transaction.id}",
+                      class: "text-red-600 bg-white rounded-full shadow-lg",
+                      data: { turbo_method: :delete } do %>
+            <%= render_icon :destroy %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

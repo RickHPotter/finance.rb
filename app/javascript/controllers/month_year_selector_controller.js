@@ -4,7 +4,7 @@ const active_bg = [ "bg-blue-200", "text-blue-800" ]
 const inactive_bg = [ "bg-slate-100", "text-gray-800" ]
 
 export default class extends Controller {
-  static targets = ["monthYearContainer", "monthYear", "monthYears"]
+  static targets = ["monthYearContainer", "monthYear", "monthYears", "defaultYear"]
 
   connect() {
     this.initialise()
@@ -72,6 +72,7 @@ export default class extends Controller {
     target.classList.add(...active_bg)
 
     this.monthYearsTarget.value = JSON.stringify(Array.from(document.activeMonths))
+    this.defaultYearTarget.value = this.defaultYear
 
     const formId = this.element.dataset.formId
     const form = document.getElementById(formId)

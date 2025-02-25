@@ -16,8 +16,13 @@ development:
     migrations_paths: db/cache_migrate
 
 test:
-  <<: *default
-  database: <%= ENV["POSTGRES_DATABASE"] %>_test
+  primary: &primary_test
+    <<: *default
+    database: <%= ENV["POSTGRES_DATABASE"] %>_test
+  cache:
+    <<: *primary_test
+    database: app_test_cache
+    migrations_paths: db/cache_migrate
 
 production:
   primary: &primary_production

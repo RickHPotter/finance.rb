@@ -1,0 +1,7 @@
+<div class="mb-8" data-datatable-target="table">
+  <fieldset class="grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4">
+    <%= content_tag :legend, @month_year_str, class: "px-2 text-lg text-slate-800 text-start" %>
+
+    <%= render @cash_installments %>
+  </fieldset>
+</div>

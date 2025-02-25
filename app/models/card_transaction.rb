@@ -64,7 +64,7 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
     self.paid = false
   end

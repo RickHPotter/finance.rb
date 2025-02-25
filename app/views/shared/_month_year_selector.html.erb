@@ -1,5 +1,6 @@
 <%= content_tag :div, class: "w-full", data: { controller: "month-year-selector", form_id: } do %>
-  <%= text_field_tag :active_month_years, active_month_years.to_json, id: :month_years_array, class: "hidden", data: { month_year_selector_target: "monthYears" } %>
+  <%= text_field_tag :default_year, default_year, class: "hidden", data: { month_year_selector_target: "defaultYear" } %>
+  <%= text_field_tag :active_month_years, active_month_years.to_json, class: "hidden", data: { month_year_selector_target: "monthYears" } %>
 
   <% years.each do |year| %>
     <%= content_tag :div, class: ("active" if year == default_year).to_s, data: { month_year_selector_target: "monthYearContainer", year: } do %>

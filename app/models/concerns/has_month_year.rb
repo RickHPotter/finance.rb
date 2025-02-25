@@ -11,7 +11,7 @@ module HasMonthYear
     validates :year,  presence: true, if: -> { respond_to?(:year) }
 
     # @callbacks ..............................................................
-    before_validation :set_date, on: :create
+    before_validation :set_date, on: :create, if: -> { respond_to?(:date) && date.nil? }
     before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
     before_validation :check_number, if: -> { respond_to?(:number) && number.nil? }
     before_validation :set_month_year, if: -> { respond_to?(:month) }
@@ -52,12 +52,20 @@ module HasMonthYear
     Date.new(date.year, date.month) + (days - 1).days + months.month + years.years
   end
 
+  # Fetches the first day of given `month` and `year`.
+  #
+  # @return [Date].
+  #
+  def beginning_of_month
+    Date.new(year, month).beginning_of_month
+  end
+
   # Fetches the last day of given `month` and `year`.
   #
   # @return [Date].
   #
   def end_of_month
-    Date.new(year, month).at_end_of_month
+    Date.new(year, month).end_of_month
   end
 
   # @protected_instance_methods ...............................................
@@ -98,8 +106,7 @@ module HasMonthYear
   # @return [void].
   #
   def set_month_year
-    return if defined?(imported) && imported
-    return if defined?(card_transaction) && card_transaction.imported
+    return if imported?
 
     if instance_of?(CardTransaction) || instance_of?(CardInstallment)
       return false if user_card_id.nil?
@@ -110,5 +117,12 @@ module HasMonthYear
       self.month ||= date.month
       self.year  ||= date.year
     end
+  end
+
+  def imported?
+    return true if defined?(card_transaction) && card_transaction&.imported
+    return true if defined?(cash_transaction) && cash_transaction&.imported
+
+    defined?(imported) && imported
   end
 end

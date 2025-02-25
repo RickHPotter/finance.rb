@@ -14,6 +14,7 @@ class CashInstallment < Installment
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
+  after_save :check_paid_situation
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
@@ -38,9 +39,19 @@ class CashInstallment < Installment
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
     self.paid = date.present? && Date.current >= date
+  end
+
+  # Sets `cash_transaction.paid` as true if all its installments were paid.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # @return [void].
+  #
+  def check_paid_situation
+    cash_transaction.update_columns(paid: cash_transaction.cash_installments.where(paid: false).empty?)
   end
 end
 
