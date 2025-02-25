@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 module FeatureHelper
-  BASIC      = I18n.t("tabs.basic")
-  CARD       = I18n.t("tabs.card_transaction")
-  CASH       = I18n.t("tabs.cash_transaction")
-  USERCARD   = I18n.t("tabs.user_card")
-  CATEGORY   = I18n.t("tabs.category")
-  ENTITY     = I18n.t("tabs.entity")
-  PIX        = I18n.t("tabs.pix")
-  INVESTMENT = I18n.t("tabs.investment")
+  BASIC           = I18n.t("tabs.basic")
+  CARD            = I18n.t("tabs.card_transaction")
+  CASH            = I18n.t("tabs.cash_transaction")
+  USERBANKACCOUNT = I18n.t("tabs.user_bank_account")
+  USERCARD        = I18n.t("tabs.user_card")
+  CATEGORY        = I18n.t("tabs.category")
+  ENTITY          = I18n.t("tabs.entity")
+  PIX             = I18n.t("tabs.pix")
+  INVESTMENT      = I18n.t("tabs.investment")
 
   def sign_in_as(user:)
     visit root_path

@@ -143,7 +143,7 @@ RSpec.describe "Entities", type: :feature do
 
       expect(page).to have_css("turbo-frame#entity_#{entity.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactions, Entity))
+      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactionsa, Entity))
     end
   end
 end

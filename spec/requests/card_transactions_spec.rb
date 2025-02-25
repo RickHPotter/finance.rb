@@ -50,7 +50,6 @@ RSpec.describe "CardTransactions", type: :request do
 
   before { sign_in user }
 
-  # FIXME: failing idk why
   describe "[ #create ]" do
     it "creates one new record with one installment and non-paying entities" do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [] } ]

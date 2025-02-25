@@ -145,7 +145,7 @@ RSpec.describe "Categories", type: :feature do
 
       expect(page).to have_css("turbo-frame#category_#{category.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactions, Category))
+      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactionsa, Category))
     end
   end
 end
