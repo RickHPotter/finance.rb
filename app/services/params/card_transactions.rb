@@ -2,7 +2,7 @@
 
 module Params
   class CardTransactions
-    attr_accessor :description, :date, :month, :year, :price, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
 
     def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_card_transaction(card_transaction)
@@ -20,6 +20,7 @@ module Params
           month:,
           year:,
           price:,
+          paid:,
           user_id:,
           user_card_id:,
           card_installments_attributes:,
@@ -74,18 +75,19 @@ module Params
     private
 
     def assign_card_transaction(card_transaction, card_transaction_options: {})
-      @description    = card_transaction_options[:description]    || card_transaction[:description]
-      @date           = card_transaction_options[:date]           || card_transaction[:date]
-      @month          = card_transaction_options[:month]          || card_transaction[:month]
-      @year           = card_transaction_options[:year]           || card_transaction[:year]
-      @price          = card_transaction_options[:price]          || card_transaction[:price]
-      @user_id        = card_transaction_options[:user_id]        || card_transaction[:user_id]
-      @user_card_id   = card_transaction_options[:user_card_id]   || card_transaction[:user_card_id]
+      @description  = card_transaction_options[:description]  || card_transaction[:description]
+      @date         = card_transaction_options[:date]         || card_transaction[:date]
+      @month        = card_transaction_options[:month]        || card_transaction[:month]
+      @year         = card_transaction_options[:year]         || card_transaction[:year]
+      @price        = card_transaction_options[:price]        || card_transaction[:price]
+      @paid         = card_transaction_options[:paid]         || card_transaction[:paid]
+      @user_id      = card_transaction_options[:user_id]      || card_transaction[:user_id]
+      @user_card_id = card_transaction_options[:user_card_id] || card_transaction[:user_card_id]
     end
 
     def assign_card_installments(card_installments)
       @card_installments = card_installments.map do |installment|
-        installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CardInstallment)
+        installment.slice(:id, :number, :date, :month, :year, :price, :paid).merge(installment_type: :CardInstallment)
       end
     end
 

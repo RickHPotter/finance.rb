@@ -45,14 +45,14 @@
       <div class="flex items-center justify-center px-2 my-1 rounded-md">
         <%= link_to edit_entity_path(entity),
                     id: "edit_entity_#{entity.id}",
-                    class: "text-blue-600 hover:text-blue-800 m-2 bg-sky-200 rounded-4xl",
+                    class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
                     data: { turbo_frame: :center_container } do %>
           <%= render_icon :pencil %>
         <% end %>
 
         <%= link_to entity,
                     id: "delete_entity_#{entity.id}",
-                    class: "text-red-600 hover:text-red-800 m-2 bg-rose-200 rounded-4xl",
+                    class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
                     data: { turbo_method: :delete } do %>
           <%= render_icon :destroy %>
         <% end %>

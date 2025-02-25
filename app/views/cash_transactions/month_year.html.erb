@@ -1,0 +1,4 @@
+<%= turbo_frame_tag "month_year_container_#{@month_year}" do %>
+  <% path = @mobile ? "mobile_month_year" : "month_year" %>
+  <%= render "cash_transactions/month_year/#{path}" %>
+<% end %>

@@ -16,7 +16,11 @@ Rails.application.routes.draw do
   resources :user_bank_accounts, except: :show
   resources :entities
   resources :categories
-  resources :cash_transactions
+  resources :cash_transactions do
+    collection do
+      get :month_year
+    end
+  end
   resources :card_transactions do
     collection do
       get :month_year

@@ -2,7 +2,7 @@
 
 module Params
   class CashTransactions
-    attr_accessor :description, :date, :month, :year, :price, :user_id, :user_card_id, :cash_installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :cash_installments, :category_transactions, :entity_transactions
 
     def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_cash_transaction(cash_transaction)
@@ -20,6 +20,7 @@ module Params
           month:,
           year:,
           price:,
+          paid:,
           user_id:,
           user_card_id:,
           cash_installments_attributes:,
@@ -74,18 +75,19 @@ module Params
     private
 
     def assign_cash_transaction(cash_transaction, cash_transaction_options: {})
-      @description    = cash_transaction_options[:description]    || cash_transaction[:description]
-      @date           = cash_transaction_options[:date]           || cash_transaction[:date]
-      @month          = cash_transaction_options[:month]          || cash_transaction[:month]
-      @year           = cash_transaction_options[:year]           || cash_transaction[:year]
-      @price          = cash_transaction_options[:price]          || cash_transaction[:price]
-      @user_id        = cash_transaction_options[:user_id]        || cash_transaction[:user_id]
-      @user_card_id   = cash_transaction_options[:user_card_id]   || cash_transaction[:user_card_id]
+      @description  = cash_transaction_options[:description]  || cash_transaction[:description]
+      @date         = cash_transaction_options[:date]         || cash_transaction[:date]
+      @month        = cash_transaction_options[:month]        || cash_transaction[:month]
+      @year         = cash_transaction_options[:year]         || cash_transaction[:year]
+      @price        = cash_transaction_options[:price]        || cash_transaction[:price]
+      @paid         = cash_transaction_options[:paid]         || cash_transaction[:paid]
+      @user_id      = cash_transaction_options[:user_id]      || cash_transaction[:user_id]
+      @user_card_id = cash_transaction_options[:user_card_id] || cash_transaction[:user_card_id]
     end
 
     def assign_cash_installments(cash_installments)
       @cash_installments = cash_installments.map do |installment|
-        installment.slice(:id, :number, :date, :month, :year, :price).merge(installment_type: :CashInstallment)
+        installment.slice(:id, :number, :date, :month, :year, :price, :paid).merge(installment_type: :CashInstallment)
       end
     end
 

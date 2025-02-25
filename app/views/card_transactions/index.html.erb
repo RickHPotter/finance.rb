@@ -4,7 +4,7 @@
       <%= turbo_frame_tag :card_transactions do %>
         <div class="min-h-screen" data-controller="datatable">
           <div class="mb-6 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
-            <%= render "card_transactions/shared/index_search_form", url: card_transactions_path %>
+            <%= render "card_transactions/shared/index_search_form", url: card_transactions_path, default_year: @default_year %>
           </div>
 
           <%= render "card_transactions/month_year_container", user_card_id: params[:user_card_id].presence || params.dig(:card_transaction, :user_card_id).presence || @user_card_id,

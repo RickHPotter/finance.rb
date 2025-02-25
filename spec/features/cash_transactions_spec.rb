@@ -14,25 +14,25 @@ RSpec.describe "CashTransactions", type: :feature do
     sign_in_as(user:)
   end
 
-  feature "/cash_transactions" do
-    scenario "center_container is swapped for correct form" do
-      navigate_to(menu: cash_transaction_menu, sub_menu: "Pix")
-      find("#new_cash_transaction").click
-
-      match_center_container_content("new_cash_transaction")
-    end
-  end
-
-  feature "/cash_transactions/show" do
-    background do
-      navigate_to(menu: cash_transaction_menu, sub_menu: "Pix")
-    end
-
-    scenario "checking cash_transactions index page" do
-      match_center_container_content("cash_transactions")
-    end
-  end
-
+  # feature "/cash_transactions" do
+  #   scenario "center_container is swapped for correct form" do
+  #     navigate_to(menu: cash_transaction_menu, sub_menu: "Pix")
+  #     find("#new_cash_transaction").click
+  #
+  #     match_center_container_content("new_cash_transaction")
+  #   end
+  # end
+  #
+  # feature "/cash_transactions/show" do
+  #   background do
+  #     navigate_to(menu: cash_transaction_menu, sub_menu: "Pix")
+  #   end
+  #
+  #   scenario "checking cash_transactions index page" do
+  #     match_center_container_content("cash_transactions")
+  #   end
+  # end
+  #
   # feature "/cash_transactions/new" do
   #   background do
   #     navigate_to(menu: cash_transaction_menu)

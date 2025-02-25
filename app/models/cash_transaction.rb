@@ -10,6 +10,8 @@ class CashTransaction < ApplicationRecord
   include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :imported
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, optional: true
@@ -41,7 +43,7 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
-    self.date ||= Date.current
+    self.date ||= Date.current unless imported
     set_month_year
     cash_installments.each(&:build_month_year)
   end
@@ -64,9 +66,9 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
-    self.paid = true if cash_transaction_type == "INVESTMENT"
+    self.paid = true if cash_transaction_type == "Investment"
     self.paid = date.present? && Date.current >= date
   end
 end

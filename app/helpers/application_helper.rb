@@ -6,8 +6,14 @@ module ApplicationHelper
   #
   # @return [String]
   def from_cent_based_to_float(price, currency = nil)
-    price = price.to_s.rjust(3, "0").insert(-3, ".")
-    price.insert(-7, ",") if price.gsub("-", "").length > 6
+    price = price.to_s
+    negative = price.starts_with?("-")
+
+    price = price.delete("-").rjust(3, "0")
+    price.insert(-3, ".") if price.length > 2
+    price.insert(-7, ",") if price.length > 6
+
+    price = "-#{price}" if negative
 
     [ currency, price ].compact.join(" ")
   end

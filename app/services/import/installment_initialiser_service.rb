@@ -12,14 +12,13 @@ module Import
       user_card_name = user_card.user_card_name
       card_installments_count = transaction_zero[:installments_count]
 
-      indexes = filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
-      indexes = filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
-      indexes = filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
+      indexes = cleanse_indexes(user_card_name, transaction_zero, card_installments_count)
 
       card_installments = indexes.map do |index|
         installment = transactions_collection[user_card_name][:with_pending_installments][index]
 
-        installment.slice(:number, :date, :month, :year, :price)
+        paid = installment[:date].present? && Date.current >= installment[:date]
+        installment.slice(:number, :date, :month, :year, :price).merge(paid:)
       end
 
       indexes.reverse_each do |index|
@@ -27,6 +26,12 @@ module Import
       end
 
       validate_installments(transaction_zero, card_installments)
+    end
+
+    def cleanse_indexes(user_card_name, transaction_zero, card_installments_count)
+      indexes = filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
+      indexes = filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
+      filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
     end
 
     def filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
