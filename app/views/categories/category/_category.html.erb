@@ -2,14 +2,8 @@
                 class: "grid grid-cols-7 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
                 data: { id: category.id, datatable_target: :row } do %>
 
-    <div class="px-2 flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false,
-                         id: "checkbox_#{category.id}",
-                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
-    </div>
-
-    <div class="px-1 flex items-center mx-auto font-semibold">
-      <%= content_tag :span, category.category_name, class: "px-4 whitespace-nowrap border-1 border-zinc-600 rounded-full #{category.bg_colour} #{category.text_colour}" %>
+    <div class="col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold">
+      <%= content_tag :span, category.category_name, class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md #{category.bg_colour} #{category.text_colour}" %>
     </div>
 
     <div class="jump_to_card_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">

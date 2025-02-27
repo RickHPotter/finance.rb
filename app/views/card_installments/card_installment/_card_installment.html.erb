@@ -12,11 +12,6 @@
                   data: { id: card_installment.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 
     <div class="p-2 flex items-center justify-between">
-      <div class="flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{card_installment.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
-
-        <span class="ml-2 cursor-move">↕</span>
-      </div>
       <%= content_tag :span, l(card_installment.date, format: :shorter), class: "px-1 rounded-sm text-slate-900 mx-auto" %>
     </div>
 
@@ -29,10 +24,9 @@
       <% end %>
 
       <%= content_tag :span, card_transaction.description, class: "flex-1 truncate text-md" %>
-      <% if card_installment.card_installments_count > 0 %>
-        <% installments_content = [ format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count) ].join("/") %>
-        <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-20' if card_transaction.card_installments_count == 1}" %>
-      <% end %>
+      <%= content_tag :span,
+                      pretty_installments(card_installment.number, card_installment.card_installments_count),
+                      class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}" %>
     </div>
 
     <%= content_tag :div, class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) } do %>

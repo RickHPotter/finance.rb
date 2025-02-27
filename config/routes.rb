@@ -17,6 +17,10 @@ Rails.application.routes.draw do
   resources :entities
   resources :categories
   resources :cash_transactions do
+    member do
+      post :pay_cash_installment
+    end
+
     collection do
       get :month_year
     end

@@ -291,7 +291,7 @@ Possible Downtime: 6 months and a half
   - ✅ Use modern `datatables`, (maybe) with `Hotwire` and `Pagy` for the `:index`.
   - ✅ Create search sub_menu in `CardTransaction`'s `:index`.
   - ✅ Add CRUD for `UserBankAccount`.
-  - ⌛ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
+  - ✅ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
   - ⌛ Create a `Budget` System.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.

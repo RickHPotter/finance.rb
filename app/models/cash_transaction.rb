@@ -68,8 +68,7 @@ class CashTransaction < ApplicationRecord
   def set_paid
     return if [ false, true ].include?(paid)
 
-    self.paid = true if cash_transaction_type == "Investment"
-    self.paid = date.present? && Date.current >= date
+    self.paid = cash_transaction_type == "Investment"
   end
 end
 

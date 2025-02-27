@@ -6,6 +6,9 @@ class CashInstallment < Installment
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  def balance = @balance || read_attribute("balance")
+  attr_writer :balance
+
   # @relationships ............................................................
   belongs_to :cash_transaction, counter_cache: true
 

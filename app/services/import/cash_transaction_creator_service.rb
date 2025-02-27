@@ -45,7 +45,6 @@ module Import
     end
 
     def create_standalone_transactions(standalone_transactions)
-      # FIXME: pretty much all standalone transactions are being labelled as not paid when most were
       @transactions_collection[:standalone] = standalone_transactions.map do |transaction|
         next if transaction[:entity] == "PREDICTION"
 
@@ -62,7 +61,6 @@ module Import
         end
 
         cash_transaction = transaction.slice(:description, :date, :month, :year, :price).merge({ user_id: })
-
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
         Params::CashTransactions.new(cash_transaction:, cash_installments: { count: 1 }, category_transactions:, entity_transactions:)

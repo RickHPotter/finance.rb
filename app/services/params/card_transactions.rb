@@ -39,7 +39,8 @@ module Params
       installment_price = price / count
 
       (1..count).map do |i|
-        { number: i, date: date.next_month(i - 1), month:, year:, price: installment_price }
+        paid = date.present? && date + i.months <= Date.current
+        { number: i, date: date.next_month(i - 1), month:, year:, price: installment_price, paid: }
       end
     end
 

@@ -51,6 +51,14 @@ module Import
       end
     end
 
+    def self.correct_investment_dates
+      user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+      user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
+        transaction.update(date: transaction.date.beginning_of_month)
+        transaction.cash_installments.update(date: transaction.date.beginning_of_month)
+      end
+    end
+
     RIKKI_COLOURS = {
       "FOOD" => :meat,
       "GROCERY" => :lettuce,
@@ -77,13 +85,5 @@ module Import
       "EXCHANGE" => :dirt,
       "EXCHANGE RETURN" => :yellow
     }.freeze
-  end
-
-  def self.correct_investment_dates
-    user = User.find_by(first_name: "Rikki", last_name: "Potteru")
-    user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
-      transaction.update(date: transaction.date.beginning_of_month)
-      transaction.cash_installments.update(date: transaction.date.beginning_of_month)
-    end
   end
 end

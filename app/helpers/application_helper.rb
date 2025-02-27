@@ -17,4 +17,13 @@ module ApplicationHelper
 
     [ currency, price ].compact.join(" ")
   end
+
+  # @example
+  #   pretty_installments(1, 2)
+  #   # => "01/02"
+  #
+  # @return [String]
+  def pretty_installments(installment_number, installments_count)
+    [ format("%02d", installment_number), format("%02d", installments_count) ].join("/")
+  end
 end

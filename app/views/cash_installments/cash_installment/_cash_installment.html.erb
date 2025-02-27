@@ -11,19 +11,23 @@
                   draggable: true,
                   data: { id: cash_installment.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 
-    <div class="p-2 flex items-center justify-between">
-      <div class="flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{cash_installment.id}", class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
-      </div>
-
-
-      <%= content_tag :span, class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto" do %>
-        <% icon = :check_square if cash_installment.paid %>
-        <% icon ||= cash_installment.date > Date.current ? :warning_octagon : :x_circle %>
-        <%= render_icon icon %>
-        <%= l(cash_installment.date, format: :shorter) %>
+    <%= content_tag :div, class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto" do %>
+      <% case [ cash_installment.paid, cash_installment.date > Date.current ]
+         in [ true,  _     ] then [ false, :check_square ]
+         in [ false, false ] then [ true,  :warning_octagon ]
+         in [ false, true  ] then [ true,  :x_circle ]
+         end => shoud_display_link_to_pay, icon %>
+      <% if shoud_display_link_to_pay %>
+        <%= link_to render_icon(icon),
+                    pay_cash_installment_cash_transaction_path(id: cash_installment, balance: cash_installment.balance, format: :turbo_stream),
+                    class: "hover:bg-white hover:text-honda hover:rounded-full hover:scale-160",
+                    title: model_attribute(cash_installment, :pay), data: { turbo_method: :post } %>
+      <% else %>
+        <%= content_tag :span, render_icon(icon), title: model_attribute(cash_installment, :already_paid), class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160" %>
       <% end %>
-    </div>
+
+      <%= content_tag :span, l(cash_installment.date, format: :shorter) %>
+    <% end %>
 
     <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
       <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
@@ -31,10 +35,9 @@
                   class: "flex-1 truncate text-md",
                   data: { turbo_frame: :center_container } %>
 
-      <% if cash_installment.cash_installments_count > 0 %>
-        <% installments_content = [ format("%02d", cash_installment.number), format("%02d", cash_installment.cash_installments_count) ].join("/") %>
-        <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-20' if cash_transaction.cash_installments_count == 1}" %>
-      <% end %>
+      <%= content_tag :span,
+                      pretty_installments(cash_installment.number, cash_installment.cash_installments_count),
+                      class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}" %>
     </div>
 
     <%= content_tag :div, class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) } do %>

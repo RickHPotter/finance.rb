@@ -31,7 +31,8 @@ module Import
     def cleanse_indexes(user_card_name, transaction_zero, card_installments_count)
       indexes = filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
       indexes = filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
-      filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
+      indexes = filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
+      indexes
     end
 
     def filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)

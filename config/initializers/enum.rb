@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+def rikki = -> { Import::FromRikkiExcel.run }
+
 MONTHS_FULL = %w[Janvier Fevrier Mars Avril Mai June Jui Août Septembre Octobre Novembre Decembre].freeze
 MONTHS_ABBR = %w[Jan Fev Mars Avril Mai June Jui Août Sept Oct Nov Dec].freeze
 

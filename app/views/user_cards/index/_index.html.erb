@@ -28,8 +28,7 @@
           </div>
 
           <div class="grid grid-cols-9 py-1 gap-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
-            <div></div>
-            <%= content_tag :div, model_attribute(UserCard, :user_card_name), class: "text-center" %>
+            <%= content_tag :div, model_attribute(UserCard, :user_card_name), class: "col-span-2 text-center" %>
             <%= content_tag :div, model_attribute(UserCard, :count), class: "text-center" %>
             <%= content_tag :div, model_attribute(UserCard, :spent), class: "text-center" %>
             <%= content_tag :div, model_attribute(UserCard, :closing_date), class: "text-end text-lime-800 pr-2" %>

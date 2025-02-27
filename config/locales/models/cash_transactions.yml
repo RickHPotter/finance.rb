@@ -18,6 +18,7 @@ en:
         starting_price: Original Price
         paid: Paid
         not_paid: Not Paid
+        user_bank_account_id: Account
         user_card_id: Card
         month: Month
         year: Year
@@ -60,6 +61,7 @@ pt-BR:
         starting_price: Preço Inicial
         paid: Paga
         not_paid: Pendente
+        user_bank_account_id: Conta
         user_card_id: Cartão
         month: Mês
         year: Ano

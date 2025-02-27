@@ -2,13 +2,7 @@
                 class: "grid grid-cols-6 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
                 data: { id: user_bank_account.id, datatable_target: :row } do %>
 
-    <div class="px-2 flex items-center justify-between">
-        <%= checkbox_tag :checkbox, false, false,
-                         id: "checkbox_#{user_bank_account.id}",
-                         class: "border-gray-300 focus:ring-blue-500 focus:ring-2 rounded-sm shadow-sm" %>
-    </div>
-
-    <div class="px-1 flex items-center mx-auto font-semibold">
+    <div class="col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold">
       <% brand_and_name = "[ #{user_bank_account.bank.bank_name} ] #{user_bank_account.agency_number || '-'}/#{user_bank_account.account_number || '-'}" %>
       <%= content_tag :span, brand_and_name, class: "px-4 whitespace-nowrap" %>
     </div>

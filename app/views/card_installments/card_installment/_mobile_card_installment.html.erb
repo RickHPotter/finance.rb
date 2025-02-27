@@ -14,57 +14,34 @@
                         class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-950 border-1 border-slate-200 text-slate-200",
                         data: { turbo_frame: :center_container, turbo_prefetch: false } %>
           <% end %>
-          <%= content_tag :span, card_transaction.description, class: "truncate text-md" %>
 
-          <% if card_installment.card_installments_count > 1 %>
-            <% installments_content = [ format("%02d", card_installment.number), format("%02d", card_installment.card_installments_count) ].join("/") %>
-            <%= content_tag :span, installments_content, class: "px-1 rounded-sm bg-white border border-black flex-shrink-0" %>
-          <% end %>
+          <%= content_tag :span, card_transaction.description, class: "truncate text-md" %>
+          <%= content_tag :span,
+                          pretty_installments(card_installment.number, card_installment.card_installments_count),
+                          class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}" %>
         </div>
       </div>
 
       <div class="flex items-center justify-between py-2">
-        <%= checkbox_tag :checkbox, false, false, id: "checkbox_#{card_installment.id}", class: "shrink-0 w-4 h-4 rounded-full border-slate-300" %>
-
-        <%= content_tag :span, l(card_installment.date, format: :short), class: "text-xs text-start flex-1 ps-2" %>
+        <%= content_tag :span, l(card_installment.date, format: :short), class: "text-xs text-start flex-1" %>
 
         <div class="whitespace-nowrap">
           <%= from_cent_based_to_float(card_installment.price, "R$") %>
         </div>
       </div>
 
-      <%= content_tag :div, class: "text-start py-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) } do %>
-        <% card_transaction.categories.each do |category| %>
-          <%= content_tag :span, class: "px-1 py-1 rounded-full text-xs font-medium underline underline-offset-[3px]" do %>
-            <%= category.category_name %>
+      <%= content_tag :div, class: "flex items-center justify-between gap-2" do %>
+        <%= content_tag :div, class: "flex justify-between gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) } do %>
+          <% card_transaction.categories.each do |category| %>
+            <%= content_tag :span, category.category_name, class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]" %>
           <% end %>
         <% end %>
-      <% end %>
 
-      <%= content_tag :div, class: "flex justify-between py-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) } do %>
-        <div class="flex items-center justify-between gap-2">
+        <%= content_tag :div, class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) } do %>
           <% card_transaction.entities.each do |entity| %>
-            <span class="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500">
-              <%= entity.entity_name %>
-            </span>
+            <%= content_tag :span, entity.entity_name, class: "px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500" %>
           <% end %>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <%= link_to edit_card_transaction_path(card_transaction),
-                      id: "edit_card_transaction_#{card_transaction.id}",
-                      class: "text-white bg-blue-600 rounded-full shadow-lg",
-                      data: { turbo_frame: :center_container } do %>
-            <%= render_icon :pencil %>
-          <% end %>
-
-          <%= link_to card_transaction,
-                      id: "delete_card_transaction_#{card_transaction.id}",
-                      class: "text-red-600 bg-white rounded-full shadow-lg",
-                      data: { turbo_method: :delete } do %>
-            <%= render_icon :destroy %>
-          <% end %>
-        </div>
+        <% end %>
       <% end %>
     </div>
   <% end %>

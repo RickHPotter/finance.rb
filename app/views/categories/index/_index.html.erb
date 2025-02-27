@@ -29,8 +29,7 @@
           </div>
 
           <div class="grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
-            <div></div>
-            <%= content_tag :div, model_attribute(Category, :category_name), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Category, :category_name), class: "col-span-2 text-center" %>
             <%= content_tag :div, model_attribute(Category, :count), class: "text-center" %>
             <%= content_tag :div, model_attribute(Category, :spent), class: "text-center" %>
             <%= content_tag :div, model_attribute(Category, :count), class: "text-center" %>

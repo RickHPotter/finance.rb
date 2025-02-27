@@ -28,7 +28,10 @@ class ApplicationController < ActionController::Base
 
   def set_user_bank_accounts
     @user_bank_accounts = current_user.user_bank_accounts.active.order(:agency_number, :account_number).map do |user_bank_account|
-      [ "#{user_bank_account.agency_number} - #{user_bank_account.account_number}", user_bank_account.id ]
+      [
+        "[#{user_bank_account.bank.bank_name}] #{user_bank_account.agency_number || 'XXXX'} - #{user_bank_account.account_number || 'YY'}",
+        user_bank_account.id
+      ]
     end
   end
 
