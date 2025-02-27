@@ -1,29 +1,38 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Finance</title>
+    <title><%= t("pages.title") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/pwa_logos/ios/128.png" type="image/png">
+    <link rel="apple-touch-icon" href="/pwa_logos/ios/512.png">
+
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-
-    <%= combobox_style_tag %>
-
+    <%= stylesheet_link_tag "components/tom-select" %>
+    <%= stylesheet_link_tag "components/select" %>
     <%= javascript_importmap_tags %>
+    <%= combobox_style_tag %>
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <main class="antialiased">
-      <div class="p-3">
+    <%= content_tag :main, class: "antialiased pt-4 max-w-auto mx-1 md:container mx-auto" do %>
+      <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
-        <%= render "shared/dark_mode" %>
-      </div>
+      <% end %>
+      <%= render "shared/dark_mode" %>
 
-      <section class="container mx-auto mt-16 px-5 flex">
-        <%= yield %>
-      </section>
-    </main>
+      <%= content_tag :section, class: "flex mt-10" do %>
+        <% yield %>
+      <% end %>
+    <% end %>
   </body>
 </html>
+
+<script>
+  window.APP_LOCALE = "<%= I18n.locale %>"
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>

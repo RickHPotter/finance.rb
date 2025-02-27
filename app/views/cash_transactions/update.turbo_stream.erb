@@ -1,0 +1,8 @@
+<% if @cash_transaction.errors.empty? %>
+  <%= turbo_stream.replace(:center_container, template: "cash_transactions/index", locals: { user_bank_account_id: @cash_transaction.user_bank_account_id }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CashTransaction) }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% else %>
+  <%= turbo_stream.replace(:center_container, template: "cash_transactions/edit", locals: { cash_transaction: @cash_transaction }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashTransaction) }) %>
+<% end %>

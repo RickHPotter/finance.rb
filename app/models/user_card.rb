@@ -1,27 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: user_cards
-#
-#  id                   :bigint           not null, primary key
-#  user_card_name       :string           not null
-#  days_until_due_date  :integer          not null
-#  current_closing_date :date             not null
-#  current_due_date     :date             not null
-#  min_spend            :integer          not null
-#  credit_limit         :integer          not null
-#  active               :boolean          not null
-#  user_id              :bigint           not null
-#  card_id              :bigint           not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#
 class UserCard < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
-  include HasMonthYear
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -47,6 +29,10 @@ class UserCard < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def update_card_transactions_total
+    update_columns(card_transactions_total: card_transactions.sum(:price))
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -78,13 +64,42 @@ class UserCard < ApplicationRecord
 
     self.current_closing_date ||= current_due_date - days_until_due_date
     self.days_until_due_date  ||= (current_due_date - current_closing_date).abs
-    self.current_due_date     ||= next_date(days: current_due_date.day)
+    self.current_due_date     ||= current_closing_date + days_until_due_date
   end
 
   def update_dates
-    self.current_closing_date = current_closing_date + 1.month if current_closing_date && current_closing_date < Date.current
-    self.current_due_date     = current_due_date     + 1.month if current_due_date     && current_due_date     < Date.current
+    return if current_closing_date.present? && current_closing_date > Date.current
+    return if current_due_date.present? && days_until_due_date.present? && current_due_date - days_until_due_date > Date.current
+
+    self.current_closing_date = current_closing_date + 1.month if current_closing_date
+    self.current_due_date     = current_due_date     + 1.month if current_due_date
   end
 
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: user_cards
+#
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  credit_limit            :integer          not null
+#  current_closing_date    :date             not null
+#  current_due_date        :date             not null
+#  days_until_due_date     :integer          not null
+#  min_spend               :integer          not null
+#  user_card_name          :string           not null, indexed
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  card_id                 :bigint           not null, indexed
+#  user_id                 :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_user_cards_on_card_id         (card_id)
+#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
+#  index_user_cards_on_user_id         (user_id)
+#

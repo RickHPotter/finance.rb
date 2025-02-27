@@ -11,13 +11,15 @@ class CreateUserCards < ActiveRecord::Migration[8.0]
       t.integer :min_spend, null: false
       t.integer :credit_limit, null: false
       t.boolean :active, null: false, default: true
+      t.integer :card_transactions_count, null: false, default: 0
+      t.integer :card_transactions_total, null: false, default: 0
 
       t.references :user, null: false
       t.references :card, null: false
 
       t.timestamps
-    end
 
-    add_index :user_cards, :user_card_name, unique: true
+      t.index [ "user_card_name" ], name: "index_user_cards_on_user_card_name", unique: true
+    end
   end
 end

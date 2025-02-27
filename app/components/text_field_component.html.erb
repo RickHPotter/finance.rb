@@ -2,8 +2,8 @@
   <div class="relative w-full">
 <% end %>
 
-  <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-    <%= render "shared/svgs/#{options[:svg]}" if options[:svg] %>
+  <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1">
+    <%= helpers.render_icon options[:svg] if options[:svg] %>
   </div>
   <% if options[:type] == :select && items.present? %>
     <%= form.select field, items, {}, options %>

@@ -19,6 +19,11 @@ class CreateCardTransactions < ActiveRecord::Migration[8.0]
       t.references :advance_cash_transaction, foreign_key: { to_table: :cash_transactions }
 
       t.timestamps
+
+      execute "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+
+      t.index [ :description ], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
+      t.index [ :price ],       name: "idx_card_transactions_price"
     end
   end
 end

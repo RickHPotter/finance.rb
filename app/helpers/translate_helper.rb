@@ -17,7 +17,8 @@ module TranslateHelper
   def model_on_count(instances)
     model = instances.first.class
     count = instances.count
-    model.model_name.human.pluralize(count)
+
+    I18n.t("activerecord.models.#{model.model_name.singular}", count:)
   end
 
   # Takes a model class and a count, and returns a pluralised human-readable model name based on the count.
@@ -34,13 +35,25 @@ module TranslateHelper
   # @return [String] Pluralised human-readable model name based on the count.
   #
   def pluralise_model(model, count)
-    model.model_name.human.pluralize(count)
+    I18n.t("activerecord.models.#{model.model_name.singular}", count:)
+  end
+
+  # Takes a notification key and a model class and returns the translated notification message.
+  #
+  # @example Get notification message:
+  #   notification_model(:created, UserCard)
+  #   # => "User Card was successfully created."
+  #
+  # @return [String] Translated notification message.
+  #
+  def notification_model(notification, model)
+    I18n.t("notification.#{notification}", model: model.model_name.human)
   end
 
   # Takes a model instance or class and an attribute name, and returns a human-readable attribute name based on the model and attribute.
   #
   # @example Get human-readable attribute name:
-  #   attribute_model(User, :first_name)
+  #   model_attribute(User, :first_name)
   #   # => "First Name"
   #
   # @param model [ActiveRecord::Base] Model instance or class.
@@ -50,8 +63,8 @@ module TranslateHelper
   #
   # @return [String] Human-readable attribute name based on the model and attribute.
   #
-  def attribute_model(model, attribute)
-    model = model.class if model.class.is_a?(Class)
+  def model_attribute(model, attribute)
+    model = model.class if model.is_a?(ActiveRecord::Base)
     model = model.model_name.singular
     I18n.t("activerecord.attributes.#{model}.#{attribute}")
   end
@@ -80,6 +93,12 @@ module TranslateHelper
     I18n.t("actions.#{action_name}")
   end
 
+  # @return [String] Action shortcut for I18n.
+  #
+  def action_message(action)
+    I18n.t("actions.#{action}")
+  end
+
   # Dynamically generates an action model based on the current controller action and the singularised capitalised name of the model.
   #
   # @param action [String] Controller action.
@@ -87,7 +106,11 @@ module TranslateHelper
   #
   # @return [String] Action model for the current controller action and model.
   #
-  def action_model(action, model)
-    "#{I18n.t("actions.#{action}")} #{I18n.t("activerecord.models.#{model.model_name.singular}.one")}"
+  def action_model(action, model, count = 1)
+    "#{I18n.t("actions.#{action}")} #{I18n.t("activerecord.models.#{model.model_name.singular}", count:)}"
+  end
+
+  def action_attribute(action, model, attribute)
+    "#{I18n.t("actions.#{action}")} #{model_attribute(model, attribute)}"
   end
 end

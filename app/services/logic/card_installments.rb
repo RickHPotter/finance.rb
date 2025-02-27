@@ -2,32 +2,87 @@
 
 module Logic
   class CardInstallments
-    def self.find_by_span(user_card, span)
-      max_date = user_card.card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)")
-      l_date, r_date = RefMonthYear.get_span(Date.current, max_date, span)
+    def self.find_ref_month_year_by_params(user, params)
+      params = params.symbolize_keys
+      month_year = params.delete(:month_year)
+      search_term = params.delete(:search_term) || ""
 
-      user_card.card_installments
-               .includes(card_transaction: %i[categories entities])
-               .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", l_date, r_date)
-               .order("installments.date DESC")
-               .group_by { |t| Date.new(t.year, t.month) }
-               .sort
-               .reverse
-    end
+      search_term_condition = "card_transactions.description ILIKE '%#{search_term}%'" if search_term.present?
+      conditions = build_conditions_from_params(params)
 
-    def self.find_by_params(user, params)
-      conditions = {}
-      category_transactions = { category_id: params[:category_id] } if params[:category_id]
-      entity_transactions   = { entity_id: params[:entity_id] }     if params[:entity_id]
-      conditions[:card_transaction] = { category_transactions:, entity_transactions: }.compact
+      inclusions = { card_transaction: %i[categories entities] }
+      inclusions[:card_transaction] << :user_card if params[:user_card_id].blank?
 
       user.card_installments
-          .includes(card_transaction: %i[categories entities])
+          .includes(inclusions)
           .where(conditions)
+          .where(search_term_condition)
+          .where("installments.date_year = ? AND installments.date_month = ?", month_year[0..3], month_year[4..])
           .order("installments.date DESC")
-          .group_by { |t| Date.new(t.year, t.month) }
-          .sort
-          .reverse
+    end
+
+    def self.build_conditions_from_params(params)
+      params.delete(:controller)
+      params.delete(:action)
+
+      return {} if params.blank?
+
+      associations = build_conditions_for_associoations(params)
+
+      params[:price] = build_price_range_conditions(params)
+      params[:card_installments_count] = build_installments_count_range_conditions(params)
+      installments_price = build_card_transaction_price_range_conditions(params)
+
+      {
+        price: installments_price,
+        card_transaction: { **params.compact_blank, **associations.compact_blank }.compact_blank
+      }.compact_blank
+    end
+
+    def self.build_card_transaction_price_range_conditions(params)
+      from_ct_price = params.delete(:from_ct_price).to_i
+      to_ct_price = params.delete(:to_ct_price).to_i
+      return nil if from_ct_price.zero? && to_ct_price.zero?
+
+      from_ct_price ||= 0
+      to_ct_price   ||= from_ct_price if from_ct_price
+      from_ct_price, to_ct_price = to_ct_price, from_ct_price if from_ct_price > to_ct_price
+
+      (from_ct_price..to_ct_price)
+    end
+
+    def self.build_price_range_conditions(params)
+      from_price = params.delete(:from_price).to_i
+      to_price = params.delete(:to_price).to_i
+      return nil if from_price.zero? && to_price.zero?
+
+      from_price ||= 0
+      to_price   ||= from_price if from_price
+      from_price, to_price = to_price, from_price if from_price > to_price
+
+      (from_price..to_price)
+    end
+
+    def self.build_installments_count_range_conditions(params)
+      from_installments_count = params.delete(:from_installments_count).to_i
+      to_installments_count = params.delete(:to_installments_count).to_i
+      return nil if from_installments_count.zero? && to_installments_count.zero?
+
+      from_installments_count ||= 1
+      to_installments_count   ||= from_installments_count if from_installments_count
+      from_installments_count, to_installments_count = to_installments_count, from_installments_count if from_installments_count > to_installments_count
+
+      (from_installments_count..to_installments_count)
+    end
+
+    def self.build_conditions_for_associoations(params)
+      category_id = (params.delete(:category_id) || params.delete(:category_ids) || {}).compact_blank
+      entity_id = (params.delete(:entity_id) || params.delete(:entity_ids) || {}).compact_blank
+
+      {
+        category_transactions: { category_id: }.compact_blank,
+        entity_transactions: { entity_id: }.compact_blank
+      }.compact_blank
     end
   end
 end

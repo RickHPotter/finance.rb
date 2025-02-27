@@ -1,5 +1,15 @@
-const MONTHS_FULL = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "June", "Jui", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"]
-const MONTHS_ABBR = ["Jan", "Fev", "Mars", "Avril", "Mai", "June", "Jui", "Aout", "Sept", "Oct", "Nov", "Dec"]
+function getMonthNames(locale = "fr") {
+  const formatFull = new Intl.DateTimeFormat(locale, { month: "long" })
+  const formatAbbr = new Intl.DateTimeFormat(locale, { month: "short" })
+
+  return {
+    full: [...Array(12)].map((_, i) => formatFull.format(new Date(2000, i, 1))),
+    abbr: [...Array(12)].map((_, i) => formatAbbr.format(new Date(2000, i, 1)).replace(".", "")),
+  }
+}
+
+const locale = window.APP_LOCALE || "fr"
+const { full: MONTHS_FULL, abbr: MONTHS_ABBR } = getMonthNames(locale)
 
 class RailsDate {
   // Thanks, Javascript, for not supporting keyword parameters neither more than one constructor

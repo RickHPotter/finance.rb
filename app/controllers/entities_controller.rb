@@ -3,14 +3,14 @@
 class EntitiesController < ApplicationController
   include TabsConcern
 
-  before_action :set_user, only: %i[index new create edit update destroy]
   before_action :set_entity, only: %i[edit update destroy]
   before_action :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @entities = current_user.entities.where(conditions).order(:entity_name)
+
+    @entities = current_user.entities.where(conditions).order(entity_name: :asc)
   end
 
   def show; end
@@ -26,7 +26,7 @@ class EntitiesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_entities
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
     end
 
     respond_to(&:turbo_stream)
@@ -41,7 +41,7 @@ class EntitiesController < ApplicationController
     if @card_transaction
       set_user_cards
       set_entities
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @entity.active?
+      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @entity.active?
     end
 
     respond_to(&:turbo_stream)
@@ -63,6 +63,6 @@ class EntitiesController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def entity_params
-    params.require(:entity).permit(:entity_name, :active, :user_id)
+    params.require(:entity).permit(:entity_name, :active, :avatar_name, :user_id)
   end
 end

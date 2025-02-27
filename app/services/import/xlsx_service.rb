@@ -91,7 +91,7 @@ module Import
     def parse_category_and_entity(attributes)
       entity = attributes[:entity]
       category = attributes[:category]
-      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALMENT DISCOUNT REVERSAL])
+      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
       is_payer = category == "EXCHANGE" && entity != "MOI"
 
       { category:, entity:, is_payer: }
@@ -100,11 +100,11 @@ module Import
     def parse_month_year(attributes)
       ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
-      if attributes[:date].present?
+      if attributes[:date].present? && Date.current >= attributes[:date]
         attributes[:paid] = true
       else
         attributes[:paid] = false
-        attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1)
+        attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1).end_of_month
       end
 
       { month: ref_month_year.month, year: ref_month_year.year, date: attributes[:date] }

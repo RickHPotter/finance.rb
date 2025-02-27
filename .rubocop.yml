@@ -28,6 +28,9 @@ Style/PercentLiteralDelimiters:
   PreferredDelimiters:
     default: "[]"
 
+Style/Documentation:
+  Enabled: false
+
 Layout/LineLength:
   Max: 166
 
@@ -40,8 +43,8 @@ Metrics/CyclomaticComplexity:
 Metrics/PerceivedComplexity:
   Max: 16
 
-Style/Documentation:
-  Enabled: false
+Metrics/ClassLength:
+  Max: 200
 
 Metrics/MethodLength:
   Max: 20

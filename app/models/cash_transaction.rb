@@ -1,26 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: cash_transactions
-#
-#  id                      :bigint           not null, primary key
-#  description             :string           not null
-#  comment                 :text
-#  date                    :date             not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  starting_price          :integer          not null
-#  price                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  cash_transaction_type   :string
-#  cash_installments_count :integer          default(0), not null
-#  user_id                 :bigint           not null
-#  user_card_id            :bigint
-#  user_bank_account_id    :bigint
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#
 class CashTransaction < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
@@ -31,39 +10,26 @@ class CashTransaction < ApplicationRecord
   include EntityTransactable
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :imported
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, optional: true
-  belongs_to :user_bank_account, optional: true
+  belongs_to :user_bank_account, counter_cache: true, optional: true
 
   has_many :card_installments, dependent: :destroy
   has_many :investments, dependent: :destroy
   has_many :exchanges, dependent: :destroy
 
   # @validations ..............................................................
-  validates :description, :date, :month, :year, :starting_price, :price, presence: true
+  validates :description, :cash_installments_count, presence: true
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
+  after_save :update_associations_count_and_total
+  after_destroy :update_associations_count_and_total
 
   # @scopes ...................................................................
-  scope :by_user, ->(user) { where(user:) }
-  scope :check_helper, lambda { |year, month|
-    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
-      .order(:date)
-  }
-  scope :check_helper_by_date, lambda { |year, month|
-    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
-      .order(:date)
-      .group_by(&:date)
-  }
-  scope :check_helper_by_date_pluck, lambda { |year, month|
-    where("extract(year from date) = ? AND extract(month from date) = ? AND (PRICE > 0 OR PRICE < 0)", year, month)
-      .order(:date)
-      .group_by(&:date)
-      .transform_values { |v| v.map! { |e| [ e.description, e.price ] } }
-  }
-
   # @public_instance_methods ..................................................
 
   def entity_bundle
@@ -77,8 +43,15 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
+    self.date ||= Date.current unless imported
     set_month_year
     cash_installments.each(&:build_month_year)
+  end
+
+  def update_associations_count_and_total
+    user_bank_account&.update_cash_transactions_total
+    categories.each(&:update_cash_transactions_count_and_total)
+    entities.each(&:update_cash_transactions_count_and_total)
   end
 
   # @protected_instance_methods ...............................................
@@ -93,9 +66,43 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
-    self.paid = true if cash_transaction_type == "INVESTMENT"
+    self.paid = true if cash_transaction_type == "Investment"
     self.paid = date.present? && Date.current >= date
   end
 end
+
+# == Schema Information
+#
+# Table name: cash_transactions
+#
+#  id                      :bigint           not null, primary key
+#  cash_installments_count :integer          default(0), not null
+#  cash_transaction_type   :string
+#  comment                 :text
+#  date                    :date             not null
+#  description             :string           not null
+#  month                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  price                   :integer          not null
+#  starting_price          :integer          not null
+#  year                    :integer          not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_bank_account_id    :bigint           indexed
+#  user_card_id            :bigint           indexed
+#  user_id                 :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_cash_transactions_on_user_bank_account_id  (user_bank_account_id)
+#  index_cash_transactions_on_user_card_id          (user_card_id)
+#  index_cash_transactions_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_card_id => user_cards.id)
+#  fk_rails_...  (user_id => users.id)
+#

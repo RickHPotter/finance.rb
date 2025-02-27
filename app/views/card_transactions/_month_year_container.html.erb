@@ -1,0 +1,6 @@
+<%= turbo_frame_tag :month_year_container do %>
+  <% custom_params = { user_card_id:, search_term:, category_ids:, entity_ids:, from_ct_price:, to_ct_price:, from_price:, to_price:, from_installments_count:, to_installments_count: } %>
+  <% active_month_years.sort.each do |month_year| %>
+    <%= turbo_frame_tag "month_year_container_#{month_year}", src: month_year_card_transactions_path(custom_params.merge(month_year:)) %>
+  <% end %>
+<% end %>

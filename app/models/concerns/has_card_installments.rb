@@ -11,7 +11,7 @@ module HasCardInstallments
 
     # @callbacks ..............................................................
     after_initialize :create_one_default_card_installment
-    after_save :update_card_transaction_count
+    after_save :update_card_transaction_count_and_invoke_cash_transactable
   end
 
   # @public_class_methods .....................................................
@@ -35,7 +35,7 @@ module HasCardInstallments
   #
   # @return [void].
   #
-  def update_card_transaction_count
+  def update_card_transaction_count_and_invoke_cash_transactable
     card_installments_count = card_installments.count
     card_installments.each { |i| i.update(card_installments_count:) }
   end

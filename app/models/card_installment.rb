@@ -1,25 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: installments
-#
-#  id                      :bigint           not null, primary key
-#  number                  :integer          not null
-#  date                    :date             not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  starting_price          :integer          not null
-#  price                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  installment_type        :string           not null
-#  card_installments_count :integer          default(0)
-#  cash_installments_count :integer          default(0)
-#  card_transaction_id     :bigint
-#  cash_transaction_id     :bigint
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#
 class CardInstallment < Installment
   # @extends ..................................................................
   delegate :user, :user_id, :user_card, :user_card_id, to: :card_transaction, allow_nil: true
@@ -35,8 +15,8 @@ class CardInstallment < Installment
   validates :card_installments_count, presence: true
 
   # @callbacks ................................................................
-  before_validation :set_installment_type, on: :create
-  before_validation :set_paid,             on: :create
+  before_validation :set_installment_type, :set_paid, on: :create
+  after_save :check_paid_situation
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
@@ -74,8 +54,8 @@ class CardInstallment < Installment
     installments = CardInstallment.by(month:, year:, user_id:, user_card_id:)
 
     x, y = installments.partition { |installment| installment.card_installments_count == 1 }
-    in_one = x.sum(&:price).round(2)
-    spread = y.sum(&:price).round(2)
+    in_one = x.sum(&:price)
+    spread = y.sum(&:price)
 
     "Upfront: #{in_one}, Installments: #{spread}"
   end
@@ -119,8 +99,53 @@ class CardInstallment < Installment
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
     self.paid = date.present? && Date.current >= date
   end
+
+  # Sets `card_transaction.paid` as true if all its installments were paid.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # @return [void].
+  #
+  def check_paid_situation
+    card_transaction.update_columns(paid: card_transaction.card_installments.where(paid: false).empty?)
+  end
 end
+
+# == Schema Information
+#
+# Table name: installments
+#
+#  id                      :bigint           not null, primary key
+#  card_installments_count :integer          default(0)
+#  cash_installments_count :integer          default(0)
+#  date                    :date             not null
+#  date_month              :integer          not null, indexed => [date_year]
+#  date_year               :integer          not null, indexed => [date_month]
+#  installment_type        :string           not null
+#  month                   :integer          not null
+#  number                  :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  price                   :integer          not null, indexed
+#  starting_price          :integer          not null
+#  year                    :integer          not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  card_transaction_id     :bigint           indexed
+#  cash_transaction_id     :bigint           indexed
+#
+# Indexes
+#
+#  idx_installments_price                     (price)
+#  idx_installments_year_month                (date_year,date_month)
+#  index_installments_on_card_transaction_id  (card_transaction_id)
+#  index_installments_on_cash_transaction_id  (cash_transaction_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (card_transaction_id => card_transactions.id)
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#

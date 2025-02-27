@@ -1,15 +1,16 @@
 <%= turbo_frame_tag dom_id entity do %>
-  <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-
-    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
-
-    <%= form.hidden_field :user_id, value: @user.id %>
+  <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+    <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :entity_name,
-            class: autosave_input_class, autofocus: true, autocomplete: :off,
-            data: { autosave_target: :input, placeholder: "Entity Name", placeholder_type: :word } %>
+            class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            data: { reactive_form_target: :input, placeholder: model_attribute(entity, :entity_name), placeholder_type: :word } %>
+    </div>
+
+    <div class="inline-block mx-auto py-2">
+      <%= render Components::IconPicker.new(form:, field: :avatar_name) %>
     </div>
 
     <div>
@@ -17,10 +18,18 @@
     </div>
 
     <div class="mb-3">
-      <%= form.checkbox :active, class: "bg-purple-600 border-gray-300 focus:ring-blue-500 focus:ring-2", checked: entity.new_record? || entity.active %>
+      <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active %>
     </div>
 
-    <%= render ButtonComponent.new form:, options: { label: "Submit Entity" } %>
+    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, entity) } %>
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>
+
+<div class="title-sm font-thin text-slate-300 pt-3">
+  <span>People icons created by </span>
+  <a class="underline" href="https://www.flaticon.com/authors/vitaly-gorbachev" title="people icons">Vitaly Gorbachev - Flaticon</a>
+  <br>
+  <span>Dogs icons created by </span>
+  <a class="underline" href="https://www.flaticon.com/authors/maxim-kulikov" title="dogs icons">Maxim Kulikov - Flaticon</a>
+</div>

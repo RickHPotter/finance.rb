@@ -9,6 +9,12 @@ Rails.application.configure do
     Bullet.console       = true
     Bullet.rails_logger  = true
     Bullet.add_footer    = true
+
+    # Cash Transactable Concern problems I could not solve, plus schrodinger's eager load (such a pain)
+    %i[card_transaction cash_transaction category entity].each do |association|
+      Bullet.add_safelist(type: :n_plus_one_query,     class_name: "CardInstallment", association:)
+      Bullet.add_safelist(type: :unused_eager_loading, class_name: "CardInstallment", association:)
+    end
   end
 
   # Settings specified here will take precedence over those in config/application.rb.
@@ -36,7 +42,7 @@ Rails.application.configure do
   end
 
   # Change to :null_store to avoid any caching.
-  config.cache_store = :memory_store
+  config.cache_store = :solid_cache_store
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local

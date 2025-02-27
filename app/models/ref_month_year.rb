@@ -32,7 +32,7 @@ class RefMonthYear
   # @return [String] Formatted `month` and `year` string in the format "MONTH <YEAR>".
   #
   def month_year
-    "#{MONTHS_ABBR[@month - 1].upcase} <#{@year - 2000}>"
+    I18n.l(Date.new(@year, @month), format: "%b <%y>").upcase
   end
 
   # Initialises a new {RefMonthYear} instance from a string.
@@ -41,6 +41,8 @@ class RefMonthYear
   #
   # @example Create a new RefMonthYear instance:
   #   ref_month_year = RefMonthYear.from_string("NOV <24>")
+  #
+  # @note The `MONTH` of `month_year` is expected to be in either `MONTHS_ABBR` or `MONTHS_FULL`.
   #
   # @return [RefMonthYear] A new instance of {RefMonthYear}.
   #
