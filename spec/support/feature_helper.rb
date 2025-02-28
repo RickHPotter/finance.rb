@@ -20,11 +20,11 @@ module FeatureHelper
 
   def navigate_to(menu:, sub_menu:)
     within "turbo-frame#tabs ul:nth-child(1)", match: :first do
-      click_on menu
+      find("a", text: menu.to_s, match: :first).click
     end
 
     within "turbo-frame#tabs div[role='tabpanel'] ul" do
-      click_on sub_menu
+      find("a", text: sub_menu.to_s, match: :first).click
     end
   end
 

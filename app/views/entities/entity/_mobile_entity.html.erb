@@ -74,7 +74,7 @@
             <%= render_icon :pencil %>
           <% end %>
 
-          <%= link_to entity, id: "delete_entity_#{entity.id}", data: { turbo_method: :delete } do %>
+          <%= link_to entity, id: "delete_entity_#{entity.id}", data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
             <%= render_icon :rubbish %>
           <% end %>
         </div>

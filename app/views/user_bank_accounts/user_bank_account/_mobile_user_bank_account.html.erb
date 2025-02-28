@@ -48,7 +48,7 @@
             <%= render_icon :pencil %>
           <% end %>
 
-          <%= link_to user_bank_account, id: "delete_user_bank_account_#{user_bank_account.id}", data: { turbo_method: :delete } do %>
+          <%= link_to user_bank_account, id: "delete_user_bank_account_#{user_bank_account.id}", data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
             <%= render_icon :rubbish %>
           <% end %>
         </div>

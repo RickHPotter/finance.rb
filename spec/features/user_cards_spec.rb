@@ -146,6 +146,7 @@ RSpec.describe "UserCards", type: :feature do
     scenario "destroying a user_card that has no card_transactions" do
       within "turbo-frame#user_card_#{user_card.id}" do
         find("#delete_user_card_#{user_card.id}").click
+        accept_alert
       end
 
       expect(page).to_not have_css("turbo-frame#user_card_#{user_card.id}")
@@ -158,6 +159,7 @@ RSpec.describe "UserCards", type: :feature do
 
       within "turbo-frame#user_card_#{user_card.id}" do
         find("#delete_user_card_#{user_card.id}").click
+        accept_alert
       end
 
       expect(page).to have_css("turbo-frame#user_card_#{user_card.id}")

@@ -49,7 +49,9 @@ class CardTransaction < ApplicationRecord
   #
   def build_month_year
     self.date ||= Date.current unless imported
+
     set_month_year
+    card_installments.new(number: 1, price:, date:) if card_installments.empty?
     card_installments.each(&:build_month_year)
   end
 

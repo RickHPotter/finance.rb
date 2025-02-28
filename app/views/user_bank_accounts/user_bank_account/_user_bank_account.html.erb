@@ -3,8 +3,7 @@
                 data: { id: user_bank_account.id, datatable_target: :row } do %>
 
     <div class="col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold">
-      <% brand_and_name = "[ #{user_bank_account.bank.bank_name} ] #{user_bank_account.agency_number || '-'}/#{user_bank_account.account_number || '-'}" %>
-      <%= content_tag :span, brand_and_name, class: "px-4 whitespace-nowrap" %>
+      <%= content_tag :span, user_bank_account.pretty_print, class: "user_bank_account_description px-4 whitespace-nowrap" %>
     </div>
 
     <div class="jump_to_cash_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">
@@ -38,7 +37,7 @@
         <%= link_to user_bank_account,
                     id: "delete_user_bank_account_#{user_bank_account.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
-                    data: { turbo_method: :delete } do %>
+                    data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
           <%= render_icon :destroy %>
         <% end %>
       </div>

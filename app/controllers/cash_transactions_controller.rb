@@ -54,7 +54,7 @@ class CashTransactionsController < ApplicationController
   def show; end
 
   def new
-    @cash_transaction = CashTransaction.new(user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first.id)
+    @cash_transaction = CashTransaction.new(user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id)
     @cash_transaction.build_month_year
 
     respond_to do |format|
@@ -81,6 +81,7 @@ class CashTransactionsController < ApplicationController
       if @cash_transaction.save
         @user_bank_account = @cash_transaction.user_bank_account
         index
+        load_index_based_on_save
         set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end
 
@@ -102,6 +103,7 @@ class CashTransactionsController < ApplicationController
       if @cash_transaction.save
         @user_bank_account = @cash_transaction.user_bank_account
         index
+        load_index_based_on_save
         set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end
 
@@ -130,6 +132,14 @@ class CashTransactionsController < ApplicationController
         ]
       end
     end
+  end
+
+  def load_index_based_on_save
+    @default_year = @cash_transaction.cash_installments.first.year
+    @active_month_years = @cash_transaction.cash_installments.map do |cash_installment|
+      Date.new(cash_installment.year, cash_installment.month, 1).strftime("%Y%m").to_i
+    end
+    @search_term = @cash_transaction.description
   end
 
   private

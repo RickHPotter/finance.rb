@@ -26,6 +26,10 @@ class UserBankAccount < ApplicationRecord
     update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
   end
 
+  def pretty_print
+    "[ #{bank.bank_name} ] #{agency_number || '-'}/#{account_number || '-'}"
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end

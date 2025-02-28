@@ -15,7 +15,7 @@ module Logic
 
       user.cash_installments
           .where.not(price: 0)
-          .joins(:cash_transaction)
+          .left_outer_joins(inclusions)
           .select("installments.*,
                   SUM(installments.price)
                   OVER (PARTITION BY cash_transactions.user_id ORDER BY installments.date ASC, installments.cash_installments_count ASC, installments.price DESC)
@@ -92,8 +92,8 @@ module Logic
       entity_id = (params.delete(:entity_id) || params.delete(:entity_ids) || {}).compact_blank
 
       {
-        category_transactions: { category_id: }.compact_blank,
-        entity_transactions: { entity_id: }.compact_blank
+        categories: { id: category_id }.compact_blank,
+        entities: { id: entity_id }.compact_blank
       }.compact_blank
     end
   end

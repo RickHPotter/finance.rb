@@ -53,7 +53,8 @@
         <%= render Components::TextFieldComponent.new \
               form, :date,
               id: :cash_transaction_date,
-              type: :date, svg: :calendar,
+              type: "datetime-local", svg: :calendar,
+              value: cash_transaction.date.strftime("%Y-%m-%dT%H:%M"),
               class: "font-graduate",
               data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" } %>
       </div>
@@ -138,7 +139,15 @@
       <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, cash_transaction) } %>
+    <div class="w-2/5 flex items-center justify-between gap-2 mx-auto">
+      <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, cash_transaction) } %>
+      <%= render Components::ButtonComponent.new link: cash_transaction,
+                                                 options: { id: "delete_cash_transaction_#{cash_transaction.id}",
+                                                            label: action_model(:destroy, cash_transaction),
+                                                            colour: :red,
+                                                            data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } } %>
+    </div>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

@@ -102,6 +102,7 @@ RSpec.describe "CardTransactions", type: :feature do
 
       within "turbo-frame#card_transactions #card_installment_#{card_transaction.card_installments.first.id}" do
         click_link("delete_card_transaction_#{card_transaction.id}")
+        accept_alert
       end
 
       expect(notification).to have_content(notification_model(:destroyeda, CardTransaction))

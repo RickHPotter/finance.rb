@@ -127,6 +127,7 @@ RSpec.describe "Entities", type: :feature do
     scenario "destroying a entity that has no card_transactions" do
       within "turbo-frame#entity_#{entity.id}" do
         find("#delete_entity_#{entity.id}").click
+        accept_alert
       end
 
       expect(page).to_not have_css("turbo-frame#entity_#{entity.id}")
@@ -139,6 +140,7 @@ RSpec.describe "Entities", type: :feature do
 
       within "turbo-frame#entity_#{entity.id}" do
         find("#delete_entity_#{entity.id}").click
+        accept_alert
       end
 
       expect(page).to have_css("turbo-frame#entity_#{entity.id}")

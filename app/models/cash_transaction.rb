@@ -45,7 +45,9 @@ class CashTransaction < ApplicationRecord
   #
   def build_month_year
     self.date ||= Date.current unless imported
+
     set_month_year
+    cash_installments.new(number: 1, price:, date:) if cash_installments.empty?
     cash_installments.each(&:build_month_year)
   end
 

@@ -56,7 +56,8 @@
         <%= render Components::TextFieldComponent.new \
               form, :date,
               id: :card_transaction_date,
-              type: :date, svg: :calendar,
+              type: "datetime-local", svg: :calendar,
+              value: card_transaction.date.strftime("%Y-%m-%dT%H:%M"),
               class: "font-graduate",
               data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" } %>
       </div>

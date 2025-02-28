@@ -129,6 +129,7 @@ RSpec.describe "Categories", type: :feature do
     scenario "destroying a category that has no card_transactions" do
       within "turbo-frame#category_#{category.id}" do
         find("#delete_category_#{category.id}").click
+        accept_alert
       end
 
       expect(page).to_not have_css("turbo-frame#category_#{category.id}")
@@ -141,6 +142,7 @@ RSpec.describe "Categories", type: :feature do
 
       within "turbo-frame#category_#{category.id}" do
         find("#delete_category_#{category.id}").click
+        accept_alert
       end
 
       expect(page).to have_css("turbo-frame#category_#{category.id}")

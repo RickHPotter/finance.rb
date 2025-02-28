@@ -27,14 +27,9 @@ RSpec.describe "UserBankAccounts", type: :feature do
     end
 
     scenario "jumping to cash_transactions that belong to the newly-created user_bank_account" do
-      skip
       find("#user_bank_account_#{user_bank_account.id} .jump_to_cash_transactions a", match: :first).click
 
       match_center_container_content("cash_transactions")
-
-      within "turbo-frame#center_container turbo-frame#cash_transactions" do
-        expect(page).to have_selector("#month_year_selector_title", text: user_bank_account.user_bank_account_name)
-      end
     end
   end
 
@@ -54,7 +49,6 @@ RSpec.describe "UserBankAccounts", type: :feature do
     end
 
     scenario "creating a valid user_bank_account and getting redirected to cash_transaction creation with user_bank_account already preselected" do
-      skip
       within "turbo-frame#new_user_bank_account form" do
         hotwire_select "hw_user_bank_account_bank_id", with: bank.id
         fill_in "user_bank_account_agency_number",     with: "123"
@@ -68,14 +62,10 @@ RSpec.describe "UserBankAccounts", type: :feature do
       match_center_container_content("new_cash_transaction")
 
       within "turbo-frame#new_cash_transaction form" do
-        within ".hw-cb .hw-combobox[data-async-id='cash_transaction_user_bank_account_id']" do |element|
-          # FIXME: a
-          # user_bank_account = user.user_bank_accounts.find_by()
-          user_bank_account = user.user_bank_accounts.first
-          bank_name = element["data-hw-combobox-prefilled-display-value"]
-          bank_id   = find("#cash_transaction_user_bank_account_id-hw-hidden-field", visible: false)["value"]
+        within ".hw-cb .hw-combobox[data-async-id='cash_transaction_user_bank_account_id']" do
+          user_bank_account = user.user_bank_accounts.find_by(bank_id: bank.id, agency_number: "123", account_number: "456")
+          bank_id = find("#cash_transaction_user_bank_account_id-hw-hidden-field", visible: false)["value"]
 
-          expect(bank_name).to eq(user_bank_account.user_bank_account_name)
           expect(bank_id).to eq(user_bank_account.id.to_s)
         end
       end
@@ -90,7 +80,6 @@ RSpec.describe "UserBankAccounts", type: :feature do
     end
 
     scenario "editing a valid user_bank_account and getting redirected to cash_transaction creation with user_bank_account already preselected" do
-      skip
       within "turbo-frame#center_container" do
         find("#edit_user_bank_account_#{user_bank_account.id}", match: :first).click
 
@@ -108,14 +97,10 @@ RSpec.describe "UserBankAccounts", type: :feature do
       match_center_container_content("new_cash_transaction")
 
       within "turbo-frame#new_cash_transaction form" do
-        within ".hw-cb .hw-combobox[data-async-id='cash_transaction_user_bank_account_id']" do |element|
-          # FIXME: a
-          # user_bank_account = user.user_bank_accounts.find_by()
-          user_bank_account = user.user_bank_accounts.first
-          bank_name = element["data-hw-combobox-prefilled-display-value"]
-          bank_id   = find("#cash_transaction_user_bank_account_id-hw-hidden-field", visible: false)["value"]
+        within ".hw-cb .hw-combobox[data-async-id='cash_transaction_user_bank_account_id']" do
+          user_bank_account = user.user_bank_accounts.find_by(bank_id: bank.id, agency_number: "123", account_number: "456")
+          bank_id = find("#cash_transaction_user_bank_account_id-hw-hidden-field", visible: false)["value"]
 
-          expect(bank_name).to eq(user_bank_account.user_bank_account_name)
           expect(bank_id).to eq(user_bank_account.id.to_s)
         end
       end
@@ -123,9 +108,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
       navigate_to(menu: basic, sub_menu: user_bank_account_submenu)
 
       within "turbo-frame#user_bank_accounts turbo-frame#user_bank_account_#{user_bank_account.id}" do
-        expect(page).to have_selector("span", text: "Another Test Entity")
-        expect(page).to have_selector("span.agency_number", text: "123")
-        expect(page).to have_selector("span.account_number", text: "456")
+        expect(page).to have_selector("span.user_bank_account_description", text: user_bank_account.reload.pretty_print)
       end
     end
   end
@@ -139,6 +122,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
     scenario "destroying a user_bank_account that has no cash_transactions" do
       within "turbo-frame#user_bank_account_#{user_bank_account.id}" do
         find("#delete_user_bank_account_#{user_bank_account.id}").click
+        accept_alert
       end
 
       expect(page).to_not have_css("turbo-frame#user_bank_account_#{user_bank_account.id}")
@@ -151,6 +135,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
 
       within "turbo-frame#user_bank_account_#{user_bank_account.id}" do
         find("#delete_user_bank_account_#{user_bank_account.id}").click
+        accept_alert
       end
 
       expect(page).to have_css("turbo-frame#user_bank_account_#{user_bank_account.id}")

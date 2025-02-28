@@ -61,7 +61,7 @@
         <%= link_to card_transaction,
                     id: "delete_card_transaction_#{card_transaction.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
-                    data: { turbo_method: :delete } do %>
+                    data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
           <%= render_icon :destroy %>
         <% end %>
       </div>
