@@ -13,9 +13,7 @@
       <%= render Components::IconPicker.new(form:, field: :avatar_name) %>
     </div>
 
-    <div>
-      <%= bold_label(form, :active) %>
-    </div>
+    <%= bold_label(form, :active) %>
 
     <div class="mb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active %>

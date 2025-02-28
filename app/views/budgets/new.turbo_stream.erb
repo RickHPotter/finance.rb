@@ -1,0 +1,5 @@
+<%= turbo_stream.replace(:center_container, template: "budgets/new", locals: { budget: @budget }) %>
+<%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% if params[:no_budget] %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:budget_needed, CardTransaction) }) %>
+<% end %>

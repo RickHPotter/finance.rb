@@ -13,10 +13,12 @@ class Budget < ApplicationRecord
   has_many :budget_entities
   has_many :entities, through: :budget_entities
 
+  accepts_nested_attributes_for :budget_categories, allow_destroy: true, reject_if: :all_blank
+  accepts_nested_attributes_for :budget_entities, allow_destroy: true, reject_if: :all_blank
+
   # @validations ..............................................................
   validates :month, :year, presence: true
-  validates :budget_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
-  validates :remaining_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
+  validates :value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
@@ -40,7 +42,7 @@ class Budget < ApplicationRecord
       cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
     end => installments
 
-    self.remaining_value = budget_value - installments.sum(&:price)
+    self.remaining_value = value - installments.sum(&:price)
   end
 
   # @protected_instance_methods ...............................................
@@ -48,8 +50,8 @@ class Budget < ApplicationRecord
   protected
 
   def update_budget_according_to_changes
-    if budget_value_changed?
-      self.remaining_value += changes[:budget_value].last - changes[:budget_value].first
+    if value_changed?
+      self.remaining_value += changes[:value].last - changes[:value].first
     elsif inclusive_changed? || month_changed? || year_changed? || user_id_changed? || changes.without(:remaining_value).empty?
       set_remaining_value
     end
@@ -64,10 +66,11 @@ end
 #
 #  id              :bigint           not null, primary key
 #  active          :boolean          default(TRUE), not null
-#  budget_value    :integer          not null
+#  description     :string           not null
 #  inclusive       :boolean          default(TRUE), not null
 #  month           :integer          not null
 #  remaining_value :integer          not null
+#  value           :integer          not null
 #  year            :integer          not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null

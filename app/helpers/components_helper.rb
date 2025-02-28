@@ -10,10 +10,17 @@ module ComponentsHelper
     text-gray-900".squish
   end
 
-  # @return [String] tailwind class for autosave input.
+  # @return [String] tailwind class for input.
   #
   def outdoor_input_class
     "w-full text-black text-center text-ellipsis text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-extrabold
+    border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent".squish
+  end
+
+  # @return [String] tailwind class for readonly input.
+  #
+  def outdoor_readonly_input_class
+    "w-full text-black text-center text-ellipsis text-lg lg:text-2xl xl:text-3xl 2xl:text-4xl font-extrabold
     border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent".squish
   end
 

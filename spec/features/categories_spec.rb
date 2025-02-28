@@ -63,7 +63,7 @@ RSpec.describe "Categories", type: :feature do
 
       within "turbo-frame#new_card_transaction form" do
         within "#categories_nested" do
-          categories = page.all(".category_transaction_category_name").map(&:text)
+          categories = page.all(".categories_category_name").map(&:text)
           expect(categories).to include("Test Category")
         end
       end
@@ -107,7 +107,7 @@ RSpec.describe "Categories", type: :feature do
 
       within "turbo-frame#new_card_transaction form" do
         within "#categories_nested" do
-          categories = page.all(".category_transaction_category_name").map(&:text)
+          categories = page.all(".categories_category_name").map(&:text)
           expect(categories).to include("Another Test Category")
         end
       end

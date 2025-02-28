@@ -60,9 +60,7 @@
       </div>
     </div>
 
-    <div>
-      <%= bold_label(form, :active) %>
-    </div>
+    <%= bold_label(form, :active) %>
 
     <div class="mb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>

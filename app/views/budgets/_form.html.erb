@@ -1,0 +1,120 @@
+<%= turbo_frame_tag dom_id budget do %>
+  <%= form_with(model: budget, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form dynamic-description", action: "submit->reactive-form#removeMasks" }) do |form| %>
+    <%= form.hidden_field :user_id, value: current_user.id %>
+    <%= hidden_field_tag :category_colours, current_user.categories.to_h { |c| [ c.id, c.bg_colour ] }.to_json, disabled: true, data: { reactive_form_target: :categoryColours } %>
+
+    <div class="w-full mb-6">
+      <%= form.text_field \
+            :description,
+            class: outdoor_readonly_input_class,
+            data: { reactive_form_target: :input, dynamic_description_target: :description, placeholder: model_attribute(budget, :description), placeholder_type: :word } %>
+    </div>
+
+    <div class="lg:flex lg:gap-2 w-full mb-3">
+      <div id="hw_category_id" class="hw-cb w-full lg:w-1/4 mb-3 plus-icon">
+        <%= bold_label(form, :categories) %>
+        <%= form.combobox \
+              :budget_category,
+              @categories,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: model_attribute(budget, :category_id),
+              data: { action: "hw-combobox:selection->reactive-form#insertChip hw-combobox:selection->dynamic-description#updateDescription", value: ".hw-combobox__input" } %>
+      </div>
+
+      <div id="hw_budget_entity_id" class="hw-cb w-full lg:w-1/4 mb-3 user-icon">
+        <%= bold_label(form, :entities) %>
+        <%= form.combobox \
+              :budget_entity,
+              @entities,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: model_attribute(budget, :entity_id),
+              data: { action: "hw-combobox:selection->dynamic-description#updateDescription", value: ".hw-combobox__input" } %>
+      </div>
+
+      <div class="w-full lg:w-1/4 mb-2">
+        <%= bold_label(form, :month_year) %>
+        <%= render Components::TextFieldComponent.new \
+              form, :month_year,
+              type: :month, svg: :calendar,
+              class: "font-graduate",
+              value: budget.month.present? ? "#{budget.year}-#{budget.month}" : Date.current.strftime("%Y-%m"),
+              data: { dynamic_description_target: :monthYear, action: "input->dynamic-description#updateDescription" } %>
+      </div>
+
+      <div class="w-full lg:w-1/4 mb-2">
+        <%= bold_label(form, :value) %>
+        <%= render Components::TextFieldComponent.new \
+              form, :value,
+              svg: :money,
+              class: "font-graduate",
+              data: { dynamic_description_target: :value, reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->dynamic-description#updateDescription" } %>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-center gap-2 w-1/4 mb-3 mx-auto">
+      <div class="w-1/2 mb-2">
+        <%= bold_label(form, :inclusive) %>
+
+        <div class="mb-3">
+          <%= form.checkbox \
+                :inclusive,
+                class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                checked: budget.new_record? || budget.active,
+                data: { dynamic_description_target: :inclusive, action: "change->dynamic-description#updateDescription" } %>
+        </div>
+      </div>
+
+      <div class="w-1/2 mb-2">
+        <%= bold_label(form, :active) %>
+
+        <div class="mb-3">
+          <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.new_record? || budget.active %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
+         class="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 pb-2">
+      <template data-nested-form-target="template">
+        <%= form.fields_for :budget_categories, BudgetCategory.new, child_index: "NEW_RECORD" do |budget_category_fields| %>
+          <%= render "budgets/budget_category_fields", form: budget_category_fields %>
+        <% end %>
+      </template>
+
+      <% budget_categories_association = budget.budget_categories.includes(:category) if budget.budget_categories.count > 1 %>
+      <%= form.fields_for :budget_categories, budget_categories_association do |budget_category_fields| %>
+        <%= render "budgets/budget_category_fields", form: budget_category_fields %>
+      <% end %>
+
+      <!-- inserted elements -->
+      <div data-nested-form-target="target"></div>
+
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addCategory, action: "nested-form#add" } %>
+    </div>
+
+    <!-- Entities -->
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+      <template data-nested-form-target="template">
+        <%= form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields| %>
+          <%= render "budgets/budget_entity_fields", form: budget_entity_fields %>
+        <% end %>
+      </template>
+
+      <% budget_entities_association = budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1 %>
+      <%= form.fields_for :budget_entities, budget_entities_association do |budget_entity_fields| %>
+        <%= render "budgets/budget_entity_fields", form: budget_entity_fields %>
+      <% end %>
+
+      <!-- inserted elements -->
+      <div data-nested-form-target="target"></div>
+
+      <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
+    </div>
+
+    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, budget) } %>
+    <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
+  <% end %>
+<% end %>

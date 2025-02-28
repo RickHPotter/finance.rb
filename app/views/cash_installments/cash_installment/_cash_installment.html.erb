@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id cash_installment do %>
-  <% cash_transaction = cash_installment.cash_transaction %>
+  <% cash_transaction = cash_installment.cash_transaction || Budget.find(cash_installment.id) %>
 
   <% solid_colour_or_gradient = cash_transaction.categories.first&.bg_colour %>
   <% if cash_transaction.categories.count > 1 %>
@@ -30,14 +30,15 @@
     <% end %>
 
     <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
-      <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
+      <!-- TODO: edit a cash_transaction or a budget -->
+      <%= link_to cash_installment.description, edit_cash_transaction_path(cash_transaction),
                   id: "edit_cash_transaction_#{cash_transaction.id}",
                   class: "flex-1 truncate text-md",
                   data: { turbo_frame: :center_container } %>
 
       <%= content_tag :span,
                       pretty_installments(cash_installment.number, cash_installment.cash_installments_count),
-                      class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}" %>
+                      class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}" %>
     </div>
 
     <%= content_tag :div, class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) } do %>

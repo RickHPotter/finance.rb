@@ -292,7 +292,7 @@ Possible Downtime: 6 months and a half
   - ✅ Create search sub_menu in `CardTransaction`'s `:index`.
   - ✅ Add CRUD for `UserBankAccount`.
   - ✅ Update `CashTransaction` CRUD in the same way as `CardTransaction`.
-  - ⌛ Create a `Budget` System.
+  - ✅ Create a `Budget` System.
   - ⌛ Create the connection of `EntityTransaction` to `CardTransaction` form.
   - ⌛ Create the connection of `Exchange` to `EntityTransaction` sub-form.
 - Extra:

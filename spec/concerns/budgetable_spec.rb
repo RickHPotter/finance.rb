@@ -24,7 +24,7 @@ RSpec.describe Budgetable, type: :concern do
   end
 
   let(:budget) do
-    build(:budget, budget_value: -1_000_00, month: applicable_transaction.month, year: applicable_transaction.year, inclusive: false, user:,
+    build(:budget, value: -1_000_00, month: applicable_transaction.month, year: applicable_transaction.year, inclusive: false, user:,
                    budget_categories: [ BudgetCategory.new(category:) ],
                    budget_entities: [ BudgetEntity.new(entity:) ])
   end
@@ -47,7 +47,7 @@ RSpec.describe Budgetable, type: :concern do
   def validate_budget(installments, more_installments = nil)
     installments_total = installments.where(month: budget.month, year: budget.year).sum(:price)
     installments_total += more_installments.where(month: budget.month, year: budget.year).sum(:price) if more_installments
-    expect(budget.remaining_value).to eq(budget.budget_value - installments_total)
+    expect(budget.remaining_value).to eq(budget.value - installments_total)
   end
 
   describe "[ concern behaviour ]" do
@@ -65,7 +65,7 @@ RSpec.describe Budgetable, type: :concern do
         non_applicable_transaction.save
         budget.reload
 
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
     end
 
@@ -77,7 +77,7 @@ RSpec.describe Budgetable, type: :concern do
 
       it "does not update the budget" do
         budget.reload
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
 
       it "creates transactions that apply to the budget" do
@@ -122,7 +122,7 @@ RSpec.describe Budgetable, type: :concern do
 
         budget.reload
 
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
 
       it "updates the non-inclusive budget to no longer be applied to the transaction" do
@@ -130,7 +130,7 @@ RSpec.describe Budgetable, type: :concern do
         budget.entities = [ create(:entity, :random, user:) ]
         budget.save
 
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
 
       it "updates the budget to inclusive and still be applied to the transaction" do
@@ -145,7 +145,7 @@ RSpec.describe Budgetable, type: :concern do
         budget.entities = [ create(:entity, :random, user:) ]
         budget.save
 
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
 
       it "destroys the transactions that apply to the budget" do
@@ -153,7 +153,7 @@ RSpec.describe Budgetable, type: :concern do
 
         budget.reload
 
-        expect(budget.remaining_value).to eq(budget.budget_value)
+        expect(budget.remaining_value).to eq(budget.value)
       end
     end
   end

@@ -21,7 +21,7 @@ export default class extends Controller {
     "closingDateDay", "daysUntilDueDate",
 
     "installmentWrapper", "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
-    "categoryTransactionWrapper", "categoryColours",
+    "categoryWrapper", "categoryColours",
 
     "addInstallment", "delInstallment",
     "addCategory", "delCategory",
@@ -129,9 +129,9 @@ export default class extends Controller {
 
   removeChip({ target }) {
     const nested_div = target.parentElement.parentElement.parentElement
-    const chip_value = nested_div.querySelector(".category_transaction_category_id").value
+    const chip_value = nested_div.querySelector(".categories_category_id").value
 
-    const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+    const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
     const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
     if (!comboboxController) return console.error("Combobox controller not found")
 
@@ -271,22 +271,22 @@ export default class extends Controller {
 
     this.addCategoryTarget.click()
 
-    const wrappers = this.categoryTransactionWrapperTargets
+    const wrappers = this.categoryWrapperTargets
     const new_wrapper = wrappers[wrappers.length - 1]
 
-    new_wrapper.querySelector(".category_transaction_container").classList.add(this.categoryColours[value])
-    new_wrapper.querySelector(".category_transaction_category_id").value = value
-    new_wrapper.querySelector(".category_transaction_category_name").textContent = text
+    new_wrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    new_wrapper.querySelector(".categories_category_id").value = value
+    new_wrapper.querySelector(".categories_category_name").textContent = text
   }
 
   _updateChips() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+      const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
       const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
       if (!comboboxController) return console.error("Combobox controller not found")
 
-      const chip_values = this.categoryTransactionWrapperTargets.map((target) => { return target.querySelector(".category_transaction_category_id").value })
+      const chip_values = this.categoryWrapperTargets.map((target) => { return target.querySelector(".categories_category_id").value })
 
       let all_options = comboboxController._allOptions
       let to_be_hidden = all_options.filter((option) => { return chip_values.includes(option.dataset.value) })

@@ -81,6 +81,7 @@ module TabsConcern
   def set_cash_transaction_sublinks
     @cash_transaction_items = [
       { label: t("tabs.pix"),        icon: :mobile,      link: cash_transactions_path, default: @active_sub_menu == :pix },
+      { label: t("tabs.budget"),     icon: :piggy_bank,  link: new_budget_path,        default: @active_sub_menu == :budget },
       { label: t("tabs.investment"), icon: :trending_up, link: cash_transactions_path, default: @active_sub_menu == :investment }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 

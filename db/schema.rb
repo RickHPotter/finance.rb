@@ -43,9 +43,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
   end
 
   create_table "budgets", force: :cascade do |t|
+    t.string "description", null: false
     t.integer "month", null: false
     t.integer "year", null: false
-    t.integer "budget_value", null: false
+    t.integer "value", null: false
     t.integer "remaining_value", null: false
     t.boolean "inclusive", default: true, null: false
     t.boolean "active", default: true, null: false
