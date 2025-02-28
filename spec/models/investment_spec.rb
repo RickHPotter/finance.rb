@@ -128,7 +128,7 @@ end
 # Table name: investments
 #
 #  id                   :bigint           not null, primary key
-#  date                 :date             not null
+#  date                 :datetime         not null
 #  description          :string
 #  month                :integer          not null
 #  price                :integer          not null

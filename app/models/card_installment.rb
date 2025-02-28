@@ -20,7 +20,14 @@ class CardInstallment < Installment
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
-  scope :by, ->(month:, year:, user_id:, user_card_id:) { joins(:card_transaction).where(month:, year:, card_transaction: { user_id:, user_card_id: }) }
+  scope :by_categories, ->(categories) { joins(card_transaction: :categories).where(card_transaction: { categories: }) }
+  scope :by_entities, ->(entities) { joins(card_transaction: :entities).where(card_transaction: { entities: }) }
+  scope :by_categories_and_entities, ->(categories, entities) { joins(card_transaction: %i[categories entities]).where(card_transaction: { categories:, entities: }) }
+  scope :by_categories_or_entities, lambda { |categories, entities|
+    joins(card_transaction: %i[categories entities]).where(card_transaction: { categories: }).or(
+      joins(card_transaction: %i[categories entities]).where(card_transaction: { entities: })
+    )
+  }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
@@ -51,7 +58,7 @@ class CardInstallment < Installment
   # @return [String] The generated comment.
   #
   def comment
-    installments = CardInstallment.by(month:, year:, user_id:, user_card_id:)
+    installments = user_card.card_installments.where(month:, year:)
 
     x, y = installments.partition { |installment| installment.card_installments_count == 1 }
     in_one = x.sum(&:price)
@@ -122,7 +129,7 @@ end
 #  id                      :bigint           not null, primary key
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
-#  date                    :date             not null
+#  date                    :datetime         not null
 #  date_month              :integer          not null, indexed => [date_year]
 #  date_year               :integer          not null, indexed => [date_month]
 #  installment_type        :string           not null

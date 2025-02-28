@@ -5,7 +5,7 @@ class CreateInvestments < ActiveRecord::Migration[8.0]
   def change
     create_table :investments do |t|
       t.string :description, null: true
-      t.date :date, null: false
+      t.datetime :date, null: false
       t.integer :month, null: false
       t.integer :year, null: false
       t.integer :price, null: false

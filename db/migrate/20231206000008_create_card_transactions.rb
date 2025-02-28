@@ -6,7 +6,7 @@ class CreateCardTransactions < ActiveRecord::Migration[8.0]
     create_table :card_transactions do |t|
       t.string :description, null: false
       t.text :comment
-      t.date :date, null: false
+      t.datetime :date, null: false
       t.integer :month, null: false
       t.integer :year, null: false
       t.integer :starting_price, null: false

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
+ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -22,10 +22,43 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "budget_categories", force: :cascade do |t|
+    t.bigint "budget_id", null: false
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["budget_id", "category_id"], name: "index_budget_categories_on_composite_key", unique: true
+    t.index ["budget_id"], name: "index_budget_categories_on_budget_id"
+    t.index ["category_id"], name: "index_budget_categories_on_category_id"
+  end
+
+  create_table "budget_entities", force: :cascade do |t|
+    t.bigint "budget_id", null: false
+    t.bigint "entity_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["budget_id", "entity_id"], name: "index_budget_entities_on_composite_key", unique: true
+    t.index ["budget_id"], name: "index_budget_entities_on_budget_id"
+    t.index ["entity_id"], name: "index_budget_entities_on_entity_id"
+  end
+
+  create_table "budgets", force: :cascade do |t|
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.integer "budget_value", null: false
+    t.integer "remaining_value", null: false
+    t.boolean "inclusive", default: true, null: false
+    t.boolean "active", default: true, null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_budgets_on_user_id"
+  end
+
   create_table "card_transactions", force: :cascade do |t|
     t.string "description", null: false
     t.text "comment"
-    t.date "date", null: false
+    t.datetime "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
     t.integer "starting_price", null: false
@@ -56,7 +89,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
   create_table "cash_transactions", force: :cascade do |t|
     t.string "description", null: false
     t.text "comment"
-    t.date "date", null: false
+    t.datetime "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
     t.integer "starting_price", null: false
@@ -148,7 +181,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
 
   create_table "installments", force: :cascade do |t|
     t.integer "number", null: false
-    t.date "date", null: false
+    t.datetime "date", null: false
     t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
     t.virtual "date_month", type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
     t.integer "month", null: false
@@ -171,7 +204,7 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
 
   create_table "investments", force: :cascade do |t|
     t.string "description"
-    t.date "date", null: false
+    t.datetime "date", null: false
     t.integer "month", null: false
     t.integer "year", null: false
     t.integer "price", null: false
@@ -238,6 +271,11 @@ ActiveRecord::Schema[8.0].define(version: 2024_05_00_000003) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "budget_categories", "budgets"
+  add_foreign_key "budget_categories", "categories"
+  add_foreign_key "budget_entities", "budgets"
+  add_foreign_key "budget_entities", "entities"
+  add_foreign_key "budgets", "users"
   add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"

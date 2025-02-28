@@ -38,7 +38,7 @@ end
 #  id                          :bigint           not null, primary key
 #  card_installments_count     :integer          default(0), not null
 #  comment                     :text
-#  date                        :date             not null
+#  date                        :datetime         not null
 #  description                 :string           not null, indexed
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)

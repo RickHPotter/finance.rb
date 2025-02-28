@@ -21,7 +21,14 @@ class CashInstallment < Installment
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
-  scope :by, ->(month:, year:, user_id:) { joins(:cash_transaction).where(month:, year:, cash_transaction: { user_id: }) }
+  scope :by_categories, ->(categories) { joins(cash_transaction: :categories).where(cash_transaction: { categories: }) }
+  scope :by_entities, ->(entities) { joins(cash_transaction: :entities).where(cash_transaction: { entities: }) }
+  scope :by_categories_and_entities, ->(categories, entities) { joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories:, entities: }) }
+  scope :by_categories_or_entities, lambda { |categories, entities|
+    joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories: }).or(
+      joins(cash_transaction: %i[categories entities]).where(cash_transaction: { entities: })
+    )
+  }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
@@ -65,7 +72,7 @@ end
 #  id                      :bigint           not null, primary key
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
-#  date                    :date             not null
+#  date                    :datetime         not null
 #  date_month              :integer          not null, indexed => [date_year]
 #  date_year               :integer          not null, indexed => [date_month]
 #  installment_type        :string           not null

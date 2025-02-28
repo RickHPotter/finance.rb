@@ -36,7 +36,7 @@ end
 #  id                      :bigint           not null, primary key
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
-#  date                    :date             not null
+#  date                    :datetime         not null
 #  date_month              :integer          not null, indexed => [date_year]
 #  date_year               :integer          not null, indexed => [date_month]
 #  installment_type        :string           not null

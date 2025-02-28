@@ -58,7 +58,7 @@ end
 #  cash_installments_count :integer          default(0), not null
 #  cash_transaction_type   :string
 #  comment                 :text
-#  date                    :date             not null
+#  date                    :datetime         not null
 #  description             :string           not null
 #  month                   :integer          not null
 #  paid                    :boolean          default(FALSE)
