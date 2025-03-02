@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Import
-  class InstallmentInitialiserService
+  class CardInstallmentInitialiserService
     delegate :transactions_collection, to: :@main_service
 
     def initialize(main_service)
@@ -31,6 +31,7 @@ module Import
     def cleanse_indexes(user_card_name, transaction_zero, card_installments_count)
       indexes = filter_indexes_by_attributes(user_card_name, transaction_zero, card_installments_count)
       indexes = filter_indexes_by_price_similarity(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count > card_installments_count
+      indexes = filter_indexes_by_number(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
       indexes = filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count) if indexes.count != card_installments_count
       indexes
     end
@@ -62,6 +63,17 @@ module Import
       validate_installments_count_by_indexes(indexes, card_installments_count, transaction_zero[:description])
     end
 
+    def filter_indexes_by_number(indexes, user_card_name, transaction_zero, card_installments_count)
+      new_indexes = []
+      indexes.each do |index|
+        next if transactions_collection[user_card_name][:with_pending_installments][index][:number] != new_indexes.count + 1
+
+        new_indexes << index
+      end
+
+      validate_installments_count_by_indexes(new_indexes, card_installments_count, transaction_zero[:description])
+    end
+
     def filter_indexes_by_month_order(indexes, user_card_name, transaction_zero, card_installments_count)
       transaction_zero_date = transaction_zero[:date]
       transaction_zero_reference = Date.new(2000 + transaction_zero[:year], transaction_zero[:month])
@@ -71,11 +83,9 @@ module Import
         installment = transactions_collection[user_card_name][:with_pending_installments][index]
         pos = new_indexes.count
 
-        installment_number = installment[:number]
         installment_date = installment[:date]
         installment_reference = Date.new(2000 + installment[:year], installment[:month])
 
-        next if installment_number != pos + 1
         next if installment_date != transaction_zero_date.next_month(pos)
         next if installment_reference != transaction_zero_reference.next_month(pos)
 

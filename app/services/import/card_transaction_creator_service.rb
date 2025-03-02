@@ -9,7 +9,7 @@ module Import
       @main_service = main_service
       @hash_collection = @main_service.hash_cards_collection
       @transactions_collection = transactions_collection
-      @installment_initialiser_service ||= Import::InstallmentInitialiserService.new(self)
+      @installment_initialiser_service ||= Import::CardInstallmentInitialiserService.new(self)
     end
 
     delegate :log_with, to: LoggerService

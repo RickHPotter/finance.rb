@@ -2,17 +2,19 @@
 
 module Import
   class CashTransactionCreatorService
-    attr_reader :hash_collection
+    attr_reader :hash_collection, :installment_initialiser_service
     attr_accessor :transactions_collection
 
     def initialize(main_service, transactions_collection = {})
       @main_service = main_service
       @hash_collection = @main_service.hash_cash_collection
       @transactions_collection = transactions_collection
+      @installment_initialiser_service ||= Import::CashInstallmentInitialiserService.new(self)
     end
 
     delegate :log_with, to: LoggerService
     delegate :user, :user_id, :find_or_create_user_bank, :find_or_create_user_card, :create_category_and_entity_transactions, to: :@main_service
+    delegate :prepare_installments, to: :installment_initialiser_service
 
     def run
       create_cash_transactions_data
@@ -74,7 +76,7 @@ module Import
       while @transactions_collection[:with_pending_installments].any?
         transaction_zero = @transactions_collection[:with_pending_installments].first
 
-        cash_installments = prepare_installments(transaction_zero, transaction_zero[:installments_count])
+        cash_installments = prepare_installments(transaction_zero)
         price = cash_installments.pluck(:price).sum
         transaction_zero[:paid] = cash_installments.all? { |installment| installment[:paid] }
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero)
@@ -87,35 +89,6 @@ module Import
             entity_transactions:
           )
       end
-    end
-
-    def prepare_installments(transaction_zero, cash_installments)
-      indexes = filter_indexes(transaction_zero, cash_installments)
-
-      cash_installments = indexes.map do |index|
-        installment = transactions_collection[:with_pending_installments][index]
-
-        paid = installment[:date].present? && Date.current >= installment[:date]
-        installment.slice(:number, :date, :month, :year, :price).merge(paid:)
-      end
-
-      indexes.reverse_each do |index|
-        transactions_collection[:with_pending_installments].delete_at(index)
-      end
-
-      cash_installments
-    end
-
-    def filter_indexes(transaction_zero, cash_installments)
-      transactions_collection[:with_pending_installments].each_with_index.map do |transaction, index|
-        next if transaction[:installments_count] == 1
-        next if transaction[:installments_count] != cash_installments
-        next if transaction[:description] != transaction_zero[:description]
-        next if transaction[:category] != transaction_zero[:category]
-        next if transaction[:entity] != transaction_zero[:entity]
-
-        index
-      end.compact
     end
 
     def add_card_type_to_collection(user_card_id, transaction)
