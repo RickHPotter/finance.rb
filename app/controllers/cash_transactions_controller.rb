@@ -48,7 +48,7 @@ class CashTransactionsController < ApplicationController
     @month_year_str = I18n.l(Date.parse("#{@month_year[0..3]}-#{@month_year[4..]}-01"), format: "%B %Y")
     @user_bank_account_id = params[:user_bank_account_id]
 
-    @cash_installments = Logic::CashInstallments.find_ref_month_year_by_params(current_user, params.to_unsafe_h)
+    @cash_installments, @budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, params.to_unsafe_h)
   end
 
   def show; end

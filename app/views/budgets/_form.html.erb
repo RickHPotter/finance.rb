@@ -35,11 +35,12 @@
 
       <div class="w-full lg:w-1/4 mb-2">
         <%= bold_label(form, :month_year) %>
+        <% budget_date = budget.new_record? ? Date.current : Date.new(budget.year, budget.month, 1) %>
         <%= render Components::TextFieldComponent.new \
               form, :month_year,
               type: :month, svg: :calendar,
               class: "font-graduate",
-              value: budget.month.present? ? "#{budget.year}-#{budget.month}" : Date.current.strftime("%Y-%m"),
+              value: budget_date.strftime("%Y-%m"),
               data: { dynamic_description_target: :monthYear, action: "input->dynamic-description#updateDescription" } %>
       </div>
 

@@ -12,8 +12,9 @@
         <%= content_tag :div, model_attribute(CashTransaction, :balance), class: "p-3 text-end" %>
       </div>
 
-      <% if @cash_installments.present? %>
+      <% if @cash_installments.present? || @budgets.present? %>
         <%= render @cash_installments %>
+        <%= render partial: "budgets/budget", collection: @budgets, as: :budget %>
       <% else %>
         <%= content_tag :div, class: "border-b border-slate-200 py-2 my-2 text-lg" do %>
           <%= t(:rows_not_found) %>

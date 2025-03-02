@@ -1,5 +1,5 @@
-<% if @card_transaction %>
-  <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
+<% if @budget %>
+  <%= turbo_stream.replace(:center_container, template: "cash_transactions/index") %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Budget) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>

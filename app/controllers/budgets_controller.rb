@@ -19,11 +19,10 @@ class BudgetsController < ApplicationController
 
   def create
     @budget = Logic::Budgets.create(budget_params)
-    @card_transaction = Logic::CardTransactions.create_from(budget: @budget) if @budget.valid?
 
-    if @card_transaction
-      set_budgets
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
+    if @budget
+      load_based_on_save
+      set_tabs(active_menu: :cash, active_sub_menu: :pix)
     end
 
     respond_to(&:turbo_stream)
@@ -33,11 +32,10 @@ class BudgetsController < ApplicationController
 
   def update
     @budget = Logic::Budgets.update(@budget, budget_params)
-    @card_transaction = Logic::CardTransactions.create_from(budget: @budget) if @budget.valid?
 
-    if @card_transaction
-      set_budgets
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @budget.active?
+    if @budget
+      load_based_on_save
+      set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
     end
 
     respond_to(&:turbo_stream)
@@ -50,6 +48,16 @@ class BudgetsController < ApplicationController
     respond_to(&:turbo_stream)
   end
 
+  def load_based_on_save
+    min_date = current_user.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    max_date = current_user.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    @years = (min_date.year..max_date.year)
+    @default_year = @budget.year
+    @active_month_years = [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ]
+    set_all_categories
+    set_entities
+  end
+
   private
 
   # Use callbacks to share common setup or constraints between actions.
@@ -60,9 +68,9 @@ class BudgetsController < ApplicationController
   # Only allow a list of trusted parameters through.
   def budget_params
     ret_params = params.require(:budget)
-    ret_params[:month], ret_params[:year] = ret_params[:month_year].split("-")
+    ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-")
 
-    ret_params.permit(:value, :inclusive, :month, :year, :active, :user_id,
+    ret_params.permit(:description, :value, :inclusive, :month, :year, :active, :user_id,
                       budget_categories_attributes: %i[id category_id _destroy],
                       budget_entities_attributes: %i[id entity_id _destroy])
   end

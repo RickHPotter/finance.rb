@@ -18,7 +18,7 @@ module Logic
           .includes(inclusions)
           .where(conditions)
           .where(search_term_condition)
-          .where("installments.date_year = ? AND installments.date_month = ?", year, month)
+          .where("installments.year = ? AND installments.month = ?", year, month)
           .order("installments.date")
     end
 

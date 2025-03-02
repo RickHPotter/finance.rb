@@ -1,0 +1,58 @@
+<%= turbo_frame_tag dom_id budget do %>
+
+  <!-- TODO: budgets need to have a a different colour or something, it should stand out -->
+  <% solid_colour_or_gradient = budget.categories.first&.bg_colour %>
+  <% if budget.categories.count > 1 %>
+    <% solid_colour_or_gradient = [ budget.categories.first.from_bg, *budget.categories[1..-2].map(&:via_bg), budget.categories.last.to_bg ].join(" ") %>
+  <% end %>
+
+  <%= content_tag :div,
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient} hover:opacity-60",
+                  draggable: true,
+                  data: { id: budget.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
+
+    <%= content_tag :div, class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto" do %>
+      <% case budget.remaining_value <=> budget.value
+         when -1 then :check_square
+         when 0 then :warning_octagon
+         when 1 then :x_circle
+         end => icon %>
+
+      <%= content_tag :span, render_icon(icon), title: model_attribute(budget, :already_paid), class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160" %>
+      <%= content_tag :span, l(DateTime.new(budget.year, budget.month, 1).end_of_month, format: :shorter) %>
+    <% end %>
+
+    <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
+      <%= link_to budget.description, edit_budget_path(budget),
+                  id: "edit_budget_#{budget.id}",
+                  class: "flex-1 truncate text-md",
+                  data: { turbo_frame: :center_container } %>
+
+      <%= content_tag :span, pretty_installments(1, 1), class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 opacity-40" %>
+    </div>
+
+    <%= content_tag :div, class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) } do %>
+      <% budget.categories.each do |category| %>
+        <%= content_tag :span, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm" do %>
+          <%= category.category_name %>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <%= content_tag :div, class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: budget.entities.map(&:id) } do %>
+      <% budget.entities.each do |entity| %>
+        <span class="px-4 rounded-full text-sm bg-purple-100 text-slate-800 border-1 border-black">
+          <%= entity.entity_name %>
+        </span>
+      <% end %>
+    <% end %>
+
+    <div class="py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto">
+      <%= from_cent_based_to_float(budget.remaining_value, "R$") %>
+    </div>
+
+    <div class="py-2 px-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto">
+      <%= from_cent_based_to_float(budget.balance, "R$") %>
+    </div>
+  <% end %>
+<% end %>

@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id cash_installment do %>
-  <% cash_transaction = cash_installment.cash_transaction || Budget.find(cash_installment.id) %>
+  <% cash_transaction = cash_installment.cash_transaction %>
 
   <% solid_colour_or_gradient = cash_transaction.categories.first&.bg_colour %>
   <% if cash_transaction.categories.count > 1 %>
@@ -30,7 +30,6 @@
     <% end %>
 
     <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
-      <!-- TODO: edit a cash_transaction or a budget -->
       <%= link_to cash_installment.description, edit_cash_transaction_path(cash_transaction),
                   id: "edit_cash_transaction_#{cash_transaction.id}",
                   class: "flex-1 truncate text-md",

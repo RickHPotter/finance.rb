@@ -8,9 +8,9 @@ class Budget < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  has_many :budget_categories
+  has_many :budget_categories, dependent: :destroy
   has_many :categories, through: :budget_categories
-  has_many :budget_entities
+  has_many :budget_entities, dependent: :destroy
   has_many :entities, through: :budget_entities
 
   accepts_nested_attributes_for :budget_categories, allow_destroy: true, reject_if: :all_blank
@@ -36,7 +36,7 @@ class Budget < ApplicationRecord
     cash_installments = user.cash_installments.where(month:, year:)
     card_installments = user.card_installments.where(month:, year:)
 
-    if inclusive
+    if inclusive && category_ids.present? && entity_ids.present?
       cash_installments.by_categories_and_entities(category_ids, entity_ids) + card_installments.by_categories_and_entities(category_ids, entity_ids)
     else
       cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
