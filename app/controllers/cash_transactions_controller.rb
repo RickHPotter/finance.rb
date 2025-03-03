@@ -121,7 +121,7 @@ class CashTransactionsController < ApplicationController
 
   def pay_cash_installment
     @cash_installment = current_user.cash_installments.find(params[:id])
-    @cash_installment.update(paid: true)
+    @cash_installment.update(date: DateTime.current, paid: true)
     @cash_installment.balance = params[:balance]
 
     respond_to do |format|

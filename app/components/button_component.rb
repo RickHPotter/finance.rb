@@ -12,8 +12,8 @@ module Components
         hover: { bg: "hover:bg-indigo-900", text: "" }
       },
       red: {
-        text: "text-white", bg: "bg-red-800", border: "border-black",
-        hover: { bg: "hover:bg-red-700", text: "hover:text-gray-50" }
+        text: "text-white", bg: "bg-rose-600", border: "border-black",
+        hover: { bg: "hover:bg-red-600", text: "hover:text-gray-50" }
       },
       indigo: {
         text: "text-white", bg: "bg-indigo-600", border: "border-black",

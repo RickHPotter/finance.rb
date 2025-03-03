@@ -33,8 +33,7 @@ module Logic
     def self.fetch_budgets(user, month, year, conditions, search_term_condition)
       past_installments = user.cash_installments.where("date_year < ? OR (date_year = ? AND date_month <= ?)", year, year, month).sum(:price)
       past_budgets      = user.budgets.where("year < ? OR (year = ? AND month < ?)", year, year, month).sum(:remaining_value)
-
-      initial_balance = past_installments + past_budgets
+      initial_balance   = past_installments + past_budgets
 
       user.budgets
           .where(conditions.merge(month:, year:))

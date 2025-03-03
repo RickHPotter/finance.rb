@@ -3,5 +3,6 @@
     <%= content_tag :legend, @month_year_str, class: "px-2 text-lg text-slate-800 text-start" %>
 
     <%= render @cash_installments %>
+    <%= render partial: "budgets/budget", collection: @budgets, as: :budget %>
   </fieldset>
 </div>

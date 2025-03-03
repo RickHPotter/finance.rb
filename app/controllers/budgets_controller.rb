@@ -43,6 +43,7 @@ class BudgetsController < ApplicationController
 
   def destroy
     @budget.destroy
+    load_based_on_save
     set_tabs(active_menu: :basic, active_sub_menu: :budget)
 
     respond_to(&:turbo_stream)
@@ -69,6 +70,7 @@ class BudgetsController < ApplicationController
   def budget_params
     ret_params = params.require(:budget)
     ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-")
+    ret_params[:value] = ret_params[:value].to_i * -1 if ret_params[:value].present?
 
     ret_params.permit(:description, :value, :inclusive, :month, :year, :active, :user_id,
                       budget_categories_attributes: %i[id category_id _destroy],

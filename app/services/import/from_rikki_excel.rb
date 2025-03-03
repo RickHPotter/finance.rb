@@ -31,6 +31,7 @@ module Import
       service.import
 
       aftermath_fix
+      create_budgets
     rescue StandardError => e
       Rails.logger.error("ERROR: #{e.message}")
       debugger if Rails.env.development? # rubocop:disable Lint/Debugger
@@ -87,6 +88,30 @@ module Import
         date = Date.new(transaction.year, transaction.month, 1)
         transaction.update(date:)
         transaction.cash_installments.update(date:)
+      end
+    end
+
+    def create_budgets
+      food_category = @user.categories.find_by(category_name: "FOOD")
+      transport_category = @user.categories.find_by(category_name: "TRANSPORT")
+      needs_category = @user.categories.find_by(category_name: "NEEDS")
+
+      budgets = @user.budgets
+      budgets.create(month: 4, year: 2025, value: -45_000, inclusive: false, description: "FOOD", categories: [ food_category ])
+      budgets.create(month: 5, year: 2025, value: -16_200, inclusive: false, description: "FOOD", categories: [ food_category ])
+      budgets.create(month: 5, year: 2025, value: -958_00, inclusive: false, description: "TRANSPORT", categories: [ transport_category ])
+      budgets.create(month: 6, year: 2025, value: -16_200, inclusive: false, description: "FOOD", categories: [ food_category ])
+      budgets.create(month: 6, year: 2025, value: -958_00, inclusive: false, description: "TRANSPORT", categories: [ transport_category ])
+
+      start_date = Date.new(2025, 7, 1)
+      (0..8).each do |index|
+        date = start_date + index.months
+        month = date.month
+        year = date.year
+
+        budgets.create(month:, year:, value: -30_000, inclusive: false, description: "FOOD", categories: [ food_category ])
+        budgets.create(month:, year:, value: -1_458_00, inclusive: false, description: "TRANSPORT", categories: [ transport_category ])
+        budgets.create(month:, year:, value: -70_000, inclusive: false, description: "NEEDS", categories: [ needs_category ])
       end
     end
   end

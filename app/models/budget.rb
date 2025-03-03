@@ -37,12 +37,20 @@ class Budget < ApplicationRecord
     card_installments = user.card_installments.where(month:, year:)
 
     if inclusive && category_ids.present? && entity_ids.present?
-      cash_installments.by_categories_and_entities(category_ids, entity_ids) + card_installments.by_categories_and_entities(category_ids, entity_ids)
+      inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
     else
-      cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
+      exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
     end => installments
 
     self.remaining_value = value - installments.sum(&:price)
+  end
+
+  def inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
+    cash_installments.by_categories_and_entities(category_ids, entity_ids) + card_installments.by_categories_and_entities(category_ids, entity_ids)
+  end
+
+  def exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
+    cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
   end
 
   # @protected_instance_methods ...............................................

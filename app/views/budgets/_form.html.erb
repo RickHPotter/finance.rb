@@ -6,6 +6,7 @@
     <div class="w-full mb-6">
       <%= form.text_field \
             :description,
+            autocomplete: :off,
             class: outdoor_readonly_input_class,
             data: { reactive_form_target: :input, dynamic_description_target: :description, placeholder: model_attribute(budget, :description), placeholder_type: :word } %>
     </div>
@@ -50,6 +51,7 @@
               form, :value,
               svg: :money,
               class: "font-graduate",
+              value: budget.value || -10000,
               data: { dynamic_description_target: :value, reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->dynamic-description#updateDescription" } %>
       </div>
     </div>
@@ -115,7 +117,16 @@
       <%= link_to nil, nil, class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" } %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, budget) } %>
+
+    <div class="w-2/5 flex items-center justify-between gap-2 mx-auto">
+      <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, budget) } %>
+      <%= render Components::ButtonComponent.new link: budget,
+                                                 options: { id: "delete_budget_#{budget.id}",
+                                                            label: action_model(:destroy, budget),
+                                                            colour: :red,
+                                                            data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } } %>
+    </div>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>
