@@ -5,24 +5,32 @@ module Import
     WSL_PATH = File.join("/mnt", "c", "Users", "Administrator", "Downloads", "finance.xlsx")
     LNX_PATH = File.join("/home", "lovelace", "Downloads", "finance.xlsx")
 
+    def initialize(file_path = nil)
+      return if file_path.blank?
+
+      if File.exist?(file_path)
+        File.open(file_path)
+      else
+        File.open(WSL_PATH)
+      end => file
+
+      @file = file
+    end
+
     def self.run
+      new(LNX_PATH).run
+    end
+
+    def run
       delete_user
 
-      if File.exist?(WSL_PATH)
-        File.open(WSL_PATH)
-      else
-        File.open(LNX_PATH)
-      end => file_path
-
-      xlsx_service = Import::XlsxService.new(file_path)
+      xlsx_service = Import::XlsxService.new(@file)
       xlsx_service.import
 
       service = Import::MainService.new(xlsx_service.hash_collection, "PIX")
       service.import
 
-      fix_user_card_dates
-      set_category_colours
-      correct_investment_dates
+      aftermath_fix
     rescue StandardError => e
       Rails.logger.error("ERROR: #{e.message}")
       debugger if Rails.env.development? # rubocop:disable Lint/Debugger
@@ -30,60 +38,56 @@ module Import
       raise
     end
 
-    def self.delete_user
+    def delete_user
       user = User.find_by(first_name: "Rikki", last_name: "Potteru")
       user.destroy if user.present?
     end
 
-    def self.fix_user_card_dates
-      today = Date.current
-      UserCard.where(user_card_name: %w[AZUL C6 PP AME]).update(active: false)
-      UserCard.find_by(user_card_name: "CLICK").update(days_until_due_date: 6, current_due_date: Date.new(today.year, today.month, 1), current_closing_date: nil)
-      UserCard.find_by(user_card_name: "NBNK").update(days_until_due_date: 7, current_due_date: Date.new(today.year, today.month, 13), current_closing_date: nil)
-      UserCard.find_by(user_card_name: "WILL").update(days_until_due_date: 6, current_due_date: Date.new(today.year, today.month, 10), current_closing_date: nil)
+    def aftermath_fix
+      @user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+
+      fix_user_card_dates
+      fix_card_payment_dates
+      set_category_colours
+      correct_investment_dates
     end
 
-    def self.set_category_colours
-      user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+    def fix_user_card_dates
+      UserCard.where(user_card_name: %w[C6 PP AME]).update(active: false)
+      UserCard.find_by(user_card_name: "AZUL").update(due_date_day: 8, days_until_due_date: 6, active: false)
+      UserCard.find_by(user_card_name: "WILL").update(due_date_day: 10, days_until_due_date: 6)
+      UserCard.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6)
+      UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7)
+    end
 
-      user.categories.find_each do |category|
+    def fix_card_payment_dates
+      beginning_of_month = Date.current.beginning_of_month
+      end_of_an_era = Date.new(3000, 12, 31)
+
+      @user.user_cards.find_each do |user_card|
+        user_card.card_installments_invoices.where(date: beginning_of_month..end_of_an_era).find_each do |card_payment|
+          reference = card_payment.user_card.references.find_by(month: card_payment.month, year: card_payment.year)
+          reference_date = card_payment.date.change(day: user_card.due_date_day)
+          reference.update(reference_date:)
+
+          card_payment.update(imported: true, date: reference_date)
+          card_payment.cash_installments.first.update_columns(date: reference_date, paid: false)
+        end
+      end
+    end
+
+    def set_category_colours
+      @user.categories.find_each do |category|
         category.update(colour: RIKKI_COLOURS[category.category_name]) if RIKKI_COLOURS.key?(category.category_name)
       end
     end
 
-    def self.correct_investment_dates
-      user = User.find_by(first_name: "Rikki", last_name: "Potteru")
-      user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
-        transaction.update(date: transaction.date.beginning_of_month)
-        transaction.cash_installments.update(date: transaction.date.beginning_of_month)
+    def correct_investment_dates
+      @user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
+        date = Date.new(transaction.year, transaction.month, 1)
+        transaction.update(date:)
+        transaction.cash_installments.update(date:)
       end
     end
-
-    RIKKI_COLOURS = {
-      "FOOD" => :meat,
-      "GROCERY" => :lettuce,
-      "EDUCATION" => :book,
-      "RENT" => :urgency,
-      "NEEDS" => :urgency,
-      "GIFT" => :gift,
-      "TRANSPORT" => :honda,
-      "SALARY" => :gold,
-      "CARD PAYMENT" => :money,
-      "CARD ADVANCE" => :money,
-      "CARD DISCOUNT" => :money,
-      "CARD REVERSAL" => :money,
-      "CARD INSTALLMENT" => :money,
-      "DEPOSIT" => :money,
-      "PROMO" => :money,
-      "INVESTMENT" => :bronze,
-      "SELL" => :oldmoney,
-      "LEISURE" => :fun,
-      "BILL" => :gray,
-      "FEES" => :gray,
-      "BET" => :silver,
-      "GODSEND" => :greek,
-      "EXCHANGE" => :dirt,
-      "EXCHANGE RETURN" => :yellow
-    }.freeze
   end
 end

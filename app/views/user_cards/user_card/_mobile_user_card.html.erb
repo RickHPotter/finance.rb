@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex items-center">
-          <%= content_tag :span, l(user_card.current_closing_date, format: :short) %>
+          <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :short) %>
         </div>
       </div>
 
@@ -59,7 +59,7 @@
         </div>
 
         <div class="flex items-center">
-          <%= content_tag :span, l(user_card.current_due_date, format: :short) %>
+          <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day), format: :short) %>
         </div>
       </div>
     </div>

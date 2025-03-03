@@ -106,6 +106,9 @@ module Import
       cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
       cash_transaction.update(date: transaction[:date], imported: true)
       cash_transaction.cash_installments.first.update_columns(date: transaction[:date])
+
+      reference = cash_transaction.user_card.references.create_with(reference_date: transaction[:date]).find_or_create_by(transaction.slice(:month, :year))
+      reference.update(reference_date: transaction[:date])
     end
 
     def add_card_advance(user, transaction, params)

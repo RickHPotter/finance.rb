@@ -10,7 +10,7 @@ RSpec.describe "UserCards", type: :feature do
   let(:card) { build(:card, :random) }
   let(:current_closing_date) { Date.current + 4.days }
   let(:current_due_date) { Date.current + 9.days }
-  let(:user_card) { build(:user_card, :random, user:, card:, current_closing_date:, current_due_date:) }
+  let(:user_card) { build(:user_card, :random, user:, card:, days_until_due_date: 5, due_date_day: (Date.current + 9.days).day) }
 
   before { sign_in_as(user:) }
 

@@ -115,17 +115,21 @@ module CashTransactable
   end
 
   def new_cash_transaction_params
+    if is_a?(Investment)
+      [ Date.current.beginning_of_month, true ]
+    else
+      [ card_payment_date, (respond_to?(:paid) && paid) || (date.present? && Date.current >= date) ]
+    end => reference_date, paid
+
     cash_transaction_params
       .without(:category_transactions)
       .merge(price:,
-             date: cash_transaction_date,
+             date: reference_date,
              category_transactions_attributes:,
              entity_transactions_attributes:,
-             cash_installments_attributes:)
-  end
-
-  def cash_installments_attributes
-    [ { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
+             cash_installments_attributes: [
+               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date, month:, year:, paid: }
+             ])
   end
 
   def full_price

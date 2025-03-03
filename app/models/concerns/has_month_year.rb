@@ -14,7 +14,7 @@ module HasMonthYear
     before_validation :set_date, on: :create, if: -> { respond_to?(:date) && date.nil? }
     before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
     before_validation :check_number, if: -> { respond_to?(:number) && number.nil? }
-    before_validation :set_month_year, if: -> { respond_to?(:month) }
+    before_validation :set_month_year, if: -> { errors.empty? && respond_to?(:month) }
   end
 
   # @public_instance_methods ..................................................
@@ -99,7 +99,7 @@ module HasMonthYear
     false
   end
 
-  # Sets `month` and `year` based on self's `cash_transaction_date` or `date`.
+  # Sets `month` and `year` based on self's `card_payment_date` or `date`.
   #
   # @note This is a method that is called before_validation.
   #
@@ -111,8 +111,8 @@ module HasMonthYear
     if instance_of?(CardTransaction) || instance_of?(CardInstallment)
       return false if user_card_id.nil?
 
-      self.month = cash_transaction_date.month
-      self.year  = cash_transaction_date.year
+      self.month = card_payment_date.month
+      self.year  = card_payment_date.year
     else
       self.month ||= date.month
       self.year  ||= date.year

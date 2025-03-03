@@ -6,8 +6,8 @@ class CreateInstallments < ActiveRecord::Migration[8.0]
     create_table :installments do |t|
       t.integer :number, null: false
       t.datetime :date, null: false
-      t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
-      t.virtual "date_month", type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
+      t.virtual :date_year, type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
+      t.virtual :date_month, type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
       t.integer :month, null: false
       t.integer :year, null: false
       t.integer :starting_price, null: false

@@ -26,22 +26,6 @@ RSpec.describe UserCard, type: :model do
       hm_models.each { |model| it { should have_many(model) } }
     end
   end
-
-  describe "[ business logic ]" do
-    context "( callbacks )" do
-      it "assigns the correct current_closing_date given past current_due_date" do
-        current_due_date = Date.current.beginning_of_year - 1.year
-        subject.update(current_closing_date: nil, current_due_date:, days_until_due_date: 7)
-        expect(subject.current_closing_date).to eq(subject.current_due_date - 7.days)
-      end
-
-      it "assigns the correct current_closing_date given future current_due_date" do
-        current_due_date = Date.current.beginning_of_year + 1.year
-        subject.update(current_closing_date: nil, current_due_date:, days_until_due_date: 7)
-        expect(subject.current_closing_date).to eq(subject.current_due_date - 7.days)
-      end
-    end
-  end
 end
 
 # == Schema Information
@@ -53,9 +37,8 @@ end
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
 #  credit_limit            :integer          not null
-#  current_closing_date    :date             not null
-#  current_due_date        :date             not null
 #  days_until_due_date     :integer          not null
+#  due_date_day            :integer          default(1), not null
 #  min_spend               :integer          not null
 #  user_card_name          :string           not null, indexed
 #  created_at              :datetime         not null

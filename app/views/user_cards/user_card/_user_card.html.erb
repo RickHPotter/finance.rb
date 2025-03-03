@@ -25,11 +25,11 @@
 
 
     <div class="flex items-center justify-center text-lg whitespace-nowrap ml-auto pr-2 border-r border-black">
-      <%= content_tag :span, l(user_card.current_closing_date, format: :shorter), class: "current_closing_date" %>
+      <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter), class: "current_closing_date" %>
     </div>
 
     <div class="flex items-center justify-center text-lg whitespace-nowrap mr-auto">
-      <%= content_tag :span, l(user_card.current_due_date, format: :shorter), class: "current_due_date" %>
+      <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day), format: :shorter), class: "current_due_date" %>
     </div>
 
     <div class="flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto">

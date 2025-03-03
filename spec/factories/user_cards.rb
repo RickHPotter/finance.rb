@@ -4,8 +4,7 @@ FactoryBot.define do
   factory :user_card do
     user_card_name { "AZUL" }
     days_until_due_date { 7 }
-    current_closing_date { Date.current }
-    current_due_date { current_closing_date - days_until_due_date }
+    due_date_day { 6 }
     min_spend { 10_000 }
     credit_limit { 200_000 }
     active { true }
@@ -15,8 +14,8 @@ FactoryBot.define do
 
     trait :different do
       user_card_name { "CLICK" }
-      days_until_due_date { 9 }
-      current_closing_date { Date.current - 2.months }
+      days_until_due_date { 10 }
+      due_date_day { 7 }
 
       user { different_custom_create(:user) }
       card { different_custom_create(:card) }
@@ -25,7 +24,7 @@ FactoryBot.define do
     trait :random do
       user_card_name { "#{card.card_name} - #{user.first_name} #{rand(1000)}" }
       days_until_due_date { rand(4..10) }
-      current_closing_date { Date.new(Date.current.year, Date.current.month, rand(1..28)) }
+      due_date_day { rand(1..9) }
       min_spend { [ 0o00, 10_000, 20_000 ].sample }
       credit_limit { Faker::Number.number(digits: rand(6..7)) + 20_000 }
       active { true }
@@ -45,9 +44,8 @@ end
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
 #  credit_limit            :integer          not null
-#  current_closing_date    :date             not null
-#  current_due_date        :date             not null
 #  days_until_due_date     :integer          not null
+#  due_date_day            :integer          default(1), not null
 #  min_spend               :integer          not null
 #  user_card_name          :string           not null, indexed
 #  created_at              :datetime         not null

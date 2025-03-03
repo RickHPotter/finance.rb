@@ -1,8 +1,12 @@
 <%= turbo_frame_tag dom_id card_transaction do %>
   <%= form_with(model: card_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
-    <%= hidden_field_tag :closing_date_day, card_transaction.user_card&.current_closing_date&.day, disabled: true, data: { reactive_form_target: :closingDateDay } %>
-    <%= hidden_field_tag :days_until_due_date, card_transaction&.user_card&.days_until_due_date, disabled: true, data: { reactive_form_target: :daysUntilDueDate } %>
+
+    <% user_card = card_transaction&.user_card %>
+    <% due_date = Date.current.change(day: user_card.due_date_day) if user_card %>
+    <% closing_date = due_date - user_card.days_until_due_date if due_date %>
+    <%= hidden_field_tag :days_until_due_date, user_card&.days_until_due_date, disabled: true, data: { reactive_form_target: :daysUntilDueDate } %>
+    <%= hidden_field_tag :closing_date_day, closing_date&.day, disabled: true, data: { reactive_form_target: :closingDateDay } %>
     <%= hidden_field_tag :category_colours, current_user.categories.to_h { |c| [ c.id, c.bg_colour ] }.to_json, disabled: true, data: { reactive_form_target: :categoryColours } %>
 
     <div class="w-full mb-6">

@@ -100,8 +100,8 @@ module Import
     def parse_month_year(attributes)
       ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
-      if attributes[:date].present? && Date.current >= attributes[:date]
-        attributes[:paid] = true
+      if attributes[:date].present?
+        attributes[:paid] = Date.current >= attributes[:date]
       else
         attributes[:paid] = false
         attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1).end_of_month

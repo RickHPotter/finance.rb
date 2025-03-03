@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -219,6 +219,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
 
+  create_table "references", force: :cascade do |t|
+    t.bigint "user_card_id", null: false
+    t.integer "month", null: false
+    t.integer "year", null: false
+    t.date "reference_date", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_card_id", "month", "year"], name: "idx_references_user_card_month_year", unique: true
+    t.index ["user_card_id"], name: "index_references_on_user_card_id"
+  end
+
   create_table "user_bank_accounts", force: :cascade do |t|
     t.integer "agency_number"
     t.integer "account_number"
@@ -237,8 +248,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
   create_table "user_cards", force: :cascade do |t|
     t.string "user_card_name", null: false
     t.integer "days_until_due_date", null: false
-    t.date "current_closing_date", null: false
-    t.date "current_due_date", null: false
+    t.integer "due_date_day", default: 1, null: false
     t.integer "min_spend", null: false
     t.integer "credit_limit", null: false
     t.boolean "active", default: true, null: false
@@ -295,6 +305,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_02_27_155642) do
   add_foreign_key "investments", "cash_transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
+  add_foreign_key "references", "user_cards"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"
 end

@@ -34,7 +34,7 @@ class Investment < ApplicationRecord
   #
   # @return [Date].
   #
-  def cash_transaction_date
+  def card_payment_date
     beginning_of_month
   end
 

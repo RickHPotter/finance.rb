@@ -4,13 +4,14 @@ require "rails_helper"
 
 RSpec.describe Budgetable, type: :concern do
   let(:user) { create(:user, :random) }
-  let(:user_card) { create(:user_card, :random, user:) }
+  let(:user_card) { create(:user_card, :random, user:, due_date_day: Date.current.day, days_until_due_date: 0) }
   let(:category) { create(:category, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
 
   let(:applicable_transaction) do
     build(:cash_transaction, :random,
           user:, price: -200_00,
+          date: Date.current,
           cash_installments: build_list(:cash_installment, 2, price: -100_00) { |ci, i| ci.number = i + 1 },
           category_transactions: [ build(:category_transaction, :random, category:, transactable: nil) ],
           entity_transactions: [ build(:entity_transaction, :random, entity: entity, price: 0, is_payer: false, transactable: nil) ])
@@ -19,6 +20,7 @@ RSpec.describe Budgetable, type: :concern do
   let(:non_applicable_transaction) do
     build(:cash_transaction, :random,
           user:, price: -200_00,
+          date: Date.current,
           cash_installments: build_list(:cash_installment, 2, price: -100_00) { |ci, i| ci.number = i + 1 },
           category_transactions: [ build(:category_transaction, :random, category: create(:category, :random), transactable: nil) ])
   end
@@ -32,6 +34,8 @@ RSpec.describe Budgetable, type: :concern do
   let(:applicable_card_transaction) do
     build(:card_transaction, :random,
           user:, price: -200_00,
+          user_card:,
+          date: Date.current - 1.month,
           card_installments: build_list(:card_installment, 2, price: -100_00) { |ci, i| ci.number = i + 1 },
           category_transactions: [ build(:category_transaction, :random, category:, transactable: nil) ],
           entity_transactions: [ build(:entity_transaction, :random, entity: entity, price: 0, is_payer: false, transactable: nil) ])
@@ -40,6 +44,8 @@ RSpec.describe Budgetable, type: :concern do
   let(:non_applicable_card_transaction) do
     build(:card_transaction, :random,
           user:, price: -200_00,
+          user_card:,
+          date: Date.current - 1.month,
           card_installments: build_list(:card_installment, 2, price: -100_00) { |ci, i| ci.number = i + 1 },
           category_transactions: [ build(:category_transaction, :random, category: create(:category, :random), transactable: nil) ])
   end

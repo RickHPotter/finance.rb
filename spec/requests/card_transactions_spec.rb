@@ -6,8 +6,8 @@ RSpec.describe "CardTransactions", type: :request do
   let(:bank) { create(:bank, :random) }
   let(:user) { create(:user, :random) }
   let(:card) { create(:card, :random, bank:) }
-  let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", current_due_date: Date.current) }
-  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", current_due_date: Date.current) }
+  let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", due_date_day: Date.current.day) }
+  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", due_date_day: Date.current.day) }
   let(:entity_one) { create(:entity, :random, user:) }
   let(:entity_two) { create(:entity, :random, user:) }
 

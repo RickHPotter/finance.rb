@@ -67,8 +67,12 @@ class UserCardsController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def user_card_params
-    params.require(:user_card).permit(
-      :user_card_name, :current_closing_date, :current_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id
-    )
+    ret_params = params.require(:user_card)
+    if ret_params[:current_closing_date].present? && ret_params[:current_due_date].present?
+      ret_params[:due_date_day]        = ret_params[:current_due_date].to_date.day
+      ret_params[:days_until_due_date] = ret_params[:current_due_date].to_date - ret_params[:current_closing_date].to_date
+    end
+
+    ret_params.permit(:user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id)
   end
 end

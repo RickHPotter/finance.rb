@@ -8,7 +8,7 @@ RSpec.describe "CardTransactions", type: :feature do
 
   let(:user) { create(:user, :random) }
   let(:card) { build(:card, :random) }
-  let(:user_card) { build(:user_card, :random, user:, card:, current_closing_date: Date.current + 4.days, current_due_date: Date.current + 9.days) }
+  let(:user_card) { build(:user_card, :random, user:, card:, days_until_due_date: 5, due_date_day: (Date.current + 9.days).day) }
   let(:card_transaction) { build(:card_transaction, :random, user:, user_card:, date: Date.current) }
 
   before do

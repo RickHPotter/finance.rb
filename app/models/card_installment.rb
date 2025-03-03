@@ -33,12 +33,13 @@ class CardInstallment < Installment
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Generates a `date` for the associated `cash_transaction`, picking the `current_due_date` of `user_card` based on the `current_closing_date`.
+  # Retrieves the `reference_date` for the associated `cash_transaction` through `user_card.references`, based on `month` and `year`.
   #
   # @return [Date].
   #
-  def cash_transaction_date
-    card_transaction.cash_transaction_date.next_month(number - 1)
+  def card_payment_date
+    reference_date = (card_transaction.date + (number - 1).months).end_of_month
+    user_card.references.create_with(reference_date:).find_or_create_by(month: reference_date.month, year: reference_date.year).reference_date
   end
 
   # @protected_instance_methods ...............................................

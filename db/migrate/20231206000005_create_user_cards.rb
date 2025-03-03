@@ -6,8 +6,7 @@ class CreateUserCards < ActiveRecord::Migration[8.0]
     create_table :user_cards do |t|
       t.string :user_card_name, null: false
       t.integer :days_until_due_date, null: false
-      t.date :current_closing_date, null: false
-      t.date :current_due_date, null: false
+      t.integer :due_date_day, null: false, default: 1
       t.integer :min_spend, null: false
       t.integer :credit_limit, null: false
       t.boolean :active, null: false, default: true

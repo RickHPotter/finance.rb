@@ -30,7 +30,7 @@
     <% end %>
 
     <div class="col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline">
-      <%= link_to cash_installment.description, edit_cash_transaction_path(cash_transaction),
+      <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                   id: "edit_cash_transaction_#{cash_transaction.id}",
                   class: "flex-1 truncate text-md",
                   data: { turbo_frame: :center_container } %>

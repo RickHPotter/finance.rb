@@ -56,5 +56,32 @@ COLOURS = ActiveSupport::HashWithIndifferentAccess.new(
     fuchsia: { bg: "bg-fuchsia-500", text: "text-black", from: "from-fuchsia-500", via: "via-fuchsia-500", to: "to-fuchsia-500" },
     purple: { bg: "bg-purple-500", text: "text-black", from: "from-purple-500", via: "via-purple-500", to: "to-purple-500" },
     violet: { bg: "bg-violet-500", text: "text-black", from: "from-violet-500", via: "via-violet-500", to: "to-violet-500" }
-  }
+  }.freeze
 )
+
+RIKKI_COLOURS = {
+  "FOOD" => :meat,
+  "GROCERY" => :lettuce,
+  "EDUCATION" => :book,
+  "RENT" => :urgency,
+  "NEEDS" => :urgency,
+  "GIFT" => :gift,
+  "TRANSPORT" => :honda,
+  "SALARY" => :gold,
+  "CARD PAYMENT" => :money,
+  "CARD ADVANCE" => :money,
+  "CARD DISCOUNT" => :money,
+  "CARD REVERSAL" => :money,
+  "CARD INSTALLMENT" => :money,
+  "DEPOSIT" => :money,
+  "PROMO" => :money,
+  "INVESTMENT" => :bronze,
+  "SELL" => :oldmoney,
+  "LEISURE" => :fun,
+  "BILL" => :gray,
+  "FEES" => :gray,
+  "BET" => :silver,
+  "GODSEND" => :greek,
+  "EXCHANGE" => :dirt,
+  "EXCHANGE RETURN" => :yellow
+}.freeze

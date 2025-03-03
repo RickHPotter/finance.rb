@@ -29,18 +29,22 @@ class CardTransaction < ApplicationRecord
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
 
-  # Generates a `date` for the associated `cash_transaction` through `installment`, based on `user_card.current_due_date` and `user_card.current_closing_date`.
+  def cash_transaction_date
+    due_date = date.change(day: user_card.due_date_day)
+    closing_date = due_date - user_card.days_until_due_date
+
+    return due_date if closing_date > date
+
+    due_date + 1.month
+  end
+
+  # Retrieves the `reference_date` for the associated `cash_transaction` through `user_card.references`, based on `month` and `year`.
   #
   # @return [Date].
   #
-  def cash_transaction_date
-    closing_days      = user_card.current_closing_date.day
-    next_closing_date = next_date(date:, days: closing_days)
-    next_due_date     = next_closing_date + user_card.days_until_due_date
-
-    return next_due_date if next_closing_date > date
-
-    next_date(date: next_due_date, months: 1)
+  def card_payment_date
+    reference_date = cash_transaction_date.end_of_month
+    user_card.references.create_with(reference_date:).find_or_create_by(month: reference_date.month, year: reference_date.year).reference_date
   end
 
   # Builds `month` and `year` columns for `self` and associated `_installments`.
