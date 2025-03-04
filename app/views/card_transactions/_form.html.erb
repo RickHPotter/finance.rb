@@ -4,6 +4,7 @@
 
     <% user_card = card_transaction&.user_card %>
     <% due_date = Date.current.change(day: user_card.due_date_day) if user_card %>
+    <% due_date += 1.month if due_date && due_date <= Date.current %>
     <% closing_date = due_date - user_card.days_until_due_date if due_date %>
     <%= hidden_field_tag :days_until_due_date, user_card&.days_until_due_date, disabled: true, data: { reactive_form_target: :daysUntilDueDate } %>
     <%= hidden_field_tag :closing_date_day, closing_date&.day, disabled: true, data: { reactive_form_target: :closingDateDay } %>
@@ -53,7 +54,7 @@
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :entity_id),
-              data: { action: "hw-combobox:selection->reactive-form#popModal", value: ".hw-combobox__input" } %>
+              data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" } %>
       </div>
 
       <div class="w-full lg:w-3/12 mb-3 lg:mb-0">
@@ -90,7 +91,7 @@
 
     <!-- Installments -->
     <div data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
-         class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-3">
+         class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields| %>
           <%= render "card_transactions/installment_fields", form: installment_fields %>
@@ -128,7 +129,8 @@
     </div>
 
     <!-- Entities -->
-    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
+         class="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 pb-2">
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
           <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>

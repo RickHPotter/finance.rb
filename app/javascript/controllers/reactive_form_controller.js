@@ -25,6 +25,7 @@ export default class extends Controller {
 
     "addInstallment", "delInstallment",
     "addCategory", "delCategory",
+    "addEntity", "delEntity",
 
     "updateButton"
   ]
@@ -138,8 +139,63 @@ export default class extends Controller {
     let all_options = comboboxController._allOptions
     let removed_option = all_options.find((option) => { return option.dataset.value === chip_value })
 
-    removed_option.classList.remove("hidden")
-    removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
+    if (removed_option) {
+      removed_option.classList.remove("hidden")
+      removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
+    }
+
+    nested_div.style.display = "none"
+    nested_div.querySelector("input[name*='_destroy']").value = "true"
+  }
+
+  // Entities
+  insertEntity({ target }) {
+    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    let all_options = comboboxController._allOptions
+    let selected_option = comboboxController._selectedOptionElement
+    if (!selected_option) return
+
+    selected_option.classList.add("hidden")
+    selected_option.dataset.filterableAs = ""
+    let visible_options = all_options.filter((option) => { return !option.classList.contains("hidden") })
+
+    const value = selected_option.dataset.value
+    const text = selected_option.textContent
+
+    this.addEntityTarget.click()
+
+    const wrappers = this.categoryWrapperTargets
+    const new_wrapper = wrappers[wrappers.length - 1]
+
+    new_wrapper.querySelector(".entities_entity_id").value = value
+    new_wrapper.querySelector(".entities_entity_name").textContent = text
+
+    comboboxController.clearOrToggleOnHandleClick()
+
+    if (visible_options.length === 0) {
+      comboboxController.close()
+    } else {
+      sleep(() => { comboboxController.actingCombobox.focus() })
+    }
+  }
+
+  removeEntity({ target }) {
+    const nested_div = target.parentElement.parentElement.parentElement
+    const chip_value = nested_div.querySelector(".entities_entity_id").value
+
+    const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
+    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    let all_options = comboboxController._allOptions
+    let removed_option = all_options.find((option) => { return option.dataset.value === chip_value })
+
+    if (removed_option) {
+      removed_option.classList.remove("hidden")
+      removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
+    }
 
     nested_div.style.display = "none"
     nested_div.querySelector("input[name*='_destroy']").value = "true"
@@ -180,6 +236,7 @@ export default class extends Controller {
   // Installments
   _getDueDate() {
     if (!this.hasClosingDateDayTarget) { return new RailsDate(this.dateInputTarget.value) }
+    return new RailsDate(this.element.querySelector(".installment_date").value)
 
     const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
     const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
@@ -194,17 +251,21 @@ export default class extends Controller {
   _updateWrappers(starting_rails_date, starting_number = 0) {
     if (starting_number === 0 && this.monthYearInstallmentTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
 
-    starting_rails_date.monthsForwards(starting_number)
-
     const visible_installments_wrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
 
-    visible_installments_wrappers.slice(starting_number).forEach((target, index) => {
+    console.log(starting_rails_date.date())
+    visible_installments_wrappers.forEach((target, index) => {
+      starting_rails_date.monthsForwards(1)
+
+      if (target.querySelector(".installment_month").value) { return }
+
+      const proposed_date = new RailsDate(starting_rails_date.year, starting_rails_date.month, new Date(this.dateInputTarget.value).getDate())
+
       target.querySelector(".installment_month_year").textContent = starting_rails_date.monthYear()
-      target.querySelector(".installment_number").value = index + starting_number + 1
+      target.querySelector(".installment_number").value = index + 1
+      target.querySelector(".installment_date").value = proposed_date.date().toISOString().slice(0, 16)
       target.querySelector(".installment_month").value = starting_rails_date.month
       target.querySelector(".installment_year").value = starting_rails_date.year
-
-      starting_rails_date.monthsForwards(1)
     })
   }
 
@@ -261,7 +322,8 @@ export default class extends Controller {
     }
 
     const rails_due_date = this._getDueDate()
-    this._updateWrappers(rails_due_date, visible_installments_count)
+    const installments_count = this.priceInstallmentInputTargets.filter((element) => element.checkVisibility()).length
+    this._updateWrappers(rails_due_date, installments_count)
   }
 
   // Categories

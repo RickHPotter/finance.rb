@@ -51,7 +51,7 @@
               form, :value,
               svg: :money,
               class: "font-graduate",
-              value: budget.value || -10000,
+              value: budget.value || -10_000,
               data: { dynamic_description_target: :value, reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->dynamic-description#updateDescription" } %>
       </div>
     </div>

@@ -20,10 +20,10 @@
         <div class="text-xs text-start flex-1">
           <%= content_tag :span, class: "flex items-center justify-start gap-2 rounded-sm text-slate-100 mx-auto" do %>
             <% case budget.remaining_value <=> budget.value
-              when -1 then :x_circle
-              when 0 then :warning_octagon
-              when 1 then :check_square
-              end => icon %>
+               when -1 then :x_circle
+               when 0 then :warning_octagon
+               when 1 then :check_square
+               end => icon %>
 
             <%= render_icon icon %>
             <%= l(DateTime.new(budget.year, budget.month, 1).end_of_month, format: :shorter) %>

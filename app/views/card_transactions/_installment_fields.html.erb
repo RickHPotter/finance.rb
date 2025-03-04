@@ -2,7 +2,7 @@
 
 <div class="nested-form-wrapper" data-new-record="<%= installment.new_record? %>" data-reactive-form-target="installmentWrapper">
   <div class="flex w-full my-1">
-    <div class="flex w-1/2">
+    <div class="flex w-1/4">
       <span class="inline-flex items-center text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md w-full">
         <span class="flex items-center text-sm font-medium text-black ps-2">
           <span class="flex w-3 h-3 bg-orange-500 rounded-full me-2 flex-shrink-0"></span>
@@ -12,11 +12,23 @@
         </span>
       </span>
     </div>
-    <div class="flex w-1/2 font-graduate">
+
+    <div class="flex w-1/2 mx-auto">
+      <div class="flex justify-center items-center text-sm text-gray-900 bg-gray-200 border border-gray-300 w-full cursor-pointer mx-auto">
+        <%= form.text_field :date,
+                            id: :card_installment_date,
+                            type: "datetime-local",
+                            value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
+                            class: "installment_date w-full outline-hidden appearance-none bg-transparent border-0 font-graduate text-[0.8rem]",
+                            data: { reactive_form_target: :dateInput } %>
+      </div>
+    </div>
+
+    <div class="flex w-1/4 font-graduate">
       <%= form.text_field \
             :price,
             class: "price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
-            data: { reactive_form_target: "priceInstallmentInput", action: "input->reactive-form#applyMask" } %>
+            data: { reactive_form_target: :priceInstallmentInput, action: "input->reactive-form#applyMask" } %>
     </div>
   </div>
 

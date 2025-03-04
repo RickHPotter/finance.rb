@@ -38,8 +38,13 @@ class CardInstallment < Installment
   # @return [Date].
   #
   def card_payment_date
-    reference_date = (card_transaction.date + (number - 1).months).end_of_month
-    user_card.references.create_with(reference_date:).find_or_create_by(month: reference_date.month, year: reference_date.year).reference_date
+    installment_date = Date.new(card_transaction.year, card_transaction.month, 1) + (number - 1).months
+    reference = user_card.references.find_by(month: installment_date.month, year: installment_date.year)
+    return reference.reference_date if reference.present?
+
+    reference_date = user_card.calculate_reference_date(installment_date)
+    reference = user_card.references.create(reference_date:, month: reference_date.month, year: reference_date.year)
+    reference.reference_date
   end
 
   # @protected_instance_methods ...............................................

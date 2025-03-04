@@ -43,8 +43,12 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def card_payment_date
-    reference_date = cash_transaction_date.end_of_month
-    user_card.references.create_with(reference_date:).find_or_create_by(month: reference_date.month, year: reference_date.year).reference_date
+    reference = user_card.references.find_by(month:, year:)
+    return reference.reference_date if reference.present?
+
+    reference_date = user_card.calculate_reference_date(date)
+    reference = user_card.references.create(reference_date:, month: reference_date.month, year: reference_date.year)
+    reference.reference_date
   end
 
   # Builds `month` and `year` columns for `self` and associated `_installments`.
@@ -52,7 +56,7 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
-    self.date ||= Date.current unless imported
+    self.date ||= DateTime.current unless imported
 
     set_month_year
     card_installments.new(number: 1, price:, date:) if card_installments.empty?

@@ -14,6 +14,7 @@ en:
         entity_id: Entity
         is_payer: Payer
         price: Price
+        exchanges_count: Exchanges Count
         created_at: Created at
         updated_at: Updated at
 
@@ -33,5 +34,6 @@ pt-BR:
         entity_id: ID da Entidade
         is_payer: Pagante
         price: Valor
+        exchanges_count: Quantidade de Trocas
         created_at: Criado em
         updated_at: Atualizado em

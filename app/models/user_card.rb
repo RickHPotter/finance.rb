@@ -35,6 +35,15 @@ class UserCard < ApplicationRecord
     update_columns(card_transactions_total: card_transactions.sum(:price))
   end
 
+  def calculate_reference_date(date)
+    current_due_date = Date.current.change(day: due_date_day)
+    current_closing_date = current_due_date - days_until_due_date
+
+    return current_due_date if date < current_closing_date
+
+    current_due_date + 1.month
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
