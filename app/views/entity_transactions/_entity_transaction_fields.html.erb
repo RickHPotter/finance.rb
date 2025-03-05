@@ -5,7 +5,9 @@
     <span class="flex items-center text-sm font-medium text-black">
       <%= content_tag :div, class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm" do %>
         <%= button_tag type: :button, class: "flex items-center gap-2", data: { modal_target: "entityModal#{form.index}", modal_toggle: "entityModal#{form.index}" } do %>
-          <%= image_tag asset_path("avatars/#{entity_transaction.entity.avatar_name}"), class: "w-6 h-6 rounded-full" if entity_transaction.entity %>
+          <div class="entity_avatar_container">
+            <%= image_tag asset_path("avatars/#{entity_transaction.entity.avatar_name}"), class: "entity_avatar w-6 h-6 rounded-full" if entity_transaction.entity %>
+          </div>
           <%= content_tag :span, entity_transaction&.entity&.entity_name, class: "entities_entity_name text-nowrap" %>
         <% end %>
 

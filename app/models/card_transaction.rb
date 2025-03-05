@@ -43,11 +43,7 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def card_payment_date
-    reference = user_card.references.find_by(month:, year:)
-    return reference.reference_date if reference.present?
-
-    reference_date = user_card.calculate_reference_date(date)
-    reference = user_card.references.create(reference_date:, month: reference_date.month, year: reference_date.year)
+    reference = user_card.find_or_create_reference_for(date)
     reference.reference_date
   end
 

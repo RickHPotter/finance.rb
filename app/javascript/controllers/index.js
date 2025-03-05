@@ -10,6 +10,9 @@ application.register("autocomplete-select", AutocompleteSelectController)
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 
+import BlinkingPlaceholderController from "./blinking_placeholder_controller"
+application.register("blinking-placeholder", BlinkingPlaceholderController)
+
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
 
@@ -48,6 +51,9 @@ application.register("nested-form", NestedFormController)
 
 import NotificationController from "./notification_controller"
 application.register("notification", NotificationController)
+
+import PriceMaskController from "./price_mask_controller"
+application.register("price-mask", PriceMaskController)
 
 import PwaInstallationController from "./pwa_installation_controller"
 application.register("pwa-installation", PwaInstallationController)

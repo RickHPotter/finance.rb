@@ -10,7 +10,10 @@
     <div class="relative bg-white rounded-lg shadow-lg">
       <!-- Modal header -->
       <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
-        <%= content_tag :span, entity_transaction&.entity&.entity_name, class: outdoor_input_class %>
+        <%= content_tag :span,
+                        entity_transaction&.entity&.entity_name,
+                        class: "entities_entity_name w-full text-black text-center text-ellipsis text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-extrabold border-0
+                               outline-hidden tracking-tight caret-transparent" %>
 
         <%= button_tag type: :button,
                        class: "text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center",
@@ -33,7 +36,7 @@
                   svg: :money,
                   id: "entity_transaction_price_#{form.index}",
                   class: "font-graduate",
-                  data: { reactive_form_target: :priceInput, entity_transaction_target: :priceInput, action: "input->reactive-form#applyMask input->entity-transaction#updateExchangesPrices" } %>
+                  data: { reactive_form_target: :priceInput, entity_transaction_target: :priceInput, action: "input->price-mask#applyMask input->entity-transaction#updateExchangesPrices" } %>
           </div>
 
           <%= button_tag "1/1", type: :button, class: "bg-slate-800 text-white font-bold p-1 border-2 border-red-300 rounded-sm shadow-sm", data: { action: "entity-transaction#fillPrice", divider: 1 } %>

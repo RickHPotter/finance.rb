@@ -1,12 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
-import RailsDate from "models/railsDate"
+import { initModals } from "flowbite"
+import RailsDate from "../models/railsDate"
 
 // FIXME: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = ["priceInput", "priceExchangeInput", "exchangesCountInput", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
 
   connect() {
-    // const modal = new window.Flowbite.Modal(this.element)
+    initModals()
   }
 
   toggleExchanges({ target }) {

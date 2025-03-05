@@ -1,23 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 import RailsDate from "../models/railsDate"
+import { is_present, sleep } from "../utils/utils.js"
+import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
-const is_empty = (value) => {
-  return value === "" || value === null || value === undefined
-}
-
-const is_present = (value) => {
-  return !is_empty(value)
-}
-
-const sleep = (fn, time = 0) => {
-  return new Promise((resolve) => setTimeout(resolve, time))
-    .then(fn)
-}
-
 export default class extends Controller {
   static targets = [
-    "input", "dateInput", "priceInput",
+    "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
 
     "installmentWrapper", "addInstallment", "delInstallment",
@@ -28,17 +17,13 @@ export default class extends Controller {
 
     "entityWrapper",
     "addEntity", "delEntity",
+    "entityIcons",
 
     "updateButton"
   ]
 
   connect() {
     this.debounceTimeout = null
-
-    this.applyMasks()
-
-    const inputs_with_placeholder = this.inputTargets.filter(e => e.dataset.placeholder)
-    inputs_with_placeholder.forEach(e => this.blink_placeholder(e))
 
     if (this.element.querySelector("#categories_nested")) {
       this._updateCategories()
@@ -55,21 +40,10 @@ export default class extends Controller {
     if (this.hasCategoryColoursTarget) {
       this.categoryColours = JSON.parse(this.categoryColoursTarget.value)
     }
-  }
 
-  blink_placeholder(input) {
-    const symbol = "█"
-    const text = input.dataset.placeholder
-
-    const toggleBlink = () => {
-      const lastChar = input.placeholder.at(-1)
-      const cursor = lastChar === symbol ? " " : symbol
-      input.placeholder = `${text}${cursor}`
+    if (this.hasEntityIconsTarget) {
+      this.entityIcons = JSON.parse(this.entityIconsTarget.value)
     }
-
-    const blinkInterval = setInterval(toggleBlink, 500)
-
-    input.dataset.blinkInterval = blinkInterval;
   }
 
   // Installments
@@ -77,26 +51,6 @@ export default class extends Controller {
     const has_value = is_present(target.value) || (target.dataset.value && is_present(target.querySelector(target.dataset.value).value))
 
     if (has_value) { target.form.requestSubmit(this.updateButtonTarget) }
-  }
-
-  applyMasks() {
-    [...this.priceInputTargets, ...this.priceInstallmentInputTargets].forEach((target) => {
-      this.applyMask({ target })
-    })
-  }
-
-  applyMask({ target }) {
-    target.value = this._applyMask(target.value)
-  }
-
-  removeMasks() {
-    [...this.priceInputTargets, ...this.priceInstallmentInputTargets].forEach((target) => {
-      this.removeMask({ target })
-    })
-  }
-
-  removeMask({ target }) {
-    target.value = this._removeMask(target.value)
   }
 
   updateInstallmentsDates() {
@@ -203,7 +157,6 @@ export default class extends Controller {
 
     this.debounceTimeout = setTimeout(() => {
       this.element.requestSubmit()
-      sleep(() => { this.applyMasks() })
     }, 800)
   }
 
@@ -214,20 +167,6 @@ export default class extends Controller {
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░  ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓████████▓▒░
-
-  _applyMask(value) {
-    const isNegative = value.startsWith("-")
-
-    value = value.replace(/[^\d]/g, "")
-    value = (value / 100).toFixed(2).toString()
-    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-
-    return (isNegative ? "-R$ " : "R$ ") + value
-  }
-
-  _removeMask(value) {
-    return value.replace(/[^\d-]/g, "")
-  }
 
   // Installments
   _getDueDate() {
@@ -265,7 +204,7 @@ export default class extends Controller {
   }
 
   async _updateInstallmentsPrices() {
-    const total_price            = parseInt(this._removeMask(this.priceInputTarget.value))
+    const total_price            = parseInt(_removeMask(this.priceInputTarget.value))
     const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
 
     let price_that_cannot_be_divided  = total_price % new_installments_count
@@ -278,7 +217,7 @@ export default class extends Controller {
 
     visible_installments_inputs.forEach((target) => {
       const value  = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
-      target.value = this._applyMask(value)
+      target.value = _applyMask(value)
     })
   }
 
@@ -373,7 +312,12 @@ export default class extends Controller {
     const new_wrapper = wrappers[wrappers.length - 1]
 
     new_wrapper.querySelector(".entities_entity_id").value = value
-    new_wrapper.querySelector(".entities_entity_name").textContent = text
+    new_wrapper.querySelectorAll(".entities_entity_name").forEach((element) => { element.textContent = text })
+
+    const avatar_image = document.createElement("img")
+    avatar_image.src = this.entityIcons[value]
+    avatar_image.classList.add("entity_avatar", "w-6", "h-6", "rounded-full")
+    new_wrapper.querySelector(".entity_avatar_container").prepend(avatar_image)
   }
 
   _updateEntities() {

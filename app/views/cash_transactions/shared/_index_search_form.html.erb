@@ -3,7 +3,7 @@
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" } do |form| %>
+              data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form| %>
 
   <div class="mb-6 flex gap-4 flex-wrap">
     <%= render "shared/month_year_selector", form_id: :search_form, default_year:, years: @years, active_month_years: @active_month_years do %>
@@ -45,7 +45,7 @@
             form, :from_ct_price,
             svg: :money,
             value: @from_ct_price || from_cent_based_to_float(0, "R$"),
-            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+            data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask change->reactive-form#submit" } %>
     </div>
 
     <div class="col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75">
@@ -59,7 +59,7 @@
             form, :to_ct_price,
             svg: :money,
             value: @to_ct_price || nil,
-            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+            data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask change->reactive-form#submit" } %>
     </div>
 
     <hr class="hidden lg:block transform rotate-90 my-auto border-1 border-slate-300">
@@ -69,7 +69,7 @@
             form, :from_price,
             svg: :money,
             value: @from_price || from_cent_based_to_float(0, "R$"),
-            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+            data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask change->reactive-form#submit" } %>
     </div>
 
     <div class="col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]">
@@ -83,7 +83,7 @@
             form, :to_price,
             svg: :money,
             value: @to_price || nil,
-            data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask change->reactive-form#submit" } %>
+            data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask change->reactive-form#submit" } %>
     </div>
 
     <hr class="hidden lg:block transform rotate-90 my-auto border-1 border-slate-300">

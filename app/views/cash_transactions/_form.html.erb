@@ -1,13 +1,17 @@
 <%= turbo_frame_tag dom_id cash_transaction do %>
-  <%= form_with(model: cash_transaction, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+  <%= form_with(model: cash_transaction,
+                id: :form,
+                class: "contents text-black",
+                data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
     <%= hidden_field_tag :category_colours, current_user.categories.to_h { |c| [ c.id, c.bg_colour ] }.to_json, disabled: true, data: { reactive_form_target: :categoryColours } %>
+    <%= hidden_field_tag :entity_icons, current_user.entities.to_h { |c| [ c.id, asset_path("avatars/#{c.avatar_name}") ] }.to_json, disabled: true, data: { reactive_form_target: :entityIcons } %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :description,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
-            data: { reactive_form_target: :input, placeholder: model_attribute(cash_transaction, :description_placeholder), placeholder_type: :word } %>
+            data: { controller: "blinking-placeholder", text: model_attribute(cash_transaction, :description_placeholder) } %>
     </div>
 
     <div class="w-full mb-6">
@@ -15,7 +19,7 @@
       <%= form.text_area \
             :comment,
             class: "text-gray-500 px-4 pt-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
-            data: { controller: "text-area-autogrow", reactive_form_target: :input, placeholder: model_attribute(cash_transaction, :comment_placeholder), placeholder_type: :word } %>
+            data: { controller: "text-area-autogrow blinking-placeholder", text: model_attribute(cash_transaction, :comment_placeholder) } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
@@ -65,7 +69,7 @@
                 form, :price,
                 svg: :money,
                 class: "font-graduate",
-                data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask input->reactive-form#updateInstallmentsPrices" } %>
+                data: { price_mask_target: :priceInput, reactive_form_target: :priceInput, action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices" } %>
         </div>
 
         <div class="w-1/3 lg:w-2/5">
@@ -146,7 +150,7 @@
       <% if cash_transaction.can_be_deleted? %>
         <div class="mx-auto">
           <%= render Components::ButtonComponent.new link: cash_transaction,
-                                                    options: { id: "delete_cash_transaction_#{cash_transaction.id}",
+                                                     options: { id: "delete_cash_transaction_#{cash_transaction.id}",
                                                                 label: action_model(:destroy, cash_transaction),
                                                                 colour: :red,
                                                                 data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } } %>

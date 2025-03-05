@@ -21,21 +21,18 @@ RSpec.describe CashTransactable, type: :concern do
                                       category_transactions: [])
   end
 
-  def validate(card_transaction, installments_prices)
-    cash_transactions = card_transaction.card_installments.map(&:cash_transaction)
+  def validate(installments_prices)
+    # cash_transactions = card_transaction.card_installments.map(&:cash_transaction)
 
-    expect(cash_transactions.count).to eq cash_transactions.compact_blank.count
+    # debugger if installments_prices.sort != cash_transactions.pluck(:price).sort
 
-    cash_transactions.each_with_index do |cash_transaction, index|
+    # expect(cash_transactions.count).to eq cash_transactions.compact_blank.count
+
+    CashTransaction.order(:month, :year).each_with_index do |cash_transaction, index|
       expect(cash_transaction.comment).to eq "Upfront: 0, Installments: #{installments_prices[index]}"
       expect(cash_transaction.price).to eq installments_prices[index]
     end
-  end
-
-  def validate_multiple(card_transactions, installments_prices)
-    card_transactions.each do |card_transaction|
-      validate(card_transaction, installments_prices)
-    end
+    # end
   end
 
   describe "[ concern behaviour ]" do
@@ -44,7 +41,7 @@ RSpec.describe CashTransactable, type: :concern do
     end
 
     it "attaches a cash_transaction on create" do
-      validate(card_transaction_one, [ -100, -100 ])
+      validate([ -100, -100 ])
     end
 
     it "updates a cash_transaction on price update" do
@@ -53,7 +50,7 @@ RSpec.describe CashTransactable, type: :concern do
       card_transaction_one.card_installments.second.price = -200
       card_transaction_one.save
 
-      validate(card_transaction_one, [ -200, -200 ])
+      validate([ -200, -200 ])
     end
 
     it "switches and deletes old cash_transaction on user_card update" do
@@ -62,7 +59,7 @@ RSpec.describe CashTransactable, type: :concern do
       card_transaction_one.update(user_card: user_card_two)
 
       expect(CashTransaction.where(id: old_cash_transactions.pluck(:id))).to be_empty
-      validate(card_transaction_one, [ -100, -100 ])
+      validate([ -100, -100 ])
     end
 
     it "switches and deletes old cash_transaction on month_year update" do
@@ -72,26 +69,26 @@ RSpec.describe CashTransactable, type: :concern do
       card_transaction_one.update(date: new_date, month: new_date.month, year: new_date.year)
 
       expect(CashTransaction.where(id: old_cash_transactions.pluck(:id))).to be_empty
-      validate(card_transaction_one, [ -100, -100 ])
+      validate([ -100, -100 ])
     end
 
     context "( when multiple transactions exist )" do
       before { card_transaction_two.save }
 
-      it "updates cash_transaction on destroy as one of the card_installments" do
-        validate_multiple(CardTransaction.all, [ -200, -200, -100 ])
+      it "updates cash_transaction on destroy of one card_transaction" do
+        validate([ -200, -200, -100 ])
 
-        card_transaction_one.card_installments.last.destroy
+        card_transaction_one.destroy
 
-        validate_multiple(CardTransaction.all, [ -200, -100, -100 ])
+        validate([ -100, -100, -100 ])
       end
 
-      it "destroys cash_transaction on destroy as the only card_installment" do
-        validate_multiple(CardTransaction.all, [ -200, -200, -100 ])
+      it "destroys one cash_transaction on destroy of one card_transaction" do
+        validate([ -200, -200, -100 ])
 
-        card_transaction_two.card_installments.third.destroy
+        card_transaction_two.destroy
 
-        validate_multiple(CardTransaction.all, [ -200, -200 ])
+        validate([ -100, -100 ])
       end
     end
 

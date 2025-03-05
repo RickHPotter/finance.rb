@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id user_bank_account do %>
-  <%= form_with(model: user_bank_account, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+  <%= form_with(model: user_bank_account, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">

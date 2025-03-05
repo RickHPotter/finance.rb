@@ -1,12 +1,12 @@
 <%= turbo_frame_tag dom_id user_card do %>
-  <%= form_with(model: user_card, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
+  <%= form_with(model: user_card, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :user_card_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
-            data: { reactive_form_target: :input, placeholder: model_attribute(user_card, :user_card_name), placeholder_type: :word } %>
+            data: { controller: "blinking-placeholder", text: model_attribute(user_card, :user_card_name) } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
@@ -47,7 +47,7 @@
               form, :min_spend,
               svg: :money,
               class: "font-graduate",
-              data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+              data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask" } %>
       </div>
 
       <div class="w-full lg:w-2/12 mb-2">
@@ -56,7 +56,7 @@
               form, :credit_limit,
               svg: :money,
               class: "font-graduate",
-              data: { reactive_form_target: :priceInput, action: "input->reactive-form#applyMask" } %>
+              data: { price_mask_target: :priceInput, action: "input->price-mask#applyMask" } %>
       </div>
     </div>
 

@@ -35,13 +35,12 @@ class UserCard < ApplicationRecord
     update_columns(card_transactions_total: card_transactions.sum(:price))
   end
 
-  def calculate_reference_date(date)
-    current_due_date = Date.current.change(day: due_date_day)
-    current_closing_date = current_due_date - days_until_due_date
+  def find_or_create_reference_for(date)
+    reference = references.find_by(month: date.month, year: date.year)
+    return reference if reference.present?
 
-    return current_due_date if date < current_closing_date
-
-    current_due_date + 1.month
+    reference_date = calculate_reference_date(date)
+    references.create(reference_date:, month: reference_date.month, year: reference_date.year)
   end
 
   # @protected_instance_methods ...............................................
@@ -56,6 +55,15 @@ class UserCard < ApplicationRecord
   #
   def set_user_card_name
     self.user_card_name ||= card.card_name
+  end
+
+  def calculate_reference_date(date)
+    current_due_date = date.change(day: due_date_day)
+    current_closing_date = current_due_date - days_until_due_date
+
+    return current_due_date if date < current_closing_date
+
+    current_due_date + 1.month
   end
 
   # @private_instance_methods .................................................
