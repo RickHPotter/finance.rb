@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import RailsDate from "models/railsDate"
+import RailsDate from "../models/railsDate"
 
 // Connects to data-controller="reactive-form"
 const is_empty = (value) => {

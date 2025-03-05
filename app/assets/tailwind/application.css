@@ -121,7 +121,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .ts-wrapper .ts-control {
-  @apply border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent shadow-none
+  @apply border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent shadow-none !gap-2
 }
 
 .ts-wrapper.plugin-remove_button .item {

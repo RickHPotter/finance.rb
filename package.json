@@ -1,0 +1,26 @@
+{
+  "name": "finance.rb",
+  "private": true,
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "scripts": {
+    "build": "esbuild app/javascript/*.* --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets"
+  },
+  "author": "Rick H Potter",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@hotwired/stimulus": "^3.2.2",
+    "@hotwired/turbo-rails": "^8.0.13",
+    "@josefarias/hotwire_combobox": "^0.3.2",
+    "flowbite": "^3.1.2",
+    "flowbite-datepicker": "^1.3.2",
+    "hotkeys-js": "^3.13.9",
+    "stimulus-notification": "^2.2.0",
+    "stimulus-rails-autosave": "^5.1.0",
+    "stimulus-rails-nested-form": "^4.1.0",
+    "stimulus-textarea-autogrow": "^4.1.0",
+    "stimulus-use": "^0.52.3",
+    "tom-select": "^2.4.3"
+  }
+}

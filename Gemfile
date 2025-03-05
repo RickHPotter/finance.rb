@@ -7,8 +7,8 @@ ruby "3.4.1"
 gem "rails", "~> 8.0"
 
 gem "bootsnap", require: false
-gem "importmap-rails"
 gem "jbuilder"
+gem "jsbundling-rails"
 gem "pg"
 gem "propshaft"
 gem "puma"

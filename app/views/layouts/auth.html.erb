@@ -10,9 +10,9 @@
     <link rel="icon" href="/pwa_logos/ios/128.png" type="image/png">
     <link rel="apple-touch-icon" href="/pwa_logos/ios/512.png">
 
-    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
+    <%= stylesheet_link_tag "tailwind", data: { turbo_track: :reload } %>
+    <%= stylesheet_link_tag "application", data: { turbo_track: :reload } %>
+    <%= javascript_include_tag "application", data: { turbo_track: :reload }, type: :module %>
   </head>
 
   <body class="bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">

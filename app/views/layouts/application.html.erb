@@ -10,12 +10,12 @@
     <link rel="icon" href="/pwa_logos/ios/128.png" type="image/png">
     <link rel="apple-touch-icon" href="/pwa_logos/ios/512.png">
 
-    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", data: { turbo_track: :reload } %>
+    <%= stylesheet_link_tag "application", data: { turbo_track: :reload } %>
     <%= stylesheet_link_tag "components/tom-select" %>
     <%= stylesheet_link_tag "components/select" %>
-    <%= javascript_importmap_tags %>
     <%= combobox_style_tag %>
+    <%= javascript_include_tag "application", data: { turbo_track: :reload }, type: :module %>
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
@@ -35,4 +35,5 @@
 <script>
   window.APP_LOCALE = "<%= I18n.locale %>"
 </script>
+<!-- FIXME: now with esbuild, this should not be here -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
