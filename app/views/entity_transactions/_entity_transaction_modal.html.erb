@@ -24,13 +24,14 @@
 
       <!-- Modal body -->
       <div class="p-4">
-        <%= bold_label(form, :price) %>
+        <%= bold_label(form, :price, "entity_transaction_price_#{form.index}") %>
 
         <div class="grid grid-cols-6 gap-5 my-3">
           <div class="col-span-3">
             <%= render Components::TextFieldComponent.new \
                   form, :price,
                   svg: :money,
+                  id: "entity_transaction_price_#{form.index}",
                   class: "font-graduate",
                   data: { reactive_form_target: :priceInput, entity_transaction_target: :priceInput, action: "input->reactive-form#applyMask input->entity-transaction#updateExchangesPrices" } %>
           </div>
@@ -42,22 +43,27 @@
 
         <div class="grid grid-cols-2 justify-center items-center gap-5 my-3">
           <div>
-            <%= bold_label(form, :is_payer) %>
+            <%= bold_label(form, :is_payer, "entity_transaction_is_payer_#{form.index}") %>
 
             <div class="mb-3">
-              <%= form.checkbox :is_payer, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", data: { action: "change->entity-transaction#toggleExchanges" } %>
+              <%= form.checkbox :is_payer,
+                                id: "entity_transaction_is_payer_#{form.index}",
+                                class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                                data: { action: "change->entity-transaction#toggleExchanges" } %>
             </div>
           </div>
 
           <div>
-            <%= bold_label(form, :exchanges_count) %>
+            <%= bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}") %>
 
             <%= render Components::TextFieldComponent.new \
                   form, :exchanges_count,
                   type: :number,
                   svg: :number,
-                  min: 1, max: 72,
+                  min: 0, max: 72,
                   disabled: !entity_transaction.is_payer,
+                  value: entity_transaction&.exchanges_count&.to_i,
+                  id: "entity_transaction_exchanges_count_#{form.index}",
                   class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
                   data: { entity_transaction_target: :exchangesCountInput, action: "input->entity-transaction#updateExchangesPrices" } %>
           </div>
@@ -66,12 +72,12 @@
         <div id="exchanges_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-exchange-wrapper">
           <template data-nested-form-target="template">
             <%= form.fields_for :exchanges, Exchange.new, child_index: "NEW_RECORD" do |exchange_fields| %>
-              <%= render "card_transactions/exchange_fields", form: exchange_fields %>
+              <%= render "exchanges/exchange_fields", form: exchange_fields %>
             <% end %>
           </template>
 
           <%= form.fields_for :exchanges do |exchange_fields| %>
-            <%= render "card_transactions/exchange_fields", form: exchange_fields %>
+            <%= render "exchanges/exchange_fields", form: exchange_fields %>
           <% end %>
 
           <div data-nested-form-target="target"></div>

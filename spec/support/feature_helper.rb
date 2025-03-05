@@ -16,6 +16,7 @@ module FeatureHelper
     fill_in "user_email", with: user.email
     fill_in "user_password", with: user.password
     click_on I18n.t(:sign_in)
+    find("#notification-close").click
   end
 
   def navigate_to(menu:, sub_menu:)
@@ -28,12 +29,8 @@ module FeatureHelper
     end
   end
 
-  def notification
-    find("#notification-content")
-  end
-
   def match_center_container_content(turbo_frame_id)
-    expect(page).to have_selector("turbo-frame#center_container turbo-frame##{turbo_frame_id}")
+    expect(page).to have_css("turbo-frame#center_container turbo-frame##{turbo_frame_id}")
   end
 
   def hotwire_select(div_id, with:)

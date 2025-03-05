@@ -35,7 +35,7 @@ RSpec.describe "CashTransactions", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_createda, CashTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, CashTransaction))
     end
 
     scenario "creating a valid cash_transaction and getting redirected to cash_transactions/index" do
@@ -43,13 +43,13 @@ RSpec.describe "CashTransactions", type: :feature do
         fill_in "cash_transaction_description",             with: "Test Cash Transaction"
         fill_in "cash_transaction_comment",                 with: "A really nice comment"
         fill_in "cash_transaction_date",                    with: Date.current
-        fill_in "cash_transaction_price",                   with: 3000 * 100
-        fill_in "cash_transaction_cash_installments_count", with: 3
+        fill_in "cash_transaction_price",                   with: 300_000
+        fill_in "cash_transaction_cash_installments_count", with: 2
 
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:createda, CashTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, CashTransaction))
 
       cash_transaction = user.cash_transactions.last
       within "turbo-frame#cash_transactions turbo-frame#cash_installment_#{cash_transaction.cash_installments.first.id}" do
@@ -69,7 +69,7 @@ RSpec.describe "CashTransactions", type: :feature do
       fill_in "cash_transaction_description", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updateda, CashTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, CashTransaction))
     end
 
     scenario "editing a valid cash_transaction and getting redirected to cash_transactions/index" do
@@ -77,11 +77,11 @@ RSpec.describe "CashTransactions", type: :feature do
       fill_in "cash_transaction_description", with: "Some Other Cash Transaction Name"
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:updateda, CashTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, CashTransaction))
 
       within "turbo-frame#cash_transactions" do
         within "turbo-frame#cash_installment_#{cash_transaction.cash_installments.first.id}" do
-          expect(page).to have_selector("a#edit_cash_transaction_#{cash_transaction.id}", text: "Some Other Cash Transaction Name")
+          expect(page).to have_css("a#edit_cash_transaction_#{cash_transaction.id}", text: "Some Other Cash Transaction Name")
         end
       end
     end
@@ -100,7 +100,7 @@ RSpec.describe "CashTransactions", type: :feature do
       click_link("delete_cash_transaction_#{cash_transaction.id}")
       accept_alert
 
-      expect(notification).to have_content(notification_model(:destroyeda, CashTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, CashTransaction))
     end
   end
 end

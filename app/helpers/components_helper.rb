@@ -44,9 +44,7 @@ module ComponentsHelper
     form.label field, model_attribute(form.object, field).downcase, class: "font-poetsen-one text-medium font-bold text-gray-500", for: id
   end
 
-  def thin_label(form, field, id = nil)
-    id ||= "#{form.object.model_name.singular}_#{field}"
-
-    form.label field, model_attribute(form.object, field).downcase, class: "font-poetsen-one font-thin text-gray-500", for: id
+  def thin_label(form, field)
+    content_tag :span, model_attribute(form.object, field).downcase, class: "font-poetsen-one font-thin text-gray-500"
   end
 end

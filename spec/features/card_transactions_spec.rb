@@ -39,7 +39,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_createda, CardTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, CardTransaction))
     end
 
     scenario "creating a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
@@ -54,7 +54,7 @@ RSpec.describe "CardTransactions", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:createda, CardTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, CardTransaction))
 
       within "turbo-frame#card_transactions" do
         expect(page).to have_css("#month_year_selector_title", text: user_card.user_card_name)
@@ -71,24 +71,32 @@ RSpec.describe "CardTransactions", type: :feature do
 
     scenario "editing an invalid card_transaction" do
       find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
-      fill_in "card_transaction_description", with: ""
-      find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updateda, CardTransaction))
+      within "turbo-frame#card_transaction_#{card_transaction.id} form" do
+        fill_in "card_transaction_description", with: ""
+
+        find("input[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, CardTransaction))
     end
 
     scenario "editing a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
       find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
-      fill_in "card_transaction_description", with: "Some Other Card Transaction Name"
-      find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:updateda, CardTransaction))
+      within "turbo-frame#card_transaction_#{card_transaction.id} form" do
+        fill_in "card_transaction_description", with: "Some Other Card Transaction Name"
+
+        find("input[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, CardTransaction))
 
       within "turbo-frame#card_transactions" do
         expect(page).to have_css("#month_year_selector_title", text: user.user_cards.first.user_card_name)
 
         within "turbo-frame#card_installment_#{card_transaction.card_installments.first.id}" do
-          expect(page).to have_selector("span", text: "Some Other Card Transaction Name")
+          expect(page).to have_css("span", text: "Some Other Card Transaction Name")
         end
       end
     end
@@ -105,7 +113,7 @@ RSpec.describe "CardTransactions", type: :feature do
         accept_alert
       end
 
-      expect(notification).to have_content(notification_model(:destroyeda, CardTransaction))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, CardTransaction))
     end
   end
 end

@@ -5,6 +5,10 @@ import RailsDate from "models/railsDate"
 export default class extends Controller {
   static targets = ["priceInput", "priceExchangeInput", "exchangesCountInput", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
 
+  connect() {
+    // const modal = new window.Flowbite.Modal(this.element)
+  }
+
   toggleExchanges({ target }) {
     const checked = target.checked
 
@@ -21,7 +25,9 @@ export default class extends Controller {
 
   fillPrice({ target }) {
     const divider = target.dataset.divider
-    const priceStr = document.getElementById("card_transaction_price").value
+    const cardTransactionPriceStr = document.getElementById("card_transaction_price")
+    const cashTransactionPriceStr = document.getElementById("cash_transaction_price")
+    const priceStr = ( cardTransactionPriceStr || cashTransactionPriceStr ).value
     const price = parseInt(this._removeMask(priceStr) / divider)
 
     this.element.querySelector("input[name*='[price]']").value = this._applyMask(price.toString())
@@ -137,6 +143,10 @@ export default class extends Controller {
   }
 
   _getDueDate() {
-    return new RailsDate(document.getElementById("card_transaction_date").value)
+    const cardTransactionDate = document.getElementById("card_transaction_date")
+    const cashTransactionDate = document.getElementById("cash_transaction_date")
+    const dateStr = ( cardTransactionDate || cashTransactionDate ).value
+
+    return new RailsDate(dateStr)
   }
 }

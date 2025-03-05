@@ -45,7 +45,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_createda, UserBankAccount))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, UserBankAccount))
     end
 
     scenario "creating a valid user_bank_account and getting redirected to cash_transaction creation with user_bank_account already preselected" do
@@ -57,7 +57,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:createda, UserBankAccount))
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, UserBankAccount))
 
       match_center_container_content("new_cash_transaction")
 
@@ -92,7 +92,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
         end
       end
 
-      expect(notification).to have_content(notification_model(:updateda, UserBankAccount))
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, UserBankAccount))
 
       match_center_container_content("new_cash_transaction")
 
@@ -108,7 +108,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
       navigate_to(menu: basic, sub_menu: user_bank_account_submenu)
 
       within "turbo-frame#user_bank_accounts turbo-frame#user_bank_account_#{user_bank_account.id}" do
-        expect(page).to have_selector("span.user_bank_account_description", text: user_bank_account.reload.pretty_print)
+        expect(page).to have_css("span.user_bank_account_description", text: user_bank_account.reload.pretty_print)
       end
     end
   end
@@ -127,7 +127,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
 
       expect(page).to_not have_css("turbo-frame#user_bank_account_#{user_bank_account.id}")
 
-      expect(notification).to have_content(notification_model(:destroyeda, UserBankAccount))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, UserBankAccount))
     end
 
     scenario "failing to destroy a user_bank_account that has cash_transactions" do
@@ -140,7 +140,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
 
       expect(page).to have_css("turbo-frame#user_bank_account_#{user_bank_account.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactionsa, UserBankAccount))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_destroyed_because_has_transactionsa, UserBankAccount))
     end
   end
 end

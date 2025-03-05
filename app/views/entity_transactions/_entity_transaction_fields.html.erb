@@ -1,20 +1,19 @@
 <% entity_transaction = form.object %>
-<% now = DateTime.current.to_i %>
 
-<%= content_tag :div, class: "nested-form-wrapper", data: { new_record: entity_transaction.new_record?, controller: "modal", reactive_form_target: "entityWrapper" } do %>
-  <div class="flex w-full my-1 justify-center">
-    <span class="flex items-center text-sm font-medium text-black ps-2">
-      <%= content_tag :div, class: "entities_entity_name flex items-center border-1 border-slate-400 text-black outline-none rounded-lg text-sm px-2 py-1" do %>
+<%= content_tag :div, class: "nested-form-wrapper", data: { new_record: entity_transaction.new_record?, reactive_form_target: "entityWrapper" } do %>
+  <div class="flex my-1">
+    <span class="flex items-center text-sm font-medium text-black">
+      <%= content_tag :div, class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm" do %>
         <%= button_tag type: :button, class: "flex items-center gap-2", data: { modal_target: "entityModal#{form.index}", modal_toggle: "entityModal#{form.index}" } do %>
           <%= image_tag asset_path("avatars/#{entity_transaction.entity.avatar_name}"), class: "w-6 h-6 rounded-full" if entity_transaction.entity %>
-          <%= entity_transaction&.entity&.entity_name %>
+          <%= content_tag :span, entity_transaction&.entity&.entity_name, class: "entities_entity_name text-nowrap" %>
         <% end %>
 
         <%= button_tag "",
                        type: :button,
-                       class: "inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
+                       class: "wtf inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
                        aria_label: "Remove",
-                       data: { action: "click->reactive-form#removeChip" } do %>
+                       data: { action: "click->reactive-form#removeCategory" } do %>
           <svg class="w-2 h-2 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"></path>
           </svg>
@@ -25,6 +24,6 @@
     <%= form.hidden_field :entity_id, class: :entities_entity_id %>
     <%= form.hidden_field :_destroy %>
 
-    <%= render partial: "card_transactions/entity_transaction_modal", locals: { form: form } %>
+    <%= render partial: "entity_transactions/entity_transaction_modal", locals: { form: } %>
   </div>
 <% end %>

@@ -44,10 +44,10 @@
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :category_id),
-              data: { action: "hw-combobox:selection->reactive-form#insertChip", value: ".hw-combobox__input" } %>
+              data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" } %>
       </div>
 
-      <div id="hw_card_transaction_entity_id" class="hw-cb w-full lg:w-2/12 mb-3 user-icon">
+      <div id="hw_entity_id" class="hw-cb w-full lg:w-2/12 mb-3 user-icon">
         <%= form.combobox \
               :entity_transaction,
               @entities,
@@ -94,12 +94,12 @@
          class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields| %>
-          <%= render "card_transactions/installment_fields", form: installment_fields %>
+          <%= render "installments/installment_fields", form: installment_fields %>
         <% end %>
       </template>
 
       <%= form.fields_for :card_installments do |installment_fields| %>
-        <%= render "card_transactions/installment_fields", form: installment_fields %>
+        <%= render "installments/installment_fields", form: installment_fields %>
       <% end %>
 
       <!-- inserted elements -->
@@ -109,17 +109,16 @@
     </div>
 
     <!-- Categories -->
-    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
-         class="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 pb-2">
+    <div id="categories_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto">
       <template data-nested-form-target="template">
         <%= form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields| %>
-          <%= render "card_transactions/category_transaction_fields", form: category_transaction_fields %>
+          <%= render "category_transactions/category_transaction_fields", form: category_transaction_fields %>
         <% end %>
       </template>
 
       <% category_transactions_association = card_transaction.category_transactions.includes(:category) if card_transaction.category_transactions.count > 1 %>
       <%= form.fields_for :category_transactions, category_transactions_association do |category_transaction_fields| %>
-        <%= render "card_transactions/category_transaction_fields", form: category_transaction_fields %>
+        <%= render "category_transactions/category_transaction_fields", form: category_transaction_fields %>
       <% end %>
 
       <!-- inserted elements -->
@@ -129,17 +128,16 @@
     </div>
 
     <!-- Entities -->
-    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper"
-         class="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 pb-2">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto"
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
-          <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>
+          <%= render "entity_transactions/entity_transaction_fields", form: entity_transaction_fields %>
         <% end %>
       </template>
 
       <% entity_transactions_association = card_transaction.entity_transactions.includes(:entity) if card_transaction.entity_transactions.count > 1 %>
       <%= form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields| %>
-        <%= render "card_transactions/entity_transaction_fields", form: entity_transaction_fields %>
+        <%= render "entity_transactions/entity_transaction_fields", form: entity_transaction_fields %>
       <% end %>
 
       <!-- inserted elements -->

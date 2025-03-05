@@ -34,7 +34,7 @@ RSpec.describe "UserCards", type: :feature do
       match_center_container_content("card_transactions")
 
       within "turbo-frame#center_container turbo-frame#card_transactions" do
-        expect(page).to have_selector("#month_year_selector_title", text: user_card.user_card_name)
+        expect(page).to have_css("#month_year_selector_title", text: user_card.user_card_name)
       end
     end
   end
@@ -51,7 +51,7 @@ RSpec.describe "UserCards", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_created, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_created, UserCard))
     end
 
     scenario "creating a valid user_card and getting redirected to card_transaction creation with user_card already preselected" do
@@ -66,7 +66,7 @@ RSpec.describe "UserCards", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:created, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:created, UserCard))
 
       match_center_container_content("new_card_transaction")
 
@@ -95,7 +95,7 @@ RSpec.describe "UserCards", type: :feature do
       fill_in "user_card_user_card_name", with: ""
       find("form input[type=submit]", match: :first).click
 
-      expect(notification).to have_content(notification_model(:not_updated, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updated, UserCard))
     end
 
     scenario "editing a valid user_card and getting redirected to card_transaction creation with user_card already preselected" do
@@ -113,7 +113,7 @@ RSpec.describe "UserCards", type: :feature do
         end
       end
 
-      expect(notification).to have_content(notification_model(:updated, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:updated, UserCard))
 
       match_center_container_content("new_card_transaction")
 
@@ -130,9 +130,9 @@ RSpec.describe "UserCards", type: :feature do
       navigate_to(menu: basic, sub_menu: user_card_submenu)
 
       within "turbo-frame#user_cards turbo-frame#user_card_#{user_card.id}" do
-        expect(page).to have_selector("span", text: "Another Test Entity")
-        expect(page).to have_selector("span.current_closing_date", text: I18n.l(current_closing_date + 2.days, format: :shorter))
-        expect(page).to have_selector("span.current_due_date",     text: I18n.l(current_due_date     + 2.days, format: :shorter))
+        expect(page).to have_css("span", text: "Another Test Entity")
+        expect(page).to have_css("span.current_closing_date", text: I18n.l(current_closing_date + 2.days, format: :shorter))
+        expect(page).to have_css("span.current_due_date",     text: I18n.l(current_due_date     + 2.days, format: :shorter))
       end
     end
   end
@@ -151,7 +151,7 @@ RSpec.describe "UserCards", type: :feature do
 
       expect(page).to_not have_css("turbo-frame#user_card_#{user_card.id}")
 
-      expect(notification).to have_content(notification_model(:destroyed, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyed, UserCard))
     end
 
     scenario "failing to destroy a user_card that has card_transactions" do
@@ -164,7 +164,7 @@ RSpec.describe "UserCards", type: :feature do
 
       expect(page).to have_css("turbo-frame#user_card_#{user_card.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactions, UserCard))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_destroyed_because_has_transactions, UserCard))
     end
   end
 end

@@ -47,7 +47,7 @@ RSpec.describe "Entities", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_createda, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, Entity))
     end
 
     scenario "creating a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -57,13 +57,13 @@ RSpec.describe "Entities", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:createda, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, Entity))
 
       match_center_container_content("new_card_transaction")
 
       within "turbo-frame#new_card_transaction form" do
         within "#entities_nested" do
-          expect(page).to have_selector("#entity_transaction_entity_id > option:nth-child(1)", text: "Test Entity")
+          expect(page).to have_css(".entities_entity_name", text: "Test Entity")
         end
       end
     end
@@ -86,7 +86,7 @@ RSpec.describe "Entities", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_updateda, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, Entity))
     end
 
     scenario "editing a valid entity and getting redirected to card_transaction creation with entity already preselected" do
@@ -100,20 +100,20 @@ RSpec.describe "Entities", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:updateda, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, Entity))
 
       match_center_container_content("new_card_transaction")
 
       within "turbo-frame#new_card_transaction form" do
         within "#entities_nested" do
-          expect(page).to have_selector("#entity_transaction_entity_id > option:nth-child(1)", text: "Another Test Entity")
+          expect(page).to have_css(".entities_entity_name", text: "Another Test Entity")
         end
       end
 
       navigate_to(menu: basic, sub_menu: entity_submenu)
 
       within "turbo-frame#entities turbo-frame#entity_#{entity.id}" do
-        expect(page).to have_selector("span", text: "Another Test Entity")
+        expect(page).to have_css("span", text: "Another Test Entity")
       end
     end
   end
@@ -132,7 +132,7 @@ RSpec.describe "Entities", type: :feature do
 
       expect(page).to_not have_css("turbo-frame#entity_#{entity.id}")
 
-      expect(notification).to have_content(notification_model(:destroyeda, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, Entity))
     end
 
     scenario "failing to destroy a entity that has card_transactions" do
@@ -145,7 +145,7 @@ RSpec.describe "Entities", type: :feature do
 
       expect(page).to have_css("turbo-frame#entity_#{entity.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactionsa, Entity))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_destroyed_because_has_transactionsa, Entity))
     end
   end
 end

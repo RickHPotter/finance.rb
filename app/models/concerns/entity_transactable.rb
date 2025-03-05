@@ -58,11 +58,5 @@ module EntityTransactable
     exchange_category = built_in_category_transactions_by(category_id: exchange_category_id).first
     payers = entity_transactions.pluck(:is_payer)
     category_transactions << CategoryTransaction.new(category_id: exchange_category_id) if exchange_category.blank? && payers.any?
-
-    # case [ exchange_category.present?, payers.any? ]
-    # in [true, false] then exchange_category.destroy
-    # in [false, true] then category_transactions << CategoryTransaction.new(category_id: exchange_category_id)
-    # in [ _, _ ]      then nil
-    # end
   end
 end

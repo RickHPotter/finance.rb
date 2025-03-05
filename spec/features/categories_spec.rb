@@ -47,7 +47,7 @@ RSpec.describe "Categories", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_createda, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, Category))
     end
 
     scenario "creating a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -57,7 +57,7 @@ RSpec.describe "Categories", type: :feature do
         find("input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:createda, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -87,7 +87,7 @@ RSpec.describe "Categories", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:not_updateda, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, Category))
     end
 
     scenario "editing a valid category and getting redirected to card_transaction creation with category already preselected" do
@@ -101,7 +101,7 @@ RSpec.describe "Categories", type: :feature do
         find("form input[type=submit]", match: :first).click
       end
 
-      expect(notification).to have_content(notification_model(:updateda, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, Category))
 
       match_center_container_content("new_card_transaction")
 
@@ -115,7 +115,7 @@ RSpec.describe "Categories", type: :feature do
       navigate_to(menu: basic, sub_menu: category_submenu)
 
       within "turbo-frame#categories turbo-frame#category_#{category.id}" do
-        expect(page).to have_selector("span", text: "Another Test Category")
+        expect(page).to have_css("span", text: "Another Test Category")
       end
     end
   end
@@ -134,7 +134,7 @@ RSpec.describe "Categories", type: :feature do
 
       expect(page).to_not have_css("turbo-frame#category_#{category.id}")
 
-      expect(notification).to have_content(notification_model(:destroyeda, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, Category))
     end
 
     scenario "failing to destroy a category that has card_transactions" do
@@ -147,7 +147,7 @@ RSpec.describe "Categories", type: :feature do
 
       expect(page).to have_css("turbo-frame#category_#{category.id}")
 
-      expect(notification).to have_content(notification_model(:not_destroyed_because_has_transactionsa, Category))
+      expect(page).to have_css("#notification-content", text: notification_model(:not_destroyed_because_has_transactionsa, Category))
     end
   end
 end

@@ -1,17 +1,16 @@
 <% category_transaction = form.object %>
-<% now = DateTime.current.to_i %>
 
 <%= content_tag :div, class: "nested-form-wrapper", data: { new_record: category_transaction.new_record?, reactive_form_target: "categoryWrapper" } do %>
-  <div class="flex w-full my-1 justify-center">
-    <span class="flex items-center text-sm font-medium text-black ps-2">
-      <%= content_tag :div, class: "category_container px-2 py-1 flex items-center justify-center rounded-sm border-1 border-black text-sm #{category_transaction&.category&.bg_colour}" do %>
-        <%= content_tag :span, category_transaction&.category&.category_name, class: "categories_category_name" %>
+  <div class="flex my-1">
+    <span class="flex items-center text-sm font-medium text-black">
+      <%= content_tag :div, class: "category_container flex items-center justify-center px-2 py-1 rounded-sm border-1 border-black text-sm #{category_transaction&.category&.bg_colour}" do %>
+        <%= content_tag :span, category_transaction&.category&.category_name, class: "categories_category_name text-nowrap" %>
 
         <%= button_tag "",
                        type: :button,
                        class: "inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
                        aria_label: "Remove",
-                       data: { action: "click->reactive-form#removeChip" } do %>
+                       data: { action: "click->reactive-form#removeCategory" } do %>
           <svg class="w-2 h-2 pointer-events-none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"></path>
           </svg>
