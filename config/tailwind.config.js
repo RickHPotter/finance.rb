@@ -7,7 +7,7 @@ module.exports = {
     "./app/components/**/*.rb",
     "./app/components/**/*.html.erb",
     "./app/views/**/*.{erb,rb,haml,html,slim}",
-    "./node_modules/flowbite/**/*.js"
+    "./node_modules/flowbite/**/*.{js,css}"
   ],
   darkMode: "class"
 }

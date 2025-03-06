@@ -26,12 +26,13 @@
         <% (1..12).each do |month| %>
           <% month_year = Date.new(year, month, 1).strftime("%Y%m").to_i %>
           <%= link_to "#", class: "w-full px-3 py-2 rounded-md shadow-sm font-medium text-lg hover:bg-blue-100 transition-colors",
+                           onclick: "event.preventDefault();",
                            data: { month_year_selector_target: "monthYear",
-                                   action: "click->month-year-selector#toggleMonth",
+                                   action: "mousedown->month-year-selector#activate mouseup->month-year-selector#stop",
                                    month_year:,
                                    active: active_month_years.include?(month_year) } do %>
-            <%= content_tag :span, I18n.t("date.abbr_month_names")[month], class: "block sm:hidden pointer-events-none" %>
-            <%= content_tag :span, I18n.t("date.month_names")[month], class: "hidden sm:block pointer-events-none" %>
+            <%= content_tag :span, I18n.t("date.abbr_month_names")[month], class: "block sm:hidden pointer-events-none no-selection" %>
+            <%= content_tag :span, I18n.t("date.month_names")[month], class: "hidden sm:block pointer-events-none no-selection" %>
           <% end %>
         <% end %>
       <% end %>

@@ -1,3 +1,5 @@
 <%= turbo_frame_tag :center_container do %>
-  <%= render "card_transactions/form", card_transaction: @card_transaction %>
+  <div class="bg-white p-4 shadow-md rounded-lg">
+    <%= render "card_transactions/form", card_transaction: @card_transaction %>
+  </div>
 <% end %>

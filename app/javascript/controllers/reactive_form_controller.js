@@ -54,7 +54,7 @@ export default class extends Controller {
   }
 
   updateInstallmentsDates() {
-    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today() }
+    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today().toISOString().slice(0, 16) }
 
     const rails_due_date = this._getDueDate()
     this._updateWrappers(rails_due_date)
@@ -276,6 +276,43 @@ export default class extends Controller {
     new_wrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
     new_wrapper.querySelector(".categories_category_id").value = value
     new_wrapper.querySelector(".categories_category_name").textContent = text
+  }
+
+  _insertExchangeCategory() {
+    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
+    const value = exchangeCategoryId
+    const text = "EXCHANGE"
+
+    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategory = selectedCategories.find((element) => element.value === value)
+    if (exchangeCategory) {
+      const category_wrapper_div = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === text)
+
+      if (!category_wrapper_div) return
+
+      category_wrapper_div.style.display = "block"
+      category_wrapper_div.querySelector("input[name*='_destroy']").value = "0"
+
+      return
+    }
+
+    this.addCategoryTarget.click()
+
+    const wrappers = this.categoryWrapperTargets
+    const new_wrapper = wrappers[wrappers.length - 1]
+
+    new_wrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    new_wrapper.querySelector(".categories_category_id").value = value
+    new_wrapper.querySelector(".categories_category_name").textContent = text
+  }
+
+  _removeExchangeCategory() {
+    const category_wrapper_div = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === "EXCHANGE")
+
+    if (!category_wrapper_div) return
+
+    category_wrapper_div.style.display = "none"
+    category_wrapper_div.querySelector("input[name*='_destroy']").value = "true"
   }
 
   _updateCategories() {

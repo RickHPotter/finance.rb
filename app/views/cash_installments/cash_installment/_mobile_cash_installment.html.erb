@@ -8,10 +8,22 @@
     <div class="p-4">
       <div class="flex items-center justify-between gap-4 w-full text-black text-sm font-semibold">
         <div class="flex-1 flex items-center justify-between gap-1 min-w-0">
-          <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
-                      id: "edit_cash_transaction_#{cash_transaction.id}",
-                      class: "truncate text-md",
-                      data: { turbo_frame: :center_container } %>
+          <% if cash_transaction.investment? %>
+            <%= content_tag :span, cash_transaction.description, class: "truncate text-md" %>
+          <% elsif cash_transaction.card_payment? %>
+            <% default_year = cash_transaction.year %>
+            <% active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]" %>
+
+            <%= link_to cash_transaction.description,
+                        card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+                        class: "truncate text-md",
+                        data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+          <% else %>
+            <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
+                        id: "edit_cash_transaction_#{cash_transaction.id}",
+                        class: "truncate text-md",
+                        data: { turbo_frame: :center_container } %>
+          <% end %>
 
           <%= content_tag :span,
                           pretty_installments(cash_installment.number, cash_installment.cash_installments_count),

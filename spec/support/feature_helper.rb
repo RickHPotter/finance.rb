@@ -46,7 +46,7 @@ module FeatureHelper
 
     params = {}
     within "turbo-frame#card_transactions #search_form" do
-      # params[:search_term] = find("#card_transaction_search_term").text if params_to_return.include?(:search_term)
+      find("details", text: I18n.t(:advanced_filter)).click
 
       within "#card_transaction_category_ids" do
         params[:category_ids] = find("option:checked").value if params_to_return.include?(:category_ids) && page.has_css?("option:checked")

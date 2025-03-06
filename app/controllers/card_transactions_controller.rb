@@ -9,12 +9,13 @@ class CardTransactionsController < ApplicationController
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
-    search_variables
     @user_card ||= current_user.user_cards.find_by(id: params[:user_card_id])                  if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
     @user_card_id = @user_card&.id
 
     index_variables(@user_card.card_installments)
+    search_variables
+
     respond_to do |format|
       format.html
       format.turbo_stream do
@@ -86,27 +87,17 @@ class CardTransactionsController < ApplicationController
     @card_transaction = CardTransaction.new(card_transaction_params)
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
-    if params[:commit] == "Update"
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
-        end
-      end
-    else
-      if @card_transaction.save
-        @user_card = @card_transaction.user_card
-        index
-        set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
-      end
-
-      respond_to(&:turbo_stream)
-    end
+    handle_save
   end
 
   def update
     @card_transaction.assign_attributes(card_transaction_params)
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
+    handle_save
+  end
+
+  def handle_save
     if params[:commit] == "Update"
       respond_to do |format|
         format.turbo_stream do
@@ -115,8 +106,11 @@ class CardTransactionsController < ApplicationController
       end
     else
       if @card_transaction.save
-        @user_card = @card_transaction.user_card
         index
+        @user_card = @card_transaction.user_card
+        @default_year = @card_transaction.year
+        @active_month_years = @card_transaction.card_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
+        @search_term = @card_transaction.description
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
       end
 
@@ -154,9 +148,8 @@ class CardTransactionsController < ApplicationController
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price,
-        { exchanges_attributes: %i[id number exchange_type price _destroy] },
-        :_destroy
+        :id, :entity_id, :is_payer, :price, :_destroy,
+        { exchanges_attributes: %i[id number exchange_type price _destroy] }
       ]
     )
   end

@@ -8,6 +8,7 @@ RSpec.describe "CardTransactions", type: :request do
   let(:card) { create(:card, :random, bank:) }
   let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", due_date_day: Date.current.day) }
   let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", due_date_day: Date.current.day) }
+  let(:exchange_category) { user.built_in_category("EXCHANGE") }
   let(:entity_one) { create(:entity, :random, user:) }
   let(:entity_two) { create(:entity, :random, user:) }
 
@@ -62,6 +63,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "creates one new record with two installments and two paying entities" do
       card_transaction.card_installments = { count: 2 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
         { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] },
         { entity_id: entity_two.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] }
@@ -76,6 +78,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "creates two new records, each with two installments that overlap months, and two paying entities" do
       card_transaction.card_installments = { count: 2 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
         { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] },
         { entity_id: entity_two.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] }
@@ -113,6 +116,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "updates the record to have one paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
       check_paying_entities(@existing_card_transaction)
     end

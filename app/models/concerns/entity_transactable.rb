@@ -9,9 +9,6 @@ module EntityTransactable
     has_many :entity_transactions, as: :transactable, dependent: :destroy
     has_many :entities, -> { order(:entity_name) }, through: :entity_transactions
     accepts_nested_attributes_for :entity_transactions, allow_destroy: true, reject_if: :all_blank
-
-    # @callbacks ...............................................................
-    after_save :update_card_transaction_categories, if: -> { instance_of?(CardTransaction) }
   end
 
   # @public_class_methods .....................................................
@@ -41,22 +38,4 @@ module EntityTransactable
   end
 
   # @protected_instance_methods ...............................................
-
-  protected
-
-  # Handles the `category` of such `transaction` based on the existing `exchanges`.
-  #
-  # @note This is a method that is called after_save.
-  #
-  # return [void].
-  #
-  def update_card_transaction_categories
-    return if defined?(imported) && imported
-
-    exchange_category_id = user.built_in_category("EXCHANGE").id
-
-    exchange_category = built_in_category_transactions_by(category_id: exchange_category_id).first
-    payers = entity_transactions.pluck(:is_payer)
-    category_transactions << CategoryTransaction.new(category_id: exchange_category_id) if exchange_category.blank? && payers.any?
-  end
 end

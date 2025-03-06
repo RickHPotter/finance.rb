@@ -34,6 +34,9 @@ application.register("dynamic-description", DynamicDescriptionController)
 import EntityTransactionController from "./entity_transaction_controller"
 application.register("entity-transaction", EntityTransactionController)
 
+import ExchangeController from "./exchange_controller"
+application.register("exchange", ExchangeController)
+
 import FormValidateController from "./form_validate_controller"
 application.register("form-validate", FormValidateController)
 

@@ -8,6 +8,7 @@ export default class extends Controller {
 
   connect() {
     initModals()
+    this.checkForExchangeCategory()
   }
 
   toggleExchanges({ target }) {
@@ -22,6 +23,8 @@ export default class extends Controller {
       this.delExchangeTargets.forEach((element) => element.click())
       this.exchangesCountInputTarget.classList.add("opacity-50")
     }
+
+    if (target.value > 0) this.checkForExchangeCategory()
   }
 
   fillPrice({ target }) {
@@ -36,10 +39,12 @@ export default class extends Controller {
   }
 
   updateExchangesPrices({ target }) {
-    if (target.value < 1) { target.value = 1 }
+    if (target.value < 0) { target.value = 0 }
     if (target.value > 72) { target.value = 72 }
 
     this._updateExchangesPrices()
+
+    if (target.value > 0) this.checkForExchangeCategory()
   }
 
   toggleExchangeType({ target }) {
@@ -47,6 +52,23 @@ export default class extends Controller {
     const formIndex = target.dataset.formIndex
 
     this.element.querySelector(`#exchange_exchange_type_${formIndex}`).value = checked ? "monetary" : "non_monetary"
+
+    this.checkForExchangeCategory()
+  }
+
+  checkForExchangeCategory() {
+    const allExchanges = Array.from(document.querySelectorAll(".exchange_type_checkbox"))
+    const monetaryExchanges = allExchanges.filter((element) => element.checkVisibility() && element.checked)
+
+    const reactiveFormTarget = document.querySelector("#transaction_form")
+    const comboboxController = this.application.getControllerForElementAndIdentifier(reactiveFormTarget, "reactive-form")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    if (monetaryExchanges.length > 0) {
+      comboboxController._insertExchangeCategory()
+    } else {
+      comboboxController._removeExchangeCategory()
+    }
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░

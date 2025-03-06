@@ -64,6 +64,7 @@ en:
   minimum_characters: "( at least %{count} characters )"
   datatable_actions: "Actions"
   rows_not_found: "No data to display"
+  advanced_filter: "Advanced Filter"
 
 pt-BR:
   confirmation:
@@ -132,3 +133,4 @@ pt-BR:
   minimum_characters: "( no mínimo %{count} caracteres )"
   datatable_actions: "Ações"
   rows_not_found: "Sem dados para exibir"
+  advanced_filter: "Filtro Avançado"

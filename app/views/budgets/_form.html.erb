@@ -26,7 +26,7 @@
               data: { action: "hw-combobox:selection->reactive-form#insertCategory hw-combobox:selection->dynamic-description#updateDescription", value: ".hw-combobox__input" } %>
       </div>
 
-      <div id="hw_budget_entity_id" class="hw-cb w-full lg:w-1/4 mb-3 user-icon">
+      <div id="hw_entity_id" class="hw-cb w-full lg:w-1/4 mb-3 user-icon">
         <%= bold_label(form, :entities) %>
         <%= form.combobox \
               :budget_entity,
@@ -55,7 +55,7 @@
               svg: :money,
               class: "font-graduate",
               value: budget.value || -10_000,
-              data: { dynamic_description_target: :value, price_mask_target: :priceInput, action: "input->price-mask#applyMask input->dynamic-description#updateDescription" } %>
+              data: { dynamic_description_target: :value, price_mask_target: :input, action: "input->price-mask#applyMask input->dynamic-description#updateDescription" } %>
       </div>
     </div>
 

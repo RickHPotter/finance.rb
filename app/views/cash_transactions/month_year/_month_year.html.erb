@@ -20,6 +20,11 @@
           <%= t(:rows_not_found) %>
         <% end %>
       <% end %>
+
+      <div class="grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+        <%= content_tag :span, "#{model_attribute(CashTransaction, :total_amount)}:", class: "py-3 col-span-6 text-center" %>
+        <%= content_tag :span, from_cent_based_to_float(@cash_installments.sum(:price) + @budgets.sum(:remaining_value), "R$"), class: "py-3 col-start-7 text-end" %>
+      </div>
     </div>
   </fieldset>
 </div>

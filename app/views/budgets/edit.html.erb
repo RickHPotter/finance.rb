@@ -1,3 +1,5 @@
 <%= turbo_frame_tag :center_container do %>
-  <%= render "budgets/form", budget: @budget %>
+  <div class="bg-white p-4 shadow-md rounded-lg">
+    <%= render "budgets/form", budget: @budget %>
+  </div>
 <% end %>

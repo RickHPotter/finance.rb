@@ -8,6 +8,9 @@ export default class extends Controller {
 
   connect() {
     this.initialise()
+    this.isMouseDown = false;
+    this.buttonStart = null
+    this.buttonEnd = null
   }
 
   initialise() {
@@ -44,15 +47,35 @@ export default class extends Controller {
     this._updateContainer()
   }
 
-  toggleMonth(event) {
-    event.preventDefault()
-    const month = parseInt(event.target.dataset.monthYear)
+  toggleMonth(button) {
+    const month = parseInt(button.dataset.monthYear)
 
     if (document.activeMonths.has(month)) {
-      this._removeMonthYearContainer(event.target, month)
+      this._removeMonthYearContainer(button, month)
+      button.dataset.active = false
     } else {
-      this._addMonthYearContainer(event.target, month)
+      this._addMonthYearContainer(button, month)
+      button.dataset.active = true
     }
+  }
+
+  activate(event) {
+    this.isMouseDown = true
+    this.buttonStart = event.currentTarget
+  }
+
+  stop(event) {
+    this.buttonEnd = event.currentTarget
+
+    const firstMonthYear = this.buttonStart.dataset.monthYear
+    const lastMonthYear = this.buttonEnd.dataset.monthYear
+
+    const operation = this.buttonStart.dataset.active
+
+    const buttonsToClick = this.monthYearTargets.filter(e => e.dataset.monthYear >= firstMonthYear && e.dataset.monthYear <= lastMonthYear && e.dataset.active === operation)
+    buttonsToClick.forEach(e => this.toggleMonth(e))
+
+    this.isMouseDown = false
   }
 
   _updateContainer() {

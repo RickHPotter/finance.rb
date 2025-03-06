@@ -57,8 +57,20 @@ class CashTransaction < ApplicationRecord
     entities.each(&:update_cash_transactions_count_and_total)
   end
 
+  def can_be_updated?
+    categories.pluck(:category_name).intersection([ "CARD PAYMENT", "INVESTMENT" ]).empty?
+  end
+
   def can_be_deleted?
-    categories.pluck(:category_name).intersection([ "CARD PAYMENT", "CARD INSTALLMENT" ]).empty?
+    categories.pluck(:category_name).intersection([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT" ]).empty?
+  end
+
+  def investment?
+    cash_transaction_type == "Investment"
+  end
+
+  def card_payment?
+    categories.pluck(:category_name).include? "CARD PAYMENT"
   end
 
   # @protected_instance_methods ...............................................

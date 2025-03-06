@@ -1,6 +1,6 @@
 <% exchange = form.object %>
 
-<div class="nested-exchange-wrapper" data-entity-transaction-target="exchangeWrapper">
+<%= content_tag :div, class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" } do %>
   <%= form.hidden_field :id %>
   <%= form.hidden_field :_destroy %>
   <%= form.hidden_field :exchange_type, id: "exchange_exchange_type_#{form.index}", value: exchange.exchange_type || :monetary %>
@@ -20,7 +20,7 @@
     <div class="flex w-1/5 mx-auto">
       <label class="flex justify-center items-center text-sm text-gray-900 bg-gray-200 border border-gray-300 w-full cursor-pointer mx-auto">
         <%= checkbox_tag "exchange_exchange_type_#{form.index}", :monetary,
-                         class: "sr-only peer",
+                         class: "exchange_type_checkbox sr-only peer",
                          checked: exchange.new_record? || exchange.exchange_type == :monetary,
                          data: { action: "click->entity-transaction#toggleExchangeType", form_index: form.index } %>
 
@@ -32,11 +32,11 @@
       <%= form.text_field \
             :price,
             class: "price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
-            data: { entity_transaction_target: :priceExchangeInput, action: "input->price-mask#applyMask" } %>
+            data: { price_mask_target: :input, entity_transaction_target: :priceExchangeInput, action: "input->price-mask#applyMask" } %>
     </div>
   </div>
 
   <%= form.hidden_field :number, class: :exchange_number %>
 
   <%= link_to nil, nil, class: :hidden, data: { entity_transaction_target: "delExchange", action: "nested-form#remove" } %>
-</div>
+<% end %>

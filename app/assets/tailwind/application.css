@@ -163,3 +163,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .plugin-clear_button .ts-control {
   @apply !pl-[12px] !pr-[12px]
 }
+
+.no-selection::selection {
+  @apply !bg-transparent
+}

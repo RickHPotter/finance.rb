@@ -36,7 +36,7 @@
                   svg: :money,
                   id: "entity_transaction_price_#{form.index}",
                   class: "font-graduate",
-                  data: { reactive_form_target: :priceInput, entity_transaction_target: :priceInput, action: "input->price-mask#applyMask input->entity-transaction#updateExchangesPrices" } %>
+                  data: { price_mask_target: :input, reactive_form_target: :priceInput, entity_transaction_target: :priceInput, action: "input->price-mask#applyMask input->entity-transaction#updateExchangesPrices" } %>
           </div>
 
           <%= button_tag "1/1", type: :button, class: "bg-slate-800 text-white font-bold p-1 border-2 border-red-300 rounded-sm shadow-sm", data: { action: "entity-transaction#fillPrice", divider: 1 } %>
@@ -72,20 +72,23 @@
           </div>
         </div>
 
+        <!-- Exchanges -->
         <div id="exchanges_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-exchange-wrapper">
           <template data-nested-form-target="template">
-            <%= form.fields_for :exchanges, Exchange.new, child_index: "NEW_RECORD" do |exchange_fields| %>
+            <%= form.fields_for :exchanges, Exchange.new, child_index: "NEW_NESTED_RECORD" do |exchange_fields| %>
               <%= render "exchanges/exchange_fields", form: exchange_fields %>
             <% end %>
           </template>
 
-          <%= form.fields_for :exchanges do |exchange_fields| %>
+          <% exchanges_association = entity_transaction.exchanges.includes(:cash_transaction) if entity_transaction.exchanges.count > 1 %>
+          <%= form.fields_for :exchanges, exchanges_association do |exchange_fields| %>
             <%= render "exchanges/exchange_fields", form: exchange_fields %>
           <% end %>
 
+          <!-- inserted elements -->
           <div data-nested-form-target="target"></div>
 
-          <%= link_to nil, nil, class: :hidden, data: { entity_transaction_target: :addExchange, action: "nested-form#add" } %>
+          <%= link_to nil, nil, class: :hidden, data: { entity_transaction_target: :addExchange, action: "nested-form#addChildNested" } %>
         </div>
       </div>
     </div>

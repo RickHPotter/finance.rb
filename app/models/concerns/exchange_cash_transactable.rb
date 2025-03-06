@@ -112,6 +112,8 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def update_or_destroy_cash_transaction
+    return if cash_transaction.nil?
+
     exchanges_that_belong_to_cash_transaction = Exchange.where(cash_transaction_id:).where.not(id:)
 
     cash_transaction.destroy and return if exchanges_that_belong_to_cash_transaction.empty?
