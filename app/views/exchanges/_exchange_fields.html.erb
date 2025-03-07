@@ -3,7 +3,18 @@
 <%= content_tag :div, class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" } do %>
   <%= form.hidden_field :id %>
   <%= form.hidden_field :_destroy %>
-  <%= form.hidden_field :exchange_type, id: "exchange_exchange_type_#{form.index}", value: exchange.exchange_type || :monetary %>
+  <%= form.hidden_field :exchange_type, value: :monetary %>
+
+  <%= select_tag :cash_transaction_id,
+                 options_from_collection_for_select([], :id, :description),
+                 class: "w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
+                 data: { controller: "select", id: "cash-transaction-select" } %>
+
+  <%= turbo_frame_tag :cash_transactions do %>
+    <% if exchange.cash_transaction %>
+      <%= turbo_frame_tag "cash_transaction_#{exchange.cash_transaction.id}", src: inspect_cash_transactions_path(id: exchange.cash_transaction.id) %>
+    <% end %>
+  <% end %>
 
   <div class="flex w-full my-1">
     <div class="flex w-2/5">
@@ -15,17 +26,6 @@
           </span>
         </span>
       </span>
-    </div>
-
-    <div class="flex w-1/5 mx-auto">
-      <label class="flex justify-center items-center text-sm text-gray-900 bg-gray-200 border border-gray-300 w-full cursor-pointer mx-auto">
-        <%= checkbox_tag "exchange_exchange_type_#{form.index}", :monetary,
-                         class: "exchange_type_checkbox sr-only peer",
-                         checked: exchange.new_record? || exchange.exchange_type == :monetary,
-                         data: { action: "click->entity-transaction#toggleExchangeType", form_index: form.index } %>
-
-        <div class="relative w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-      </label>
     </div>
 
     <div class="flex w-2/5 font-graduate">

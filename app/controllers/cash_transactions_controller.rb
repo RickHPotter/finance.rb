@@ -3,10 +3,35 @@
 # Controller for CashTransaction
 class CashTransactionsController < ApplicationController
   include TabsConcern
+  include ApplicationHelper
 
   before_action :set_tabs
   before_action :set_cash_transaction, only: %i[edit update destroy]
   before_action :set_banks, :set_user_bank_accounts, :set_entities, :set_categories, only: %i[new create edit update]
+
+  def inspect
+    entity_id = params[:entity_id]
+
+    @cash_installments =
+      current_user
+      .cash_installments
+      .includes(cash_transaction: %i[category_transactions entity_transactions])
+      .where(cash_transaction: { entity_transactions: { entity_id: } })
+      .where("cash_transaction.description ILIKE '%#{params[:query]}%'")
+
+    render json: @cash_installments.map { |ci|
+      {
+        id: ci.id,
+        date: I18n.l(ci.date.to_date, format: :shorter),
+        price: from_cent_based_to_float(ci.price, "R$"),
+        description: ci.cash_transaction.description.to_s,
+        cash_installments_count: ci.cash_installments_count,
+        pretty_installments: pretty_installments(ci.number, ci.cash_installments_count),
+        bg_colour: ci.cash_transaction.categories&.first&.bg_colour,
+        categories: ci.cash_transaction.categories.map(&:category_name)
+      }
+    }
+  end
 
   def index
     index_variables(current_user.cash_installments)

@@ -34,16 +34,17 @@ end
 #
 # Table name: entity_transactions
 #
-#  id                :bigint           not null, primary key
-#  exchanges_count   :integer          default(0), not null
-#  is_payer          :boolean          default(FALSE), not null
-#  price             :integer          default(0), not null
-#  status            :integer          default("pending"), not null
-#  transactable_type :string           not null, indexed => [entity_id, transactable_id], indexed => [transactable_id]
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  entity_id         :bigint           not null, indexed => [transactable_type, transactable_id], indexed
-#  transactable_id   :bigint           not null, indexed => [entity_id, transactable_type], indexed => [transactable_type]
+#  id                   :bigint           not null, primary key
+#  exchanges_count      :integer          default(0), not null
+#  is_payer             :boolean          default(FALSE), not null
+#  price                :integer          default(0), not null
+#  price_to_be_returned :integer
+#  status               :integer          default("pending"), not null
+#  transactable_type    :string           not null, indexed => [entity_id, transactable_id], indexed => [transactable_id]
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  entity_id            :bigint           not null, indexed => [transactable_type, transactable_id], indexed
+#  transactable_id      :bigint           not null, indexed => [entity_id, transactable_type], indexed => [transactable_type]
 #
 # Indexes
 #

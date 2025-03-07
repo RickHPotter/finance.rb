@@ -47,24 +47,12 @@ export default class extends Controller {
     if (target.value > 0) this.checkForExchangeCategory()
   }
 
-  toggleExchangeType({ target }) {
-    const checked = target.checked
-    const formIndex = target.dataset.formIndex
-
-    this.element.querySelector(`#exchange_exchange_type_${formIndex}`).value = checked ? "monetary" : "non_monetary"
-
-    this.checkForExchangeCategory()
-  }
-
   checkForExchangeCategory() {
-    const allExchanges = Array.from(document.querySelectorAll(".exchange_type_checkbox"))
-    const monetaryExchanges = allExchanges.filter((element) => element.checkVisibility() && element.checked)
-
     const reactiveFormTarget = document.querySelector("#transaction_form")
     const comboboxController = this.application.getControllerForElementAndIdentifier(reactiveFormTarget, "reactive-form")
     if (!comboboxController) return console.error("Combobox controller not found")
 
-    if (monetaryExchanges.length > 0) {
+    if (this.exchangeWrapperTargets.length > 0) {
       comboboxController._insertExchangeCategory()
     } else {
       comboboxController._removeExchangeCategory()

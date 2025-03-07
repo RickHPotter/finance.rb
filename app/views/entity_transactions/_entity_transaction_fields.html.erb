@@ -1,6 +1,6 @@
 <% entity_transaction = form.object %>
 
-<%= content_tag :div, class: "nested-form-wrapper", data: { new_record: entity_transaction.new_record?, reactive_form_target: "entityWrapper" } do %>
+<%= content_tag :div, class: "nested-form-wrapper", data: { new_record: entity_transaction.new_record?, reactive_form_target: "entityWrapper", controller: "entity-transaction" } do %>
   <div class="flex my-1">
     <span class="flex items-center text-sm font-medium text-black">
       <%= content_tag :div, class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm" do %>
@@ -23,7 +23,7 @@
       <% end %>
     </span>
 
-    <%= form.hidden_field :entity_id, class: :entities_entity_id %>
+    <%= form.hidden_field :entity_id, class: :entities_entity_id, data: { entity_transaction_target: "entitySelect" } %>
     <%= form.hidden_field :_destroy %>
 
     <%= render partial: "entity_transactions/entity_transaction_modal", locals: { form: } %>
