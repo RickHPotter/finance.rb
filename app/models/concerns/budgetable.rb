@@ -48,7 +48,7 @@ module Budgetable
   end
 
   def relevant_budgets
-    budgets = Budget.where(month:, year:)
+    budgets = user.budgets.where(month:, year:)
     return budgets if should_update_all || destroyed?
 
     budgets.select do |budget|

@@ -16,6 +16,7 @@ gem "redis"
 gem "solid_cache"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
+gem "thruster"
 gem "turbo-rails"
 
 # ViewComponent
@@ -30,6 +31,7 @@ gem "letter_opener_web"
 # CD
 gem "dockerfile-rails"
 gem "dotenv-rails"
+gem "kamal", require: false
 
 gem "roo", git: "https://github.com/roo-rb/roo.git"
 

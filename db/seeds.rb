@@ -2,6 +2,8 @@
 
 require "faker"
 
+return if Rails.env.production?
+
 FactoryBot.create(:user, :random, first_name: "John", last_name: "Doe")
 FactoryBot.create(:user, :random, first_name: "Jane", last_name: "Doe")
 puts "Created Users.".green
