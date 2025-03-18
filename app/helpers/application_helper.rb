@@ -26,4 +26,13 @@ module ApplicationHelper
   def pretty_installments(installment_number, installments_count)
     [ format("%02d", installment_number), format("%02d", installments_count) ].join("/")
   end
+
+  # Generate a link to change the locale
+  #
+  # @return [String]
+  def locale_link(locale, options = {}, &)
+    path = request.path
+    path_with_locale = "#{path}?locale=#{locale}"
+    link_to(path_with_locale, class: options[:class], &)
+  end
 end

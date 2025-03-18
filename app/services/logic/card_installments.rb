@@ -9,7 +9,6 @@ module Logic
       month = month_year[4..]
       search_term = params.delete(:search_term) || ""
 
-      search_term_condition = "card_transactions.description ILIKE '%#{search_term}%'" if search_term.present?
       conditions = build_conditions_from_params(params)
       inclusions = { card_transaction: %i[categories entities] }
       inclusions[:card_transaction] << :user_card if params[:user_card_id].blank?
@@ -17,7 +16,7 @@ module Logic
       user.card_installments
           .includes(inclusions)
           .where(conditions)
-          .where(search_term_condition)
+          .where("card_transactions.description ILIKE ?", "%#{search_term}%")
           .where("installments.year = ? AND installments.month = ?", year, month)
           .order("installments.date")
     end

@@ -43,6 +43,15 @@ class UserCard < ApplicationRecord
     references.create(reference_date:, month: reference_date.month, year: reference_date.year)
   end
 
+  def calculate_reference_date(date)
+    current_due_date = date.change(day: due_date_day)
+    current_closing_date = current_due_date - days_until_due_date
+
+    return current_due_date if date < current_closing_date
+
+    current_due_date + 1.month
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -55,15 +64,6 @@ class UserCard < ApplicationRecord
   #
   def set_user_card_name
     self.user_card_name ||= card.card_name
-  end
-
-  def calculate_reference_date(date)
-    current_due_date = date.change(day: due_date_day)
-    current_closing_date = current_due_date - days_until_due_date
-
-    return current_due_date if date < current_closing_date
-
-    current_due_date + 1.month
   end
 
   # @private_instance_methods .................................................

@@ -155,6 +155,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.boolean "is_payer", default: false, null: false
     t.integer "status", default: 0, null: false
     t.integer "price", default: 0, null: false
+    t.integer "price_to_be_returned", default: 0, null: false
     t.integer "exchanges_count", default: 0, null: false
     t.bigint "entity_id", null: false
     t.string "transactable_type", null: false

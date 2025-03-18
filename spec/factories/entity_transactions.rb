@@ -38,7 +38,7 @@ end
 #  exchanges_count      :integer          default(0), not null
 #  is_payer             :boolean          default(FALSE), not null
 #  price                :integer          default(0), not null
-#  price_to_be_returned :integer
+#  price_to_be_returned :integer          default(0), not null
 #  status               :integer          default("pending"), not null
 #  transactable_type    :string           not null, indexed => [entity_id, transactable_id], indexed => [transactable_id]
 #  created_at           :datetime         not null

@@ -2,6 +2,7 @@
 
 module Import
   class FromRikkiExcel
+    VPS_FILE = File.join("./", "vps-only", "finance.xlsx")
     WSL_PATH = File.join("/mnt", "c", "Users", "Administrator", "Downloads", "finance.xlsx")
     LNX_PATH = File.join("/home", "lovelace", "Downloads", "finance.xlsx")
 
@@ -18,7 +19,7 @@ module Import
     end
 
     def self.run
-      new(LNX_PATH).run
+      new(VPS_FILE).run
     end
 
     def run
@@ -54,11 +55,14 @@ module Import
     end
 
     def fix_user_card_dates
-      UserCard.where(user_card_name: %w[C6 PP AME]).update(active: false)
-      UserCard.find_by(user_card_name: "AZUL").update(due_date_day: 8, days_until_due_date: 6, active: false)
-      UserCard.find_by(user_card_name: "WILL").update(due_date_day: 10, days_until_due_date: 6)
-      UserCard.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6)
-      UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7)
+      UserCard.find_by(user_card_name: "C6").update(active: false, card: Card.find_by(card_name: "C6"))
+      UserCard.find_by(user_card_name: "PP").update(active: false, card: Card.find_by(card_name: "PICPAY"))
+      UserCard.find_by(user_card_name: "AME").update(active: false, card: Card.find_by(card_name: "AME"))
+      UserCard.find_by(user_card_name: "AZUL").update(due_date_day: 8, days_until_due_date: 6, active: false, card: Card.find_by(card_name: "ITAU"))
+      UserCard.find_by(user_card_name: "WILL").update(due_date_day: 10, days_until_due_date: 6, card: Card.find_by(card_name: "WILL"))
+      UserCard.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6, card: Card.find_by(card_name: "ITAU"))
+      UserCard.find_by(user_card_name: "MELIUZ").update(due_date_day: 1, days_until_due_date: 7, card: Card.find_by(card_name: "MELIUZ"))
+      UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7, card: Card.find_by(card_name: "NUBANK"))
     end
 
     def fix_card_payment_dates

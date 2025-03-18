@@ -19,16 +19,17 @@ module Import
     def find_or_create_user_card(card_name)
       return @main_service.user_cards[card_name] if @main_service.user_cards[card_name]
 
-      bank = Bank.find_or_create_by(bank_name: card_name, bank_code: card_name.upcase)
-      card = Card.find_or_create_by(card_name:, bank:)
+      bank = Bank.find_or_create_by(bank_code: 0)
+      card = Card.find_or_create_by(bank:)
 
-      @main_service.user_cards[card_name] = UserCard.find_or_create_by(user:, card:, days_until_due_date: 6, min_spend: 0, credit_limit: 1000 * 100, active: true)
+      @main_service.user_cards[card_name] =
+        UserCard.find_or_create_by(user:, card:, user_card_name: card_name, days_until_due_date: 6, min_spend: 0, credit_limit: 1000 * 100, active: true)
     end
 
     def find_or_create_user_bank(bank_name)
       return @main_service.user_banks[bank_name] if @main_service.user_banks[bank_name]
 
-      bank = Bank.find_or_create_by(bank_name:, bank_code: bank_name.upcase)
+      bank = Bank.find_or_create_by(bank_code: 0)
       @main_service.user_banks[bank_name] = UserBankAccount.find_or_create_by(user:, bank:)
     end
 

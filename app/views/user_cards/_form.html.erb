@@ -28,7 +28,9 @@
               type: :date, svg: :calendar,
               class: "font-graduate",
               min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
-              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d") %>
+              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d"),
+              value: @user_card.calculate_reference_date(Date.current) - @user_card.days_until_due_date
+            %>
       </div>
 
       <div class="w-full lg:w-3/12 mb-2">
@@ -38,7 +40,9 @@
               type: :date, svg: :calendar,
               class: "font-graduate",
               min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
-              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d") %>
+              max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d"),
+              value: @user_card.calculate_reference_date(Date.current)
+            %>
       </div>
 
       <div class="w-full lg:w-2/12 mb-2">

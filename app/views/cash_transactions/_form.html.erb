@@ -1,6 +1,6 @@
 <%= turbo_frame_tag dom_id cash_transaction do %>
   <%= form_with(model: cash_transaction,
-                id: :form,
+                id: :transaction_form,
                 class: "contents text-black",
                 data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
@@ -124,7 +124,7 @@
     </div>
 
     <!-- Entities -->
-    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
           <%= render "entity_transactions/entity_transaction_fields", form: entity_transaction_fields %>

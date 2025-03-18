@@ -33,7 +33,6 @@ end
 #  exchanges_count       :integer          default(0), not null
 #  number                :integer          default(1), not null
 #  price                 :integer          not null
-#  price_to_be_returned  :integer
 #  starting_price        :integer          not null
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null

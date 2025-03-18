@@ -14,6 +14,14 @@ module Logic
       fetch_cash_installments(user, month, year, conditions, search_term_condition)
     end
 
+    def self.find_by_query(user, entity_id, query)
+      user
+        .cash_installments
+        .includes(cash_transaction: %i[category_transactions entity_transactions])
+        .where(cash_transaction: { entity_transactions: { entity_id: } })
+        .where("cash_transaction.description ILIKE ?", "%#{query}%")
+    end
+
     def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
       past_installments = user.cash_installments.where("date_year < ? OR (date_year = ? AND date_month < ?)", year, year, month).sum(:price)
       past_budgets      = user.budgets.where("year < ? OR (year = ? AND month < ?)", year, year, month).sum(:remaining_value)

@@ -25,11 +25,29 @@
       <% end %>
       <%= render "shared/dark_mode" %>
 
-      <%= content_tag :section, class: "flex mt-10" do %>
+
+      <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
         <% yield %>
       <% end %>
     <% end %>
   </body>
+
+  <footer class="container mx-auto">
+    <ul class="py-2 text-sm text-gray-700">
+      <li>
+        <%= locale_link("pt-BR", class: "flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-gray-600") do %>
+          <span>Português</span>
+          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15"  %>
+        <% end %>
+      </li>
+      <li>
+        <%= locale_link("en", class: "flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-gray-600") do %>
+          <span>English</span>
+          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15"  %>
+        <% end %>
+      </li>
+    </ul>
+  </footer>
 </html>
 
 <script>

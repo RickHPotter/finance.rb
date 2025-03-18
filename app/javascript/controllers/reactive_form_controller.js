@@ -216,7 +216,9 @@ export default class extends Controller {
     const visible_installments_inputs = this.priceInstallmentInputTargets.filter((element) => element.checkVisibility())
 
     visible_installments_inputs.forEach((target) => {
-      const value  = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
+      const price = price_that_cannot_be_divided > 0 ? 1 : 0
+      price_that_cannot_be_divided -= 1
+      const value  = (divisible_installment_price + Math.max(0, price)).toString()
       target.value = _applyMask(value)
     })
   }

@@ -3,7 +3,7 @@ import TomSelect from "tom-select"
 
 export default class extends Controller {
   connect() {
-    if (this.element.dataset.id = "cash-transaction-select") {
+    if (this.element.dataset.id == "cash-transaction-select") {
       this.initialiseCashTransactionSelect()
     } else {
       this.initializeTomSelect()
@@ -40,7 +40,6 @@ export default class extends Controller {
         fetch(url)
           .then(response => response.json())
           .then(json => {
-            console.log(json)
             callback(json);
           }).catch(()=>{
             callback();
@@ -48,6 +47,8 @@ export default class extends Controller {
       },
       render: {
         option: function(item, escape) {
+          if (!item.categories) { return "<div class='opacity-0'></div>" }
+
           return `<div class="rounded-lg shadow-sm overflow-hidden ${ escape(item.bg_colour) } my-1">
             <div class="px-4 py-2">
               <div class="grid grid-cols-4 md:grid-cols-9 gap-2 w-full text-black text-sm font-semibold">
@@ -72,6 +73,8 @@ export default class extends Controller {
           </div>`
         },
         item: function(item, escape) {
+          if (!item.categories) { return "<div class='opacity-0'></div>" }
+
           return `<div class="rounded-lg shadow-sm overflow-hidden ${ escape(item.bg_colour) } my-1">
             <div class="px-4 py-2">
               <div class="grid grid-cols-4 md:grid-cols-9 gap-2 w-full text-black text-sm font-semibold">

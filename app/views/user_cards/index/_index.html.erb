@@ -20,14 +20,14 @@
                          data: { action: "input->datatable#filter" } %>
 
       <div class="my-4" data-datatable-target="table">
-        <div class="bg-slate-300 rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
-          <div class="grid grid-cols-9 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+        <div class="rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
+          <div class="bg-slate-300 grid grid-cols-9 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
             <div class="col-span-2"></div>
             <%= content_tag :div, pluralise_model(CardTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
             <div class="col-span-5"></div>
           </div>
 
-          <div class="grid grid-cols-9 py-1 gap-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+          <div class="bg-slate-300 grid grid-cols-9 py-1 gap-1 border-b border-slate-400 font-semibold text-black font-graduate">
             <%= content_tag :div, model_attribute(UserCard, :user_card_name), class: "col-span-2 text-center" %>
             <%= content_tag :div, model_attribute(UserCard, :count), class: "text-center" %>
             <%= content_tag :div, model_attribute(UserCard, :spent), class: "text-center" %>
@@ -42,7 +42,7 @@
           <% if @user_cards.present? %>
             <%= render @user_cards %>
           <% else %>
-            <%= content_tag :div, class: "border-b border-slate-200 py-2 my-2 text-lg" do %>
+            <%= content_tag :div, class: "border-b border-slate-200 py-2 my-2 text-lg bg-white" do %>
               <%= t(:rows_not_found) %>
             <% end %>
           <% end %>

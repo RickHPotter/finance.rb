@@ -6,7 +6,7 @@ RSpec.describe "LogIn", type: :feature do
   let(:user) { create(:user, :random) }
 
   scenario "invalid inputs" do
-    visit root_path
+    visit root_path(locale: I18n.locale)
     fill_in "user_email", with: "anything@mail.com"
     fill_in "user_password", with: "123123"
     click_on I18n.t(:sign_in)
@@ -14,7 +14,7 @@ RSpec.describe "LogIn", type: :feature do
   end
 
   scenario "valid inputs" do
-    visit root_path
+    visit root_path(locale: I18n.locale)
     fill_in "user_email", with: user.email
     fill_in "user_password", with: user.password
     click_on I18n.t(:sign_in)

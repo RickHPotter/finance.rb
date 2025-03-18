@@ -1,6 +1,6 @@
 <% content_for(:auth_header) do %>
-  <%= content_tag :h2, t(:sign_in), class: "mt-2 text-center text-lg md:text-5xl font-bold tracking-tight text-gray-900" %>
-  <p class="mt-1 text-center text-gray-600">
+  <%= content_tag :h2, t(:sign_in), class: "mt-2 text-center text-lg md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white" %>
+  <p class="mt-1 text-center text-gray-600 dark:text-white">
     <%= t(:or) %>
     <%= link_to t(:create_free_account), new_registration_path(resource_name), class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>

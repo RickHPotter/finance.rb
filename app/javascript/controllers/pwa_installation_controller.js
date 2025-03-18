@@ -8,6 +8,7 @@ const supportsInstallPrompt = "onbeforeinstallprompt" in window
 // Listen for the `beforeinstallprompt` event to customize the install prompt UX with our own button.
 // Note that this event is currently only implemented in Chromium based browsers.
 // @see https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
+// FIXME: localise messages
 window.addEventListener("beforeinstallprompt", async (event) => {
   event.preventDefault()
 

@@ -11,7 +11,7 @@
             :description,
             autocomplete: :off,
             class: outdoor_readonly_input_class,
-            data: { controller: "blinking-placeholder", text: model_attribute(budget, :description) } %>
+            data: { controller: "blinking-placeholder", text: model_attribute(budget, :description), dynamic_description_target: :description } %>
     </div>
 
     <div class="lg:flex lg:gap-2 w-full mb-3">
@@ -102,7 +102,7 @@
     </div>
 
     <!-- Entities -->
-    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields| %>
           <%= render "budgets/budget_entity_fields", form: budget_entity_fields %>

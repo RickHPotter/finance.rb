@@ -29,6 +29,7 @@ class User < ApplicationRecord
 
   # @callbacks ................................................................
   before_create :create_built_ins
+  before_create :set_confirmed_at
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -76,6 +77,12 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN")
     )
+  end
+
+  # TODO: setting up a free SMTP server comes first
+  # and maybe even before that, switching from Devise to Auth-Zero
+  def set_confirmed_at
+    self.confirmed_at = Date.current
   end
 
   # @private_instance_methods .................................................

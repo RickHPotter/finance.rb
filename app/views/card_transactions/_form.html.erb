@@ -130,7 +130,7 @@
     </div>
 
     <!-- Entities -->
-    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto">
+    <div id="entities_nested" data-controller="nested-form" data-nested-form-wrapper-selector-value=".nested-form-wrapper" class="flex gap-2 overflow-x-auto pb-3">
       <template data-nested-form-target="template">
         <%= form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields| %>
           <%= render "entity_transactions/entity_transaction_fields", form: entity_transaction_fields %>

@@ -7,6 +7,7 @@ class CreateEntityTransactions < ActiveRecord::Migration[8.0]
       t.boolean :is_payer, null: false, default: false
       t.integer :status, null: false, default: 0
       t.integer :price, null: false, default: 0
+      t.integer :price_to_be_returned, null: false, default: 0
       t.integer :exchanges_count, default: 0, null: false
 
       t.references :entity, null: false, foreign_key: true

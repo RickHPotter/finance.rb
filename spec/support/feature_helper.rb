@@ -12,11 +12,10 @@ module FeatureHelper
   INVESTMENT      = I18n.t("tabs.investment")
 
   def sign_in_as(user:)
-    visit root_path
+    visit root_path(locale: I18n.locale)
     fill_in "user_email", with: user.email
     fill_in "user_password", with: user.password
     click_on I18n.t(:sign_in)
-    find("#notification-close").click
   end
 
   def navigate_to(menu:, sub_menu:)
@@ -48,10 +47,10 @@ module FeatureHelper
     within "turbo-frame#card_transactions #search_form" do
       find("details", text: I18n.t(:advanced_filter)).click
 
-      within "#card_transaction_category_ids" do
+      within "#card_transaction_category_ids", visible: false do
         params[:category_ids] = find("option:checked").value if params_to_return.include?(:category_ids) && page.has_css?("option:checked")
       end
-      within "#card_transaction_entity_ids" do
+      within "#card_transaction_entity_ids", visible: false do
         params[:entity_ids] = find("option:checked").value if params_to_return.include?(:entity_ids) && page.has_css?("option:checked")
       end
     end
