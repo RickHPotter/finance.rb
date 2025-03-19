@@ -6,22 +6,28 @@
     <% solid_colour_or_gradient = [ cash_transaction.categories.first.from_bg, *cash_transaction.categories[1..-2].map(&:via_bg), cash_transaction.categories.last.to_bg ].join(" ") %>
   <% end %>
 
+  <% case [ cash_installment.paid, cash_installment.date > Date.current ]
+      in [ true,  _     ] then [ false, :check_square ]
+      in [ false, true  ] then [ true,  :warning_octagon ]
+      in [ false, false ] then [ true,  :x_circle ]
+      end => should_display_link_to_pay, icon %>
+
+  <% if should_display_link_to_pay %>
+    <%= render "cash_installments/pay_modal", cash_installment: %>
+  <% end %>
+
   <%= content_tag :div,
-                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient} hover:opacity-80",
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient} hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}",
                   draggable: true,
                   data: { id: cash_installment.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 
     <%= content_tag :div, class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto" do %>
-      <% case [ cash_installment.paid, cash_installment.date > Date.current ]
-         in [ true,  _     ] then [ false, :check_square ]
-         in [ false, false ] then [ true,  :warning_octagon ]
-         in [ false, true  ] then [ true,  :x_circle ]
-         end => shoud_display_link_to_pay, icon %>
-      <% if shoud_display_link_to_pay %>
-        <%= link_to render_icon(icon),
-                    pay_cash_installment_cash_transaction_path(id: cash_installment, balance: cash_installment.balance, format: :turbo_stream),
-                    class: "hover:bg-white hover:text-honda hover:rounded-full hover:scale-160",
-                    title: model_attribute(cash_installment, :pay), data: { turbo_method: :post } %>
+      <% if should_display_link_to_pay %>
+        <%= button_tag render_icon(icon),
+                        type: :button,
+                        class: "hover:bg-white hover:text-honda hover:rounded-full hover:scale-160",
+                        title: model_attribute(cash_installment, :pay),
+                        data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" } %>
       <% else %>
         <%= content_tag :span, render_icon(icon), title: model_attribute(cash_installment, :already_paid), class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160" %>
       <% end %>

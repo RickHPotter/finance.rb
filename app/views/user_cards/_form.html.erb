@@ -29,7 +29,7 @@
               class: "font-graduate",
               min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
               max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d"),
-              value: @user_card.calculate_reference_date(Date.current) - @user_card.days_until_due_date
+              value: @user_card.new_record? ? Date.current : @user_card.calculate_reference_date(Date.current) - @user_card.days_until_due_date
             %>
       </div>
 
@@ -41,7 +41,7 @@
               class: "font-graduate",
               min: Date.current.prev_month.beginning_of_month.strftime("%Y-%m-%d"),
               max: Date.current.next_month.end_of_month.strftime("%Y-%m-%d"),
-              value: @user_card.calculate_reference_date(Date.current)
+              value: @user_card.new_record? ? Date.current + 7.days : @user_card.calculate_reference_date(Date.current)
             %>
       </div>
 

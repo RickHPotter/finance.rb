@@ -1,8 +1,18 @@
 <%= turbo_frame_tag dom_id cash_installment do %>
   <% cash_transaction = cash_installment.cash_transaction %>
 
+  <% case [ cash_installment.paid, cash_installment.date > Date.current ]
+      in [ true,  _     ] then [ false, :check_square ]
+      in [ false, true  ] then [ true,  :warning_octagon ]
+      in [ false, false ] then [ true,  :x_circle ]
+      end => should_display_link_to_pay, icon %>
+
+  <% if should_display_link_to_pay %>
+    <%= render "cash_installments/pay_modal", cash_installment: %>
+  <% end %>
+
   <%= content_tag :div,
-                  class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-2",
+                  class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-2 #{'animate-pulse' if should_display_link_to_pay}",
                   data: { id: cash_installment.id, datatable_target: :row } do %>
 
     <div class="p-4">
@@ -16,12 +26,12 @@
 
             <%= link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "truncate text-md",
+                        class: "truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false } %>
           <% else %>
             <%= link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "truncate text-md",
+                        class: "truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container } %>
           <% end %>
 
@@ -34,9 +44,15 @@
       <div class="flex items-center justify-between py-2">
         <div class="text-xs text-start flex-1">
           <%= content_tag :span, class: "flex items-center justify-start gap-2 rounded-sm text-slate-900 mx-auto" do %>
-            <% icon = :check_square if cash_installment.paid %>
-            <% icon ||= cash_installment.date > Date.current ? :warning_octagon : :x_circle %>
-            <%= render_icon icon %>
+            <% if should_display_link_to_pay %>
+              <%= button_tag render_icon(icon),
+                              type: :button,
+                              class: "bg-white text-honda rounded-full",
+                              data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" } %>
+            <% else %>
+              <%= content_tag :span, render_icon(icon), title: model_attribute(cash_installment, :already_paid), class: "bg-white text-money rounded-sm" %>
+            <% end %>
+
             <%= l(cash_installment.date, format: :shorter) %>
           <% end %>
         </div>
@@ -61,6 +77,8 @@
       <% end %>
     </div>
   <% end %>
-<% end %>
 
-<%= from_cent_based_to_float(cash_installment.balance, "R$") %>
+  <div class="p-1 font-lekton font-bold whitespace-nowrap text-right">
+    <%= from_cent_based_to_float(cash_installment.balance, "R$") %>
+  </div>
+<% end %>

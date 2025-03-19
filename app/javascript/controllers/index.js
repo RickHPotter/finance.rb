@@ -69,3 +69,6 @@ application.register("select", SelectController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
+
+import PriceSumController from "./price_sum_controller"
+application.register("price-sum", PriceSumController)

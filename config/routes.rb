@@ -22,10 +22,6 @@ Rails.application.routes.draw do
   resources :budgets, except: %i[index show]
 
   resources :cash_transactions, except: :show do
-    member do
-      post :pay_cash_installment
-    end
-
     collection do
       get :month_year
       get :inspect
@@ -36,6 +32,12 @@ Rails.application.routes.draw do
     collection do
       get :month_year
       get :search
+    end
+  end
+
+  resources :cash_installments, only: [] do
+    member do
+      patch :pay
     end
   end
 

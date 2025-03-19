@@ -137,21 +137,6 @@ class CashTransactionsController < ApplicationController
     respond_to(&:turbo_stream)
   end
 
-  def pay_cash_installment
-    @cash_installment = current_user.cash_installments.find(params[:id])
-    @cash_installment.update(date: DateTime.current, paid: true)
-    @cash_installment.balance = params[:balance]
-
-    respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.update(@cash_installment, partial: "cash_installments/cash_installment", locals: { cash_installment: @cash_installment }),
-          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CashInstallment) })
-        ]
-      end
-    end
-  end
-
   def load_index_based_on_save
     @default_year = @cash_transaction.cash_installments.first.year
     @active_month_years = @cash_transaction.cash_installments.map do |cash_installment|

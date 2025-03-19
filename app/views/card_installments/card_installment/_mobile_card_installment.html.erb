@@ -15,7 +15,10 @@
                         data: { turbo_frame: :center_container, turbo_prefetch: false } %>
           <% end %>
 
-          <%= content_tag :span, card_transaction.description, class: "truncate text-md" %>
+          <%= link_to card_transaction.description, edit_card_transaction_path(card_transaction),
+                      id: "edit_card_transaction_#{card_transaction.id}",
+                      class: "truncate text-md underline underline-offset-[3px]",
+                      data: { turbo_frame: :center_container } %>
           <%= content_tag :span,
                           pretty_installments(card_installment.number, card_installment.card_installments_count),
                           class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}" %>

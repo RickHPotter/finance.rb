@@ -7,6 +7,10 @@
             <%= render "card_transactions/shared/index_search_form", url: card_transactions_path, default_year: @default_year %>
           </div>
 
+          <div class="flex justify-end p-4">
+            <%= content_tag :span, nil, id: :totalPriceSum %>
+          </div>
+
           <%= render "card_transactions/month_year_container", user_card_id: params[:user_card_id].presence || params.dig(:card_transaction, :user_card_id).presence || @user_card_id,
                                                                search_term: @search_term,
                                                                category_ids: @category_ids,

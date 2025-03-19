@@ -23,7 +23,10 @@
                     data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       <% end %>
 
-      <%= content_tag :span, card_transaction.description, class: "flex-1 truncate text-md" %>
+      <%= link_to card_transaction.description, edit_card_transaction_path(card_transaction),
+                  id: "edit_card_transaction_#{card_transaction.id}",
+                  class: "flex-1 truncate text-md underline underline-offset-[3px]",
+                  data: { turbo_frame: :center_container } %>
       <%= content_tag :span,
                       pretty_installments(card_installment.number, card_installment.card_installments_count),
                       class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}" %>
@@ -51,13 +54,6 @@
 
     <div class="py-2 flex items-center justify-center">
       <div class="flex items-center justify-center px-2 my-1 rounded-md">
-        <%= link_to edit_card_transaction_path(card_transaction),
-                    id: "edit_card_transaction_#{card_transaction.id}",
-                    class: "text-blue-600 hover:text-blue-800 mx-2 bg-white rounded-4xl",
-                    data: { turbo_frame: :center_container } do %>
-          <%= render_icon :pencil %>
-        <% end %>
-
         <%= link_to card_transaction,
                     id: "delete_card_transaction_#{card_transaction.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",

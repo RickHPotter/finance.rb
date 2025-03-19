@@ -22,6 +22,8 @@ en:
         cash_installment: Installment
         cash_installments_count: Installments Count
         cash_installments_count_short: Installments
+        confirm_payment: Confirm Payment
+        payment_date: Payment Date
         created_at: Created at
         updated_at: Updated at
 
@@ -49,5 +51,7 @@ pt-BR:
         cash_installment: Parcela
         cash_installments_count: Quantidade de Parcelas
         cash_installments_count_short: Parcelas
+        confirm_payment: Confirmar Pagamento
+        payment_date: Data de Pagamento
         created_at: Criado em
         updated_at: Atualizado em

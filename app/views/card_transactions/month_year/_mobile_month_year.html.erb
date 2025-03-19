@@ -1,4 +1,9 @@
 <div class="mb-8" data-datatable-target="table">
+  <%= content_tag :span, nil,
+                  class: "py-3 col-start-7 text-end",
+                  id: :priceSum,
+                  data: { controller: "price-sum", price: @card_installments.sum(:price) } %>
+
   <fieldset class="grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4">
     <%= content_tag :legend, @month_year_str, class: "px-2 text-lg text-slate-800 text-start" %>
 

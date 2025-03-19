@@ -27,32 +27,6 @@ export default class extends Controller {
     })
   }
 
-  filterCategory(event) {
-    const searchTerm = event.target.value.toLowerCase();
-
-    this.categoryTargets.forEach(categoryField => {
-      const categoryIds = categoryField.dataset.id
-      if (categoryIds.includes(searchTerm)) {
-        categoryField.parentElement.style.display = ""
-      } else {
-        categoryField.parentElement.style.display = "none"
-      }
-    })
-  }
-
-  filterEntity(event) {
-    const searchTerm = event.target.value.toLowerCase();
-
-    this.entityTargets.forEach(entityField => {
-      const entityIds = entityField.dataset.id
-      if (entityIds.includes(searchTerm)) {
-        entityField.parentElement.style.display = ""
-      } else {
-        entityField.parentElement.style.display = "none"
-      }
-    })
-  }
-
   start(event) {
     event.dataTransfer.setData("text/plain", event.target.dataset.id)
     event.target.classList.add("opacity-50")

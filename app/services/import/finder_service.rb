@@ -29,8 +29,15 @@ module Import
     def find_or_create_user_bank(bank_name)
       return @main_service.user_banks[bank_name] if @main_service.user_banks[bank_name]
 
-      bank = Bank.find_or_create_by(bank_code: 0)
-      @main_service.user_banks[bank_name] = UserBankAccount.find_or_create_by(user:, bank:)
+      matched_bank = Bank.where("UPPER(bank_name) ILIKE ?", "%#{bank_name}%").first
+      if matched_bank.present?
+        UserBankAccount.find_or_create_by(user:, bank: matched_bank)
+      else
+        bank = Bank.find_or_create_by(bank_code: 0)
+        UserBankAccount.create(user:, bank:)
+      end => user_bank_account
+
+      @main_service.user_banks[bank_name] = user_bank_account
     end
 
     def find_or_create_category(category_name)

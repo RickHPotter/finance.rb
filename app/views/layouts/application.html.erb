@@ -51,5 +51,8 @@
 </html>
 
 <script>
-  window.APP_LOCALE = "<%= I18n.locale %>"
+  var queryString = window.location.search;
+  var urlParams = new URLSearchParams(queryString);
+  var locale = urlParams.get("locale")
+  window.APP_LOCALE = locale || "<%= I18n.locale %>"
 </script>

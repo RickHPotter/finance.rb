@@ -1,18 +1,12 @@
 <%= turbo_frame_tag dom_id budget do %>
 
   <%= content_tag :div,
-                  class: "grid grid-cols-8 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80",
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80 #{'animate-pulse' if budget.remaining_value >= budget.value / 5 }",
                   draggable: true,
                   data: { id: budget.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 
     <%= content_tag :div, class: "flex items-center justify-between gap-2 rounded-sm text-slate-100 mx-auto" do %>
-      <% case budget.remaining_value <=> budget.value
-         when -1 then :check_square
-         when 0 then :warning_octagon
-         when 1 then :x_circle
-         end => icon %>
-
-      <%= content_tag :span, render_icon(icon), title: model_attribute(budget, :already_paid) %>
+      <%= content_tag :span, render_icon(:safe), title: pluralise_model(budget, 1) %>
       <%= content_tag :span, l(DateTime.new(budget.year, budget.month, 1).end_of_month, format: :shorter) %>
     <% end %>
 

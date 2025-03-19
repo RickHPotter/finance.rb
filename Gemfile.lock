@@ -525,11 +525,6 @@ GEM
     tailwindcss-ruby (4.0.14-x86_64-linux-gnu)
     tailwindcss-ruby (4.0.14-x86_64-linux-musl)
     thor (1.3.2)
-    thruster (0.1.12)
-    thruster (0.1.12-aarch64-linux)
-    thruster (0.1.12-arm64-darwin)
-    thruster (0.1.12-x86_64-darwin)
-    thruster (0.1.12-x86_64-linux)
     tilt (2.6.0)
     timeout (0.4.3)
     turbo-rails (2.0.13)
@@ -619,7 +614,6 @@ DEPENDENCIES
   solid_cache
   stimulus-rails
   tailwindcss-rails
-  thruster
   turbo-rails
   tzinfo-data
   view_component

@@ -21,6 +21,8 @@ en:
     sure: "Are you sure?"
     yes: "Yes"
     no: "No"
+    confirm: "Confirm"
+    cancel: "Cancel"
   gerund:
     index: "Listing"
     show: "Details of"
@@ -71,6 +73,8 @@ pt-BR:
     sure: "Tem certeza?"
     yes: "Sim"
     no: "Não"
+    confirm: "Confirmar"
+    cancel: "Cancelar"
   notification:
     created: "%{model} foi criado com sucesso."
     not_created: "%{model} não foi criado."

@@ -96,7 +96,7 @@ RSpec.describe "CardTransactions", type: :feature do
         expect(page).to have_css("#month_year_selector_title", text: user.user_cards.first.user_card_name)
 
         within "turbo-frame#card_installment_#{card_transaction.card_installments.first.id}" do
-          expect(page).to have_css("span", text: "Some Other Card Transaction Name")
+          expect(page).to have_css("a#edit_card_transaction_#{card_transaction.id}", text: "Some Other Card Transaction Name")
         end
       end
     end

@@ -304,3 +304,4 @@ Possible Downtime: 6 months and a half
   - ✅ Add icon column for `Entity` and `IconPicker` Component for its form.
   - ✅ Create indexes on table around `CardTranscation`.
   - ✅ Setup and use cache for static assets such as `svg icons`.
+  - ✅ Deploy to `Hostinger` with `Kamal`.

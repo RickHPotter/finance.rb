@@ -70,7 +70,7 @@ class BudgetsController < ApplicationController
   def budget_params
     ret_params = params.require(:budget)
     ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-")
-    ret_params[:value] = ret_params[:value].to_i * -1 if ret_params[:value].present?
+    ret_params[:value] = ret_params[:value].to_i.abs * -1 if ret_params[:value].present?
 
     ret_params.permit(:description, :value, :inclusive, :month, :year, :active, :user_id,
                       budget_categories_attributes: %i[id category_id _destroy],

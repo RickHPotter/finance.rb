@@ -7,9 +7,10 @@
     <div class="p-4">
       <div class="flex items-center justify-between gap-4 w-full text-slate-100 text-sm font-semibold">
         <div class="flex-1 flex items-center justify-between gap-1 min-w-0">
-          <%= link_to "#{pluralise_model(budget, 1)}: #{budget.description}", edit_budget_path(budget),
+          <%= link_to "#{pluralise_model(budget, 1)}: #{budget.description}",
+                      edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
-                      class: "truncate text-md",
+                      class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: :center_container } %>
 
           <%= content_tag :span, from_cent_based_to_float(budget.value, "R$"), class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0" %>

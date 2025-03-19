@@ -16,7 +16,6 @@ gem "redis"
 gem "solid_cache"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
-gem "thruster"
 gem "turbo-rails"
 
 # ViewComponent
