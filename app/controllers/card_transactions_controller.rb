@@ -74,7 +74,7 @@ class CardTransactionsController < ApplicationController
     @card_transaction.build_month_year
 
     respond_to do |format|
-      format.html
+      format.html { render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction) }
       format.turbo_stream
     end
   end

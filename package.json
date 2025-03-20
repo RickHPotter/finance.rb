@@ -21,6 +21,7 @@
     "stimulus-rails-nested-form": "^4.1.0",
     "stimulus-textarea-autogrow": "^4.1.0",
     "stimulus-use": "^0.52.3",
+    "tailwindcss-animate": "^1.0.7",
     "tom-select": "^2.4.3"
   }
 }

@@ -57,6 +57,7 @@ group :development do
   gem "hotwire-spark"
   gem "rails-erd"
   gem "rubocop-rails-omakase", require: false
+  gem "ruby_ui", "~> 1.0.0.beta1", require: false
   gem "web-console"
 
   # NEOVIM IDE
@@ -72,4 +73,6 @@ group :test do
   gem "simplecov", require: false
 end
 
-gem "phlex-rails", "~> 2.0"
+gem "phlex-rails"
+
+gem "tailwind_merge", "~> 1.1"

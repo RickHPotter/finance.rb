@@ -298,21 +298,21 @@ GEM
       net-protocol
     net-ssh (7.3.0)
     nio4r (2.7.4)
-    nokogiri (1.18.4-aarch64-linux-gnu)
+    nokogiri (1.18.5-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.4-aarch64-linux-musl)
+    nokogiri (1.18.5-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.18.4-arm-linux-gnu)
+    nokogiri (1.18.5-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.4-arm-linux-musl)
+    nokogiri (1.18.5-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.18.4-arm64-darwin)
+    nokogiri (1.18.5-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.18.4-x86_64-darwin)
+    nokogiri (1.18.5-x86_64-darwin)
       racc (~> 1.4)
-    nokogiri (1.18.4-x86_64-linux-gnu)
+    nokogiri (1.18.5-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.4-x86_64-linux-musl)
+    nokogiri (1.18.5-x86_64-linux-musl)
       racc (~> 1.4)
     notiffany (0.1.3)
       nenv (~> 0.1)
@@ -463,6 +463,7 @@ GEM
     ruby-graphviz (1.2.5)
       rexml
     ruby-progressbar (1.13.0)
+    ruby_ui (1.0.0.beta1)
     rubyzip (2.4.1)
     securerandom (0.4.1)
     selenium-webdriver (4.29.1)
@@ -480,6 +481,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.1)
     simplecov_json_formatter (0.1.4)
+    sin_lru_redux (2.5.2)
     smart_properties (1.17.0)
     solargraph (0.52.0)
       backport (~> 1.2)
@@ -514,6 +516,8 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.5)
+    tailwind_merge (1.1.0)
+      sin_lru_redux (~> 2.5)
     tailwindcss-rails (4.2.0)
       railties (>= 7.0.0)
       tailwindcss-ruby (~> 4.0)
@@ -598,7 +602,7 @@ DEPENDENCIES
   letter_opener_web
   neovim
   pg
-  phlex-rails (~> 2.0)
+  phlex-rails
   propshaft
   puma
   rails (~> 8.0)
@@ -607,12 +611,14 @@ DEPENDENCIES
   roo!
   rspec-rails
   rubocop-rails-omakase
+  ruby_ui (~> 1.0.0.beta1)
   selenium-webdriver
   shoulda-matchers
   simplecov
   solargraph
   solid_cache
   stimulus-rails
+  tailwind_merge (~> 1.1)
   tailwindcss-rails
   turbo-rails
   tzinfo-data
