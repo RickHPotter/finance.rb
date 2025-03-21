@@ -10,7 +10,6 @@ module Components
     DOGS_ICONS_PATH = "avatars/dogs"
 
     def initialize(form:, field:, &)
-      super
       @form = form
       @field = field
       @value = form.object.send(field)

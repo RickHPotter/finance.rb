@@ -1,10 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 import { initModals } from "flowbite"
 import RailsDate from "../models/railsDate"
+import { _removeMask, _applyMask } from "../utils/mask.js"
 
 // FIXME: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
-  static targets = ["priceInput", "priceExchangeInput", "exchangesCountInput", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
+  static targets = ["priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
 
   connect() {
     initModals()
@@ -12,19 +13,22 @@ export default class extends Controller {
   }
 
   toggleExchanges({ target }) {
-    const checked = target.checked
+    const price = parseInt(_removeMask(target.value))
+    const shouldBeDisabled = price === 0
 
-    this.exchangesCountInputTarget.disabled = !checked
+    if (shouldBeDisabled !== this.exchangesCountInputTarget.disabled) {
+      this.exchangesCountInputTarget.disabled = shouldBeDisabled
 
-    if (checked) {
-      this.exchangesCountInputTarget.classList.remove("opacity-50")
-    } else {
-      this.exchangesCountInputTarget.value = 0
-      this.delExchangeTargets.forEach((element) => element.click())
-      this.exchangesCountInputTarget.classList.add("opacity-50")
+      if (shouldBeDisabled) {
+        this.exchangesCountInputTarget.value = 0
+        this.delExchangeTargets.forEach((element) => element.click())
+        this.exchangesCountInputTarget.classList.add("opacity-50")
+      } else {
+        this.exchangesCountInputTarget.classList.remove("opacity-50")
+      }
     }
 
-    if (target.value > 0) this.checkForExchangeCategory()
+    if (this.exchangesCountInputTarget.value > 0) this.checkForExchangeCategory()
   }
 
   fillPrice({ target }) {
@@ -36,6 +40,16 @@ export default class extends Controller {
 
     this.element.querySelector("input[name*='[price]']").value = this._applyMask(price.toString())
     this._updateExchangesPrices()
+  }
+
+  updatePrice() {
+    const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value))
+    const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
+    const price = parseInt(_removeMask(this.priceInputTarget.value))
+
+    if (totalPrice < priceToBeReturned) { this.priceToBeReturnedInputTarget.value = this._applyMask(totalPrice.toString()) }
+    if (totalPrice < price) { this.priceInputTarget.value = this._applyMask(totalPrice.toString()) }
+    if (priceToBeReturned > price) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
   }
 
   updateExchangesPrices({ target }) {
@@ -83,7 +97,7 @@ export default class extends Controller {
   }
 
   async _updateExchangesPrices() {
-    const total_price         = parseInt(this._removeMask(this.priceInputTarget.value))
+    const total_price         = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
     const new_exchanges_count = parseInt(this.exchangesCountInputTarget.value)
 
     let price_that_cannot_be_divided  = total_price % new_exchanges_count

@@ -81,6 +81,8 @@ class CardTransactionsController < ApplicationController
 
   def edit
     @card_transaction = CardTransaction.includes(:card_installments).find(params[:id])
+
+    render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)
   end
 
   def create

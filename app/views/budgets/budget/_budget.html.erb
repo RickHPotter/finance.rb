@@ -1,7 +1,7 @@
 <%= turbo_frame_tag dom_id budget do %>
 
   <%= content_tag :div,
-                  class: "grid grid-cols-8 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80 #{'animate-pulse' if budget.remaining_value >= budget.value / 5 }",
+                  class: "grid grid-cols-8 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80 #{'animate-pulse' if budget.remaining_value >= budget.value / 5}",
                   draggable: true,
                   data: { id: budget.id, datatable_target: :row, action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" } do %>
 

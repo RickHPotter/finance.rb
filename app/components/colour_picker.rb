@@ -2,7 +2,7 @@
 
 module Components
   class ColourPicker < Base
-    def initialize(form:, field:, &) # rubocop:disable Lint/MissingSuper
+    def initialize(form:, field:, &)
       @form = form
       @field = field
       @value = form.object.send(field) || :white

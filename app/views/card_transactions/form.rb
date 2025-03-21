@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-# rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/BlockLength
-
 module Views
   module CardTransactions
-    class Form < Views::Base
+    class Form < Components::Base
       include Phlex::Rails::Helpers::TurboFrameTag
       include Phlex::Rails::Helpers::FormWith
+      include Phlex::Rails::Helpers::TextFieldTag
       include Phlex::Rails::Helpers::HiddenFieldTag
       include Phlex::Rails::Helpers::AssetPath
       include Phlex::Rails::Helpers::DOMID
@@ -17,7 +16,7 @@ module Views
 
       attr_reader :current_user, :user_card, :card_transaction
 
-      def initialize(current_user:, card_transaction:) # rubocop:disable Lint/MissingSuper
+      def initialize(current_user:, card_transaction:)
         @current_user = current_user
         @card_transaction = card_transaction
         @user_card = card_transaction&.user_card
@@ -94,20 +93,21 @@ module Views
               end
 
               div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
-                render Components::TextFieldComponent.new \
+                TextField \
                   form, :date,
                   id: :card_transaction_date,
                   type: "datetime-local", svg: :calendar,
                   value: card_transaction.date.strftime("%Y-%m-%dT%H:%M"),
                   class: "font-graduate",
-                  data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
+                  data: { controller: "ruby-ui--calendar-input", reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
               end
 
               div(class: "flex") do
                 div(class: "w-2/3 lg:w-3/5 mb-3 lg:mb-0") do
-                  render Components::TextFieldComponent.new \
+                  TextField \
                     form, :price,
                     svg: :money,
+                    id: :transaction_price,
                     class: "font-graduate",
                     data: { price_mask_target: :input,
                             reactive_form_target: :priceInput,
@@ -115,7 +115,7 @@ module Views
                 end
 
                 div(class: "w-1/3 lg:w-2/5") do
-                  render Components::TextFieldComponent.new \
+                  TextField \
                     form, :card_installments_count,
                     type: :number,
                     svg: :number,
@@ -169,7 +169,7 @@ module Views
                 data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
               template(data: { nested_form_target: "template" }) do
                 form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
-                  render partial "entity_transactions/entity_transaction_fields", form: entity_transaction_fields
+                  render ::Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
                 end
               end
 
@@ -178,7 +178,7 @@ module Views
                                                                                                 :exchanges)
               end
               form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields|
-                render partial "entity_transactions/entity_transaction_fields", form: entity_transaction_fields
+                render ::Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
               end
 
               div(data: { nested_form_target: "target" })
@@ -211,5 +211,3 @@ module Views
     end
   end
 end
-
-# rubocop:enable Metrics/AbcSize,Metrics/MethodLength,Metrics/BlockLength

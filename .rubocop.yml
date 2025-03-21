@@ -48,11 +48,25 @@ Metrics/ClassLength:
 
 Metrics/MethodLength:
   Max: 20
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/AbcSize:
   Max: 26
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/BlockLength:
   Max: 22
   Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
     - "spec/***/*"
+
+Lint/MissingSuper:
+  Enabled: true
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"

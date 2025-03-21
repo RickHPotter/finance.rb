@@ -8,7 +8,11 @@ module RubyUI
 
     attr_reader :attrs
 
-    def initialize(**user_attrs) # rubocop:disable Lint/MissingSuper
+    def cache_store
+      Rails.cache
+    end
+
+    def initialize(**user_attrs)
       @attrs = mix(default_attrs, user_attrs)
       @attrs[:class] = TAILWIND_MERGER.merge(@attrs[:class]) if @attrs[:class]
     end

@@ -58,17 +58,32 @@ application.register("notification", NotificationController)
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)
 
+import PriceSumController from "./price_sum_controller"
+application.register("price-sum", PriceSumController)
+
 import PwaInstallationController from "./pwa_installation_controller"
 application.register("pwa-installation", PwaInstallationController)
 
 import ReactiveFormController from "./reactive_form_controller"
 application.register("reactive-form", ReactiveFormController)
 
+import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
+application.register("ruby-ui--calendar", RubyUi__CalendarController)
+
+import RubyUi__CalendarInputController from "./ruby_ui/calendar_input_controller"
+application.register("ruby-ui--calendar-input", RubyUi__CalendarInputController)
+
+import RubyUi__SheetContentController from "./ruby_ui/sheet_content_controller"
+application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
+
+import RubyUi__SheetController from "./ruby_ui/sheet_controller"
+application.register("ruby-ui--sheet", RubyUi__SheetController)
+
+import RubyUi__TabsController from "./ruby_ui/tabs_controller"
+application.register("ruby-ui--tabs", RubyUi__TabsController)
+
 import SelectController from "./select_controller"
 application.register("select", SelectController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
-
-import PriceSumController from "./price_sum_controller"
-application.register("price-sum", PriceSumController)

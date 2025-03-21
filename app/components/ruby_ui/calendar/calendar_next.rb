@@ -2,7 +2,7 @@
 
 module RubyUI
   class CalendarNext < Base
-    def view_template(&block)
+    def view_template(&)
       button(**attrs) do
         icon
       end

@@ -29,7 +29,7 @@ export default class extends Controller {
   }
 
   initialiseCashTransactionSelect() {
-    const entityId = 5
+    const entityId = 46
 
     new TomSelect(this.element, {
       valueField: "id",

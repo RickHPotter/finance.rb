@@ -1,6 +1,6 @@
 <% if @card_transaction %>
   <% if @user_card.active? %>
-    <%= turbo_stream.replace(:center_container, template: "card_transactions/new", locals: { card_transaction: @card_transaction }) %>
+    <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
     <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updated, UserCard) }) %>
     <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
   <% else %>
