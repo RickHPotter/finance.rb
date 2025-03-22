@@ -19,12 +19,11 @@
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <%= content_tag :main, class: "antialiased pt-4 max-w-auto mx-1 md:container mx-auto" do %>
+    <%= content_tag :main, class: "antialiased pt-4 max-w-auto mx-2 max-w-[1420px] mx-auto" do %>
       <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
       <% end %>
       <%= render "shared/dark_mode" %>
-
 
       <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
         <% yield %>

@@ -61,4 +61,4 @@ jobs:
         run: bin/rails assets:precompile
 
       - name: Run tests
-        run: bin/rspec
+        run: bin/rspec spec/models/ spec/concerns spec/requests

@@ -58,26 +58,24 @@ module TabsConcern
   end
 
   def set_card_transaction_sublinks
-    # user_cards = current_user.user_cards.active.pluck(:id, :user_card_name)
-    #
-    # @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
-    #   default = @active_sub_menu.to_sym == user_card_name.to_sym
-    #   Components::TabsComponent::Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, :center_container)
-    # end
-    #
-    # if @card_transaction_tab.present?
-    #   @card_transaction_tab << Components::TabsComponent::Item.new(action_message(:search),
-    #                                                                :magnifying_glass,
-    #                                                                search_card_transactions_path,
-    #                                                                @active_sub_menu.to_sym == :search,
-    #                                                                :center_container)
-    #   return
-    # end
-    #
-    # @card_transaction_tab <<
-    #   Components::TabsComponent::Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, :center_container)
+    user_cards = current_user.user_cards.active.pluck(:id, :user_card_name)
 
-    @card_transaction_tab = [ Components::TabsComponent::Item.new(:a, :credit_card, edit_card_transaction_path(394), true, :center_container) ]
+    @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
+      default = @active_sub_menu.to_sym == user_card_name.to_sym
+      Components::TabsComponent::Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, :center_container)
+    end
+
+    if @card_transaction_tab.present?
+      @card_transaction_tab << Components::TabsComponent::Item.new(action_message(:search),
+                                                                   :magnifying_glass,
+                                                                   search_card_transactions_path,
+                                                                   @active_sub_menu.to_sym == :search,
+                                                                   :center_container)
+      return
+    end
+
+    @card_transaction_tab <<
+      Components::TabsComponent::Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, :center_container)
   end
 
   def set_cash_transaction_sublinks

@@ -4,7 +4,7 @@ import TomSelect from "tom-select"
 export default class extends Controller {
   connect() {
     if (this.element.dataset.id == "cash-transaction-select") {
-      this.initialiseCashTransactionSelect()
+      this.initialiseCashTransactionSelect(entityId)
     } else {
       this.initializeTomSelect()
     }
@@ -28,8 +28,8 @@ export default class extends Controller {
     })
   }
 
-  initialiseCashTransactionSelect() {
-    const entityId = 46
+  initialiseCashTransactionSelect(entityId) {
+    if (!entityId) return
 
     new TomSelect(this.element, {
       valueField: "id",

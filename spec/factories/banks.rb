@@ -22,7 +22,7 @@ end
 # Table name: banks
 #
 #  id         :bigint           not null, primary key
-#  bank_code  :string           not null
+#  bank_code  :integer          not null
 #  bank_name  :string           not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null

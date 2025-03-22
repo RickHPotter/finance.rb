@@ -33,12 +33,12 @@ export default class extends Controller {
 
   fillPrice({ target }) {
     const divider = target.dataset.divider
-    const cardTransactionPriceStr = document.getElementById("card_transaction_price")
-    const cashTransactionPriceStr = document.getElementById("cash_transaction_price")
-    const priceStr = ( cardTransactionPriceStr || cashTransactionPriceStr ).value
+    const priceStr = document.getElementById("transaction_price").value
     const price = parseInt(this._removeMask(priceStr) / divider)
 
-    this.element.querySelector("input[name*='[price]']").value = this._applyMask(price.toString())
+    this.priceInputTarget.value = this._applyMask(price.toString())
+    this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+    this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
     this._updateExchangesPrices()
   }
 
@@ -153,11 +153,13 @@ export default class extends Controller {
   }
 
   _updateWrappers(starting_rails_date, starting_number = 0) {
-    if (starting_number === 0 && this.monthYearExchangeTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
+    if (this.monthYearExchangeTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
 
     starting_rails_date.monthsForwards(starting_number)
 
     const visible_exchanges_wrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
+    console.log(starting_number)
+    console.log(visible_exchanges_wrappers)
 
     visible_exchanges_wrappers.slice(starting_number).forEach((target, index) => {
       target.querySelector(".exchange_month_year").textContent = starting_rails_date.monthYear()

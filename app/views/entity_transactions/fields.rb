@@ -39,7 +39,7 @@ module Views
                   cached_icon(:little_x)
                 end
 
-                render Views::EntityTransactions::FieldsSheet.new(form: form)
+                render Views::EntityTransactions::FieldsSheet.new(form:)
               end
             end
 

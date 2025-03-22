@@ -103,7 +103,10 @@ class CardTransactionsController < ApplicationController
     if params[:commit] == "Update"
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.update(@card_transaction, partial: "card_transactions/form", locals: { card_transaction: @card_transaction })
+          render turbo_stream: turbo_stream.update(
+            @card_transaction,
+            Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction)
+          )
         end
       end
     else

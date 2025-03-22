@@ -53,7 +53,7 @@ module Views
             end
 
             div(class: "w-full mb-6") do
-              render_icon :quote
+              cached_icon :quote
               form.text_area \
                 :comment,
                 class: "text-gray-500 p-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
