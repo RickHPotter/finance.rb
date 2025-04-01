@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :card, active_sub_menu: :a)
+  def set_tabs(active_menu: :basic, active_sub_menu: :a)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -46,7 +46,8 @@ module TabsConcern
 
   def set_basic_sublinks
     @basic_items = [
-      { label: t("tabs.user_bank_account"), icon: :safe,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
+      # { label: t("tabs.user_bank_account"), icon: :safe,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
+      { label: t("tabs.user_bank_account"), icon: :safe,        link: new_investment_path, default: @active_sub_menu == :user_bank_account },
       { label: t("tabs.user_card"),         icon: :credit_card, link: user_cards_path,         default: @active_sub_menu == :user_card },
       { label: t("tabs.category"),          icon: :category,    link: categories_path,         default: @active_sub_menu == :category },
       { label: t("tabs.entity"),            icon: :user_circle, link: entities_path,           default: @active_sub_menu == :entity }

@@ -1,0 +1,39 @@
+en:
+  activerecord:
+    models:
+      investment:
+        one: Investment
+        other: Investments
+    attributes:
+      investment:
+        id: ID
+        description: Description
+        date: Date
+        month: Month
+        year: Year
+        price: Price
+        user_id: User
+        user_bank_account_id: Account
+        cash_transaction_id: Cash Transaction
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      investment:
+        one: Investimento
+        other: Investimentos
+    attributes:
+      investment:
+        id: ID
+        description: Descrição
+        date: Data
+        month: Mês
+        year: Ano
+        price: Preço
+        user_id: Usuário
+        user_bank_account_id: Conta
+        cash_transaction_id: Movimentação
+        created_at: Criado em
+        updated_at: Atualizado em

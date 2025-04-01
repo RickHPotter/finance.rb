@@ -41,5 +41,7 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :investments
+
   root "pages#index"
 end
