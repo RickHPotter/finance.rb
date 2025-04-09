@@ -65,13 +65,29 @@ module Import
       UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7, card: Card.find_by(card_name: "NUBANK"))
     end
 
+    def fix_missing_references
+      @user.user_cards.find_each do |user_card|
+        month_years = user_card.card_installments_invoices.pluck(:month, :year).uniq
+
+        month_years.each do |month, year|
+          next if user_card.references.exists?(month: month, year: year)
+
+          card_payment = user_card.card_installments_invoices.find_by(month:, year:)
+          next if card_payment.nil?
+
+          reference_date = user_card.calculate_reference_date(card_payment.date)
+          user_card.references.create(month: month, year: year, reference_date: reference_date)
+        end
+      end
+    end
+
     def fix_card_payment_dates
       beginning_of_month = Date.current.beginning_of_month
       end_of_an_era = Date.new(3000, 12, 31)
 
       @user.user_cards.find_each do |user_card|
         user_card.card_installments_invoices.where(date: beginning_of_month..end_of_an_era).find_each do |card_payment|
-          reference = card_payment.user_card.references.find_by(month: card_payment.month, year: card_payment.year)
+          reference = user_card.references.find_by(month: card_payment.month, year: card_payment.year)
           reference_date = card_payment.date.change(day: user_card.due_date_day)
           reference.update(reference_date:)
 

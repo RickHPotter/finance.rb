@@ -108,7 +108,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
       navigate_to(menu: basic, sub_menu: user_bank_account_submenu)
 
       within "turbo-frame#user_bank_accounts turbo-frame#user_bank_account_#{user_bank_account.id}" do
-        expect(page).to have_css("span.user_bank_account_description", text: user_bank_account.reload.pretty_print)
+        expect(page).to have_css("span.user_bank_account_description", text: user_bank_account.reload.pretty_label)
       end
     end
   end

@@ -10,12 +10,26 @@ class Reference < ApplicationRecord
   # @validations ..............................................................
   validates :month, :year, :reference_date, presence: true
   validates :user_card_id, uniqueness: { scope: %i[month year] }
+  validates :reference_date, uniqueness: { scope: :user_card_id }
 
   # @callbacks ................................................................
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def self.find_by_reference_date(user_card, reference_date)
+    where(user_card: user_card, reference_date: reference_date).first
+  end
+
+  def self.find_or_create_for(user_card, date)
+    month = date.month
+    year = date.year
+
+    find_or_create_by(user_card: user_card, month: month, year: year) do |ref|
+      ref.reference_date = user_card.calculate_reference_date(date)
+    end
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end

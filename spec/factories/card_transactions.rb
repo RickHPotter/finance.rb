@@ -73,6 +73,7 @@ end
 #  comment                     :text
 #  date                        :datetime         not null
 #  description                 :string           not null, indexed
+#  imported                    :boolean          default(FALSE)
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
 #  price                       :integer          not null, indexed

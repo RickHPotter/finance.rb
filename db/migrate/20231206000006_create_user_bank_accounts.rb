@@ -4,6 +4,7 @@
 class CreateUserBankAccounts < ActiveRecord::Migration[8.0]
   def change
     create_table :user_bank_accounts do |t|
+      t.string :user_bank_account_name
       t.integer :agency_number
       t.integer :account_number
       t.boolean :active, null: false, default: true

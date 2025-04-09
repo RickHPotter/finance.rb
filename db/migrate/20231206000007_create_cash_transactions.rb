@@ -12,6 +12,7 @@ class CreateCashTransactions < ActiveRecord::Migration[8.0]
       t.integer :starting_price, null: false
       t.integer :price, null: false
       t.boolean :paid, default: false
+      t.boolean :imported, default: false
       t.string :cash_transaction_type, null: true
       t.integer :cash_installments_count, default: 0, null: false
 

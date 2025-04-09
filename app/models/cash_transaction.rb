@@ -11,8 +11,6 @@ class CashTransaction < ApplicationRecord
   include Budgetable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :imported
-
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, optional: true
@@ -27,6 +25,7 @@ class CashTransaction < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
+  after_initialize :build_default_cash_installments
   after_save :update_associations_count_and_total
   after_destroy :update_associations_count_and_total
 
@@ -44,11 +43,15 @@ class CashTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
+    return if imported
+
     self.date ||= Date.current unless imported
 
     set_month_year
-    cash_installments.new(number: 1, price:, date:) if cash_installments.empty?
-    cash_installments.each(&:build_month_year)
+
+    cash_installments.each_with_index do |installment, index|
+      installment.date = date + index.months
+    end
   end
 
   def update_associations_count_and_total
@@ -58,11 +61,11 @@ class CashTransaction < ApplicationRecord
   end
 
   def can_be_updated?
-    categories.pluck(:category_name).intersection([ "CARD PAYMENT", "INVESTMENT" ]).empty?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "INVESTMENT" ])
   end
 
   def can_be_deleted?
-    categories.pluck(:category_name).intersection([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT" ]).empty?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT" ])
   end
 
   def investment?
@@ -89,6 +92,10 @@ class CashTransaction < ApplicationRecord
 
     self.paid = cash_transaction_type == "Investment"
   end
+
+  def build_default_cash_installments
+    cash_installments.new(number: 1, price:, date:) if cash_installments.empty?
+  end
 end
 
 # == Schema Information
@@ -101,6 +108,7 @@ end
 #  comment                 :text
 #  date                    :datetime         not null
 #  description             :string           not null
+#  imported                :boolean          default(FALSE)
 #  month                   :integer          not null
 #  paid                    :boolean          default(FALSE)
 #  price                   :integer          not null

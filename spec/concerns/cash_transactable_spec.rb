@@ -22,17 +22,10 @@ RSpec.describe CashTransactable, type: :concern do
   end
 
   def validate(installments_prices)
-    # cash_transactions = card_transaction.card_installments.map(&:cash_transaction)
-
-    # debugger if installments_prices.sort != cash_transactions.pluck(:price).sort
-
-    # expect(cash_transactions.count).to eq cash_transactions.compact_blank.count
-
     CashTransaction.order(:month, :year).each_with_index do |cash_transaction, index|
       expect(cash_transaction.comment).to eq "Upfront: 0, Installments: #{installments_prices[index]}"
       expect(cash_transaction.price).to eq installments_prices[index]
     end
-    # end
   end
 
   describe "[ concern behaviour ]" do

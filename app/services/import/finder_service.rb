@@ -31,10 +31,10 @@ module Import
 
       matched_bank = Bank.where("UPPER(bank_name) ILIKE ?", "%#{bank_name}%").first
       if matched_bank.present?
-        UserBankAccount.find_or_create_by(user:, bank: matched_bank)
+        UserBankAccount.find_or_create_by(user:, bank: matched_bank, user_bank_account_name: bank_name, account_number: UserBankAccount.ids.last.to_i + 1)
       else
         bank = Bank.find_or_create_by(bank_code: 0)
-        UserBankAccount.create(user:, bank:)
+        UserBankAccount.create(user:, bank:, user_bank_account_name: bank_name, account_number: UserBankAccount.ids.last.to_i + 1)
       end => user_bank_account
 
       @main_service.user_banks[bank_name] = user_bank_account

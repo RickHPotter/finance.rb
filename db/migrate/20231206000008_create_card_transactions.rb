@@ -12,6 +12,7 @@ class CreateCardTransactions < ActiveRecord::Migration[8.0]
       t.integer :starting_price, null: false
       t.integer :price, null: false
       t.boolean :paid, default: false
+      t.boolean :imported, default: false
       t.integer :card_installments_count, default: 0, null: false
 
       t.references :user, null: false, foreign_key: true

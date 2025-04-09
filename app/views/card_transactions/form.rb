@@ -99,7 +99,7 @@ module Views
                   type: "datetime-local", svg: :calendar,
                   value: card_transaction.date.strftime("%Y-%m-%dT%H:%M"),
                   class: "font-graduate",
-                  data: { controller: "ruby-ui--calendar-input", reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
+                  data: { controller: "ruby-ui--calendar-input", reactive_form_target: :dateInput, action: "focusout->reactive-form#requestSubmit" }
               end
 
               div(class: "flex") do
@@ -122,7 +122,7 @@ module Views
                     min: 1, max: 72,
                     value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
                     class: "font-graduate",
-                    data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
+                    data: { reactive_form_target: :installmentsCountInput, action: "change->reactive-form#requestSubmit focusout->reactive-form#requestSubmit" }
                 end
               end
             end

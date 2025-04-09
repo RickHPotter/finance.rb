@@ -26,7 +26,7 @@ class UserBankAccount < ApplicationRecord
     update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
   end
 
-  def pretty_print
+  def pretty_label
     "[ #{bank.bank_name} ] #{agency_number || '-'}/#{account_number || '-'}"
   end
 
@@ -45,6 +45,7 @@ end
 #  balance                 :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null
 #  cash_transactions_total :integer          default(0), not null
+#  user_bank_account_name  :string
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  bank_id                 :bigint           not null, indexed

@@ -107,22 +107,17 @@ module HasMonthYear
   #
   def set_month_year
     return if imported?
+    return if instance_of?(CardInstallment)
+    build_month_year and return if instance_of?(CardTransaction)
 
-    if instance_of?(CardTransaction) || instance_of?(CardInstallment)
-      return false if user_card_id.nil?
-
-      self.month = card_payment_date.month
-      self.year  = card_payment_date.year
-    else
-      self.month ||= date.month
-      self.year  ||= date.year
-    end
+    self.month ||= date.month
+    self.year  ||= date.year
   end
 
   def imported?
-    return true if defined?(card_transaction) && card_transaction&.imported
-    return true if defined?(cash_transaction) && cash_transaction&.imported
+    impoted_cash_transaction  = instance_of?(CashTransaction) && imported
+    imported_cash_installment = instance_of?(CashInstallment) && cash_transaction&.imported
 
-    defined?(imported) && imported
+    impoted_cash_transaction || imported_cash_installment
   end
 end

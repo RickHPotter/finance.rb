@@ -33,17 +33,13 @@ class CardInstallment < Installment
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Retrieves the `reference_date` for the associated `cash_transaction` through `user_card.references`, based on `month` and `year`.
+  # Retrieves the `reference_date` for the associated `card_transaction` through `user_card.references`, based on `month` and `year`.
   #
   # @return [Date].
   #
   def card_payment_date
-    installment_date = card_transaction.card_payment_date + (number - 1).months
-
-    reference = user_card.references.find_by(month: installment_date.month, year: installment_date.year) ||
-                user_card.references.create(month: installment_date.month, year: installment_date.year, reference_date: installment_date)
-
-    reference.reference_date
+    installment_date = card_transaction.date + (number - 1).months
+    Reference.find_or_create_for(user_card, installment_date).reference_date
   end
 
   # @protected_instance_methods ...............................................

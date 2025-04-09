@@ -65,6 +65,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.integer "starting_price", null: false
     t.integer "price", null: false
     t.boolean "paid", default: false
+    t.boolean "imported", default: false
     t.integer "card_installments_count", default: 0, null: false
     t.bigint "user_id", null: false
     t.bigint "user_card_id", null: false
@@ -96,6 +97,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.integer "starting_price", null: false
     t.integer "price", null: false
     t.boolean "paid", default: false
+    t.boolean "imported", default: false
     t.string "cash_transaction_type"
     t.integer "cash_installments_count", default: 0, null: false
     t.bigint "user_id", null: false
@@ -232,6 +234,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   end
 
   create_table "user_bank_accounts", force: :cascade do |t|
+    t.string "user_bank_account_name"
     t.integer "agency_number"
     t.integer "account_number"
     t.boolean "active", default: true, null: false

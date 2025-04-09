@@ -70,7 +70,8 @@ class CardTransactionsController < ApplicationController
   def show; end
 
   def new
-    @card_transaction = CardTransaction.new(user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id)
+    @card_transaction = CardTransaction.new(user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id,
+                                            date: DateTime.current)
     @card_transaction.build_month_year
 
     respond_to do |format|

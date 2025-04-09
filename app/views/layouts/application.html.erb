@@ -19,7 +19,7 @@
   </head>
 
   <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <%= content_tag :main, class: "antialiased pt-4 max-w-auto mx-2 max-w-[1420px] mx-auto" do %>
+    <%= content_tag :main, class: "antialiased pt-4 max-w-auto max-w-[1420px] mx-auto" do %>
       <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
       <% end %>
@@ -31,8 +31,8 @@
     <% end %>
   </body>
 
-  <footer class="container mx-auto">
-    <ul class="py-2 text-sm text-gray-700">
+  <footer class="bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
+    <ul class="antialiased pt-4 max-w-auto max-w-[1420px] mx-auto">
       <li>
         <%= locale_link("pt-BR", class: "flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-gray-600") do %>
           <span>Português</span>

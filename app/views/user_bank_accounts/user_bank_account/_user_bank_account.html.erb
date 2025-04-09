@@ -3,7 +3,7 @@
                 data: { id: user_bank_account.id, datatable_target: :row } do %>
 
     <div class="col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold">
-      <%= content_tag :span, user_bank_account.pretty_print, class: "user_bank_account_description px-4 whitespace-nowrap" %>
+      <%= content_tag :span, user_bank_account.pretty_label, class: "user_bank_account_description px-4 whitespace-nowrap" %>
     </div>
 
     <div class="jump_to_cash_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">

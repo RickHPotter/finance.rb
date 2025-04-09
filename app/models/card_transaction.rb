@@ -12,17 +12,17 @@ class CardTransaction < ApplicationRecord
   include Budgetable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :imported
-
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, counter_cache: true
 
   # @validations ..............................................................
   validates :description, :card_installments_count, presence: true
+  validate :reference_date_is_valid
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
+  after_initialize :build_default_card_installments
   after_save :update_associations_count_and_total
   after_destroy :update_associations_count_and_total
 
@@ -52,11 +52,37 @@ class CardTransaction < ApplicationRecord
   # @return [void].
   #
   def build_month_year
-    self.date ||= DateTime.current unless imported
+    return if user_card_id.nil?
+    return if imported
 
-    set_month_year
-    card_installments.new(number: 1, price:, date:) if card_installments.empty?
-    card_installments.each(&:build_month_year)
+    reference_date = user_card.calculate_reference_date(date)
+    existing_reference = Reference.find_by_reference_date(user_card, reference_date)
+
+    if existing_reference
+      self.month = existing_reference.month
+      self.year = existing_reference.year
+    else
+      self.month = reference_date.month
+      self.year = reference_date.year
+      Reference.create!(user_card:, month:, year:, reference_date:)
+    end
+
+    update_installments if card_installments.any?
+  end
+
+  def update_installments
+    card_installments.each_with_index do |installment, index|
+      installment_date = date + index.months
+      reference_date = user_card.calculate_reference_date(installment_date)
+
+      installment.date = installment_date
+      installment.month = reference_date.month
+      installment.year = reference_date.year
+
+      next if installment.new_record?
+
+      installment.save
+    end
   end
 
   # @protected_instance_methods ...............................................
@@ -81,6 +107,18 @@ class CardTransaction < ApplicationRecord
     categories.each(&:update_card_transactions_count_and_total)
     entities.each(&:update_card_transactions_count_and_total)
   end
+
+  def build_default_card_installments
+    card_installments.new(number: 1, price:, date:) if card_installments.empty?
+  end
+
+  def reference_date_is_valid
+    return if imported
+    return false if errors.any?
+
+    calculated_date = user_card.calculate_reference_date(date)
+    errors.add(:date, "Invalid reference date") if calculated_date.month != month || calculated_date.year != year
+  end
 end
 
 # == Schema Information
@@ -92,6 +130,7 @@ end
 #  comment                     :text
 #  date                        :datetime         not null
 #  description                 :string           not null, indexed
+#  imported                    :boolean          default(FALSE)
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
 #  price                       :integer          not null, indexed

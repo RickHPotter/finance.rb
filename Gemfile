@@ -57,7 +57,7 @@ group :development do
   gem "hotwire-spark"
   gem "rails-erd"
   gem "rubocop-rails-omakase", require: false
-  gem "ruby_ui", "~> 1.0.0.beta1", require: false
+  gem "ruby_ui", require: false
   gem "web-console"
 
   # NEOVIM IDE

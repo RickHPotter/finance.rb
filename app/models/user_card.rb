@@ -26,6 +26,7 @@ class UserCard < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
+  after_update :update_references_and_payments, if: :payment_date_settings_changed?
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -43,13 +44,13 @@ class UserCard < ApplicationRecord
     references.create(reference_date:, month: reference_date.month, year: reference_date.year)
   end
 
-  def calculate_reference_date(date)
-    current_due_date = date.change(day: due_date_day)
-    current_closing_date = current_due_date - days_until_due_date
+  def calculate_reference_date(transaction_date)
+    due_date = transaction_date.change(day: due_date_day)
+    closing_date = due_date - days_until_due_date
 
-    return current_due_date if date < current_closing_date
+    return due_date if transaction_date < closing_date
 
-    current_due_date + 1.month
+    due_date + 1.month
   end
 
   # @protected_instance_methods ...............................................
@@ -67,6 +68,29 @@ class UserCard < ApplicationRecord
   end
 
   # @private_instance_methods .................................................
+
+  private
+
+  def payment_date_settings_changed?
+    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
+  end
+
+  def update_references_and_payments
+    month_years = card_installments_invoices.pluck(:month, :year).uniq
+
+    month_years.each do |month, year|
+      next if references.exists?(month: month, year: year)
+
+      card_payment = card_installments_invoices.find_by(month:, year:)
+      next if card_payment.nil?
+
+      reference_date = calculate_reference_date(card_payment.date)
+      references.create(month: month, year: year, reference_date: reference_date)
+
+      card_payment.update(date: reference_date)
+      card_payment.cash_installments.first&.update_columns(date: reference_date)
+    end
+  end
 end
 
 # == Schema Information
