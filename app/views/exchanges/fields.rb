@@ -2,11 +2,7 @@
 
 module Views
   module Exchanges
-    class Fields < Components::Base
-      # include Phlex::Rails::Helpers::SelectTag
-      # include Phlex::Rails::Helpers::OptionsFromCollectionForSelect
-      # include Phlex::Rails::Helpers::TurboFrameTag
-
+    class Fields < Views::Base
       attr_reader :form, :exchange
 
       def initialize(form:)

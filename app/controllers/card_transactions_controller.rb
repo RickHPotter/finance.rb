@@ -13,11 +13,13 @@ class CardTransactionsController < ApplicationController
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
     @user_card_id = @user_card&.id
 
-    index_variables(@user_card.card_installments)
-    search_variables
+    build_context(@user_card.card_installments)
 
     respond_to do |format|
-      format.html
+      format.html do
+        render Views::CardTransactions::Index.new(index_context: @index_context)
+      end
+
       format.turbo_stream do
         set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
       end
@@ -25,15 +27,58 @@ class CardTransactionsController < ApplicationController
   end
 
   def search
-    index_variables(current_user.card_installments)
-    search_variables
+    build_context(current_user.card_installments)
 
     respond_to do |format|
-      format.html
+      format.html do
+        render Views::CardTransactions::Index.new(index_context: @index_context, search: true)
+      end
+
       format.turbo_stream do
         set_tabs(active_menu: :card, active_sub_menu: :search)
       end
     end
+  end
+
+  def build_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
+    @years = (min_date.year..max_date.year)
+    @default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
+    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
+    set_all_categories
+    set_entities
+
+    @search_term = search_card_transaction_params[:search_term]
+    @category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
+    @entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
+    @from_ct_price = search_card_transaction_params[:from_ct_price]
+    @to_ct_price = search_card_transaction_params[:to_ct_price]
+    @from_price = search_card_transaction_params[:from_price]
+    @to_price = search_card_transaction_params[:to_price]
+    @from_installments_count = search_card_transaction_params[:from_installments_count]
+    @to_installments_count = search_card_transaction_params[:to_installments_count]
+
+    @index_context = {
+      current_user:,
+      default_year: @default_year,
+      years: @years,
+      active_month_years: @active_month_years,
+      search_term: @search_term,
+      category_ids: @category_ids,
+      entity_ids: @entity_ids,
+      from_ct_price: @from_ct_price,
+      to_ct_price: @to_ct_price,
+      from_price: @from_price,
+      to_price: @to_price,
+      from_installments_count: @from_installments_count,
+      to_installments_count: @to_installments_count,
+      user_card: @user_card,
+      user_card_id: @user_card&.id,
+      categories: @categories,
+      entities: @entities
+    }
   end
 
   def index_variables(card_installments)

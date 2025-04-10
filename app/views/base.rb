@@ -2,10 +2,14 @@
 
 module Views
   class Base < Components::Base
-    # The `Views::Base` is an abstract class for all your views.
+    include Phlex::Rails::Helpers::TurboFrameTag
 
-    # By default, it inherits from `Components::Base`, but you
-    # can change that to `Phlex::HTML` if you want to keep views and
-    # components independent.
+    def params
+      context[:rails_view_context].params
+    end
+
+    def thin__label(form, field)
+      span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(form.object, field).downcase }
+    end
   end
 end

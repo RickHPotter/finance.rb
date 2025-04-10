@@ -31,6 +31,9 @@ Style/PercentLiteralDelimiters:
 Style/Documentation:
   Enabled: false
 
+Style/ClassAndModuleChildren:
+  Enabled: false
+
 Layout/LineLength:
   Max: 166
 

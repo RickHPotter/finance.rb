@@ -2,8 +2,7 @@
 
 module Views
   module CardTransactions
-    class Form < Components::Base
-      include Phlex::Rails::Helpers::TurboFrameTag
+    class Form < Views::Base
       include Phlex::Rails::Helpers::FormWith
       include Phlex::Rails::Helpers::TextFieldTag
       include Phlex::Rails::Helpers::HiddenFieldTag

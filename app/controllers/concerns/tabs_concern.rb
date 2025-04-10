@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :basic, active_sub_menu: :a)
+  def set_tabs(active_menu: :card, active_sub_menu: :WILL)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -46,8 +46,7 @@ module TabsConcern
 
   def set_basic_sublinks
     @basic_items = [
-      # { label: t("tabs.user_bank_account"), icon: :safe,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
-      { label: t("tabs.user_bank_account"), icon: :safe,        link: new_investment_path, default: @active_sub_menu == :user_bank_account },
+      { label: t("tabs.user_bank_account"), icon: :safe,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
       { label: t("tabs.user_card"),         icon: :credit_card, link: user_cards_path,         default: @active_sub_menu == :user_card },
       { label: t("tabs.category"),          icon: :category,    link: categories_path,         default: @active_sub_menu == :category },
       { label: t("tabs.entity"),            icon: :user_circle, link: entities_path,           default: @active_sub_menu == :entity }
@@ -83,7 +82,8 @@ module TabsConcern
     @cash_transaction_items = [
       { label: t("tabs.pix"),        icon: :mobile,      link: cash_transactions_path, default: @active_sub_menu == :pix },
       { label: t("tabs.budget"),     icon: :piggy_bank,  link: new_budget_path,        default: @active_sub_menu == :budget },
-      { label: t("tabs.investment"), icon: :trending_up, link: cash_transactions_path, default: @active_sub_menu == :investment }
+      # { label: t("tabs.investment"), icon: :trending_up, link: new_investment_path, default: @active_sub_menu == :investment }
+      { label: t("tabs.investment"), icon: :trending_up, link: investments_path, default: @active_sub_menu == :investment }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @cash_transaction_tab = @cash_transaction_items.map do |label, icon, link, default|

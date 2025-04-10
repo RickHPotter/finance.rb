@@ -2,8 +2,7 @@
 
 module Views
   module Investments
-    class Form < Components::Base
-      include Phlex::Rails::Helpers::TurboFrameTag
+    class Form < Views::Base
       include Phlex::Rails::Helpers::FormWith
       include Phlex::Rails::Helpers::DOMID
       include TranslateHelper

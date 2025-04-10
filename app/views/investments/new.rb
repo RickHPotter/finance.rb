@@ -3,8 +3,6 @@
 module Views
   module Investments
     class New < Views::Base
-      include Phlex::Rails::Helpers::TurboFrameTag
-
       def initialize(current_user:, investment:)
         @current_user = current_user
         @investment = investment

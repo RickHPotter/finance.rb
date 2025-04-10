@@ -3,8 +3,6 @@
 module Views
   module CardTransactions
     class New < Views::Base
-      include Phlex::Rails::Helpers::TurboFrameTag
-
       def initialize(current_user:, card_transaction:)
         @current_user = current_user
         @card_transaction = card_transaction
