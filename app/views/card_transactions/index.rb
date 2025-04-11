@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::Index < Views::Base
+  include Views::CardTransactions
+  include Phlex::Rails::Helpers::LinkTo
+  include CacheHelper
+
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
               :category_ids, :entity_ids,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :user_card, :user_card_id, :categories, :entities,
+              :user_card, :categories, :entities,
               :search, :url
-
-  include Views::CardTransactions
-  include Phlex::Rails::Helpers::LinkTo
-  include CacheHelper
 
   def initialize(index_context: {}, search: false)
     @index_context = index_context
@@ -30,7 +30,6 @@ class Views::CardTransactions::Index < Views::Base
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
     @user_card = index_context[:user_card]
-    @user_card_id = index_context[:user_card_id]
     @categories = index_context[:categories]
     @entities = index_context[:entities]
     @category_ids = index_context[:category_ids]
@@ -54,10 +53,10 @@ class Views::CardTransactions::Index < Views::Base
                 span(id: :totalPriceSum)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:user_card_id, :search_term, :category_ids, :entity_ids,
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_ids, :entity_ids,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
-                                                                               :active_month_years))
+                                                                               :user_card, :active_month_years))
             end
 
             link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),

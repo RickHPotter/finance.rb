@@ -3,7 +3,7 @@
 # Controller for CashTransaction
 class CashTransactionsController < ApplicationController
   include TabsConcern
-  include ApplicationHelper
+  include TranslateHelper
 
   before_action :set_tabs
   before_action :set_cash_transaction, only: %i[edit update destroy]

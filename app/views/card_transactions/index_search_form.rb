@@ -3,12 +3,10 @@
 class Views::CardTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::DOMID
-  include ApplicationHelper
+
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
-  include ContextHelper
 
   attr_reader :url,
               :index_context, :current_user,
@@ -17,7 +15,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :user_card, :user_card_id, :categories, :entities
+              :user_card, :categories, :entities
 
   def initialize(url:, index_context: {})
     @url = url
@@ -36,7 +34,6 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
     @user_card = index_context[:user_card]
-    @user_card_id = index_context[:user_card_id]
     @categories = index_context[:categories]
     @entities = index_context[:entities]
     @category_ids = index_context[:category_ids]
@@ -52,7 +49,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      form.text_field :user_card_id, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card_id, class: :hidden
+      form.text_field :user_card_id, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id, class: :hidden
 
       div class: "w-full mb-2" do
         TextField \
@@ -88,7 +85,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
           div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75" do
             thin__label(form, :price)
-            render_icon :exchange
+            cached_icon :exchange
             thin__label(form, :self)
           end
 
@@ -112,7 +109,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
           div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
             thin__label(form, :price)
-            render_icon :exchange
+            cached_icon :exchange
             thin__label(form, :card_installment)
           end
 
@@ -137,7 +134,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
           div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
             thin__label(form, :count)
-            render_icon :exchange
+            cached_icon :exchange
             thin__label(form, :card_installment)
           end
 

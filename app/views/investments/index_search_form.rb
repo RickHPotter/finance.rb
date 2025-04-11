@@ -27,7 +27,8 @@ module Views
                   class: "w-full",
                   data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
           div class: "mb-6 flex gap-4 flex-wrap" do
-            render "shared/month_year_selector", form_id: :search_form, default_year:, years: @years, active_month_years: @active_month_years do
+            # render "shared/month_year_selector", form_id: :search_form, default_year:, years: @years, active_month_years: @active_month_years do
+            render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
               link_to new_card_transaction_path(user_card_id: @user_card&.id, format: :turbo_stream),
                       id: "new_card_transaction",
                       class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black

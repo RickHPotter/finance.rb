@@ -1,15 +1,14 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::MonthYearContainer < Views::Base
-  attr_reader :user_card_id, :search_term,
+  attr_reader :search_term,
               :category_ids, :entity_ids,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :active_month_years
+              :user_card_id, :active_month_years
 
   def initialize(index_context: {})
-    @user_card_id = index_context[:user_card_id]
     @search_term = index_context[:search_term]
     @category_ids = index_context[:category_ids]
     @entity_ids = index_context[:entity_ids]
@@ -19,6 +18,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @user_card_id = index_context[:user_card]&.id
     @active_month_years = index_context[:active_month_years]
   end
 
