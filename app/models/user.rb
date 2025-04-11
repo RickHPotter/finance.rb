@@ -14,6 +14,8 @@ class User < ApplicationRecord
   has_many :cash_transactions, dependent: :destroy
   has_many :cash_installments, through: :cash_transactions
 
+  has_many :investments, dependent: :destroy
+
   has_many :user_cards, dependent: :destroy
   has_many :user_bank_accounts, dependent: :destroy
 

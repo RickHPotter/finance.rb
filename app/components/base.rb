@@ -2,9 +2,9 @@
 
 module Components
   class Base < RubyUI::Base
-    include Components
-
     include Phlex::Rails::Helpers::Routes
+
+    include Components
 
     if Rails.env.development?
       def before_template

@@ -8,6 +8,7 @@ module Views
       include Phlex::Rails::Helpers::HiddenFieldTag
       include Phlex::Rails::Helpers::AssetPath
       include Phlex::Rails::Helpers::DOMID
+
       include TranslateHelper
       include ComponentsHelper
       include CacheHelper

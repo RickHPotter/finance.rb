@@ -20,7 +20,7 @@ class CardTransactionsController < ApplicationController
       end
 
       format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: user_card&.user_card_name || :search)
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
       end
     end
   end
@@ -37,69 +37,6 @@ class CardTransactionsController < ApplicationController
         set_tabs(active_menu: :card, active_sub_menu: :search)
       end
     end
-  end
-
-  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
-    years = (min_date.year..max_date.year)
-    default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
-    active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
-    set_all_categories
-    set_entities
-
-    search_term = search_card_transaction_params[:search_term]
-    category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
-    entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
-    from_ct_price = search_card_transaction_params[:from_ct_price]
-    to_ct_price = search_card_transaction_params[:to_ct_price]
-    from_price = search_card_transaction_params[:from_price]
-    to_price = search_card_transaction_params[:to_price]
-    from_installments_count = search_card_transaction_params[:from_installments_count]
-    to_installments_count = search_card_transaction_params[:to_installments_count]
-
-    @index_context = {
-      current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      search_term:,
-      category_ids:,
-      entity_ids:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
-      user_card: @user_card,
-      categories: @categories,
-      entities: @entities
-    }
-  end
-
-  def index_variables(card_installments)
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
-    @years = (min_date.year..max_date.year)
-    @default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
-    @active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
-    set_all_categories
-    set_entities
-  end
-
-  def search_variables
-    @search_term = search_card_transaction_params[:search_term]
-    @category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
-    @entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
-    @from_ct_price = search_card_transaction_params[:from_ct_price]
-    @to_ct_price = search_card_transaction_params[:to_ct_price]
-    @from_price = search_card_transaction_params[:from_price]
-    @to_price = search_card_transaction_params[:to_price]
-    @from_installments_count = search_card_transaction_params[:from_installments_count]
-    @to_installments_count = search_card_transaction_params[:to_installments_count]
   end
 
   def month_year
@@ -158,10 +95,11 @@ class CardTransactionsController < ApplicationController
     else
       if @card_transaction.save
         index
-        @user_card = @card_transaction.user_card
-        @default_year = @card_transaction.year
-        @active_month_years = @card_transaction.card_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
-        @search_term = @card_transaction.description
+        @index_context[:user_card] = @card_transaction.user_card
+        @index_context[:default_year] = @card_transaction.year
+        @index_context[:active_month_years] = @card_transaction.card_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
+        @index_context[:search_term] = @card_transaction.description
+
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
       end
 
@@ -175,6 +113,47 @@ class CardTransactionsController < ApplicationController
     index
 
     respond_to(&:turbo_stream)
+  end
+
+  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
+    years = (min_date.year..max_date.year)
+    default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
+    active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
+
+    search_term = search_card_transaction_params[:search_term]
+    category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
+    entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
+    from_ct_price = search_card_transaction_params[:from_ct_price]
+    to_ct_price = search_card_transaction_params[:to_ct_price]
+    from_price = search_card_transaction_params[:from_price]
+    to_price = search_card_transaction_params[:to_price]
+    from_installments_count = search_card_transaction_params[:from_installments_count]
+    to_installments_count = search_card_transaction_params[:to_installments_count]
+
+    set_all_categories
+    set_entities
+
+    @index_context = {
+      current_user:,
+      years:,
+      default_year:,
+      active_month_years:,
+      search_term:,
+      category_ids:,
+      entity_ids:,
+      from_ct_price:,
+      to_ct_price:,
+      from_price:,
+      to_price:,
+      from_installments_count:,
+      to_installments_count:,
+      user_card: @user_card,
+      categories: @categories,
+      entities: @entities
+    }
   end
 
   private

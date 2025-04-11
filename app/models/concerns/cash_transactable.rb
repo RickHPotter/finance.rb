@@ -103,7 +103,7 @@ module CashTransactable
   #
   def cash_transaction_params
     {
-      description:,
+      description: cash_transaction_description,
       month:,
       year:,
       user_id:,

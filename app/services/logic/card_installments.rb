@@ -27,7 +27,7 @@ module Logic
 
       return {} if params.blank?
 
-      associations = build_conditions_for_associoations(params)
+      associations = build_conditions_for_associations(params)
 
       params[:price] = build_price_range_conditions(params)
       params[:card_installments_count] = build_installments_count_range_conditions(params)
@@ -75,7 +75,7 @@ module Logic
       (from_installments_count..to_installments_count)
     end
 
-    def self.build_conditions_for_associoations(params)
+    def self.build_conditions_for_associations(params)
       category_id = (params.delete(:category_id) || params.delete(:category_ids) || {}).compact_blank
       entity_id = (params.delete(:entity_id) || params.delete(:entity_ids) || {}).compact_blank
 

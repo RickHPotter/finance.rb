@@ -3,6 +3,7 @@
 module Components
   class IconPicker < Base
     include Phlex::Rails::Helpers::AssetPath
+
     include TranslateHelper
 
     ICONS_PATH = "avatars"

@@ -50,7 +50,7 @@ class CardInstallment < Installment
   #
   # @return [String] The generated description.
   #
-  def description
+  def cash_transaction_description
     "CARD PAYMENT [ #{user_card.user_card_name} - #{month_year} ]"
   end
 

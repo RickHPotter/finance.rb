@@ -3,6 +3,7 @@
 class Views::Shared::MonthYearSelector < Views::Base
   include Phlex::Rails::Helpers::TextFieldTag
   include Phlex::Rails::Helpers::LinkTo
+
   include ContextHelper
 
   attr_reader :current_user, :form_id, :default_year, :years, :active_month_years

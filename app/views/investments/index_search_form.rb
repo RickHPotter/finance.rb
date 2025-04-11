@@ -1,144 +1,72 @@
 # frozen_string_literal: true
 
-module Views
-  module Investments
-    class IndexSearchForm < Components::Base
-      include Phlex::Rails::Helpers::FormWith
-      include Phlex::Rails::Helpers::DOMID
-      include TranslateHelper
-      include ComponentsHelper
-      include CacheHelper
-      include ContextHelper
+class Views::Investments::IndexSearchForm < Views::Base
+  include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::LinkTo
 
-      attr_reader :current_user, :user_card, :investment
+  include TranslateHelper
+  include ComponentsHelper
+  include CacheHelper
 
-      def initialize(current_user:, investment:)
-        @current_user = current_user
-        @investment = investment
+  attr_reader :index_context, :current_user,
+              :default_year, :years, :active_month_years, :search_term,
+              :user_bank_account_ids,
+              :user_bank_accounts
 
-        set_user_bank_accounts
+  def initialize(index_context: {})
+    @index_context = index_context
+    @current_user = index_context[:current_user]
+    @default_year = index_context[:default_year]
+    @years = index_context[:years]
+    @active_month_years = index_context[:active_month_years]
+    @search_term = index_context[:search_term]
+    @user_bank_account_ids = index_context[:user_bank_account_ids]
+    @user_bank_accounts = index_context[:user_bank_accounts]
+  end
+
+  def view_template
+    form_with model: Investment.new,
+              url: investments_path,
+              id: :search_form,
+              method: :get,
+              class: "w-full",
+              data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+      build_month_year_selector
+
+      form.text_field \
+        :user_bank_account_id,
+        value: params[:user_bank_account_id] || params.dig(:card_transaction, :user_bank_account_id),
+        class: :hidden
+
+      div class: "w-full mb-2" do
+        TextField \
+          form, :search_term,
+          svg: :magnifying_glass,
+          autofocus: true,
+          placeholder: "#{action_message(:search)}...",
+          value: search_term,
+          data: { controller: "cursor", action: "input->reactive-form#submit" }
       end
 
-      def view_template
-        form_with model: CardTransaction.new,
-                  url:,
-                  id: :search_form,
-                  method: :get,
-                  class: "w-full",
-                  data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
-          div class: "mb-6 flex gap-4 flex-wrap" do
-            # render "shared/month_year_selector", form_id: :search_form, default_year:, years: @years, active_month_years: @active_month_years do
-            render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
-              link_to new_card_transaction_path(user_card_id: @user_card&.id, format: :turbo_stream),
-                      id: "new_card_transaction",
-                      class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
-                              hover:text-white font-thin",
-                      data: { turbo_frame: :center_container, turbo_prefetch: false } do
-                content_tag :span, action_message(:newa)
-                content_tag :span, pluralise_model(CardTransaction, 1)
-                content_tag :span, @user_card&.user_card_name, id: :month_year_selector_title
-              end
-            end
-          end
+      div class: "gap-y-2 mb-2" do
+        form.select :user_bank_account_ids, user_bank_accounts,
+                    { multiple: true, selected: user_bank_account_ids },
+                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(UserBankAccount, 2), action: "change->reactive-form#submit" } }
+      end
+    end
+  end
 
-          form.text_field :user_card_id, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || @user_card_id, class: :hidden
-
-          div class: "w-full mb-2" do
-            render Components::TextFieldComponent.new(form, :search_term,
-                                                      svg: :magnifying_glass,
-                                                      autofocus: true,
-                                                      placeholder: "#{action_message(:search)}...",
-                                                      value: @search_term,
-                                                      data: { controller: "cursor", action: "input->reactive-form#submit" })
-          end
-
-          details(@entities.present? ? "open" : "") do
-            summary(class: "pb-1") { I18n.t(:advanced_filter) }
-
-            div class: "grid grid-cols-1 gap-y-2 mb-2" do
-              form.select :category_ids, @categories,
-                          { multiple: true, selected: @category_ids },
-                          { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } }
-
-              form.select :entity_ids, @entities,
-                          { multiple: true, selected: @entity_ids },
-                          { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } }
-            end
-
-            div class: "grid grid-cols-38 gap-x-2 font-graduate" do
-              div class: "col-span-16 lg:col-span-5 my-auto" do
-                render Components::TextFieldComponent.new \
-                  form, :from_ct_price,
-                  svg: :money,
-                  value: @from_ct_price || from_cent_based_to_float(0, "R$"),
-                  data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-              end
-
-              div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75" do
-                thin_label(form, :price)
-                render_icon :exchange
-                thin_label(form, :self)
-              end
-
-              div class: "col-span-16 lg:col-span-5 my-auto" do
-                render Components::TextFieldComponent.new \
-                  form, :to_ct_price,
-                  svg: :money,
-                  value: @to_ct_price || nil,
-                  data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-              end
-
-              hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
-
-              div(class: "col-span-16 lg:col-span-5 my-auto") do
-                render Components::TextFieldComponent.new \
-                  form, :from_price,
-                  svg: :money,
-                  value: @from_price || from_cent_based_to_float(0, "R$"),
-                  data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-              end
-
-              div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
-                thin_label(form, :price)
-                render_icon :exchange
-                thin_label(form, :card_installment)
-              end
-
-              div class: "col-span-16 lg:col-span-5 my-auto" do
-                render Components::TextFieldComponent.new \
-                  form, :to_price,
-                  svg: :money,
-                  value: @to_price || nil,
-                  data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-              end
-
-              hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
-
-              div class: "col-span-16 lg:col-span-5 my-auto" do
-                render Components::TextFieldComponent.new \
-                  form, :from_installments_count,
-                  type: :number,
-                  svg: :number,
-                  min: 1, max: 72, value: @from_installments_count || 1,
-                  data: { action: "input->reactive-form#submit" }
-              end
-
-              div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
-                thin_label(form, :count)
-                render_icon :exchange
-                thin_label(form, :card_installment)
-              end
-
-              div class: "col-span-16 lg:col-span-5 my-auto" do
-                render Components::TextFieldComponent.new \
-                  form, :to_installments_count,
-                  type: :number,
-                  svg: :number,
-                  min: 1, max: 72, value: @to_installments_count || 72,
-                  data: { action: "input->reactive-form#submit" }
-              end
-            end
-          end
+  def build_month_year_selector
+    div class: "mb-6 flex gap-4 flex-wrap" do
+      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
+        link_to new_investment_path(format: :turbo_stream),
+                id: "new_card_transaction",
+                class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
+                        hover:text-white font-thin",
+                data: { turbo_frame: :center_container, turbo_prefetch: false } do
+          span { action_message(:new) }
+          span { " " }
+          span { pluralise_model(Investment, 1) }
         end
       end
     end

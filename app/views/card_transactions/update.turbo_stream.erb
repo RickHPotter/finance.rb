@@ -1,5 +1,5 @@
 <% if @card_transaction.errors.empty? %>
-  <%= turbo_stream.replace(:center_container, template: "card_transactions/index", locals: { user_card_id: @card_transaction.user_card_id }) %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context)) %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CardTransaction) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>

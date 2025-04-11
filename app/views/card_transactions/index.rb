@@ -3,6 +3,7 @@
 class Views::CardTransactions::Index < Views::Base
   include Views::CardTransactions
   include Phlex::Rails::Helpers::LinkTo
+
   include CacheHelper
 
   attr_reader :index_context, :current_user,

@@ -56,7 +56,7 @@ Metrics/MethodLength:
     - "app/views/**/*.rb"
 
 Metrics/AbcSize:
-  Max: 26
+  Max: 30
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"

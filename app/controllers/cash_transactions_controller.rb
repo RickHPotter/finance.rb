@@ -9,7 +9,7 @@ class CashTransactionsController < ApplicationController
   before_action :set_cash_transaction, only: %i[edit update destroy]
   before_action :set_banks, :set_user_bank_accounts, :set_entities, :set_categories, only: %i[new create edit update]
 
-  def inspect # rubocop:disable Metrics/AbcSize
+  def inspect
     @cash_installments = Logic::CashInstallments.find_by_query(current_user, params[:entity_id], params[:query])
 
     render json: @cash_installments.map { |ci|

@@ -49,6 +49,7 @@ module Import
       @user = User.find_by(first_name: "Rikki", last_name: "Potteru")
 
       fix_user_card_dates
+      fix_user_bank_account_banks
       fix_card_payment_dates
       set_category_colours
       correct_investment_dates
@@ -63,6 +64,14 @@ module Import
       UserCard.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6, card: Card.find_by(card_name: "ITAU"))
       UserCard.find_by(user_card_name: "MELIUZ").update(due_date_day: 1, days_until_due_date: 7, card: Card.find_by(card_name: "MELIUZ"))
       UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7, card: Card.find_by(card_name: "NUBANK"))
+    end
+
+    def fix_user_bank_account_banks
+      UserBankAccount.find_by(user_bank_account_name: "NBNK").update(bank: Bank.find_by(bank_code: 260))
+      UserBankAccount.find_by(user_bank_account_name: "99PAY").update(bank: Bank.find_by(bank_code: 301))
+      UserBankAccount.find_by(user_bank_account_name: "PP").update(bank: Bank.find_by(bank_code: 380))
+      UserBankAccount.find_by(user_bank_account_name: "MP").update(bank: Bank.find_by(bank_code: 323))
+      UserBankAccount.find_by(user_bank_account_name: "ITI").update(bank: Bank.find_by(bank_code: 341))
     end
 
     def fix_missing_references

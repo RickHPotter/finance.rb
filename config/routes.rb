@@ -41,7 +41,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :investments
+  resources :investments, except: :show do
+    collection do
+      get :month_year
+    end
+  end
 
   root "pages#index"
 end

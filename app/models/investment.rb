@@ -26,7 +26,7 @@ class Investment < ApplicationRecord
   #
   # @return [String] The generated description.
   #
-  def description
+  def cash_transaction_description
     "INVESTMENT #{user_bank_account.bank.bank_name} #{month_year}"
   end
 

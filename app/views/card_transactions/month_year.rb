@@ -2,6 +2,7 @@
 
 class Views::CardTransactions::MonthYear < Views::Base
   include Phlex::Rails::Helpers::TurboFrameTag
+
   include TranslateHelper
 
   attr_reader :mobile, :month_year, :month_year_str, :user_card_id, :card_installments

@@ -13,7 +13,7 @@ module ContextHelper
   def set_user_bank_accounts
     @user_bank_accounts = current_user.user_bank_accounts.active.includes(:bank).order(:agency_number, :account_number).map do |user_bank_account|
       [
-        "[#{user_bank_account.bank.bank_name}] #{user_bank_account.agency_number || 'XXXX'} - #{user_bank_account.account_number || 'YY'}",
+        "#{user_bank_account.user_bank_account_name} [#{user_bank_account.bank.bank_name}]",
         user_bank_account.id
       ]
     end
