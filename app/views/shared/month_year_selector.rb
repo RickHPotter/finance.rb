@@ -14,8 +14,6 @@ class Views::Shared::MonthYearSelector < Views::Base
     @default_year = default_year
     @years = years
     @active_month_years = active_month_years
-
-    set_user_bank_accounts
   end
 
   def view_template(&)

@@ -1,1 +1,1 @@
-<%= turbo_stream.replace(:center_container, template: "cash_transactions/new", locals: { cash_transaction: @cash_transaction }) %>
+<%= turbo_stream.replace(:center_container, Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction)) %>

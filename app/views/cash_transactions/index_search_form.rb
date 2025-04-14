@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardTransactions::IndexSearchForm < Views::Base
+class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
 
@@ -16,7 +16,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :user_card, :categories, :entities
+              :user_bank_account_id, :categories, :entities
 
   def initialize(url:, index_context: {})
     @url = url
@@ -34,14 +34,14 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
-    @user_card = index_context[:user_card]
+    @user_bank_account_id = index_context[:user_bank_account_id]
 
     set_all_categories
     set_entities
   end
 
   def view_template
-    form_with model: CardTransaction.new,
+    form_with model: CashTransaction.new,
               url:,
               id: :search_form,
               method: :get,
@@ -49,7 +49,9 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      form.text_field :user_card_id, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id, class: :hidden
+      form.text_field :user_bank_account_id,
+                      value: params[:user_bank_account_id] || params.dig(:cash_transaction, :user_bank_account_id) || user_bank_account_id,
+                      class: :hidden
 
       div class: "w-full mb-2" do
         TextField \
@@ -61,7 +63,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           data: { controller: "cursor", action: "input->reactive-form#submit" }
       end
 
-      details(open: entities.present?) do
+      details(open: category_ids.present? || entity_ids.present?) do
         summary(class: "pb-1") { I18n.t(:advanced_filter) }
 
         div class: "grid grid-cols-1 gap-y-2 mb-2" do
@@ -110,7 +112,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
             thin__label(form, :price)
             cached_icon :exchange
-            thin__label(form, :card_installment)
+            thin__label(form, :cash_installment)
           end
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
@@ -135,7 +137,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
             thin__label(form, :count)
             cached_icon :exchange
-            thin__label(form, :card_installment)
+            thin__label(form, :cash_installment)
           end
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
@@ -154,14 +156,13 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
-        link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
-                id: "new_card_transaction",
+        link_to new_cash_transaction_path(format: :turbo_stream),
+                id: "new_cash_transaction",
                 class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
                         hover:text-white font-thin flex items-center gap-2",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
           span { action_message(:newa) }
-          span { pluralise_model(CardTransaction, 1) }
-          span(id: :month_year_selector_title) { user_card&.user_card_name }
+          span { pluralise_model(CashTransaction, 1) }
         end
       end
     end

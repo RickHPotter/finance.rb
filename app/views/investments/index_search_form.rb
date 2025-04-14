@@ -7,6 +7,7 @@ class Views::Investments::IndexSearchForm < Views::Base
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
+  include ContextHelper
 
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
@@ -21,7 +22,8 @@ class Views::Investments::IndexSearchForm < Views::Base
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
     @user_bank_account_ids = index_context[:user_bank_account_ids]
-    @user_bank_accounts = index_context[:user_bank_accounts]
+
+    set_user_bank_accounts
   end
 
   def view_template

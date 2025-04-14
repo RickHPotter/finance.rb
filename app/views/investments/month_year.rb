@@ -30,6 +30,7 @@ class Views::Investments::MonthYear < Views::Base
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
       span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: investments.sum(:price) })
+
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
         legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
 
@@ -41,6 +42,7 @@ class Views::Investments::MonthYear < Views::Base
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
       span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: investments.sum(:price) })
+
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
         legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
 

@@ -41,7 +41,7 @@ Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space
 
 Metrics/CyclomaticComplexity:
-  Max: 10
+  Max: 16
 
 Metrics/PerceivedComplexity:
   Max: 16

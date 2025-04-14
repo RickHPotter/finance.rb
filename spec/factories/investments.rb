@@ -2,6 +2,7 @@
 
 FactoryBot.define do
   factory :investment do
+    description { "INVESTMENT" }
     price { 1.12 }
     date { Date.new(2023, 12, 16) }
     month { 12 }

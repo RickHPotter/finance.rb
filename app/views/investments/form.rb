@@ -9,7 +9,7 @@ class Views::Investments::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :investment
+  attr_reader :current_user, :user_card, :investment, :user_bank_accounts
 
   def initialize(current_user:, investment:)
     @current_user = current_user

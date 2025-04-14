@@ -2,6 +2,21 @@
 
 module Logic
   class Investments
+    def self.create(investment_params)
+      investment = Investment.new(investment_params)
+      _handle_creation(investment)
+    end
+
+    def self.update(investment, investment_params)
+      investment.assign_attributes(investment_params)
+      _handle_creation(investment)
+    end
+
+    def self._handle_creation(investment)
+      investment.save
+      investment
+    end
+
     def self.find_ref_month_year_by_params(user, params)
       params = params.symbolize_keys
       month_year = params.delete(:month_year)
@@ -24,17 +39,9 @@ module Logic
 
       return {} if params.blank?
 
-      associations = build_conditions_for_associations(params)
+      params[:user_bank_account_id] = params.delete(:user_bank_account_ids)
 
-      { **params.compact_blank, **associations.compact_blank }.compact_blank
-    end
-
-    def self.build_conditions_for_associations(params)
-      user_bank_account_id = (params.delete(:user_bank_account_id) || params.delete(:user_bank_account_ids) || {}).compact_blank
-
-      {
-        user_bank_accounts: { id: user_bank_account_id }.compact_blank
-      }.compact_blank
+      params.compact_blank
     end
   end
 end

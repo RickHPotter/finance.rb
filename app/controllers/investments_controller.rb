@@ -4,7 +4,6 @@ class InvestmentsController < ApplicationController
   include TabsConcern
 
   before_action :set_investment, only: %i[edit update destroy]
-  before_action :set_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     build_index_context
@@ -69,8 +68,8 @@ class InvestmentsController < ApplicationController
 
   def destroy
     @investment.destroy
-    load_based_on_save
     set_tabs(active_menu: :basic, active_sub_menu: :investment)
+    build_index_context
 
     respond_to(&:turbo_stream)
   end
@@ -81,15 +80,13 @@ class InvestmentsController < ApplicationController
     years = (min_date.year..max_date.year)
     default_year = @investment.year
     active_month_years = [ Date.new(@investment.year, @investment.month, 1).strftime("%Y%m").to_i ]
-    set_user_bank_accounts
 
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
-      user_bank_account_ids: [ @investment.user_bank_account_id ],
-      user_bank_accounts: @user_bank_accounts
+      user_bank_account_ids: [ @investment.user_bank_account_id ]
     }
   end
 
@@ -104,16 +101,13 @@ class InvestmentsController < ApplicationController
     search_term = search_investment_params[:search_term]
     user_bank_account_ids = search_investment_params[:user_bank_account_ids] || [ params[:user_bank_account_ids] ].compact_blank
 
-    set_user_bank_accounts
-
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
       search_term:,
-      user_bank_account_ids:,
-      user_bank_accounts: @user_bank_accounts
+      user_bank_account_ids:
     }
   end
 
@@ -127,18 +121,14 @@ class InvestmentsController < ApplicationController
   def search_investment_params
     return {} if params[:investment].blank?
 
-    params.require(:investment).permit(
-      %i[search_term], user_bank_account_ids: []
-    )
+    params.require(:investment).permit(%i[search_term], user_bank_account_ids: [])
   end
 
   # Only allow a list of trusted parameters through.
   def investment_params
     ret_params = params.require(:investment)
-    ret_params[:value] = ret_params[:value].to_i if ret_params[:value].present?
+    ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 
-    ret_params.permit(:description, :value, :inclusive, :month, :year, :active, :user_id,
-                      budget_categories_attributes: %i[id category_id _destroy],
-                      budget_entities_attributes: %i[id entity_id _destroy])
+    ret_params.permit(:description, :price, :date, :month, :year, :user_id, :user_bank_account_id)
   end
 end

@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-# Controller for CardTransaction
 class CardTransactionsController < ApplicationController
   include TabsConcern
 
   before_action :set_tabs
   before_action :set_card_transaction, only: %i[edit update destroy]
-  before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     @user_card = current_user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
@@ -82,6 +80,14 @@ class CardTransactionsController < ApplicationController
     handle_save
   end
 
+  def destroy
+    @user_card = @card_transaction.user_card
+    @card_transaction.destroy
+    index
+
+    respond_to(&:turbo_stream)
+  end
+
   def handle_save
     if params[:commit] == "Update"
       respond_to do |format|
@@ -107,14 +113,6 @@ class CardTransactionsController < ApplicationController
     end
   end
 
-  def destroy
-    @user_card = @card_transaction.user_card
-    @card_transaction.destroy
-    index
-
-    respond_to(&:turbo_stream)
-  end
-
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
@@ -132,9 +130,6 @@ class CardTransactionsController < ApplicationController
     to_price = search_card_transaction_params[:to_price]
     from_installments_count = search_card_transaction_params[:from_installments_count]
     to_installments_count = search_card_transaction_params[:to_installments_count]
-
-    set_all_categories
-    set_entities
 
     @index_context = {
       current_user:,
