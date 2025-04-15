@@ -8,8 +8,8 @@ FactoryBot.create(:user, :random, first_name: "John", last_name: "Doe")
 FactoryBot.create(:user, :random, first_name: "Jane", last_name: "Doe")
 puts "Created Users.".green
 
-FactoryBot.create_list(:bank, 3, :random)
-puts "Created Banks.".green
+FactoryBot.create(:bank, :random)
+puts "Created Bank.".green
 
 Bank.find_each do |bank|
   FactoryBot.create(:card, :random, bank:)

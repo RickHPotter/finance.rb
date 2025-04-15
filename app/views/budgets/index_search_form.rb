@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Investments::IndexSearchForm < Views::Base
+class Views::Budgets::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
 
@@ -11,8 +11,8 @@ class Views::Investments::IndexSearchForm < Views::Base
 
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :user_bank_account_id,
-              :user_bank_accounts
+              :category_id, :entity_id,
+              :categories, :entities
 
   def initialize(index_context: {})
     @index_context = index_context
@@ -21,25 +21,25 @@ class Views::Investments::IndexSearchForm < Views::Base
     @years = index_context[:years]
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
-    @user_bank_account_id = index_context[:user_bank_account_id]
+    @category_id = index_context[:category_id]
+    @entity_id = index_context[:entity_id]
 
-    set_user_bank_accounts
+    set_all_categories
+    set_entities
   end
 
   def view_template
-    form_with model: Investment.new,
-              url: investments_path,
+    form_with model: Budget.new,
+              url: budgets_path,
               id: :search_form,
               method: :get,
               class: "w-full",
               data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      TextFieldTag :user_bank_account_id, class: :hidden, value: params[:user_bank_account_id] || params.dig(:card_transaction, :user_bank_account_id)
-
       div class: "w-full mb-2" do
-        TextFieldTag \
-          :search_term,
+        TextField \
+          form, :search_term,
           svg: :magnifying_glass,
           autofocus: true,
           placeholder: "#{action_message(:search)}...",
@@ -48,9 +48,13 @@ class Views::Investments::IndexSearchForm < Views::Base
       end
 
       div class: "gap-y-2 mb-2" do
-        form.select :user_bank_account_id, user_bank_accounts,
-                    { multiple: true, selected: user_bank_account_id },
-                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(UserBankAccount, 2), action: "change->reactive-form#submit" } }
+        form.select :category_id, categories,
+                    { multiple: true, selected: category_id },
+                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } }
+
+        form.select :entity_id, entities,
+                    { multiple: true, selected: entity_id },
+                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } }
       end
     end
   end
@@ -58,14 +62,14 @@ class Views::Investments::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
-        link_to new_investment_path(format: :turbo_stream),
+        link_to new_budget_path(format: :turbo_stream),
                 id: "new_card_transaction",
                 class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
                         hover:text-white font-thin",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
           span { action_message(:new) }
           span { " " }
-          span { pluralise_model(Investment, 1) }
+          span { pluralise_model(Budget, 1) }
         end
       end
     end

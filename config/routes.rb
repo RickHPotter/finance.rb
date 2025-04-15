@@ -17,9 +17,8 @@ Rails.application.routes.draw do
 
   resources :user_cards, except: :show
   resources :user_bank_accounts, except: :show
-  resources :entities, except: :show
   resources :categories, except: :show
-  resources :budgets, except: %i[index show]
+  resources :entities, except: :show
 
   resources :cash_transactions, except: :show do
     collection do
@@ -42,6 +41,12 @@ Rails.application.routes.draw do
   end
 
   resources :investments, except: :show do
+    collection do
+      get :month_year
+    end
+  end
+
+  resources :budgets, except: :show do
     collection do
       get :month_year
     end

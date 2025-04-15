@@ -31,7 +31,7 @@ RSpec.describe "Categories", type: :feature do
       match_center_container_content("card_transactions")
       params = card_transactions_search_form_params
 
-      expect(params[:category_ids]).to eq(category.id.to_s)
+      expect(params[:category_id]).to eq(category.id.to_s)
     end
   end
 

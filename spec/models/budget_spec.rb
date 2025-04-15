@@ -35,6 +35,7 @@ end
 #  inclusive       :boolean          default(TRUE), not null
 #  month           :integer          not null
 #  remaining_value :integer          not null
+#  starting_value  :integer          not null
 #  value           :integer          not null
 #  year            :integer          not null
 #  created_at      :datetime         not null

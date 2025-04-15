@@ -27,7 +27,7 @@ class Investment < ApplicationRecord
   # @return [String] The generated description.
   #
   def cash_transaction_description
-    "INVESTMENT #{user_bank_account.bank.bank_name} #{month_year}"
+    "INVESTMENT #{user_bank_account.user_bank_account_name} #{month_year}"
   end
 
   # Generates a `date` for the associated `cash_transaction`, picking the end of given `month` for the `cash_transaction`.
@@ -67,7 +67,7 @@ class Investment < ApplicationRecord
   # @return [Hash] The generated attributes.
   #
   def entity_transactions_attributes
-    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_bank_account.bank.bank_name).id } ]
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_bank_account.user_bank_account_name).id } ]
   end
 
   # @private_instance_methods .................................................

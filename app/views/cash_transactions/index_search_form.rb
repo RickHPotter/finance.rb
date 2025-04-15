@@ -12,7 +12,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   attr_reader :url,
               :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_ids, :entity_ids,
+              :category_id, :entity_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -26,8 +26,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @years = index_context[:years]
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
-    @category_ids = index_context[:category_ids]
-    @entity_ids = index_context[:entity_ids]
+    @category_id = index_context[:category_id]
+    @entity_id = index_context[:entity_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -54,8 +54,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                       class: :hidden
 
       div class: "w-full mb-2" do
-        TextField \
-          form, :search_term,
+        TextFieldTag \
+          :search_term,
           svg: :magnifying_glass,
           autofocus: true,
           placeholder: "#{action_message(:search)}...",
@@ -63,23 +63,23 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           data: { controller: "cursor", action: "input->reactive-form#submit" }
       end
 
-      details(open: category_ids.present? || entity_ids.present?) do
+      details(open: category_id.present? || entity_id.present?) do
         summary(class: "pb-1") { I18n.t(:advanced_filter) }
 
         div class: "grid grid-cols-1 gap-y-2 mb-2" do
-          form.select :category_ids, categories,
-                      { multiple: true, selected: category_ids },
+          form.select :category_id, categories,
+                      { multiple: true, selected: category_id },
                       { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } }
 
-          form.select :entity_ids, entities,
-                      { multiple: true, selected: entity_ids },
+          form.select :entity_id, entities,
+                      { multiple: true, selected: entity_id },
                       { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } }
         end
 
         div class: "grid grid-cols-38 gap-x-2 font-graduate" do
           div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextField \
-              form, :from_ct_price,
+            TextFieldTag \
+              :from_ct_price,
               svg: :money,
               value: from_ct_price || from_cent_based_to_float(0, "R$"),
               data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
@@ -92,8 +92,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           end
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextField \
-              form, :to_ct_price,
+            TextFieldTag \
+              :to_ct_price,
               svg: :money,
               value: to_ct_price || nil,
               data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
@@ -102,8 +102,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
 
           div(class: "col-span-16 lg:col-span-5 my-auto") do
-            TextField \
-              form, :from_price,
+            TextFieldTag \
+              :from_price,
               svg: :money,
               value: from_price || from_cent_based_to_float(0, "R$"),
               data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
@@ -116,8 +116,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           end
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextField \
-              form, :to_price,
+            TextFieldTag \
+              :to_price,
               svg: :money,
               value: to_price || nil,
               data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
@@ -126,8 +126,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextField \
-              form, :from_installments_count,
+            TextFieldTag \
+              :from_installments_count,
               type: :number,
               svg: :number,
               min: 1, max: 72, value: from_installments_count || 1,
@@ -141,8 +141,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           end
 
           div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextField \
-              form, :to_installments_count,
+            TextFieldTag \
+              :to_installments_count,
               type: :number,
               svg: :number,
               min: 1, max: 72, value: to_installments_count || 72,

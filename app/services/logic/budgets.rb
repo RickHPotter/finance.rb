@@ -18,7 +18,7 @@ module Logic
     end
 
     def self.find_by_ref_month_year(user, month, year, raw_conditions)
-      return [] if raw_conditions[:cash_installments_count]&.exclude?(1)
+      return [] if raw_conditions[:skip_budgets]
 
       search_term_condition = "description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
 

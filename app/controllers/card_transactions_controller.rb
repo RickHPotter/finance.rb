@@ -8,7 +8,7 @@ class CardTransactionsController < ApplicationController
 
   def index
     @user_card = current_user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
-    @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id]) if params[:card_transaction]
+    @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
     build_index_context(@user_card.card_installments)
 
@@ -38,11 +38,11 @@ class CardTransactionsController < ApplicationController
   end
 
   def month_year
-    month_year = params[:month_year]
+    month_year = search_card_transaction_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
-    user_card_id = params[:user_card_id]
+    user_card_id = card_transaction_params[:user_card_id].presence
 
-    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, params.to_unsafe_h)
+    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, card_transaction_params, search_card_transaction_params)
 
     render Views::CardTransactions::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, user_card_id:, card_installments:)
   end
@@ -118,12 +118,10 @@ class CardTransactionsController < ApplicationController
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
     default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
-    default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
-    active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
 
+    category_id = [ card_transaction_params[:category_id] ].flatten&.compact_blank
+    entity_id = [ card_transaction_params[:entity_id] ].flatten&.compact_blank
     search_term = search_card_transaction_params[:search_term]
-    category_ids = search_card_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
-    entity_ids = search_card_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
     from_ct_price = search_card_transaction_params[:from_ct_price]
     to_ct_price = search_card_transaction_params[:to_ct_price]
     from_price = search_card_transaction_params[:from_price]
@@ -131,23 +129,35 @@ class CardTransactionsController < ApplicationController
     from_installments_count = search_card_transaction_params[:from_installments_count]
     to_installments_count = search_card_transaction_params[:to_installments_count]
 
+    if params[:all_month_years]
+      associations = {}
+      associations.merge!({ categories: { id: category_id } }) if category_id.present?
+      associations.merge!({ entities: { id: entity_id } })     if entity_id.present?
+
+      card_installments
+        .joins(card_transaction: associations.keys)
+        .where(card_transaction: associations).map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
+        .uniq
+    else
+      params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
+    end => active_month_years
+    default_year = active_month_years.max.to_s.first(4).to_i || params[:default_year]&.to_i || [ max_date, Date.current ].min.year
+
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
       search_term:,
-      category_ids:,
-      entity_ids:,
+      category_id:,
+      entity_id:,
       from_ct_price:,
       to_ct_price:,
       from_price:,
       to_price:,
       from_installments_count:,
       to_installments_count:,
-      user_card: @user_card,
-      categories: @categories,
-      entities: @entities
+      user_card: @user_card
     }
   end
 
@@ -159,17 +169,27 @@ class CardTransactionsController < ApplicationController
   end
 
   def search_card_transaction_params
-    return {} if params[:card_transaction].blank?
-
-    params.require(:card_transaction).permit(
-      %i[search_term from_ct_price to_ct_price from_price to_price from_installments_count to_installments_count], category_ids: [], entity_ids: []
+    params.permit(
+      %i[
+        search_term
+        from_ct_price
+        to_ct_price
+        from_price
+        to_price
+        from_installments_count
+        to_installments_count
+        month_year
+      ]
     )
   end
 
   # Only allow a list of trusted parameters through.
   def card_transaction_params
+    return {} if params[:card_transaction].blank?
+
     params.require(:card_transaction).permit(
-      %i[id description comment date month year price paid user_id user_card_id],
+      %i[id description comment date month year price paid user_id user_card_id category_id entity_id],
+      category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [

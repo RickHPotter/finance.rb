@@ -21,10 +21,10 @@ class CashTransactionsController < ApplicationController
   end
 
   def month_year
-    month_year = params[:month_year]
+    month_year = search_cash_transaction_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
-    cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, params.to_unsafe_h)
+    cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, cash_transaction_params, search_cash_transaction_params)
 
     render Views::CashTransactions::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, cash_installments:, budgets:)
   end
@@ -103,24 +103,25 @@ class CashTransactionsController < ApplicationController
     default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
 
+    category_id = cash_transaction_params[:category_id]
+    entity_id = cash_transaction_params[:entity_id]
     search_term = search_cash_transaction_params[:search_term]
-    category_ids = search_cash_transaction_params[:category_ids] || [ params[:category_id] ].compact_blank
-    entity_ids = search_cash_transaction_params[:entity_ids]     || [ params[:entity_id]   ].compact_blank
     from_ct_price = search_cash_transaction_params[:from_ct_price]
     to_ct_price = search_cash_transaction_params[:to_ct_price]
     from_price = search_cash_transaction_params[:from_price]
     to_price = search_cash_transaction_params[:to_price]
     from_installments_count = search_cash_transaction_params[:from_installments_count]
     to_installments_count = search_cash_transaction_params[:to_installments_count]
+    skip_budgets = search_cash_transaction_params[:skip_budgets]
 
     @index_context = {
-      current_user: current_user,
+      current_user:,
       years:,
       default_year:,
       active_month_years:,
       search_term:,
-      category_ids:,
-      entity_ids:,
+      category_id:,
+      entity_id:,
       from_ct_price:,
       to_ct_price:,
       from_price:,
@@ -128,8 +129,7 @@ class CashTransactionsController < ApplicationController
       from_installments_count:,
       to_installments_count:,
       user_card: @user_card,
-      categories: @categories,
-      entities: @entities
+      skip_budgets:
     }
   end
 
@@ -158,17 +158,28 @@ class CashTransactionsController < ApplicationController
   end
 
   def search_cash_transaction_params
-    return {} if params[:cash_transaction].blank?
-
-    params.require(:cash_transaction).permit(
-      %i[search_term from_ct_price to_ct_price from_price to_price from_installments_count to_installments_count], category_ids: [], entity_ids: []
+    params.permit(
+      %i[
+        search_term
+        from_ct_price
+        to_ct_price
+        from_price
+        to_price
+        from_installments_count
+        to_installments_count
+        month_year
+        skip_budgets
+      ]
     )
   end
 
   # Only allow a list of trusted parameters through.
   def cash_transaction_params
+    return {} if params[:cash_transaction].blank?
+
     params.require(:cash_transaction).permit(
       %i[id description comment date month year price paid user_id user_bank_account_id],
+      category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id],
       cash_installments_attributes: %i[id number date month year price],
       entity_transactions_attributes: [

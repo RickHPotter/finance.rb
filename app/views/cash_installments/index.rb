@@ -152,12 +152,19 @@ class Views::CashInstallments::Index < Views::Base
         end
 
         div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline") do
-          # TODO: soon Investment cash_transactions should go to investment :show action, where there will also be an :edit button
           if cash_transaction.investment?
-            span(class: "flex-1 truncate text-md") { cash_transaction.description }
+            default_year = cash_transaction.year
+            active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
+            investment = { user_bank_account_id: cash_transaction.user_bank_account_id }
+
+            link_to cash_transaction.description,
+                    investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
+                    class: "flex-1 truncate text-md",
+                    data: { turbo_frame: :center_container, turbo_prefetch: false }
           elsif cash_transaction.card_payment?
             default_year = cash_transaction.year
             active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
+
             link_to cash_transaction.description,
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
                     class: "flex-1 truncate text-md",

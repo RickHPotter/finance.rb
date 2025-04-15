@@ -12,6 +12,10 @@ class InvestmentsController < ApplicationController
       format.html do
         render Views::Investments::Index.new(index_context: @index_context)
       end
+
+      format.turbo_stream do
+        set_tabs(active_menu: :cash, active_sub_menu: :investment)
+      end
     end
   end
 
@@ -19,7 +23,7 @@ class InvestmentsController < ApplicationController
     month_year = params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
-    investments = Logic::Investments.find_ref_month_year_by_params(current_user, params.to_unsafe_h)
+    investments = Logic::Investments.find_ref_month_year_by_params(current_user, investment_params, search_investment_params)
 
     render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:)
   end
@@ -30,7 +34,7 @@ class InvestmentsController < ApplicationController
     respond_to do |format|
       format.html { render Views::Investments::New.new(current_user:, investment: @investment) }
       format.turbo_stream do
-        set_tabs(active_menu: :basic, active_sub_menu: :investment)
+        set_tabs(active_menu: :cash, active_sub_menu: :investment)
       end
     end
   end
@@ -50,7 +54,7 @@ class InvestmentsController < ApplicationController
     respond_to do |format|
       format.html { render Views::Investments::Edit.new(current_user:, investment: @investment) }
       format.turbo_stream do
-        set_tabs(active_menu: :basic, active_sub_menu: :investment)
+        set_tabs(active_menu: :cash, active_sub_menu: :investment)
       end
     end
   end
@@ -68,7 +72,7 @@ class InvestmentsController < ApplicationController
 
   def destroy
     @investment.destroy
-    set_tabs(active_menu: :basic, active_sub_menu: :investment)
+    set_tabs(active_menu: :cash, active_sub_menu: :investment)
     build_index_context
 
     respond_to(&:turbo_stream)
@@ -86,11 +90,11 @@ class InvestmentsController < ApplicationController
       years:,
       default_year:,
       active_month_years:,
-      user_bank_account_ids: [ @investment.user_bank_account_id ]
+      user_bank_account_id: [ @investment.user_bank_account_id ]
     }
   end
 
-  def build_index_context # rubocop:disable Metrics/AbcSize
+  def build_index_context
     min_date = Investment.minimum("MAKE_DATE(year, month, 1)") || Date.current
     max_date = Investment.maximum("MAKE_DATE(year, month, 1)") || Date.current
     default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
@@ -99,7 +103,7 @@ class InvestmentsController < ApplicationController
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
 
     search_term = search_investment_params[:search_term]
-    user_bank_account_ids = search_investment_params[:user_bank_account_ids] || [ params[:user_bank_account_ids] ].compact_blank
+    user_bank_account_id = investment_params[:user_bank_account_id]
 
     @index_context = {
       current_user:,
@@ -107,7 +111,7 @@ class InvestmentsController < ApplicationController
       default_year:,
       active_month_years:,
       search_term:,
-      user_bank_account_ids:
+      user_bank_account_id:
     }
   end
 
@@ -119,13 +123,13 @@ class InvestmentsController < ApplicationController
   end
 
   def search_investment_params
-    return {} if params[:investment].blank?
-
-    params.require(:investment).permit(%i[search_term], user_bank_account_ids: [])
+    params.permit(%i[search_term month_year])
   end
 
   # Only allow a list of trusted parameters through.
   def investment_params
+    return {} if params[:investment].blank?
+
     ret_params = params.require(:investment)
     ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 

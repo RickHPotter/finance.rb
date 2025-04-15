@@ -1,18 +1,19 @@
 # frozen_string_literal: true
 
 module Components
-  class TextField < Base
+  class TextFieldTag < Base
     include Phlex::Rails::Helpers::TextFieldTag
+    include Phlex::Rails::Helpers::SelectTag
 
     include ComponentsHelper
     include CacheHelper
     include TranslateHelper
 
-    attr_reader :form, :object, :field, :items, :options
+    attr_reader :field, :items, :options
 
-    def initialize(form, field, items = nil, **options)
-      @form = form
-      @object = form&.object || form.options[:parent_builder].object
+    TAGS = %i[multiple selected].freeze
+
+    def initialize(field, items = nil, **options)
       @items = items
       @field = field
       @options = default_options(options)
@@ -24,24 +25,25 @@ module Components
           cached_icon options[:svg] if options[:svg]
         end
 
+        value = options.delete(:value)
+
         if options[:type] == :select && items.present?
-          form.select field, items, {}, options
+          select_tag field, items, options
         elsif options[:type] == :textarea
-          form.text_area field, options
+          text_area_tag field, value, options
         else
-          form.text_field field, options
+          text_field_tag field, value, options
         end
       end
     end
 
     def default_options(options)
-      options[:data] = { form_validate_target: "field" }.merge(options[:data] || {})
       options[:class] = [ input_class, options[:class] ].compact.join(" ")
 
       {
-        id: "#{@object.model_name.singular}_#{@field}",
-        label: model_attribute(@object, @field),
-        autocomplete: @field
+        id: field,
+        label: field,
+        autocomplete: field
       }.merge(options)
     end
   end

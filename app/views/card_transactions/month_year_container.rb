@@ -2,7 +2,7 @@
 
 class Views::CardTransactions::MonthYearContainer < Views::Base
   attr_reader :search_term,
-              :category_ids, :entity_ids,
+              :category_id, :entity_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -10,8 +10,8 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
-    @category_ids = index_context[:category_ids]
-    @entity_ids = index_context[:entity_ids]
+    @category_id = index_context[:category_id]
+    @entity_id = index_context[:entity_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -25,10 +25,12 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
   def view_template
     turbo_frame_tag :month_year_container do
       custom_params = {
-        user_card_id:,
+        card_transaction: {
+          user_card_id:,
+          category_id:,
+          entity_id:
+        },
         search_term:,
-        category_ids:,
-        entity_ids:,
         from_ct_price:,
         to_ct_price:,
         from_price:,

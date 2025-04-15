@@ -63,7 +63,7 @@ class Views::CardTransactions::MonthYear < Views::Base
           div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-6 text-center") { "#{model_attribute(CardTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: card_installments.sum(:price) }) do
+            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { controller: "price-sum", price: card_installments.sum(:price) }) do
               from_cent_based_to_float(card_installments.sum(:price), "R$")
             end
           end

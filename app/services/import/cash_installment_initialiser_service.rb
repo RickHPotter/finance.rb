@@ -119,7 +119,7 @@ module Import
       validate_installments_count_by_indexes(new_indexes, cash_installments_count, transaction_zero[:description])
     end
 
-    def validate_installments_count_by_indexes(indexes, cash_installments_count, _description)
+    def validate_installments_count_by_indexes(indexes, cash_installments_count, description)
       return indexes if indexes.count >= cash_installments_count
 
       raise StandardError, "Expected #{cash_installments_count} installments, got: #{indexes.count} for #{description}."

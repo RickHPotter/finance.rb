@@ -1,2 +1,2 @@
-<%= turbo_stream.replace(:center_container, template: "budgets/new", locals: { budget: @budget }) %>
+<%= turbo_stream.replace(:center_container, Views::Budgets::New.new(current_user:, budget: @budget)) %>
 <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>

@@ -8,7 +8,7 @@ module Components
     # @extends ..................................................................
     COLOURS = {
       purple: {
-        text: "text-white", bg: "bg-purple-600", border: "border-gray-300",
+        text: "text-white", bg: "bg-purple-600", border: "border-black",
         hover: { bg: "hover:bg-indigo-900", text: "" }
       },
       red: {
@@ -20,10 +20,10 @@ module Components
         hover: { bg: "hover:bg-indigo-700", text: "hover:text-gray-50" }
       },
       orange: {
-        text: "text-white", bg: "bg-orange-500", border: "rounded-md",
+        text: "text-white", bg: "bg-orange-500", border: "border-black",
         hover: { bg: "hover:bg-red-700", text: "" }
       },
-      light: {
+      gray: {
         text: "text-black", bg: "bg-gray-300", border: "border-black",
         hover: { bg: "hover:bg-gray-500", text: "hover:text-gray-50" }
       }

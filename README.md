@@ -295,8 +295,8 @@ Possible Downtime: 6 months and a half
   - ✅ Create a `Budget` System.
   - ✅ Create the connection of `CardTransaction` to `EntityTransaction` form.
   - ✅ Create the connection of `EntityTransaction` to `Exchange` sub-form.
+  - ✅ Create the CRUD for `Investment`.
   - ⌛ Create the connection of `Exchange` to `CashTransaction` sub-form.
-  - ⌛ Create the CRUD for `Investment`.
 - Extra:
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.

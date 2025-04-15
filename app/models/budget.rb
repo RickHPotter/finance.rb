@@ -18,10 +18,11 @@ class Budget < ApplicationRecord
 
   # @validations ..............................................................
   validates :month, :year, presence: true
-  validates :value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
+  validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
+  before_validation :set_starting_value
   before_create :set_remaining_value
   before_update :update_budget_according_to_changes
 
@@ -42,7 +43,9 @@ class Budget < ApplicationRecord
       exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
     end => installments
 
-    self.remaining_value = value - installments.sum(&:price)
+    installments_price = installments.sum(&:price)
+    self.value = [ value, installments_price ].min
+    self.remaining_value = value - installments_price
   end
 
   def inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
@@ -56,6 +59,10 @@ class Budget < ApplicationRecord
   # @protected_instance_methods ...............................................
 
   protected
+
+  def set_starting_value
+    self.starting_value = value
+  end
 
   def update_budget_according_to_changes
     if value_changed?
@@ -78,6 +85,7 @@ end
 #  inclusive       :boolean          default(TRUE), not null
 #  month           :integer          not null
 #  remaining_value :integer          not null
+#  starting_value  :integer          not null
 #  value           :integer          not null
 #  year            :integer          not null
 #  created_at      :datetime         not null

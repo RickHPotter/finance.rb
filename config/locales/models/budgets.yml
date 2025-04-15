@@ -7,6 +7,7 @@ en:
     attributes:
       budget:
         id: ID
+        date: Date
         description: Description
         active: Active
         value: Budget Value
@@ -20,6 +21,7 @@ en:
         categories: Categories
         entities: Entities
         user_id: User
+        total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
 
@@ -27,14 +29,15 @@ pt-BR:
   activerecord:
     models:
       budget:
-        one: Orcamento
-        other: Orcamentos
+        one: Orçamento
+        other: Orçamentos
     attributes:
       budget:
         id: ID
+        date: Data
         description: Descrição
         active: Ativo
-        value: Valor do Orcamento
+        value: Valor do Orçamento
         remaining_value: Valor Restante
         month: Mês
         year: Ano
@@ -45,5 +48,6 @@ pt-BR:
         categories: Categorias
         entities: Entidades
         user_id: Usuário
+        total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em

@@ -64,7 +64,7 @@ class Views::Investments::MonthYear < Views::Base
           div(class: "grid grid-cols-6 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-4 text-center") { "#{model_attribute(Investment, :total_amount)}:" }
 
-            span(class: "py-3 col-start-5 text-end", id: :priceSum, data: { controller: "price-sum", price: investments.sum(:price) }) do
+            span(class: "py-3 col-start-5 text-end", id: :totalAmount, data: { controller: "price-sum", price: investments.sum(:price) }) do
               from_cent_based_to_float(investments.sum(:price), "R$")
             end
           end

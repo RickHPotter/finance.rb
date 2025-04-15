@@ -40,18 +40,18 @@ module FeatureHelper
   end
 
   def card_transactions_search_form_params(only: nil, except: [])
-    only ||= %i[category_ids entity_ids]
+    only ||= %i[category_id entity_id]
     params_to_return = only - except
 
     params = {}
     within "turbo-frame#card_transactions #search_form" do
       find("details", text: I18n.t(:advanced_filter)).click
 
-      within "#card_transaction_category_ids", visible: false do
-        params[:category_ids] = find("option:checked").value if params_to_return.include?(:category_ids) && page.has_css?("option:checked")
+      within "#card_transaction_category_id", visible: false do
+        params[:category_id] = find("option:checked").value if params_to_return.include?(:category_id) && page.has_css?("option:checked")
       end
-      within "#card_transaction_entity_ids", visible: false do
-        params[:entity_ids] = find("option:checked").value if params_to_return.include?(:entity_ids) && page.has_css?("option:checked")
+      within "#card_transaction_entity_id", visible: false do
+        params[:entity_id] = find("option:checked").value if params_to_return.include?(:entity_id) && page.has_css?("option:checked")
       end
     end
 

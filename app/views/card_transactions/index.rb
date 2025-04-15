@@ -31,7 +31,7 @@ class Views::CardTransactions::Index < Views::Base
                 span(id: :totalPriceSum)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_ids, :entity_ids,
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
                                                                                :user_card, :active_month_years))
@@ -39,7 +39,7 @@ class Views::CardTransactions::Index < Views::Base
 
             link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
                     style: "margin: 30px",
-                    class: "block md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50
+                    class: "flex md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg items-center justify-center z-50
                            active:scale-95 transition-transform",
                     data: { turbo_frame: :center_container } do
               cached_icon :bigger_plus

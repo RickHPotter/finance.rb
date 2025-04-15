@@ -47,6 +47,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.integer "month", null: false
     t.integer "year", null: false
     t.integer "value", null: false
+    t.integer "starting_value", null: false
     t.integer "remaining_value", null: false
     t.boolean "inclusive", default: true, null: false
     t.boolean "active", default: true, null: false
