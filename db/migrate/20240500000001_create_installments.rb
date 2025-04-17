@@ -12,6 +12,7 @@ class CreateInstallments < ActiveRecord::Migration[8.0]
       t.integer :year, null: false
       t.integer :starting_price, null: false
       t.integer :price, null: false
+      t.integer :balance, null: false
       t.boolean :paid, default: false
       t.string :installment_type, null: false
       t.integer :card_installments_count, default: 0, null: true
@@ -22,8 +23,8 @@ class CreateInstallments < ActiveRecord::Migration[8.0]
 
       t.timestamps
 
-      t.index [ :price ],               name: "idx_installments_price"
-      t.index %i[date_year date_month], name: "idx_installments_year_month"
+      t.index %i[price],                     name: "idx_installments_price"
+      t.index %i[date_year date_month date], name: "idx_installments_year_month_date"
     end
   end
 end

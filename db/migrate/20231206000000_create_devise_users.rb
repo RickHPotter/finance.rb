@@ -24,6 +24,8 @@ class CreateDeviseUsers < ActiveRecord::Migration[8.0]
       t.string :first_name, null: false
       t.string :last_name, null: false
 
+      t.string :locale, null: false
+
       t.timestamps null: false
 
       t.index [ "email" ],                name: "index_users_on_email",                unique: true

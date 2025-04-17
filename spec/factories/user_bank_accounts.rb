@@ -2,6 +2,7 @@
 
 FactoryBot.define do
   factory :user_bank_account do
+    user_bank_account_name { "Nice Bank" }
     agency_number { "1324" }
     account_number { "123456" }
     balance { 39_392 }

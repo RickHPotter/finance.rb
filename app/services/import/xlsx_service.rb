@@ -89,10 +89,26 @@ module Import
     end
 
     def parse_category_and_entity(attributes)
-      entity = attributes[:entity]
-      category = attributes[:category]
-      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
-      is_payer = category == "EXCHANGE" && entity != "MOI"
+      case attributes[:category]
+      in String then attributes[:category]&.split(",")
+      in Array  then attributes[:category]
+      else []
+      end => category
+
+      case attributes[:entity]
+      in String then attributes[:entity]&.split(",")
+      in Array  then attributes[:entity]
+      else []
+      end => entity
+
+      is_payer = false
+
+      category.each_with_index do |cat, index|
+        category[index] = "CARD #{cat}" if cat.in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
+        next if cat != "EXCHANGE" || entity == "MOI"
+
+        is_payer = true
+      end
 
       { category:, entity:, is_payer: }
     end

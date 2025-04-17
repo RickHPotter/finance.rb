@@ -2,6 +2,13 @@
   <%= form_with(model: user_bank_account, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
+    <div class="w-full mb-6">
+      <%= form.text_field \
+            :user_bank_account_name,
+            class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            data: { controller: "blinking-placeholder", text: model_attribute(user_bank_account, :user_bank_account_name) } %>
+    </div>
+
     <div class="lg:flex lg:gap-2 w-full mb-3">
       <div id="hw_user_bank_account_bank_id" class="hw-cb w-full lg:w-4/12 bank-icon">
         <%= bold_label(form, :bank_id, "user_bank_account_bank_id") %>

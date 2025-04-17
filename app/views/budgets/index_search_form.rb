@@ -64,8 +64,8 @@ class Views::Budgets::IndexSearchForm < Views::Base
       render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
         link_to new_budget_path(format: :turbo_stream),
                 id: "new_card_transaction",
-                class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
-                        hover:text-white font-thin",
+                class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
+                        text-black hover:text-white font-thin items-center gap-2",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
           span { action_message(:new) }
           span { " " }

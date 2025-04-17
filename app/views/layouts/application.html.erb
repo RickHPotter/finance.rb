@@ -32,26 +32,23 @@
   </body>
 
   <footer class="bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <ul class="antialiased pt-4 max-w-auto max-w-[1420px] mx-auto">
-      <li>
-        <%= locale_link("pt-BR", class: "flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-gray-600") do %>
-          <span>Português</span>
-          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15"  %>
+    <div class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto flex justify-end gap-2">
+      <span>
+        <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
+          <span class="mr-2">Português</span>
+          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15" %>
         <% end %>
-      </li>
-      <li>
-        <%= locale_link("en", class: "flex items-center justify-between px-4 py-2 text-sm text-white hover:bg-gray-600") do %>
-          <span>English</span>
-          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15"  %>
+      </span>
+      <span>
+        <%= locale_link("en", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
+          <span class="mr-2">English</span>
+          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15" %>
         <% end %>
-      </li>
-    </ul>
+      </span>
+    </div>
   </footer>
 </html>
 
 <script>
-  var queryString = window.location.search;
-  var urlParams = new URLSearchParams(queryString);
-  var locale = urlParams.get("locale")
-  window.APP_LOCALE = locale || "<%= I18n.locale %>"
+  window.APP_LOCALE = "<%= I18n.locale %>"
 </script>

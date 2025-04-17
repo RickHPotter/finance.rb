@@ -14,7 +14,7 @@ class UserBankAccount < ApplicationRecord
   has_many :investments, dependent: :destroy
 
   # @validations ..............................................................
-  validates :balance, presence: true
+  validates :user_bank_account_name, :balance, presence: true
   validates :bank_id, uniqueness: { scope: %i[agency_number account_number] }
 
   # @callbacks ................................................................
@@ -27,7 +27,7 @@ class UserBankAccount < ApplicationRecord
   end
 
   def pretty_label
-    "[ #{bank.bank_name} ] #{agency_number || '-'}/#{account_number || '-'}"
+    "[ #{user_bank_account_name} ] #{agency_number || '-'}/#{account_number || '-'}"
   end
 
   # @protected_instance_methods ...............................................

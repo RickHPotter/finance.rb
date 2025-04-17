@@ -143,8 +143,6 @@ module TranslateHelper
   #
   # @return [String]
   def locale_link(locale, options = {}, &)
-    path = request.path
-    path_with_locale = "#{path}?locale=#{locale}"
-    link_to(path_with_locale, class: options[:class], &)
+    button_to(update_locale_path(locale:), method: :patch, **options, &)
   end
 end

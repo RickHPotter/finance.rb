@@ -48,15 +48,15 @@ module Import
 
     def create_standalone_transactions(standalone_transactions)
       @transactions_collection[:standalone] = standalone_transactions.map do |transaction|
-        next if transaction[:entity] == "PREDICTION"
+        next if transaction[:entity] == [ "PREDICTION" ]
 
-        if transaction[:category] == "INVESTMENT"
-          user_bank_account_id = find_or_create_user_bank(transaction[:entity]).id
+        if transaction[:category] == [ "INVESTMENT" ]
+          user_bank_account_id = find_or_create_user_bank(transaction[:entity].first).id
           Investment.create(transaction.slice(:description, :date, :month, :year, :price).merge(user_id:, user_bank_account_id:))
           next
         end
 
-        if transaction[:category].in?([ "CARD ADVANCE", "CARD PAYMENT" ])
+        if transaction[:category].count == 1 && transaction[:category].first.in?([ "CARD ADVANCE", "CARD PAYMENT" ])
           user_card_id = find_or_create_user_card(transaction[:entity]).id
           add_card_type_to_collection(user_card_id, transaction)
           next
@@ -92,9 +92,9 @@ module Import
     end
 
     def add_card_type_to_collection(user_card_id, transaction)
-      params = transaction.slice(:month, :year, :price).merge(user_card_id:, categories: { category_name: transaction[:category] })
+      params = transaction.slice(:month, :year, :price).merge(user_card_id:, categories: { category_name: transaction[:category].first })
 
-      case transaction[:category]
+      case transaction[:category].first
       when "CARD PAYMENT"
         add_card_payment(user, transaction, params)
       when "CARD ADVANCE"

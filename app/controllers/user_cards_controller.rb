@@ -2,6 +2,7 @@
 
 class UserCardsController < ApplicationController
   include TabsConcern
+  include ContextHelper
 
   before_action :set_user_card, only: %i[edit update destroy]
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]

@@ -9,7 +9,7 @@ module Import
     end
 
     def create_user
-      @main_service.user = User.find_or_create_by(first_name: "Rikki", last_name: "Potteru", email: "rikki.potteru@mail.com") do |user|
+      @main_service.user = User.find_or_create_by(first_name: "Rikki", last_name: "Potteru", email: "rikki.potteru@mail.com", locale: :en) do |user|
         user.password = "123123"
         user.confirmed_at = Date.current
       end
@@ -53,12 +53,21 @@ module Import
     end
 
     def create_category_and_entity_transactions(transaction)
-      category = find_or_create_category(transaction[:category])
-      category_transactions = [ { category_id: category.id } ]
+      categories = transaction[:category].map do |category_name|
+        find_or_create_category(category_name)
+      end
 
-      entity = find_or_create_entity(transaction[:entity]) if transaction[:entity].present?
-      entity_transactions = []
-      entity_transactions << { entity_id: entity.id, is_payer: false, price: 0, exchanges_attributes: [] } if entity.present?
+      category_transactions = categories.map do |category|
+        { category_id: category.id }
+      end
+
+      entities = transaction[:entity].map do |entity_name|
+        find_or_create_entity(entity_name)
+      end
+
+      entity_transactions = entities.map do |entity|
+        { entity_id: entity.id, is_payer: false, price: 0, exchanges_attributes: [] }
+      end
 
       [ category_transactions, entity_transactions ]
     end

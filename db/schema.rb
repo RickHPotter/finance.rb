@@ -280,6 +280,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.datetime "confirmation_sent_at"
     t.string "first_name", null: false
     t.string "last_name", null: false
+    t.string "locale", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true

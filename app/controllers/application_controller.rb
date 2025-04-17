@@ -16,7 +16,7 @@ class ApplicationController < ActionController::Base
   #
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:sign_up, keys: %i[first_name last_name])
-    devise_parameter_sanitizer.permit(:account_update, keys: %i[first_name last_name])
+    devise_parameter_sanitizer.permit(:account_update, keys: %i[first_name last_name locale])
   end
 
   # Set locale from params[:locale] or cookies[:locale]
@@ -24,10 +24,13 @@ class ApplicationController < ActionController::Base
   # @return [void]
   #
   def set_locale
-    local_param = params[:locale]
-    local_cookie = cookies[:locale]
-
-    local_cookie = local_param if local_param
-    I18n.locale = local_cookie if local_cookie
+    I18n.locale =
+      if respond_to?(:current_user) && current_user&.locale.present?
+        current_user.locale
+      elsif params[:locale].present?
+        cookies[:locale] = params[:locale]
+      else
+        cookies[:locale] || I18n.default_locale
+      end
   end
 end

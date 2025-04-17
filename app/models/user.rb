@@ -102,6 +102,7 @@ end
 #  encrypted_password     :string           default(""), not null
 #  first_name             :string           not null
 #  last_name              :string           not null
+#  locale                 :string           not null
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string           indexed

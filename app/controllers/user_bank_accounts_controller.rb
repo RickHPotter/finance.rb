@@ -2,6 +2,7 @@
 
 class UserBankAccountsController < ApplicationController
   include TabsConcern
+  include ContextHelper
 
   before_action :set_user_bank_account, only: %i[edit update destroy]
   before_action :set_banks, :set_user_bank_accounts, :set_entities, :set_categories, only: %i[new create edit update]
@@ -68,6 +69,6 @@ class UserBankAccountsController < ApplicationController
 
   # Only allow a list of trusted parameters through.
   def user_bank_account_params
-    params.require(:user_bank_account).permit(:account_number, :agency_number, :balance, :active, :bank_id, :user_id)
+    params.require(:user_bank_account).permit(:user_bank_account_name, :account_number, :agency_number, :balance, :active, :bank_id, :user_id)
   end
 end

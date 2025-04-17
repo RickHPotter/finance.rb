@@ -156,12 +156,14 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
         link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
                 id: "new_card_transaction",
-                class: "py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors text-black
-                        hover:text-white font-thin flex items-center gap-2",
+                class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
+                        text-black hover:text-white font-thin items-center gap-2",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
-          span { action_message(:newa) }
-          span { pluralise_model(CardTransaction, 1) }
-          span(id: :month_year_selector_title) { user_card&.user_card_name }
+          div(class: "") do
+            span { action_message(:newa) }
+            span { pluralise_model(CardTransaction, 1) }
+            span(id: :month_year_selector_title) { user_card&.user_card_name }
+          end
         end
       end
     end

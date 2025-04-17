@@ -45,7 +45,7 @@ class Views::Shared::MonthYearSelector < Views::Base
               month_year = Date.new(year, month, 1).strftime("%Y%m").to_i
 
               link_to "#",
-                      class: "w-full px-3 py-2 rounded-md shadow-sm font-medium text-lg hover:bg-blue-100 transition-colors",
+                      class: "w-full p-2 rounded-md shadow-sm font-medium text-lg hover:bg-blue-100 transition-colors",
                       onclick: "event.preventDefault();",
                       data: {
                         month_year_selector_target: "monthYear",

@@ -4,6 +4,8 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   devise_for :users
+  patch "/locale", to: "users#update_locale", as: :update_locale
+
   # devise_for :users, controllers: {
   #   confirmations: "users/confirmations"
   # }

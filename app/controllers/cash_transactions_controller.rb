@@ -81,7 +81,7 @@ class CashTransactionsController < ApplicationController
         end
       end
     else
-      if @card_transaction.save
+      if @cash_transaction.save
         index
         @index_context[:user_bank_account_id] = @cash_transaction.user_bank_account_id
         @index_context[:default_year] = @cash_transaction.cash_installments.first.year
