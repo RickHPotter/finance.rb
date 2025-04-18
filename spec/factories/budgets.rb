@@ -18,6 +18,7 @@ end
 #
 #  id              :bigint           not null, primary key
 #  active          :boolean          default(TRUE), not null
+#  balance         :integer
 #  description     :string           not null
 #  inclusive       :boolean          default(TRUE), not null
 #  month           :integer          not null

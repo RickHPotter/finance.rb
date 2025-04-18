@@ -4,6 +4,7 @@ class Budget < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
+  include HasBalance
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -30,6 +31,10 @@ class Budget < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def date
+    Date.new(year, month).end_of_month
+  end
+
   def set_remaining_value
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
@@ -81,6 +86,7 @@ end
 #
 #  id              :bigint           not null, primary key
 #  active          :boolean          default(TRUE), not null
+#  balance         :integer
 #  description     :string           not null
 #  inclusive       :boolean          default(TRUE), not null
 #  month           :integer          not null

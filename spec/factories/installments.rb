@@ -25,11 +25,12 @@ end
 # Table name: installments
 #
 #  id                      :bigint           not null, primary key
+#  balance                 :integer
 #  card_installments_count :integer          default(0)
 #  cash_installments_count :integer          default(0)
-#  date                    :datetime         not null
-#  date_month              :integer          not null, indexed => [date_year]
-#  date_year               :integer          not null, indexed => [date_month]
+#  date                    :datetime         not null, indexed => [date_year, date_month]
+#  date_month              :integer          not null, indexed => [date_year, date]
+#  date_year               :integer          not null, indexed => [date_month, date]
 #  installment_type        :string           not null
 #  month                   :integer          not null
 #  number                  :integer          not null
@@ -45,7 +46,7 @@ end
 # Indexes
 #
 #  idx_installments_price                     (price)
-#  idx_installments_year_month                (date_year,date_month)
+#  idx_installments_year_month_date           (date_year,date_month,date)
 #  index_installments_on_card_transaction_id  (card_transaction_id)
 #  index_installments_on_cash_transaction_id  (cash_transaction_id)
 #

@@ -49,6 +49,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.integer "value", null: false
     t.integer "starting_value", null: false
     t.integer "remaining_value", null: false
+    t.integer "balance"
     t.boolean "inclusive", default: true, null: false
     t.boolean "active", default: true, null: false
     t.bigint "user_id", null: false
@@ -193,6 +194,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.integer "year", null: false
     t.integer "starting_price", null: false
     t.integer "price", null: false
+    t.integer "balance"
     t.boolean "paid", default: false
     t.string "installment_type", null: false
     t.integer "card_installments_count", default: 0
@@ -203,7 +205,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.datetime "updated_at", null: false
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
-    t.index ["date_year", "date_month"], name: "idx_installments_year_month"
+    t.index ["date_year", "date_month", "date"], name: "idx_installments_year_month_date"
     t.index ["price"], name: "idx_installments_price"
   end
 

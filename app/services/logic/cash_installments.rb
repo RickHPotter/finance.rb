@@ -22,26 +22,13 @@ module Logic
         .where("cash_transaction.description ILIKE ?", "%#{query}%")
     end
 
-    # TODO: in the near future, it might be wise to save to database the balance and always keep it updated, as it is now, when filtered the balance is always 0
-    # at first, it was supposed to be a bug, but given i couldnt fix it and shouldnt fix it, it is a feature until i do what I just mentioned
     def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
-      past_installments = user.cash_installments.where("date_year < ? OR (date_year = ? AND date_month < ?)", year, year, month).sum(:price)
-      past_budgets      = user.budgets.where("year < ? OR (year = ? AND month < ?)", year, year, month).sum(:remaining_value)
-      initial_balance   = past_installments + past_budgets
-
-      subquery = CashInstallment
-                 .where(date_year: year, date_month: month)
-                 .select(
-                   "installments.*",
-                   "SUM(installments.price) OVER (ORDER BY installments.date, installments.id) + #{initial_balance} AS balance"
-                 )
-
-      CashInstallment
-        .from("(#{subquery.to_sql}) AS installments")
-        .includes(cash_transaction: %i[categories entities])
-        .where(conditions)
-        .where(search_term_condition)
-        .order(:date, :id)
+      user.cash_installments
+          .where(date_year: year, date_month: month)
+          .includes(cash_transaction: %i[categories entities])
+          .where(conditions)
+          .where(search_term_condition)
+          .order(:date, :id)
     end
 
     def self.build_conditions_from_params(params)

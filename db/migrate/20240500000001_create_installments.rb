@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# CardTransaction/CashTransaction Migration
+# CardTransaction/CashTransaction Installments Migration
 class CreateInstallments < ActiveRecord::Migration[8.0]
   def change
     create_table :installments do |t|
@@ -12,7 +12,7 @@ class CreateInstallments < ActiveRecord::Migration[8.0]
       t.integer :year, null: false
       t.integer :starting_price, null: false
       t.integer :price, null: false
-      t.integer :balance, null: false
+      t.integer :balance, null: true
       t.boolean :paid, default: false
       t.string :installment_type, null: false
       t.integer :card_installments_count, default: 0, null: true

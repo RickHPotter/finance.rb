@@ -9,6 +9,7 @@ class CreateBudgets < ActiveRecord::Migration[8.0]
       t.integer :value, null: false
       t.integer :starting_value, null: false
       t.integer :remaining_value, null: false
+      t.integer :balance, null: true
       t.boolean :inclusive, null: false, default: true
       t.boolean :active, null: false, default: true
 
