@@ -30,7 +30,7 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to search_card_transactions_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
             <%= render_icon :jump_to %>
           <% end %>
         </div>

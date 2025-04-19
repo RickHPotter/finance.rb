@@ -85,9 +85,11 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
       end
-    end
 
-    from_cent_based_to_float(budget.balance, "R$")
+      div(class: "p-1 font-lekton font-bold whitespace-nowrap text-right") do
+        from_cent_based_to_float(budget.balance, "R$")
+      end
+    end
   end
 
   def render_budget(budget)

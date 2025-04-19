@@ -27,10 +27,7 @@ class Views::Investments::Index < Views::Base
                 span(id: :totalPriceSum)
               end
 
-              render MonthYearContainer.new(
-                url_lambda: ->(args = {}) { month_year_investments_path(args) },
-                index_context: index_context.slice(:search_term, :user_bank_account_id, :active_month_years)
-              )
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :user_bank_account_id, :active_month_years))
             end
 
             link_to new_investment_path(format: :turbo_stream),

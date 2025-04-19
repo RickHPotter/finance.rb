@@ -64,8 +64,7 @@ class Views::Investments::IndexSearchForm < Views::Base
                         text-black hover:text-white font-thin items-center gap-2",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
           span { action_message(:new) }
-          span { " " }
-          span { model_attribute(Investment, :self) }
+          span { pluralise_model(Investment, 1) }
         end
       end
     end
