@@ -158,8 +158,6 @@ export default class extends Controller {
     starting_rails_date.monthsForwards(starting_number)
 
     const visible_exchanges_wrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
-    console.log(starting_number)
-    console.log(visible_exchanges_wrappers)
 
     visible_exchanges_wrappers.slice(starting_number).forEach((target, index) => {
       target.querySelector(".exchange_month_year").textContent = starting_rails_date.monthYear()

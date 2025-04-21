@@ -128,7 +128,7 @@ class Views::Budgets::Budgets < Views::Base
 
         div(class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
           budget.entities.each do |entity|
-            span(class: "px-4 rounded-full text-sm bg-purple-100 text-slate-100 border-1 border-white") do
+            span(class: "px-4 rounded-full text-sm bg-purple-100 text-black border-1 border-white") do
               entity.entity_name
             end
           end

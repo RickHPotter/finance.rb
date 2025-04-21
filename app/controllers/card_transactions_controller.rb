@@ -114,9 +114,9 @@ class CardTransactionsController < ApplicationController
   end
 
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (Date.current + 1.month)
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (Date.current + 1.month)
+    default_active_month_years = [ [ max_date, Date.current + 1.month ].min.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
 
     category_id = [ card_transaction_params[:category_id] ].flatten&.compact_blank
@@ -193,7 +193,7 @@ class CardTransactionsController < ApplicationController
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
         { exchanges_attributes: %i[id number exchange_type price _destroy] }
       ]
     )

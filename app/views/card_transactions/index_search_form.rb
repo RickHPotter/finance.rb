@@ -159,11 +159,9 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
                         text-black hover:text-white font-thin items-center gap-2",
                 data: { turbo_frame: :center_container, turbo_prefetch: false } do
-          div(class: "") do
-            span { action_message(:newa) }
-            span { pluralise_model(CardTransaction, 1) }
-            span(id: :month_year_selector_title) { user_card&.user_card_name }
-          end
+          span { action_message(:newa) }
+          span { pluralise_model(CardTransaction, 1) }
+          span(id: :month_year_selector_title) { user_card&.user_card_name }
         end
       end
     end

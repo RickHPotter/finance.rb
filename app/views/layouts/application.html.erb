@@ -2,7 +2,8 @@
 <html>
   <head>
     <title><%= t("pages.title") %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#1a202c">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -18,7 +19,7 @@
     <%= javascript_include_tag "application", data: { turbo_track: :reload }, type: :module %>
   </head>
 
-  <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
+  <body class="h-screen bg-gray-900 text-white">
     <%= content_tag :main, class: "antialiased pt-4 max-w-auto max-w-[1420px] mx-auto" do %>
       <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
@@ -31,7 +32,7 @@
     <% end %>
   </body>
 
-  <footer class="bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
+  <footer class="bg-gray-900 text-white">
     <div class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto flex justify-end gap-2">
       <span>
         <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>

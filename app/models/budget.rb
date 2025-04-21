@@ -24,8 +24,7 @@ class Budget < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_starting_value
-  before_create :set_remaining_value
-  before_update :update_budget_according_to_changes
+  before_save :set_remaining_value
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -33,6 +32,10 @@ class Budget < ApplicationRecord
   # @public_instance_methods ..................................................
   def date
     Date.new(year, month).end_of_month
+  end
+
+  def set_starting_value
+    self.starting_value = value
   end
 
   def set_remaining_value
@@ -62,21 +65,6 @@ class Budget < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
-
-  protected
-
-  def set_starting_value
-    self.starting_value = value
-  end
-
-  def update_budget_according_to_changes
-    if value_changed?
-      self.remaining_value += changes[:value].last - changes[:value].first
-    elsif inclusive_changed? || month_changed? || year_changed? || user_id_changed? || changes.without(:remaining_value).empty?
-      set_remaining_value
-    end
-  end
-
   # @private_instance_methods .................................................
 end
 

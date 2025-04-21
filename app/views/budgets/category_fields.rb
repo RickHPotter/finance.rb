@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Budgets::CategoryFields < Views::Base
-  include Phlex::Rails::Helpers::HiddenField
-  include Phlex::Rails::Helpers::Object
-
   attr_accessor :form
 
   def initialize(form:)

@@ -64,7 +64,7 @@ export default class extends Controller {
     var new_tab = item.cloneNode()
     new_tab.innerHTML = "-"
     new_tab.classList.remove("bg-inherit", "text-slate-700")
-    new_tab.classList.add("bg-white", "dark:bg-sky-500", "text-transparent")
+    new_tab.classList.add("bg-sky-500", "text-transparent")
     new_tab.style.animation = ".2s ease"
 
     moving_div.appendChild(new_tab)

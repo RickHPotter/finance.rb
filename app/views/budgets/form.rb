@@ -34,6 +34,7 @@ class Views::Budgets::Form < Views::Base
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
+        hidden_field_tag :entity_icons,     entities_json,   disabled: true, data: { reactive_form_target: :entityIcons }
 
         div(class: "w-full mb-6") do
           form.text_field \
@@ -63,7 +64,8 @@ class Views::Budgets::Form < Views::Base
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(budget, :entity_id),
-              data: { action: "hw-combobox:selection->dynamic-description#updateDescription", value: ".hw-combobox__input" }
+              data: { action: "hw-combobox:selection->reactive-form#insertEntity hw-combobox:selection->dynamic-description#updateDescription",
+                      value: ".hw-combobox__input" }
           end
 
           div(class: "w-full lg:w-1/4 mb-2") do
@@ -132,16 +134,15 @@ class Views::Budgets::Form < Views::Base
 
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data_nested_form_target: "template") do
+          template(data: { nested_form_target: "template" }) do
             form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields|
-              render EntityFields.new(form: budget_entity_fields, entities:)
+              render EntityFields.new(form: budget_entity_fields)
             end
           end
 
           budget_entities_association = budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1
-
           form.fields_for :budget_entities, budget_entities_association do |budget_entity_fields|
-            render EntityFields.new(form: budget_entity_fields, entities:)
+            render EntityFields.new(form: budget_entity_fields)
           end
 
           div(data_nested_form_target: "target")
@@ -152,9 +153,10 @@ class Views::Budgets::Form < Views::Base
         div(class: "#{budget.persisted? ? 'w-4/5' : 'w-2/5'} grid grid-cols-1 lg:flex items-center justify-between gap-2 mx-auto") do
           if budget.persisted?
             transaction = { category_id: budget.categories.map(&:id), entity_id: budget.entities.map(&:id) }
+            active_month_years = "[#{Date.new(budget.year, budget.month).strftime('%Y%m')}]"
 
             render Components::ButtonComponent.new \
-              link: search_card_transactions_path(card_transaction: transaction, format: :turbo_stream),
+              link: search_card_transactions_path(card_transaction: transaction, active_month_years:, format: :turbo_stream),
               options: { label: action_model(:index, CardTransaction, 2), colour: :indigo, data: { turbo_prefetch: false } }
 
             render Components::ButtonComponent.new \

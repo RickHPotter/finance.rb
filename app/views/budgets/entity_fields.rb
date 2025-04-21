@@ -1,66 +1,48 @@
 # frozen_string_literal: true
 
-class Views::Budgets::EntityFields < Views::Base
-  include Phlex::Rails::Helpers::ContentTag
-  include Phlex::Rails::Helpers::HiddenField
-  include Phlex::Rails::Helpers::Object
-  include Phlex::Rails::Helpers::Select
+module Views
+  module Budgets
+    class EntityFields < Components::Base
+      include Phlex::Rails::Helpers::AssetPath
+      include Phlex::Rails::Helpers::ImageTag
 
-  attr_accessor :form
+      include CacheHelper
 
-  def initialize(form:, entities:)
-    @form = form
-    @entities = entities
-  end
+      attr_reader :form, :budget_entity
 
-  def view_template
-    div(
-      class: "nested-form-wrapper",
-      data_new_record: form.object.new_record?
-    ) do
-      div(class: "flex space-x-12") do
-        div(class: "flex w-1/4 flex-col my-6") do
-          whitespace
-          render Components::TextFieldComponent.new(
-            form,
-            :entity_id,
-            @entities,
-            type: :select
-          )
-        end
-        whitespace
-        content_tag :span,
-                    form.object&.entity&.entity_name,
-                    class: "entities_entity_name",
-                    data: {
-                      dynamic_description_target: :entity
-                    }
-        whitespace
-        plain form.hidden_field :_destroy
-        div(class: "flex w-1/4 flex-col my-6") do
-          whitespace
-          render Components::ButtonComponent.new(
-            options: {
-              label: action_model(:destroy, BudgetEntity),
-              colour: :red,
-              data: {
-                action:
-                  "nested-form#remove dynamic-description#updateDescription"
-              }
-            }
-          )
+      def initialize(form:)
+        @form = form
+        @budget_entity = form.object
+      end
+
+      def view_template
+        div(class: "nested-form-wrapper",
+            data: { new_record: budget_entity.new_record?, reactive_form_target: "entityWrapper" }) do
+          div(class: "flex my-1") do
+            span(class: "flex items-center text-sm font-medium text-black") do
+              Sheet(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
+                SheetTrigger(class: "flex items-center gap-2 flex-1") do
+                  div(class: "entity_avatar_container") do
+                    image_tag asset_path("avatars/#{budget_entity.entity.avatar_name}"), class: "entity_avatar w-6 h-6 rounded-full" if budget_entity.entity
+                  end
+
+                  span(class: "entities_entity_name text-black text-nowrap") { budget_entity&.entity&.entity_name }
+                end
+
+                button(type: :button,
+                       class: "inline-flex items-center p-1 ms-2 text-sm bg-white text-black rounded-xs",
+                       aria_label: "Remove",
+                       data: { action: "click->reactive-form#removeEntity" }) do
+                  cached_icon(:little_x)
+                end
+              end
+            end
+
+            form.hidden_field :entity_id, class: :entities_entity_id
+            form.hidden_field :_destroy
+          end
         end
       end
     end
-  end
-
-  private
-
-  def action_model(*args, **kwargs)
-    # TODO: Implement me
-  end
-
-  def render(*args, **kwargs)
-    # TODO: Implement me
   end
 end

@@ -29,21 +29,21 @@ module Views
             bold_label(form, :price, "entity_transaction_price_#{form.index}")
             div(class: "grid grid-cols-12 pb-3") do
               div(class: "col-span-9") do
-                TextField  form, :price,
-                           svg: :money,
-                           id: "entity_transaction_price_#{form.index}",
-                           class: "font-graduate",
-                           data: { price_mask_target: :input,
-                                   reactive_form_target: :priceInput,
-                                   entity_transaction_target: :priceInput,
-                                   action: "input->price-mask#applyMask input->entity-transaction#updatePrice" }
+                TextField form, :price,
+                          svg: :money,
+                          id: "entity_transaction_price_#{form.index}",
+                          class: "font-graduate",
+                          data: { price_mask_target: :input,
+                                  reactive_form_target: :priceInput,
+                                  entity_transaction_target: :priceInput,
+                                  action: "input->price-mask#applyMask input->entity-transaction#updatePrice" }
               end
 
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 1 }) { " 1/1 " }
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 2 }) { " 1/2 " }
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 3 }) { " 1/3 " }
             end
 
@@ -60,11 +60,11 @@ module Views
                                   action: "input->price-mask#applyMask input->entity-transaction#updatePrice input->entity-transaction#toggleExchanges" }
               end
 
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 1 }) { " 1/1 " }
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 2 }) { " 1/2 " }
-              button(type: :button, class: "font-medium text-blue-600 dark:text-blue-500 hover:underline",
+              button(type: :button, class: "font-medium text-blue-500 hover:underline",
                      data: { action: "entity-transaction#fillPrice", divider: 3 }) { " 1/3 " }
             end
 

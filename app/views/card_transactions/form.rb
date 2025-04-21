@@ -169,10 +169,7 @@ class Views::CardTransactions::Form < Views::Base
             end
           end
 
-          if card_transaction.entity_transactions.count > 1
-            entity_transactions_association = card_transaction.entity_transactions.includes(:entity,
-                                                                                            :exchanges)
-          end
+          entity_transactions_association = card_transaction.entity_transactions.includes(:entity, :exchanges) if card_transaction.entity_transactions.count > 1
           form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields|
             render ::Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
           end
