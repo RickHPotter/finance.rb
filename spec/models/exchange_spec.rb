@@ -29,6 +29,7 @@ end
 # Table name: exchanges
 #
 #  id                    :bigint           not null, primary key
+#  bound_type            :string           default("standalone"), not null
 #  exchange_type         :integer          default("non_monetary"), not null
 #  exchanges_count       :integer          default(0), not null
 #  number                :integer          default(1), not null

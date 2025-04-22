@@ -29,15 +29,6 @@ class CardTransaction < ApplicationRecord
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
 
-  def cash_transaction_date
-    due_date = date.change(day: user_card.due_date_day)
-    closing_date = due_date - user_card.days_until_due_date
-
-    return due_date if closing_date > date
-
-    due_date + 1.month
-  end
-
   # Retrieves the `reference_date` for the associated `cash_transaction` through `user_card.references`, based on `month` and `year`.
   #
   # @return [Date].
@@ -116,8 +107,10 @@ class CardTransaction < ApplicationRecord
     return if imported
     return false if errors.any?
 
-    calculated_date = user_card.calculate_reference_date(date)
-    errors.add(:date, "Invalid reference date") if calculated_date.month != month || calculated_date.year != year
+    reference_date = user_card.calculate_reference_date(date)
+    reference = user_card.references.find_by(month: reference_date.month, year: reference_date.year)
+
+    errors.add(:date, "Invalid reference date") if reference.month != month || reference.year != year
   end
 end
 

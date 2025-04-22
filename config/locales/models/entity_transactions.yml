@@ -16,6 +16,8 @@ en:
         price: Price
         price_to_be_returned: Price to be returned
         exchanges_count: Exchanges Count
+        standalone: Standalone
+        card_bound: Card Bound
         created_at: Created at
         updated_at: Updated at
 
@@ -37,5 +39,7 @@ pt-BR:
         price: Valor
         price_to_be_returned: Valor a ser devolvido
         exchanges_count: Quantidade de Trocas
+        standalone: Simples
+        card_bound: Vinculado ao Cartão
         created_at: Criado em
         updated_at: Atualizado em

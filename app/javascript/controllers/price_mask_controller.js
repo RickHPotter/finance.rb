@@ -23,6 +23,10 @@ export default class extends Controller {
     [...this.inputTargets].forEach((target) => {
       this.removeMask({ target })
     })
+
+    this.element.querySelectorAll(".dynamic-price").forEach((target) => {
+      this.removeMask({ target })
+    })
   }
 
   removeMask({ target }) {

@@ -19,6 +19,7 @@ class EntityTransaction < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :set_status, on: :create
+  before_save :set_is_payer
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -36,6 +37,10 @@ class EntityTransaction < ApplicationRecord
   #
   def set_status
     self.status ||= is_payer ? :pending : :finished
+  end
+
+  def set_is_payer
+    self.is_payer = !price_to_be_returned.zero?
   end
 
   # @private_instance_methods .................................................

@@ -17,7 +17,7 @@ module Logic
           .where(conditions)
           .where("card_transactions.description ILIKE ?", "%#{search_term}%")
           .where("installments.year = ? AND installments.month = ?", year, month)
-          .order("installments.date")
+          .order("installments.date, installments.id")
     end
 
     def self.build_conditions_from_params(card_transaction_params, search_params)

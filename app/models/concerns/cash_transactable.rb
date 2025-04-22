@@ -33,7 +33,7 @@ module CashTransactable
   #
   def attach_cash_transaction
     self.previous_cash_transaction_id = cash_transaction_id
-    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params) ||
+    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
                             CashTransaction.create(new_cash_transaction_params)
   end
 

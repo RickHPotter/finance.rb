@@ -22,7 +22,7 @@ class Investment < ApplicationRecord
 
   protected
 
-  # Generates an `description` for the associated `cash_transaction` based on the `user`'s `bank_name` and `month_year`.
+  # Generates a `description` for the associated `cash_transaction` based on the `user`'s `bank_name` and `month_year`.
   #
   # @return [String] The generated description.
   #

@@ -18,7 +18,7 @@ class CashTransaction < ApplicationRecord
 
   has_many :card_installments, dependent: :destroy
   has_many :investments, dependent: :destroy
-  has_many :exchanges, dependent: :destroy
+  has_many :exchanges
 
   # @validations ..............................................................
   validates :description, :cash_installments_count, presence: true

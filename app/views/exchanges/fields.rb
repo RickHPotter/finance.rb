@@ -14,6 +14,7 @@ module Views
         div(class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" }) do
           form.hidden_field :id
           form.hidden_field :number, class: :exchange_number
+          form.hidden_field :bound_type, class: :bound_type
           form.hidden_field :exchange_type, value: :monetary
           form.hidden_field :_destroy
 
@@ -43,7 +44,7 @@ module Views
 
               div(class: "flex w-1/2 font-graduate") do
                 form.text_field :price,
-                                class: "price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
+                                class: "dynamic-price price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
                                        focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5".squish,
                                 data: { price_mask_target: :input, entity_transaction_target: :priceExchangeInput, action: "input->price-mask#applyMask" }
               end

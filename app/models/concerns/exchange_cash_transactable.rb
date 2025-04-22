@@ -5,7 +5,10 @@ module ExchangeCashTransactable
   extend ActiveSupport::Concern
 
   included do
-    # @extends ..................................................................
+    # @security (i.e. attr_accessible) ........................................
+    enum :bound_type, { standalone: "standalone", card_bound: "card_bound" }
+
+    # @extends ................................................................
     delegate :transactable, to: :entity_transaction
     delegate :user, to: :transactable
 
@@ -17,25 +20,24 @@ module ExchangeCashTransactable
     before_create :create_cash_transaction, if: :monetary?
     before_update :update_cash_transaction, if: :monetary?
     before_update :destroy_cash_transaction, if: :non_monetary?
-    before_destroy :update_or_destroy_cash_transaction
+    before_destroy :update_or_destroy_cash_transaction, if: -> { cash_transaction.present? }
   end
 
   # @class_methods ............................................................
-  # TODO: needs testing
-  def self.join_exchanges(exchanges_ids, cash_transaction_id)
-    exchanges = Exchange.where(id: exchanges_ids)
-    cash_transaction = CashTransaction.find(cash_transaction_id)
+  # def self.join_exchanges(exchanges_ids, cash_transaction_id)
+  #   exchanges = Exchange.where(id: exchanges_ids)
+  #   cash_transaction = CashTransaction.find(cash_transaction_id)
+  #
+  #   comment = exchanges.map { |exchange| "#{exchange.number}/#{exchange.entity_transaction.exchanges_count}" }.join(", ")
+  #   cash_transaction.update_columns(price: exchanges.sum(:price), comment:)
+  #   cash_transaction.cash_installments.first.update_columns(price: exchanges.sum(:price))
+  #
+  #   exchanges.update_all(cash_transaction_id:)
+  # end
 
-    comment = exchanges.map { |exchange| "#{exchange.number}/#{exchange.entity_transaction.exchanges_count}" }.join(", ")
-    cash_transaction.update_columns(price: exchanges.sum(:price), comment:)
-
-    exchanges.update_all(cash_transaction_id:)
-  end
-
-  # TODO: needs testing
-  def self.undo_join_exchanges(exchanges_ids)
-    raise NotImplementedError
-  end
+  # def self.undo_join_exchanges(exchanges_ids)
+  #   raise NotImplementedError
+  # end
 
   # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
@@ -71,7 +73,28 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def create_cash_transaction
-    self.cash_transaction = CashTransaction.create(cash_transaction_params)
+    if standalone?
+      self.cash_transaction = CashTransaction.create(cash_transaction_params)
+      update_cash_transaction_and_installment(updated_price: cash_transaction.price)
+      return
+    end
+
+    params = {
+      **transactable.slice(:month, :year),
+      description: transactable.user_card.user_card_name,
+      cash_transaction_type: model_name.name,
+      categories: { id: user.built_in_category("EXCHANGE RETURN").id }
+    }
+    existing_cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
+
+    if existing_cash_transaction
+      self.cash_transaction = existing_cash_transaction
+      @f.lee
+      update_cash_transaction_and_installment(updated_price: exchanges_price + price)
+      return
+    end
+
+    self.cash_transaction = CashTransaction.create(card_bound_cash_transaction_params)
   end
 
   # @note This is a method that is called before_update.
@@ -86,7 +109,20 @@ module ExchangeCashTransactable
 
     return if (changes.keys - %w[created_at updated_at]).empty?
 
-    cash_transaction.update(cash_transaction_params)
+    if changes[:bound_type].nil?
+      return if changes[:price].present?
+
+      cash_transaction_price = exchanges_price(with_updated_price: true)
+      update_cash_transaction_and_installment(updated_price: cash_transaction_price)
+    else
+      if standalone?
+        update_cash_transaction_and_installment(updated_price: exchanges_price - price)
+      else
+        destroy_cash_transaction
+      end
+
+      create_cash_transaction
+    end
   end
 
   # Sets `cash_transaction_id` to nil if `exchange_type` has changed to `non_monetary`.
@@ -97,11 +133,15 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def destroy_cash_transaction
-    return if changes[:exchange_type].blank?
+    should_destroy = standalone? || cash_transaction.exchanges.ids == [ id ]
 
-    cash_transaction_id_to_be_destroyed = cash_transaction_id
-    self.cash_transaction_id = nil
-    CashTransaction.find(cash_transaction_id_to_be_destroyed).destroy
+    if should_destroy
+      date = cash_transaction.date
+      _destroy_cash_transaction
+      user.cash_installments.where("installments.date < ?", date).order(date: :asc).last&.save
+    else
+      update_cash_transaction_and_installment(updated_price: exchanges_price - price)
+    end
   end
 
   # Sets `cash_transaction_id` to nil if the `EXCHANGE RETURN` category has been removed.
@@ -112,13 +152,26 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def update_or_destroy_cash_transaction
-    return if cash_transaction.nil?
+    sibling_exchanges = Exchange.where(cash_transaction_id: cash_transaction.id).where.not(id:)
 
-    exchanges_that_belong_to_cash_transaction = Exchange.where(cash_transaction_id:).where.not(id:)
+    if sibling_exchanges.empty?
+      _destroy_cash_transaction
+    else
+      cash_transaction.update_columns(price: sibling_exchanges.sum(:price))
+      cash_transaction.cash_installments.first&.update(price: sibling_exchanges.sum(:price))
+    end
+  end
 
-    cash_transaction.destroy and return if exchanges_that_belong_to_cash_transaction.empty?
+  def update_cash_transaction_and_installment(updated_price:)
+    cash_transaction.update_columns(price: updated_price)
+    cash_transaction.cash_installments.first.update(price: updated_price)
+  end
 
-    cash_transaction.update_columns(price: exchanges_that_belong_to_cash_transaction.sum(:price))
+  def exchanges_price(with_updated_price: false)
+    price = cash_transaction.exchanges.sum(:price)
+    return price if with_updated_price == false || changes[:price].nil?
+
+    price - changes[:price][0] + changes[:price][1]
   end
 
   # @see {CashTransaction}.
@@ -126,16 +179,27 @@ module ExchangeCashTransactable
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    {
-      description: "EXCHANGE RETURN - #{transactable} #{number}/#{entity_transaction.exchanges_count}",
-      starting_price:, price:,
-      date: transactable.date, month: transactable.month, year: transactable.year,
-      user_id: user.id,
-      cash_transaction_type: model_name.name,
-      user_bank_account_id: user.user_bank_accounts.ids.sample,
-      category_transactions: FactoryBot.build_list(
-        :category_transaction, 1, transactable: self, category: user.built_in_category("EXCHANGE RETURN")
-      )
-    }
+    date = transactable.is_a?(CardTransaction) ? transactable.card_payment_date : transactable.date + 1.month
+
+    transactable
+      .slice(:description, :month, :year, :user_card_id)
+      .merge(starting_price:,
+             price:,
+             date:,
+             user_id: user.id,
+             cash_transaction_type: model_name.name,
+             category_transactions: FactoryBot.build_list(:category_transaction, 1, transactable: self, category: user.built_in_category("EXCHANGE RETURN")),
+             entity_transactions: FactoryBot.build_list(:entity_transaction, 1, transactable: self, entity: entity_transaction.entity))
+  end
+
+  def card_bound_cash_transaction_params
+    cash_transaction_params.merge(description: transactable.user_card.user_card_name)
+  end
+
+  def _destroy_cash_transaction
+    previous_cash_transaction_id = cash_transaction_id
+    update_columns(cash_transaction_id: nil)
+
+    CashTransaction.find(previous_cash_transaction_id).destroy
   end
 end

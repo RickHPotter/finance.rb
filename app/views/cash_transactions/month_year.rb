@@ -13,7 +13,7 @@ class Views::CashTransactions::MonthYear < Views::Base
     @month_year_str = month_year_str
     @cash_installments = cash_installments
     @budgets = budgets
-    @total_amount = cash_installments.sum(:price) + budgets.sum(:remaining_value)
+    @total_amount = cash_installments.sum(&:price) + budgets.sum(&:remaining_value)
   end
 
   def view_template

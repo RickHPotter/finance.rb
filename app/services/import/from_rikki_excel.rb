@@ -53,6 +53,7 @@ module Import
       fix_card_payment_dates
       set_category_colours
       correct_investment_dates
+      fix_missing_references
     end
 
     def fix_user_card_dates
@@ -75,17 +76,18 @@ module Import
     end
 
     def fix_missing_references
+      @user.user_cards.find_by(user_card_name: "MELIUZ").references.destroy_all
+
       @user.user_cards.find_each do |user_card|
         month_years = user_card.card_installments_invoices.pluck(:month, :year).uniq
 
         month_years.each do |month, year|
-          next if user_card.references.exists?(month: month, year: year)
+          next if user_card.references.exists?(month:, year:)
 
           card_payment = user_card.card_installments_invoices.find_by(month:, year:)
           next if card_payment.nil?
 
-          reference_date = user_card.calculate_reference_date(card_payment.date)
-          user_card.references.create(month: month, year: year, reference_date: reference_date)
+          user_card.references.create(month:, year:, reference_date: card_payment.date)
         end
       end
     end
@@ -126,12 +128,10 @@ module Import
       needs_category = @user.categories.find_by(category_name: "NEEDS")
 
       budgets = @user.budgets
-      budgets.create(month: 5, year: 2025, value: -40_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-      budgets.create(month: 5, year: 2025, value: -30_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
-      budgets.create(month: 6, year: 2025, value: -16_200, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
+      budgets.create(month: 6, year: 2025, value: -20_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
       budgets.create(month: 6, year: 2025, value: -20_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
       budgets.create(month: 7, year: 2025, value: -30_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-      budgets.create(month: 7, year: 2025, value: -130_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+      budgets.create(month: 7, year: 2025, value: -140_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
 
       start_date = Date.new(2025, 8, 1)
       (0..8).each do |index|

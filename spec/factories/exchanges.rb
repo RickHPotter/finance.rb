@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :exchange do
     exchange_type { 0 }
     price { 999 }
+    bound_type { :standalone }
     entity_transaction { custom_create(:entity_transaction, options: { is_payer: true }) }
 
     trait :different do
@@ -25,6 +26,7 @@ end
 # Table name: exchanges
 #
 #  id                    :bigint           not null, primary key
+#  bound_type            :string           default("standalone"), not null
 #  exchange_type         :integer          default("non_monetary"), not null
 #  exchanges_count       :integer          default(0), not null
 #  number                :integer          default(1), not null

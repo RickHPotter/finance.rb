@@ -172,6 +172,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   end
 
   create_table "exchanges", force: :cascade do |t|
+    t.string "bound_type", default: "standalone", null: false
     t.integer "exchange_type", default: 0, null: false
     t.integer "number", default: 1, null: false
     t.integer "starting_price", null: false

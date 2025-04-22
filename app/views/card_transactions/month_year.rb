@@ -5,7 +5,7 @@ class Views::CardTransactions::MonthYear < Views::Base
 
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :user_card_id, :card_installments
+  attr_reader :mobile, :month_year, :month_year_str, :user_card_id, :card_installments, :card_installments_price
 
   def initialize(mobile:, month_year:, month_year_str:, user_card_id:, card_installments:)
     @month_year = month_year
@@ -13,6 +13,7 @@ class Views::CardTransactions::MonthYear < Views::Base
     @month_year_str = month_year_str
     @user_card_id = user_card_id
     @card_installments = card_installments
+    @card_installments_price = card_installments.sum(&:price)
   end
 
   def view_template
@@ -27,7 +28,7 @@ class Views::CardTransactions::MonthYear < Views::Base
 
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: card_installments.sum(:price) })
+      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: card_installments_price })
 
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
         legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
@@ -39,7 +40,7 @@ class Views::CardTransactions::MonthYear < Views::Base
 
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: card_installments.sum(:price) })
+      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: card_installments.sum(&:price) })
 
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
         legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
@@ -63,8 +64,8 @@ class Views::CardTransactions::MonthYear < Views::Base
           div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-6 text-center") { "#{model_attribute(CardTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { controller: "price-sum", price: card_installments.sum(:price) }) do
-              from_cent_based_to_float(card_installments.sum(:price), "R$")
+            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { controller: "price-sum", price: card_installments_price }) do
+              from_cent_based_to_float(card_installments_price, "R$")
             end
           end
         end

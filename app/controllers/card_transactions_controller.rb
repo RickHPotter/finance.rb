@@ -194,7 +194,7 @@ class CardTransactionsController < ApplicationController
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
-        { exchanges_attributes: %i[id number exchange_type price _destroy] }
+        { exchanges_attributes: %i[id number exchange_type bound_type price _destroy] }
       ]
     )
   end

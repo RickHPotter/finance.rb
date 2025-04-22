@@ -5,11 +5,10 @@ import { _removeMask, _applyMask } from "../utils/mask.js"
 
 // FIXME: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
-  static targets = ["priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
+  static targets = ["priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
 
   connect() {
     initModals()
-    this.checkForExchangeCategory()
   }
 
   toggleExchanges({ target }) {
@@ -33,23 +32,38 @@ export default class extends Controller {
 
   fillPrice({ target }) {
     const divider = target.dataset.divider
+    const inputTarget = target.dataset.target
     const priceStr = document.getElementById("transaction_price").value
-    const price = parseInt(this._removeMask(priceStr) / divider)
+    const price = parseInt(this._removeMask(priceStr) / divider) * - 1
 
-    this.priceInputTarget.value = this._applyMask(price.toString())
-    this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+    switch (inputTarget) {
+      case "priceInput":
+        if (price < parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))) {
+          this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+        }
+        this.priceInputTarget.value = this._applyMask(price.toString())
+        break
+      case "priceToBeReturnedInput":
+        if (price > parseInt(this._removeMask(this.priceInputTarget.value))) {
+          this.priceInputTarget.value = this._applyMask(price.toString())
+        }
+        this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+        break
+    }
+
     this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
     this._updateExchangesPrices()
   }
 
   updatePrice() {
-    const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value))
+    const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value)) * - 1
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
     if (totalPrice < priceToBeReturned) { this.priceToBeReturnedInputTarget.value = this._applyMask(totalPrice.toString()) }
     if (totalPrice < price) { this.priceInputTarget.value = this._applyMask(totalPrice.toString()) }
     if (priceToBeReturned > price) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
+    this._updateExchangesPrices()
   }
 
   updateExchangesPrices({ target }) {
@@ -57,6 +71,7 @@ export default class extends Controller {
     if (target.value > 72) { target.value = 72 }
 
     this._updateExchangesPrices()
+    this.fillInBoundType({ target: this.boundTypeTargets.find((element) => element.checked) })
 
     if (target.value > 0) this.checkForExchangeCategory()
   }
@@ -71,6 +86,12 @@ export default class extends Controller {
     } else {
       comboboxController._removeExchangeCategory()
     }
+  }
+
+  fillInBoundType({ target }) {
+    if (!target) return
+
+    this.element.querySelectorAll(".bound_type").forEach((element) => element.value = target.value)
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░

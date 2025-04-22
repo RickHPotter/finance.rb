@@ -37,16 +37,16 @@ class UserCard < ApplicationRecord
   end
 
   def find_or_create_reference_for(date)
-    reference = references.find_by(month: date.month, year: date.year)
+    reference_date = calculate_reference_date(date)
+    reference = references.find_by(month: reference_date.month, year: reference_date.year)
     return reference if reference.present?
 
-    reference_date = calculate_reference_date(date)
     references.create(reference_date:, month: reference_date.month, year: reference_date.year)
   end
 
   def calculate_reference_date(transaction_date)
     due_date = transaction_date.change(day: due_date_day)
-    closing_date = due_date - days_until_due_date
+    closing_date = due_date - days_until_due_date.days
 
     return due_date if transaction_date < closing_date
 
@@ -79,16 +79,12 @@ class UserCard < ApplicationRecord
     month_years = card_installments_invoices.pluck(:month, :year).uniq
 
     month_years.each do |month, year|
-      next if references.exists?(month: month, year: year)
+      next if references.exists?(month:, year:)
 
       card_payment = card_installments_invoices.find_by(month:, year:)
       next if card_payment.nil?
 
-      reference_date = calculate_reference_date(card_payment.date)
-      references.create(month: month, year: year, reference_date: reference_date)
-
-      card_payment.update(date: reference_date)
-      card_payment.cash_installments.first&.update_columns(date: reference_date)
+      references.create(month:, year:, reference_date: card_payment.date)
     end
   end
 end
