@@ -18,60 +18,67 @@ module RubyUI
 
     def size_classes
       if @icon
-        case @size
-        when :sm then "h-6 w-6"
-        when :md then "h-9 w-9"
-        when :lg then "h-10 w-10"
-        when :xl then "h-12 w-12"
-        end
+        {
+          sm: "h-6 w-6",
+          md: "h-9 w-9",
+          lg: "h-10 w-10",
+          xl: "h-12 w-12"
+        }[@size]
       else
-        case @size
-        when :sm then "px-3 py-1.5 h-8 text-xs"
-        when :md then "px-4 py-2 h-9 text-sm"
-        when :lg then "px-4 py-2 h-10 text-base"
-        when :xl then "px-6 py-3 h-12 text-base"
-        end
+        {
+          sm: "px-3 py-1.5 h-8 text-xs",
+          md: "px-4 py-2 h-9 text-sm",
+          lg: "px-4 py-2 h-10 text-base",
+          xl: "px-6 py-3 h-12 text-base"
+        }[@size]
       end
     end
 
     def primary_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90".squish,
         size_classes
       ]
     end
 
     def link_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-primary underline-offset-4 hover:underline",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 text-primary underline-offset-4 hover:underline".squish,
         size_classes
       ]
     end
 
     def secondary_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-opacity-80",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-opacity-80".squish,
         size_classes
       ]
     end
 
     def destructive_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90".squish,
         size_classes
       ]
     end
 
     def outline_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent
+        hover:text-accent-foreground".squish,
         size_classes
       ]
     end
 
     def ghost_classes
       [
-        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground",
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground".squish,
         size_classes
       ]
     end

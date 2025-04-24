@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce CashTransactions.
-module ExchangeCashTransactable
+module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
 
   included do
@@ -24,21 +24,6 @@ module ExchangeCashTransactable
   end
 
   # @class_methods ............................................................
-  # def self.join_exchanges(exchanges_ids, cash_transaction_id)
-  #   exchanges = Exchange.where(id: exchanges_ids)
-  #   cash_transaction = CashTransaction.find(cash_transaction_id)
-  #
-  #   comment = exchanges.map { |exchange| "#{exchange.number}/#{exchange.entity_transaction.exchanges_count}" }.join(", ")
-  #   cash_transaction.update_columns(price: exchanges.sum(:price), comment:)
-  #   cash_transaction.cash_installments.first.update_columns(price: exchanges.sum(:price))
-  #
-  #   exchanges.update_all(cash_transaction_id:)
-  # end
-
-  # def self.undo_join_exchanges(exchanges_ids)
-  #   raise NotImplementedError
-  # end
-
   # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
 
@@ -89,7 +74,6 @@ module ExchangeCashTransactable
 
     if existing_cash_transaction
       self.cash_transaction = existing_cash_transaction
-      @f.lee
       update_cash_transaction_and_installment(updated_price: exchanges_price + price)
       return
     end
@@ -133,12 +117,14 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def destroy_cash_transaction
+    return if cash_transaction.nil?
+
     should_destroy = standalone? || cash_transaction.exchanges.ids == [ id ]
 
     if should_destroy
-      date = cash_transaction.date
+      order_id = cash_transaction.cash_installments.first.order_id
       _destroy_cash_transaction
-      user.cash_installments.where("installments.date < ?", date).order(date: :asc).last&.save
+      user.cash_installments.where(order_id: 0..(order_id - 1)).order(:order_id).last&.save
     else
       update_cash_transaction_and_installment(updated_price: exchanges_price - price)
     end

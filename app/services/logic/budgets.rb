@@ -35,7 +35,7 @@ module Logic
           .where(conditions.merge(month:, year:))
           .where(search_term_condition)
           .includes(:categories, :entities)
-          .order(:id)
+          .order(:order_id)
     end
   end
 end

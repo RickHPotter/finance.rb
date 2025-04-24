@@ -15,8 +15,10 @@ RSpec.describe "CardTransactions", type: :request do
   let(:card_transaction) do
     Params::CardTransactions.new(
       card_transaction: { price: -20_000, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
-      card_installments: { count: 1 }, category_transactions: [],
-      entity_transactions: [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] } ]
+      card_installments: { count: 1 },
+      category_transactions: [],
+      entity_transactions: [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200,
+                               exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] } ]
     )
   end
 
@@ -53,7 +55,7 @@ RSpec.describe "CardTransactions", type: :request do
 
   describe "[ #create ]" do
     it "creates one new record with one installment and non-paying entities" do
-      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [] } ]
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [] } ]
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
@@ -65,8 +67,8 @@ RSpec.describe "CardTransactions", type: :request do
       card_transaction.card_installments = { count: 2 }
       card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] }
+        { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] },
+        { entity_id: entity_two.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -80,8 +82,8 @@ RSpec.describe "CardTransactions", type: :request do
       card_transaction.card_installments = { count: 2 }
       card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: -22.00, exchanges_attributes: [ { price: -22.00, exchange_type: :monetary } ] }
+        { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] },
+        { entity_id: entity_two.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -101,7 +103,7 @@ RSpec.describe "CardTransactions", type: :request do
 
   describe "[ #update ]" do
     before do
-      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -22.00, exchanges_attributes: [] } ]
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [] } ]
       post card_transactions_path, params: card_transaction.params
       @existing_card_transaction = CardTransaction.last
 

@@ -50,7 +50,7 @@ Metrics/ClassLength:
   Max: 200
 
 Metrics/MethodLength:
-  Max: 20
+  Max: 22
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"

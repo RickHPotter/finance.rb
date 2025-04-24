@@ -145,6 +145,7 @@ end
 #  updated_at              :datetime         not null
 #  card_transaction_id     :bigint           indexed
 #  cash_transaction_id     :bigint           indexed
+#  order_id                :integer
 #
 # Indexes
 #

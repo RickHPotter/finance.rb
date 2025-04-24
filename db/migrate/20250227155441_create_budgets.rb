@@ -3,6 +3,7 @@
 class CreateBudgets < ActiveRecord::Migration[8.0]
   def change
     create_table :budgets do |t|
+      t.integer :order_id, null: false
       t.string :description, null: false
       t.integer :month, null: false
       t.integer :year, null: false

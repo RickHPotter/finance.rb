@@ -13,8 +13,8 @@ RSpec.describe EntityTransactable, type: :concern do
 
   let(:card_transaction) do
     create(:card_transaction, :random, user:, user_card:, price: -600, entity_transactions: [
-             build(:entity_transaction, :random, entity: entity_one, price: 0, is_payer: false, transactable: nil),
-             build(:entity_transaction, :random, entity: entity_two, price: -200, is_payer: true, transactable: nil)
+             build(:entity_transaction, :random, entity: entity_one, price: -200, price_to_be_returned: 0, transactable: nil),
+             build(:entity_transaction, :random, entity: entity_two, price: -200, price_to_be_returned: -200, transactable: nil)
            ])
   end
 

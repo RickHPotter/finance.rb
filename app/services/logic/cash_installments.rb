@@ -28,7 +28,7 @@ module Logic
           .includes(cash_transaction: %i[categories entities])
           .where(conditions)
           .where(search_term_condition)
-          .order(:date, :id)
+          .order(:order_id)
     end
 
     def self.build_conditions_from_params(params)

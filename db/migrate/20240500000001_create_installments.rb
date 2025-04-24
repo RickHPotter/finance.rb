@@ -4,6 +4,7 @@
 class CreateInstallments < ActiveRecord::Migration[8.0]
   def change
     create_table :installments do |t|
+      t.integer :order_id, null: true # should only be null for card_installments
       t.integer :number, null: false
       t.datetime :date, null: false
       t.virtual :date_year, type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true

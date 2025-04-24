@@ -43,6 +43,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   end
 
   create_table "budgets", force: :cascade do |t|
+    t.integer "order_id", null: false
     t.string "description", null: false
     t.integer "month", null: false
     t.integer "year", null: false
@@ -187,6 +188,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   end
 
   create_table "installments", force: :cascade do |t|
+    t.integer "order_id"
     t.integer "number", null: false
     t.datetime "date", null: false
     t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true

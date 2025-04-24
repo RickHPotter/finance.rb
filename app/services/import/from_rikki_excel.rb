@@ -54,6 +54,7 @@ module Import
       set_category_colours
       correct_investment_dates
       fix_missing_references
+      fix_installments_and_budgets_order_id
     end
 
     def fix_user_card_dates
@@ -93,7 +94,7 @@ module Import
     end
 
     def fix_card_payment_dates
-      beginning_of_month = Date.current.beginning_of_month
+      beginning_of_month = Date.current
       end_of_an_era = Date.new(3000, 12, 31)
 
       @user.user_cards.find_each do |user_card|
@@ -143,6 +144,12 @@ module Import
         budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
         budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ NEEDS ]", categories: [ needs_category ])
       end
+    end
+
+    def fix_installments_and_budgets_order_id
+      @user.cash_installments.update_all(order_id: 0, balance: 0)
+      @user.budgets.update_all(order_id: 0, balance: 0)
+      @user.cash_installments.order(:date).first.save
     end
   end
 end

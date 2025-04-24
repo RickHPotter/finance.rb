@@ -117,6 +117,7 @@ module Params
           is_payer: is_payer_option || entity_transaction.is_payer,
           entity_id: entity_transaction.entity_id,
           price: entity_transaction.price,
+          price_to_be_returned: is_payer_option ? entity_transaction.price_to_be_returned : 0,
           exchanges_attributes: exchanges
         }
       end

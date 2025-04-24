@@ -8,9 +8,6 @@ class CashInstallment < Installment
   include HasBalance
 
   # @security (i.e. attr_accessible) ..........................................
-  def balance = @balance || read_attribute("balance")
-  attr_writer :balance
-
   # @relationships ............................................................
   belongs_to :cash_transaction, counter_cache: true
 
@@ -89,6 +86,7 @@ end
 #  updated_at              :datetime         not null
 #  card_transaction_id     :bigint           indexed
 #  cash_transaction_id     :bigint           indexed
+#  order_id                :integer
 #
 # Indexes
 #
