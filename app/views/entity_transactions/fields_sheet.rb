@@ -26,7 +26,7 @@ module Views
           end
 
           SheetMiddle do
-            div(class: "grid grid-cols-2 justify-center") do
+            div(class: "grid grid-cols-2 gap-26 justify-center") do
               bold_label(form, :price, "entity_transaction_price_#{form.index}")
               bold_label(form, :price_to_be_returned, "entity_transaction_price_to_be_returned_#{form.index}")
             end
@@ -56,42 +56,51 @@ module Views
               end
             end
 
-            div(class: "grid grid-cols-4") do
-              div(class: "col-span-2") do
-                bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}")
-              end
+            div(class: "grid grid-cols-2 gap-26") do
+              bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}")
 
-              bold_label(form, :standalone, "entity_transaction_standalone_#{form.index}")
-              bold_label(form, :card_bound, "entity_transaction_standalone_#{form.index}")
+              div(class: "grid grid-cols-2 gap-1") do
+                bold_label(form, :standalone, "entity_transaction_standalone_#{form.index}")
+                bold_label(form, :card_bound, "entity_transaction_standalone_#{form.index}")
+              end
             end
 
-            div(class: "grid grid-cols-4 gap-1") do
-              div(class: "col-span-2") do
-                TextField form, :exchanges_count,
-                          type: :number,
-                          svg: :number,
-                          min: 0, max: 72,
-                          disabled: !entity_transaction.is_payer,
-                          value: entity_transaction&.exchanges_count&.to_i,
-                          id: "entity_transaction_exchanges_count_#{form.index}",
-                          class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
-                          data: { entity_transaction_target: :exchangesCountInput, action: "input->entity-transaction#updateExchangesPrices" }
+            div(class: "grid grid-cols-12 gap-1") do
+              div(class: "col-span-5") do
+                TextFieldTag :exchanges_count,
+                             type: :number,
+                             svg: :number,
+                             min: 0, max: 72,
+                             disabled: !entity_transaction.is_payer,
+                             value: entity_transaction&.exchanges_count&.to_i,
+                             id: "entity_transaction_exchanges_count_#{form.index}",
+                             class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
+                             data: { entity_transaction_target: :exchangesCountInput, action: "input->entity-transaction#updateExchangesPrices" }
               end
 
-              radio_button_tag(:bound_type, :standalone,
-                               checked: entity_transaction.exchanges.first&.standalone? || !entity_transaction.exchanges.first&.card_bound?,
-                               id: "entity_transaction_standalone_#{form.index}",
-                               class: "w-4 h-4 border-gray-300 focus:ring-blue-500 m-auto",
-                               data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+              Button(
+                class: "col-span-2 bg-gray-100 rounded-sm", disabled: !entity_transaction.is_payer,
+                data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
+              ) do
+                cached_icon(:equals)
+              end
 
-              radio_button_tag(:bound_type, :card_bound,
-                               checked: entity_transaction.exchanges.first&.card_bound?,
-                               id: "entity_transaction_card_bound_#{form.index}",
-                               class: "w-4 h-4 border-gray-300 focus:ring-blue-500 m-auto",
-                               data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+              div(class: "col-span-5 grid grid-cols-2 gap-1") do
+                radio_button_tag(:bound_type, :standalone,
+                                 checked: entity_transaction.exchanges.first&.standalone? || !entity_transaction.exchanges.first&.card_bound?,
+                                 id: "entity_transaction_standalone_#{form.index}",
+                                 class: "w-4 h-4 border-gray-300 focus:ring-blue-500 m-auto",
+                                 data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+
+                radio_button_tag(:bound_type, :card_bound,
+                                 checked: entity_transaction.exchanges.first&.card_bound?,
+                                 id: "entity_transaction_card_bound_#{form.index}",
+                                 class: "w-4 h-4 border-gray-300 focus:ring-blue-500 m-auto",
+                                 data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+              end
             end
 
-            div(id: "exchanges_nested", data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
+            div(id: "exchanges_nested", data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }) do
               template(data: { nested_form_target: "template" }) do
                 form.fields_for :exchanges, Exchange.new, child_index: "NEW_NESTED_RECORD" do |exchange_fields|
                   render ::Views::Exchanges::Fields.new(form: exchange_fields)
@@ -108,10 +117,10 @@ module Views
               button(class: :hidden, data: { entity_transaction_target: :addExchange, action: "nested-form#addChildNested" })
             end
 
-            SheetFooter do
-              # Button(variant: :outline, data: { action: "click->ruby-ui--sheet-content#close" }) { "Cancel" }
-              # Button(type: "submit") { "Save" }
-            end
+            # SheetFooter do
+            #   Button(variant: :outline, data: { action: "click->ruby-ui--sheet-content#close" }) { "Cancel" }
+            #   Button(type: "submit") { "Save" }
+            # end
           end
         end
       end
@@ -125,15 +134,15 @@ module Views
           end
 
           PopoverContent(class: "w-40") do
-            Button(class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
               "Full Price"
             end
 
-            Button(class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
               "Half Price"
             end
 
-            Button(class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
               "Third Price"
             end
           end

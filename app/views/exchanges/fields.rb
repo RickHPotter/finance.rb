@@ -19,17 +19,6 @@ module Views
           form.hidden_field :_destroy
 
           div(class: "grid grid-cols-1 my-1") do
-            # select_tag :cash_transaction_id,
-            #            options_from_collection_for_select([], :id, :description),
-            #            class: "w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
-            #            data: { controller: "select", id: "cash-transaction-select" }
-            #
-            # turbo_frame_tag :cash_transactions do
-            #   if exchange.cash_transaction
-            #     turbo_frame_tag "cash_transaction_#{exchange.cash_transaction.id}", src: inspect_cash_transactions_path(id: exchange.cash_transaction.id)
-            #   end
-            # end
-
             div(class: "flex w-full my-1") do
               div(class: "flex w-1/2") do
                 span(class: "inline-flex items-center text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md w-full") do

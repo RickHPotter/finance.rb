@@ -2,7 +2,7 @@
 
 module RubyUI
   class Button < Base
-    def initialize(type: :button, variant: :ghost, size: :md, icon: false, **attrs)
+    def initialize(type: :button, variant: :outline, size: :md, icon: false, **attrs)
       @type = type
       @variant = variant.to_sym
       @size = size.to_sym

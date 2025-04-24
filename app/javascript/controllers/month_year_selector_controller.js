@@ -107,6 +107,8 @@ export default class extends Controller {
     target.classList.remove(...active_bg)
     target.classList.add(...inactive_bg)
 
+    this.monthYearsTarget.value = JSON.stringify(Array.from(document.activeMonths))
+
     const frame = document.querySelector(`turbo-frame#month_year_container_${month}`)
     frame.remove()
   }

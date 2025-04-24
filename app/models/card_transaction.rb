@@ -47,7 +47,7 @@ class CardTransaction < ApplicationRecord
     return if imported
 
     reference_date = user_card.calculate_reference_date(date)
-    existing_reference = Reference.find_by_reference_date(user_card, reference_date)
+    existing_reference = user_card.references.find_by(reference_date:)
 
     if existing_reference
       self.month = existing_reference.month
@@ -55,7 +55,7 @@ class CardTransaction < ApplicationRecord
     else
       self.month = reference_date.month
       self.year = reference_date.year
-      Reference.create!(user_card:, month:, year:, reference_date:)
+      user_card.references.create_with(reference_date:).find_or_create_by(month:, year:)
     end
 
     update_installments if card_installments.any?

@@ -36,6 +36,6 @@ pt-BR:
         monetary: Monetário
         non_monetary: Não Monetário
         standalone: Simples
-        card_bound: Vinculado ao Cartão
+        card_bound: Cartão
         created_at: Criado em
         updated_at: Atualizado em

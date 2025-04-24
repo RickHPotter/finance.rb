@@ -2,7 +2,8 @@ import NestedForm from 'stimulus-rails-nested-form'
 
 // Connects to data-controller='nested-form'
 export default class extends NestedForm {
-   static targets = ["target", "template"]
+  static targets = ["target", "template"]
+
   connect() {
     super.connect()
   }

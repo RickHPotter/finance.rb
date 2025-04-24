@@ -5,7 +5,10 @@ import { _removeMask, _applyMask } from "../utils/mask.js"
 
 // FIXME: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
-  static targets = ["priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"]
+  static targets = [
+    "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
+    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"
+  ]
 
   connect() {
     initModals()
@@ -17,6 +20,7 @@ export default class extends Controller {
 
     if (shouldBeDisabled !== this.exchangesCountInputTarget.disabled) {
       this.exchangesCountInputTarget.disabled = shouldBeDisabled
+      this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
 
       if (shouldBeDisabled) {
         this.exchangesCountInputTarget.value = 0
@@ -94,6 +98,12 @@ export default class extends Controller {
     this.element.querySelectorAll(".bound_type").forEach((element) => element.value = target.value)
   }
 
+  copyTransactionInstallmentsCount() {
+    this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+    this.exchangesCountInputTarget.dispatchEvent(new Event("input"))
+  }
+
+
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
@@ -118,45 +128,45 @@ export default class extends Controller {
   }
 
   async _updateExchangesPrices() {
-    const total_price         = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
-    const new_exchanges_count = parseInt(this.exchangesCountInputTarget.value)
+    const totalCents     = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
+    const exchangesCount = parseInt(this.exchangesCountInputTarget.value)
 
-    let price_that_cannot_be_divided  = total_price % new_exchanges_count
-    const price_that_can_be_divided   = total_price - price_that_cannot_be_divided
-    const divisible_exchange_price    = price_that_can_be_divided / new_exchanges_count
+    const baseCents = Math.floor(totalCents / exchangesCount)
+    const remainder = totalCents - baseCents * exchangesCount
 
-    await this._updateExchangesFields(new_exchanges_count)
+    await this._updateExchangesFields(exchangesCount)
 
-    const visible_exchanges_inputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility())
+    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility())
 
-    visible_exchanges_inputs.forEach((target) => {
-      const value  = (divisible_exchange_price + Math.max(0, price_that_cannot_be_divided--)).toString()
-      target.value = this._applyMask(value)
+    visibleExchangesInputs.forEach((input, index) => {
+      const valueCents = baseCents + (index < remainder ? 1 : 0)
+      const value = (valueCents / 100).toFixed(2)
+      input.value = this._applyMask(value)
     })
   }
 
-  async _updateExchangesFields(new_exchanges_count) {
-    const all_exchanges           = this.priceExchangeInputTargets
-    const all_exchanges_count     = all_exchanges.length
-    const visible_exchanges       = all_exchanges.filter((element) => element.checkVisibility())
-    const visible_exchanges_count = visible_exchanges.length
+  async _updateExchangesFields(newExchangesCount) {
+    const allExchanges          = this.priceExchangeInputTargets
+    const allExchangesCount     = allExchanges.length
+    const visibleExchanges      = allExchanges.filter((element) => element.checkVisibility())
+    const visibleExchangesCount = visibleExchanges.length
 
-    const should_remove_exchanges     = new_exchanges_count < visible_exchanges_count
-    const should_add_exchanges        = new_exchanges_count > visible_exchanges_count
-    const can_update_hidden_exchanges = all_exchanges_count > visible_exchanges_count
+    const shouldRemoveExchanges    = newExchangesCount < visibleExchangesCount
+    const shouldAddExchanges       = newExchangesCount > visibleExchangesCount
+    const canUpdateHiddenExchanges = allExchangesCount > visibleExchangesCount
 
-    if (visible_exchanges_count === new_exchanges_count) { return }
+    if (visibleExchangesCount === newExchangesCount) { return }
 
-    if (should_remove_exchanges) {
-      const exchanges_delete_buttons_to_be_clicked = this.delExchangeTargets.slice(new_exchanges_count)
+    if (shouldRemoveExchanges) {
+      const exchangesDeleteButtonsToBeClicked = this.delExchangeTargets.slice(newExchangesCount)
 
-      exchanges_delete_buttons_to_be_clicked.forEach((element) => element.click())
+      exchangesDeleteButtonsToBeClicked.forEach((element) => element.click())
     }
 
-    if (!should_add_exchanges) { return }
+    if (!shouldAddExchanges) { return }
 
-    if (can_update_hidden_exchanges) {
-      const sliced = this.exchangeWrapperTargets.slice(visible_exchanges_count, new_exchanges_count)
+    if (canUpdateHiddenExchanges) {
+      const sliced = this.exchangeWrapperTargets.slice(visibleExchangesCount, newExchangesCount)
 
       sliced.forEach(element => {
         element.style.display = "block"
@@ -164,35 +174,34 @@ export default class extends Controller {
       })
     }
 
-    const number_of_new_exchanges_to_add = new_exchanges_count - all_exchanges_count
-    for (let i = 0; i < number_of_new_exchanges_to_add; i++) {
+    const numberOfNewExchangesToAdd = newExchangesCount - allExchangesCount
+    for (let i = 0; i < numberOfNewExchangesToAdd; i++) {
       await this.addExchangeTarget.click()
     }
 
-    const rails_due_date = this._getDueDate()
-    this._updateWrappers(rails_due_date, visible_exchanges_count)
+    const railsDueDate = this._getDueDate()
+    this._updateWrappers(railsDueDate, visibleExchangesCount)
   }
 
-  _updateWrappers(starting_rails_date, starting_number = 0) {
-    if (this.monthYearExchangeTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
+  _updateWrappers(startingRailsDate, startingNumber = 0) {
+    if (startingNumber === 0 && this.monthYearExchangeTarget.textContent.trim() === startingRailsDate.monthYear()) { return }
 
-    starting_rails_date.monthsForwards(starting_number)
+    startingRailsDate.monthsForwards(startingNumber)
 
-    const visible_exchanges_wrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
+    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
 
-    visible_exchanges_wrappers.slice(starting_number).forEach((target, index) => {
-      target.querySelector(".exchange_month_year").textContent = starting_rails_date.monthYear()
-      target.querySelector(".exchange_number").value = index + starting_number + 1
+    visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
+      target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
+      target.querySelector(".exchange_number").value = index + startingNumber + 1
 
-      starting_rails_date.monthsForwards(1)
+      startingRailsDate.monthsForwards(1)
     })
   }
 
   _getDueDate() {
-    const cardTransactionDate = document.getElementById("card_transaction_date")
-    const cashTransactionDate = document.getElementById("cash_transaction_date")
-    const dateStr = ( cardTransactionDate || cashTransactionDate ).value
+    const year = parseInt(document.querySelector(".installment_year").value)
+    const month = parseInt(document.querySelector(".installment_month").value)
 
-    return new RailsDate(dateStr)
+    return new RailsDate(year, month, 1)
   }
 }

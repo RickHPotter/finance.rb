@@ -67,14 +67,14 @@ class CardTransactionsController < ApplicationController
   end
 
   def create
-    @card_transaction = CardTransaction.new(card_transaction_params)
+    @card_transaction = CardTransaction.new(card_transaction_params.merge(imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
     handle_save
   end
 
   def update
-    @card_transaction.assign_attributes(card_transaction_params)
+    @card_transaction.assign_attributes(card_transaction_params.merge(imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
     handle_save

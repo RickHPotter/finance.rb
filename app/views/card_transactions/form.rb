@@ -72,7 +72,7 @@ class Views::CardTransactions::Form < Views::Base
           end
 
           div(id: "hw_category_id", class: "hw-cb w-full lg:w-2/12 mb-3 plus-icon") do
-            form.combobox \
+            helpers.combobox_tag \
               :category_transaction,
               @categories,
               mobile_at: "360px",
@@ -82,7 +82,7 @@ class Views::CardTransactions::Form < Views::Base
           end
 
           div(id: "hw_entity_id", class: "hw-cb w-full lg:w-2/12 mb-3 user-icon") do
-            form.combobox \
+            helpers.combobox_tag \
               :entity_transaction,
               @entities,
               mobile_at: "360px",
@@ -114,14 +114,14 @@ class Views::CardTransactions::Form < Views::Base
             end
 
             div(class: "w-1/3 lg:w-2/5") do
-              TextField \
-                form, :card_installments_count,
+              TextFieldTag \
+                :card_installments_count,
                 type: :number,
                 svg: :number,
                 min: 1, max: 72,
                 value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
                 class: "font-graduate",
-                data: { reactive_form_target: :installmentsCountInput, action: "change->reactive-form#requestSubmit focusout->reactive-form#requestSubmit" }
+                data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
             end
           end
         end

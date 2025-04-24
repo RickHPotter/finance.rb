@@ -148,6 +148,7 @@ class Views::CashInstallments::Index < Views::Base
             end
           end
 
+          span(class: "px-1 rounded-sm text-slate-900 mx-auto") { cash_installment.order_id }
           span(class: "px-1 rounded-sm text-slate-900 mx-auto") { I18n.l(cash_installment.date, format: :shorter) }
         end
 

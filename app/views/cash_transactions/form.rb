@@ -117,7 +117,6 @@ class Views::CashTransactions::Form < Views::Base
           end
         end
 
-        # Installments
         div(class: "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do
@@ -135,7 +134,6 @@ class Views::CashTransactions::Form < Views::Base
           button(class: :hidden, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
         end
 
-        # Categories
         div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do
@@ -154,7 +152,6 @@ class Views::CashTransactions::Form < Views::Base
           button(class: :hidden, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
         end
 
-        # Entities
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do

@@ -55,9 +55,9 @@ class RailsDate {
   }
 
   yearsForwards(years) {
-    const new_date = new Date(this._date)
-    new_date.setFullYear(this._date.getFullYear() + years)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setFullYear(this._date.getFullYear() + years)
+    this._applyDate(newDate)
 
     return this
   }
@@ -67,9 +67,9 @@ class RailsDate {
   }
 
   monthsForwards(months) {
-    const new_date = new Date(this._date)
-    new_date.setMonth(this._date.getMonth() + months)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setMonth(this._date.getMonth() + months)
+    this._applyDate(newDate)
 
     return this
   }
@@ -79,9 +79,9 @@ class RailsDate {
   }
 
   daysForwards(days) {
-    const new_date = new Date(this._date)
-    new_date.setDate(this._date.getDate() + days)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setDate(this._date.getDate() + days)
+    this._applyDate(newDate)
 
     return this
   }

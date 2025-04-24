@@ -64,13 +64,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       return
     end
 
-    params = {
-      **transactable.slice(:month, :year),
-      description: transactable.user_card.user_card_name,
-      cash_transaction_type: model_name.name,
-      categories: { id: user.built_in_category("EXCHANGE RETURN").id }
-    }
-    existing_cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
+    existing_cash_transaction = user.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions)
 
     if existing_cash_transaction
       self.cash_transaction = existing_cash_transaction
@@ -160,18 +154,30 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     price - changes[:price][0] + changes[:price][1]
   end
 
+  def date
+    if transactable.is_a?(CardTransaction)
+      transactable.card_payment_date + (number - 1).months
+    else
+      transactable.date + 1.month + (number - 1).months
+    end
+  end
+
   # @see {CashTransaction}.
   #
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    date = transactable.is_a?(CardTransaction) ? transactable.card_payment_date : transactable.date + 1.month
+    reference_date = Date.new(transactable.year, transactable.month, 1) + (number - 1).months
+    year           = reference_date.year
+    month          = reference_date.month
 
     transactable
-      .slice(:description, :month, :year, :user_card_id)
+      .slice(:description, :user_card_id)
       .merge(starting_price:,
              price:,
              date:,
+             year:,
+             month:,
              user_id: user.id,
              cash_transaction_type: model_name.name,
              category_transactions: FactoryBot.build_list(:category_transaction, 1, transactable: self, category: user.built_in_category("EXCHANGE RETURN")),
@@ -180,6 +186,21 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def card_bound_cash_transaction_params
     cash_transaction_params.merge(description: transactable.user_card.user_card_name)
+  end
+
+  def cash_transaction_conditions
+    params = cash_transaction_params
+    params[:categories] = { id: params.delete(:category_transactions).pluck(:category_id) }
+    params[:entities] = { id: params.delete(:entity_transactions).pluck(:entity_id) }
+
+    params.delete(:categories) if params[:categories][:id].empty?
+    params.delete(:entities) if params[:entities][:id].empty?
+
+    params.without(:starting_price, :price, :date)
+  end
+
+  def card_bound_cash_transaction_conditions
+    cash_transaction_conditions.merge(description: transactable.user_card.user_card_name)
   end
 
   def _destroy_cash_transaction

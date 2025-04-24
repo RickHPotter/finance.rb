@@ -17,15 +17,11 @@ class Reference < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-  def self.find_by_reference_date(user_card, reference_date)
-    where(user_card: user_card, reference_date: reference_date).first
-  end
-
   def self.find_or_create_for(user_card, date)
     month = date.month
     year = date.year
 
-    find_or_create_by(user_card: user_card, month: month, year: year) do |ref|
+    find_or_create_by(user_card:, month:, year:) do |ref|
       ref.reference_date = user_card.calculate_reference_date(date)
     end
   end

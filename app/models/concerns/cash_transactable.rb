@@ -71,7 +71,7 @@ module CashTransactable
   #
   def update_cash_transaction
     cash_transaction.update_columns(price: full_price, comment:)
-    cash_transaction.cash_installments.first.update_columns(price: full_price)
+    cash_transaction.cash_installments.first.update(price: full_price)
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.

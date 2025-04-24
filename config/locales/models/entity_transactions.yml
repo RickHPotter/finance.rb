@@ -40,6 +40,6 @@ pt-BR:
         price_to_be_returned: Valor a ser devolvido
         exchanges_count: Quantidade de Trocas
         standalone: Simples
-        card_bound: Vinculado ao Cartão
+        card_bound: Cartão
         created_at: Criado em
         updated_at: Atualizado em

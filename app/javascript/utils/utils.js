@@ -1,9 +1,9 @@
-const is_empty = (value) => {
+const isEmpty = (value) => {
   return value === "" || value === null || value === undefined
 }
 
-const is_present = (value) => {
-  return !is_empty(value)
+const isPresent = (value) => {
+  return !isEmpty(value)
 }
 
 const sleep = (fn, time = 0) => {
@@ -11,4 +11,4 @@ const sleep = (fn, time = 0) => {
     .then(fn)
 }
 
-export { is_empty, is_present, sleep }
+export { isEmpty, isPresent, sleep }
