@@ -15,19 +15,38 @@
 
     <%= bold_label(form, :active) %>
 
-    <div class="mb-3">
+    <div class="pb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, entity) } %>
+    <div class="w-full">
+      <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, entity) } %>
+    </div>
+
+    <% if entity.persisted? %>
+      <div class="w-full">
+        <%= render RubyUI::Button.new(
+              id: "delete_entity_#{entity.id}",
+              type: :submit,
+              variant: :destructive,
+              link: entity_path(entity),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) { action_model(:destroy, entity) } %>
+      </div>
+    <% end %>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>
 
-<div class="title-sm font-thin text-slate-300 pt-3">
-  <span>People icons created by </span>
-  <a class="underline" href="https://www.flaticon.com/authors/vitaly-gorbachev" title="people icons">Vitaly Gorbachev - Flaticon</a>
-  <br>
-  <span>Dogs icons created by </span>
-  <a class="underline" href="https://www.flaticon.com/authors/maxim-kulikov" title="dogs icons">Maxim Kulikov - Flaticon</a>
+<div class="text-xs font-thin text-slate-300 pt-2">
+  <div>
+    <span><%= model_attribute(entity, :person_icons_credits) %></span>
+    <a class="underline" href="https://www.flaticon.com/authors/vitaly-gorbachev" title="people icons">Vitaly Gorbachev - Flaticon</a>
+  </div>
+
+  <div>
+    <span><%= model_attribute(entity, :dog_icons_credits) %></span>
+    <a class="underline" href="https://www.flaticon.com/authors/maxim-kulikov" title="dogs icons">Maxim Kulikov - Flaticon</a>
+  </div>
 </div>

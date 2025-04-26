@@ -11,30 +11,30 @@
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class="mb-4 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :first_name, svg: :user, placeholder: model_attribute(resource, :first_name), autofocus: true) %>
+    <%= render Components::TextField.new(f, :first_name, svg: :user, placeholder: model_attribute(resource, :first_name), autofocus: true) %>
   </div>
 
   <div class="mb-4 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :last_name, svg: :user_group, placeholder: model_attribute(resource, :last_name)) %>
+    <%= render Components::TextField.new(f, :last_name, svg: :user_group, placeholder: model_attribute(resource, :last_name)) %>
   </div>
 
   <div class="mb-4 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, placeholder: model_attribute(resource, :email)) %>
+    <%= render Components::TextField.new(f, :email, type: :email, svg: :email, placeholder: model_attribute(resource, :email)) %>
   </div>
 
   <div class="mb-4 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :password)) %>
+    <%= render Components::TextField.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :password)) %>
   </div>
 
   <div class="mb-4 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :password_confirmation)) %>
+    <%= render Components::TextField.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :password_confirmation)) %>
 
     <% if @minimum_password_length %>
       <%= content_tag :span, t(:minimum_characters, count: @minimum_password_length), class: "text-xs font-graduate text-gray-500" %>
     <% end %>
   </div>
 
-  <div>
-    <%= render Components::ButtonComponent.new(form: f, options: { label: t(:sign_up) }) %>
+  <div class="flex justify-center">
+    <%= render RubyUI::Button.new(type: :submit, size: :lg, variant: :purple) { t(:sign_up) } %>
   </div>
 <% end %>

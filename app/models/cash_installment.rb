@@ -5,8 +5,6 @@ class CashInstallment < Installment
   delegate :user, :user_id, :user_card, :user_card_id, to: :cash_transaction, allow_nil: true
 
   # @includes .................................................................
-  include HasBalance
-
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :cash_transaction, counter_cache: true
@@ -26,7 +24,7 @@ class CashInstallment < Installment
   scope :by_categories_or_entities, lambda { |categories, entities|
     joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories: }).or(
       joins(cash_transaction: %i[categories entities]).where(cash_transaction: { entities: })
-    )
+    ).distinct
   }
 
   # @additional_config ........................................................
@@ -50,7 +48,7 @@ class CashInstallment < Installment
   def set_paid
     return if [ false, true ].include?(paid)
 
-    self.paid = date.present? && Date.current >= date
+    self.paid = date.present? && Time.zone.today >= date
   end
 
   # Sets `cash_transaction.paid` as true if all its installments were paid.
@@ -86,10 +84,11 @@ end
 #  updated_at              :datetime         not null
 #  card_transaction_id     :bigint           indexed
 #  cash_transaction_id     :bigint           indexed
-#  order_id                :integer
+#  order_id                :integer          indexed
 #
 # Indexes
 #
+#  idx_installments_order_id                  (order_id)
 #  idx_installments_price                     (price)
 #  idx_installments_year_month_date           (date_year,date_month,date)
 #  index_installments_on_card_transaction_id  (card_transaction_id)

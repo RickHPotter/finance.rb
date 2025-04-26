@@ -10,7 +10,6 @@ module Logic
     def self.find_by(user, conditions)
       user.user_bank_accounts
           .left_joins(:cash_transactions)
-          .includes(:bank)
           .where(conditions)
           .group("user_bank_accounts.id")
           .order(:agency_number, :account_number)

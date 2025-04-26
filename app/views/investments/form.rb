@@ -36,7 +36,7 @@ class Views::Investments::Form < Views::Base
                           data: { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
         end
 
-        div(class: "lg:flex lg:gap-2 w-full mb-3") do
+        div(class: "lg:flex lg:gap-2 w-full pb-3") do
           div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-4/12 mb-3 lg:mb-0 wallet-icon") do
             form.combobox \
               :user_bank_account_id,
@@ -54,7 +54,7 @@ class Views::Investments::Form < Views::Base
               form, :date,
               id: :investment_date,
               type: "datetime-local", svg: :calendar,
-              value: (investment.date || DateTime.current).strftime("%Y-%m-%dT%H:%M"),
+              value: (investment.date || Time.zone.now).strftime("%Y-%m-%dT%H:%M"),
               class: "font-graduate",
               data: { controller: "ruby-ui--calendar-input",
                       reactive_form_target: :dateInput,
@@ -73,7 +73,9 @@ class Views::Investments::Form < Views::Base
           end
         end
 
-        render Components::ButtonComponent.new form:, options: { label: action_model(:submit, investment) }
+        div(class: "w-full") do
+          Button(type: :submit, variant: :purple) { action_model(:submit, investment) }
+        end
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end

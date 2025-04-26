@@ -18,7 +18,7 @@ class CreateUserCards < ActiveRecord::Migration[8.0]
 
       t.timestamps
 
-      t.index [ "user_card_name" ], name: "index_user_cards_on_user_card_name", unique: true
+      t.index %w[user_id card_id user_card_name], name: "index_user_cards_on_on_composite_key", unique: true
     end
   end
 end

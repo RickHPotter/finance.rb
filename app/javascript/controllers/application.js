@@ -11,6 +11,42 @@ application.register("hw-combobox", HwComboboxController)
 
 export { application }
 
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("a")
+
+  if (
+    link &&
+    (event.ctrlKey || event.metaKey) &&
+    link.href.includes(".turbo_stream")
+  ) {
+    event.preventDefault()
+    link.click()
+  }
+})
+
+document.addEventListener("DOMContentLoaded", () => {
+  const validStandalonePaths = ["/", "/sidekiq", "/up"]
+  const fullPath = window.location.pathname + window.location.search + window.location.hash
+
+  if (!validStandalonePaths.includes(window.location.pathname)) {
+    Turbo.visit("/")
+
+    document.addEventListener("turbo:load", () => {
+      console.info("you have been turbo hijacked")
+      const centerFrame = document.getElementById("center_container")
+
+      if (centerFrame) {
+        const url = new URL(fullPath, window.location.origin)
+        if (!url.searchParams.has("format")) {
+          url.searchParams.set("format", "turbo_stream")
+        }
+
+        centerFrame.src = url.pathname + url.search + url.hash
+      }
+    })
+  }
+})
+
 document.body.onkeydown = (e) => {
   const key = e.keyCode
 

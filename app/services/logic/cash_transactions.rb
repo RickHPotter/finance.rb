@@ -12,7 +12,9 @@ module Logic
         user_bank_account = user.user_bank_accounts.first
       end
 
-      cash_transaction = user_bank_account.cash_transactions.new
+      return if user_bank_account.nil?
+
+      cash_transaction = user_bank_account.cash_transactions.new(date: Time.zone.now)
       cash_transaction.build_month_year
       cash_transaction.entity_transactions.new(entity:) if entity
       cash_transaction.category_transactions.new(category:) if category
@@ -40,13 +42,15 @@ module Logic
 
       associations = build_conditions_for_associations(cash_transaction_params)
 
+      cash_transaction_params = cash_transaction_params.to_unsafe_h if cash_transaction_params.is_a?(ActionController::Parameters)
       cash_transaction_params.merge({
         price: build_price_range_conditions(search_params),
         installments_price: build_cash_transaction_price_range_conditions(search_params),
         cash_installments_count: build_installments_count_range_conditions(search_params),
         search_term: search_params.delete(:search_term),
+        skip_budgets: search_params.delete(:skip_budgets),
         associations:
-      }.compact_blank).to_unsafe_h
+      }.compact_blank)
     end
 
     def self.build_price_range_conditions(search_params)
@@ -86,8 +90,8 @@ module Logic
     end
 
     def self.build_conditions_for_associations(params)
-      category_id = (params.delete(:category_id) || {}).compact_blank
-      entity_id = (params.delete(:entity_id) || {}).compact_blank
+      category_id = (params.delete(:category_id).presence || {}).compact_blank
+      entity_id = (params.delete(:entity_id).presence || {}).compact_blank
 
       {
         categories: { id: category_id }.compact_blank,

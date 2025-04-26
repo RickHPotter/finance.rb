@@ -57,7 +57,7 @@ class RefMonthYear
 
   # Gets the span of dates according to a `pivot date` respecting the boundary of `max_date`.
   #
-  # @param pivot_date [Date] The pivot date, usually the `Date.current`.
+  # @param pivot_date [Date] The pivot date, usually the `Time.zone.today`.
   # @param max_date [Date] The maximum date, the boundary of the span.
   # @param interval [Integer] The interval, amount of months in the span.
   #

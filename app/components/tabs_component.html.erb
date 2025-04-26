@@ -9,7 +9,7 @@
 
     <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
     <% @items.each_with_index do |item, index| %>
-      <%= content_tag :li, class: "z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
+      <%= content_tag :li, class: "scale-75 md:scale-100 z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
         <%= link_to item.link,
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },

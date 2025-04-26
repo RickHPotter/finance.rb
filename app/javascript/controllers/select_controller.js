@@ -13,8 +13,8 @@ export default class extends Controller {
   initializeTomSelect() {
     new TomSelect(this.element, {
       plugins: {
-        remove_button:{ title:"Remove this item" },
-        clear_button: { title:"Remove all selected options" },
+        remove_button:{ title: "Remove this item" },
+        clear_button: { title: "Remove all selected options" },
       },
       persist: false,
       allowEmptyOption: true,

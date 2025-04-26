@@ -21,7 +21,7 @@ RSpec.describe "Categories", type: :feature do
   feature "/categories/index" do
     background do
       category.save
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, category_transactions: [ build(:category_transaction, :random, category:) ])
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, category_transactions: [ build(:category_transaction, :random, category:) ])
       navigate_to(menu: basic, sub_menu: category_submenu)
     end
 
@@ -44,7 +44,7 @@ RSpec.describe "Categories", type: :feature do
 
     scenario "creating an invalid category" do
       within "turbo-frame#new_category" do
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_createda, Category))
@@ -54,7 +54,7 @@ RSpec.describe "Categories", type: :feature do
       within "turbo-frame#new_category form" do
         fill_in "category_category_name", with: "Test Category"
 
-        find("input[type=submit]", match: :first).click
+        find("button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:createda, Category))
@@ -84,7 +84,7 @@ RSpec.describe "Categories", type: :feature do
 
       within "turbo-frame#category_#{category.id} form" do
         fill_in "category_category_name", with: ""
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, Category))
@@ -98,7 +98,7 @@ RSpec.describe "Categories", type: :feature do
       within "turbo-frame#category_#{category.id} form" do
         fill_in "category_category_name", with: "Another Test Category"
 
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:updateda, Category))
@@ -138,7 +138,7 @@ RSpec.describe "Categories", type: :feature do
     end
 
     scenario "failing to destroy a category that has card_transactions" do
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, category_transactions: [ build(:category_transaction, :random, category:) ])
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, category_transactions: [ build(:category_transaction, :random, category:) ])
 
       within "turbo-frame#category_#{category.id}" do
         find("#delete_category_#{category.id}").click

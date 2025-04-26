@@ -1,4 +1,5 @@
 <% if @cash_transaction.destroyed? %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyeda, CashTransaction) }) %>
   <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context)) %>
 <% else %>

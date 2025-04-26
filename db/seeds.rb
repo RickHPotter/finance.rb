@@ -50,7 +50,7 @@ User.find_each do |user|
   end
 
   user_bank_account = user.user_bank_accounts.sample
-  (1..28).reverse_each { |index| FactoryBot.create(:investment, :random, user:, user_bank_account:, date: Date.current - index) }
+  (1..28).reverse_each { |index| FactoryBot.create(:investment, :random, user:, user_bank_account:, date: Time.zone.today - index) }
   puts "Created Investments - #{user.full_name}.".yellow
 end
 

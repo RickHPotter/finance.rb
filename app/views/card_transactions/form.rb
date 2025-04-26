@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardTransactions::Form < Views::Base
+class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::TextFieldTag
   include Phlex::Rails::Helpers::HiddenFieldTag
@@ -13,14 +13,11 @@ class Views::CardTransactions::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :card_transaction
+  attr_reader :current_user, :card_transaction
 
   def initialize(current_user:, card_transaction:)
     @current_user = current_user
     @card_transaction = card_transaction
-    @user_card = card_transaction&.user_card
-    @due_date = @user_card&.calculate_reference_date(Date.current)
-    @closing_date = @due_date - @user_card.days_until_due_date if @due_date
 
     set_cards
     set_user_cards
@@ -36,17 +33,16 @@ class Views::CardTransactions::Form < Views::Base
                 data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
 
-        # FIXME: try to find a cleaner way to do this
-        hidden_field_tag :days_until_due_date,  user_card&.days_until_due_date, disabled: true, data: { reactive_form_target: :daysUntilDueDate }
-        hidden_field_tag :closing_date_day,     @closing_date&.day,             disabled: true, data: { reactive_form_target: :closingDateDay }
-        hidden_field_tag :category_colours,     categories_json,                disabled: true, data: { reactive_form_target: :categoryColours }
-        hidden_field_tag :entity_icons,         entities_json,                  disabled: true, data: { reactive_form_target: :entityIcons }
-        hidden_field_tag :exchange_category_id, exchange_category_id,           disabled: true, id: :exchange_category_id
+        hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
+        hidden_field_tag :entity_icons,     entities_json,   disabled: true, data: { reactive_form_target: :entityIcons }
+
+        hidden_field_tag :exchange_category_id,   exchange_category.id,   disabled: true, id: :exchange_category_id
+        hidden_field_tag :exchange_category_name, exchange_category.name, disabled: true, id: :exchange_category_name
 
         div(class: "w-full mb-6") do
           form.text_field :description,
                           class: outdoor_input_class,
-                          autofocus: true,
+                          autofocus: params[:commit] != "Update",
                           autocomplete: :off,
                           data: { controller: "blinking-placeholder", text: model_attribute(card_transaction, :description) }
         end
@@ -72,17 +68,18 @@ class Views::CardTransactions::Form < Views::Base
           end
 
           div(id: "hw_category_id", class: "hw-cb w-full lg:w-2/12 mb-3 plus-icon") do
-            helpers.combobox_tag \
+            combobox_tag \
               :category_transaction,
               @categories,
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :category_id),
+              autofocus: params[:commit] == "Update",
               data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
           end
 
           div(id: "hw_entity_id", class: "hw-cb w-full lg:w-2/12 mb-3 user-icon") do
-            helpers.combobox_tag \
+            combobox_tag \
               :entity_transaction,
               @entities,
               mobile_at: "360px",
@@ -101,19 +98,41 @@ class Views::CardTransactions::Form < Views::Base
               data: { controller: "ruby-ui--calendar-input", reactive_form_target: :dateInput, action: "focusout->reactive-form#requestSubmit" }
           end
 
-          div(class: "flex") do
-            div(class: "w-2/3 lg:w-3/5 mb-3 lg:mb-0") do
+          positive = card_transaction.price.to_i.positive?
+          sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
+          sign = positive ? "+" : "-"
+
+          div(class: "flex gap-1 mb-3 lg:mb-0") do
+            Button(
+              size: :lg,
+              class: "w-1/12 #{sign_bg_colour} border border-black",
+              tabindex: -1,
+              title: action_message(:toggle_sign),
+              data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
+            ) { sign }
+
+            div(class: "w-6/12") do
               TextField \
                 form, :price,
                 svg: :money,
                 id: :transaction_price,
-                class: "font-graduate",
+                class: "sign-based font-graduate",
+                autocomplete: :off,
                 data: { price_mask_target: :input,
                         reactive_form_target: :priceInput,
-                        action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices" }
+                        action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
+                        sign: }
             end
 
-            div(class: "w-1/3 lg:w-2/5") do
+            Button(
+              size: :lg,
+              class: "w-1/12 border border-black",
+              tabindex: -1,
+              title: action_message(:calculate_installments_price),
+              data: { action: "click->reactive-form#updateFullPrice" }
+            ) { "=" }
+
+            div(class: "w-4/12") do
               TextFieldTag \
                 :card_installments_count,
                 type: :number,
@@ -121,65 +140,83 @@ class Views::CardTransactions::Form < Views::Base
                 min: 1, max: 72,
                 value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
                 class: "font-graduate",
+                onclick: "this.select();",
                 data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
             end
           end
         end
 
-        div(class: "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 pb-3",
+        div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do
             form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
-              render partial "installments/installment_fields", form: installment_fields
+              render Views::Installments::Fields.new(form: installment_fields)
             end
           end
 
-          form.fields_for :card_installments do |installment_fields|
-            render partial "installments/installment_fields", form: installment_fields
+          card_installments = card_transaction.new_record? ? card_transaction.card_installments : card_transaction.card_installments.order(:date, :number)
+          form.fields_for :card_installments, card_installments do |installment_fields|
+            render Views::Installments::Fields.new(form: installment_fields)
           end
 
           div(data: { nested_form_target: "target" })
 
-          button(class: :hidden, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
+          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
         end
 
         div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do
             form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields|
-              render partial "category_transactions/category_transaction_fields", form: category_transaction_fields
+              render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
             end
           end
 
           category_transactions_association = card_transaction.category_transactions.includes(:category) if card_transaction.category_transactions.count > 1
           form.fields_for :category_transactions, category_transactions_association do |category_transaction_fields|
-            render partial "category_transactions/category_transaction_fields", form: category_transaction_fields
+            render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
           end
 
           div(data: { nested_form_target: "target" })
 
-          button(class: :hidden, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
+          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
         end
 
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data: { nested_form_target: "template" }) do
             form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
-              render ::Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
+              render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
             end
           end
 
           entity_transactions_association = card_transaction.entity_transactions.includes(:entity, :exchanges) if card_transaction.entity_transactions.count > 1
           form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields|
-            render ::Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
+            render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
           end
 
           div(data: { nested_form_target: "target" })
 
-          button(class: :hidden, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
+          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        render Components::ButtonComponent.new form:, options: { label: action_model(:submit, card_transaction) }
+        div(class: "w-full") do
+          Button(type: :submit, variant: :purple) { action_model(:submit, card_transaction) }
+        end
+
+        if card_transaction.can_be_destroyed?
+          div(class: "w-full") do
+            Button(
+              id: "delete_card_transaction_#{card_transaction.id}",
+              type: :submit,
+              variant: :destructive,
+              link: card_transaction_path(card_transaction),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) do
+              action_model(:destroy, card_transaction)
+            end
+          end
+        end
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
@@ -198,7 +235,7 @@ class Views::CardTransactions::Form < Views::Base
     end.to_json
   end
 
-  def exchange_category_id
-    current_user.built_in_category("EXCHANGE").id
+  def exchange_category
+    current_user.built_in_category("EXCHANGE")
   end
 end

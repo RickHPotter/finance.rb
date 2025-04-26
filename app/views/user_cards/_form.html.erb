@@ -23,7 +23,7 @@
 
       <div class="w-full lg:w-3/12 mb-2">
         <%= bold_label(form, :current_closing_date) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :current_closing_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
@@ -35,7 +35,7 @@
 
       <div class="w-full lg:w-3/12 mb-2">
         <%= bold_label(form, :current_due_date) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :current_due_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
@@ -47,7 +47,7 @@
 
       <div class="w-full lg:w-2/12 mb-2">
         <%= bold_label(form, :min_spend) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :min_spend,
               svg: :money,
               class: "font-graduate",
@@ -56,7 +56,7 @@
 
       <div class="w-full lg:w-2/12 mb-2">
         <%= bold_label(form, :credit_limit) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :credit_limit,
               svg: :money,
               class: "font-graduate",
@@ -66,11 +66,26 @@
 
     <%= bold_label(form, :active) %>
 
-    <div class="mb-3">
+    <div class="pb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, user_card) } %>
+    <div class="w-full">
+      <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, user_card) } %>
+    </div>
+
+    <% if user_card.persisted? %>
+      <div class="w-full">
+        <%= render RubyUI::Button.new(
+              id: "delete_user_card_#{user_card.id}",
+              type: :submit,
+              variant: :destructive,
+              link: user_card_path(user_card),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) { action_model(:destroy, user_card) } %>
+      </div>
+    <% end %>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

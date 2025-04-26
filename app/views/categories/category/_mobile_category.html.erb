@@ -3,7 +3,11 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <%= render_icon :category %>
-        <%= content_tag :span, category.category_name, class: "text-lg font-semibold text-black" %>
+        <%= link_to category.name,
+                    edit_category_path(category),
+                    id: "edit_category_#{category.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
       </div>
     </div>
   <% end %>
@@ -30,7 +34,9 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(category.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
             <%= render_icon :jump_to %>
           <% end %>
         </div>
@@ -58,27 +64,13 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(category.cash_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to cash_transactions_path(category_id: category.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
             <%= render_icon :jump_to %>
           <% end %>
         </div>
       </div>
     </div>
-
-    <details>
-      <%= content_tag :summary, t(:datatable_actions), class: "flex items-center justify-between py-2" %>
-
-      <%= content_tag :div, class: "flex justify-between py-2" do %>
-        <div class="flex items-center gap-3 ml-auto">
-          <%= link_to edit_category_path(category), id: "edit_category_#{category.id}", data: { turbo_frame: :center_container } do %>
-            <%= render_icon :pencil %>
-          <% end %>
-
-          <%= link_to category, id: "delete_category_#{category.id}", data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
-            <%= render_icon :rubbish %>
-          <% end %>
-        </div>
-      <% end %>
-    </details>
   </div>
 <% end %>

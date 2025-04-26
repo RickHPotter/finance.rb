@@ -6,5 +6,11 @@ class PagesController < ApplicationController
 
   before_action :set_tabs, only: :index
 
-  def index; end
+  def index
+    render Views::Pages::Index.new
+  end
+
+  def notification
+    render Views::Pages::Notification.new
+  end
 end

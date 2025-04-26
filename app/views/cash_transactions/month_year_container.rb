@@ -7,7 +7,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :user_bank_account_id, :active_month_years,
-              :skip_budgets
+              :skip_budgets, :force_mobile
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -22,6 +22,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @user_bank_account_id = index_context[:user_bank_account_id]
     @active_month_years = index_context[:active_month_years]
     @skip_budgets = index_context[:skip_budgets]
+    @force_mobile = index_context[:force_mobile]
   end
 
   def view_template
@@ -39,7 +40,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         to_price:,
         from_installments_count:,
         to_installments_count:,
-        skip_budgets:
+        skip_budgets:,
+        force_mobile:
       }
 
       active_month_years.sort.each do |month_year|

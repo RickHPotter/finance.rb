@@ -3,6 +3,8 @@
 class Views::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::DOMID
 
   include TranslateHelper
@@ -67,17 +69,46 @@ class Views::CardInstallments::Index < Views::Base
 
           div(class: "flex items-center justify-between gap-2") do
             div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              card_transaction.categories.each do |category|
-                span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                  category.category_name
+              if card_transaction.categories.count > 2
+                first_two = card_transaction.categories.first(2)
+                remaining = card_transaction.categories[2..]
+
+                first_two.each do |category|
+                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                    "#{category.name},"
+                  end
+                end
+
+                Popover(options: { placement: "top" }, class: "rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                  PopoverTrigger(class: "w-full") do
+                    Button(size: :xs, class: "p-1 text-xs") do
+                      "+#{card_transaction.categories.count - 2}"
+                    end
+                  end
+
+                  PopoverContent(class: "w-40") do
+                    remaining.each do |category|
+                      p(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                        category.name
+                      end
+                    end
+                  end
+                end
+              else
+
+                card_transaction.categories.each do |category|
+                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                    category.name
+                  end
                 end
               end
             end
 
             div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
               card_transaction.entities.each do |entity|
-                span(class: "px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500") do
-                  entity.entity_name
+                div(class: "grid grid-cols-1") do
+                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
+                  span(class: "text-xs mx-auto") { entity.entity_name }
                 end
               end
             end
@@ -92,17 +123,19 @@ class Views::CardInstallments::Index < Views::Base
       card_transaction = card_installment.card_transaction
 
       div(
-        class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(card_transaction)} hover:opacity-60",
+        class: "grid grid-cols-12 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(card_transaction)} hover:opacity-60",
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "p-2 flex items-center justify-between") do
-          span(class: "px-1 rounded-sm text-slate-900 mx-auto") { I18n.l(card_installment.date, format: :shorter) }
-        end
+        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+          date, time = I18n.l(card_installment.date, format: :shorter).split(",")
+          div(class: "grid grid-cols-1") do
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
+          end
 
-        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           if user_card_id.nil?
             link_to card_transaction.user_card.user_card_name,
                     card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
@@ -120,18 +153,45 @@ class Views::CardInstallments::Index < Views::Base
           end
         end
 
-        div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-          card_transaction.categories.each do |category|
+        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+          if card_transaction.categories.count > 1
+            first_one = card_transaction.categories.first
+            remaining = card_transaction.categories[1..]
+
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              category.category_name
+              first_one.name
+            end
+
+            Popover(options: { placement: "right" }, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+              PopoverTrigger(class: "w-full") do
+                button(class: "text-xs") do
+                  "+#{card_transaction.categories.count - 1}"
+                end
+              end
+
+              PopoverContent(class: "z-50 !opacity-100 ml-2") do
+                remaining.each do |category|
+                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+                    category.name
+                  end
+                end
+              end
+            end
+          else
+            card_transaction.categories.each do |category|
+              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+                category.name
+              end
             end
           end
         end
 
-        div(class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
+        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+            data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
           card_transaction.entities.each do |entity|
-            span(class: "px-4 rounded-full text-sm bg-purple-100 text-slate-800 border-1 border-black") do
-              entity.entity_name
+            div(class: "grid grid-cols-1") do
+              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
+              span(class: "text-xs mx-auto") { entity.entity_name }
             end
           end
         end
@@ -141,7 +201,7 @@ class Views::CardInstallments::Index < Views::Base
         end
 
         div(class: "py-2 flex items-center justify-center") do
-          div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
+          div(class: "flex items-center justify-center px-2 ml-auto rounded-md") do
             link_to card_transaction,
                     id: "delete_card_transaction_#{card_transaction.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",

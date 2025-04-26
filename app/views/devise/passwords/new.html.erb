@@ -2,11 +2,11 @@
   <%= render "devise/shared/error_messages", resource: %>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: notification_model(resource, :email)) %>
+    <%= render Components::TextField.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: model_attribute(resource, :email)) %>
   </div>
 
-  <div>
-    <%= render Components::ButtonComponent.new(form: f, options: { label: t(:request_password_instructions) }) %>
+  <div class="flex justify-center">
+    <%= render RubyUI::Button.new(type: :submit, size: :lg, variant: :purple) { t(:request_password_instructions) } %>
   </div>
 <% end %>
 

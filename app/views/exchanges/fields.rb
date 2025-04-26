@@ -16,7 +16,7 @@ module Views
           form.hidden_field :number, class: :exchange_number
           form.hidden_field :bound_type, class: :bound_type
           form.hidden_field :exchange_type, value: :monetary
-          form.hidden_field :_destroy
+          form.hidden_field :_destroy, class: :exchange_destroy
 
           div(class: "grid grid-cols-1 my-1") do
             div(class: "flex w-full my-1") do
@@ -40,7 +40,7 @@ module Views
             end
           end
 
-          button(class: :hidden, data: { entity_transaction_target: "delExchange", action: "nested-form#remove" })
+          button(type: :button, class: :hidden, tabindex: -1, data: { entity_transaction_target: "delExchange", action: "nested-form#remove" })
         end
       end
     end

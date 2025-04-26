@@ -33,6 +33,7 @@ Rails.application.routes.draw do
     collection do
       get :month_year
       get :search
+      post :pay_in_advance
     end
   end
 

@@ -52,9 +52,10 @@ module Import
       fix_user_bank_account_banks
       fix_card_payment_dates
       set_category_colours
+      set_entity_icons
       correct_investment_dates
       fix_missing_references
-      fix_installments_and_budgets_order_id
+      recalculate_balance
     end
 
     def fix_user_card_dates
@@ -88,13 +89,18 @@ module Import
           card_payment = user_card.card_installments_invoices.find_by(month:, year:)
           next if card_payment.nil?
 
-          user_card.references.create(month:, year:, reference_date: card_payment.date)
+          user_card.references.create(
+            month:,
+            year:,
+            reference_closing_date: card_payment.date - user_card.days_until_due_date.days,
+            reference_date: card_payment.date
+          )
         end
       end
     end
 
     def fix_card_payment_dates
-      beginning_of_month = Date.current
+      beginning_of_month = Time.zone.today
       end_of_an_era = Date.new(3000, 12, 31)
 
       @user.user_cards.find_each do |user_card|
@@ -115,6 +121,12 @@ module Import
       end
     end
 
+    def set_entity_icons
+      @user.entities.find_each do |entity|
+        entity.update(avatar_name: RIKKI_ICONS[entity.entity_name]) if RIKKI_ICONS.key?(entity.entity_name)
+      end
+    end
+
     def correct_investment_dates
       @user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
         date = Date.new(transaction.year, transaction.month, 1)
@@ -129,27 +141,28 @@ module Import
       needs_category = @user.categories.find_by(category_name: "NEEDS")
 
       budgets = @user.budgets
-      budgets.create(month: 6, year: 2025, value: -20_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-      budgets.create(month: 6, year: 2025, value: -20_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
-      budgets.create(month: 7, year: 2025, value: -30_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-      budgets.create(month: 7, year: 2025, value: -140_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+      [ 6, 7 ].each do |month|
+        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
+        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+      end
 
-      start_date = Date.new(2025, 8, 1)
-      (0..8).each do |index|
+      budgets.create(month: 8, year: 2025, value: -30_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
+      budgets.create(month: 8, year: 2025, value: -140_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+
+      start_date = Date.new(2025, 9, 1)
+      (0..9).each do |index|
         date = start_date + index.months
         month = date.month
         year = date.year
 
         budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
         budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
-        budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ NEEDS ]", categories: [ needs_category ])
+        budgets.create(month:, year:, value: -15_000, inclusive: false, description: "[ NEEDS ]", categories: [ needs_category ]) if (index % 3).zero?
       end
     end
 
-    def fix_installments_and_budgets_order_id
-      @user.cash_installments.update_all(order_id: 0, balance: 0)
-      @user.budgets.update_all(order_id: 0, balance: 0)
-      @user.cash_installments.order(:date).first.save
+    def recalculate_balance
+      Logic::RecalculateBalancesService.new(user: @user, year: 2021, month: 1).call
     end
   end
 end

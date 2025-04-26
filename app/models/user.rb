@@ -30,6 +30,7 @@ class User < ApplicationRecord
   validates :password, length: { in: 6..22 }
 
   # @callbacks ................................................................
+  before_validation :set_default_locale
   before_create :create_built_ins
   before_create :set_confirmed_at
 
@@ -66,6 +67,10 @@ class User < ApplicationRecord
 
   protected
 
+  def set_default_locale
+    self.locale ||= :"pt-BR"
+  end
+
   # Creates built-in `categories` for given user.
   #
   # @return [void].
@@ -84,7 +89,7 @@ class User < ApplicationRecord
   # TODO: setting up a free SMTP server comes first
   # and maybe even before that, switching from Devise to Auth-Zero
   def set_confirmed_at
-    self.confirmed_at = Date.current
+    self.confirmed_at = Time.zone.today
   end
 
   # @private_instance_methods .................................................

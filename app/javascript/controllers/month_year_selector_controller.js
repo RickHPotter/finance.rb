@@ -14,12 +14,12 @@ export default class extends Controller {
   }
 
   initialise() {
-    document.activeMonths = new Set()
+    this.activeMonths = new Set()
 
     this.monthYearTargets.forEach(e => {
-      if (e.dataset.active == "true") {
+      if ("active" in e.dataset) {
         e.classList.add(...active_bg)
-        document.activeMonths.add(parseInt(e.dataset.monthYear))
+        this.activeMonths.add(parseInt(e.dataset.monthYear))
       } else {
         e.classList.add(...inactive_bg)
       }
@@ -50,12 +50,12 @@ export default class extends Controller {
   toggleMonth(button) {
     const month = parseInt(button.dataset.monthYear)
 
-    if (document.activeMonths.has(month)) {
+    if (this.activeMonths.has(month)) {
       this._removeMonthYearContainer(button, month)
-      button.dataset.active = false
+      delete button.dataset.active
     } else {
       this._addMonthYearContainer(button, month)
-      button.dataset.active = true
+      button.dataset.active = ""
     }
   }
 
@@ -70,9 +70,11 @@ export default class extends Controller {
     const firstMonthYear = this.buttonStart.dataset.monthYear
     const lastMonthYear = this.buttonEnd.dataset.monthYear
 
-    const operation = this.buttonStart.dataset.active
+    const buttonActive = "active" in this.buttonStart.dataset
 
-    const buttonsToClick = this.monthYearTargets.filter(e => e.dataset.monthYear >= firstMonthYear && e.dataset.monthYear <= lastMonthYear && e.dataset.active === operation)
+    const buttonsToClick = this.monthYearTargets.filter(e => {
+      return e.dataset.monthYear >= firstMonthYear && e.dataset.monthYear <= lastMonthYear && ("active" in e.dataset) === buttonActive
+    })
     buttonsToClick.forEach(e => this.toggleMonth(e))
 
     this.isMouseDown = false
@@ -85,16 +87,18 @@ export default class extends Controller {
     })
 
     const chosenMonthYear = this.monthYearContainerTargets.find(e => parseInt(e.dataset.year) === this.defaultYear)
-    chosenMonthYear.classList.remove("hidden")
-    chosenMonthYear.classList.add("active")
+    if (chosenMonthYear) {
+      chosenMonthYear.classList.remove("hidden")
+      chosenMonthYear.classList.add("active")
+    }
   }
 
   _addMonthYearContainer(target, month) {
-    document.activeMonths.add(month)
+    this.activeMonths.add(month)
     target.classList.remove(...inactive_bg)
     target.classList.add(...active_bg)
 
-    this.monthYearsTarget.value = JSON.stringify(Array.from(document.activeMonths))
+    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
     this.defaultYearTarget.value = this.defaultYear
 
     const formId = this.element.dataset.formId
@@ -103,13 +107,16 @@ export default class extends Controller {
   }
 
   _removeMonthYearContainer(target, month) {
-    document.activeMonths.delete(month)
+    this.activeMonths.delete(month)
     target.classList.remove(...active_bg)
     target.classList.add(...inactive_bg)
 
-    this.monthYearsTarget.value = JSON.stringify(Array.from(document.activeMonths))
+    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
 
     const frame = document.querySelector(`turbo-frame#month_year_container_${month}`)
-    frame.remove()
+    if (frame) {
+      frame.remove()
+      document.dispatchEvent(new Event("turbo:frame-load"))
+    }
   }
 }

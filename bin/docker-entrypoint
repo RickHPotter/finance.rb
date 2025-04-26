@@ -8,8 +8,8 @@ fi
 
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-	# ./bin/rails db:prepare
-	rm -rf db/schema.rb && DISABLE_DATABASE_ENVIRONMENT_CHECK=1 ./bin/rails db:drop db:create db:migrate
+	./bin/rails db:prepare
+	# rm -rf db/schema.rb && DISABLE_DATABASE_ENVIRONMENT_CHECK=1 ./bin/rails db:drop db:create db:migrate
 fi
 
 exec "${@}"

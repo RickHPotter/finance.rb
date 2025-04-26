@@ -10,6 +10,7 @@ en:
         description: "[ Bank ] Agency/Account"
         agency_number: Agency Number
         account_number: Account Number
+        user_bank_account_name: Bank Account Name
         balance: Balance
         active: Active
         user_id: User
@@ -31,6 +32,7 @@ pt-BR:
         description: "[ Banco ] Agência/Conta"
         agency_number: Número da Agência
         account_number: Número da Conta
+        user_bank_account_name: Nome da Conta Bancária
         balance: Saldo
         active: Ativo
         user_id: Usuário

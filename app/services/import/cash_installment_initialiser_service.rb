@@ -16,7 +16,7 @@ module Import
       cash_installments = indexes.map do |index|
         installment = transactions_collection[:with_pending_installments][index]
 
-        paid = installment[:date].present? && Date.current >= installment[:date]
+        paid = installment[:date].present? && Time.zone.today >= installment[:date]
         installment.slice(:number, :date, :month, :year, :price).merge(paid:)
       end
 

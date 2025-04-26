@@ -53,100 +53,128 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                       value: params[:user_bank_account_id] || params.dig(:cash_transaction, :user_bank_account_id) || user_bank_account_id,
                       class: :hidden
 
-      div class: "w-full mb-2" do
-        TextFieldTag \
-          :search_term,
-          svg: :magnifying_glass,
-          autofocus: true,
-          placeholder: "#{action_message(:search)}...",
-          value: search_term,
-          data: { controller: "cursor", action: "input->reactive-form#submit" }
-      end
-
-      details(open: category_id.present? || entity_id.present?) do
-        summary(class: "pb-1") { I18n.t(:advanced_filter) }
-
-        div class: "grid grid-cols-1 gap-y-2 mb-2" do
-          form.select :category_id, categories,
-                      { multiple: true, selected: category_id },
-                      { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } }
-
-          form.select :entity_id, entities,
-                      { multiple: true, selected: entity_id },
-                      { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } }
+      div(class: "flex justify-between items-center gap-2") do
+        div(class: "flex-1") do
+          TextFieldTag \
+            :search_term,
+            svg: :magnifying_glass,
+            autofocus: true,
+            clearable: true,
+            placeholder: "#{action_message(:search)}...",
+            value: search_term,
+            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         end
 
-        div class: "grid grid-cols-38 gap-x-2 font-graduate" do
-          div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextFieldTag \
-              :from_ct_price,
-              svg: :money,
-              value: from_ct_price || from_cent_based_to_float(0, "R$"),
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
+        Sheet(id: "advanced_filter") do
+          SheetTrigger do
+            Button(type: :button, icon: true) do
+              cached_icon(:filter)
+            end
           end
 
-          div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75" do
-            thin__label(form, :price)
-            cached_icon :exchange
-            thin__label(form, :self)
-          end
+          SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+            SheetHeader do
+              SheetTitle { pluralise_model(CashTransaction, 2) }
+              SheetDescription { I18n.t(:advanced_filter) }
+            end
 
-          div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextFieldTag \
-              :to_ct_price,
-              svg: :money,
-              value: to_ct_price || nil,
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-          end
+            SheetMiddle do
+              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                form.select :category_id, categories,
+                            { multiple: true, selected: category_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
 
-          hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
+                form.select :entity_id, entities,
+                            { multiple: true, selected: entity_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+              end
 
-          div(class: "col-span-16 lg:col-span-5 my-auto") do
-            TextFieldTag \
-              :from_price,
-              svg: :money,
-              value: from_price || from_cent_based_to_float(0, "R$"),
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-          end
+              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
+                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
+                  thin__label(form, :price)
+                  thin__label(form, :self)
+                end
 
-          div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
-            thin__label(form, :price)
-            cached_icon :exchange
-            thin__label(form, :cash_installment)
-          end
+                div class: "col-span-11 lg:col-span-5 my-auto" do
+                  TextFieldTag \
+                    :from_ct_price,
+                    svg: :money,
+                    value: from_ct_price,
+                    placeholder: model_attribute(CashTransaction, :from_ct_price),
+                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+                end
 
-          div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextFieldTag \
-              :to_price,
-              svg: :money,
-              value: to_price || nil,
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask change->reactive-form#submit" }
-          end
+                div(class: "hidden lg:flex m-auto") do
+                  cached_icon :exchange
+                end
 
-          hr class: "hidden lg:block transform rotate-90 my-auto border-1 border-slate-300"
+                div class: "col-span-11 lg:col-span-5 my-auto" do
+                  TextFieldTag \
+                    :to_ct_price,
+                    svg: :money,
+                    value: to_ct_price,
+                    placeholder: model_attribute(CashTransaction, :to_ct_price),
+                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+                end
+              end
 
-          div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextFieldTag \
-              :from_installments_count,
-              type: :number,
-              svg: :number,
-              min: 1, max: 72, value: from_installments_count || 1,
-              data: { action: "input->reactive-form#submit" }
-          end
+              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
+                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
+                  thin__label(form, :price)
+                  thin__label(form, :cash_installment)
+                end
 
-          div class: "col-span-6 lg:col-span-2 flex flex-col items-center justify-self-center scale-75 mt-[-0.5rem]" do
-            thin__label(form, :count)
-            cached_icon :exchange
-            thin__label(form, :cash_installment)
-          end
+                div class: "col-span-11 lg:col-span-5 my-auto" do
+                  TextFieldTag \
+                    :from_price,
+                    svg: :money,
+                    value: from_price,
+                    placeholder: model_attribute(CashTransaction, :from_price),
+                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+                end
 
-          div class: "col-span-16 lg:col-span-5 my-auto" do
-            TextFieldTag \
-              :to_installments_count,
-              type: :number,
-              svg: :number,
-              min: 1, max: 72, value: to_installments_count || 72,
-              data: { action: "input->reactive-form#submit" }
+                div(class: "hidden lg:flex m-auto") do
+                  cached_icon :exchange
+                end
+
+                div class: "col-span-11 lg:col-span-5 my-auto" do
+                  TextFieldTag \
+                    :to_price,
+                    svg: :money,
+                    value: to_price || nil,
+                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+                end
+              end
+
+              div class: "grid grid-cols-11 my-auto mb-1" do
+                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
+                  thin__label(form, :count)
+                  thin__label(form, :cash_installment)
+                end
+
+                div class: "col-span-5 my-auto" do
+                  TextFieldTag \
+                    :from_installments_count,
+                    type: :number,
+                    svg: :number,
+                    min: 1, max: 72,
+                    value: from_installments_count || 1
+                end
+
+                div(class: "m-auto") do
+                  cached_icon :exchange
+                end
+
+                div class: "col-span-5 my-auto" do
+                  TextFieldTag \
+                    :to_installments_count,
+                    type: :number,
+                    svg: :number,
+                    min: 1, max: 72,
+                    value: to_installments_count || 72
+                end
+              end
+            end
           end
         end
       end

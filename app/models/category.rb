@@ -4,6 +4,7 @@ class Category < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -53,6 +54,12 @@ class Category < ApplicationRecord
 
   def text_colour
     COLOURS.dig(colour, :text)
+  end
+
+  def name
+    return model_attribute(self, attributes["category_name"].parameterize(separator: "_")).upcase if built_in?
+
+    attributes["category_name"]
   end
 
   def update_card_transactions_count_and_total

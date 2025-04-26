@@ -3,15 +3,15 @@
   <%= f.hidden_field :reset_password_token %>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password)) %>
+    <%= render Components::TextField.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password)) %>
   </div>
 
   <div class="mb-6 text-blue-700">
-    <%= render Components::TextFieldComponent.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password_confirmation)) %>
+    <%= render Components::TextField.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password_confirmation)) %>
   </div>
 
-  <div>
-    <%= render Components::ButtonComponent.new(form: f, options: { label: t("actions.update") }) %>
+  <div class="w-full">
+    <%= render RubyUI::Button.new(type: :submit, size: :lg, variant: :purple) { action_message(:update) } %>
   </div>
 <% end %>
 

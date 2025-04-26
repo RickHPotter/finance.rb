@@ -1,7 +1,11 @@
-<% if @card_transaction %>
-  <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, UserCard) }) %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% if @user_card.errors.empty? %>
+  <% if @user_card.active? && @card_transaction %>
+    <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
+    <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, UserCard) }) %>
+    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <% else %>
+    <%= turbo_stream.replace(:center_container, template: "user_cards/index") %>
+  <% end %>
 <% else %>
   <%= turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }) %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, UserCard) }) %>

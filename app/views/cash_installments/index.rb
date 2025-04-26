@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashInstallments::Index < Views::Base
+class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::DOMID
@@ -27,7 +27,7 @@ class Views::CashInstallments::Index < Views::Base
     end
   end
 
-  def render_mobile_cash_installment(cash_installment)
+  def render_mobile_cash_installment(cash_installment) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
     turbo_frame_tag dom_id cash_installment do
       cash_transaction = cash_installment.cash_transaction
 
@@ -35,31 +35,48 @@ class Views::CashInstallments::Index < Views::Base
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay
 
+      div(class: "relative") do
+        div(
+          class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold
+                  text-black text-sm z-40 #{'animate-pulse' if should_display_link_to_pay}"
+        ) do
+          from_cent_based_to_float(cash_installment.balance, "R$")
+        end
+      end
+
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-2 #{'animate-pulse' if should_display_link_to_pay}",
+        class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-4 #{'animate-pulse' if should_display_link_to_pay}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
+            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 underline underline-offset-[3px]") do
               if cash_transaction.investment?
-                span(class: "truncate text-md") { cash_transaction.description }
-              elsif cash_transaction.card_payment?
                 default_year = cash_transaction.year
                 active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
+                investment = { user_bank_account_id: cash_transaction.user_bank_account_id }
+
+                link_to cash_transaction.description,
+                        investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
+                        class: "truncate text-md",
+                        data: { turbo_frame: :center_container, turbo_prefetch: false }
+              elsif cash_transaction.card_payment? || cash_transaction.card_advance?
+                card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
+                default_year = card_.year
+                active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
 
                 link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "truncate text-md underline underline-offset-[3px]",
+                        class: "truncate text-md",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "truncate text-md underline underline-offset-[3px]",
+                        class: "truncate text-md",
                         data: { turbo_frame: :center_container }
               end
 
-              span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: "flex-shrink p-1 rounded-sm bg-white border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -82,7 +99,10 @@ class Views::CashInstallments::Index < Views::Base
                 end
               end
 
-              span(class: "whitespace-nowrap pl-2") { I18n.l(cash_installment.date, format: :short) }
+              span(class: "whitespace-nowrap pl-2") do
+                format = cash_transaction.investment? ? "%B %Y" : :short
+                I18n.l(cash_installment.date, format:)
+              end
             end
 
             div(class: "whitespace-nowrap") do
@@ -94,7 +114,7 @@ class Views::CashInstallments::Index < Views::Base
             div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               cash_transaction.categories.each do |category|
                 span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                  category.category_name
+                  category.name
                 end
               end
             end
@@ -108,10 +128,6 @@ class Views::CashInstallments::Index < Views::Base
             end
           end
         end
-      end
-
-      div(class: "p-1 font-lekton font-bold whitespace-nowrap text-right") do
-        from_cent_based_to_float(cash_installment.balance, "R$")
       end
     end
   end
@@ -132,7 +148,7 @@ class Views::CashInstallments::Index < Views::Base
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 mx-auto pl-2") do
+        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 pl-2") do
           if should_display_link_to_pay
             button(
               type: :button,
@@ -148,11 +164,13 @@ class Views::CashInstallments::Index < Views::Base
             end
           end
 
-          span(class: "px-1 rounded-sm text-slate-900 mx-auto") { cash_installment.order_id }
-          span(class: "px-1 rounded-sm text-slate-900 mx-auto") { I18n.l(cash_installment.date, format: :shorter) }
+          span(class: "px-1 rounded-sm text-slate-900 mr-auto") do
+            format = cash_transaction.investment? ? "%B %Y" : :shorter
+            I18n.l(cash_installment.date, format:)
+          end
         end
 
-        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 underline") do
+        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
           if cash_transaction.investment?
             default_year = cash_transaction.year
             active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
@@ -162,9 +180,10 @@ class Views::CashInstallments::Index < Views::Base
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                     class: "flex-1 truncate text-md",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
-          elsif cash_transaction.card_payment?
-            default_year = cash_transaction.year
-            active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
+          elsif cash_transaction.card_payment? || cash_transaction.card_advance?
+            card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
+            default_year = card_.year
+            active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
 
             link_to cash_transaction.description,
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
@@ -185,7 +204,7 @@ class Views::CashInstallments::Index < Views::Base
         div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
           cash_transaction.categories.each do |category|
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              category.category_name
+              category.name
             end
           end
         end
@@ -221,7 +240,7 @@ class Views::CashInstallments::Index < Views::Base
   end
 
   def should_display_link_to_pay?(cash_installment)
-    case [ cash_installment.paid, cash_installment.date > Date.current ]
+    case [ cash_installment.paid, cash_installment.date > Time.zone.today ]
     in [ true,  _     ] then [ false, :check_square ]
     in [ false, true  ] then [ true,  :warning_octagon ]
     in [ false, false ] then [ true,  :x_circle ]

@@ -9,11 +9,13 @@ export default class extends Controller {
   }
 
   updateDescription() {
-    const inclusive = this.inclusiveTarget.checked
-    const separator = inclusive ? " && " : " || "
+    // const inclusive = this.inclusiveTarget.checked
+    // const separator = inclusive ? " && " : " || "
+    const separator = " || "
     const categories_and_or_entities = [this.getCategories(), this.getEntities()].filter((value) => value !== "").join(separator)
 
-    this.descriptionTarget.value = `${categories_and_or_entities} - ${this.getMonthYear()}`
+    // this.descriptionTarget.value = `${categories_and_or_entities} - ${this.getMonthYear()}`
+    this.descriptionTarget.value = categories_and_or_entities
   }
 
   getCategories() {

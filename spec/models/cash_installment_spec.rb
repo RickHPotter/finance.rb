@@ -48,10 +48,11 @@ end
 #  updated_at              :datetime         not null
 #  card_transaction_id     :bigint           indexed
 #  cash_transaction_id     :bigint           indexed
-#  order_id                :integer
+#  order_id                :integer          indexed
 #
 # Indexes
 #
+#  idx_installments_order_id                  (order_id)
 #  idx_installments_price                     (price)
 #  idx_installments_year_month_date           (date_year,date_month,date)
 #  index_installments_on_card_transaction_id  (card_transaction_id)

@@ -28,10 +28,17 @@ class Views::CashTransactions::MonthYear < Views::Base
 
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: total_amount })
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
+        div(class: "pb-2 pt-6 text-slate-800 flex gap-2 relative") do
+          div(class: "flex gap-2 absolute left-0 bottom-4") do
+            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg") { month_year_str }
 
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
-        legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
+            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum,
+                 data: { price: total_amount }) do
+              from_cent_based_to_float(total_amount, "R$")
+            end
+          end
+        end
 
         render Views::CashInstallments::Index.new(mobile:, cash_installments:)
         render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
@@ -41,13 +48,20 @@ class Views::CashTransactions::MonthYear < Views::Base
 
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      span(class: "py-3 col-start-7 text-end", id: :priceSum, data: { controller: "price-sum", price: total_amount })
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
+        div(class: "pb-2 pt-4 text-slate-800 flex gap-2 relative") do
+          div(class: "flex gap-2 absolute left-0 bottom-4") do
+            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg") { month_year_str }
 
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 mb-4") do
-        legend(class: "px-2 text-lg text-slate-800 text-start") { month_year_str }
+            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg", id: :priceSum,
+                 data: { price: total_amount }) do
+              from_cent_based_to_float(total_amount, "R$")
+            end
+          end
+        end
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
+          div(class: "grid grid-cols-8 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
             div(class: "py-3")            { model_attribute(CashTransaction, :date) }
             div(class: "py-3 col-span-3") { model_attribute(CashTransaction, :description) }
             div(class: "py-3")            { model_attribute(CashTransaction, :categories) }
@@ -63,10 +77,10 @@ class Views::CashTransactions::MonthYear < Views::Base
             div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
           end
 
-          div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
+          div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-6 text-center") { "#{model_attribute(CashTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { controller: "price-sum", price: total_amount }) do
+            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

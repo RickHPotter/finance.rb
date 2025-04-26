@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark">
+<html>
   <head>
     <title><%= t("pages.title") %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -20,11 +20,10 @@
   </head>
 
   <body class="h-screen bg-gray-900 text-white">
-    <%= content_tag :main, class: "antialiased pt-4 max-w-auto max-w-[1420px] mx-auto" do %>
+    <%= content_tag :main, class: "antialiased max-w-auto max-w-[1420px] mx-auto" do %>
       <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
       <% end %>
-      <%= render "shared/dark_mode" %>
 
       <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
         <% yield %>
@@ -32,14 +31,20 @@
     <% end %>
   </body>
 
-  <footer class="bg-gray-900 text-white">
-    <div class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto flex justify-end gap-2">
+  <footer class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto bg-gray-900 text-white flex justify-between items-center">
+    <div class="flex gap-2 p-2 text-sm text-white hover:bg-gray-600">
+      <%= render_icon(:leave) %>
+      <%= link_to t(:sign_out), destroy_user_session_path, data: { turbo_method: :delete } %>
+    </div>
+
+    <div class="flex gap-2">
       <span>
         <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
           <span class="mr-2">Português</span>
           <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15" %>
         <% end %>
       </span>
+
       <span>
         <%= locale_link("en", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
           <span class="mr-2">English</span>

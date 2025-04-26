@@ -4,7 +4,7 @@
 class CreateInstallments < ActiveRecord::Migration[8.0]
   def change
     create_table :installments do |t|
-      t.integer :order_id, null: true # should only be null for card_installments
+      t.integer :order_id, null: true
       t.integer :number, null: false
       t.datetime :date, null: false
       t.virtual :date_year, type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
@@ -25,6 +25,7 @@ class CreateInstallments < ActiveRecord::Migration[8.0]
       t.timestamps
 
       t.index %i[price],                     name: "idx_installments_price"
+      t.index %i[order_id],                  name: "idx_installments_order_id"
       t.index %i[date_year date_month date], name: "idx_installments_year_month_date"
     end
   end

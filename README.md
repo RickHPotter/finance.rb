@@ -279,7 +279,7 @@ Possible Downtime: 6 months and a half
   - [#13](https://github.com/RickHPotter/finance.rb/issues/13)
 
 - Subtasks:
-  - ⌛ Use TDD approach; create the tests ~before~ after.
+  - ✅ Use TDD approach; create the tests ~before~ after.
     - ✅ Revisit every model spec.
     - ✅ Ditch spec helper `CardTransactionParams` in favour of `Params::CardTransaction`.
     - ✅ Create feature specs for `Hotwire SPA` `Pages`.
@@ -296,7 +296,7 @@ Possible Downtime: 6 months and a half
   - ✅ Create the connection of `CardTransaction` to `EntityTransaction` form.
   - ✅ Create the connection of `EntityTransaction` to `Exchange` sub-form.
   - ✅ Create the CRUD for `Investment`.
-  - ⌛ Create the connection of `Exchange` to `CashTransaction` sub-form.
+  - ✅ Create the connection of `Exchange` to `CashTransaction` sub-form.
 - Extra:
   - ✅ Implement `PWA`.
   - ✅ `PWA`: Separate views from PC and mobile.

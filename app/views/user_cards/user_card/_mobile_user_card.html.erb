@@ -6,7 +6,11 @@
         <% brand_name = user_card.card.card_name %>
         <% brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}" %>
 
-        <%= content_tag :span, brand_and_name, class: "text-lg font-semibold text-black" %>
+        <%= link_to brand_and_name,
+                    edit_user_card_path(user_card),
+                    id: "edit_user_card_#{user_card.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
       </div>
 
       <%= link_to card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container } do %>
@@ -63,21 +67,5 @@
         </div>
       </div>
     </div>
-
-    <details>
-      <%= content_tag :summary, t(:datatable_actions), class: "flex items-center justify-between py-2" %>
-
-      <%= content_tag :div, class: "flex justify-between py-2" do %>
-        <div class="flex items-center gap-3 ml-auto text-gray-900">
-          <%= link_to edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}", data: { turbo_frame: :center_container } do %>
-            <%= render_icon :pencil %>
-          <% end %>
-
-          <%= link_to user_card, id: "delete_user_card_#{user_card.id}", data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
-            <%= render_icon :rubbish %>
-          <% end %>
-        </div>
-      <% end %>
-    </details>
   </div>
 <% end %>

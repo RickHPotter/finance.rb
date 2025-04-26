@@ -8,7 +8,7 @@ FactoryBot.define do
     email { "john@example.com" }
     password { "123123" }
     password_confirmation { "123123" }
-    confirmed_at { Date.current }
+    confirmed_at { Time.zone.today }
 
     trait :different do
       first_name { "Jane" }

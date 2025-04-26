@@ -32,6 +32,6 @@ module ContextHelper
   end
 
   def set_all_categories
-    @categories = current_user.categories.active.order(:category_name).pluck(:category_name, :id)
+    @categories = current_user.categories.active.order(:category_name).map { |category| [ category.name, category.id ] }
   end
 end

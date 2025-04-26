@@ -11,7 +11,7 @@ module Import
     def create_user
       @main_service.user = User.find_or_create_by(first_name: "Rikki", last_name: "Potteru", email: "rikki.potteru@mail.com", locale: :en) do |user|
         user.password = "123123"
-        user.confirmed_at = Date.current
+        user.confirmed_at = Time.zone.today
       end
       @main_service.user_id = @main_service.user.id
     end

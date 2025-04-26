@@ -26,7 +26,7 @@ class CardInstallment < Installment
   scope :by_categories_or_entities, lambda { |categories, entities|
     joins(card_transaction: %i[categories entities]).where(card_transaction: { categories: }).or(
       joins(card_transaction: %i[categories entities]).where(card_transaction: { entities: })
-    )
+    ).distinct
   }
 
   # @additional_config ........................................................
@@ -38,8 +38,8 @@ class CardInstallment < Installment
   # @return [Date].
   #
   def card_payment_date
-    installment_date = card_transaction.date + (number - 1).months
-    Reference.find_or_create_for(user_card, installment_date).reference_date
+    reference = user_card.find_or_create_reference_for(date)
+    reference.reference_date
   end
 
   # @protected_instance_methods ...............................................
@@ -89,7 +89,7 @@ class CardInstallment < Installment
   # @return [Hash] The generated attributes.
   #
   def entity_transactions_attributes
-    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name).id } ]
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name, active: false).id } ]
   end
 
   # @private_instance_methods .................................................
@@ -109,7 +109,7 @@ class CardInstallment < Installment
   def set_paid
     return if [ false, true ].include?(paid)
 
-    self.paid = date.present? && Date.current >= date
+    self.paid = date.present? && Time.zone.today >= date
   end
 
   # Sets `card_transaction.paid` as true if all its installments were paid.
@@ -145,10 +145,11 @@ end
 #  updated_at              :datetime         not null
 #  card_transaction_id     :bigint           indexed
 #  cash_transaction_id     :bigint           indexed
-#  order_id                :integer
+#  order_id                :integer          indexed
 #
 # Indexes
 #
+#  idx_installments_order_id                  (order_id)
 #  idx_installments_price                     (price)
 #  idx_installments_year_month_date           (date_year,date_month,date)
 #  index_installments_on_card_transaction_id  (card_transaction_id)

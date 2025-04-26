@@ -2,16 +2,22 @@
 
 module RubyUI
   class Button < Base
-    def initialize(type: :button, variant: :outline, size: :md, icon: false, **attrs)
+    def initialize(type: :button, variant: :outline, size: :md, icon: false, link: nil, **attrs) # rubocop:disable Metrics/ParameterLists
       @type = type
       @variant = variant.to_sym
       @size = size.to_sym
       @icon = icon
+      @link = link
       super(**attrs)
     end
 
     def view_template(&)
-      button(**attrs, &)
+      if @link
+        attrs.merge!(href: @link)
+        a(**attrs, &)
+      else
+        button(**attrs, &)
+      end
     end
 
     private
@@ -61,7 +67,8 @@ module RubyUI
     def destructive_classes
       [
         "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
-        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90".squish,
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-destructive text-destructive-foreground shadow-sm
+        hover:bg-destructive/90 shadow".squish,
         size_classes
       ]
     end
@@ -83,6 +90,15 @@ module RubyUI
       ]
     end
 
+    def purple_classes
+      [
+        "whitespace-nowrap inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-1
+        focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-purple-700 text-white
+        shadow hover:bg-purple-700/90".squish,
+        size_classes
+      ]
+    end
+
     def default_classes
       case @variant
       when :primary then primary_classes
@@ -91,6 +107,7 @@ module RubyUI
       when :destructive then destructive_classes
       when :outline then outline_classes
       when :ghost then ghost_classes
+      when :purple then purple_classes
       end
     end
 

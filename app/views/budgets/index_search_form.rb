@@ -37,24 +37,44 @@ class Views::Budgets::IndexSearchForm < Views::Base
               data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      div class: "w-full mb-2" do
-        TextField \
-          form, :search_term,
-          svg: :magnifying_glass,
-          autofocus: true,
-          placeholder: "#{action_message(:search)}...",
-          value: search_term,
-          data: { controller: "cursor", action: "input->reactive-form#submit" }
-      end
+      div(class: "flex justify-between items-center gap-2") do
+        div(class: "flex-1") do
+          TextFieldTag \
+            :search_term,
+            svg: :magnifying_glass,
+            autofocus: true,
+            clearable: true,
+            placeholder: "#{action_message(:search)}...",
+            value: search_term,
+            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+        end
 
-      div class: "gap-y-2 mb-2" do
-        form.select :category_id, categories,
-                    { multiple: true, selected: category_id },
-                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "change->reactive-form#submit" } }
+        Sheet(id: "advanced_filter") do
+          SheetTrigger do
+            Button(type: :button, icon: true) do
+              cached_icon(:filter)
+            end
+          end
 
-        form.select :entity_id, entities,
-                    { multiple: true, selected: entity_id },
-                    { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "change->reactive-form#submit" } }
+          SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+            SheetHeader do
+              SheetTitle { pluralise_model(Budget, 2) }
+              SheetDescription { I18n.t(:advanced_filter) }
+            end
+
+            SheetMiddle do
+              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                form.select :category_id, categories,
+                            { multiple: true, selected: category_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
+
+                form.select :entity_id, entities,
+                            { multiple: true, selected: entity_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+              end
+            end
+          end
+        end
       end
     end
   end

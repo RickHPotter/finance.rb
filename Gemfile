@@ -6,6 +6,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby "3.4.1"
 gem "rails", "~> 8.0"
 
+gem "activerecord-import"
 gem "bootsnap", require: false
 gem "jbuilder"
 gem "jsbundling-rails"

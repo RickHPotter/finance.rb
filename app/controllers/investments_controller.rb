@@ -20,7 +20,7 @@ class InvestmentsController < ApplicationController
   end
 
   def month_year
-    month_year = params[:month_year]
+    month_year = search_investment_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
     investments = Logic::Investments.find_ref_month_year_by_params(current_user, investment_params, search_investment_params)
@@ -29,7 +29,7 @@ class InvestmentsController < ApplicationController
   end
 
   def new
-    @investment = Investment.new
+    @investment = current_user.investments.new
 
     respond_to do |format|
       format.html { render Views::Investments::New.new(current_user:, investment: @investment) }
@@ -79,8 +79,8 @@ class InvestmentsController < ApplicationController
   end
 
   def load_based_on_save
-    min_date = current_user.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
-    max_date = current_user.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Date.current
+    min_date = current_user.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
+    max_date = current_user.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     years = (min_date.year..max_date.year)
     default_year = @investment.year
     active_month_years = [ Date.new(@investment.year, @investment.month, 1).strftime("%Y%m").to_i ]
@@ -94,16 +94,16 @@ class InvestmentsController < ApplicationController
     }
   end
 
-  def build_index_context
-    min_date = Investment.minimum("MAKE_DATE(year, month, 1)") || Date.current
-    max_date = Investment.maximum("MAKE_DATE(year, month, 1)") || Date.current
-    default_active_month_years = [ [ max_date, Date.current ].min.strftime("%Y%m").to_i ]
+  def build_index_context # rubocop:disable Metrics/AbcSize
+    min_date = current_user.investments.minimum("MAKE_DATE(year, month, 1)") || Time.zone.today
+    max_date = current_user.investments.maximum("MAKE_DATE(year, month, 1)") || Time.zone.today
+    default_active_month_years = [ [ max_date, Time.zone.today ].min.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
-    default_year = params[:default_year]&.to_i || [ max_date, Date.current ].min.year
+    default_year = params[:default_year]&.to_i || [ max_date, Time.zone.today ].min.year
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
 
     search_term = search_investment_params[:search_term]
-    user_bank_account_id = investment_params[:user_bank_account_id]
+    user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
 
     @index_context = {
       current_user:,
@@ -119,7 +119,7 @@ class InvestmentsController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_investment
-    @investment = Investment.find(params[:id])
+    @investment = current_user.investments.find(params[:id])
   end
 
   def search_investment_params
@@ -133,6 +133,6 @@ class InvestmentsController < ApplicationController
     ret_params = params.require(:investment)
     ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 
-    ret_params.permit(:description, :price, :date, :month, :year, :user_id, :user_bank_account_id)
+    ret_params.permit(:description, :price, :date, :month, :year, :user_id, :user_bank_account_id, user_bank_account_id: [])
   end
 end

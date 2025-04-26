@@ -10,13 +10,13 @@ RSpec.describe CashTransactable, type: :concern do
   let(:user_card_two) { create(:user_card, :random, user:, card:) }
 
   let(:card_transaction_one) do
-    build(:card_transaction, :random, user:, user_card:, price: -200, date: Date.current,
+    build(:card_transaction, :random, user:, user_card:, price: -200, date: Time.zone.today,
                                       card_installments: build_list(:card_installment, 2, price: -100) { |ci, i| ci.number = i + 1 },
                                       category_transactions: [])
   end
 
   let(:card_transaction_two) do
-    build(:card_transaction, :random, user:, user_card:, price: -300, date: Date.current,
+    build(:card_transaction, :random, user:, user_card:, price: -300, date: Time.zone.today,
                                       card_installments: build_list(:card_installment, 3, price: -100) { |ci, i| ci.number = i + 1 },
                                       category_transactions: [])
   end
@@ -59,7 +59,15 @@ RSpec.describe CashTransactable, type: :concern do
       old_cash_transactions = card_transaction_one.card_installments.map(&:cash_transaction)
       new_date = card_transaction_one.date + 4.months
 
-      card_transaction_one.update(date: new_date, month: new_date.month, year: new_date.year)
+      card_transaction_one.date = new_date
+      card_transaction_one.month = new_date.month
+      card_transaction_one.year = new_date.year
+      card_transaction_one.card_installments.each do |ci|
+        ci.date = nil
+        ci.month = nil
+        ci.year = nil
+      end
+      card_transaction_one.save
 
       expect(CashTransaction.where(id: old_cash_transactions.pluck(:id))).to be_empty
       validate([ -100, -100 ])

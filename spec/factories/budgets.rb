@@ -2,9 +2,9 @@
 
 FactoryBot.define do
   factory :budget do
-    description { "#{I18n.l Date.current, format: :short} Some Categories / Some Entities / [ -10_000 ]" }
-    month { Date.current.month }
-    year { Date.current.year }
+    description { "#{I18n.l Time.zone.today, format: :short} Some Categories / Some Entities / [ -10_000 ]" }
+    month { Time.zone.today.month }
+    year { Time.zone.today.year }
     value { -10_000 }
     remaining_value { -10_000 }
     inclusive { false }
@@ -28,11 +28,12 @@ end
 #  year            :integer          not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
-#  order_id        :integer          not null
+#  order_id        :integer          indexed
 #  user_id         :bigint           not null, indexed
 #
 # Indexes
 #
+#  idx_budgets_order_id      (order_id)
 #  index_budgets_on_user_id  (user_id)
 #
 # Foreign Keys

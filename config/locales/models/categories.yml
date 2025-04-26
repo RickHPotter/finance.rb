@@ -14,6 +14,12 @@ en:
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        card_advance: Card Advance
+        card_installment: Card Installment
+        card_payment: Card Payment
+        exchange: Borrow Request
+        exchange_return: Borrow Return
+        investment: Investment
 
 pt-BR:
   activerecord:
@@ -31,3 +37,9 @@ pt-BR:
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        card_advance: Antecipação de Cartão
+        card_installment: Parcelamento de Cartão
+        card_payment: Pagamento de Cartão
+        exchange: Pedido de Empréstimo
+        exchange_return: Acerto de Empréstimo
+        investment: Investimento

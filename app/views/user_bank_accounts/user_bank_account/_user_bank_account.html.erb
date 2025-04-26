@@ -9,7 +9,7 @@
     <div class="jump_to_cash_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">
       <% if user_bank_account.cash_transactions_count > 0 %>
         <%= link_to user_bank_account.cash_transactions_count,
-                    cash_transactions_path(user_bank_account_id: user_bank_account.id, format: :turbo_stream),
+                    cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true, format: :turbo_stream),
                     class: "text-indigo-600 hover:underline",
                     data: { turbo_frame: :center_container, turbo_prefetch: false } %>
       <% else %>

@@ -17,6 +17,8 @@ en:
         people: People
         dogs: Dogs
         cats: Cats
+        person_icons_credits: People icons created by
+        dog_icons_credits: Dogs icons created by
 
 pt-BR:
   activerecord:
@@ -37,3 +39,5 @@ pt-BR:
         people: Pessoas
         dogs: Cachorros
         cats: Gatos
+        person_icons_credits: Ícones de pessoas criados por
+        dog_icons_credits: Ícones de cachorros criados por

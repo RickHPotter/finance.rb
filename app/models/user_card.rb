@@ -22,7 +22,7 @@ class UserCard < ApplicationRecord
 
   # @validations ..............................................................
   validates :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, presence: true
-  validates :user_card_name, uniqueness: { scope: :user_id }
+  validates :user_card_name, uniqueness: { scope: %i[user_id card_id] }
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
@@ -32,23 +32,25 @@ class UserCard < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-  def update_card_transactions_total
-    update_columns(card_transactions_total: card_transactions.sum(:price))
-  end
-
   def find_or_create_reference_for(date)
     reference_date = calculate_reference_date(date)
     reference = references.find_by(month: reference_date.month, year: reference_date.year)
     return reference if reference.present?
 
-    references.create(reference_date:, month: reference_date.month, year: reference_date.year)
+    references.create(
+      month: reference_date.month,
+      year: reference_date.year,
+      reference_closing_date: reference_date - days_until_due_date.days,
+      reference_date:
+    )
   end
 
   def calculate_reference_date(transaction_date)
     due_date = transaction_date.change(day: due_date_day)
+    due_date = (due_date + 1.month) if transaction_date >= due_date
     closing_date = due_date - days_until_due_date.days
 
-    return due_date if transaction_date < closing_date
+    return due_date if closing_date > transaction_date
 
     due_date + 1.month
   end
@@ -84,7 +86,12 @@ class UserCard < ApplicationRecord
       card_payment = card_installments_invoices.find_by(month:, year:)
       next if card_payment.nil?
 
-      references.create(month:, year:, reference_date: card_payment.date)
+      references.create(
+        month:,
+        year:,
+        reference_closing_date: card_payment.date - days_until_due_date.days,
+        reference_date: card_payment.date
+      )
     end
   end
 end
@@ -101,15 +108,15 @@ end
 #  days_until_due_date     :integer          not null
 #  due_date_day            :integer          default(1), not null
 #  min_spend               :integer          not null
-#  user_card_name          :string           not null, indexed
+#  user_card_name          :string           not null, indexed => [user_id, card_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  card_id                 :bigint           not null, indexed
-#  user_id                 :bigint           not null, indexed
+#  card_id                 :bigint           not null, indexed, indexed => [user_id, user_card_name]
+#  user_id                 :bigint           not null, indexed => [card_id, user_card_name], indexed
 #
 # Indexes
 #
-#  index_user_cards_on_card_id         (card_id)
-#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
-#  index_user_cards_on_user_id         (user_id)
+#  index_user_cards_on_card_id           (card_id)
+#  index_user_cards_on_on_composite_key  (user_id,card_id,user_card_name) UNIQUE
+#  index_user_cards_on_user_id           (user_id)
 #

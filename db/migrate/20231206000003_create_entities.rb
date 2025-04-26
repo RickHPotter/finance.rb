@@ -16,7 +16,6 @@ class CreateEntities < ActiveRecord::Migration[8.0]
 
       t.timestamps
 
-      t.index %w[entity_name],         name: "index_entities_on_entity_name",      unique: true
       t.index %w[user_id entity_name], name: "index_entity_name_on_composite_key", unique: true
     end
   end

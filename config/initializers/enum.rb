@@ -60,6 +60,7 @@ COLOURS = ActiveSupport::HashWithIndifferentAccess.new(
 )
 
 RIKKI_COLOURS = {
+  "HEALTH" => :meat,
   "FOOD" => :meat,
   "GROCERY" => :lettuce,
   "EDUCATION" => :book,
@@ -84,8 +85,27 @@ RIKKI_COLOURS = {
   "LEISURE" => :fun,
   "BILL" => :gray,
   "FEES" => :gray,
+  "MORAL DEBT" => :gray,
   "BET" => :silver,
   "GODSEND" => :greek,
   "EXCHANGE" => :dirt,
-  "EXCHANGE RETURN" => :yellow
+  "EXCHANGE RETURN" => :yellow,
+  "MIDDLEWARE" => :gold
+}.freeze
+
+RIKKI_ICONS = {
+  "GIGI" => "people/1.png",
+  "GESABI" => "people/2.png",
+  "VIH" => "people/4.png",
+  "LALA" => "people/5.png",
+  "SOGRINHA" => "people/12.png",
+  "TIA" => "people/13.png",
+  "MOI" => "people/15.png",
+  "SETE TECNOLOGIA" => "people/19.png",
+  "SIEDOS" => "people/19.png",
+  "SOGRAO" => "people/24.png",
+  "NOUS" => "people/29.png",
+  "RUBY" => "dogs/3.png",
+  "RAVENA" => "dogs/8.png",
+  "RECEITA FEDERAL" => "dogs/17.png"
 }.freeze

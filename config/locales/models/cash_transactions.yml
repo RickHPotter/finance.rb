@@ -34,12 +34,12 @@ en:
         created_at: Created at
         updated_at: Updated at
         search_term: Search Term
-        from_ct_price: Card Transaction Price 1
-        to_ct_price: Card Transaction Price 2
-        from_price: Card Installment Price 1
-        to_price: Card Installment Price 2
-        from_installments_count: Card Installments Count 1
-        to_installments_count: Card Installments Count 2
+        from_ct_price: Inital Card Transaction Price
+        to_ct_price: Final Card Transaction Price
+        from_price: Inital Card Installment Price
+        to_price: Final Card Installment Price
+        from_installments_count: Min Card Installments Count
+        to_installments_count: Max Card Installments Count
 
 pt-BR:
   activerecord:
@@ -52,7 +52,7 @@ pt-BR:
         self: Movimentação
         count: Quantidade
         id: ID
-        description: Descricão
+        description: Descrição
         description_placeholder: Nome da Movimentação
         comment: Comentário
         comment_placeholder: Algum comentário?
@@ -77,9 +77,9 @@ pt-BR:
         created_at: Criado em
         updated_at: Atualizado em
         search_term: Termo de Busca
-        from_ct_price: Preço da Transação 1
-        to_ct_price: Preço da Transação 2
-        from_price: Preço da Parcela 1
-        to_price: Preço da Parcela 2
-        from_installments_count: Quantidade de Parcelas 1
-        to_installments_count: Quantidade de Parcelas 2
+        from_ct_price: Preço Inicial da Transação
+        to_ct_price: Preço Final da Transação
+        from_price: Preço Inicial da Parcela
+        to_price: Preço Final da Parcela
+        from_installments_count: Quantidade Mínima de Parcelas
+        to_installments_count: Quantidade Máxima de Parcelas

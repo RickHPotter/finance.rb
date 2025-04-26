@@ -20,13 +20,15 @@ module Views
             data: { new_record: budget_entity.new_record?, reactive_form_target: "entityWrapper" }) do
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
-              Sheet(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
-                SheetTrigger(class: "flex items-center gap-2 flex-1") do
+              div(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
+                div(class: "flex items-center gap-2 flex-1") do
                   div(class: "entity_avatar_container") do
                     image_tag asset_path("avatars/#{budget_entity.entity.avatar_name}"), class: "entity_avatar w-6 h-6 rounded-full" if budget_entity.entity
                   end
 
-                  span(class: "entities_entity_name text-black text-nowrap") { budget_entity&.entity&.entity_name }
+                  span(class: "entities_entity_name text-black text-nowrap", data: { dynamic_description_target: :entity }) do
+                    budget_entity&.entity&.entity_name
+                  end
                 end
 
                 button(type: :button,

@@ -15,7 +15,7 @@ RSpec.describe UserCard, type: :model do
         it { should validate_presence_of(attribute) }
       end
 
-      it { should validate_uniqueness_of(:user_card_name).scoped_to(:user_id) }
+      it { should validate_uniqueness_of(:user_card_name).scoped_to(%i[user_id card_id]) }
     end
 
     context "( associations )" do
@@ -40,15 +40,15 @@ end
 #  days_until_due_date     :integer          not null
 #  due_date_day            :integer          default(1), not null
 #  min_spend               :integer          not null
-#  user_card_name          :string           not null, indexed
+#  user_card_name          :string           not null, indexed => [user_id, card_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  card_id                 :bigint           not null, indexed
-#  user_id                 :bigint           not null, indexed
+#  card_id                 :bigint           not null, indexed, indexed => [user_id, user_card_name]
+#  user_id                 :bigint           not null, indexed => [card_id, user_card_name], indexed
 #
 # Indexes
 #
-#  index_user_cards_on_card_id         (card_id)
-#  index_user_cards_on_user_card_name  (user_card_name) UNIQUE
-#  index_user_cards_on_user_id         (user_id)
+#  index_user_cards_on_card_id           (card_id)
+#  index_user_cards_on_on_composite_key  (user_id,card_id,user_card_name) UNIQUE
+#  index_user_cards_on_user_id           (user_id)
 #

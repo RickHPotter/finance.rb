@@ -4,9 +4,10 @@ class Budget < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
-  include HasBalance
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :flag_for_balance_recalculation
+
   # @relationships ............................................................
   belongs_to :user
   has_many :budget_categories, dependent: :destroy
@@ -25,17 +26,19 @@ class Budget < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_starting_value
   before_save :set_remaining_value
+  before_save :set_flag_for_balance_recalculation
+  after_commit :trigger_balance_recalculation, on: %i[create update], if: :flag_for_balance_recalculation
 
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def date
-    Date.new(year, month).end_of_month
+    Date.new(year, month).beginning_of_month
   end
 
   def set_starting_value
-    self.starting_value = value
+    self.starting_value ||= value
   end
 
   def set_remaining_value
@@ -61,11 +64,27 @@ class Budget < ApplicationRecord
   end
 
   def exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
-    cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
+    if category_ids.present? && entity_ids.present?
+      cash_installments.by_categories_or_entities(category_ids, entity_ids) + card_installments.by_categories_or_entities(category_ids, entity_ids)
+    elsif category_ids.present?
+      cash_installments.by_categories(category_ids) + card_installments.by_categories(category_ids)
+    elsif entity_ids.present?
+      cash_installments.by_entities(entity_ids) + card_installments.by_entities(entity_ids)
+    end
   end
 
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+
+  private
+
+  def set_flag_for_balance_recalculation
+    self.flag_for_balance_recalculation = changes.slice(:price, :remaining_value, :month, :year).present?
+  end
+
+  def trigger_balance_recalculation
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call
+  end
 end
 
 # == Schema Information
@@ -84,11 +103,12 @@ end
 #  year            :integer          not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
-#  order_id        :integer          not null
+#  order_id        :integer          indexed
 #  user_id         :bigint           not null, indexed
 #
 # Indexes
 #
+#  idx_budgets_order_id      (order_id)
 #  index_budgets_on_user_id  (user_id)
 #
 # Foreign Keys

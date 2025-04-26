@@ -6,6 +6,8 @@
       <%= form.text_field \
             :category_name,
             class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            disabled: category.persisted? && category.built_in?,
+            value: category&.name,
             data: { controller: "blinking-placeholder", text: model_attribute(category, :category_name) } %>
     </div>
 
@@ -15,11 +17,26 @@
 
     <%= bold_label(form, :active) %>
 
-    <div class="mb-3">
+    <div class="pb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: category.new_record? || category.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, category) } %>
+    <div class="w-full">
+      <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, category) } %>
+    </div>
+
+    <% if category.persisted? && category.built_in == false %>
+      <div class="w-full">
+        <%= render RubyUI::Button.new(
+              id: "delete_category_#{category.id}",
+              type: :submit,
+              variant: :destructive,
+              link: category_path(category),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) { action_model(:destroy, category) } %>
+      </div>
+    <% end %>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

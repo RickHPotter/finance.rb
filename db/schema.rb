@@ -43,7 +43,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
   end
 
   create_table "budgets", force: :cascade do |t|
-    t.integer "order_id", null: false
+    t.integer "order_id"
     t.string "description", null: false
     t.integer "month", null: false
     t.integer "year", null: false
@@ -56,6 +56,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["order_id"], name: "idx_budgets_order_id"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end
 
@@ -151,7 +152,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["entity_name"], name: "index_entities_on_entity_name", unique: true
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
@@ -209,6 +209,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
     t.index ["date_year", "date_month", "date"], name: "idx_installments_year_month_date"
+    t.index ["order_id"], name: "idx_installments_order_id"
     t.index ["price"], name: "idx_installments_price"
   end
 
@@ -232,6 +233,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.bigint "user_card_id", null: false
     t.integer "month", null: false
     t.integer "year", null: false
+    t.date "reference_closing_date", null: false
     t.date "reference_date", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -269,7 +271,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_03_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["card_id"], name: "index_user_cards_on_card_id"
-    t.index ["user_card_name"], name: "index_user_cards_on_user_card_name", unique: true
+    t.index ["user_id", "card_id", "user_card_name"], name: "index_user_cards_on_on_composite_key", unique: true
     t.index ["user_id"], name: "index_user_cards_on_user_id"
   end
 

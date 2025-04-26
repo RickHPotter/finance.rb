@@ -12,11 +12,11 @@ export default class extends Controller {
     "installmentWrapper", "addInstallment", "delInstallment",
     "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
 
-    "categoryWrapper", "addCategory", "delCategory",
+    "categoryWrapper", "addCategory",
     "categoryColours",
 
     "entityWrapper",
-    "addEntity", "delEntity",
+    "addEntity",
     "entityIcons",
 
     "updateButton"
@@ -46,8 +46,61 @@ export default class extends Controller {
     }
   }
 
+  clear({ target }) {
+    const input = document.getElementById(target.dataset.id)
+    if (!input) { return }
+
+    input.value = ""
+    input.dispatchEvent(new Event("input"))
+  }
+
   // Installments
   requestSubmit({ target }) {
+    const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
+
+    if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
+  }
+
+  updateFullPrice() {
+    const visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+    let totalPrice = 0
+
+    visibleInstallmentsInputs.forEach((input) => {
+      if (input.value) { totalPrice += parseInt(_removeMask(input.value)) }
+    })
+
+    this.priceInputTarget.value = _applyMask(totalPrice.toString())
+  }
+
+  prevMonth({ target }) {
+    this.updateInstallmentDate(target, -1)
+  }
+
+  nextMonth({ target }) {
+    this.updateInstallmentDate(target, 1)
+  }
+
+  updateInstallmentDate(target, count) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const monthYearInput = installmentWrapper.querySelector(".installment_month_year")
+    const monthInput = installmentWrapper.querySelector(".installment_month")
+    const yearInput = installmentWrapper.querySelector(".installment_year")
+
+    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
+    date.monthsForwards(count)
+
+    monthYearInput.textContent = date.monthYear()
+    monthInput.value = date.month
+    yearInput.value = date.year
+  }
+
+  async requestSubmitAfterUpdate({ target }) {
+    if (target.value < 1) { target.value = 1 }
+    if (target.value > 72) { target.value = 72 }
+
+    const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+    await this._updateInstallmentsFields(installmentsCount)
+
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
     if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
@@ -60,11 +113,11 @@ export default class extends Controller {
     this._updateWrappers(railsDueDate)
   }
 
-  updateInstallmentsPrices({ target }) {
+  async updateInstallmentsPrices({ target }) {
     if (target.value < 1) { target.value = 1 }
     if (target.value > 72) { target.value = 72 }
 
-    this._updateInstallmentsPrices()
+    await this._updateInstallmentsPrices()
   }
 
   // Categories
@@ -90,8 +143,8 @@ export default class extends Controller {
   }
 
   removeCategory({ target }) {
-    const nestedDiv = target.parentElement.parentElement.parentElement
-    const chipValue = nestedDiv.querySelector(".categories_category_id").value
+    const wrapper = target.closest("[data-reactive-form-target='categoryWrapper']")
+    const chipValue = wrapper.querySelector(".categories_category_id")?.value
 
     const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
     const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
@@ -102,11 +155,11 @@ export default class extends Controller {
 
     if (removedOption) {
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompleteAs
+      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
     }
 
-    nestedDiv.style.display = "none"
-    nestedDiv.querySelector("input[name*='_destroy']").value = "true"
+    wrapper.style.display = "none"
+    wrapper.querySelector("input[name*='_destroy']").value = "true"
   }
 
   // Entities
@@ -132,8 +185,8 @@ export default class extends Controller {
   }
 
   removeEntity({ target }) {
-    const nestedDiv = target.parentElement.parentElement.parentElement
-    const chipValue = nestedDiv.querySelector(".entities_entity_id").value
+    const wrapper = target.closest("[data-reactive-form-target='entityWrapper']")
+    const chipValue = wrapper.querySelector(".entities_entity_id")?.value
 
     const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
     const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
@@ -144,20 +197,24 @@ export default class extends Controller {
 
     if (removedOption) {
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompleteAs
+      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
     }
 
-    nestedDiv.style.display = "none"
-    nestedDiv.querySelector("input[name*='_destroy']").value = "true"
+    wrapper.style.display = "none"
+    wrapper.querySelector("input[name*='_destroy']").value = "true"
   }
 
   // search
-  submit() {
+  submitWithDelay() {
     clearTimeout(this.debounceTimeout)
 
     this.debounceTimeout = setTimeout(() => {
       this.element.requestSubmit()
     }, 800)
+  }
+
+  submit() {
+    this.element.requestSubmit()
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -170,36 +227,36 @@ export default class extends Controller {
 
   // Installments
   _getDueDate() {
-    if (!this.hasClosingDateDayTarget) { return new RailsDate(this.dateInputTarget.value) }
     return new RailsDate(this.element.querySelector(".installment_date").value)
-
-    const currentClosingDateDay = parseInt(this.closingDateDayTarget.value)
-    const daysUntilDueDate = parseInt(this.daysUntilDueDateTarget.value)
-
-    const railsCurrentDate = new RailsDate(this.dateInputTarget.value)
-    const railsClosingDate = new RailsDate(railsCurrentDate.year, railsCurrentDate.month, currentClosingDateDay)
-    railsClosingDate.monthsForwards((railsCurrentDate.date() >= railsClosingDate.date()) ? 1 : 0)
-
-    return new RailsDate(railsClosingDate).daysForwards(daysUntilDueDate)
   }
 
-  _updateWrappers(startingRailsDate, startingNumber = 0) {
-    if (startingNumber === 0 && this.monthYearInstallmentTarget.textContent.trim() === startingRailsDate.monthYear()) { return }
-
+  _updateWrappers(startingRailsDate) {
     const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
+    const firstVisibleInstallment = visibleInstallmentsWrappers[0]
+
+    if (!firstVisibleInstallment) return
+
+    if (firstVisibleInstallment.querySelector(".installment_month").value) {
+      const year = parseInt(firstVisibleInstallment.querySelector(".installment_year").value)
+      const month = parseInt(firstVisibleInstallment.querySelector(".installment_month").value)
+      const railsDate = new RailsDate(year, month, 1)
+
+      startingRailsDate.setYear(railsDate.year)
+      startingRailsDate.setMonth(railsDate.month)
+    }
 
     visibleInstallmentsWrappers.forEach((target, index) => {
-      startingRailsDate.monthsForwards(1)
 
-      if (target.querySelector(".installment_month").value) { return }
+      target.querySelector(".installment_number").value = index + 1
 
       const proposedDate = new RailsDate(startingRailsDate.year, startingRailsDate.month, new Date(this.dateInputTarget.value).getDate())
 
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".installment_number").value = index + 1
       target.querySelector(".installment_date").value = proposedDate.date().toISOString().slice(0, 16)
       target.querySelector(".installment_month").value = startingRailsDate.month
       target.querySelector(".installment_year").value = startingRailsDate.year
+
+      startingRailsDate.monthsForwards(1)
     })
   }
 
@@ -212,7 +269,8 @@ export default class extends Controller {
 
     await this._updateInstallmentsFields(installmentsCount)
 
-    const visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility()).reverse()
+    let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+    if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
 
     visibleInstallmentsInputs.forEach((input, index) => {
       const valueCents = baseCents + (index < remainder ? 1 : 0)
@@ -222,13 +280,13 @@ export default class extends Controller {
   }
 
   async _updateInstallmentsFields(newInstallmentsCount) {
-    const allInstallments          = this.priceInstallmentInputTargets
-    const allInstallmentsCount     = allInstallments.length
-    const visibleInstallments      = allInstallments.filter((element) => element.checkVisibility())
+    const allInstallments = this.priceInstallmentInputTargets
+    const allInstallmentsCount = allInstallments.length
+    const visibleInstallments = allInstallments.filter((element) => element.checkVisibility())
     const visibleInstallmentsCount = visibleInstallments.length
 
-    const shouldRemoveInstallments    = newInstallmentsCount < visibleInstallmentsCount
-    const shouldAddInstallments       = newInstallmentsCount > visibleInstallmentsCount
+    const shouldRemoveInstallments = newInstallmentsCount < visibleInstallmentsCount
+    const shouldAddInstallments = newInstallmentsCount > visibleInstallmentsCount
     const canUpdateHiddenInstallments = allInstallmentsCount > visibleInstallmentsCount
 
     if (visibleInstallmentsCount === newInstallmentsCount) { return }
@@ -239,25 +297,25 @@ export default class extends Controller {
       installmentsDeleteButtonsToBeClicked.forEach((element) => element.click())
     }
 
-    if (!shouldAddInstallments) { return }
+    if (shouldAddInstallments) {
+      if (canUpdateHiddenInstallments) {
+        const sliced = this.installmentWrapperTargets.slice(visibleInstallmentsCount, newInstallmentsCount)
 
-    if (canUpdateHiddenInstallments) {
-      const sliced = this.installmentWrapperTargets.slice(visibleInstallmentsCount, newInstallmentsCount)
+        sliced.forEach(element => {
+          element.style.display = "block"
+          element.querySelector("input[name*='_destroy']").value = "false"
+        })
+      }
 
-      sliced.forEach(element => {
-        element.style.display = "block"
-        element.querySelector("input[name*='_destroy']").value = "0"
-      })
-    }
-
-    const numberOfNewInstallmentsToAdd = newInstallmentsCount - allInstallmentsCount
-    for (let i = 0; i < numberOfNewInstallmentsToAdd; i++) {
-      await this.addInstallmentTarget.click()
+      const numberOfNewInstallmentsToAdd = newInstallmentsCount - allInstallmentsCount
+      for (let i = 0; i < numberOfNewInstallmentsToAdd; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        this.addInstallmentTarget.click()
+      }
     }
 
     const railsDueDate = this._getDueDate()
-    const installmentsCount = this.priceInstallmentInputTargets.filter((element) => element.checkVisibility()).length
-    this._updateWrappers(railsDueDate, installmentsCount)
+    this._updateWrappers(railsDueDate)
   }
 
   // Categories
@@ -280,8 +338,9 @@ export default class extends Controller {
 
   _insertExchangeCategory() {
     const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
+    const exchangeCategoryName = this.element.querySelector("#exchange_category_name").value
     const value = exchangeCategoryId
-    const text = "EXCHANGE"
+    const text = exchangeCategoryName
 
     const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
     const exchangeCategory = selectedCategories.find((element) => element.value === value)
@@ -291,7 +350,7 @@ export default class extends Controller {
       if (!categoryWrapperDiv) return
 
       categoryWrapperDiv.style.display = "block"
-      categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "0"
+      categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "false"
 
       return
     }
@@ -307,7 +366,8 @@ export default class extends Controller {
   }
 
   _removeExchangeCategory() {
-    const categoryWrapperDiv = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === "EXCHANGE")
+    const exchangeCategoryName = this.element.querySelector("#exchange_category_name").value
+    const categoryWrapperDiv = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === exchangeCategoryName)
 
     if (!categoryWrapperDiv) return
 

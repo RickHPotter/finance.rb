@@ -8,9 +8,9 @@ RSpec.describe "UserCards", type: :feature do
 
   let(:user) { create(:user, :random) }
   let(:card) { build(:card, :random) }
-  let(:current_closing_date) { Date.current + 4.days }
-  let(:current_due_date) { Date.current + 9.days }
-  let(:user_card) { build(:user_card, :random, user:, card:, days_until_due_date: 5, due_date_day: (Date.current + 9.days).day) }
+  let(:current_closing_date) { Time.zone.today + 4.days }
+  let(:current_due_date) { Time.zone.today + 9.days }
+  let(:user_card) { build(:user_card, :random, user:, card:, days_until_due_date: 5, due_date_day: (Time.zone.today + 9.days).day) }
 
   before { sign_in_as(user:) }
 
@@ -24,7 +24,7 @@ RSpec.describe "UserCards", type: :feature do
   feature "/user_cards/index" do
     background do
       user_card.save
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, user_card:)
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, user_card:)
       navigate_to(menu: basic, sub_menu: user_card_submenu)
     end
 
@@ -48,7 +48,7 @@ RSpec.describe "UserCards", type: :feature do
 
     scenario "creating an invalid user_card" do
       within "turbo-frame#new_user_card" do
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_created, UserCard))
@@ -63,7 +63,7 @@ RSpec.describe "UserCards", type: :feature do
         fill_in "user_card_min_spend",            with: 200 * 100
         fill_in "user_card_credit_limit",         with: 2000 * 100
 
-        find("input[type=submit]", match: :first).click
+        find("button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:created, UserCard))
@@ -93,7 +93,7 @@ RSpec.describe "UserCards", type: :feature do
     scenario "editing an invalid user_card" do
       find("#edit_user_card_#{user_card.id}", match: :first).click
       fill_in "user_card_user_card_name", with: ""
-      find("form input[type=submit]", match: :first).click
+      find("form button[type=submit]", match: :first).click
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_updated, UserCard))
     end
@@ -109,7 +109,7 @@ RSpec.describe "UserCards", type: :feature do
           fill_in "user_card_min_spend",            with: user_card.min_spend * 2
           fill_in "user_card_credit_limit",         with: user_card.credit_limit * 2
 
-          find("form input[type=submit]", match: :first).click
+          find("form button[type=submit]", match: :first).click
         end
       end
 
@@ -155,7 +155,7 @@ RSpec.describe "UserCards", type: :feature do
     end
 
     scenario "failing to destroy a user_card that has card_transactions" do
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, user_card:)
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, user_card:)
 
       within "turbo-frame#user_card_#{user_card.id}" do
         find("#delete_user_card_#{user_card.id}").click

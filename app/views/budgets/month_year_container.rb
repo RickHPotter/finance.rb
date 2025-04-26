@@ -13,7 +13,7 @@ class Views::Budgets::MonthYearContainer < Views::Base
 
   def view_template
     turbo_frame_tag :month_year_container do
-      custom_params = { search_term:, category_id:, entity_id: }
+      custom_params = { search_term:, budget: { category_id:, entity_id: } }
 
       active_month_years.sort.each do |month_year|
         turbo_frame_tag "month_year_container_#{month_year}", src: month_year_budgets_path(custom_params.merge(month_year:))

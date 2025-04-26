@@ -21,7 +21,7 @@ FactoryBot.define do
 
     trait :random do
       price { Faker::Number.number(digits: rand(3..4)) }
-      date { Faker::Date.between(from: 1.months.ago, to: Date.current) }
+      date { Faker::Date.between(from: 1.months.ago, to: Time.zone.today) }
       month { date.month }
       year { date.year }
 

@@ -107,8 +107,19 @@ module Import
       cash_transaction.update(date: transaction[:date], imported: true)
       cash_transaction.cash_installments.first.update_columns(date: transaction[:date])
 
-      reference = cash_transaction.user_card.references.create_with(reference_date: transaction[:date]).find_or_create_by(transaction.slice(:month, :year))
-      reference.update(reference_date: transaction[:date])
+      reference_date = transaction[:date]
+      reference = cash_transaction.user_card.references.find_or_create_by(transaction.slice(:month, :year))
+
+      if reference
+        reference.update(reference_date:)
+      else
+        params = transaction.slice(:month, :year).merge(
+          reference_closing_date: reference_date - cash_transaction.user_card.days_until_due_date.days,
+          reference_date:
+        )
+
+        cash_transaction.user_card.references.create(params)
+      end
     end
 
     def add_card_advance(user, transaction, params)

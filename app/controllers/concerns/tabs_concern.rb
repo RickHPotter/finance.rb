@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :card, active_sub_menu: :NBNK)
+  def set_tabs(active_menu: :cash, active_sub_menu: :pix)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -25,14 +25,16 @@ module TabsConcern
   private
 
   def set_variables
-    set_basic_sublinks
-    set_card_transaction_sublinks
-    set_cash_transaction_sublinks
+    set_sublinks
+
+    basic_link = (@basic_tab.find(&:default)            || @basic_tab.first).link
+    card_link  = (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link
+    cash_link  = (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link
 
     @main_items = [
-      { label: t("tabs.basic"),            icon: :exchange, link: @basic_tab.first.link,            default: @active_menu == :basic },
-      { label: t("tabs.card_transaction"), icon: :wallet,   link: @card_transaction_tab.first.link, default: @active_menu == :card },
-      { label: t("tabs.cash_transaction"), icon: :cash,     link: @cash_transaction_tab.first.link, default: @active_menu == :cash }
+      { label: t("tabs.basic"),            icon: :exchange, link: basic_link, default: @active_menu == :basic },
+      { label: t("tabs.card_transaction"), icon: :wallet,   link: card_link,  default: @active_menu == :card },
+      { label: t("tabs.cash_transaction"), icon: :cash,     link: cash_link,  default: @active_menu == :cash }
     ].map { |item| item.slice(:label, :icon, :link, :default).values }
 
     @main_tab = @main_items.map do |label, icon, link, default|
@@ -44,9 +46,15 @@ module TabsConcern
     @sub_tab = [ @basic_tab, @card_transaction_tab, @cash_transaction_tab ]
   end
 
+  def set_sublinks
+    set_basic_sublinks
+    set_card_transaction_sublinks
+    set_cash_transaction_sublinks
+  end
+
   def set_basic_sublinks
     @basic_items = [
-      { label: t("tabs.user_bank_account"), icon: :safe,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
+      { label: t("tabs.user_bank_account"), icon: :bank,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
       { label: t("tabs.user_card"),         icon: :credit_card, link: user_cards_path,         default: @active_sub_menu == :user_card },
       { label: t("tabs.category"),          icon: :category,    link: categories_path,         default: @active_sub_menu == :category },
       { label: t("tabs.entity"),            icon: :user_circle, link: entities_path,           default: @active_sub_menu == :entity }

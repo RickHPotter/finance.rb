@@ -6,6 +6,7 @@ class CreateReferences < ActiveRecord::Migration[8.0]
       t.references :user_card, null: false, foreign_key: true
       t.integer :month, null: false
       t.integer :year, null: false
+      t.date :reference_closing_date, null: false
       t.date :reference_date, null: false
 
       t.timestamps

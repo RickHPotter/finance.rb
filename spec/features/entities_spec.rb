@@ -21,7 +21,7 @@ RSpec.describe "Entities", type: :feature do
   feature "/entities/index" do
     background do
       entity.save
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
       navigate_to(menu: basic, sub_menu: entity_submenu)
     end
 
@@ -31,7 +31,7 @@ RSpec.describe "Entities", type: :feature do
       match_center_container_content("card_transactions")
       params = card_transactions_search_form_params
 
-      expect(params[:entity_ids]).to eq(entity.id.to_s)
+      expect(params[:entity_id]).to eq(entity.id.to_s)
     end
   end
 
@@ -44,7 +44,7 @@ RSpec.describe "Entities", type: :feature do
 
     scenario "creating an invalid entity" do
       within "turbo-frame#new_entity" do
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_createda, Entity))
@@ -54,7 +54,7 @@ RSpec.describe "Entities", type: :feature do
       within "turbo-frame#new_entity form" do
         fill_in "entity_entity_name", with: "Test Entity"
 
-        find("input[type=submit]", match: :first).click
+        find("button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:createda, Entity))
@@ -83,7 +83,7 @@ RSpec.describe "Entities", type: :feature do
 
       within "turbo-frame#entity_#{entity.id} form" do
         fill_in "entity_entity_name", with: ""
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, Entity))
@@ -97,7 +97,7 @@ RSpec.describe "Entities", type: :feature do
       within "turbo-frame#entity_#{entity.id} form" do
         fill_in "entity_entity_name", with: "Another Test Entity"
 
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:updateda, Entity))
@@ -136,7 +136,7 @@ RSpec.describe "Entities", type: :feature do
     end
 
     scenario "failing to destroy a entity that has card_transactions" do
-      create_list(:card_transaction, 2, :random, user:, date: Date.current, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
+      create_list(:card_transaction, 2, :random, user:, date: Time.zone.today, entity_transactions: [ build(:entity_transaction, :random, entity:) ])
 
       within "turbo-frame#entity_#{entity.id}" do
         find("#delete_entity_#{entity.id}").click

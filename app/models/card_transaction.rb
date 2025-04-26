@@ -23,10 +23,18 @@ class CardTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
-  after_save :update_associations_count_and_total
-  after_destroy :update_associations_count_and_total
+  after_commit :update_associations_total
 
   # @scopes ...................................................................
+  # @class_methods ............................................................
+  def self.new_advanced_payment(user, params)
+    card_transaction = user.card_transactions.new(params)
+    card_transaction.categories << user.built_in_category("CARD ADVANCE")
+    card_transaction.entities << user.entities.find_or_create_by(entity_name: "CARD")
+
+    card_transaction
+  end
+
   # @public_instance_methods ..................................................
 
   # Retrieves the `reference_date` for the associated `cash_transaction` through `user_card.references`, based on `month` and `year`.
@@ -46,6 +54,11 @@ class CardTransaction < ApplicationRecord
     return if user_card_id.nil?
     return if imported
 
+    attach_reference if year.nil? && month.nil?
+    update_installments
+  end
+
+  def attach_reference
     reference_date = user_card.calculate_reference_date(date)
     existing_reference = user_card.references.find_by(reference_date:)
 
@@ -55,14 +68,16 @@ class CardTransaction < ApplicationRecord
     else
       self.month = reference_date.month
       self.year = reference_date.year
-      user_card.references.create_with(reference_date:).find_or_create_by(month:, year:)
+      user_card.references
+               .create_with(reference_closing_date: reference_date - user_card.days_until_due_date.days, reference_date:)
+               .find_or_create_by(month:, year:)
     end
-
-    update_installments if card_installments.any?
   end
 
   def update_installments
     card_installments.each_with_index do |installment, index|
+      next if installment.slice(:date, :month, :year).values.compact_blank.size == 3
+
       installment_date = date + index.months
       reference_date = user_card.calculate_reference_date(installment_date)
 
@@ -76,10 +91,24 @@ class CardTransaction < ApplicationRecord
     end
   end
 
+  def can_be_destroyed?
+    persisted?
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
   private
+
+  def reference_date_is_valid
+    # return if imported
+    # return false if errors.any?
+    #
+    # reference_date = user_card.calculate_reference_date(date)
+    # reference = user_card.references.find_by(month: reference_date.month, year: reference_date.year)
+    #
+    # errors.add(:date, "Invalid reference date") if reference.month != month || reference.year != year
+  end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
@@ -93,24 +122,12 @@ class CardTransaction < ApplicationRecord
     self.paid = false
   end
 
-  def update_associations_count_and_total
-    user_card.update_card_transactions_total
-    categories.each(&:update_card_transactions_count_and_total)
-    entities.each(&:update_card_transactions_count_and_total)
-  end
-
   def build_default_card_installments
     card_installments.new(number: 1, price:, date:) if card_installments.empty?
   end
 
-  def reference_date_is_valid
-    return if imported
-    return false if errors.any?
-
-    reference_date = user_card.calculate_reference_date(date)
-    reference = user_card.references.find_by(month: reference_date.month, year: reference_date.year)
-
-    errors.add(:date, "Invalid reference date") if reference.month != month || reference.year != year
+  def update_associations_total
+    Logic::RecalculateCountAndTotalService.new(card_transaction: self).call
   end
 end
 

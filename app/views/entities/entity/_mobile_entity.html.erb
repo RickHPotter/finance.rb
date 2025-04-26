@@ -3,7 +3,12 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <%= image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full" %>
-        <%= content_tag :span, entity.entity_name, class: "text-lg font-semibold text-black" %>
+
+        <%= link_to entity.entity_name,
+                    edit_entity_path(entity),
+                    id: "edit_entity_#{entity.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
       </div>
     </div>
   </div>
@@ -30,7 +35,9 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
             <%= render_icon :jump_to %>
           <% end %>
         </div>
@@ -58,27 +65,13 @@
         <div class="flex items-center">
           <%= content_tag :span, from_cent_based_to_float(entity.cash_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
 
-          <%= link_to cash_transactions_path(entity_id: entity.id, format: :turbo_stream), class: "my-auto mt-[-1rem]", data: { turbo_frame: :center_container } do %>
+          <%= link_to cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
             <%= render_icon :jump_to %>
           <% end %>
         </div>
       </div>
     </div>
-
-    <details>
-      <%= content_tag :summary, t(:datatable_actions), class: "flex items-center justify-between py-2" %>
-
-      <%= content_tag :div, class: "flex justify-between py-2" do %>
-        <div class="flex items-center gap-3 ml-auto">
-          <%= link_to edit_entity_path(entity), id: "edit_entity_#{entity.id}", data: { turbo_frame: :center_container } do %>
-            <%= render_icon :pencil %>
-          <% end %>
-
-          <%= link_to entity, id: "delete_entity_#{entity.id}", data: { turbo_method: :delete, turbo_confirm: t("confirmation.sure") } do %>
-            <%= render_icon :rubbish %>
-          <% end %>
-        </div>
-      <% end %>
-    </details>
   </div>
 <% end %>

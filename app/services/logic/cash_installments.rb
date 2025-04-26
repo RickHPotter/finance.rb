@@ -7,7 +7,7 @@ module Logic
 
       conditions = {
         price: raw_conditions[:installments_price],
-        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price).compact_blank,
+        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
                             **raw_conditions[:associations] }.compact_blank
       }.compact_blank
 
@@ -24,7 +24,7 @@ module Logic
 
     def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
       user.cash_installments
-          .where(date_year: year, date_month: month)
+          .where(year:, month:)
           .includes(cash_transaction: %i[categories entities])
           .where(conditions)
           .where(search_term_condition)

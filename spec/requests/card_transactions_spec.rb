@@ -6,15 +6,15 @@ RSpec.describe "CardTransactions", type: :request do
   let(:bank) { create(:bank, :random) }
   let(:user) { create(:user, :random) }
   let(:card) { create(:card, :random, bank:) }
-  let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", due_date_day: Date.current.day) }
-  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", due_date_day: Date.current.day) }
+  let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", due_date_day: Time.zone.today.day) }
+  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", due_date_day: Time.zone.today.day) }
   let(:exchange_category) { user.built_in_category("EXCHANGE") }
   let(:entity_one) { create(:entity, :random, user:) }
   let(:entity_two) { create(:entity, :random, user:) }
 
   let(:card_transaction) do
     Params::CardTransactions.new(
-      card_transaction: { price: -20_000, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
+      card_transaction: { price: -20_000, date: Time.zone.today, user_id: user.id, user_card_id: user_card_one.id },
       card_installments: { count: 1 },
       category_transactions: [],
       entity_transactions: [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200,

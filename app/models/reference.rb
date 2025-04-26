@@ -13,20 +13,30 @@ class Reference < ApplicationRecord
   validates :reference_date, uniqueness: { scope: :user_card_id }
 
   # @callbacks ................................................................
+  before_save :set_reference_closing_date
+
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-  def self.find_or_create_for(user_card, date)
-    month = date.month
-    year = date.year
+  def self.find_by_month_year(month_year)
+    month = month_year.month
+    year = month_year.year
 
-    find_or_create_by(user_card:, month:, year:) do |ref|
-      ref.reference_date = user_card.calculate_reference_date(date)
-    end
+    find_by(month:, year:)
   end
 
   # @protected_instance_methods ...............................................
+
+  protected
+
+  def set_reference_closing_date
+    self.reference_closing_date = if user_card.nil?
+                                    reference_date - 1.day
+                                  else
+                                    reference_date - user_card.days_until_due_date.days
+                                  end
+  end
   # @private_instance_methods .................................................
 end
 
@@ -34,13 +44,14 @@ end
 #
 # Table name: references
 #
-#  id             :bigint           not null, primary key
-#  month          :integer          not null, indexed => [user_card_id, year]
-#  reference_date :date             not null
-#  year           :integer          not null, indexed => [user_card_id, month]
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
-#  user_card_id   :bigint           not null, indexed => [month, year], indexed
+#  id                     :bigint           not null, primary key
+#  month                  :integer          not null, indexed => [user_card_id, year]
+#  reference_closing_date :date             not null
+#  reference_date         :date             not null
+#  year                   :integer          not null, indexed => [user_card_id, month]
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  user_card_id           :bigint           not null, indexed => [month, year], indexed
 #
 # Indexes
 #

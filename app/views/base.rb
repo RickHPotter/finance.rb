@@ -4,6 +4,8 @@ module Views
   class Base < Components::Base
     include Phlex::Rails::Helpers::TurboFrameTag
 
+    register_output_helper :combobox_tag
+
     def params
       context[:rails_view_context].params
     end

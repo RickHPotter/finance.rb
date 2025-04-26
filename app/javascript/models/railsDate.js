@@ -95,7 +95,7 @@ class RailsDate {
 
   setMonth(month) {
     this.month = month
-    this._date.setMonth(month)
+    this._date.setMonth(month - 1)
 
     return this
   }

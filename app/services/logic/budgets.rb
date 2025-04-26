@@ -30,12 +30,29 @@ module Logic
       fetch_budgets(user, month, year, conditions, search_term_condition)
     end
 
+    def self.find_by_ref_month_year_by_params(user, month, year, params)
+      raw_conditions = build_conditions_from_params(params)
+      find_by_ref_month_year(user, month, year, raw_conditions)
+    end
+
     def self.fetch_budgets(user, month, year, conditions, search_term_condition)
       user.budgets
           .where(conditions.merge(month:, year:))
           .where(search_term_condition)
           .includes(:categories, :entities)
           .order(:order_id)
+    end
+
+    def self.build_conditions_from_params(params)
+      category_id = (params.delete(:category_id).presence || {}).compact_blank
+      entity_id = (params.delete(:entity_id).presence || {}).compact_blank
+
+      {
+        associations: {
+          categories: { id: category_id }.compact_blank,
+          entities: { id: entity_id }.compact_blank
+        }
+      }
     end
   end
 end

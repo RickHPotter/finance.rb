@@ -48,7 +48,7 @@ module HasMonthYear
   #
   # @return [Date].
   #
-  def next_date(date: Date.current, days: date.day, months: 0, years: 0)
+  def next_date(date: Time.zone.today, days: date.day, months: 0, years: 0)
     Date.new(date.year, date.month) + (days - 1).days + months.month + years.years
   end
 

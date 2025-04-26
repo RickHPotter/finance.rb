@@ -22,7 +22,7 @@
 
       <div class="w-full lg:w-4/12">
         <%= bold_label(form, :agency_number) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :agency_number,
               type: :number,
               svg: :number,
@@ -32,7 +32,7 @@
 
       <div class="w-full lg:w-4/12">
         <%= bold_label(form, :account_number) %>
-        <%= render Components::TextFieldComponent.new \
+        <%= render Components::TextField.new \
               form, :account_number,
               type: :number,
               svg: :number,
@@ -43,11 +43,26 @@
 
     <%= bold_label(form, :active) %>
 
-    <div class="mb-3">
+    <div class="pb-3">
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_bank_account.new_record? || user_bank_account.active %>
     </div>
 
-    <%= render Components::ButtonComponent.new form:, options: { label: action_model(:submit, user_bank_account) } %>
+    <div class="w-full">
+      <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, user_bank_account) } %>
+    </div>
+
+    <% if user_bank_account.persisted? %>
+      <div class="w-full">
+        <%= render RubyUI::Button.new(
+              id: "delete_user_bank_account_#{user_bank_account.id}",
+              type: :submit,
+              variant: :destructive,
+              link: user_bank_account_path(user_bank_account),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) { action_model(:destroy, user_bank_account) } %>
+      </div>
+    <% end %>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>

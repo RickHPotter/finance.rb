@@ -1,9 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 import { initModals } from "flowbite"
 import RailsDate from "../models/railsDate"
+import { sleep } from "../utils/utils.js"
 import { _removeMask, _applyMask } from "../utils/mask.js"
 
-// FIXME: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
+// TODO: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = [
     "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
@@ -31,7 +32,7 @@ export default class extends Controller {
       }
     }
 
-    if (this.exchangesCountInputTarget.value > 0) this.checkForExchangeCategory()
+    this.checkForExchangeCategory()
   }
 
   fillPrice({ target }) {
@@ -70,22 +71,24 @@ export default class extends Controller {
     this._updateExchangesPrices()
   }
 
-  updateExchangesPrices({ target }) {
+  async updateExchangesPrices({ target }) {
     if (target.value < 0) { target.value = 0 }
     if (target.value > 72) { target.value = 72 }
 
-    this._updateExchangesPrices()
+    await this._updateExchangesPrices()
     this.fillInBoundType({ target: this.boundTypeTargets.find((element) => element.checked) })
 
-    if (target.value > 0) this.checkForExchangeCategory()
+    this.checkForExchangeCategory()
   }
 
   checkForExchangeCategory() {
     const reactiveFormTarget = document.querySelector("#transaction_form")
     const comboboxController = this.application.getControllerForElementAndIdentifier(reactiveFormTarget, "reactive-form")
     if (!comboboxController) return console.error("Combobox controller not found")
+    const exchangesWrappers = document.querySelectorAll(".nested-exchange-wrapper")
+    const ongoingExchanges = Array.from(exchangesWrappers).filter((element) => element.querySelector(".exchange_destroy").value == "false")
 
-    if (this.exchangeWrapperTargets.length > 0) {
+    if (ongoingExchanges.length > 0) {
       comboboxController._insertExchangeCategory()
     } else {
       comboboxController._removeExchangeCategory()
@@ -170,13 +173,14 @@ export default class extends Controller {
 
       sliced.forEach(element => {
         element.style.display = "block"
-        element.querySelector("input[name*='_destroy']").value = "0"
+        element.querySelector("input[name*='_destroy']").value = "false"
       })
     }
 
     const numberOfNewExchangesToAdd = newExchangesCount - allExchangesCount
     for (let i = 0; i < numberOfNewExchangesToAdd; i++) {
-      await this.addExchangeTarget.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      this.addExchangeTarget.click()
     }
 
     const railsDueDate = this._getDueDate()

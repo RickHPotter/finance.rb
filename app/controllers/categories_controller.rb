@@ -12,22 +12,34 @@ class CategoriesController < ApplicationController
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
 
     @categories = current_user.categories.where(conditions).order(category_name: :asc)
+
+    respond_to do |format|
+      format.html
+
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :category)
+      end
+    end
   end
 
   def show; end
 
   def new
-    @category = Category.new
+    @category = current_user.categories.new
   end
 
   def create
+    index
     @category = Logic::Categories.create(category_params)
-    @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_categories
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
+    if @category.active? && !@category.built_in?
+      @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_categories
+        set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -36,13 +48,17 @@ class CategoriesController < ApplicationController
   def edit; end
 
   def update
+    index
     @category = Logic::Categories.update(@category, category_params)
-    @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_categories
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @category.active?
+    if @category.active? && !@category.built_in?
+      @card_transaction = Logic::CardTransactions.create_from(category: @category) if @category.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_categories
+        set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -59,7 +75,7 @@ class CategoriesController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_category
-    @category = Category.find(params[:id])
+    @category = current_user.categories.find(params[:id])
   end
 
   # Only allow a list of trusted parameters through.

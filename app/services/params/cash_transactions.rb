@@ -15,7 +15,7 @@ module Params
     def params
       {
         cash_transaction: {
-          description: description || "New CashTransaction #{DateTime.current.to_i}",
+          description: description || "New CashTransaction #{Time.zone.now.to_i}",
           date:,
           month:,
           year:,
@@ -39,7 +39,7 @@ module Params
       installment_price = price / count
 
       (1..count).map do |i|
-        paid = date.present? && date + (i - 1).months <= Date.current
+        paid = date.present? && date + (i - 1).months <= Time.zone.today
         { number: i, date: date.next_month(i - 1), month:, year:, price: installment_price, paid: }
       end
     end

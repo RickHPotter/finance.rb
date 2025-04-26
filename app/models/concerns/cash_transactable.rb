@@ -71,7 +71,10 @@ module CashTransactable
   #
   def update_cash_transaction
     cash_transaction.update_columns(price: full_price, comment:)
-    cash_transaction.cash_installments.first.update(price: full_price)
+    cash_transaction.cash_installments.first.update_columns(price: full_price)
+
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call
+    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -116,10 +119,12 @@ module CashTransactable
 
   def new_cash_transaction_params
     if is_a?(Investment)
-      [ Date.current.beginning_of_month, true ]
+      paid = true
+      reference_date = Time.zone.today.beginning_of_month
     else
-      [ card_payment_date, (respond_to?(:paid) && paid) || (date.present? && Date.current >= date) ]
-    end => reference_date, paid
+      paid = (respond_to?(:paid) && paid) || (date.present? && Time.zone.today >= date)
+      reference_date = card_payment_date
+    end
 
     cash_transaction_params
       .without(:category_transactions)

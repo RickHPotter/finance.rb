@@ -35,7 +35,7 @@ FactoryBot.define do
     trait :random do
       description { Faker::Lorem.sentence }
       comment { [ Faker::Lorem.sentence, nil, nil, nil, nil ].sample }
-      date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
+      date { Faker::Date.between(from: 3.months.ago, to: Time.zone.today) }
       price { Faker::Number.number(digits: rand(3..5)) }
 
       user { random_custom_create(:user) }

@@ -22,7 +22,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
   feature "/user_bank_accounts/index" do
     background do
       user_bank_account.save
-      create_list(:cash_transaction, 2, :random, user:, date: Date.current, user_bank_account:)
+      create_list(:cash_transaction, 2, :random, user:, date: Time.zone.today, user_bank_account:)
       navigate_to(menu: basic, sub_menu: user_bank_account_submenu)
     end
 
@@ -42,7 +42,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
 
     scenario "creating an invalid user_bank_account" do
       within "turbo-frame#new_user_bank_account" do
-        find("form input[type=submit]", match: :first).click
+        find("form button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:not_createda, UserBankAccount))
@@ -50,11 +50,12 @@ RSpec.describe "UserBankAccounts", type: :feature do
 
     scenario "creating a valid user_bank_account and getting redirected to cash_transaction creation with user_bank_account already preselected" do
       within "turbo-frame#new_user_bank_account form" do
-        hotwire_select "hw_user_bank_account_bank_id", with: bank.id
-        fill_in "user_bank_account_agency_number",     with: "123"
-        fill_in "user_bank_account_account_number",    with: "456"
+        fill_in "user_bank_account_user_bank_account_name", with: "Test User Bank Account"
+        hotwire_select "hw_user_bank_account_bank_id",      with: bank.id
+        fill_in "user_bank_account_agency_number",          with: "123"
+        fill_in "user_bank_account_account_number",         with: "456"
 
-        find("input[type=submit]", match: :first).click
+        find("button[type=submit]", match: :first).click
       end
 
       expect(page).to have_css("#notification-content", text: notification_model(:createda, UserBankAccount))
@@ -88,7 +89,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
           fill_in "user_bank_account_agency_number",     with: "123"
           fill_in "user_bank_account_account_number",    with: "456"
 
-          find("form input[type=submit]", match: :first).click
+          find("form button[type=submit]", match: :first).click
         end
       end
 
@@ -131,7 +132,7 @@ RSpec.describe "UserBankAccounts", type: :feature do
     end
 
     scenario "failing to destroy a user_bank_account that has cash_transactions" do
-      create_list(:cash_transaction, 2, :random, user:, date: Date.current, user_bank_account:)
+      create_list(:cash_transaction, 2, :random, user:, date: Time.zone.today, user_bank_account:)
 
       within "turbo-frame#user_bank_account_#{user_bank_account.id}" do
         find("#delete_user_bank_account_#{user_bank_account.id}").click

@@ -22,10 +22,6 @@ class UserBankAccount < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-  def update_cash_transactions_total
-    update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
-  end
-
   def pretty_label
     "[ #{user_bank_account_name} ] #{agency_number || '-'}/#{account_number || '-'}"
   end

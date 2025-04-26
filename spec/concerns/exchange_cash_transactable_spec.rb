@@ -15,7 +15,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   let(:exchangable_card_transaction) do
     build(:card_transaction,
           :random,
-          user:, user_card:, price: -180, date: Date.current,
+          user:, user_card:, price: -180, date: Time.zone.today,
           card_installments: build_list(:card_installment, 2, price: -90) { |ci, i| ci.number = i + 1 },
           category_transactions: build_list(:category_transaction, 1, :random, category: exchange_category, transactable: nil),
           entity_transactions: build_list(:entity_transaction, 1,
@@ -30,7 +30,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   let(:non_exchangable_card_transaction) do
     build(:card_transaction,
           :random,
-          user:, user_card:, price: -180, date: Date.current,
+          user:, user_card:, price: -180, date: Time.zone.today,
           card_installments: build_list(:card_installment, 2, price: -90) { |ci, i| ci.number = i + 1 },
           category_transactions: build_list(:category_transaction, 1, :random, category:, transactable: nil),
           entity_transactions: build_list(:entity_transaction, 1,

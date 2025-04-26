@@ -24,12 +24,13 @@ module Components
           cached_icon options[:svg] if options[:svg]
         end
 
+        # FIXME: when every other ERB is turned into PhlexUI, remove raw
         if options[:type] == :select && items.present?
-          form.select field, items, {}, options
+          raw form.select field, items, {}, options
         elsif options[:type] == :textarea
-          form.text_area field, options
+          raw form.text_area field, options
         else
-          form.text_field field, options
+          raw form.text_field field, options
         end
       end
     end

@@ -116,9 +116,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     should_destroy = standalone? || cash_transaction.exchanges.ids == [ id ]
 
     if should_destroy
-      order_id = cash_transaction.cash_installments.first.order_id
       _destroy_cash_transaction
-      user.cash_installments.where(order_id: 0..(order_id - 1)).order(:order_id).last&.save
     else
       update_cash_transaction_and_installment(updated_price: exchanges_price - price)
     end
@@ -137,14 +135,16 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     if sibling_exchanges.empty?
       _destroy_cash_transaction
     else
-      cash_transaction.update_columns(price: sibling_exchanges.sum(:price))
-      cash_transaction.cash_installments.first&.update(price: sibling_exchanges.sum(:price))
+      update_cash_transaction_and_installment(updated_price: sibling_exchanges.sum(:price))
     end
   end
 
   def update_cash_transaction_and_installment(updated_price:)
     cash_transaction.update_columns(price: updated_price)
-    cash_transaction.cash_installments.first.update(price: updated_price)
+    cash_transaction.cash_installments.first&.update_columns(price: updated_price)
+
+    Logic::RecalculateBalancesService.new(user:, year: cash_transaction.date.year, month: cash_transaction.date.month).call
+    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   def exchanges_price(with_updated_price: false)
@@ -156,9 +156,29 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def date
     if transactable.is_a?(CardTransaction)
+      installment = transactable.card_installments.find_by(number:)
+      if installment.present?
+        year = installment.year
+        month = installment.month
+        user_card = installment.user_card
+
+        reference = user_card.references.find_by(month:, year:)
+        return reference.reference_date if reference
+      end
+
       transactable.card_payment_date + (number - 1).months
     else
       transactable.date + 1.month + (number - 1).months
+    end
+  end
+
+  def reference_date
+    corresponding_card_installment = transactable.card_installments.find_by(number:)
+
+    if corresponding_card_installment
+      Date.new(corresponding_card_installment.year, corresponding_card_installment.month)
+    else
+      Date.new(transactable.year, transactable.month) + (number - 1).months
     end
   end
 
@@ -167,9 +187,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    reference_date = Date.new(transactable.year, transactable.month, 1) + (number - 1).months
-    year           = reference_date.year
-    month          = reference_date.month
+    year  = reference_date.year
+    month = reference_date.month
 
     transactable
       .slice(:description, :user_card_id)
@@ -180,18 +199,26 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
              month:,
              user_id: user.id,
              cash_transaction_type: model_name.name,
-             category_transactions: FactoryBot.build_list(:category_transaction, 1, transactable: self, category: user.built_in_category("EXCHANGE RETURN")),
-             entity_transactions: FactoryBot.build_list(:entity_transaction, 1, transactable: self, entity: entity_transaction.entity))
+             category_transactions_attributes:,
+             entity_transactions_attributes:)
+  end
+
+  def category_transactions_attributes
+    [ { category_id: user.built_in_category("EXCHANGE RETURN").id } ]
+  end
+
+  def entity_transactions_attributes
+    [ { id: nil, is_payer: false, price: 0, entity_id: entity_transaction.entity.id } ]
   end
 
   def card_bound_cash_transaction_params
-    cash_transaction_params.merge(description: transactable.user_card.user_card_name)
+    cash_transaction_params.merge(description: "#{transactable.user_card.user_card_name} [ #{entity_transaction.entity.entity_name} ]")
   end
 
   def cash_transaction_conditions
     params = cash_transaction_params
-    params[:categories] = { id: params.delete(:category_transactions).pluck(:category_id) }
-    params[:entities] = { id: params.delete(:entity_transactions).pluck(:entity_id) }
+    params[:categories] = { id: params.delete(:category_transactions_attributes).pluck(:category_id) }
+    params[:entities] = { id: params.delete(:entity_transactions_attributes).pluck(:entity_id) }
 
     params.delete(:categories) if params[:categories][:id].empty?
     params.delete(:entities) if params[:entities][:id].empty?
@@ -200,7 +227,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def card_bound_cash_transaction_conditions
-    cash_transaction_conditions.merge(description: transactable.user_card.user_card_name)
+    cash_transaction_conditions.merge(description: "#{transactable.user_card.user_card_name} [ #{entity_transaction.entity.entity_name} ]")
   end
 
   def _destroy_cash_transaction

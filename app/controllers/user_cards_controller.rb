@@ -12,10 +12,18 @@ class UserCardsController < ApplicationController
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
 
     @user_cards = Logic::UserCards.find_by(current_user, conditions)
+
+    respond_to do |format|
+      format.html
+
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+      end
+    end
   end
 
   def new
-    @user_card = UserCard.new
+    @user_card = current_user.user_cards.new
 
     respond_to do |format|
       format.html
@@ -26,12 +34,16 @@ class UserCardsController < ApplicationController
   end
 
   def create
+    index
     @user_card = Logic::UserCards.create(user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction)
+    if @user_card.active?
+      @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -40,12 +52,16 @@ class UserCardsController < ApplicationController
   def edit; end
 
   def update
+    index
     @user_card = Logic::UserCards.update(@user_card, user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_tabs(active_menu: :basic, active_sub_menu: :card_transaction) if @user_card.active?
+    if @user_card.active?
+      @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -63,7 +79,7 @@ class UserCardsController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_user_card
-    @user_card = UserCard.find(params[:id])
+    @user_card = current_user.user_cards.find(params[:id])
   end
 
   # Only allow a list of trusted parameters through.
