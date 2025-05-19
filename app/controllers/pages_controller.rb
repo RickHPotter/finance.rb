@@ -10,6 +10,10 @@ class PagesController < ApplicationController
     render Views::Pages::Index.new
   end
 
+  def donation
+    render Views::Pages::Donation.new
+  end
+
   def notification
     render Views::Pages::Notification.new
   end

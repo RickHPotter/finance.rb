@@ -8,6 +8,7 @@ en:
       investment:
         id: ID
         description: Description
+        description_placeholder: INVESTMENT
         date: Date
         month: Month
         year: Year
@@ -30,6 +31,7 @@ pt-BR:
       investment:
         id: ID
         description: Descrição
+        description_placeholder: RENDIMENTO
         date: Data
         month: Mês
         year: Ano

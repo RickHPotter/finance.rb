@@ -33,6 +33,7 @@ class Views::Investments::Form < Views::Base
                           class: outdoor_input_class,
                           autofocus: true,
                           autocomplete: :off,
+                          value: investment.new_record? ? model_attribute(investment, :description_placeholder) : investment.description,
                           data: { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
         end
 

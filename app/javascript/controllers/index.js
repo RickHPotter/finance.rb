@@ -4,6 +4,9 @@
 
 import { application } from "./application"
 
+import Clipboard from "@stimulus-components/clipboard"
+application.register("clipboard", Clipboard)
+
 import AutocompleteSelectController from "./autocomplete_select_controller"
 application.register("autocomplete-select", AutocompleteSelectController)
 

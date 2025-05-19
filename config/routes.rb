@@ -14,7 +14,10 @@ Rails.application.routes.draw do
   get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   resources :pages, only: :index do
-    collection { get :notification }
+    collection do
+      get :donation
+      get :notification
+    end
   end
 
   resources :user_cards, except: :show

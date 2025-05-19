@@ -32,23 +32,30 @@
   </body>
 
   <footer class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto bg-gray-900 text-white flex justify-between items-center">
-    <div class="flex gap-2 p-2 text-sm text-white hover:bg-gray-600">
-      <%= render_icon(:leave) %>
-      <%= link_to t(:sign_out), destroy_user_session_path, data: { turbo_method: :delete } %>
+    <div class="flex items-center gap-2 p-2 text-sm text-white hover:bg-gray-600">
+      <%= link_to destroy_user_session_path, data: { turbo_method: :delete } do %>
+        <%= t(:sign_out) %>
+        <%= render_icon(:leave) %>
+      <% end %>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex gap-2 p-2 text-sm text-white hover:bg-gray-600">
+      <%= link_to donation_pages_path, data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+        <%= t(:donate) %>
+        <%= render_icon(:heart) %>
+      <% end %>
+    </div>
+
+    <div class="flex items-center gap-2">
       <span>
         <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
-          <span class="mr-2">Português</span>
-          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15" %>
+          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15", title: "Português" %>
         <% end %>
       </span>
 
       <span>
         <%= locale_link("en", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
-          <span class="mr-2">English</span>
-          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15" %>
+          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15", title: "English" %>
         <% end %>
       </span>
     </div>
