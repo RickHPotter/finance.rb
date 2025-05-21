@@ -12,6 +12,8 @@ class CardTransaction < ApplicationRecord
   include Budgetable
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :duplicate
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, counter_cache: true
@@ -27,6 +29,23 @@ class CardTransaction < ApplicationRecord
 
   # @scopes ...................................................................
   # @class_methods ............................................................
+  def self.duplicate(id)
+    existing_card_transaction = find(id)
+
+    card_transaction = existing_card_transaction.dup
+    card_transaction.duplicate = true
+    card_transaction.card_installments     = existing_card_transaction.card_installments.map(&:dup)
+    card_transaction.category_transactions = existing_card_transaction.category_transactions.map(&:dup)
+
+    existing_card_transaction.entity_transactions.each do |et|
+      new_entity_transaction = et.dup
+      new_entity_transaction.exchanges = et.exchanges.map(&:dup)
+      card_transaction.entity_transactions.push(new_entity_transaction)
+    end
+
+    card_transaction
+  end
+
   def self.new_advanced_payment(user, params)
     card_transaction = user.card_transactions.new(params)
     card_transaction.categories << user.built_in_category("CARD ADVANCE")

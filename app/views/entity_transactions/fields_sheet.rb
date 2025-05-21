@@ -110,13 +110,13 @@ module Views
 
                   div(class: "grid grid-cols-2 justify-between items-center gap-1") do
                     radio_button_tag(:bound_type, :standalone,
-                                     checked: entity_transaction.exchanges.first&.standalone? || !entity_transaction.exchanges.first&.card_bound?,
+                                     checked: entity_transaction.exchanges.first&.standalone?,
                                      id: "entity_transaction_standalone_#{form.index}",
                                      class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
                                      data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
 
                     radio_button_tag(:bound_type, :card_bound,
-                                     checked: entity_transaction.exchanges.first&.card_bound?,
+                                     checked: entity_transaction.exchanges.first&.card_bound? || !entity_transaction.exchanges.first&.standalone?,
                                      id: "entity_transaction_card_bound_#{form.index}",
                                      class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
                                      data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })

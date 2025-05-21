@@ -15,13 +15,16 @@ export default class extends Controller {
     initModals()
   }
 
-  toggleExchanges({ target }) {
+  async toggleExchanges({ target }) {
     const price = parseInt(_removeMask(target.value))
     const shouldBeDisabled = price === 0
 
     if (shouldBeDisabled !== this.exchangesCountInputTarget.disabled) {
       this.exchangesCountInputTarget.disabled = shouldBeDisabled
       this.exchangesCountEqualsButtonTarget.disabled = shouldBeDisabled
+
+      this.exchangesCountInputTarget.value = document.querySelector("[data-reactive-form-target='installmentsCountInput']").value
+      await this._updateExchangesPrices()
 
       if (shouldBeDisabled) {
         this.exchangesCountInputTarget.value = 0
@@ -35,7 +38,7 @@ export default class extends Controller {
     this.checkForExchangeCategory()
   }
 
-  fillPrice({ target }) {
+  async fillPrice({ target }) {
     const divider = target.dataset.divider
     const inputTarget = target.dataset.target
     const priceStr = document.getElementById("transaction_price").value
@@ -56,8 +59,8 @@ export default class extends Controller {
         break
     }
 
-    this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
-    this._updateExchangesPrices()
+    await this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
+    await this._updateExchangesPrices()
   }
 
   updatePrice() {

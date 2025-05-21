@@ -63,10 +63,10 @@ class CardTransactionsController < ApplicationController
   end
 
   def edit
-    @card_transaction = current_user.card_transactions.includes(:card_installments).find(params[:id])
+    @card_transaction = current_user.card_transactions.find(params[:id])
 
     respond_to do |format|
-      format.html { render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction) }
+      format.html { render Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction) }
       format.turbo_stream do
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction&.user_card&.user_card_name)
       end
@@ -99,6 +99,12 @@ class CardTransactionsController < ApplicationController
     @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
 
     respond_to(&:turbo_stream)
+  end
+
+  def duplicate
+    @card_transaction = CardTransaction.duplicate(params[:id])
+
+    render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)
   end
 
   def handle_save # rubocop:disable Metrics/AbcSize

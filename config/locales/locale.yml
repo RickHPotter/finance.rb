@@ -28,6 +28,8 @@ en:
     show: "Details of"
     new: "Creating"
     edit: "Editing"
+    duplicate: "Duplicating"
+    destroy: "Destroying"
   actions:
     index: "List"
     search: "Search"
@@ -38,6 +40,7 @@ en:
     newa: "New"
     create: "Create"
     edit: "Edit"
+    duplicate: "Duplicate"
     update: "Update"
     destroy: "Destroy"
     all: "All"
@@ -102,6 +105,7 @@ pt-BR:
     show: "Detalhes de"
     new: "Criando"
     edit: "Editando"
+    duplicate: "Duplicando"
     destroy: "Deletando"
   actions:
     index: "Listar"
@@ -113,6 +117,7 @@ pt-BR:
     newa: "Nova"
     create: "Criar"
     edit: "Editar"
+    duplicate: "Duplicar"
     update: "Atualizar"
     destroy: "Deletar"
     all: "Todos os"

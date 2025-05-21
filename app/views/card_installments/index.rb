@@ -202,6 +202,10 @@ class Views::CardInstallments::Index < Views::Base
 
         div(class: "py-2 flex items-center justify-center") do
           div(class: "flex items-center justify-center px-2 ml-auto rounded-md") do
+            link_to(duplicate_card_transaction_path(card_transaction), class: "p-1 bg-white border", data: { turbo_frame: :center_container }) do
+              cached_icon :copy
+            end
+
             link_to card_transaction,
                     id: "delete_card_transaction_#{card_transaction.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
