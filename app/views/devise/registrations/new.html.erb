@@ -6,7 +6,7 @@
   </p>
 <% end %>
 
-<%= form_for resource, as: resource_name, url: registration_path(resource_name), class: "text-lg", data: { turbo: false, controller: "form-validate" } do |f| %>
+<%= form_for resource, as: resource_name, url: registration_path(resource_name), class: "text-lg", data: { turbo: false } do |f| %>
 
   <%= render "devise/shared/error_messages", resource: %>
 

@@ -30,7 +30,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
       form_with model: card_transaction,
                 id: :transaction_form,
                 class: "contents text-black",
-                data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+                data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
 
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }

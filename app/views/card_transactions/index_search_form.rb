@@ -46,7 +46,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id

@@ -32,7 +32,7 @@ class Views::Investments::IndexSearchForm < Views::Base
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "form-validate reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
       div(class: "flex justify-between items-center gap-2") do

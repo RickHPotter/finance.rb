@@ -6,7 +6,7 @@
   </p>
 <% end %>
 
-<%= form_for resource, as: resource_name, url: session_path(resource_name), data: { turbo: false, controller: "form-validate" } do |f| %>
+<%= form_for resource, as: resource_name, url: session_path(resource_name), data: { turbo: false } do |f| %>
   <div class="w-full mb-6 text-blue-700">
     <%= render Components::TextField.new(f, :email, type: :email, svg: :email, autofocus: true, placeholder: model_attribute(resource, :email)) %>
   </div>

@@ -24,7 +24,7 @@ class Views::Investments::Form < Views::Base
         model: investment,
         id: :investment_form,
         class: "contents text-black",
-        data: { controller: "form-validate price-mask", action: "submit->price-mask#removeMasks" }
+        data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
 

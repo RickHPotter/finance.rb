@@ -25,7 +25,7 @@ document.addEventListener("click", (event) => {
 })
 
 document.addEventListener("DOMContentLoaded", () => {
-  const validStandalonePaths = ["/", "/sidekiq", "/up"]
+  const validStandalonePaths = ["/", "/sidekiq", "/up", "/users"]
   const fullPath = window.location.pathname + window.location.search + window.location.hash
 
   if (!validStandalonePaths.includes(window.location.pathname)) {

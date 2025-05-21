@@ -40,9 +40,6 @@ application.register("entity-transaction", EntityTransactionController)
 import ExchangeController from "./exchange_controller"
 application.register("exchange", ExchangeController)
 
-import FormValidateController from "./form_validate_controller"
-application.register("form-validate", FormValidateController)
-
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 

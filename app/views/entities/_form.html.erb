@@ -1,5 +1,5 @@
 <%= turbo_frame_tag dom_id entity do %>
-  <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "form-validate reactive-form" }) do |form| %>
+  <%= form_with(model: entity, id: :form, class: "contents text-black", data: { controller: "reactive-form" }) do |form| %>
     <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">

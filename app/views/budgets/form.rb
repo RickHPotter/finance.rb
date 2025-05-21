@@ -29,7 +29,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         model: budget,
         id: :form,
         class: "contents text-black",
-        data: { controller: "form-validate reactive-form price-mask dynamic-description", action: "submit->price-mask#removeMasks" }
+        data: { controller: "reactive-form price-mask dynamic-description", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
