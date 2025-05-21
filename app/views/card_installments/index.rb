@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Views::CardInstallments::Index < Views::Base
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath

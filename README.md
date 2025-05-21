@@ -306,3 +306,6 @@ Possible Downtime: 6 months and a half
   - ✅ Setup and use cache for static assets such as `svg icons`.
   - ✅ Deploy to `Hostinger` with `Kamal`.
   - ✅ Migrate most of the `frontend` from `ERB` to `PlhexUI`.
+  - ✅ Create donations page.
+  - ✅ Create `duplicate` endpoint to make it easier to create repeating transactions.
+  - ✅ Add link for GitHub Pages docs in auth and application layouts.

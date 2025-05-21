@@ -32,20 +32,6 @@
   </body>
 
   <footer class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto bg-gray-900 text-white flex justify-between items-center">
-    <div class="flex items-center gap-2 p-2 text-sm text-white hover:bg-gray-600">
-      <%= link_to destroy_user_session_path, data: { turbo_method: :delete } do %>
-        <%= t(:sign_out) %>
-        <%= render_icon(:leave) %>
-      <% end %>
-    </div>
-
-    <div class="flex gap-2 p-2 text-sm text-white hover:bg-gray-600">
-      <%= link_to donation_pages_path, data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
-        <%= t(:donate) %>
-        <%= render_icon(:heart) %>
-      <% end %>
-    </div>
-
     <div class="flex items-center gap-2">
       <span>
         <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
@@ -58,6 +44,24 @@
           <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15", title: "English" %>
         <% end %>
       </span>
+    </div>
+
+    <a class="flex items-center mx-auto text-sm text-gray-600 hover:text-gray-500" href="https://rickhpotter.github.io/30fev_docs.ts/" target="_blank">
+      <%= t("pages.docs") %>
+    </a>
+
+    <div class="text-sm text-white hover:bg-gray-600">
+      <%= link_to donation_pages_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+        <%= t(:donate) %>
+        <%= render_icon(:heart) %>
+      <% end %>
+    </div>
+
+    <div class="text-sm text-white hover:bg-gray-600">
+      <%= link_to destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete } do %>
+        <%= t(:sign_out) %>
+        <%= render_icon(:leave) %>
+      <% end %>
     </div>
   </footer>
 </html>

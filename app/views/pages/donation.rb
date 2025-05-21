@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Pages::Donation < Views::Base
-  include Phlex::Rails::Helpers::TurboFrameTag
-
   include CacheHelper
 
   def options

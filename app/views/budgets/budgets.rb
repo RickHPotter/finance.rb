@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Budgets::Budgets < Views::Base
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 

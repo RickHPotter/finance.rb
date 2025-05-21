@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::MonthYear < Views::Base
-  include Phlex::Rails::Helpers::TurboFrameTag
-
   include TranslateHelper
 
   attr_reader :mobile, :month_year, :month_year_date, :month, :year, :month_year_str, :user_card_id,

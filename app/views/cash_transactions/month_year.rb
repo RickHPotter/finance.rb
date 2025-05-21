@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::CashTransactions::MonthYear < Views::Base
-  include Phlex::Rails::Helpers::TurboFrameTag
-
   include TranslateHelper
 
   attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :budgets, :total_amount
