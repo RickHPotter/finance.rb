@@ -20,6 +20,7 @@ class EntityTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_status, on: :create
   before_save :set_is_payer
+  after_destroy :update_count_and_total
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -41,6 +42,11 @@ class EntityTransaction < ApplicationRecord
 
   def set_is_payer
     self.is_payer = !price_to_be_returned.zero?
+  end
+
+  def update_count_and_total
+    entity.update_card_transactions_count_and_total
+    entity.update_cash_transactions_count_and_total
   end
 
   # @private_instance_methods .................................................

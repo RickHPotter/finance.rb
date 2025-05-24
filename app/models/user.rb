@@ -68,7 +68,7 @@ class User < ApplicationRecord
   protected
 
   def set_default_locale
-    self.locale ||= :"pt-BR"
+    self.locale ||= I18n.locale
   end
 
   # Creates built-in `categories` for given user.
