@@ -78,8 +78,11 @@ class CardTransaction < ApplicationRecord
   end
 
   def attach_reference
-    reference_date = user_card.calculate_reference_date(date)
-    existing_reference = user_card.references.find_by(reference_date:)
+    existing_reference = card_installments.first
+    if existing_reference.nil?
+      reference_date = user_card.calculate_reference_date(date)
+      existing_reference = user_card.references.find_by(reference_date:)
+    end
 
     if existing_reference
       self.month = existing_reference.month

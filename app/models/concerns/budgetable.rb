@@ -23,10 +23,17 @@ module Budgetable
     self.should_update_all = changes.without(*unnecessary_changes).empty?
   end
 
+  def budgets
+    month_years = []
+    month_years << card_installments.map { |i| i.slice(:month, :year) } if respond_to?(:card_installments)
+    month_years << cash_installments.map { |i| i.slice(:month, :year) } if respond_to?(:cash_installments)
+
+    user.budgets.where(month_years.flatten)
+  end
+
   def update_relevant_budgets
-    budgets = user.budgets.where(month:, year:)
     if should_update_all || destroyed?
-      budgets.each(&:save)
+      user.budgets.each(&:save)
       return
     end
 

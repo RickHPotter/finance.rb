@@ -92,7 +92,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               type: "datetime-local", svg: :calendar,
               value: cash_transaction.date.strftime("%Y-%m-%dT%H:%M"),
               class: "font-graduate",
-              data: { controller: "ruby-ui--calendar-input", reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
+              data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
           end
 
           positive = cash_transaction.price.to_i.positive?
