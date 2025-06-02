@@ -54,12 +54,10 @@ class Views::Investments::Form < Views::Base
             TextField \
               form, :date,
               id: :investment_date,
-              type: "datetime-local", svg: :calendar,
-              value: (investment.date || Time.zone.now).strftime("%Y-%m-%dT%H:%M"),
+              type: :date, svg: :calendar,
+              value: investment.date.to_date || Time.zone.today,
               class: "font-graduate",
-              data: { controller: "ruby-ui--calendar-input",
-                      reactive_form_target: :dateInput,
-                      action: "change->reactive-form#updateInstallmentsDates" }
+              data: { reactive_form_target: :dateInput }
           end
 
           div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
@@ -70,7 +68,7 @@ class Views::Investments::Form < Views::Base
               class: "font-graduate",
               data: { price_mask_target: :input,
                       reactive_form_target: :priceInput,
-                      action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices" }
+                      action: "input->price-mask#applyMask" }
           end
         end
 

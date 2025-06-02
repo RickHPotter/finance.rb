@@ -103,9 +103,10 @@ class Views::Investments::MonthYear < Views::Base
                         class: "truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container }
 
-                span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0") do
-                  investment.user_bank_account.user_bank_account_name
-                end
+                link_to investment.user_bank_account.user_bank_account_name,
+                        new_investment_path(next_day: true, investment: { user_bank_account_id: investment.user_bank_account_id }),
+                        class: "p-1 rounded-sm bg-white border border-black flex-shrink-0",
+                        data: { turbo_frame: :center_container }
               end
             end
 
@@ -142,9 +143,10 @@ class Views::Investments::MonthYear < Views::Base
           end
 
           div(class: "py-2 flex items-center justify-center gap-2") do
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              investment.user_bank_account.user_bank_account_name
-            end
+            link_to investment.user_bank_account.user_bank_account_name,
+                    new_investment_path(next_day: true, investment: { user_bank_account_id: investment.user_bank_account_id }),
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm underline text-indigo-400",
+                    data: { turbo_frame: :center_container }
           end
 
           div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
