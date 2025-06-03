@@ -54,6 +54,7 @@ class CardTransactionsController < ApplicationController
       user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id,
       date: Time.zone.now
     )
+    @card_transaction.entity_transactions.build(entity_id: card_transaction_params[:entity_id]) if card_transaction_params[:entity_id]
     @card_transaction.build_month_year
 
     respond_to do |format|

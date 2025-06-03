@@ -212,7 +212,11 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def card_bound_cash_transaction_params
-    cash_transaction_params.merge(description: "#{transactable.user_card.user_card_name} [ #{entity_transaction.entity.entity_name} ]")
+    month_year = RefMonthYear.new(cash_transaction_params.month, cash_transaction_params.year).month_year
+
+    cash_transaction_params.merge(
+      description: "#{entity_transaction.entity.entity_name} [ #{month_year} - #{transactable.user_card.user_card_name} ]"
+    )
   end
 
   def cash_transaction_conditions

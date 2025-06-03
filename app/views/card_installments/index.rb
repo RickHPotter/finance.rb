@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base
+class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -104,10 +104,22 @@ class Views::CardInstallments::Index < Views::Base
             end
 
             div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entities.each do |entity|
-                div(class: "grid grid-cols-1") do
+              card_transaction.entity_transactions.includes(:entity, :exchanges).each do |entity_transaction|
+                entity = entity_transaction.entity
+                exchanges_count = entity_transaction.exchanges_count
+                price_to_be_returned = entity_transaction.price_to_be_returned
+                info = ""
+                info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
+                info += " (#{exchanges_count})" if exchanges_count > 1
+
+                Link(
+                  href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+                  size: :xs,
+                  class: "grid grid-cols-1 text-xs mx-auto",
+                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+                ) do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-                  span(class: "text-xs mx-auto") { entity.entity_name }
+                  plain "#{entity.entity_name} #{info}"
                 end
               end
             end
@@ -185,12 +197,26 @@ class Views::CardInstallments::Index < Views::Base
           end
         end
 
-        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-            data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-          card_transaction.entities.each do |entity|
-            div(class: "grid grid-cols-1") do
+        div(
+          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+          data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
+        ) do
+          card_transaction.entity_transactions.includes(:entity).each do |entity_transaction|
+            entity = entity_transaction.entity
+            exchanges_count = entity_transaction.exchanges_count
+            price_to_be_returned = entity_transaction.price_to_be_returned
+            info = ""
+            info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
+            info += " (#{exchanges_count})" if exchanges_count > 1
+
+            Link(
+              href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+              size: :xs,
+              class: "grid grid-cols-1 text-xs mx-auto",
+              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+            ) do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: "text-xs mx-auto") { entity.entity_name }
+              plain "#{entity.entity_name} #{info}"
             end
           end
         end
