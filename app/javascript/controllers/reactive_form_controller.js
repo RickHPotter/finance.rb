@@ -249,10 +249,11 @@ export default class extends Controller {
 
       target.querySelector(".installment_number").value = index + 1
 
-      const proposedDate = new RailsDate(startingRailsDate.year, startingRailsDate.month, new Date(this.dateInputTarget.value).getDate())
+      const day = this.dateInputTarget.value.slice(0, 10).split("-").map(Number)[2]
+      const proposedDate = new RailsDate(startingRailsDate.year, startingRailsDate.month, day, startingRailsDate.hour, startingRailsDate.minute)
 
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".installment_date").value = proposedDate.date().toISOString().slice(0, 16)
+      target.querySelector(".installment_date").value = proposedDate.dateTime()
       target.querySelector(".installment_month").value = startingRailsDate.month
       target.querySelector(".installment_year").value = startingRailsDate.year
 

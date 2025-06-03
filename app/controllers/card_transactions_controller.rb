@@ -76,9 +76,16 @@ class CardTransactionsController < ApplicationController
   def create
     @card_transaction = current_user.card_transactions.new(card_transaction_params.merge(imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
-    @card_transaction.card_installments.first.date = @card_transaction.date
-    @card_transaction.card_installments.each do |ci|
-      ci.date = ci.date.change(hour: @card_transaction.date.hour, min: @card_transaction.date.min)
+
+    first_installment = @card_transaction.card_installments.first
+    @card_transaction.card_installments.each_with_index do |ci, index|
+      # next if ci.paid
+
+      ref_date = Date.new(first_installment.year, first_installment.month, 1) + index.months
+
+      ci.date  = @card_transaction.date + index.months
+      ci.year  = ref_date.year
+      ci.month = ref_date.month
     end
 
     handle_save

@@ -39,24 +39,31 @@ export default class extends Controller {
   }
 
   async fillPrice({ target }) {
-    const divider = target.dataset.divider
+    const divider = Number(target.dataset.divider)
     const inputTarget = target.dataset.target
     const priceStr = document.getElementById("transaction_price").value
-    const price = parseInt(this._removeMask(priceStr) / divider) * - 1
+    const totalPrice = parseInt(this._removeMask(priceStr)) * - 1
+    const price = Math.trunc(totalPrice / divider)
 
     switch (inputTarget) {
       case "priceInput":
-        if (price < parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))) {
+        if (totalPrice < parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))) {
           this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         }
         this.priceInputTarget.value = this._applyMask(price.toString())
         break
       case "priceToBeReturnedInput":
-        if (price > parseInt(this._removeMask(this.priceInputTarget.value))) {
+        if (totalPrice > parseInt(this._removeMask(this.priceInputTarget.value))) {
           this.priceInputTarget.value = this._applyMask(price.toString())
         }
         this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         break
+    }
+
+    if (Math.abs(totalPrice) < Math.abs(parseInt(this._removeMask(this.priceInputTarget.value)))) {
+      this.priceInputTarget.classList.add("border-red-600")
+    } else {
+      this.priceInputTarget.classList.remove("border-red-600")
     }
 
     await this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
