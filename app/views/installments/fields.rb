@@ -61,8 +61,10 @@ module Views
 
             form.text_field \
               :price,
-              class: "sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500
-                      block flex-1 min-w-0 w-full text-sm p-2.5",
+              inputmode: :numeric,
+              class:
+                "sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
+                focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
               data: { price_mask_target: :input, reactive_form_target: :priceInstallmentInput, action: "input->price-mask#applyMask", sign: }
           end
 

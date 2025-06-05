@@ -6,6 +6,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
+              :paid, :pending,
               :user_bank_account_id, :active_month_years,
               :skip_budgets, :force_mobile
 
@@ -19,6 +20,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @paid = index_context[:paid]
+    @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @active_month_years = index_context[:active_month_years]
     @skip_budgets = index_context[:skip_budgets]
@@ -40,6 +43,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         to_price:,
         from_installments_count:,
         to_installments_count:,
+        paid:,
+        pending:,
         skip_budgets:,
         force_mobile:
       }

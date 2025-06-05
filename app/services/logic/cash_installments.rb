@@ -5,11 +5,20 @@ module Logic
     def self.find_by_ref_month_year(user, month, year, raw_conditions)
       search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
 
+      case [ raw_conditions[:paid], raw_conditions[:pending] ]
+      when %w[false false] then return []
+      when %w[true true]   then paid = nil
+      when %w[true false]  then paid = true
+      when %w[false true]  then paid = false
+      end
+
       conditions = {
         price: raw_conditions[:installments_price],
         cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
                             **raw_conditions[:associations] }.compact_blank
       }.compact_blank
+
+      conditions.merge!(paid:) if paid.in?([ true, false ])
 
       fetch_cash_installments(user, month, year, conditions, search_term_condition)
     end

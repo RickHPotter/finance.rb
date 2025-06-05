@@ -119,6 +119,8 @@ class CashTransactionsController < ApplicationController
     to_price = search_cash_transaction_params[:to_price]
     from_installments_count = search_cash_transaction_params[:from_installments_count]
     to_installments_count = search_cash_transaction_params[:to_installments_count]
+    paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
+    pending = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:pending])
     skip_budgets = search_cash_transaction_params[:skip_budgets]
     force_mobile = search_cash_transaction_params[:force_mobile]
 
@@ -137,7 +139,7 @@ class CashTransactionsController < ApplicationController
     else
       params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     end => active_month_years
-    default_year = active_month_years.max.to_s.first(4).to_i || params[:default_year]&.to_i || [ max_date, Time.zone.today ].min.year
+    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
     @index_context = {
       current_user:,
@@ -155,6 +157,8 @@ class CashTransactionsController < ApplicationController
       from_installments_count:,
       to_installments_count:,
       user_card: @user_card,
+      paid:,
+      pending:,
       skip_budgets:,
       force_mobile:
     }
@@ -194,6 +198,8 @@ class CashTransactionsController < ApplicationController
         to_price
         from_installments_count
         to_installments_count
+        paid
+        pending
         month_year
         skip_budgets
         force_mobile

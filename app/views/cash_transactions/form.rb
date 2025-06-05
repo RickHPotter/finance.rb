@@ -111,6 +111,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             div(class: "w-6/12") do
               TextField \
                 form, :price,
+                inputmode: :numeric,
                 svg: :money,
                 id: :transaction_price,
                 class: "sign-based font-graduate",

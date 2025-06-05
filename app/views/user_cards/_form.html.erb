@@ -49,6 +49,7 @@
         <%= bold_label(form, :min_spend) %>
         <%= render Components::TextField.new \
               form, :min_spend,
+              inputmode: :numeric,
               svg: :money,
               class: "font-graduate",
               data: { price_mask_target: :input, action: "input->price-mask#applyMask" } %>
@@ -58,6 +59,7 @@
         <%= bold_label(form, :credit_limit) %>
         <%= render Components::TextField.new \
               form, :credit_limit,
+              inputmode: :numeric,
               svg: :money,
               class: "font-graduate",
               data: { price_mask_target: :input, action: "input->price-mask#applyMask" } %>

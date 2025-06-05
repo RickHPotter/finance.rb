@@ -188,7 +188,7 @@ class CardTransactionsController < ApplicationController
     else
       params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     end => active_month_years
-    default_year = active_month_years.max.to_s.first(4).to_i || params[:default_year]&.to_i || [ max_date, Time.zone.today ].min.year
+    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
     @index_context = {
       current_user:,

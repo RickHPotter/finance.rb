@@ -59,7 +59,7 @@ pt-BR:
         date: Data
         price: Preço
         starting_price: Preço Inicial
-        paid: Paga
+        paid: Pago
         not_paid: Pendente
         user_bank_account_id: Conta
         user_card_id: Cartão

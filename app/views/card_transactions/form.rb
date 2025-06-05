@@ -74,7 +74,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :category_id),
-              autofocus: params[:commit] == "Update",
+              autofocus: params[:commit] == "Update" && card_transaction.category_transactions.empty?,
               data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
           end
 
@@ -85,6 +85,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :entity_id),
+              autofocus: params[:commit] == "Update" && card_transaction.category_transactions.any? && card_transaction.entity_transactions.empty?,
               data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
           end
 
@@ -114,6 +115,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             div(class: "w-6/12") do
               TextField \
                 form, :price,
+                inputmode: :numeric,
                 svg: :money,
                 id: :transaction_price,
                 class: "sign-based font-graduate",

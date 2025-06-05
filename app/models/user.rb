@@ -82,7 +82,8 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
       Category.new(built_in: true, category_name: "INVESTMENT"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
-      Category.new(built_in: true, category_name: "EXCHANGE RETURN")
+      Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
+      Category.new(built_in: false, category_name: "BORROW RETURN")
     )
   end
 

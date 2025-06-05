@@ -90,6 +90,7 @@ RIKKI_COLOURS = {
   "GODSEND" => :greek,
   "EXCHANGE" => :dirt,
   "EXCHANGE RETURN" => :yellow,
+  "BORROW RETURN" => :yellow,
   "MIDDLEWARE" => :gold
 }.freeze
 

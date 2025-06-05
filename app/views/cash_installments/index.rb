@@ -30,7 +30,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     turbo_frame_tag dom_id cash_installment do
       cash_transaction = cash_installment.cash_transaction
 
-      should_display_link_to_pay, icon = should_display_link_to_pay?(cash_installment)
+      should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay
 
@@ -135,7 +135,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     turbo_frame_tag dom_id cash_installment do
       cash_transaction = cash_installment.cash_transaction
 
-      should_display_link_to_pay, icon = should_display_link_to_pay?(cash_installment)
+      should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay
 
@@ -238,7 +238,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     cash_transaction.categories.first&.bg_colour
   end
 
-  def should_display_link_to_pay?(cash_installment)
+  def choose_link_and_icon(cash_installment)
     case [ cash_installment.paid, cash_installment.date > Time.zone.today ]
     in [ true,  _     ] then [ false, :check_square ]
     in [ false, true  ] then [ true,  :warning_octagon ]

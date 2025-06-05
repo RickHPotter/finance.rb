@@ -3,6 +3,7 @@
 class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::CheckBoxTag
 
   include TranslateHelper
   include ComponentsHelper
@@ -16,6 +17,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
+              :paid, :pending,
               :user_bank_account_id, :categories, :entities
 
   def initialize(url:, index_context: {})
@@ -34,6 +36,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @paid = index_context[:paid]
+    @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
 
     set_all_categories
@@ -87,6 +91,19 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                 form.select :entity_id, entities,
                             { multiple: true, selected: entity_id },
                             { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+
+                div(class: "grid grid-cols-2 gap-y-2 items-center justify-center w-full mx-auto") do
+                  thin__label(form, :paid)
+                  thin__label(form, :not_paid)
+
+                  div(class: "flex justify-center items-center") do
+                    Switch(name: :paid, checked: paid.nil? || paid)
+                  end
+
+                  div(class: "flex justify-center items-center") do
+                    Switch(name: :pending, checked: pending.nil? || pending)
+                  end
+                end
               end
 
               div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do

@@ -63,6 +63,7 @@ class Views::Investments::Form < Views::Base
           div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
             TextField \
               form, :price,
+              inputmode: :numeric,
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",

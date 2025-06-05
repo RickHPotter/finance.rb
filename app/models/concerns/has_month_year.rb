@@ -12,8 +12,8 @@ module HasMonthYear
 
     # @callbacks ..............................................................
     before_validation :set_date, on: :create, if: -> { respond_to?(:date) && date.nil? }
-    before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
-    before_validation :check_number, if: -> { respond_to?(:number) && number.nil? }
+    before_validation :check_date
+    before_validation :check_number
     before_validation :set_month_year, if: -> { errors.empty? && respond_to?(:month) }
   end
 
@@ -84,6 +84,8 @@ module HasMonthYear
   # @return [void].
   #
   def check_date
+    return unless respond_to?(:date) && date.nil?
+
     errors.add(:date, :blank)
     false
   end
@@ -95,6 +97,8 @@ module HasMonthYear
   # @return [void].
   #
   def check_number
+    return unless respond_to?(:number) && number.nil?
+
     errors.add(:number, :blank)
     false
   end

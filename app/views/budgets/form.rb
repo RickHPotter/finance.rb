@@ -87,8 +87,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
               div(class: "w-full lg:w-5/6") do
                 TextField \
-                  form,
-                  :value,
+                  form, :value,
+                  inputmode: :numeric,
                   svg: :money,
                   class: "font-graduate",
                   value: budget.value || -10_000,

@@ -35,6 +35,10 @@ class RefMonthYear
     I18n.l(Date.new(@year, @month), format: "%b <%y>").upcase
   end
 
+  def numeric_month_year
+    I18n.l(Date.new(@year, @month), format: "%m/%Y")
+  end
+
   # Initialises a new {RefMonthYear} instance from a string.
   #
   # @param month_year [String] The month (e.g., "May" or "NOV") and year (e.g., "2023" or "23" or even "- 23").
