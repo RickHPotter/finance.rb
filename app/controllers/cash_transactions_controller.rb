@@ -66,6 +66,7 @@ class CashTransactionsController < ApplicationController
   def update
     @cash_transaction.assign_attributes(cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
+    @cash_transaction.update_installments if params[:commit] == "Update"
 
     handle_save
   end

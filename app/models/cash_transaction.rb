@@ -52,11 +52,13 @@ class CashTransaction < ApplicationRecord
     self.date ||= Time.zone.today
 
     set_month_year
-    update_installments
+    update_installments if new_record?
   end
 
   def update_installments
     cash_installments.each_with_index do |installment, index|
+      next if installment.paid?
+
       installment.date = date + index.months
       installment.month = installment.date.month
       installment.year = installment.date.year

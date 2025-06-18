@@ -13,6 +13,16 @@ Rails.application.routes.draw do
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  resources :lalas do
+    collection do
+      get :card_transactions
+      get :card_transactions_month_year
+
+      get :cash_transactions
+      get :cash_transactions_month_year
+    end
+  end
+
   resources :pages, only: :index do
     collection do
       get :donation
