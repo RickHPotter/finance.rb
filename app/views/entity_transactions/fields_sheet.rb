@@ -21,7 +21,7 @@ module Views
 
       def view_template
         positive = transactable.price.to_i.positive?
-        sign = positive ? "+" : "-"
+        sign = positive ? "-" : "+"
 
         SheetContent(side: :top, class: "max-w-sm md:max-w-2xl mx-auto", data: { controller: "price-mask" }) do
           SheetHeader do

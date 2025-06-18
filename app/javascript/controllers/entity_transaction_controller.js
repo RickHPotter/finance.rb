@@ -47,25 +47,14 @@ export default class extends Controller {
 
     switch (inputTarget) {
       case "priceInput":
-        if (totalPrice < parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))) {
-          this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
-        }
         this.priceInputTarget.value = this._applyMask(price.toString())
         break
       case "priceToBeReturnedInput":
-        if (totalPrice > parseInt(this._removeMask(this.priceInputTarget.value))) {
-          this.priceInputTarget.value = this._applyMask(price.toString())
-        }
         this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         break
     }
 
-    if (Math.abs(totalPrice) < Math.abs(parseInt(this._removeMask(this.priceInputTarget.value)))) {
-      this.priceInputTarget.classList.add("border-red-600")
-    } else {
-      this.priceInputTarget.classList.remove("border-red-600")
-    }
-
+    this._addBorderToPriceInputs(totalPrice)
     await this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
     await this._updateExchangesPrices()
   }
@@ -75,10 +64,17 @@ export default class extends Controller {
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
-    if (totalPrice < priceToBeReturned) { this.priceToBeReturnedInputTarget.value = this._applyMask(totalPrice.toString()) }
-    if (totalPrice < price) { this.priceInputTarget.value = this._applyMask(totalPrice.toString()) }
-    if (priceToBeReturned > price) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
+    if (Math.abs(priceToBeReturned) > Math.abs(price)) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
+    this._addBorderToPriceInputs(totalPrice)
     this._updateExchangesPrices()
+  }
+
+  _addBorderToPriceInputs(totalPrice) {
+    if (Math.abs(totalPrice) < Math.abs(parseInt(this._removeMask(this.priceInputTarget.value)))) {
+      this.priceInputTarget.classList.add("border-red-600")
+    } else {
+      this.priceInputTarget.classList.remove("border-red-600")
+    }
   }
 
   async updateExchangesPrices({ target }) {

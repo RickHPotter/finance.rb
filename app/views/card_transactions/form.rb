@@ -23,6 +23,8 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
     set_user_cards
     set_categories
     set_entities
+
+    @user_cards << card_transaction.user_card.slice(:user_card_name, :id).values if card_transaction.user_card.inactive?
   end
 
   def view_template

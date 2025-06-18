@@ -123,7 +123,13 @@ class CashTransaction < ApplicationRecord
   end
 
   def trigger_balance_recalculation
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call
+    min_date = [
+      date,
+      Date.new(year, month),
+      Date.new(changes[:year] || year, changes[:month] || month)
+    ].min
+
+    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total

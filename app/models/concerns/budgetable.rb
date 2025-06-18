@@ -28,7 +28,14 @@ module Budgetable
     month_years << card_installments.map { |i| i.slice(:month, :year) } if respond_to?(:card_installments)
     month_years << cash_installments.map { |i| i.slice(:month, :year) } if respond_to?(:cash_installments)
 
-    user.budgets.where(month_years.flatten)
+    month_years = month_years.flatten
+
+    return Budget.none if month_years.empty?
+
+    conditions = month_years.map { "(budgets.month = ? AND budgets.year = ?)" }.join(" OR ")
+    values = month_years.flat_map { |h| [ h[:month], h[:year] ] }
+
+    user.budgets.where(conditions, *values)
   end
 
   def update_relevant_budgets
