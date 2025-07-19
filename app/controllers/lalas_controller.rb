@@ -112,6 +112,8 @@ class LalasController < ApplicationController
     entity_id = User.first.entities.where(entity_name: "LALA").ids
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
+    paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
+    pending = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:pending])
     skip_budgets = search_cash_transaction_params[:skip_budgets]
     force_mobile = search_cash_transaction_params[:force_mobile]
 
@@ -128,6 +130,8 @@ class LalasController < ApplicationController
       entity_id:,
       user_bank_account_id:,
       user_card: @user_card,
+      paid:,
+      pending:,
       skip_budgets:,
       force_mobile:
     }
@@ -149,12 +153,15 @@ class LalasController < ApplicationController
   private
 
   def set_variables
-    @main_items = User.first.user_cards.active.pluck(:id, :user_card_name).map do |user_card_id, user_card_name|
+    @main_items = [ { label: t("tabs.pix"), icon: :mobile, link: cash_transactions_lalas_path, default: @active_menu == :pix } ]
+
+    card_items = User.first.user_cards.active.pluck(:id, :user_card_name).map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
       { label: user_card_name, icon: :credit_card, link: card_transactions_lalas_path(user_card_id:), default: }
     end
 
-    @main_items << { label: t("tabs.pix"), icon: :mobile, link: cash_transactions_lalas_path, default: @active_menu == :pix }
+    @main_items += card_items
+
     @main_items.first[:default] = true if @main_items.pluck(:default).uniq == [ false ]
     @main_items.map! { |item| item.slice(:label, :icon, :link, :default).values }
 
@@ -194,6 +201,8 @@ class LalasController < ApplicationController
     params.permit(
       %i[
         search_term
+        paid
+        pending
         month_year
         skip_budgets
         force_mobile

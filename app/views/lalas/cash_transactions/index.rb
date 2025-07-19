@@ -23,7 +23,8 @@ class Views::Lalas::CashTransactions::Index < Views::Base
               end
 
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
-                                                                               :user_bank_account_id, :active_month_years, :skip_budgets))
+                                                                               :user_bank_account_id, :paid, :pending,
+                                                                               :active_month_years, :skip_budgets))
             end
           end
         end

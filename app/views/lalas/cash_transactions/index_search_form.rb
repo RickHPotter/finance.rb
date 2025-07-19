@@ -11,7 +11,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
 
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :paid, :pending,
               :user_bank_account_id, :categories, :entities
 
   def initialize(index_context: {})
@@ -23,12 +23,6 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
-    @from_ct_price = index_context[:from_ct_price]
-    @to_ct_price = index_context[:to_ct_price]
-    @from_price = index_context[:from_price]
-    @to_price = index_context[:to_price]
-    @from_installments_count = index_context[:from_installments_count]
-    @to_installments_count = index_context[:to_installments_count]
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
@@ -58,6 +52,21 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
             placeholder: "#{action_message(:search)}...",
             value: search_term,
             data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+        end
+
+        div do
+          div(class: "grid grid-cols-2 items-center justify-center w-full mx-auto") do
+            div(class: "flex justify-center items-center") do
+              Switch(name: :paid, checked: paid.nil? || paid, data: { action: "change->reactive-form#submit" })
+            end
+
+            div(class: "flex justify-center items-center") do
+              Switch(name: :pending, checked: pending.nil? || pending, data: { action: "change->reactive-form#submit" })
+            end
+
+            span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :paid) }
+            span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :not_paid) }
+          end
         end
       end
     end

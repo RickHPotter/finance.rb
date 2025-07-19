@@ -3,7 +3,7 @@
 class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
   attr_reader :search_term,
               :category_id, :entity_id,
-              :user_bank_account_id, :active_month_years,
+              :user_bank_account_id, :paid, :pending, :active_month_years,
               :skip_budgets, :force_mobile
 
   def initialize(index_context: {})
@@ -11,6 +11,8 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
     @user_bank_account_id = index_context[:user_bank_account_id]
+    @paid = index_context[:paid]
+    @pending = index_context[:pending]
     @active_month_years = index_context[:active_month_years]
     @skip_budgets = index_context[:skip_budgets]
     @force_mobile = index_context[:force_mobile]
@@ -25,6 +27,8 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
           entity_id:
         },
         search_term:,
+        paid:,
+        pending:,
         skip_budgets:,
         force_mobile:
       }
