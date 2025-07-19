@@ -91,11 +91,11 @@ class BudgetsController < ApplicationController
   end
 
   def build_index_context # rubocop:disable Metrics/AbcSize
-    min_date = current_user.budgets.where(active: true).minimum("MAKE_DATE(year, month, 1)") || Time.zone.today
-    max_date = current_user.budgets.where(active: true).maximum("MAKE_DATE(year, month, 1)") || Time.zone.today
-    default_active_month_years = [ min_date.strftime("%Y%m").to_i ]
+    min_date = Time.zone.today
+    max_date = Time.zone.today + 1.month
+    default_active_month_years = [ min_date.strftime("%Y%m").to_i, max_date.strftime("%Y%m").to_i ]
     years = @years || (min_date.year..max_date.year)
-    default_year = @default_year || params[:default_year]&.to_i || [ max_date, Time.zone.today ].min.year
+    default_year = @default_year || params[:default_year]&.to_i || min_date.year
     active_month_years = @active_month_years || (params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years)
 
     category_id = [ budget_params[:category_id] ].flatten&.compact_blank
@@ -128,7 +128,10 @@ class BudgetsController < ApplicationController
   def budget_params
     return {} if params[:budget].blank?
 
-    params.require(:budget).permit(
+    ret_params = params.require(:budget)
+    ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-") if ret_params[:month_year].present?
+
+    ret_params.permit(
       :description, :value, :inclusive, :month, :year, :active, :user_id, :category_id, :entity_id,
       category_id: [], entity_id: [],
       budget_categories_attributes: %i[id category_id _destroy],

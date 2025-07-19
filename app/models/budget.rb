@@ -24,7 +24,7 @@ class Budget < ApplicationRecord
   validates :inclusive, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
-  before_validation :set_starting_value
+  before_validation :set_starting_value, :set_inclusive
   before_save :set_remaining_value
   before_save :set_flag_for_balance_recalculation
   after_commit :trigger_balance_recalculation, on: %i[create update], if: :flag_for_balance_recalculation
@@ -41,6 +41,12 @@ class Budget < ApplicationRecord
     self.starting_value ||= value
   end
 
+  def set_inclusive
+    return if [ false, true ].include?(inclusive)
+
+    self.inclusive = false
+  end
+
   def set_remaining_value
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
@@ -54,7 +60,8 @@ class Budget < ApplicationRecord
       exclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
     end => installments
 
-    installments_price = installments.sum(&:price)
+    installments_price = total_price_without_exchanges(installments)
+
     self.value = [ value, installments_price ].min
     self.remaining_value = value - installments_price
   end
@@ -71,6 +78,14 @@ class Budget < ApplicationRecord
     elsif entity_ids.present?
       cash_installments.by_entities(entity_ids) + card_installments.by_entities(entity_ids)
     end
+  end
+
+  def total_price_without_exchanges(installments)
+    installments.map do |installment|
+      installment_exchanges_price = installment.transactable.entity_transactions.map(&:exchanges).flatten.sum(&:price) * -1
+
+      installment.price - installment_exchanges_price
+    end.sum
   end
 
   # @protected_instance_methods ...............................................

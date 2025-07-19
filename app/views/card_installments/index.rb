@@ -104,7 +104,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
 
             div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entity_transactions.includes(:entity, :exchanges).each do |entity_transaction|
+              card_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
                 entity = entity_transaction.entity
                 exchanges_count = entity_transaction.exchanges_count
                 price_to_be_returned = entity_transaction.price_to_be_returned
@@ -202,7 +202,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
           data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
         ) do
-          card_transaction.entity_transactions.includes(:entity).each do |entity_transaction|
+          card_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
             entity = entity_transaction.entity
             exchanges_count = entity_transaction.exchanges_count
             price_to_be_returned = entity_transaction.price_to_be_returned

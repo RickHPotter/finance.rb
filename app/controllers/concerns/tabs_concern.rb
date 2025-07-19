@@ -66,7 +66,7 @@ module TabsConcern
   end
 
   def set_card_transaction_sublinks
-    user_cards = current_user.user_cards.active.pluck(:id, :user_card_name)
+    user_cards = current_user.user_cards.active.order(:id).pluck(:id, :user_card_name)
 
     @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym

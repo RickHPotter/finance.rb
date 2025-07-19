@@ -40,7 +40,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               span(class: "truncate text-md underline underline-offset-[3px]") do
-                card_transaction.user_card.user_card_name
+                card_transaction.description
               end
 
               span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do

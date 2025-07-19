@@ -93,7 +93,7 @@ module CashTransactable
     return if cash_transaction.nil?
 
     transactable = cash_transaction.public_send(model_name.plural)
-    if transactable.count.zero?
+    if transactable.none?
       cash_transaction.destroy
     else
       update_cash_transaction

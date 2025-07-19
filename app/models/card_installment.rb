@@ -42,6 +42,10 @@ class CardInstallment < Installment
     reference.reference_date
   end
 
+  def transactable
+    card_transaction
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

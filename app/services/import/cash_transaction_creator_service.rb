@@ -56,7 +56,7 @@ module Import
           next
         end
 
-        if transaction[:category].count == 1 && transaction[:category].first.in?([ "CARD ADVANCE", "CARD PAYMENT" ])
+        if transaction[:category].one? && transaction[:category].first.in?([ "CARD ADVANCE", "CARD PAYMENT" ])
           user_card_id = find_or_create_user_card(transaction[:entity]).id
           add_card_type_to_collection(user_card_id, transaction)
           next
@@ -127,7 +127,7 @@ module Import
       card_transactions = user.card_transactions.joins(:categories).where(params)
       return if card_transactions.empty?
 
-      card_transaction = card_transactions.count == 1 ? card_transactions.first : card_transactions.find_by(transaction.slice(:date))
+      card_transaction = card_transactions.one? ? card_transactions.first : card_transactions.find_by(transaction.slice(:date))
       card_transaction.update(date: transaction[:date], imported: true)
       card_transaction.card_installments.first.update_columns(date: transaction[:date])
     end
