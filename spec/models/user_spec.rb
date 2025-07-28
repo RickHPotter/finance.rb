@@ -52,16 +52,16 @@ end
 #
 #  id                     :bigint           not null, primary key
 #  confirmation_sent_at   :datetime
-#  confirmation_token     :string           indexed
+#  confirmation_token     :string           uniquely indexed
 #  confirmed_at           :datetime
-#  email                  :string           default(""), not null, indexed
+#  email                  :string           default(""), not null, uniquely indexed
 #  encrypted_password     :string           default(""), not null
 #  first_name             :string           not null
 #  last_name              :string           not null
 #  locale                 :string           not null
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
-#  reset_password_token   :string           indexed
+#  reset_password_token   :string           uniquely indexed
 #  unconfirmed_email      :string
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null

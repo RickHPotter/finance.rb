@@ -24,8 +24,8 @@ end
 #  id          :bigint           not null, primary key
 #  created_at  :datetime         not null
 #  updated_at  :datetime         not null
-#  budget_id   :bigint           not null, indexed, indexed => [category_id]
-#  category_id :bigint           not null, indexed, indexed => [budget_id]
+#  budget_id   :bigint           not null, indexed, uniquely indexed => [category_id]
+#  category_id :bigint           not null, indexed, uniquely indexed => [budget_id]
 #
 # Indexes
 #

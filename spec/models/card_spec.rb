@@ -32,7 +32,7 @@ end
 # Table name: cards
 #
 #  id         :bigint           not null, primary key
-#  card_name  :string           not null, indexed
+#  card_name  :string           not null, uniquely indexed
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #  bank_id    :bigint           not null, indexed

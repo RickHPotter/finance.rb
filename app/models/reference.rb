@@ -45,13 +45,13 @@ end
 # Table name: references
 #
 #  id                     :bigint           not null, primary key
-#  month                  :integer          not null, indexed => [user_card_id, year]
+#  month                  :integer          not null, uniquely indexed => [user_card_id, year]
 #  reference_closing_date :date             not null
 #  reference_date         :date             not null
-#  year                   :integer          not null, indexed => [user_card_id, month]
+#  year                   :integer          not null, uniquely indexed => [user_card_id, month]
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
-#  user_card_id           :bigint           not null, indexed => [month, year], indexed
+#  user_card_id           :bigint           not null, uniquely indexed => [month, year], indexed
 #
 # Indexes
 #

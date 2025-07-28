@@ -35,11 +35,11 @@ end
 # Table name: category_transactions
 #
 #  id                :bigint           not null, primary key
-#  transactable_type :string           not null, indexed => [category_id, transactable_id], indexed => [transactable_id]
+#  transactable_type :string           not null, uniquely indexed => [category_id, transactable_id], indexed => [transactable_id]
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
-#  category_id       :bigint           not null, indexed, indexed => [transactable_type, transactable_id]
-#  transactable_id   :bigint           not null, indexed => [category_id, transactable_type], indexed => [transactable_type]
+#  category_id       :bigint           not null, indexed, uniquely indexed => [transactable_type, transactable_id]
+#  transactable_id   :bigint           not null, uniquely indexed => [category_id, transactable_type], indexed => [transactable_type]
 #
 # Indexes
 #

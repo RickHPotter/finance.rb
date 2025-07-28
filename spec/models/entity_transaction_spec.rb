@@ -42,11 +42,11 @@ end
 #  price                :integer          default(0), not null
 #  price_to_be_returned :integer          default(0), not null
 #  status               :integer          default("pending"), not null
-#  transactable_type    :string           not null, indexed => [entity_id, transactable_id], indexed => [transactable_id]
+#  transactable_type    :string           not null, uniquely indexed => [entity_id, transactable_id], indexed => [transactable_id]
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
-#  entity_id            :bigint           not null, indexed => [transactable_type, transactable_id], indexed
-#  transactable_id      :bigint           not null, indexed => [entity_id, transactable_type], indexed => [transactable_type]
+#  entity_id            :bigint           not null, uniquely indexed => [transactable_type, transactable_id], indexed
+#  transactable_id      :bigint           not null, uniquely indexed => [entity_id, transactable_type], indexed => [transactable_type]
 #
 # Indexes
 #

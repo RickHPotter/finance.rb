@@ -47,11 +47,11 @@ end
 #  days_until_due_date     :integer          not null
 #  due_date_day            :integer          default(1), not null
 #  min_spend               :integer          not null
-#  user_card_name          :string           not null, indexed => [user_id, card_id]
+#  user_card_name          :string           not null, uniquely indexed => [user_id, card_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  card_id                 :bigint           not null, indexed, indexed => [user_id, user_card_name]
-#  user_id                 :bigint           not null, indexed => [card_id, user_card_name], indexed
+#  card_id                 :bigint           not null, indexed, uniquely indexed => [user_id, user_card_name]
+#  user_id                 :bigint           not null, uniquely indexed => [card_id, user_card_name], indexed
 #
 # Indexes
 #

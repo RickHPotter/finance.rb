@@ -28,10 +28,10 @@ end
 #  card_transactions_total :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null
 #  cash_transactions_total :integer          default(0), not null
-#  entity_name             :string           not null, indexed => [user_id]
+#  entity_name             :string           not null, uniquely indexed => [user_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  user_id                 :bigint           not null, indexed, indexed => [entity_name]
+#  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
 #
 # Indexes
 #
