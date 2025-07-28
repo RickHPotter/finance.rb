@@ -72,5 +72,9 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :admin do
+    get :data_backup, to: "backups#download_latest"
+  end
+
   root "pages#index"
 end

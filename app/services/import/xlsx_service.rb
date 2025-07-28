@@ -38,7 +38,7 @@ module Import
     end
 
     def build_headers(row, sheet_name)
-      headers = row.map { |header| header.to_s&.downcase&.to_sym }
+      headers = row.map { |header| header.to_s.downcase&.to_sym }
       return if headers.intersection(HEADERS).count < OBLIGATORY_HEADERS.count
 
       @headers[sheet_name] = {}
