@@ -14,7 +14,7 @@ module Views
         div(class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" }) do
           form.hidden_field :id
           form.hidden_field :number, class: :exchange_number
-          form.hidden_field :bound_type, class: :bound_type, value: :card_bound
+          form.hidden_field :bound_type, class: :bound_type, value: exchange.bound_type || :card_bound
           form.hidden_field :exchange_type, value: :monetary
           form.hidden_field :_destroy, class: :exchange_destroy
 

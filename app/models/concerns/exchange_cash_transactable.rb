@@ -83,7 +83,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @return [void].
   #
   def update_cash_transaction
-    return create_cash_transaction unless cash_transaction
+    create_cash_transaction and return if cash_transaction.nil?
 
     return if (changes.keys - %w[created_at updated_at]).empty?
 
@@ -140,9 +140,12 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def update_cash_transaction_and_installment(updated_price:)
+    _destroy_cash_transaction and return if updated_price.zero?
+
     cash_transaction.update_columns(price: updated_price)
     cash_transaction.cash_installments.first&.update_columns(price: updated_price)
 
+    # FIXME: gotta see if the following is needed for the early return
     Logic::RecalculateBalancesService.new(user:, year: cash_transaction.date.year, month: cash_transaction.date.month).call
     Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
