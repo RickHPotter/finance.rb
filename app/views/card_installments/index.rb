@@ -233,7 +233,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               cached_icon :copy
             end
 
-            link_to card_transaction,
+            link_to card_transaction_path(card_transaction, card_installment_id: card_installment.id),
                     id: "delete_card_transaction_#{card_transaction.id}",
                     class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
                     data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") } do

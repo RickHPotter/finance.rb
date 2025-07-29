@@ -100,11 +100,14 @@ class CardTransactionsController < ApplicationController
   end
 
   def destroy
+    card_installment = CardInstallment.find_by(id: params[:card_installment_id])
+
     @user_card = @card_transaction.user_card
     @card_transaction.destroy
     index
-    @index_context[:default_year] = @card_transaction.year
-    @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
+
+    @index_context[:default_year] = card_installment.year
+    @index_context[:active_month_years] = [ Date.new(card_installment.year, card_installment.month).strftime("%Y%m").to_i ]
 
     respond_to(&:turbo_stream)
   end
