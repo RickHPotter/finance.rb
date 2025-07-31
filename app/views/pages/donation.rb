@@ -66,7 +66,7 @@ class Views::Pages::Donation < Views::Base
   end
 
   def qr_code(option)
-    div(class: "min-w-96 hidden md:block p-2") do
+    div(class: "min-w-96 p-2") do
       div(class: "text-center mb-6") do
         p(class: "text-gray-600 mb-2") { I18n.t("donation.youre_donating") }
 
@@ -78,9 +78,9 @@ class Views::Pages::Donation < Views::Base
         p(class: "text-gray-500 text-sm") { I18n.t("donation.thank_you") }
       end
 
-      div(class: "flex justify-center") do
+      div(class: "flex justify-center ") do
         div(class: "flex flex-col items-center") do
-          div(class: "w-60 h-60 bg-white p-1 rounded-xl shadow-sm mb-4") do
+          div(class: "hidden md:block w-60 h-60 bg-white p-1 rounded-xl shadow-sm mb-4") do
             cache(option[:qr_code], expires_in: 7.days) do
               render partial "shared/pix_qr_codes/#{option[:qr_code]}"
             end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CardTransactionsController < ApplicationController
+class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
   before_action :set_tabs
@@ -161,10 +161,28 @@ class CardTransactionsController < ApplicationController
     end
   end
 
-  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (Time.zone.today + 1.month)
-    default_active_month_years = [ [ max_date, Time.zone.today + 1.month ].min.strftime("%Y%m").to_i ]
+  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    today = Time.zone.today
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
+
+    if max_date > today
+      due_date = today.change(day: @user_card.due_date_day)
+
+      closing_date = due_date - @user_card.days_until_due_date.days
+      closing_date += 1.month if closing_date <= today
+
+      statement_month = if today > closing_date
+                          today + 2.months
+                        else
+                          today + 1.months
+                        end
+
+      [ statement_month.strftime("%Y%m").to_i ]
+    else
+      [ max_date.strftime("%Y%m").to_i ]
+    end => default_active_month_years
+
     years = (min_date.year..max_date.year)
 
     card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
