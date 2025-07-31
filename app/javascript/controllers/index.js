@@ -4,9 +4,6 @@
 
 import { application } from "./application"
 
-import Clipboard from "@stimulus-components/clipboard"
-application.register("clipboard", Clipboard)
-
 import AutocompleteSelectController from "./autocomplete_select_controller"
 application.register("autocomplete-select", AutocompleteSelectController)
 
@@ -48,6 +45,9 @@ application.register("material-tailwind-tab", MaterialTailwindTabController)
 
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
+
+import MonthlyBalanceController from "./monthly_balance_controller"
+application.register("monthly-balance", MonthlyBalanceController)
 
 import NestedFormController from "./nested_form_controller"
 application.register("nested-form", NestedFormController)

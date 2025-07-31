@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
   before_action :set_locale
 
   # @protected_instance_methods ..............................................
+
   protected
 
   # Configure permitted parameters for Devise controllers.

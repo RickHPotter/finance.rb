@@ -34,6 +34,9 @@ Rails.application.routes.draw do
   resources :user_bank_accounts, except: :show
   resources :categories, except: :show
   resources :entities, except: :show
+  resources :balances, only: :index do
+    get :json, on: :collection
+  end
 
   resources :cash_transactions, except: :show do
     collection do

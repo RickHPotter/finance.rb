@@ -10,6 +10,7 @@ en:
     pix: Pix
     budget: Budget
     investment: Investment
+    balance: Balance
 
 pt-BR:
   tabs:
@@ -23,3 +24,4 @@ pt-BR:
     pix: Pix
     budget: Orçamento
     investment: Investimento
+    balance: Saldo
