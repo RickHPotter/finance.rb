@@ -14,11 +14,20 @@ RSpec.describe "CardTransactions", type: :request do
 
   let(:card_transaction) do
     Params::CardTransactions.new(
-      card_transaction: { price: -20_000, date: Time.zone.today, user_id: user.id, user_card_id: user_card_one.id },
+      card_transaction: {
+        price: -20_000,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        user_id: user.id,
+        user_card_id: user_card_one.id
+      },
       card_installments: { count: 1 },
       category_transactions: [],
-      entity_transactions: [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200,
-                               exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] } ]
+      entity_transactions: [ {
+        entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200,
+        exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+      } ]
     )
   end
 
@@ -67,8 +76,18 @@ RSpec.describe "CardTransactions", type: :request do
       card_transaction.card_installments = { count: 2 }
       card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] }
+        {
+          entity_id: entity_one.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        },
+        {
+          entity_id: entity_two.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -82,8 +101,18 @@ RSpec.describe "CardTransactions", type: :request do
       card_transaction.card_installments = { count: 2 }
       card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [ { price: -2200, exchange_type: :monetary } ] }
+        {
+          entity_id: entity_one.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        },
+        {
+          entity_id: entity_two.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -174,8 +203,11 @@ RSpec.describe "CardTransactions", type: :request do
       card_transactions = CardTransaction.where(description: (1..3))
 
       card_transactions.each do |card_transaction_to_be_deleted|
+        card_installment_id = card_transaction_to_be_deleted.card_installments.first.id
+
         sign_in user
-        expect { delete card_transaction_path(card_transaction_to_be_deleted) }.to change(CardTransaction, :count).by(-1)
+
+        expect { delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:) }.to change(CardTransaction, :count).by(-1)
         expect(card_transaction_to_be_deleted.card_installments).to_not be_present
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end

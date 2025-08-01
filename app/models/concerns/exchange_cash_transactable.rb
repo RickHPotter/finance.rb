@@ -88,7 +88,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     return if (changes.keys - %w[created_at updated_at]).empty?
 
     if changes[:bound_type].nil?
-      return if changes[:price].present?
+      return if changes.slice(:price, :date, :month, :year).empty?
 
       cash_transaction_price = exchanges_price(with_updated_price: true)
       update_cash_transaction_and_installment(updated_price: cash_transaction_price)
@@ -142,11 +142,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def update_cash_transaction_and_installment(updated_price:)
     _destroy_cash_transaction and return if updated_price.zero?
 
-    cash_transaction.update_columns(price: updated_price)
-    cash_transaction.cash_installments.first&.update_columns(price: updated_price)
+    cash_transaction.update_columns(price: updated_price, date:, month:, year:)
+    cash_transaction.cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
 
-    # FIXME: gotta see if the following is needed for the early return
-    Logic::RecalculateBalancesService.new(user:, year: cash_transaction.date.year, month: cash_transaction.date.month).call
+    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call
     Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
@@ -157,45 +156,17 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     price - changes[:price][0] + changes[:price][1]
   end
 
-  def date
-    if transactable.is_a?(CardTransaction)
-      installment = transactable.card_installments.find_by(number:)
-      if installment.present?
-        year = installment.year
-        month = installment.month
-        user_card = installment.user_card
-
-        reference = user_card.references.find_by(month:, year:)
-        return reference.reference_date if reference
-      end
-
-      transactable.card_payment_date + (number - 1).months
-    else
-      transactable.date + 1.month + (number - 1).months
-    end
-  end
-
-  def reference_date
-    corresponding_card_installment = transactable.card_installments.find_by(number:)
-
-    if corresponding_card_installment
-      Date.new(corresponding_card_installment.year, corresponding_card_installment.month)
-    else
-      Date.new(transactable.year, transactable.month) + (number - 1).months
-    end
-  end
-
   # @see {CashTransaction}.
   #
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    year  = reference_date.year
-    month = reference_date.month
+    description = exchanges_count > 1 ? "#{transactable.description} #{number}/#{exchanges_count}" : transactable.description
 
     transactable
-      .slice(:description, :user_card_id)
-      .merge(starting_price:,
+      .slice(:user_card_id)
+      .merge(description:,
+             starting_price:,
              price:,
              date:,
              year:,
@@ -215,10 +186,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def card_bound_cash_transaction_params
-    month_year = RefMonthYear.new(cash_transaction_params[:month], cash_transaction_params[:year]).numeric_month_year
+    numeric_month_year = RefMonthYear.new(month, year).numeric_month_year
 
     cash_transaction_params.merge(
-      description: "[ #{month_year} ] #{entity_transaction.entity.entity_name} - #{transactable.user_card.user_card_name}"
+      description: "[ #{numeric_month_year} ] #{entity_transaction.entity.entity_name} - #{transactable.user_card.user_card_name}"
     )
   end
 
@@ -234,10 +205,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def card_bound_cash_transaction_conditions
-    month_year = RefMonthYear.new(cash_transaction_params[:month], cash_transaction_params[:year]).numeric_month_year
+    numeric_month_year = RefMonthYear.new(month, year).numeric_month_year
 
     cash_transaction_conditions.merge(
-      description: "[ #{month_year} ] #{entity_transaction.entity.entity_name} - #{transactable.user_card.user_card_name}"
+      description: "[ #{numeric_month_year} ] #{entity_transaction.entity.entity_name} - #{transactable.user_card.user_card_name}"
     )
   end
 

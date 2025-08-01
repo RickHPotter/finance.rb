@@ -127,7 +127,7 @@ module Views
 
             div(
               id: "exchanges_nested",
-              class: "overflow-y-auto max-h-80 pt-2",
+              class: "overflow-y-auto max-h-80 pt-2 grid grid-cols-1 gap-3 pb-3",
               data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
             ) do
               template(data: { nested_form_target: "template" }) do

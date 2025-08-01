@@ -7,7 +7,7 @@ import { _removeMask, _applyMask } from "../utils/mask.js"
 // TODO: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = [
-    "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
+    "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"
   ]
 
@@ -48,9 +48,23 @@ export default class extends Controller {
     switch (inputTarget) {
       case "priceInput":
         this.priceInputTarget.value = this._applyMask(price.toString())
+
+        const priceToBeReturnedInput = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
+
+        if (priceToBeReturnedInput === 0 || ( price > 0 === priceToBeReturnedInput > 0 ) && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
+          this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+        }
+
         break
       case "priceToBeReturnedInput":
         this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
+
+        const priceInput = parseInt(this._removeMask(this.priceInputTarget.value))
+
+        if (priceInput === 0 || ( priceInput > 0 === price > 0 ) && Math.abs(price) > Math.abs(priceInput)) {
+          this.priceInputTarget.value = this._applyMask(price.toString())
+        }
+
         break
     }
 
@@ -105,6 +119,18 @@ export default class extends Controller {
     if (!target) return
 
     this.element.querySelectorAll(".bound_type").forEach((element) => element.value = target.value)
+
+    if (target.value == "card_bound") {
+      this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = true)
+
+      this.monthYearExchangeTarget.textContent = ""
+      this.buttonTargets.forEach((element) => element.classList.add("opacity-0"))
+      const railsDueDate = this._getDueDate()
+      this._updateWrappers(railsDueDate, 0)
+    } else {
+      this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = false)
+      this.buttonTargets.forEach((element) => element.classList.remove("opacity-0"))
+    }
   }
 
   copyTransactionInstallmentsCount() {
@@ -200,11 +226,19 @@ export default class extends Controller {
 
     const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
 
+    const [ year, month, day ] = document.querySelector("#cash_transaction_reference_date").value.slice(0, 10).split("-").map(Number)
+    const proposedDate = new RailsDate(year, month, day)
+    proposedDate.monthsForwards(startingNumber)
+
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
+      target.querySelector(".exchange_date").value = proposedDate.dateTime()
+      target.querySelector(".exchange_month").value = startingRailsDate.month
+      target.querySelector(".exchange_year").value = startingRailsDate.year
       target.querySelector(".exchange_number").value = index + startingNumber + 1
 
       startingRailsDate.monthsForwards(1)
+      proposedDate.monthsForwards(1)
     })
   }
 
@@ -213,5 +247,27 @@ export default class extends Controller {
     const month = parseInt(document.querySelector(".installment_month").value)
 
     return new RailsDate(year, month, 1)
+  }
+
+  prevMonth({ target }) {
+    this.updateExchangeDate(target, -1)
+  }
+
+  nextMonth({ target }) {
+    this.updateExchangeDate(target, 1)
+  }
+
+  updateExchangeDate(target, count) {
+    const exchangeWrapper = target.closest("[data-entity-transaction-target='exchangeWrapper']")
+    const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
+    const monthInput = exchangeWrapper.querySelector(".exchange_month")
+    const yearInput = exchangeWrapper.querySelector(".exchange_year")
+
+    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
+    date.monthsForwards(count)
+
+    monthYearInput.textContent = date.monthYear()
+    monthInput.value = date.month
+    yearInput.value = date.year
   }
 }

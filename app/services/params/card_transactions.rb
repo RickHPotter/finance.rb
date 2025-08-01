@@ -109,7 +109,7 @@ module Params
 
       @entity_transactions = entity_transactions.map do |entity_transaction|
         exchanges = entity_transaction.exchanges.map(&:attributes).map(&:symbolize_keys)
-        exchanges = [ { number: 1, price: entity_transaction.price } ] if exchanges.blank? && is_payer_option
+        exchanges = [ { number: 1, price: entity_transaction.price, date:, month:, year: } ] if exchanges.blank? && is_payer_option
         exchanges = exchanges.each { |exchange| exchange[:exchange_type] = exchange_type_option } if exchange_type_option
 
         {

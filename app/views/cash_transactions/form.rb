@@ -91,7 +91,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               id: :cash_transaction_date,
               type: "datetime-local", svg: :calendar,
               value: cash_transaction.date.strftime("%Y-%m-%dT%H:%M"),
-              class: "font-graduate",
+              class: "font-graduate transaction-date",
               data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
           end
 

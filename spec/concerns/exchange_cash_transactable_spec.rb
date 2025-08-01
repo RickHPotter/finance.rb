@@ -91,7 +91,18 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
       end
 
       it "attaches one more EXCHANGE RETURN CashTransaction when exchanges increases by one" do
-        exchangable_card_transaction.entity_transactions.first.exchanges << Exchange.new(exchange_type: :monetary, number: 3)
+        new_exchange = exchangable_card_transaction.entity_transactions.first.exchanges.last.dup
+        new_exchange.number += 1
+        new_exchange.date = new_exchange.date + 1.month
+
+        if new_exchange.month == 12
+          new_exchange.month = 1
+          new_exchange.year += 1
+        else
+          new_exchange.month += 1
+        end
+
+        exchangable_card_transaction.entity_transactions.first.exchanges << new_exchange
         exchangable_card_transaction.entity_transactions.first.exchanges.each { |exchange| exchange.price = 60 }
         exchangable_card_transaction.save
 
