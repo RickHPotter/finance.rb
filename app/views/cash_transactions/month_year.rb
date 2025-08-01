@@ -56,6 +56,18 @@ class Views::CashTransactions::MonthYear < Views::Base
               from_cent_based_to_float(total_amount, "R$")
             end
           end
+
+          if cash_installments.any? && cash_installments.none?(&:paid?)
+            render Views::CashTransactions::PayMultipleModal.new(cash_installments:)
+
+            Button(
+              class: "absolute right-0 bottom-4",
+              title: model_attribute(CashInstallment, :pay),
+              data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
+            ) do
+              model_attribute(CashInstallment, :pay)
+            end
+          end
         end
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do

@@ -61,6 +61,10 @@ Rails.application.routes.draw do
     member do
       patch :pay
     end
+
+    collection do
+      post :pay_multiple
+    end
   end
 
   resources :investments, except: :show do

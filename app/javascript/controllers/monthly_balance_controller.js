@@ -9,7 +9,7 @@ export default class extends Controller {
     fetch(this.urlValue)
       .then(r => r.json())
       .then(data => {
-        this.rawData = data.map((d, index) => ({ ...d }))
+        this.rawData = data.map(d => ({ ...d }))
         this.render()
       })
   }
@@ -56,11 +56,23 @@ export default class extends Controller {
     const max = Math.max(...balances)
     const min = Math.min(...balances)
 
-    const pointColors = balances.map(val => {
+    const lastIndexesByLabel = {}
+    labels.forEach((label, i) => {
+      lastIndexesByLabel[label] = i
+    })
+
+    const pointColors = balances.map((val, index) => {
       if (val === max) return "rgba(0, 200, 80, 1)"
       if (val === min) return "rgba(255, 80, 80, 1)"
+      if (lastIndexesByLabel[labels[index]] === index) {
+        return "rgba(255, 200, 0, 1)"
+      }
       return "rgba(0, 180, 200, 1)"
     })
+
+    const pointRadius = labels.map((label, index) =>
+      lastIndexesByLabel[label] === index ? 5 : 3
+    )
 
     if (this.chart) this.chart.destroy()
 
@@ -69,11 +81,11 @@ export default class extends Controller {
       data: {
         labels: labels,
         datasets: [{
-          label: "Balance",
+          label: this.canvasTarget.dataset.subtitle,
           data: balances,
           borderColor: "rgba(0, 180, 200, 1)",
           backgroundColor: "rgba(0, 180, 200, 0.1)",
-          pointRadius: 3,
+          pointRadius: pointRadius,
           pointHoverRadius: 6,
           tension: 0.3,
           fill: true,
@@ -93,7 +105,9 @@ export default class extends Controller {
           x: {
             ticks: {
               maxRotation: 60,
-              minRotation: 30
+              minRotation: 30,
+              autoSkip: true,
+              maxTicksLimit: window.innerWidth < 640 ? 5 : 20
             }
           },
           y: {

@@ -30,7 +30,7 @@ class Logic::MonthlyBalanceBuilder
           result << {
             x: x,
             y: balance,
-            label: current_date.strftime("%b").upcase + " <#{current_date.strftime('%y')}>",
+            label: "#{I18n.l(current_date, format: '%b').upcase} #{current_date.strftime('%Y')}",
             raw_month_year: current_date.strftime("%Y%m").to_i
           }
           last_balance = balance
@@ -40,7 +40,7 @@ class Logic::MonthlyBalanceBuilder
         result << {
           x:,
           y: last_balance,
-          label: current_date.strftime("%b").upcase + " <#{current_date.strftime('%y')}>",
+          label: "#{I18n.l(current_date, format: '%b').upcase} #{current_date.strftime('%Y')}",
           raw_month_year: current_date.strftime("%Y%m").to_i
         }
         x += 1
