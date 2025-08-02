@@ -166,7 +166,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
 
-    if max_date > today
+    if @user_card && max_date > today
       due_date = today.change(day: @user_card.due_date_day)
 
       closing_date = due_date - @user_card.days_until_due_date.days

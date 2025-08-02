@@ -69,7 +69,7 @@
   </div>
 
   <div class="hidden md:flex justify-center pt-16 mb-2">
-    <% if current_user.email == "rikki.potteru@mail.com" %>
+    <% if current_user&.email == "rikki.potteru@mail.com" %>
       <%= link_to "Download", admin_data_backup_path, class: "flex justify-center" %>
     <% else %>
       <a class="flex items-center text-sm text-gray-600 hover:text-gray-500" href="https://rickhpotter.github.io/30fev_docs.ts/" target="_blank">

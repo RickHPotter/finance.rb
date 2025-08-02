@@ -120,6 +120,15 @@ export default class extends Controller {
     await this._updateInstallmentsPrices()
   }
 
+  setPaid({ target }) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const paidInput = installmentWrapper.querySelector(".installment_paid")
+
+    paidInput.checked = !paidInput.checked
+    target.classList.toggle("bg-green-400")
+    target.classList.toggle("bg-orange-600")
+  }
+
   // Categories
   insertCategory({ target }) {
     const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")

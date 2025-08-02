@@ -32,7 +32,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
-      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay
+      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(class: "relative") do
         div(
@@ -91,6 +91,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 ) do
                   cached_icon(icon)
                 end
+              elsif cash_transaction.card_payment?
+                button(
+                  class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
+                  title: model_attribute(cash_installment, :change_date),
+                  data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
+                ) do
+                  cached_icon(:check_calendar)
+                end
               else
                 button(class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200",
                        title: model_attribute(cash_installment, :already_paid)) do
@@ -131,13 +139,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment)
+  def render_cash_installment(cash_installment) # rubocop:disable Metrics/PerceivedComplexity
     turbo_frame_tag dom_id cash_installment do
       cash_transaction = cash_installment.cash_transaction
 
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
-      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay
+      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
         class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
@@ -156,6 +164,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
             ) do
               cached_icon(icon)
+            end
+          elsif cash_transaction.card_payment?
+            button(
+              class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
+              title: model_attribute(cash_installment, :change_date),
+              data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
+            ) do
+              cached_icon(:check_calendar)
             end
           else
             span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160", title: model_attribute(cash_installment, :already_paid)) do

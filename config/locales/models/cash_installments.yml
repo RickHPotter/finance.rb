@@ -13,6 +13,7 @@ en:
         price: Price
         starting_price: Original Price
         already_paid: Already Paid
+        change_date: Change Date
         pay: Pay
         paid: Paid
         not_paid: Not Paid
@@ -42,6 +43,7 @@ pt-BR:
         price: Preço
         starting_price: Preço Inicial
         already_paid: Já Pago
+        change_date: Alterar Data
         pay: Pagar
         paid: Paga
         not_paid: Pendente

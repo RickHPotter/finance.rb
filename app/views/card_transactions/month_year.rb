@@ -58,7 +58,7 @@ class Views::CardTransactions::MonthYear < Views::Base
             end
           end
 
-          if user_card_id && card_installments.any?
+          if user_card_id && card_installments.any? && !card_installments.first.cash_transaction.paid?
             render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, min_date:, max_date:)
 
             Button(size: :sm, class: "absolute right-0 bottom-4", data: { modal_target: modal_id, modal_toggle: modal_id }) do
@@ -85,7 +85,7 @@ class Views::CardTransactions::MonthYear < Views::Base
             end
           end
 
-          if user_card_id && card_installments.any?
+          if user_card_id && card_installments.any? && !card_installments.first.cash_transaction.paid?
             render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, min_date:, max_date:)
 
             Button(class: "absolute right-0 bottom-4", data: { modal_target: modal_id, modal_toggle: modal_id }) do

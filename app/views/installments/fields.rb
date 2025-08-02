@@ -27,7 +27,14 @@ module Views
             end
 
             div(class: "col-span-4 flex items-center") do
-              button(type: :button, class: "flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{installment.paid ? 'bg-green-400' : 'bg-orange-600'}")
+              data = {}
+              data = { action: "click->reactive-form#setPaid" } if installment.installment_type == "CashInstallment"
+
+              button(
+                type: :button,
+                class: "flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{installment.paid ? 'bg-green-400' : 'bg-orange-600'}",
+                data:
+              )
 
               span(class: "installment_month_year font-victor font-semibold text-orange-950", data: { reactive_form_target: :monthYearInstallment }) do
                 installment.month_year if installment.month
@@ -67,6 +74,8 @@ module Views
                 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
               data: { price_mask_target: :input, reactive_form_target: :priceInstallmentInput, action: "input->price-mask#applyMask", sign: }
           end
+
+          form.check_box :paid, style: "display: none", class: :installment_paid
 
           form.hidden_field :number, class: :installment_number
           form.hidden_field :month, class: :installment_month

@@ -120,7 +120,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 ) do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
                   span(class: :entity_entity_name) { entity.entity_name }
-                  span(class: :entity_exchanges_info) { info }
+                  span(class: "hidden entity_exchanges_info") { info }
                 end
               end
             end
@@ -218,7 +218,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             ) do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
               span(class: :entity_entity_name) { entity.entity_name }
-              span(class: :entity_exchanges_info) { info }
+              span(class: "hidden entity_exchanges_info") { info }
             end
           end
         end

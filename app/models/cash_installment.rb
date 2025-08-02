@@ -62,7 +62,15 @@ class CashInstallment < Installment
   # @return [void].
   #
   def check_paid_situation
-    cash_transaction.update_columns(paid: cash_transaction.cash_installments.where(paid: false).empty?)
+    cash_transaction.update_columns(paid: should_be_paid?)
+
+    return unless cash_transaction.card_payment?
+
+    cash_transaction.card_installments.update(paid: should_be_paid?)
+  end
+
+  def should_be_paid?
+    cash_transaction.cash_installments.where(paid: false).empty?
   end
 end
 
