@@ -40,6 +40,7 @@ en:
         to_installments_count: Max Card Installments Count
         pay_in_advance: Pay Card In Advance
         confirm_payment: Confirm Payment
+        duplicate: Duplicate
         card_advance_description: CARD BILL PAYMENT
 
 pt-BR:
@@ -84,4 +85,5 @@ pt-BR:
         to_installments_count: Quantidade Máxima de Parcelas
         pay_in_advance: Pagar Antecipadamente
         confirm_payment: Confirmar Pagamento
+        duplicate: Duplicar
         card_advance_description: PAGAMENTO FATURA

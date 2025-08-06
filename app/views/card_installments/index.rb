@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -66,61 +66,25 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              if card_transaction.categories.count > 2
-                first_two = card_transaction.categories.first(2)
-                remaining = card_transaction.categories[2..]
-
-                first_two.each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                    "#{category.name},"
-                  end
-                end
-
-                Popover(options: { placement: "top" }, class: "rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                  PopoverTrigger(class: "w-full") do
-                    Button(size: :xs, class: "p-1 text-xs") do
-                      "+#{card_transaction.categories.count - 2}"
-                    end
-                  end
-
-                  PopoverContent(class: "w-40") do
-                    remaining.each do |category|
-                      p(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                        category.name
-                      end
-                    end
-                  end
-                end
-              else
-
-                card_transaction.categories.each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                    category.name
-                  end
+          div(class: "flex flex-wrap items-center gap-1") do
+            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+              card_transaction.categories.each do |category|
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
+                  category.name
                 end
               end
             end
 
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
-                entity = entity_transaction.entity
-                exchanges_count = entity_transaction.exchanges_count
-                price_to_be_returned = entity_transaction.price_to_be_returned
-                info = ""
-                info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
-                info += " (#{exchanges_count})" if exchanges_count > 1
-
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
+              card_transaction.entities.each do |entity|
                 Link(
-                  href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+                  href: new_card_transaction_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
-                  class: "grid grid-cols-1 text-xs mx-auto",
+                  class: "flex flex-col items-center w-16 text-center text-xs",
                   data: { turbo_frame: :center_container, turbo_prefetch: "false" }
                 ) do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-                  span(class: :entity_entity_name) { entity.entity_name }
-                  span(class: "hidden entity_exchanges_info") { info }
+                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
+                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
                 end
               end
             end

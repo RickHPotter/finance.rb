@@ -63,7 +63,7 @@ class Views::Lalas::CashTransactions::MonthYear < Views::Base
             div(class: "py-3")            { model_attribute(CashTransaction, :categories) }
             div(class: "py-3")            { model_attribute(CashTransaction, :entities) }
             div(class: "py-3 text-end")   { model_attribute(CashTransaction, :price) }
-            div(class: "py-3 text-end")   { model_attribute(CashTransaction, :balance) }
+            div(class: "py-3 text-end")   { model_attribute(CashTransaction, :paid) }
           end
 
           if cash_installments.present?
@@ -73,7 +73,7 @@ class Views::Lalas::CashTransactions::MonthYear < Views::Base
           end
 
           div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
-            span(class: "py-3 col-span-6 text-center") { "#{model_attribute(CashTransaction, :total_amount)}:" }
+            span(class: "py-3 col-span-6 text-end") { "#{model_attribute(CashTransaction, :total_amount)}:" }
 
             span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")

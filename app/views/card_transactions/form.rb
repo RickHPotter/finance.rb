@@ -208,11 +208,20 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "w-full") do
+        div(class: "w-full my-2") do
           Button(type: :submit, variant: :purple) { action_model(:submit, card_transaction) }
         end
 
         if card_transaction.can_be_destroyed?
+          div(class: "w-full mb-2") do
+            Button(
+              link: duplicate_card_transaction_path(card_transaction),
+              data: { turbo_frame: "center_container" }
+            ) do
+              action_model(:duplicate, card_transaction)
+            end
+          end
+
           div(class: "w-full") do
             Button(
               id: "delete_card_transaction_#{card_transaction.id}",

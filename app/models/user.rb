@@ -60,7 +60,7 @@ class User < ApplicationRecord
   # @return [ActiveRecord::Relation].
   #
   def custom_categories
-    categories.where(built_in: false)
+    categories.where("built_in = false OR category_name = 'INVESTMENT'")
   end
 
   # @protected_instance_methods ...............................................

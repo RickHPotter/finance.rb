@@ -2,6 +2,8 @@
 
 class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::DOMID
 
   include TranslateHelper
@@ -17,19 +19,30 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def view_template
     if mobile
       cash_installments.each do |cash_installment|
-        render_mobile_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction
+        avatar_name = retrieve_avatar_name(cash_transaction)
+
+        render_mobile_cash_installment(cash_installment, cash_transaction, avatar_name)
       end
     else
       cash_installments.each do |cash_installment|
-        render_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction
+        avatar_name = retrieve_avatar_name(cash_transaction)
+
+        render_cash_installment(cash_installment, cash_transaction, avatar_name)
       end
     end
   end
 
-  def render_mobile_cash_installment(cash_installment) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
-    turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
+  def retrieve_avatar_name(cash_transaction)
+    return "others/card.png" if cash_transaction.card_advance? || cash_transaction.card_payment?
+    return "others/bank.png" if cash_transaction.investment?
 
+    nil
+  end
+
+  def render_mobile_cash_installment(cash_installment, cash_transaction, avatar_name) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+    turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
@@ -117,19 +130,25 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+          div(class: "flex flex-wrap items-center gap-1") do
+            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               cash_transaction.categories.each do |category|
-                span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                   category.name
                 end
               end
             end
 
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
               cash_transaction.entities.each do |entity|
-                span(class: "px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500") do
-                  entity.entity_name
+                Link(
+                  href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+                  size: :xs,
+                  class: "flex flex-col items-center w-16 text-center text-xs",
+                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+                ) do
+                  image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
+                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
                 end
               end
             end
@@ -139,16 +158,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment) # rubocop:disable Metrics/PerceivedComplexity
+  def render_cash_installment(cash_installment, cash_transaction, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
     turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
-
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
-        class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
+        class: "grid grid-cols-12 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
                   hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}".squish,
         draggable: true,
         data: { id: cash_installment.id,
@@ -179,13 +196,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
           end
 
-          span(class: "px-1 rounded-sm text-slate-900 mr-auto") do
-            format = cash_transaction.investment? ? "%B %Y" : :shorter
-            I18n.l(cash_installment.date, format:)
+          date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
+          div(class: "grid grid-cols-1 mr-auto") do
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
           end
         end
 
-        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
+        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
           if cash_transaction.investment?
             default_year = cash_transaction.year
             active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
@@ -216,7 +234,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
           cash_transaction.categories.each do |category|
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
               category.name
@@ -224,10 +242,19 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        div(class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-          cash_transaction.entities.each do |entity|
-            span(class: "px-4 rounded-full text-sm bg-purple-100 text-slate-800 border-1 border-black") do
-              entity.entity_name
+        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+            data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+          cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
+            entity = entity_transaction.entity
+
+            Link(
+              href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+              size: :xs,
+              class: "grid grid-cols-1 text-xs mx-auto",
+              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+            ) do
+              image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
+              span(class: :entity_entity_name) { entity.entity_name }
             end
           end
         end
@@ -236,8 +263,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "py-2 px-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
-          from_cent_based_to_float(cash_installment.balance, "R$")
+        div(class: "flex items-center justify-center font-lekton font-bold text-black whitespace-nowrap ml-auto") do
+          div(class: "p-1 rounded-md shadow-sm border border-black") do
+            from_cent_based_to_float(cash_installment.balance, "R$")
+          end
         end
       end
     end

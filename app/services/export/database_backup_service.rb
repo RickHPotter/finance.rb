@@ -10,6 +10,7 @@ module Export
 
     def initialize(user)
       @user = user
+      FileUtils.mkdir_p(BACKUP_DIR)
       @path = BACKUP_DIR.join("backup_#{@user.id}_#{Time.zone.today}.xlsx")
       @workbook = WriteXLSX.new(@path)
     end

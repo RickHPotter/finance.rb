@@ -16,7 +16,7 @@ module CategoryTransactable
   # @return [ActiveRecord::Relation] Helper method for finding custom `categories`.
   #
   def custom_categories
-    categories.where(built_in: false)
+    categories.where("built_in = false OR category_name = 'INVESTMENT'")
   end
 
   # @param [Hash] options.

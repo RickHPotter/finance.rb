@@ -71,11 +71,10 @@ class Views::CashTransactions::MonthYear < Views::Base
         end
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-8 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3")            { model_attribute(CashTransaction, :date) }
-            div(class: "py-3 col-span-3") { model_attribute(CashTransaction, :description) }
-            div(class: "py-3")            { model_attribute(CashTransaction, :categories) }
-            div(class: "py-3")            { model_attribute(CashTransaction, :entities) }
+          div(class: "grid grid-cols-12 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
+            div(class: "py-3 col-span-5") { model_attribute(CashTransaction, :description) }
+            div(class: "py-3 col-span-3") { model_attribute(CashTransaction, :categories) }
+            div(class: "py-3 col-span-2") { model_attribute(CashTransaction, :entities) }
             div(class: "py-3 text-end")   { model_attribute(CashTransaction, :price) }
             div(class: "py-3 text-end")   { model_attribute(CashTransaction, :balance) }
           end
@@ -87,10 +86,10 @@ class Views::CashTransactions::MonthYear < Views::Base
             div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
           end
 
-          div(class: "grid grid-cols-8 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
-            span(class: "py-3 col-span-6 text-center") { "#{model_attribute(CashTransaction, :total_amount)}:" }
+          div(class: "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
+            span(class: "py-3 col-span-10 text-end") { "#{model_attribute(CashTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-7 text-end", id: :totalAmount, data: { price: total_amount }) do
+            span(class: "py-3 col-start-11 text-end", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

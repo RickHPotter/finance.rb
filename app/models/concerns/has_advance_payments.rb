@@ -80,7 +80,7 @@ module HasAdvancePayments
   end
 
   def entity_transactions_attributes
-    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name, active: false).id } ]
+    [ { id: nil, is_payer: false, price: 0, entity_id: user.entities.find_or_create_by(entity_name: user_card.user_card_name).id } ]
   end
 
   # @see {CashTransaction}.

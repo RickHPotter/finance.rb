@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Views::Lalas::CashInstallments::Index < Views::Base
+  include Phlex::Rails::Helpers::AssetPath
+  include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::DOMID
 
   include TranslateHelper
@@ -50,8 +52,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1 flex items-center") do
-              button(class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200",
-                     title: model_attribute(cash_installment, :already_paid)) do
+              button(class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200") do
                 cached_icon(icon)
               end
 
@@ -66,19 +67,25 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+          div(class: "flex flex-wrap items-center gap-1") do
+            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               cash_transaction.categories.each do |category|
-                span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                   category.name
                 end
               end
             end
 
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
               cash_transaction.entities.each do |entity|
-                span(class: "px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-black border border-1 border-gray-500") do
-                  entity.entity_name
+                Link(
+                  href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+                  size: :xs,
+                  class: "flex flex-col items-center w-16 text-center text-xs",
+                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+                ) do
+                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
+                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
                 end
               end
             end
@@ -103,10 +110,6 @@ class Views::Lalas::CashInstallments::Index < Views::Base
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
         div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 pl-2") do
-          span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160", title: model_attribute(cash_installment, :already_paid)) do
-            cached_icon(icon)
-          end
-
           span(class: "px-1 rounded-sm text-slate-900 mr-auto") do
             format = cash_transaction.investment? ? "%B %Y" : :shorter
             I18n.l(cash_installment.date, format:)
@@ -131,10 +134,19 @@ class Views::Lalas::CashInstallments::Index < Views::Base
           end
         end
 
-        div(class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-          cash_transaction.entities.each do |entity|
-            span(class: "px-4 rounded-full text-sm bg-purple-100 text-slate-800 border-1 border-black") do
-              entity.entity_name
+        div(class: "py-2 flex items-center justify-center flex-wrap gap-2",
+            data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+          cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
+            entity = entity_transaction.entity
+
+            Link(
+              href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+              size: :xs,
+              class: "grid grid-cols-1 text-xs mx-auto",
+              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+            ) do
+              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
+              span(class: :entity_entity_name) { entity.entity_name }
             end
           end
         end
@@ -143,8 +155,11 @@ class Views::Lalas::CashInstallments::Index < Views::Base
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "py-2 px-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
-          from_cent_based_to_float(0, "R$")
+        div(class: "py-2 px-2 flex items-center justify-center gap-2 font-lekton font-bold whitespace-nowrap ml-auto") do
+          span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
+            cached_icon(icon)
+          end
+          span { cash_installment.paid ? "Sim" : "Não" }
         end
       end
     end
