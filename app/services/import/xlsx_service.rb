@@ -104,6 +104,10 @@ module Import
       is_payer = false
 
       category.each_with_index do |cat, index|
+        cat = "PAYMENT" if cat == "PAGAMENTO"
+        cat = "ADVANCE" if cat == "ADIANTAMENTO"
+        cat = "EXCHANGE" if cat == "EMP"
+
         category[index] = "CARD #{cat}" if cat.in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
         next if cat != "EXCHANGE" || entity == "MOI"
 

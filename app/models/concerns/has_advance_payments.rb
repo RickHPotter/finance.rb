@@ -4,6 +4,8 @@
 module HasAdvancePayments
   extend ActiveSupport::Concern
 
+  include TranslateHelper
+
   included do
     # @security (i.e. attr_accessible) ........................................
     attr_accessor :destroy_advance_cash_transaction_id
@@ -89,7 +91,7 @@ module HasAdvancePayments
   #
   def advance_cash_transaction_params
     {
-      description: "CARD ADVANCE [ #{user_card.user_card_name} - #{month_year} ]",
+      description: "#{model_attribute(Category, :card_advance).upcase}  [ #{user_card.user_card_name} - #{month_year} ]",
       starting_price: price * -1, price: price * -1,
       date:, month: date.month, year: date.year,
       user_id:,

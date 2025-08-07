@@ -101,7 +101,7 @@ class Views::CardTransactions::MonthYear < Views::Base
             div(class: "py-3 col-span-2 flex justify-center items-center gap-1") do
               span { model_attribute(CardTransaction, :entities) }
 
-              button_tag(onclick: "document.querySelectorAll('.entity-exchanges-info').forEach(el => el.classList.toggle('hidden'))") do
+              button_tag(onclick: "document.querySelectorAll('.entity_exchanges_info').forEach(el => el.classList.toggle('hidden'))") do
                 cached_icon :eye
               end
             end

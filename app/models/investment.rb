@@ -6,6 +6,7 @@ class Investment < ApplicationRecord
   include HasMonthYear
   include CashTransactable
   include CategoryTransactable
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -27,7 +28,7 @@ class Investment < ApplicationRecord
   # @return [String] The generated description.
   #
   def cash_transaction_description
-    "INVESTMENT #{user_bank_account.user_bank_account_name} #{month_year}"
+    "#{pluralise_model(Investment, 1).upcase} #{user_bank_account.user_bank_account_name} #{month_year}"
   end
 
   # Generates a `date` for the associated `cash_transaction`, picking the end of given `month` for the `cash_transaction`.

@@ -8,8 +8,8 @@ module Import
       @main_service = main_service
     end
 
-    def create_user
-      @main_service.user = User.find_or_create_by(first_name: "Rikki", last_name: "Potteru", email: "rikki.potteru@mail.com", locale: :en) do |user|
+    def create_user(user_hash)
+      @main_service.user = User.find_or_create_by(user_hash) do |user|
         user.password = "123123"
         user.confirmed_at = Time.zone.today
       end

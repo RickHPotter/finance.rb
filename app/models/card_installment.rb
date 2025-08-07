@@ -6,6 +6,7 @@ class CardInstallment < Installment
 
   # @includes .................................................................
   include CashTransactable
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -55,7 +56,7 @@ class CardInstallment < Installment
   # @return [String] The generated description.
   #
   def cash_transaction_description
-    "CARD PAYMENT [ #{user_card.user_card_name} - #{month_year} ]"
+    "#{model_attribute(Category, :card_payment).upcase} [ #{user_card.user_card_name} - #{month_year} ]"
   end
 
   # Generates a `comment` for the associated `cash_transaction` based on the `user_card` and `month` and `year`.

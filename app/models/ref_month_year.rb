@@ -53,7 +53,7 @@ class RefMonthYear
   def self.from_string(month_year)
     month, year = month_year.split
 
-    month = [ *MONTHS_ABBR, *MONTHS_FULL ].map(&:parameterize).index(month.parameterize) + 1
+    month = [ *PTBR_MONTHS_FULL, *MONTHS_ABBR, *MONTHS_FULL ].map(&:parameterize).index(month.parameterize) + 1
     year = year.gsub(/[^\d.-]+/, "").rjust(4, "20").to_i
 
     RefMonthYear.new(month, year.to_i)

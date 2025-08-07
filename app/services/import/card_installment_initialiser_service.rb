@@ -54,8 +54,11 @@ module Import
       indexes.map do |index|
         transaction = transactions_collection[user_card_name][:with_pending_installments][index]
 
-        next if transaction[:price] - transaction_zero[:price] <= transaction_zero[:price] * 0.06
-        next if transaction[:price] - transaction_zero[:price] >= transaction_zero[:price] * 0.06 * -1
+        transaction_price = transaction[:price].abs * -1
+        transaction_zero_price = transaction_zero[:price].abs * -1
+
+        next if transaction_price - transaction_zero_price <= transaction_zero_price * 0.06
+        next if transaction_price - transaction_zero_price >= transaction_zero_price * 0.06 * -1
 
         index
       end.compact => indexes

@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 def rikki = -> { Import::FromRikkiExcel.run }
+def gigi = -> { Import::FromGigiExcel.run }
 
+PTBR_MONTHS_FULL = %w[Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro].freeze
 MONTHS_FULL = %w[Janvier Fevrier Mars Avril Mai June Jui Août Septembre Octobre Novembre Decembre].freeze
 MONTHS_ABBR = %w[Jan Fev Mars Avril Mai June Jui Août Sept Oct Nov Dec].freeze
 
@@ -109,4 +111,53 @@ RIKKI_ICONS = {
   "RUBY" => "dogs/3.png",
   "RAVENA" => "dogs/8.png",
   "RECEITA FEDERAL" => "dogs/17.png"
+}.freeze
+
+GIGI_COLOURS = {
+  "FOOD" => :meat,
+  "EDUCACAO" => :book,
+  "NECESSIDADE" => :urgency,
+  "PRESENTE" => :gift,
+  "PATRIMONIO" => :gift,
+  "TRANSPORTE" => :honda,
+  "CARRO" => :honda,
+  "SALARIO" => :gold,
+  "CARD PAYMENT" => :money,
+  "CARD ADVANCE" => :money,
+  "CARD DISCOUNT" => :money,
+  "CARD REVERSAL" => :money,
+  "CARD INSTALLMENT" => :money,
+  "REEMBOLSO" => :money,
+  "ESTORNO" => :money,
+  "PROMO" => :money,
+  "INVESTMENT" => :bronze,
+  "VENDA" => :oldmoney,
+  "LAZER" => :fun,
+  "DOG" => :fun,
+  "BOLETO" => :gray,
+  "INFELIZ" => :gray,
+  "CALOTE" => :gray,
+  "SAUDE" => :meat,
+  "TAXA" => :gray,
+  "APOSTA" => :silver,
+  "CAIU DO CEU" => :greek,
+  "EMP" => :dirt,
+  "EXCHANGE" => :dirt,
+  "EXCHANGE RETURN" => :yellow,
+  "BORROW RETURN" => :yellow
+}.freeze
+
+GIGI_ICONS = {
+  "MOI" => "people/1.png",
+  "GABY" => "people/2.png",
+  "PATRICIA" => "people/12.png",
+  "IVANILDO" => "people/24.png",
+  "LUIS" => "people/15.png",
+  "SETE TECH" => "people/19.png",
+  "BRASIL CENTER" => "people/19.png",
+  "NOSOTROS" => "people/29.png",
+  "RUBY" => "dogs/3.png",
+  "RAVENA" => "dogs/8.png",
+  "RECEITA FEDERAL" => "dogs/17.png",
+  "GOV" => "dogs/17.png"
 }.freeze

@@ -28,7 +28,8 @@ module Import
       xlsx_service = Import::XlsxService.new(@file)
       xlsx_service.import
 
-      service = Import::MainService.new(xlsx_service.hash_collection, "PIX")
+      user_hash = { first_name: "Rikki", last_name: "Potteru", email: "rikki.potteru@mail.com", locale: :en }
+      service = Import::MainService.new(user_hash, xlsx_service.hash_collection, "PIX")
       service.import
 
       aftermath_fix
@@ -78,8 +79,6 @@ module Import
     end
 
     def fix_missing_references
-      @user.user_cards.find_by(user_card_name: "MELIUZ").references.destroy_all
-
       @user.user_cards.find_each do |user_card|
         month_years = user_card.card_installments_invoices.pluck(:month, :year).uniq
 
