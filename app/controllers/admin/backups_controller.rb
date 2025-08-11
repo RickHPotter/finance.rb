@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class Admin::BackupsController < ApplicationController
-  before_action :authenticate_rikki
+  def data_backup
+    return head :unauthorized unless current_user
 
-  def download_latest
     service = Export::DatabaseBackupService.new(current_user)
     service.run!
 
@@ -12,14 +12,8 @@ class Admin::BackupsController < ApplicationController
     return head :not_found unless path
 
     send_file path,
-              filename: File.basename(path),
+              filename: "30fev backup.zip",
               type: "application/zip",
               disposition: "attachment"
-  end
-
-  private
-
-  def authenticate_rikki
-    redirect_to root_path unless current_user&.email == "rikki.potteru@mail.com"
   end
 end

@@ -80,7 +80,7 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
-    get :data_backup, to: "backups#download_latest"
+    get :data_backup, to: "backups#data_backup"
   end
 
   root "pages#index"

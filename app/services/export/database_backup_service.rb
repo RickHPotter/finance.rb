@@ -10,8 +10,8 @@ module Export
 
     def initialize(user)
       @user = user
-      FileUtils.mkdir_p(BACKUP_DIR)
-      @path = BACKUP_DIR.join("backup_#{@user.id}_#{Time.zone.today}.xlsx")
+      FileUtils.mkdir_p(BACKUP_DIR.join("user_#{@user.id}"))
+      @path = BACKUP_DIR.join("user_#{@user.id}", "backup_#{@user.id}_#{Time.zone.today}.xlsx")
       @workbook = WriteXLSX.new(@path)
     end
 
@@ -99,29 +99,6 @@ module Export
       records.each_with_index do |record, i|
         sheet.write_row(i + 1, 0, record.attributes.values)
       end
-    end
-
-    def cleanup_old_backups
-      return if Date.current.day.positive?
-
-      zips = Dir[BACKUP_DIR.join("backup_#{@user.id}_*.zip")]
-      to_keep = []
-      grouped = zips.group_by do |f|
-        Date.parse(File.basename(f).split("_")[2].to_i.to_s)
-      rescue StandardError
-        nil
-      end
-
-      # For each past month, keep only last-day backup; keep all backups in last two months
-      grouped.each do |date, files|
-        if date >= 2.months.ago.to_date.beginning_of_month
-          to_keep += files
-        else
-          to_keep << files.max_by { |f| File.mtime(f) }
-        end
-      end
-      to_delete = zips - to_keep
-      to_delete.each { |f| FileUtils.rm_f(f) }
     end
   end
 end
