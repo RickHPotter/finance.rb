@@ -56,7 +56,6 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           TextFieldTag \
             :search_term,
             svg: :magnifying_glass,
-            autofocus: true,
             clearable: true,
             placeholder: "#{action_message(:search)}...",
             value: search_term,

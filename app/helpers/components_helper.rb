@@ -14,7 +14,7 @@ module ComponentsHelper
   #
   def outdoor_input_class
     "w-full text-black text-center text-ellipsis text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-extrabold
-    border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent".squish
+    border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight".squish
   end
 
   # @return [String] tailwind class for readonly input.

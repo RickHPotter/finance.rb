@@ -66,6 +66,20 @@ document.body.onkeydown = (e) => {
 
   up_down_keys[index] && window.scrollBy({ top: up_down_command[index], left: 0, behavior: "smooth" })
 
+  // FOCUS ON SEARCH BAR
+  const search_key = 70 // f
+  if (key == search_key) {
+    e.preventDefault()
+    document.getElementById("search_term").focus()
+  }
+
+  // SCROLL TO LAST PAID
+  const scroll_to_las_paid = 78 // n
+  if (key == scroll_to_las_paid) {
+    e.preventDefault()
+    document.querySelector("[data-datatable-target='row'].animate-pulse")?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
   // SET THEME
   const theme_key = 84 // t
   key === theme_key && document.getElementById("theme_toggle").click()
