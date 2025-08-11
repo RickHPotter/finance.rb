@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class Views::Lalas::CashInstallments::Index < Views::Base
-  include Phlex::Rails::Helpers::AssetPath
-  include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::DOMID
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper

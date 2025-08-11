@@ -79,7 +79,7 @@ class CashTransactionsController < ApplicationController
     respond_to(&:turbo_stream)
   end
 
-  def handle_save # rubocop:disable Metrics/AbcSize
+  def handle_save
     if params[:commit] == "Update"
       respond_to do |format|
         format.turbo_stream do
@@ -92,10 +92,9 @@ class CashTransactionsController < ApplicationController
     else
       if @cash_transaction.save
         index
-        @index_context[:user_bank_account_id] = @cash_transaction.user_bank_account_id
         @index_context[:default_year] = @cash_transaction.cash_installments.first.year
         @index_context[:active_month_years] = @cash_transaction.cash_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }.uniq
-        @index_context[:search_term] = @cash_transaction.description
+        @index_context[:user_bank_account_id] = []
 
         set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end
@@ -219,7 +218,7 @@ class CashTransactionsController < ApplicationController
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
-        { exchanges_attributes: %i[id number exchange_type bound_type price _destroy] }
+        { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
   end

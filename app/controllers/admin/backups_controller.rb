@@ -12,7 +12,7 @@ class Admin::BackupsController < ApplicationController
     return head :not_found unless path
 
     send_file path,
-              filename: "30fev backup.zip",
+              filename: "30fev backup.xlsx",
               type: "application/zip",
               disposition: "attachment"
   end

@@ -3,6 +3,8 @@
 class Views::Budgets::Budgets < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper
@@ -49,7 +51,7 @@ class Views::Budgets::Budgets < Views::Base
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-slate-100 text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              link_to pluralise_model(budget, 1).upcase,
+              link_to budget.description,
                       edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
@@ -74,7 +76,7 @@ class Views::Budgets::Budgets < Views::Base
                 end => icon
 
                 cached_icon icon
-                span { I18n.l(budget.date, format: "%B %Y") }
+                span(class: "rounded-xs text-xs mr-auto") { I18n.l(budget.date, format: "%B %Y") }
               end
             end
             div(class: "whitespace-nowrap") do
@@ -84,15 +86,17 @@ class Views::Budgets::Budgets < Views::Base
           div(class: "flex items-center justify-between gap-2") do
             div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
               budget.categories.each do |category|
-                span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1  #{category.bg_colour.sub('bg', 'border')} text-xs") do
                   category.name
                 end
               end
             end
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
+
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
               budget.entities.each do |entity|
-                span(class: "px-2 py-1 rounded-full text-xs font-medium bg-purple-100 border border-1 border-gray-500") do
-                  entity.entity_name
+                div(class: "flex flex-col items-center w-16 text-center text-xs") do
+                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
+                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
                 end
               end
             end
@@ -107,7 +111,7 @@ class Views::Budgets::Budgets < Views::Base
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-8 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80",
+        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80",
         draggable: true,
         data: {
           id: budget.id,
@@ -118,10 +122,14 @@ class Views::Budgets::Budgets < Views::Base
         div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-100 pl-2") do
           span(class: "size-4", title: pluralise_model(budget, 1)) { cached_icon(:piggy_safe) }
 
-          span(class: "px-1 rounded-sm mr-auto") { I18n.l(budget.date, format: "%B %Y") }
+          month, year = I18n.l(budget.date, format: "%B %Y").split
+          div(class: "grid grid-cols-1 mr-auto") do
+            span(class: "rounded-xs text-xs mr-auto") { month }
+            span(class: "rounded-xs text-xs mr-auto") { year }
+          end
         end
 
-        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
+        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
           link_to "#{pluralise_model(budget, 1).upcase}: #{from_cent_based_to_float(budget.value, 'R$')}",
                   edit_budget_path(budget),
                   id: "edit_budget_#{budget.id}",
@@ -133,7 +141,7 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
 
-        div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
+        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
           budget.categories.each do |category|
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm #{category.bg_colour} border-1 border-white text-sm") do
               category.name
@@ -141,10 +149,14 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
 
-        div(class: "py-2 flex items-center justify-center flex-wrap gap-2", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-          budget.entities.each do |entity|
-            span(class: "px-4 rounded-full text-sm bg-purple-100 text-black border-1 border-white") do
-              entity.entity_name
+        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+            data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
+          budget.budget_entities.order(:entity_id).includes(:entity).each do |budget_entity|
+            entity = budget_entity.entity
+
+            div(class: "grid grid-cols-1 text-xs mx-auto") do
+              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
+              span(class: :entity_entity_name) { entity.entity_name }
             end
           end
         end
@@ -153,8 +165,10 @@ class Views::Budgets::Budgets < Views::Base
           from_cent_based_to_float(budget.remaining_value, "R$")
         end
 
-        div(class: "py-2 px-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
-          from_cent_based_to_float(budget.balance, "R$")
+        div(class: "flex items-center justify-center font-lekton font-bold text-white whitespace-nowrap ml-auto") do
+          div(class: "p-1 rounded-md shadow-sm border border-white") do
+            from_cent_based_to_float(budget.balance, "R$")
+          end
         end
       end
     end

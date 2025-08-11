@@ -91,9 +91,10 @@ class BudgetsController < ApplicationController
   end
 
   def build_index_context # rubocop:disable Metrics/AbcSize
-    min_date = Time.zone.today
-    max_date = Time.zone.today + 1.month
-    default_active_month_years = [ min_date.strftime("%Y%m").to_i, max_date.strftime("%Y%m").to_i ]
+    min_date = current_user.budgets.active.minimum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
+    max_date = current_user.budgets.active.maximum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
+
+    default_active_month_years = [ min_date.strftime("%Y%m").to_i, (min_date + 1.month).strftime("%Y%m").to_i ]
     years = @years || (min_date.year..max_date.year)
     default_year = @default_year || params[:default_year]&.to_i || min_date.year
     active_month_years = @active_month_years || (params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years)

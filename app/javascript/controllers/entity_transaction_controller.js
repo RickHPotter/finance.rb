@@ -226,8 +226,7 @@ export default class extends Controller {
 
     const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
 
-    const [ year, month, day ] = document.querySelector("#cash_transaction_reference_date").value.slice(0, 10).split("-").map(Number)
-    const proposedDate = new RailsDate(year, month, day)
+    const proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
     proposedDate.monthsForwards(startingNumber)
 
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {

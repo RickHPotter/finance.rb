@@ -26,7 +26,6 @@ module Components
       @dependent = dependent
       @dependent_no = dependent_no
       @mobile = mobile
-      super
     end
 
     Item = Struct.new(:label, :icon, :link, :default, :turbo_frame)

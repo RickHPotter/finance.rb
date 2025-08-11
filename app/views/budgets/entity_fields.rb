@@ -3,8 +3,8 @@
 module Views
   module Budgets
     class EntityFields < Components::Base
-      include Phlex::Rails::Helpers::AssetPath
       include Phlex::Rails::Helpers::ImageTag
+      include Phlex::Rails::Helpers::AssetPath
 
       include CacheHelper
 

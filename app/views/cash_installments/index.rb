@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+  include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
-  include Phlex::Rails::Helpers::DOMID
 
   include TranslateHelper
   include CacheHelper
@@ -70,7 +70,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "truncate text-md",
+                        class: "cash_transaction_description truncate text-md",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               elsif cash_transaction.card_payment? || cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -79,12 +79,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "truncate text-md",
+                        class: "cash_transaction_description truncate text-md",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "truncate text-md",
+                        class: "cash_transaction_description truncate text-md",
                         data: { turbo_frame: :center_container }
               end
 
@@ -211,7 +211,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
             link_to cash_transaction.description,
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
           elsif cash_transaction.card_payment? || cash_transaction.card_advance?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -220,13 +220,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
             link_to cash_transaction.description,
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
           else
             link_to cash_transaction.description,
                     edit_cash_transaction_path(cash_transaction),
                     id: "edit_cash_transaction_#{cash_transaction.id}",
-                    class: "flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md",
                     data: { turbo_frame: :center_container }
           end
           span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do

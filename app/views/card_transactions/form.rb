@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/ClassLength
+  include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::TextFieldTag
   include Phlex::Rails::Helpers::HiddenFieldTag
   include Phlex::Rails::Helpers::AssetPath
-  include Phlex::Rails::Helpers::DOMID
   include Views::CardTransactions
 
   include TranslateHelper
@@ -28,7 +28,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def view_template
-    user_card_date = card_transaction.user_card.calculate_reference_date(card_transaction.date)
+    user_card_date = card_transaction.user_card.calculate_reference_date(card_transaction.date).to_datetime
 
     turbo_frame_tag dom_id @card_transaction do
       form_with model: card_transaction,
@@ -43,7 +43,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         hidden_field_tag :exchange_category_id,   exchange_category.id,   disabled: true, id: :exchange_category_id
         hidden_field_tag :exchange_category_name, exchange_category.name, disabled: true, id: :exchange_category_name
 
-        hidden_field_tag :user_card_reference_date, user_card_date, disabled: true, id: :cash_transaction_reference_date
+        hidden_field_tag :user_card_reference_date, user_card_date, disabled: true, type: "datetime-local", id: :cash_transaction_date
 
         div(class: "w-full mb-6") do
           form.text_field :description,

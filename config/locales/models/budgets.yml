@@ -21,7 +21,7 @@ en:
         categories: Categories
         entities: Entities
         user_id: User
-        total_amount: Total Amount
+        total_amount: Total Remaining Amount
         created_at: Created at
         updated_at: Updated at
 
@@ -48,6 +48,6 @@ pt-BR:
         categories: Categorias
         entities: Entidades
         user_id: Usuário
-        total_amount: Valor Total
+        total_amount: Valor Restante Total
         created_at: Criado em
         updated_at: Atualizado em

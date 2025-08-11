@@ -33,7 +33,8 @@ gem "dockerfile-rails"
 gem "dotenv-rails"
 gem "kamal", require: false
 
-gem "roo", git: "https://github.com/roo-rb/roo.git"
+gem "csv"
+gem "roo"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]

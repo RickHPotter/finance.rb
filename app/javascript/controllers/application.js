@@ -47,40 +47,62 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
-document.body.onkeydown = (e) => {
-  const key = e.keyCode
-
-  const isInputFocused = ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)
-  if (isInputFocused) {
-    if (key === 27) { // ESC
-      document.activeElement.blur()
-    }
-
+document.addEventListener("keyup", (e) => {
+  const tag = document.activeElement && document.activeElement.tagName
+  const key = e.key.toLowerCase()
+  const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
+  if (inInput) {
+    if (key === "escape") document.activeElement.blur()
     return
   }
 
-  // NEOVIM
-  const up_down_keys = [74, 75] // j, k
-  const up_down_command = [150, -150]
-  const index = up_down_keys.indexOf(key)
-
-  up_down_keys[index] && window.scrollBy({ top: up_down_command[index], left: 0, behavior: "smooth" })
-
   // FOCUS ON SEARCH BAR
-  const search_key = 70 // f
-  if (key == search_key) {
+  if (key === "f") {
     e.preventDefault()
-    document.getElementById("search_term").focus()
+    document.getElementById("search_term")?.focus()
+    return
   }
 
   // SCROLL TO LAST PAID
-  const scroll_to_las_paid = 78 // n
-  if (key == scroll_to_las_paid) {
+  if (key === "n") {
     e.preventDefault()
-    document.querySelector("[data-datatable-target='row'].animate-pulse")?.scrollIntoView({ behavior: "smooth", block: "center" })
+    const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse)")
+    const lastPaidTransaction = paidTransactions[paidTransactions.length - 1]
+
+    lastPaidTransaction.scrollIntoView({ behavior: "smooth", block: "center" })
+    lastPaidTransaction.querySelector(".cash_transaction_description").classList.add("animate-bounce")
+    setTimeout(() => lastPaidTransaction.querySelector(".cash_transaction_description").classList.remove("animate-bounce"), 3000)
+    return
   }
 
   // SET THEME
-  const theme_key = 84 // t
-  key === theme_key && document.getElementById("theme_toggle").click()
-}
+  if (key === "t") {
+    e.preventDefault()
+    document.getElementById("theme_toggle")?.click()
+    return
+  }
+
+  // PERFORM SCROLL
+  if (key !== "j" && key !== "k") return
+
+  const distance = key === "j" ? 150 : -150
+
+  e.preventDefault()
+  document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
+})
+
+document.addEventListener("keydown", (e) => {
+  const tag = document.activeElement && document.activeElement.tagName
+  const key = e.key.toLowerCase()
+  const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
+  if (inInput) {
+    if (key === "escape") document.activeElement.blur()
+    return
+  }
+
+  // PERFORM CONTINUOUS SCROLL
+  if (key === "j" || key === "k") {
+    const distance = key === "j" ? 500 : -500
+    document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
+  }
+})

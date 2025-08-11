@@ -53,9 +53,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      form.text_field :user_bank_account_id,
-                      value: params[:user_bank_account_id] || params.dig(:cash_transaction, :user_bank_account_id) || user_bank_account_id,
-                      class: :hidden
+      form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
 
       div(class: "flex justify-between items-center gap-2") do
         div(class: "flex-1") do
@@ -158,6 +156,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                     :to_price,
                     svg: :money,
                     value: to_price || nil,
+                    placeholder: model_attribute(CashTransaction, :to_price),
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
               end

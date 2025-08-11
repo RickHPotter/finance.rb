@@ -258,8 +258,7 @@ export default class extends Controller {
 
       target.querySelector(".installment_number").value = index + 1
 
-      const [ year, month, day ] = document.querySelector(".transaction-date").value.slice(0, 10).split("-").map(Number)
-      const proposedDate = new RailsDate(year, month, day)
+      const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
       proposedDate.monthsForwards(index)
 
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
