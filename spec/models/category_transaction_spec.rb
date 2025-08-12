@@ -1,20 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: category_transactions
-#
-#  id                :bigint           not null, primary key
-#  category_id       :bigint           not null
-#  transactable_type :string           not null
-#  transactable_id   :bigint           not null
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe CategoryTransaction, type: :model do
-  let!(:subject) { build(:category_transaction, :random) }
+  let(:subject) { build(:category_transaction, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -32,3 +21,26 @@ RSpec.describe CategoryTransaction, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: category_transactions
+#
+#  id                :bigint           not null, primary key
+#  transactable_type :string           not null, uniquely indexed => [category_id, transactable_id], indexed => [transactable_id]
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  category_id       :bigint           not null, indexed, uniquely indexed => [transactable_type, transactable_id]
+#  transactable_id   :bigint           not null, uniquely indexed => [category_id, transactable_type], indexed => [transactable_type]
+#
+# Indexes
+#
+#  index_category_transactions_on_category_id    (category_id)
+#  index_category_transactions_on_composite_key  (category_id,transactable_type,transactable_id) UNIQUE
+#  index_category_transactions_on_transactable   (transactable_type,transactable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (category_id => categories.id)
+#
+#  fk_rails_...  (category_id => categories.id)

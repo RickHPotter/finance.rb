@@ -1,6 +1,6 @@
 <% if @category.destroyed? %>
   <%= turbo_stream.replace(:center_container, template: "categories/index") %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Category has been deleted." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyeda, Category) }) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: "Category with transactions cannot be deleted." }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyed_because_has_transactionsa, Category) }) %>
 <% end %>

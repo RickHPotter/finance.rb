@@ -1,21 +1,8 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: user_bank_accounts
-#
-#  id             :bigint           not null, primary key
-#  agency_number  :integer
-#  account_number :integer
-#  active         :boolean          default(TRUE), not null
-#  balance        :integer          default(0), not null
-#  user_id        :bigint           not null
-#  bank_id        :bigint           not null
-#  created_at     :datetime         not null
-#  updated_at     :datetime         not null
-#
 FactoryBot.define do
   factory :user_bank_account do
+    user_bank_account_name { "Nice Bank" }
     agency_number { "1324" }
     account_number { "123456" }
     balance { 39_392 }
@@ -42,3 +29,31 @@ FactoryBot.define do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: user_bank_accounts
+#
+#  id                      :bigint           not null, primary key
+#  account_number          :integer
+#  active                  :boolean          default(TRUE), not null
+#  agency_number           :integer
+#  balance                 :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  user_bank_account_name  :string
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  bank_id                 :bigint           not null, indexed
+#  user_id                 :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_user_bank_accounts_on_bank_id  (bank_id)
+#  index_user_bank_accounts_on_user_id  (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
+#  fk_rails_...  (user_id => users.id)
+#

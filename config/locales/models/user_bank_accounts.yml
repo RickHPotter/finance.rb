@@ -1,0 +1,43 @@
+en:
+  activerecord:
+    models:
+      user_bank_account:
+        one: Bank Account
+        other: Bank Accounts
+    attributes:
+      user_bank_account:
+        id: ID
+        description: "[ Bank ] Agency/Account"
+        agency_number: Agency Number
+        account_number: Account Number
+        user_bank_account_name: Bank Account Name
+        balance: Balance
+        active: Active
+        user_id: User
+        bank_id: Bank
+        count: Count
+        spent: Spent
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      user_bank_account:
+        one: Conta Bancária
+        other: Contas Bancárias
+    attributes:
+      user_bank_account:
+        id: ID
+        description: "[ Banco ] Agência/Conta"
+        agency_number: Número da Agência
+        account_number: Número da Conta
+        user_bank_account_name: Nome da Conta Bancária
+        balance: Saldo
+        active: Ativo
+        user_id: Usuário
+        bank_id: Banco
+        count: Quantidade
+        spent: Gasto
+        created_at: Criado em
+        updated_at: Atualizado em

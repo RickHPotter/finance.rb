@@ -1,26 +1,17 @@
-<!-- FIXME: lol, this was not touched. -->
-
-<h2>Change your password</h2>
-
 <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }) do |f| %>
   <%= render "devise/shared/error_messages", resource: %>
   <%= f.hidden_field :reset_password_token %>
 
-  <div class="field">
-    <%= f.label :password, "New password" %><br>
-    <% if @minimum_password_length %>
-      <em>(<%= @minimum_password_length %> characters minimum)</em><br>
-    <% end %>
-    <%= f.password_field :password, autofocus: true, autocomplete: "new-password" %>
+  <div class="mb-6 text-blue-700">
+    <%= render Components::TextField.new(f, :password, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password)) %>
   </div>
 
-  <div class="field">
-    <%= f.label :password_confirmation, "Confirm new password" %><br>
-    <%= f.password_field :password_confirmation, autocomplete: "new-password" %>
+  <div class="mb-6 text-blue-700">
+    <%= render Components::TextField.new(f, :password_confirmation, type: :password, svg: :key, placeholder: model_attribute(resource, :new_password_confirmation)) %>
   </div>
 
-  <div class="actions">
-    <%= f.submit "Change my password" %>
+  <div class="w-full">
+    <%= render RubyUI::Button.new(type: :submit, size: :lg, variant: :purple) { action_message(:update) } %>
   </div>
 <% end %>
 

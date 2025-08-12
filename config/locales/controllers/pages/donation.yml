@@ -1,0 +1,45 @@
+en:
+  donation:
+    title: Support Our Cause
+    subtitle: Your donation helps us continue our mission to provide the best possible experience for our users who desire to have a smoother financial life. Choose an option and contribute if you can!
+    water_title: Water
+    water_subtitle: Water is a vital material for everything. Without water, we would not have a keyboard factory.
+    coffee_title: Coffee
+    coffee_subtitle: Coffee for the weak. More coffee for the strong. I WANT COFFEEEEEEE!
+    juice_title: Juice
+    juice_subtitle: Thanks for the invite, but I'm not into alcohol. Honestly, I'd rather drink an orange juice.
+    wine_title: Wine
+    wine_subtitle: We all want to age like fine wine. 2 wine glasses for 2 talking mouths.
+    meal_title: Breakfast
+    meal_subtitle: Burger? Salada? Sushi? Fish and Chips? Pizza? Pasta? I'm SO in!
+    restaurant_title: Restaurant
+    restaurant_subtitle: Take her out to the restaurant to get `social credits` and create another transaction on 30fev.fun
+    complete_donation: Complete Your Donation
+    youre_donating: "You're donating:"
+    thank_you: Thank you for your generosity!
+    scan_qr_code_or_copy: Scan QR Code or Copy Key to donate
+    copy: Copy
+    copied: Copied!
+
+pt-BR:
+  donation:
+    title: Suporte a Nossa Causa
+    subtitle: Sua doação nos ajuda a continuar com nossa missão de fornecer a melhor experiência possível para nossos usuários que desejam ter uma vida financeira mais tranquila. Escolha uma opção e contribue se puder!
+    water_title: Água
+    water_subtitle: Água é a matéria prima vital de tudo. Sem água, não teríamos fabricação de teclados mecânicos.
+    coffee_title: Café
+    coffee_subtitle: Café para os fracos. Mais café ainda para os fortes. QUERO CAFEEEEEEÉ!
+    juice_title: Suco
+    juice_subtitle: Eu agradeço o convite, mas não sou chegado em bebida alcoólica. Eu prefiro um suco de laranja.
+    wine_title: Vinho
+    wine_subtitle: Uma garrafa e duas taças para dois de nós conversarmos.
+    meal_title: Almoço
+    meal_subtitle: Strognoff, parmegiana de frango, bife acebolado, farofa de banana da terra. Miiim deeeeeeeeeeê, papai.
+    restaurant_title: Restaurante
+    restaurant_subtitle: Chamar a crush ao restaurante para ganhar `social credits`, e criar mais uma transaçãozinha no 30fev.fun
+    complete_donation: Complete Sua Doação
+    youre_donating: "Você está doando:"
+    thank_you: Obrigado pela gentileza!
+    scan_qr_code_or_copy: Escaneie o QR Code ou copie a chave para doar
+    copy: Copiar
+    copied: Copiado!

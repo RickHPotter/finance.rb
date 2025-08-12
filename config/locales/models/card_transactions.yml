@@ -6,21 +6,42 @@ en:
         other: Card Transactions
     attributes:
       card_transaction:
+        self: Card Transaction
+        count: Count
         id: ID
         description: Description
+        description_placeholder: Card Transaction Name
         comment: Comment
+        comment_placeholder: Any comment about?
         date: Date
         price: Price
         starting_price: Original Price
+        paid: Paid
+        not_paid: Not Paid
         user_card_id: Card
-        entity_id: Entity
-        category: Category
         month: Month
         year: Year
         card_installment: Installment
         card_installments_count: Installments Count
+        card_installments_count_short: Installments
+        category_id: Category
+        entity_id: Entity
+        categories: Categories
+        entities: Entities
+        total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
+        search_term: Search Term
+        from_ct_price: Inital Card Transaction Price
+        to_ct_price: Final Card Transaction Price
+        from_price: Inital Card Installment Price
+        to_price: Final Card Installment Price
+        from_installments_count: Min Card Installments Count
+        to_installments_count: Max Card Installments Count
+        pay_in_advance: Pay Card In Advance
+        confirm_payment: Confirm Payment
+        duplicate: Duplicate
+        card_advance_description: CARD BILL PAYMENT
 
 pt-BR:
   activerecord:
@@ -30,18 +51,39 @@ pt-BR:
         other: Transações
     attributes:
       card_transaction:
+        self: Transação
+        count: Quantidade
         id: ID
-        description: Descricão
+        description: Descrição
+        description_placeholder: Nome da Transação
         comment: Comentário
+        comment_placeholder: Algum comentário?
         date: Data
         price: Preço
         starting_price: Preço Inicial
+        paid: Pago
+        not_paid: Pendente
         user_card_id: Cartão
-        entity_id: Entidade
-        category: Categoria
         month: Mês
         year: Ano
         card_installment: Parcela
         card_installments_count: Quantidade de Parcelas
+        card_installments_count_short: Parcelas
+        category_id: Categoria
+        entity_id: Entidade
+        categories: Categorias
+        entities: Entidades
+        total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em
+        search_term: Termo de Busca
+        from_ct_price: Preço Inicial da Transação
+        to_ct_price: Preço Final da Transação
+        from_price: Preço Inicial da Parcela
+        to_price: Preço Final da Parcela
+        from_installments_count: Quantidade Mínima de Parcelas
+        to_installments_count: Quantidade Máxima de Parcelas
+        pay_in_advance: Pagar Antecipadamente
+        confirm_payment: Confirmar Pagamento
+        duplicate: Duplicar
+        card_advance_description: PAGAMENTO FATURA

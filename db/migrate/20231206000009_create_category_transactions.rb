@@ -8,11 +8,8 @@ class CreateCategoryTransactions < ActiveRecord::Migration[8.0]
       t.references :transactable, null: false, polymorphic: true
 
       t.timestamps
-    end
 
-    add_index :category_transactions,
-              %i[category_id transactable_type transactable_id],
-              unique: true,
-              name: "index_category_transactions_on_composite_key"
+      t.index %w[category_id transactable_type transactable_id], name: "index_category_transactions_on_composite_key", unique: true
+    end
   end
 end

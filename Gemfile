@@ -6,13 +6,15 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby "3.4.1"
 gem "rails", "~> 8.0"
 
+gem "activerecord-import"
 gem "bootsnap", require: false
-gem "importmap-rails"
 gem "jbuilder"
+gem "jsbundling-rails"
 gem "pg"
 gem "propshaft"
 gem "puma"
 gem "redis"
+gem "solid_cache"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
@@ -29,12 +31,15 @@ gem "letter_opener_web"
 # CD
 gem "dockerfile-rails"
 gem "dotenv-rails"
+gem "kamal", require: false
 
-# roo still does not support ruby 3.4
-gem "roo", git: "https://github.com/HashNotAdam/roo.git"
+gem "csv"
+gem "roo"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
+
+gem "write_xlsx"
 
 group :development, :test do
   gem "bullet"
@@ -45,7 +50,7 @@ group :development, :test do
 end
 
 group :development do
-  gem "annotate"
+  gem "annotaterb"
   gem "awesome_print"
   gem "better_errors"
   gem "binding_of_caller"
@@ -56,6 +61,7 @@ group :development do
   gem "hotwire-spark"
   gem "rails-erd"
   gem "rubocop-rails-omakase", require: false
+  gem "ruby_ui", require: false
   gem "web-console"
 
   # NEOVIM IDE
@@ -70,3 +76,7 @@ group :test do
   gem "shoulda-matchers"
   gem "simplecov", require: false
 end
+
+gem "phlex-rails"
+
+gem "tailwind_merge", "~> 1.1"

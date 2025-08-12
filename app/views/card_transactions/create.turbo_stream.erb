@@ -1,11 +1,8 @@
-<% if @card_transaction.errors.present? %>
-  <%= turbo_stream.replace :new_card_transaction_form, partial: "form", locals: { card_transaction: @card_transaction } %>
+<% if @card_transaction.errors.empty? %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, CardTransaction) }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 <% else %>
-  <%= turbo_stream.replace :new_card_transaction do %>
-    <%= turbo_frame_tag :new_card_transaction %>
-  <% end %>
-
-  <%= turbo_stream.prepend "card_transactions", partial: "card_transaction", locals: { card_transaction: @card_transaction } %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, CardTransaction) }) %>
 <% end %>
-
-<%= turbo_stream.update :notification, partial: "shared/flash" %>

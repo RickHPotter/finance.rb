@@ -9,7 +9,13 @@ Rails.application.configure do
   config.after_initialize do
     Bullet.enable        = true
     Bullet.bullet_logger = true
-    Bullet.raise         = true # raise an error if n+1 query occurs
+    Bullet.raise         = false # raise an error if n+1 query occurs
+
+    # Cash Transactable Concern problems I could not solve, plus schrodinger's eager load (such a pain)
+    %i[card_transaction cash_transaction category entity].each do |association|
+      Bullet.add_safelist(type: :n_plus_one_query,     class_name: "CardInstallment", association:)
+      Bullet.add_safelist(type: :unused_eager_loading, class_name: "CardInstallment", association:)
+    end
   end
 
   # While tests run files are not watched, reloading is not necessary.

@@ -1,0 +1,59 @@
+en:
+  activerecord:
+    models:
+      cash_installment:
+        one: Cash Installment
+        other: Cash Installments
+    attributes:
+      cash_installment:
+        self: Cash Installment
+        count: Count
+        id: ID
+        date: Date
+        price: Price
+        starting_price: Original Price
+        already_paid: Already Paid
+        change_date: Change Date
+        pay: Pay
+        paid: Paid
+        not_paid: Not Paid
+        month: Month
+        year: Year
+        balance: Balance
+        cash_installment: Installment
+        cash_installments_count: Installments Count
+        cash_installments_count_short: Installments
+        confirm_payment: Confirm Payment
+        payment_date: Payment Date
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      cash_installment:
+        one: Parcela
+        other: Parcelas
+    attributes:
+      cash_installment:
+        self: Parcela
+        count: Quantidade
+        id: ID
+        date: Data
+        price: Preço
+        starting_price: Preço Inicial
+        already_paid: Já Pago
+        change_date: Alterar Data
+        pay: Pagar
+        paid: Paga
+        not_paid: Pendente
+        month: Mês
+        year: Ano
+        balance: Saldo
+        cash_installment: Parcela
+        cash_installments_count: Quantidade de Parcelas
+        cash_installments_count_short: Parcelas
+        confirm_payment: Confirmar Pagamento
+        payment_date: Data de Pagamento
+        created_at: Criado em
+        updated_at: Atualizado em

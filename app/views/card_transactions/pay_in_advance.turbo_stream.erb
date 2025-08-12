@@ -1,0 +1,3 @@
+<%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context)) %>
+<%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, CardTransaction) }) %>

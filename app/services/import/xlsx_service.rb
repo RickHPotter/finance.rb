@@ -38,7 +38,7 @@ module Import
     end
 
     def build_headers(row, sheet_name)
-      headers = row.map { |header| header.to_s&.downcase&.to_sym }
+      headers = row.map { |header| header.to_s.downcase&.to_sym }
       return if headers.intersection(HEADERS).count < OBLIGATORY_HEADERS.count
 
       @headers[sheet_name] = {}
@@ -89,10 +89,30 @@ module Import
     end
 
     def parse_category_and_entity(attributes)
-      entity = attributes[:entity]
-      category = attributes[:category]
-      category = "CARD #{category}" if attributes[:category].in?(%w[PAYMENT ADVANCE INSTALMENT DISCOUNT REVERSAL])
-      is_payer = category == "EXCHANGE" && entity != "MOI"
+      case attributes[:category]
+      in String then attributes[:category]&.split(",")
+      in Array  then attributes[:category]
+      else []
+      end => category
+
+      case attributes[:entity]
+      in String then attributes[:entity]&.split(",")
+      in Array  then attributes[:entity]
+      else []
+      end => entity
+
+      is_payer = false
+
+      category.each_with_index do |cat, index|
+        cat = "PAYMENT" if cat == "PAGAMENTO"
+        cat = "ADVANCE" if cat == "ADIANTAMENTO"
+        cat = "EXCHANGE" if cat == "EMP"
+
+        category[index] = "CARD #{cat}" if cat.in?(%w[PAYMENT ADVANCE INSTALLMENT DISCOUNT REVERSAL])
+        next if cat != "EXCHANGE" || entity == "MOI"
+
+        is_payer = true
+      end
 
       { category:, entity:, is_payer: }
     end
@@ -101,10 +121,10 @@ module Import
       ref_month_year = RefMonthYear.from_string(attributes[:reference].to_s)
 
       if attributes[:date].present?
-        attributes[:paid] = true
+        attributes[:paid] = Time.zone.today >= attributes[:date]
       else
         attributes[:paid] = false
-        attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1)
+        attributes[:date] = Date.new(ref_month_year.year, ref_month_year.month, 1).end_of_month
       end
 
       { month: ref_month_year.month, year: ref_month_year.year, date: attributes[:date] }

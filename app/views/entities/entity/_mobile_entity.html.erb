@@ -1,0 +1,77 @@
+<%= content_tag :div, class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: entity.id, datatable_target: :row } do %>
+  <div class="p-4 bg-gradient-to-r from-slate-700 via-slate-400 to-white">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <%= image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full" %>
+
+        <%= link_to entity.entity_name,
+                    edit_entity_path(entity),
+                    id: "edit_entity_#{entity.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-4">
+    <div class="grid grid-cols-2 gap-4 my-2">
+      <div class="space-y-1">
+        <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
+          <%= render_icon :number %>
+          <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "ml-2" %>
+        <% end %>
+
+        <div class="flex items-center">
+          <%= content_tag :span, entity.card_transactions_count, class: "text-sm font-semibold text-slate-800" %>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :money %>
+          <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, from_cent_based_to_float(entity.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
+
+          <%= link_to search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
+            <%= render_icon :jump_to %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 my-2">
+      <div class="space-y-1">
+        <%= content_tag :div, class: "flex items-center text-sm font-medium text-slate-500" do %>
+          <%= render_icon :number %>
+          <%= content_tag :span, pluralise_model(CashTransaction, 2), class: "ml-2 truncate" %>
+        <% end %>
+
+        <div class="flex items-center">
+          <%= content_tag :span, entity.cash_transactions_count, class: "text-sm font-semibold text-slate-800" %>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :money %>
+          <%= content_tag :span, model_attribute(CashTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, from_cent_based_to_float(entity.cash_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
+
+          <%= link_to cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                      class: "my-auto mt-[-1rem]",
+                      data: { turbo_frame: :center_container } do %>
+            <%= render_icon :jump_to %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

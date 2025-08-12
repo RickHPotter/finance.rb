@@ -1,24 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: entity_transactions
-#
-#  id                :bigint           not null, primary key
-#  is_payer          :boolean          default(FALSE), not null
-#  status            :integer          default("pending"), not null
-#  price             :integer          default(0), not null
-#  exchanges_count   :integer          default(0), not null
-#  entity_id         :bigint           not null
-#  transactable_type :string           not null
-#  transactable_id   :bigint           not null
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe EntityTransaction, type: :model do
-  let!(:subject) { build(:entity_transaction, :random) }
+  let(:subject) { build(:entity_transaction, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -46,3 +31,30 @@ RSpec.describe EntityTransaction, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: entity_transactions
+#
+#  id                   :bigint           not null, primary key
+#  exchanges_count      :integer          default(0), not null
+#  is_payer             :boolean          default(FALSE), not null
+#  price                :integer          default(0), not null
+#  price_to_be_returned :integer          default(0), not null
+#  status               :integer          default("pending"), not null
+#  transactable_type    :string           not null, uniquely indexed => [entity_id, transactable_id], indexed => [transactable_id]
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  entity_id            :bigint           not null, uniquely indexed => [transactable_type, transactable_id], indexed
+#  transactable_id      :bigint           not null, uniquely indexed => [entity_id, transactable_type], indexed => [transactable_type]
+#
+# Indexes
+#
+#  index_entity_transactions_on_composite_key  (entity_id,transactable_type,transactable_id) UNIQUE
+#  index_entity_transactions_on_entity_id      (entity_id)
+#  index_entity_transactions_on_transactable   (transactable_type,transactable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (entity_id => entities.id)
+#

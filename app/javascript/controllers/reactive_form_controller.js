@@ -1,123 +1,229 @@
 import { Controller } from "@hotwired/stimulus"
-import RailsDate from "models/railsDate"
+import RailsDate from "../models/railsDate"
+import { isPresent, sleep } from "../utils/utils.js"
+import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
-const is_empty = (value) => {
-  return value === "" || value === null || value === undefined
-}
-
-const is_present = (value) => {
-  return !is_empty(value)
-}
-
-const sleep = (fn, time = 0) => {
-  return new Promise((resolve) => setTimeout(resolve, time))
-    .then(fn)
-}
-
 export default class extends Controller {
   static targets = [
-    "input", "dateInput", "priceInput",
+    "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
 
-    "installmentWrapper", "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
-    "categoryTransactionWrapper",
+    "installmentWrapper", "addInstallment", "delInstallment",
+    "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
 
-    "addInstallment", "delInstallment",
-    "addCategory", "delCategory",
+    "categoryWrapper", "addCategory",
+    "categoryColours",
+
+    "entityWrapper",
+    "addEntity",
+    "entityIcons",
 
     "updateButton"
   ]
 
   connect() {
-    this.applyMasks()
+    this.debounceTimeout = null
 
-    if (this.priceInstallmentInputTargets.length > 0) {
-      this._updateInstallmentsPrices()
-      this._updateChips()
+    if (this.element.querySelector("#categories_nested")) {
+      this._updateCategories()
     }
+
+    if (this.element.querySelector("#entities_nested")) {
+      this._updateEntities()
+    }
+
+    if (this.hasPriceInstallmentInputTargets) {
+      this._updateInstallmentsPrices()
+    }
+
+    if (this.hasCategoryColoursTarget) {
+      this.categoryColours = JSON.parse(this.categoryColoursTarget.value)
+    }
+
+    if (this.hasEntityIconsTarget) {
+      this.entityIcons = JSON.parse(this.entityIconsTarget.value)
+    }
+  }
+
+  clear({ target }) {
+    const input = document.getElementById(target.dataset.id)
+    if (!input) { return }
+
+    input.value = ""
+    input.dispatchEvent(new Event("input"))
   }
 
   // Installments
   requestSubmit({ target }) {
-    const has_value = is_present(target.value) || (target.dataset.value && is_present(target.querySelector(target.dataset.value).value))
+    const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
-    if (has_value) { target.form.requestSubmit(this.updateButtonTarget) }
+    if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
   }
 
-  applyMasks() {
-    [...this.priceInputTargets, ...this.priceInstallmentInputTargets].forEach((target) => {
-      this.applyMask({ target })
+  updateFullPrice() {
+    const visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+    let totalPrice = 0
+
+    visibleInstallmentsInputs.forEach((input) => {
+      if (input.value) { totalPrice += parseInt(_removeMask(input.value)) }
     })
+
+    this.priceInputTarget.value = _applyMask(totalPrice.toString())
   }
 
-  applyMask({ target }) {
-    target.value = this._applyMask(target.value)
+  prevMonth({ target }) {
+    this.updateInstallmentDate(target, -1)
   }
 
-  removeMasks() {
-    [...this.priceInputTargets, ...this.priceInstallmentInputTargets].forEach((target) => {
-      this.removeMask({ target })
-    })
+  nextMonth({ target }) {
+    this.updateInstallmentDate(target, 1)
   }
 
-  removeMask({ target }) {
-    target.value = this._removeMask(target.value)
+  updateInstallmentDate(target, count) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const monthYearInput = installmentWrapper.querySelector(".installment_month_year")
+    const monthInput = installmentWrapper.querySelector(".installment_month")
+    const yearInput = installmentWrapper.querySelector(".installment_year")
+
+    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
+    date.monthsForwards(count)
+
+    monthYearInput.textContent = date.monthYear()
+    monthInput.value = date.month
+    yearInput.value = date.year
   }
 
-  updateInstallmentsDates() {
-    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today() }
-
-    const rails_due_date = this._getDueDate()
-    this._updateWrappers(rails_due_date)
-  }
-
-  updateInstallmentsPrices({ target }) {
+  async requestSubmitAfterUpdate({ target }) {
     if (target.value < 1) { target.value = 1 }
     if (target.value > 72) { target.value = 72 }
 
-    this._updateInstallmentsPrices()
+    const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+    await this._updateInstallmentsFields(installmentsCount)
+
+    const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
+
+    if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
+  }
+
+  updateInstallmentsDates() {
+    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today().toISOString().slice(0, 16) }
+
+    const railsDueDate = this._getDueDate()
+    this._updateWrappers(railsDueDate)
+  }
+
+  async updateInstallmentsPrices({ target }) {
+    if (target.value < 1) { target.value = 1 }
+    if (target.value > 72) { target.value = 72 }
+
+    await this._updateInstallmentsPrices()
+  }
+
+  setPaid({ target }) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const paidInput = installmentWrapper.querySelector(".installment_paid")
+
+    paidInput.checked = !paidInput.checked
+    target.classList.toggle("bg-green-400")
+    target.classList.toggle("bg-orange-600")
   }
 
   // Categories
-  insertChip({ target }) {
+  insertCategory({ target }) {
     const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
     if (!comboboxController) return console.error("Combobox controller not found")
 
-    let all_options = comboboxController._allOptions
-    let selected_option = comboboxController._selectedOptionElement
-    if (!selected_option) return
+    let allOptions = comboboxController._allOptions
+    let selectedOption = comboboxController._selectedOptionElement
+    if (!selectedOption) return
 
-    selected_option.classList.add("hidden")
-    selected_option.dataset.filterableAs = ""
-    let visible_options = all_options.filter((option) => { return !option.classList.contains("hidden") })
-
-    this._insertChip(selected_option)
+    this._insertCategory(selectedOption)
 
     comboboxController.clearOrToggleOnHandleClick()
 
-    if (visible_options.length === 0) {
+    let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
+
+    if (visibleOptions.length === 0) {
       comboboxController.close()
     } else {
       sleep(() => { comboboxController.actingCombobox.focus() })
     }
   }
 
-  removeChip({ target }) {
-    const nested_div = target.parentElement.parentElement.parentElement
-    const chip_value = nested_div.querySelector(".category_transaction_category_id").value
+  removeCategory({ target }) {
+    const wrapper = target.closest("[data-reactive-form-target='categoryWrapper']")
+    const chipValue = wrapper.querySelector(".categories_category_id")?.value
 
-    const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+    const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
     const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
     if (!comboboxController) return console.error("Combobox controller not found")
 
-    let all_options = comboboxController._allOptions
-    let removed_option = all_options.find((option) => { return option.dataset.value === chip_value })
+    let allOptions = comboboxController._allOptions
+    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
 
-    removed_option.classList.remove("hidden")
-    removed_option.dataset.filterableAs = removed_option.dataset.autocompleteAs
+    if (removedOption) {
+      removedOption.classList.remove("hidden")
+      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+    }
 
-    nested_div.remove()
+    wrapper.style.display = "none"
+    wrapper.querySelector("input[name*='_destroy']").value = "true"
+  }
+
+  // Entities
+  insertEntity({ target }) {
+    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    let allOptions = comboboxController._allOptions
+    let selectedOption = comboboxController._selectedOptionElement
+    if (!selectedOption) return
+
+    this._insertEntity(selectedOption)
+
+    comboboxController.clearOrToggleOnHandleClick()
+
+    let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
+
+    if (visibleOptions.length === 0) {
+      comboboxController.close()
+    } else {
+      sleep(() => { comboboxController.actingCombobox.focus() })
+    }
+  }
+
+  removeEntity({ target }) {
+    const wrapper = target.closest("[data-reactive-form-target='entityWrapper']")
+    const chipValue = wrapper.querySelector(".entities_entity_id")?.value
+
+    const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
+    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
+    if (!comboboxController) return console.error("Combobox controller not found")
+
+    let allOptions = comboboxController._allOptions
+    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
+
+    if (removedOption) {
+      removedOption.classList.remove("hidden")
+      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+    }
+
+    wrapper.style.display = "none"
+    wrapper.querySelector("input[name*='_destroy']").value = "true"
+  }
+
+  // search
+  submitWithDelay() {
+    clearTimeout(this.debounceTimeout)
+
+    this.debounceTimeout = setTimeout(() => {
+      this.element.requestSubmit()
+    }, 800)
+  }
+
+  submit() {
+    this.element.requestSubmit()
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -128,108 +234,213 @@ export default class extends Controller {
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░ ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒░
   // ░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░  ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓████████▓▒░
 
-  _applyMask(value) {
-    value = value.replace(/\D/g, '')
-    value = (value / 100).toFixed(2).toString()
-    value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-
-    return "R$ " + value
-  }
-
-  _removeMask(value) {
-    return value.replace(/[^\d]/g, "")
-  }
-
   // Installments
   _getDueDate() {
-    const current_closing_date_day = parseInt(this.closingDateDayTarget.value)
-    const days_until_due_date = parseInt(this.daysUntilDueDateTarget.value)
-
-    const rails_current_date = new RailsDate(this.dateInputTarget.value)
-    const rails_closing_date = new RailsDate(rails_current_date.year, rails_current_date.month, current_closing_date_day)
-    rails_closing_date.monthsForwards((rails_current_date.date() >= rails_closing_date.date()) ? 1 : 0)
-
-    return new RailsDate(rails_closing_date).daysForwards(days_until_due_date)
+    return new RailsDate(this.element.querySelector(".installment_date").value)
   }
 
-  _updateWrappers(starting_rails_date, starting_number = 0) {
-    if (starting_number === 0 && this.monthYearInstallmentTarget.textContent.trim() === starting_rails_date.monthYear()) { return }
+  _updateWrappers(startingRailsDate) {
+    const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
+    const firstVisibleInstallment = visibleInstallmentsWrappers[0]
 
-    starting_rails_date.monthsForwards(starting_number)
+    if (!firstVisibleInstallment) return
 
-    this.installmentWrapperTargets.slice(starting_number).forEach((target, index) => {
-      target.querySelector(".installment_month_year").textContent = starting_rails_date.monthYear()
-      target.querySelector(".installment_number").value = index + starting_number + 1
-      target.querySelector(".installment_month").value = starting_rails_date.month
-      target.querySelector(".installment_year").value = starting_rails_date.year
+    if (firstVisibleInstallment.querySelector(".installment_month").value) {
+      const year = parseInt(firstVisibleInstallment.querySelector(".installment_year").value)
+      const month = parseInt(firstVisibleInstallment.querySelector(".installment_month").value)
+      const railsDate = new RailsDate(year, month, 1)
 
-      starting_rails_date.monthsForwards(1)
+      startingRailsDate.setYear(railsDate.year)
+      startingRailsDate.setMonth(railsDate.month)
+    }
+
+    visibleInstallmentsWrappers.forEach((target, index) => {
+
+      target.querySelector(".installment_number").value = index + 1
+
+      const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
+      proposedDate.monthsForwards(index)
+
+      target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
+      target.querySelector(".installment_date").value = proposedDate.dateTime()
+      target.querySelector(".installment_month").value = startingRailsDate.month
+      target.querySelector(".installment_year").value = startingRailsDate.year
+
+      startingRailsDate.monthsForwards(1)
+      proposedDate.monthsForwards(1)
     })
   }
 
   async _updateInstallmentsPrices() {
-    const total_price = parseInt(this._removeMask(this.priceInputTarget.value))
-    const installments_count = parseInt(this.installmentsCountInputTarget.value)
+    const totalCents = parseInt(_removeMask(this.priceInputTarget.value))
+    const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
 
-    let price_that_cannot_be_divided = total_price % installments_count
-    const price_that_can_be_divided = total_price - price_that_cannot_be_divided
-    const divisible_installment_price = price_that_can_be_divided / installments_count
+    const baseCents = Math.floor(totalCents / installmentsCount)
+    const remainder = totalCents - baseCents * installmentsCount
 
-    if (this.priceInstallmentInputTargets.length !== installments_count) { await this._updateInstallmentsFields() }
+    await this._updateInstallmentsFields(installmentsCount)
 
-    this.priceInstallmentInputTargets.forEach((target) => {
-      const value = (divisible_installment_price + Math.max(0, price_that_cannot_be_divided--)).toString()
-      target.value = this._applyMask(value)
+    let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+    if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
+
+    visibleInstallmentsInputs.forEach((input, index) => {
+      const valueCents = baseCents + (index < remainder ? 1 : 0)
+      const value = (valueCents / 100).toFixed(2)
+      input.value = _applyMask(value)
     })
   }
 
-  async _updateInstallmentsFields() {
-    const old_installments_count = this.priceInstallmentInputTargets.length
-    const new_installments_count = parseInt(this.installmentsCountInputTarget.value)
+  async _updateInstallmentsFields(newInstallmentsCount) {
+    const allInstallments = this.priceInstallmentInputTargets
+    const allInstallmentsCount = allInstallments.length
+    const visibleInstallments = allInstallments.filter((element) => element.checkVisibility())
+    const visibleInstallmentsCount = visibleInstallments.length
 
-    if (old_installments_count > new_installments_count) {
-      const installments_to_be_deleted = this.delInstallmentTargets.slice(new_installments_count)
-      installments_to_be_deleted.forEach((el) => el.click())
+    const shouldRemoveInstallments = newInstallmentsCount < visibleInstallmentsCount
+    const shouldAddInstallments = newInstallmentsCount > visibleInstallmentsCount
+    const canUpdateHiddenInstallments = allInstallmentsCount > visibleInstallmentsCount
+
+    if (visibleInstallmentsCount === newInstallmentsCount) { return }
+
+    if (shouldRemoveInstallments) {
+      const installmentsDeleteButtonsToBeClicked = this.delInstallmentTargets.slice(newInstallmentsCount)
+
+      installmentsDeleteButtonsToBeClicked.forEach((element) => element.click())
+    }
+
+    if (shouldAddInstallments) {
+      if (canUpdateHiddenInstallments) {
+        const sliced = this.installmentWrapperTargets.slice(visibleInstallmentsCount, newInstallmentsCount)
+
+        sliced.forEach(element => {
+          element.style.display = "block"
+          element.querySelector("input[name*='_destroy']").value = "false"
+        })
+      }
+
+      const numberOfNewInstallmentsToAdd = newInstallmentsCount - allInstallmentsCount
+      for (let i = 0; i < numberOfNewInstallmentsToAdd; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        this.addInstallmentTarget.click()
+      }
+    }
+
+    const railsDueDate = this._getDueDate()
+    this._updateWrappers(railsDueDate)
+  }
+
+  // Categories
+  _insertCategory(selectedOption) {
+    selectedOption.classList.add("hidden")
+    selectedOption.dataset.filterableAs = ""
+
+    const value = selectedOption.dataset.value
+    const text = selectedOption.textContent
+
+    this.addCategoryTarget.click()
+
+    const wrappers = this.categoryWrapperTargets
+    const newWrapper = wrappers[wrappers.length - 1]
+
+    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".categories_category_id").value = value
+    newWrapper.querySelector(".categories_category_name").textContent = text
+  }
+
+  _insertExchangeCategory() {
+    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
+    const exchangeCategoryName = this.element.querySelector("#exchange_category_name").value
+    const value = exchangeCategoryId
+    const text = exchangeCategoryName
+
+    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategory = selectedCategories.find((element) => element.value === value)
+    if (exchangeCategory) {
+      const categoryWrapperDiv = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === text)
+
+      if (!categoryWrapperDiv) return
+
+      categoryWrapperDiv.style.display = "block"
+      categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "false"
 
       return
     }
 
-    const number_of_installments_to_add = new_installments_count - old_installments_count
-    for (let i = 0; i < number_of_installments_to_add; i++) {
-      await sleep(() => { this.addInstallmentTarget.click() })
-    }
-
-    const rails_due_date = this._getDueDate()
-    this._updateWrappers(rails_due_date, old_installments_count)
-  }
-
-  // Categories
-  _insertChip(selected_option) {
-    const value = selected_option.dataset.value
-    const text = selected_option.textContent
-
     this.addCategoryTarget.click()
 
-    const wrappers = this.categoryTransactionWrapperTargets
-    const new_wrapper = wrappers[wrappers.length - 1]
+    const wrappers = this.categoryWrapperTargets
+    const newWrapper = wrappers[wrappers.length - 1]
 
-    new_wrapper.querySelector(".category_transaction_category_id").value = value
-    new_wrapper.querySelector(".category_transaction_category_name").textContent = text
+    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".categories_category_id").value = value
+    newWrapper.querySelector(".categories_category_name").textContent = text
   }
 
-  _updateChips() {
+  _removeExchangeCategory() {
+    const exchangeCategoryName = this.element.querySelector("#exchange_category_name").value
+    const categoryWrapperDiv = this.categoryWrapperTargets.find((element) => element.querySelector(".categories_category_name").textContent === exchangeCategoryName)
+
+    if (!categoryWrapperDiv) return
+
+    categoryWrapperDiv.style.display = "none"
+    categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "true"
+  }
+
+  _updateCategories() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector('[data-action="hw-combobox:selection->reactive-form#insertChip"]')
+      const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
       const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
       if (!comboboxController) return console.error("Combobox controller not found")
 
-      const chip_values = this.categoryTransactionWrapperTargets.map((target) => { return target.querySelector(".category_transaction_category_id").value })
+      const chipValues = this.categoryWrapperTargets.map((target) => { return target.querySelector(".categories_category_id").value })
 
-      let all_options = comboboxController._allOptions
-      let to_be_hidden = all_options.filter((option) => { return chip_values.includes(option.dataset.value) })
+      let allOptions = comboboxController._allOptions
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
 
-      to_be_hidden.forEach((option) => {
+      toBeHidden.forEach((option) => {
+        option.classList.add("hidden")
+        option.dataset.filterableAs = ""
+      })
+    })
+  }
+
+  // Entities
+
+  _insertEntity(selectedOption) {
+    selectedOption.classList.add("hidden")
+    selectedOption.dataset.filterableAs = ""
+
+    const value = selectedOption.dataset.value
+    const text = selectedOption.textContent
+
+    this.addEntityTarget.click()
+
+    const wrappers = this.entityWrapperTargets
+    const newWrapper = wrappers[wrappers.length - 1]
+
+    newWrapper.querySelector(".entities_entity_id").value = value
+    newWrapper.querySelectorAll(".entities_entity_name").forEach((element) => { element.textContent = text })
+
+    const avatarImage = document.createElement("img")
+    avatarImage.src = this.entityIcons[value]
+    avatarImage.classList.add("entity_avatar", "w-6", "h-6", "rounded-full")
+    newWrapper.querySelector(".entity_avatar_container").prepend(avatarImage)
+  }
+
+  _updateEntities() {
+    // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
+    sleep(() => {
+      const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
+      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
+      if (!comboboxController) return console.error("Combobox controller not found")
+
+      const chipValues = this.entityWrapperTargets.map((target) => { return target.querySelector(".entities_entity_id").value })
+
+      let allOptions = comboboxController._allOptions
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
+
+      toBeHidden.forEach((option) => {
         option.classList.add("hidden")
         option.dataset.filterableAs = ""
       })

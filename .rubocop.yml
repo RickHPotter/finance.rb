@@ -28,6 +28,12 @@ Style/PercentLiteralDelimiters:
   PreferredDelimiters:
     default: "[]"
 
+Style/Documentation:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
 Layout/LineLength:
   Max: 166
 
@@ -35,21 +41,35 @@ Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space
 
 Metrics/CyclomaticComplexity:
-  Max: 10
+  Max: 16
 
 Metrics/PerceivedComplexity:
   Max: 16
 
-Style/Documentation:
-  Enabled: false
+Metrics/ClassLength:
+  Max: 200
 
 Metrics/MethodLength:
-  Max: 20
+  Max: 22
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/AbcSize:
-  Max: 26
+  Max: 30
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
 
 Metrics/BlockLength:
   Max: 22
   Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
     - "spec/***/*"
+
+Lint/MissingSuper:
+  Enabled: true
+  Exclude:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"

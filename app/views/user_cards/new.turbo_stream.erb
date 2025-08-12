@@ -1,0 +1,5 @@
+<%= turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }) %>
+<%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% if params[:no_user_card] %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:user_card_needed, CardTransaction) }) %>
+<% end %>

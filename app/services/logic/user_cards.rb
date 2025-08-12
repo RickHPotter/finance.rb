@@ -12,10 +12,16 @@ module Logic
       _handle_creation(user_card)
     end
 
-    def self._handle_creation(user_card)
-      return user_card if user_card.current_closing_date.nil? || user_card.current_due_date.nil?
+    def self.find_by(user, conditions)
+      user.user_cards
+          .left_joins(:card_transactions)
+          .includes(:card)
+          .where(conditions)
+          .group("user_cards.id")
+          .order(user_card_name: :asc)
+    end
 
-      user_card.days_until_due_date = user_card.current_closing_date.day - user_card.current_due_date.day
+    def self._handle_creation(user_card)
       user_card.save
       user_card
     end

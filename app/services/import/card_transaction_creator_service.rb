@@ -8,10 +8,8 @@ module Import
     def initialize(main_service, transactions_collection = {})
       @main_service = main_service
       @hash_collection = @main_service.hash_cards_collection
-
       @transactions_collection = transactions_collection
-
-      @installment_initialiser_service ||= Import::InstallmentInitialiserService.new(self)
+      @installment_initialiser_service ||= Import::CardInstallmentInitialiserService.new(self)
     end
 
     delegate :log_with, to: LoggerService
@@ -60,31 +58,36 @@ module Import
         card_transaction = transaction.slice(:description, :date, :month, :year, :price).merge({ user_id:, user_card_id: user_card.id })
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction)
 
-        Params::CardTransactionParams.new(card_transaction:, card_installments: { count: 1 }, category_transactions:, entity_transactions:)
+        Params::CardTransactions.new(card_transaction:, card_installments: { count: 1 }, category_transactions:, entity_transactions:)
       end
     end
 
     def create_transactions_with_installments(user_card, transactions_with_installments)
       user_card_name = user_card.user_card_name
 
-      @transactions_collection[user_card_name][:with_pending_installments] = transactions_with_installments
-      @transactions_collection[user_card_name][:with_installments] = []
+      populate_hash_collection(user_card_name, transactions_with_installments)
 
       while @transactions_collection[user_card_name][:with_pending_installments].any?
         transaction_zero = @transactions_collection[user_card_name][:with_pending_installments].first
 
         card_installments = prepare_installments(user_card, transaction_zero)
         price = card_installments.pluck(:price).sum
+        transaction_zero[:paid] = card_installments.all? { |installment| installment[:paid] }
         category_transactions, entity_transactions = create_category_and_entity_transactions(transaction_zero)
 
         @transactions_collection[user_card_name][:with_installments] <<
-          Params::CardTransactionParams.new(
-            card_transaction: transaction_zero.slice(:description, :date, :month, :year).merge({ price:, user_id:, user_card_id: user_card.id }),
+          Params::CardTransactions.new(
+            card_transaction: transaction_zero.slice(:description, :date, :month, :year, :paid).merge({ price:, user_id:, user_card_id: user_card.id }),
             card_installments:,
             category_transactions:,
             entity_transactions:
           )
       end
+    end
+
+    def populate_hash_collection(user_card_name, transactions_with_installments)
+      @transactions_collection[user_card_name][:with_pending_installments] = transactions_with_installments
+      @transactions_collection[user_card_name][:with_installments] = []
     end
   end
 end

@@ -1,0 +1,8 @@
+<% if @budget %>
+  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Budget) }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") if @budget.active? %>
+<% else %>
+  <%= turbo_stream.replace(:center_container, Views::Budgets::New.new(current_user:, budget: @budget)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Budget) }) %>
+<% end %>

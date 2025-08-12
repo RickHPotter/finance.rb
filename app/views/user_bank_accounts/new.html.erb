@@ -1,0 +1,12 @@
+<%= turbo_frame_tag :center_container do %>
+  <div class="bg-white p-4 shadow-md rounded-lg">
+    <div class="flex justify-between mb-8">
+      <%= link_to pluralise_model(UserBankAccount, 2),
+                  user_bank_accounts_path,
+                  class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+                  data: { turbo_frame: :center_container } %>
+    </div>
+
+    <%= render "user_bank_accounts/form", user_bank_account: @user_bank_account %>
+  </div>
+<% end %>

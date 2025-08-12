@@ -10,8 +10,15 @@ en:
         entity_name: Entity Name
         active: Active
         user_id: User
+        count: Count
+        spent: Spent
         created_at: Created at
         updated_at: Updated at
+        people: People
+        dogs: Dogs
+        cats: Cats
+        person_icons_credits: People icons created by
+        dog_icons_credits: Dogs icons created by
 
 pt-BR:
   activerecord:
@@ -25,5 +32,12 @@ pt-BR:
         entity_name: Nome da Entidade
         active: Ativo
         user_id: Usuário
+        count: Quantidade
+        spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        people: Pessoas
+        dogs: Cachorros
+        cats: Gatos
+        person_icons_credits: Ícones de pessoas criados por
+        dog_icons_credits: Ícones de cachorros criados por

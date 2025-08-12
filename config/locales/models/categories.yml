@@ -10,8 +10,17 @@ en:
         category_name: Category Name
         active: Active
         user_id: User
+        count: Count
+        spent: Spent
         created_at: Created at
         updated_at: Updated at
+        card_advance: Card Advance
+        card_installment: Card Installment
+        card_payment: Card Payment
+        exchange: Lend Request
+        exchange_return: Lend Return
+        borrow_return: Borrow Return
+        investment: Investment
 
 pt-BR:
   activerecord:
@@ -25,5 +34,14 @@ pt-BR:
         category_name: Nome da Categoria
         active: Ativo
         user_id: Usuário
+        count: Quantidade
+        spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        card_advance: Antecipação de Cartão
+        card_installment: Parcelamento de Cartão
+        card_payment: Pagamento de Cartão
+        exchange: Pedido Empréstimo
+        exchange_return: Acerto Empréstimo
+        borrow_return: Retorno Empréstimo
+        investment: Investimento

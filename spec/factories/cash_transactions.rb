@@ -1,29 +1,8 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: cash_transactions
-#
-#  id                      :bigint           not null, primary key
-#  description             :string           not null
-#  comment                 :text
-#  date                    :date             not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  starting_price          :integer          not null
-#  price                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  cash_transaction_type   :string
-#  cash_installments_count :integer          default(0), not null
-#  user_id                 :bigint           not null
-#  user_card_id            :bigint
-#  user_bank_account_id    :bigint
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#
 FactoryBot.define do
   factory :cash_transaction do
-    description { "Meat" }
+    description { "MEAT" }
     comment { "Barbecue at Aunt's" }
     date { Date.new 2023, 12, 16 }
     month { date.month }
@@ -33,10 +12,10 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
-    cash_installments { build_list(:cash_installment, 1, price:) }
+    cash_installments { build_list(:cash_installment, 1, price:, number: 1) }
 
     trait :different do
-      description { "HotWheels" }
+      description { "HOTWHEELS" }
       comment { "Toy for brother-in-law" }
       date { Date.new 2024, 1, 16 }
       month { 1 }
@@ -47,7 +26,7 @@ FactoryBot.define do
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
 
       cash_installments do
-        build_list(:cash_installment, 2, price: (price / 2).round(2)) do |installment, i|
+        build_list(:cash_installment, 2, price: price / 2) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
@@ -56,17 +35,52 @@ FactoryBot.define do
     trait :random do
       description { Faker::Lorem.sentence }
       comment { [ Faker::Lorem.sentence, nil, nil, nil, nil ].sample }
-      date { Faker::Date.between(from: 3.months.ago, to: Date.current) }
+      date { Faker::Date.between(from: 3.months.ago, to: Time.zone.today) }
       price { Faker::Number.number(digits: rand(3..5)) }
 
       user { random_custom_create(:user) }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
 
       cash_installments do
-        build_list(:cash_installment, 3, price: (price / date.month).round(2)) do |installment, i|
+        build_list(:cash_installment, 3, price: price / date.month) do |installment, i|
           installment.assign_attributes(number: i + 1)
         end
       end
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: cash_transactions
+#
+#  id                      :bigint           not null, primary key
+#  cash_installments_count :integer          default(0), not null
+#  cash_transaction_type   :string
+#  comment                 :text
+#  date                    :datetime         not null
+#  description             :string           not null
+#  imported                :boolean          default(FALSE)
+#  month                   :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  price                   :integer          not null
+#  starting_price          :integer          not null
+#  year                    :integer          not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_bank_account_id    :bigint           indexed
+#  user_card_id            :bigint           indexed
+#  user_id                 :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_cash_transactions_on_user_bank_account_id  (user_bank_account_id)
+#  index_cash_transactions_on_user_card_id          (user_card_id)
+#  index_cash_transactions_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_card_id => user_cards.id)
+#  fk_rails_...  (user_id => users.id)
+#

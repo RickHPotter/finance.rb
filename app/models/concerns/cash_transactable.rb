@@ -32,8 +32,8 @@ module CashTransactable
   # @return [void].
   #
   def attach_cash_transaction
-    self.previous_cash_transaction_id = cash_transaction&.id
-    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params) ||
+    self.previous_cash_transaction_id = cash_transaction_id
+    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
                             CashTransaction.create(new_cash_transaction_params)
   end
 
@@ -47,10 +47,10 @@ module CashTransactable
   # @return [void].
   #
   def fix_cash_transaction
-    previous_cash_transaction = CashTransaction.find_by(id: previous_cash_transaction_id)
-    return if previous_cash_transaction.nil?
-    return if previous_cash_transaction == cash_transaction
+    return if previous_cash_transaction_id.nil?
+    return if previous_cash_transaction_id == cash_transaction_id
 
+    previous_cash_transaction = CashTransaction.find_by(id: previous_cash_transaction_id)
     previous_cash_transaction.investments&.first&.touch
     previous_cash_transaction.card_installments&.first&.touch
 
@@ -72,6 +72,9 @@ module CashTransactable
   def update_cash_transaction
     cash_transaction.update_columns(price: full_price, comment:)
     cash_transaction.cash_installments.first.update_columns(price: full_price)
+
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call
+    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -90,7 +93,7 @@ module CashTransactable
     return if cash_transaction.nil?
 
     transactable = cash_transaction.public_send(model_name.plural)
-    if transactable.count.zero?
+    if transactable.none?
       cash_transaction.destroy
     else
       update_cash_transaction
@@ -103,7 +106,7 @@ module CashTransactable
   #
   def cash_transaction_params
     {
-      description:,
+      description: cash_transaction_description,
       month:,
       year:,
       user_id:,
@@ -115,23 +118,29 @@ module CashTransactable
   end
 
   def new_cash_transaction_params
+    if is_a?(Investment)
+      paid = true
+      reference_date = Time.zone.today.beginning_of_month
+    else
+      paid = (respond_to?(:paid) && paid) || (date.present? && Time.zone.today >= date)
+      reference_date = card_payment_date
+    end
+
     cash_transaction_params
       .without(:category_transactions)
       .merge(price:,
-             date: cash_transaction_date,
+             date: reference_date,
              category_transactions_attributes:,
              entity_transactions_attributes:,
-             cash_installments_attributes:)
-  end
-
-  def cash_installments_attributes
-    [ { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date:, month:, year:, paid: true } ]
+             cash_installments_attributes: [
+               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date, month:, year:, paid: }
+             ])
   end
 
   def full_price
     return price if cash_transaction.nil?
 
     transactable = cash_transaction.public_send(model_name.plural)
-    transactable.sum(:price).round(2)
+    transactable.sum(:price)
   end
 end

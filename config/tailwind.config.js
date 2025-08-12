@@ -3,31 +3,74 @@ module.exports = {
     "./public/*.html",
     "./app/helpers/**/*.rb",
     "./app/javascript/**/*.js",
+    "./app/assets/stylesheets/components/*.css",
     "./app/components/**/*.rb",
     "./app/components/**/*.html.erb",
-    "./app/views/**/*.{erb,haml,html,slim}",
-    "./node_modules/flowbite/**/*.js"
+    "./app/views/**/*.{erb,rb,haml,html,slim}",
+    "./node_modules/flowbite/**/*.{js,css}"
   ],
   darkMode: "class",
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       colors: {
-        meat: "#f9906f",
-        lettuce: "#93c560",
-        book: "#2f7361",
-        urgency: "#555857",
-        gift: "#ce2d46",
-        honda: "#cc0000",
-        money: "#34a853",
-        oldmoney: "#b9c58f",
-        gold: "#c9a95f",
-        fun: "#fbbc05", // [#f6ec95]
-        greek: "#5b6794",
-      }
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        /* ruby_ui especific */
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: `var(--radius)`,
+        md: `calc(var(--radius) - 2px)`,
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", 'ui-sans-serif', 'system-ui', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+      },
     },
-  },
-  safelist: [
-    { pattern: /bg-(meat|lettuce|book|urgency|gift|honda|money|oldmoney|gold|fun|greek)/ },
-    { pattern: /bg-(gray|yellow)-(400|600)/ }
-  ]
+  }
 }

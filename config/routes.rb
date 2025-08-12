@@ -1,16 +1,87 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  devise_for :users, controllers: {
-    confirmations: "users/confirmations"
-  }
+  get "up" => "rails/health#show", as: :rails_health_check
 
-  resources :pages, only: :index
+  devise_for :users
+  patch "/locale", to: "users#update_locale", as: :update_locale
+
+  # devise_for :users, controllers: {
+  #   confirmations: "users/confirmations"
+  # }
+
+  get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
+  get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+
+  resources :lalas do
+    collection do
+      get :card_transactions
+      get :card_transactions_month_year
+
+      get :cash_transactions
+      get :cash_transactions_month_year
+    end
+  end
+
+  resources :pages, only: :index do
+    collection do
+      get :donation
+      get :notification
+    end
+  end
+
   resources :user_cards, except: :show
-  resources :entities
-  resources :categories
-  resources :cash_transactions
-  resources :card_transactions
+  resources :user_bank_accounts, except: :show
+  resources :categories, except: :show
+  resources :entities, except: :show
+  resources :balances, only: :index do
+    get :json, on: :collection
+  end
+
+  resources :cash_transactions, except: :show do
+    collection do
+      get :month_year
+      get :inspect
+    end
+  end
+
+  resources :card_transactions, except: :show do
+    member do
+      get :duplicate
+    end
+
+    collection do
+      get :month_year
+      get :search
+      post :pay_in_advance
+    end
+  end
+
+  resources :cash_installments, only: [] do
+    member do
+      patch :pay
+    end
+
+    collection do
+      post :pay_multiple
+    end
+  end
+
+  resources :investments, except: :show do
+    collection do
+      get :month_year
+    end
+  end
+
+  resources :budgets, except: :show do
+    collection do
+      get :month_year
+    end
+  end
+
+  namespace :admin do
+    get :data_backup, to: "backups#data_backup"
+  end
 
   root "pages#index"
 end

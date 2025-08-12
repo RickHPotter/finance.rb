@@ -2,22 +2,38 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/typography";
-@plugin "flowbite/plugin";
+@plugin "tailwindcss-animate";
 
 @config "../../../config/tailwind.config.js";
+@source "../../../config/safelist.txt";
+@source "../stylesheets/components/tom-select.css";
+@source "../stylesheets/components/select.css";
 
 @theme {
-  --breakpoint-xxs: 530px;
+  --breakpoint-xxs: 390px;
+
+  --color-meat: oklch(75.81% 0.1357 38.2);
+  --color-lettuce: oklch(76.59% 0.1419 130.84);
+  --color-book: oklch(50.64% 0.0749 173.12);
+  --color-urgency: oklch(45.73% 0.0041 174.32);
+  --color-gift: oklch(56.09% 0.1953 18.36);
+  --color-honda: oklch(53.08% 0.2178 29.23);
+  --color-money: oklch(64.75% 0.1603 148.5);
+  --color-oldmoney: oklch(80.07% 0.0737 118.27);
+  --color-bronze: oklch(74.76% 0.1005 86.56);
+  --color-gold: oklch(79.52% 0.1617 86.05);
+  --color-fun: oklch(93.2% 0.1085 102.59);
+  --color-greek: oklch(52.26% 0.0728 272.23);
 }
 
 /*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+The default border color has changed to `currentColor` in Tailwind CSS v4,
+so we've added these compatibility styles to make sure everything still
+looks the same as it did with Tailwind CSS v3.
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
+If we ever want to remove these styles, we need to add an explicit border
+color utility to any element that depends on these defaults.
+ */
 @layer base {
   *,
   ::after,
@@ -26,6 +42,70 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
   }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+
+    /* ruby_ui especific */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --success: 87 100% 37%;
+    --success-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    /* ruby_ui especific */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --success: 84 81% 44%;
+    --success-foreground: 0 0% 100%;
+  }
+}
+
+html, body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -39,9 +119,11 @@ body::-webkit-scrollbar { /* WebKit */
   height: 0;
 }
 
+/* TODO: I realised I couldnt open datepicker by clicking on the input instead of the indicator icon */
+/* Hide this again (maybe) after implmenting a real datepicker */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
+  /*display: none;*/
+  /*-webkit-appearance: none;*/
 }
 
 .hw-cb {
@@ -52,7 +134,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .hw-combobox__main__wrapper {
     @apply w-full;
     @apply ps-10;
-    @apply py-[10px];
   }
 
   .hw-combobox__icon {
@@ -88,10 +169,66 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --hw-icon-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor' class='w-6 h-6'%3E%3Cpath d='M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.625A4.483 4.483 0 015.25 7.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 6H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H15a.75.75 0 00-.75.75 2.25 2.25 0 01-4.5 0A.75.75 0 009 9H5.25z' /%3E%3C/svg%3E%0A");
 }
 
+.bank-icon {
+  --hw-icon-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktYmFuayIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJtOCAwIDYuNjEgM2guODlhLjUuNSAwIDAgMSAuNS41djJhLjUuNSAwIDAgMS0uNS41SDE1djdhLjUuNSAwIDAgMSAuNDg1LjM4bC41IDJhLjQ5OC40OTggMCAwIDEtLjQ4NS42MkguNWEuNDk4LjQ5OCAwIDAgMS0uNDg1LS42MmwuNS0yQS41LjUgMCAwIDEgMSAxM1Y2SC41YS41LjUgMCAwIDEtLjUtLjV2LTJBLjUuNSAwIDAgMSAuNSAzaC44OXpNMy43NzcgM2g4LjQ0N0w4IDF6TTIgNnY3aDFWNnptMiAwdjdoMi41VjZ6bTMuNSAwdjdoMVY2em0yIDB2N0gxMlY2ek0xMyA2djdoMVY2em0yLTFWNEgxdjF6bS0uMzkgOUgxLjM5bC0uMjUgMWgxMy43MnoiLz4KPC9zdmc+Cg==");
+}
+
 .plus-icon {
   --hw-icon-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor' class='w-6 h-6'%3E%3Cpath fill-rule='evenodd' d='M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H4.5a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z' clip-rule='evenodd' /%3E%3C/svg%3E%0A");
 }
 
 .user-icon {
-  --hw-icon-image: url("data:image/svg+xml,%3Csvg class='w-6 h-6 text-gray-800 dark:text-white' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='currentColor' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 6a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm-1.5 8a4 4 0 0 0-4 4 2 2 0 0 0 2 2h7a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-3Zm6.82-3.096a5.51 5.51 0 0 0-2.797-6.293 3.5 3.5 0 1 1 2.796 6.292ZM19.5 18h.5a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-1.1a5.503 5.503 0 0 1-.471.762A5.998 5.998 0 0 1 19.5 18ZM4 7.5a3.5 3.5 0 0 1 5.477-2.889 5.5 5.5 0 0 0-2.796 6.293A3.501 3.501 0 0 1 4 7.5ZM7.1 12H6a4 4 0 0 0-4 4 2 2 0 0 0 2 2h.5a5.998 5.998 0 0 1 3.071-5.238A5.505 5.505 0 0 1 7.1 12Z' clip-rule='evenodd'/%3E%3C/svg%3E%0A");
+  --hw-icon-image: url("data:image/svg+xml,%3Csvg class='w-6 h-6 text-gray-800 text-white' aria-hidden='true' xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='currentColor' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 6a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm-1.5 8a4 4 0 0 0-4 4 2 2 0 0 0 2 2h7a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-3Zm6.82-3.096a5.51 5.51 0 0 0-2.797-6.293 3.5 3.5 0 1 1 2.796 6.292ZM19.5 18h.5a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-1.1a5.503 5.503 0 0 1-.471.762A5.998 5.998 0 0 1 19.5 18ZM4 7.5a3.5 3.5 0 0 1 5.477-2.889 5.5 5.5 0 0 0-2.796 6.293A3.501 3.501 0 0 1 4 7.5ZM7.1 12H6a4 4 0 0 0-4 4 2 2 0 0 0 2 2h.5a5.998 5.998 0 0 1 3.071-5.238A5.505 5.505 0 0 1 7.1 12Z' clip-rule='evenodd'/%3E%3C/svg%3E%0A");
+}
+
+.ts-wrapper {
+  @apply !p-0
+}
+
+.ts-wrapper .ts-control {
+  @apply border-0 focus:border-0 focus:ring-0 focus:outline-hidden sm:tracking-tight caret-transparent shadow-none !gap-2
+}
+
+.ts-wrapper.plugin-remove_button .item {
+  @apply rounded bg-gray-100 px-1.5
+}
+
+.ts-wrapper.multi .ts-control > div {
+  @apply p-0 m-0 pl-1
+}
+
+.ts-wrapper.plugin-remove_button .item .remove {
+  @apply border-none text-lg leading-none py-1 rounded-r-lg
+}
+
+.ts-dropdown {
+  @apply rounded-md border border-solid border-t border-gray-300
+}
+
+.ts-dropdown [data-selectable].option:first-child {
+  @apply rounded-t-md
+}
+
+.ts-dropdown [data-selectable].option:last-child {
+  @apply rounded-b-md
+}
+.ts-dropdown .create:hover, .ts-dropdown .option:hover, .ts-dropdown .active {
+  @apply bg-blue-100 text-blue-900
+}
+
+.plugin-clear_button .clear-button {
+  @apply opacity-100 !bg-transparent !text-black my-auto
+}
+
+.ts-wrapper.multi .ts-control>div {
+  margin: 0 0 0 12px !important;
+  padding: 0 0 0 12px !important;
+}
+
+.plugin-clear_button .ts-control {
+  @apply !pl-[12px] !pr-[12px]
+}
+
+.no-selection::selection {
+  @apply !bg-transparent
 }

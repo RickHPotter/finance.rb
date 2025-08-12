@@ -1,0 +1,85 @@
+en:
+  activerecord:
+    models:
+      cash_transaction:
+        one: Cash Transaction
+        other: Cash Transactions
+    attributes:
+      cash_transaction:
+        self: Cash Transaction
+        count: Count
+        id: ID
+        description: Description
+        description_placeholder: Cash Transaction Name
+        comment: Comment
+        comment_placeholder: Any comment about?
+        date: Date
+        price: Price
+        starting_price: Original Price
+        paid: Paid
+        not_paid: Not Paid
+        user_bank_account_id: Account
+        user_card_id: Card
+        month: Month
+        year: Year
+        balance: Balance
+        cash_installment: Installment
+        cash_installments_count: Installments Count
+        cash_installments_count_short: Installments
+        category_id: Category
+        entity_id: Entity
+        categories: Categories
+        entities: Entities
+        total_amount: Total Amount
+        created_at: Created at
+        updated_at: Updated at
+        search_term: Search Term
+        from_ct_price: Inital Card Transaction Price
+        to_ct_price: Final Card Transaction Price
+        from_price: Inital Card Installment Price
+        to_price: Final Card Installment Price
+        from_installments_count: Min Card Installments Count
+        to_installments_count: Max Card Installments Count
+
+pt-BR:
+  activerecord:
+    models:
+      cash_transaction:
+        one: Movimentação
+        other: Movimentações
+    attributes:
+      cash_transaction:
+        self: Movimentação
+        count: Quantidade
+        id: ID
+        description: Descrição
+        description_placeholder: Nome da Movimentação
+        comment: Comentário
+        comment_placeholder: Algum comentário?
+        date: Data
+        price: Preço
+        starting_price: Preço Inicial
+        paid: Pago
+        not_paid: Pendente
+        user_bank_account_id: Conta
+        user_card_id: Cartão
+        month: Mês
+        year: Ano
+        balance: Saldo
+        cash_installment: Parcela
+        cash_installments_count: Quantidade de Parcelas
+        cash_installments_count_short: Parcelas
+        category_id: Categoria
+        entity_id: Entidade
+        categories: Categorias
+        entities: Entidades
+        total_amount: Valor Total
+        created_at: Criado em
+        updated_at: Atualizado em
+        search_term: Termo de Busca
+        from_ct_price: Preço Inicial da Transação
+        to_ct_price: Preço Final da Transação
+        from_price: Preço Inicial da Parcela
+        to_price: Preço Final da Parcela
+        from_installments_count: Quantidade Mínima de Parcelas
+        to_installments_count: Quantidade Máxima de Parcelas

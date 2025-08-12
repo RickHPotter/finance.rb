@@ -1,0 +1,12 @@
+<% if @user_bank_account.errors.empty? %>
+  <% if @user_bank_account.active? && @cash_transaction %>
+    <%= turbo_stream.replace(:center_container, Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction)) %>
+    <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, UserBankAccount) }) %>
+    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <% else %>
+    <%= turbo_stream.replace(:center_container, template: "user_bank_accounts/index") %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.replace(:center_container, template: "user_bank_accounts/new", locals: { user_bank_account: @user_bank_account }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, UserBankAccount) }) %>
+<% end %>

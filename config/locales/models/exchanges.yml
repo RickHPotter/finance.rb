@@ -1,0 +1,41 @@
+en:
+  activerecord:
+    models:
+      exchange:
+        one: Exchange
+        other: Exchanges
+    attributes:
+      exchange:
+        id: ID
+        price: Price
+        month_year: Month/Year
+        exchanges_count: Exchanges Count
+        exchange_type: Exchange Type
+        bound_type: Bound Type
+        monetary: Monetary
+        non_monetary: Non Monetary
+        standalone: Standalone
+        card_bound: Card Bound
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      exchange:
+        one: Troca
+        other: Trocas
+    attributes:
+      exchange:
+        id: ID
+        price: Valor
+        month_year: Mês/Ano
+        exchanges_count: Quantidade de Trocas
+        exchange_type: Tipo de Troca
+        bound_type: Tipo de Conta
+        monetary: Monetário
+        non_monetary: Não Monetário
+        standalone: Simples
+        card_bound: Cartão
+        created_at: Criado em
+        updated_at: Atualizado em

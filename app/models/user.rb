@@ -1,24 +1,5 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: users
-#
-#  id                     :bigint           not null, primary key
-#  email                  :string           default(""), not null
-#  encrypted_password     :string           default(""), not null
-#  reset_password_token   :string
-#  reset_password_sent_at :datetime
-#  remember_created_at    :datetime
-#  confirmation_token     :string
-#  unconfirmed_email      :string
-#  confirmed_at           :datetime
-#  confirmation_sent_at   :datetime
-#  first_name             :string           not null
-#  last_name              :string           not null
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
-#
 class User < ApplicationRecord
   # @extends ..................................................................
   devise :database_authenticatable, :registerable, :confirmable, :recoverable, :rememberable, :validatable
@@ -33,8 +14,12 @@ class User < ApplicationRecord
   has_many :cash_transactions, dependent: :destroy
   has_many :cash_installments, through: :cash_transactions
 
+  has_many :investments, dependent: :destroy
+
   has_many :user_cards, dependent: :destroy
   has_many :user_bank_accounts, dependent: :destroy
+
+  has_many :budgets, dependent: :destroy
 
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
@@ -45,7 +30,9 @@ class User < ApplicationRecord
   validates :password, length: { in: 6..22 }
 
   # @callbacks ................................................................
+  before_validation :set_default_locale
   before_create :create_built_ins
+  before_create :set_confirmed_at
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -73,12 +60,16 @@ class User < ApplicationRecord
   # @return [ActiveRecord::Relation].
   #
   def custom_categories
-    categories.where(built_in: false)
+    categories.where("built_in = false OR category_name IN ('INVESTMENT', 'BORROW RETURN')")
   end
 
   # @protected_instance_methods ...............................................
 
   protected
+
+  def set_default_locale
+    self.locale ||= I18n.locale
+  end
 
   # Creates built-in `categories` for given user.
   #
@@ -91,9 +82,43 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
       Category.new(built_in: true, category_name: "INVESTMENT"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
-      Category.new(built_in: true, category_name: "EXCHANGE RETURN")
+      Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
+      Category.new(built_in: true, category_name: "BORROW RETURN")
     )
+  end
+
+  # TODO: make more visible to the user that they need to confirm their email
+  # and maybe even before that, switching from Devise to Auth-Zero
+  def set_confirmed_at
+    self.confirmed_at = Time.zone.today
   end
 
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: users
+#
+#  id                     :bigint           not null, primary key
+#  confirmation_sent_at   :datetime
+#  confirmation_token     :string           uniquely indexed
+#  confirmed_at           :datetime
+#  email                  :string           default(""), not null, uniquely indexed
+#  encrypted_password     :string           default(""), not null
+#  first_name             :string           not null
+#  last_name              :string           not null
+#  locale                 :string           not null
+#  remember_created_at    :datetime
+#  reset_password_sent_at :datetime
+#  reset_password_token   :string           uniquely indexed
+#  unconfirmed_email      :string
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#
+# Indexes
+#
+#  index_users_on_confirmation_token    (confirmation_token) UNIQUE
+#  index_users_on_email                 (email) UNIQUE
+#  index_users_on_reset_password_token  (reset_password_token) UNIQUE
+#

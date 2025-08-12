@@ -3,19 +3,31 @@
 require "rails_helper"
 
 RSpec.describe "CardTransactions", type: :request do
-  let!(:bank) { create(:bank, :random) }
-  let!(:user) { create(:user, :random) }
-  let!(:card) { create(:card, :random, bank:) }
-  let!(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", current_due_date: Date.current) }
-  let!(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", current_due_date: Date.current) }
-  let!(:entity_one) { create(:entity, :random, user:) }
-  let!(:entity_two) { create(:entity, :random, user:) }
+  let(:bank) { create(:bank, :random) }
+  let(:user) { create(:user, :random) }
+  let(:card) { create(:card, :random, bank:) }
+  let(:user_card_one) { create(:user_card, :random, user:, card:, user_card_name: "Gaara", due_date_day: Time.zone.today.day) }
+  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Jiraiya", due_date_day: Time.zone.today.day) }
+  let(:exchange_category) { user.built_in_category("EXCHANGE") }
+  let(:entity_one) { create(:entity, :random, user:) }
+  let(:entity_two) { create(:entity, :random, user:) }
 
   let(:card_transaction) do
-    CardTransactionParams.new(
-      card_transaction: { price: 200.0, date: Date.current, user_id: user.id, user_card_id: user_card_one.id },
-      card_installments: { count: 1 }, category_transactions: [],
-      entity_transactions: [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] } ]
+    Params::CardTransactions.new(
+      card_transaction: {
+        price: -20_000,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        user_id: user.id,
+        user_card_id: user_card_one.id
+      },
+      card_installments: { count: 1 },
+      category_transactions: [],
+      entity_transactions: [ {
+        entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200,
+        exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+      } ]
     )
   end
 
@@ -52,7 +64,7 @@ RSpec.describe "CardTransactions", type: :request do
 
   describe "[ #create ]" do
     it "creates one new record with one installment and non-paying entities" do
-      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [] } ]
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [] } ]
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
@@ -62,9 +74,20 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "creates one new record with two installments and two paying entities" do
       card_transaction.card_installments = { count: 2 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
+        {
+          entity_id: entity_one.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        },
+        {
+          entity_id: entity_two.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -76,9 +99,20 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "creates two new records, each with two installments that overlap months, and two paying entities" do
       card_transaction.card_installments = { count: 2 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       card_transaction.entity_transactions = [
-        { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] },
-        { entity_id: entity_two.id, price: 22.00, exchanges_attributes: [ { price: 22.00, exchange_type: :monetary } ] }
+        {
+          entity_id: entity_one.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        },
+        {
+          entity_id: entity_two.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        }
       ]
 
       expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
@@ -98,7 +132,7 @@ RSpec.describe "CardTransactions", type: :request do
 
   describe "[ #update ]" do
     before do
-      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 22.00, exchanges_attributes: [] } ]
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [] } ]
       post card_transactions_path, params: card_transaction.params
       @existing_card_transaction = CardTransaction.last
 
@@ -113,6 +147,7 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "updates the record to have one paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
       put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
       check_paying_entities(@existing_card_transaction)
     end
@@ -168,8 +203,11 @@ RSpec.describe "CardTransactions", type: :request do
       card_transactions = CardTransaction.where(description: (1..3))
 
       card_transactions.each do |card_transaction_to_be_deleted|
+        card_installment_id = card_transaction_to_be_deleted.card_installments.first.id
+
         sign_in user
-        expect { delete card_transaction_path(card_transaction_to_be_deleted) }.to change(CardTransaction, :count).by(-1)
+
+        expect { delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:) }.to change(CardTransaction, :count).by(-1)
         expect(card_transaction_to_be_deleted.card_installments).to_not be_present
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end

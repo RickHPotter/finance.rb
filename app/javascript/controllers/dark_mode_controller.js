@@ -4,17 +4,17 @@ import { Controller } from "@hotwired/stimulus"
 //
 // Connects to data-controller="dark-mode"
 export default class extends Controller {
-  static targets = ['checkbox']
+  static targets = ["checkbox"]
 
   connect() {
     this.theme_check()
   }
 
   theme_check() {
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    const userTheme = localStorage.getItem('theme')
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    const userTheme = localStorage.getItem("theme")
 
-    if (userTheme === 'dark' || (!userTheme && systemTheme === 'dark')) {
+    if (userTheme === "dark" || (!userTheme && systemTheme === "dark")) {
       this.set_dark_theme()
       this.checkboxTarget.checked = true
     } else {
@@ -27,18 +27,18 @@ export default class extends Controller {
     const state = this.checkboxTarget.checked
     if (state) {
       this.set_dark_theme()
-      localStorage.setItem('theme', 'dark')
+      localStorage.setItem("theme", "dark")
     } else {
-      document.querySelector('html').classList.remove('dark')
-      localStorage.setItem('theme', 'light')
+      document.querySelector('html').classList.remove("dark")
+      localStorage.setItem("theme", "light")
     }
   }
 
   set_dark_theme() {
-    document.querySelector('html').classList.add('dark')
+    document.querySelector("html").classList.add("dark")
   }
 
   set_light_theme() {
-    document.querySelector('html').classList.remove('dark')
+    document.querySelector("html").classList.remove("dark")
   }
 }

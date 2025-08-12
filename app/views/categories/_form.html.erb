@@ -1,26 +1,42 @@
 <%= turbo_frame_tag dom_id category do %>
-  <%= form_with(model: category, id: :form, class: "contents text-black", data: { controller: "form-validate autosave reactive-form", action: "submit->reactive-form#removeMasks" }) do |form| %>
-
-    <% action = form.object.persisted? ? "keyup->autosave#save" : "" %>
-
-    <%= form.hidden_field :user_id, value: @user.id %>
+  <%= form_with(model: category, id: :form, class: "contents text-black", data: { controller: "reactive-form" }) do |form| %>
+    <%= form.hidden_field :user_id, value: current_user.id %>
 
     <div class="w-full mb-6">
       <%= form.text_field \
             :category_name,
-            class: autosave_input_class, autofocus: true, autocomplete: :off,
-            data: { autosave_target: :input, placeholder: "Category Name", placeholder_type: :word } %>
+            class: outdoor_input_class, autofocus: true, autocomplete: :off,
+            disabled: category.persisted? && category.built_in?,
+            value: category&.name,
+            data: { controller: "blinking-placeholder", text: model_attribute(category, :category_name) } %>
     </div>
 
-    <div>
-      <%= bold_label(form, :active) %>
+    <div class="flex justify-center items-center mx-auto py-2">
+      <%= render Components::ColourPicker.new(form:, field: :colour) %>
     </div>
 
-    <div class="mb-3">
-      <%= form.checkbox :active, class: "bg-purple-600 border-gray-300 focus:ring-blue-500 focus:ring-2", checked: category.new_record? || category.active %>
+    <%= bold_label(form, :active) %>
+
+    <div class="pb-3">
+      <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: category.new_record? || category.active %>
     </div>
 
-    <%= render ButtonComponent.new form:, options: { label: "Submit Category" } %>
+    <div class="w-full">
+      <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, category) } %>
+    </div>
+
+    <% if category.persisted? && category.built_in == false %>
+      <div class="w-full">
+        <%= render RubyUI::Button.new(
+              id: "delete_category_#{category.id}",
+              type: :submit,
+              variant: :destructive,
+              link: category_path(category),
+              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+            ) { action_model(:destroy, category) } %>
+      </div>
+    <% end %>
+
     <%= form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton } %>
   <% end %>
 <% end %>
