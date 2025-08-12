@@ -1,0 +1,27 @@
+en:
+  tabs:
+    basic: Basics
+    card_transaction: Card Transactions
+    cash_transaction: Cash Transactions
+    user_bank_account: Accounts
+    user_card: Cards
+    category: Categories
+    entity: Entities
+    pix: Pix
+    budget: Budget
+    investment: Investment
+    balance: Balance
+
+pt-BR:
+  tabs:
+    basic: Básicos
+    card_transaction: Lançamentos de Cartão
+    cash_transaction: Pagamentos de Dinheiro
+    user_bank_account: Contas
+    user_card: Cartões
+    category: Categorias
+    entity: Entidades
+    pix: Pix
+    budget: Orçamento
+    investment: Investimento
+    balance: Saldo

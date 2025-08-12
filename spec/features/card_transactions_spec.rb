@@ -1,0 +1,119 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "CardTransactions", type: :feature do
+  let(:basic) { FeatureHelper::BASIC }
+  let(:card_transaction_menu) { FeatureHelper::CARD }
+
+  let(:user) { create(:user, :random) }
+  let(:card) { build(:card, :random) }
+  let(:user_card) { build(:user_card, :random, user:, card:, days_until_due_date: 5, due_date_day: (Time.zone.today + 9.days).day) }
+  let(:card_transaction) { build(:card_transaction, :random, user:, user_card:, date: Time.zone.today) }
+
+  before do
+    user_card.save
+    sign_in_as(user:)
+  end
+
+  feature "/card_transactions/index" do
+    background do
+      user_card.save
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
+    end
+
+    scenario "checking card_transactions index page" do
+      match_center_container_content("card_transactions")
+    end
+  end
+
+  feature "/card_transactions/new" do
+    background do
+      user_card.save
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
+      find("#new_card_transaction").click
+    end
+
+    scenario "creating an invalid card_transaction" do
+      within "turbo-frame#new_card_transaction" do
+        find("form button[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:not_createda, CardTransaction))
+    end
+
+    scenario "creating a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
+      within "turbo-frame#new_card_transaction form" do
+        fill_in "card_transaction_description",            with: "Test Card Transaction"
+        fill_in "card_transaction_comment",                with: "A really nice comment"
+        hotwire_select "hw_card_transaction_user_card_id", with: user_card.id
+        fill_in "card_transaction_date",                   with: Time.zone.today
+        fill_in "transaction_price",                       with: 3000 * 100
+        fill_in "card_installments_count",                 with: 3
+
+        find("button[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:createda, CardTransaction))
+
+      within "turbo-frame#card_transactions" do
+        expect(page).to have_css("#month_year_selector_title", text: user_card.user_card_name)
+      end
+    end
+  end
+
+  feature "/card_transactions/edit" do
+    background do
+      user_card.save
+      card_transaction.save
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
+    end
+
+    scenario "editing an invalid card_transaction" do
+      find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
+
+      within "turbo-frame#card_transaction_#{card_transaction.id} form" do
+        fill_in "card_transaction_description", with: ""
+
+        find("button[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:not_updateda, CardTransaction))
+    end
+
+    scenario "editing a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
+      find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
+
+      within "turbo-frame#card_transaction_#{card_transaction.id} form" do
+        fill_in "card_transaction_description", with: "Some Other Card Transaction Name"
+
+        find("button[type=submit]", match: :first).click
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:updateda, CardTransaction))
+
+      within "turbo-frame#card_transactions" do
+        expect(page).to have_css("#month_year_selector_title", text: user.user_cards.first.user_card_name)
+
+        within "turbo-frame#card_installment_#{card_transaction.card_installments.first.id}" do
+          expect(page).to have_css("a#edit_card_transaction_#{card_transaction.id}", text: "Some Other Card Transaction Name")
+        end
+      end
+    end
+  end
+
+  feature "/card_transactions/destroy" do
+    scenario "destroying a card_transaction" do
+      card_transaction = create(:card_transaction, user:, user_card:, date: Time.zone.today)
+
+      navigate_to(menu: card_transaction_menu, sub_menu: user_card.user_card_name)
+
+      within "turbo-frame#card_transactions #card_installment_#{card_transaction.card_installments.first.id}" do
+        click_link("delete_card_transaction_#{card_transaction.id}")
+        accept_alert
+      end
+
+      expect(page).to have_css("#notification-content", text: notification_model(:destroyeda, CardTransaction))
+    end
+  end
+end

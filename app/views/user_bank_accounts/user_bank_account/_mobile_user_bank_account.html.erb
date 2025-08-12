@@ -1,0 +1,47 @@
+<%= content_tag :div, class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_bank_account.id, datatable_target: :row } do %>
+  <div class="p-4 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-700">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <%= render_icon :money %>
+        <%# brand_and_name = "[ #{user_bank_account.user_bank_account_name} ] #{user_bank_account.agency_number || '-'}/#{user_bank_account.account_number || '-'}" %>
+
+        <%= link_to user_bank_account.user_bank_account_name,
+                    edit_user_bank_account_path(user_bank_account),
+                    id: "edit_user_bank_account_#{user_bank_account.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
+      </div>
+
+      <%= link_to cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true, format: :turbo_stream),
+                  data: { turbo_frame: :center_container } do %>
+        <%= render_icon :jump_to %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="p-4">
+    <div class="grid grid-cols-2 gap-4 my-2">
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :number %>
+          <%= content_tag :span, pluralise_model(CashTransaction, 2), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, user_bank_account.cash_transactions_count, class: "text-sm font-semibold text-slate-800" %>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :money %>
+          <%= content_tag :span, model_attribute(CashTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, from_cent_based_to_float(user_bank_account.cash_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

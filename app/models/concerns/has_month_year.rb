@@ -5,10 +5,16 @@ module HasMonthYear
   extend ActiveSupport::Concern
 
   included do
+    # @validations ..............................................................
+    validates :date,  presence: true
+    validates :month, presence: true, if: -> { respond_to?(:month) }
+    validates :year,  presence: true, if: -> { respond_to?(:year) }
+
     # @callbacks ..............................................................
-    before_validation :set_date, on: :create
-    before_validation :check_date, if: -> { respond_to?(:date) && date.nil? }
-    before_validation :set_month_year, if: -> { errors.none? && respond_to?(:month) }
+    before_validation :set_date, on: :create, if: -> { respond_to?(:date) && date.nil? }
+    before_validation :check_date
+    before_validation :check_number
+    before_validation :set_month_year, if: -> { errors.empty? && respond_to?(:month) }
   end
 
   # @public_instance_methods ..................................................
@@ -42,8 +48,16 @@ module HasMonthYear
   #
   # @return [Date].
   #
-  def next_date(date: Date.current, days: date.day, months: 0, years: 0)
+  def next_date(date: Time.zone.today, days: date.day, months: 0, years: 0)
     Date.new(date.year, date.month) + (days - 1).days + months.month + years.years
+  end
+
+  # Fetches the first day of given `month` and `year`.
+  #
+  # @return [Date].
+  #
+  def beginning_of_month
+    Date.new(year, month).beginning_of_month
   end
 
   # Fetches the last day of given `month` and `year`.
@@ -51,7 +65,7 @@ module HasMonthYear
   # @return [Date].
   #
   def end_of_month
-    Date.new(year, month).at_end_of_month
+    Date.new(year, month).end_of_month
   end
 
   # @protected_instance_methods ...............................................
@@ -70,25 +84,44 @@ module HasMonthYear
   # @return [void].
   #
   def check_date
+    return unless respond_to?(:date) && date.nil?
+
     errors.add(:date, :blank)
+    false
   end
 
-  # Sets `month` and `year` based on self's `cash_transaction_date` or `date`.
+  # Checks if `date` is nil when self responds to `date`. If so, adds an error.
+  #
+  # @note This is a method that is called before_validation.
+  #
+  # @return [void].
+  #
+  def check_number
+    return unless respond_to?(:number) && number.nil?
+
+    errors.add(:number, :blank)
+    false
+  end
+
+  # Sets `month` and `year` based on self's `card_payment_date` or `date`.
   #
   # @note This is a method that is called before_validation.
   #
   # @return [void].
   #
   def set_month_year
-    return if defined?(imported) && imported
-    return if defined?(card_transaction) && card_transaction.imported
+    return if imported?
+    return if instance_of?(CardInstallment)
+    build_month_year and return if instance_of?(CardTransaction)
 
-    if instance_of?(CardTransaction) || instance_of?(CardInstallment)
-      self.month = cash_transaction_date.month
-      self.year  = cash_transaction_date.year
-    else
-      self.month ||= date.month
-      self.year  ||= date.year
-    end
+    self.month ||= date.month
+    self.year  ||= date.year
+  end
+
+  def imported?
+    impoted_cash_transaction  = instance_of?(CashTransaction) && imported
+    imported_cash_installment = instance_of?(CashInstallment) && cash_transaction&.imported
+
+    impoted_cash_transaction || imported_cash_installment
   end
 end

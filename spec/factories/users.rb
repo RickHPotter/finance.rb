@@ -1,32 +1,14 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: users
-#
-#  id                     :bigint           not null, primary key
-#  email                  :string           default(""), not null
-#  encrypted_password     :string           default(""), not null
-#  reset_password_token   :string
-#  reset_password_sent_at :datetime
-#  remember_created_at    :datetime
-#  confirmation_token     :string
-#  unconfirmed_email      :string
-#  confirmed_at           :datetime
-#  confirmation_sent_at   :datetime
-#  first_name             :string           not null
-#  last_name              :string           not null
-#  created_at             :datetime         not null
-#  updated_at             :datetime         not null
-#
 FactoryBot.define do
   factory :user do
     first_name { "John" }
     last_name { "Doe" }
+    locale { :en }
     email { "john@example.com" }
     password { "123123" }
     password_confirmation { "123123" }
-    confirmed_at { Date.current }
+    confirmed_at { Time.zone.today }
 
     trait :different do
       first_name { "Jane" }
@@ -39,3 +21,30 @@ FactoryBot.define do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: users
+#
+#  id                     :bigint           not null, primary key
+#  confirmation_sent_at   :datetime
+#  confirmation_token     :string           uniquely indexed
+#  confirmed_at           :datetime
+#  email                  :string           default(""), not null, uniquely indexed
+#  encrypted_password     :string           default(""), not null
+#  first_name             :string           not null
+#  last_name              :string           not null
+#  locale                 :string           not null
+#  remember_created_at    :datetime
+#  reset_password_sent_at :datetime
+#  reset_password_token   :string           uniquely indexed
+#  unconfirmed_email      :string
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#
+# Indexes
+#
+#  index_users_on_confirmation_token    (confirmation_token) UNIQUE
+#  index_users_on_email                 (email) UNIQUE
+#  index_users_on_reset_password_token  (reset_password_token) UNIQUE
+#

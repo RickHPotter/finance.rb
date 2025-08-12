@@ -1,27 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: user_cards
-#
-#  id                   :bigint           not null, primary key
-#  user_card_name       :string           not null
-#  days_until_due_date  :integer          not null
-#  current_closing_date :date             not null
-#  current_due_date     :date             not null
-#  min_spend            :integer          not null
-#  credit_limit         :integer          not null
-#  active               :boolean          not null
-#  user_id              :bigint           not null
-#  card_id              :bigint           not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#
 class UserCard < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
-  include HasMonthYear
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -33,20 +15,46 @@ class UserCard < ApplicationRecord
   has_many :card_installments_invoices, lambda {
     joins(:categories).where(categories: { category_name: "CARD PAYMENT" }).distinct
   }, through: :card_installments, source: :cash_transaction
+
   has_many :cash_transactions
 
+  has_many :references, dependent: :destroy
+
   # @validations ..............................................................
-  validates :user_card_name, :current_due_date, :current_closing_date, :days_until_due_date, :min_spend, :credit_limit, presence: true
-  validates :user_card_name, uniqueness: { scope: :user_id }
+  validates :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, presence: true
+  validates :user_card_name, uniqueness: { scope: %i[user_id card_id] }
 
   # @callbacks ................................................................
   before_validation :set_user_card_name, on: :create
-  before_validation :set_current_dates, if: -> { active? }
+  after_update :update_references_and_payments, if: :payment_date_settings_changed?
 
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def find_or_create_reference_for(date)
+    reference_date = calculate_reference_date(date)
+    reference = references.find_by(month: reference_date.month, year: reference_date.year)
+    return reference if reference.present?
+
+    references.create(
+      month: reference_date.month,
+      year: reference_date.year,
+      reference_closing_date: reference_date - days_until_due_date.days,
+      reference_date:
+    )
+  end
+
+  def calculate_reference_date(transaction_date)
+    due_date = transaction_date.change(day: due_date_day)
+    due_date = (due_date + 1.month) if transaction_date >= due_date
+    closing_date = due_date - days_until_due_date.days
+
+    return due_date if closing_date > transaction_date
+
+    due_date + 1.month
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -61,30 +69,54 @@ class UserCard < ApplicationRecord
     self.user_card_name ||= card.card_name
   end
 
-  # Sets the `current_closing_date` and `current_due_date` attributes based on `current_due_date` and `days_until_due_date`.
-  #
-  # @note This is a method that is called before_validation.
-  # @note The method returns false if `current_due_date` or `days_until_due_date` is nil.
-  #
-  # @see {MonthYear#next_date}.
-  #
-  # @return [Boolean].
-  #
-  def set_current_dates
-    fields_that_are_not_nil = [ current_closing_date, days_until_due_date, current_due_date ].compact
-    return if fields_that_are_not_nil.count < 2
-
-    update_dates
-
-    self.current_closing_date ||= current_due_date - days_until_due_date
-    self.days_until_due_date  ||= (current_due_date - current_closing_date).abs
-    self.current_due_date     ||= next_date(days: current_due_date.day)
-  end
-
-  def update_dates
-    self.current_closing_date = current_closing_date + 1.month if current_closing_date && current_closing_date < Date.current
-    self.current_due_date     = current_due_date     + 1.month if current_due_date     && current_due_date     < Date.current
-  end
-
   # @private_instance_methods .................................................
+
+  private
+
+  def payment_date_settings_changed?
+    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
+  end
+
+  def update_references_and_payments
+    month_years = card_installments_invoices.pluck(:month, :year).uniq
+
+    month_years.each do |month, year|
+      next if references.exists?(month:, year:)
+
+      card_payment = card_installments_invoices.find_by(month:, year:)
+      next if card_payment.nil?
+
+      references.create(
+        month:,
+        year:,
+        reference_closing_date: card_payment.date - days_until_due_date.days,
+        reference_date: card_payment.date
+      )
+    end
+  end
 end
+
+# == Schema Information
+#
+# Table name: user_cards
+#
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  credit_limit            :integer          not null
+#  days_until_due_date     :integer          not null
+#  due_date_day            :integer          default(1), not null
+#  min_spend               :integer          not null
+#  user_card_name          :string           not null, uniquely indexed => [user_id, card_id]
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  card_id                 :bigint           not null, indexed, uniquely indexed => [user_id, user_card_name]
+#  user_id                 :bigint           not null, uniquely indexed => [card_id, user_card_name], indexed
+#
+# Indexes
+#
+#  index_user_cards_on_card_id           (card_id)
+#  index_user_cards_on_on_composite_key  (user_id,card_id,user_card_name) UNIQUE
+#  index_user_cards_on_user_id           (user_id)
+#

@@ -1,0 +1,71 @@
+<%= content_tag :div, class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_card.id, datatable_target: :row } do %>
+  <div class="p-4 bg-gradient-to-r from-blue-500 to-blue-700">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <%= render_icon :credit_card %>
+        <% brand_name = user_card.card.card_name %>
+        <% brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}" %>
+
+        <%= link_to brand_and_name,
+                    edit_user_card_path(user_card),
+                    id: "edit_user_card_#{user_card.id}",
+                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                    data: { turbo_frame: :center_container } %>
+      </div>
+
+      <%= link_to card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container } do %>
+        <%= render_icon :jump_to %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="p-4">
+    <div class="grid grid-cols-2 gap-4 my-2">
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :number %>
+          <%= content_tag :span, pluralise_model(CardTransaction, 2), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, user_card.card_transactions_count, class: "text-sm font-semibold text-slate-800" %>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :money %>
+          <%= content_tag :span, model_attribute(CardTransaction, :total_amount), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, from_cent_based_to_float(user_card.card_transactions_total, "R$"), class: "text-sm font-semibold text-slate-800 mr-auto" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 my-2">
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :calendar %>
+          <%= content_tag :span, model_attribute(UserCard, :current_closing_date), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :short) %>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <%= render_icon :calendar %>
+          <%= content_tag :span, model_attribute(UserCard, :current_due_date), class: "text-sm font-medium text-slate-500" %>
+        </div>
+
+        <div class="flex items-center">
+          <%= content_tag :span, l(Date.current.change(day: user_card.due_date_day), format: :short) %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

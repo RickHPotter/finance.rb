@@ -31,6 +31,8 @@ module HasActive
   # @return [void].
   #
   def set_active
-    self.active ||= true
+    return if [ false, true ].include?(active)
+
+    self.active = true
   end
 end

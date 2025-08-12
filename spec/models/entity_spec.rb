@@ -1,19 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: entities
-#
-#  id          :bigint           not null, primary key
-#  entity_name :string           not null
-#  user_id     :bigint           not null
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe Entity, type: :model do
-  let!(:subject) { build(:entity, :random) }
+  let(:subject) { build(:entity, :random) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -37,3 +27,29 @@ RSpec.describe Entity, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: entities
+#
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  avatar_name             :string           default("people/0.png"), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  entity_name             :string           not null, uniquely indexed => [user_id]
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
+#
+# Indexes
+#
+#  index_entities_on_user_id           (user_id)
+#  index_entity_name_on_composite_key  (user_id,entity_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#

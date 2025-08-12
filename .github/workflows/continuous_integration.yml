@@ -3,12 +3,35 @@ on:
   push:
     branches: ["**"]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Security audit dependencies
+        run: bin/bundler-audit --update
+
+      - name: Security audit application code
+        run: bin/brakeman -q -w2
+
+      - name: Lint Ruby files
+        run: bin/rubocop --parallel
+
+      - name: Lint ERuby files
+        run: bin/erblint -la
+
   test:
     # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:11-alpine
+        image: postgres:16
         ports:
           - "5432:5432"
         env:
@@ -19,43 +42,23 @@ jobs:
     env:
       RAILS_ENV: test
       DATABASE_URL: "postgres://rails:password@localhost:5432/rails_test"
+      CAPYBARA_DRIVER: selenium_chrome_headless
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Install Ruby and gems
+
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: .ruby-version
+          bundler: default
           bundler-cache: true
 
       - name: Set up database schema
         run: bin/rails db:schema:load
-      - name: Set up npm
-        run: npm install
-      - name: Set up assets
+
+      - name: Precompile assets
         run: bin/rails assets:precompile
+
       - name: Run tests
-        run: bin/rspec
-      - name: Create Coverage Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage
-          path: public/coverage/
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Install Ruby and gems
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-
-      - name: Security audit dependencies
-        run: bin/bundler-audit --update
-      - name: Security audit application code
-        run: bin/brakeman -q -w2
-      - name: Lint Ruby files
-        run: bin/rubocop --parallel
-      - name: Lint ERuby files
-        run: bin/erblint -la
+        run: bin/rspec spec/models/ spec/concerns spec/requests

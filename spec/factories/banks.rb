@@ -1,22 +1,12 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: banks
-#
-#  id         :bigint           not null, primary key
-#  bank_name  :string           not null
-#  bank_code  :string           not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#
 FactoryBot.define do
   factory :bank do
-    bank_name { "Itau" }
+    bank_name { "ITAU" }
     bank_code { "479" }
 
     trait :different do
-      bank_name { "Nubank" }
+      bank_name { "NBNK" }
       bank_code { "001" }
     end
 
@@ -26,3 +16,14 @@ FactoryBot.define do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: banks
+#
+#  id         :bigint           not null, primary key
+#  bank_code  :integer          not null
+#  bank_name  :string           not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#

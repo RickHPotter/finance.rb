@@ -5,8 +5,8 @@ class CreateDeviseUsers < ActiveRecord::Migration[8.0]
   def change
     create_table :users do |t|
       ## Database authenticatable
-      t.string :email,              null: false, default: ''
-      t.string :encrypted_password, null: false, default: ''
+      t.string :email,              null: false, default: ""
+      t.string :encrypted_password, null: false, default: ""
 
       ## Recoverable
       t.string   :reset_password_token
@@ -24,11 +24,13 @@ class CreateDeviseUsers < ActiveRecord::Migration[8.0]
       t.string :first_name, null: false
       t.string :last_name, null: false
 
-      t.timestamps null: false
-    end
+      t.string :locale, null: false
 
-    add_index :users, :email,                unique: true
-    add_index :users, :reset_password_token, unique: true
-    add_index :users, :confirmation_token,   unique: true
+      t.timestamps null: false
+
+      t.index [ "email" ],                name: "index_users_on_email",                unique: true
+      t.index [ "confirmation_token" ],   name: "index_users_on_confirmation_token",   unique: true
+      t.index [ "reset_password_token" ], name: "index_users_on_reset_password_token", unique: true
+    end
   end
 end

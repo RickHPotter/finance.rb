@@ -12,7 +12,9 @@ module Logic
         user_card = user.user_cards.first
       end
 
-      card_transaction = user_card.card_transactions.new
+      return if user_card.nil?
+
+      card_transaction = user_card.card_transactions.new(date: Time.zone.now)
       card_transaction.build_month_year
       card_transaction.entity_transactions.new(entity:) if entity
       card_transaction.category_transactions.new(category:) if category

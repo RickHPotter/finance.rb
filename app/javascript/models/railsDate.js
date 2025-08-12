@@ -1,5 +1,15 @@
-const MONTHS_FULL = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "June", "Jui", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"]
-const MONTHS_ABBR = ["Jan", "Fev", "Mars", "Avril", "Mai", "June", "Jui", "Aout", "Sept", "Oct", "Nov", "Dec"]
+function getMonthNames(locale = "fr") {
+  const formatFull = new Intl.DateTimeFormat(locale, { month: "long" })
+  const formatAbbr = new Intl.DateTimeFormat(locale, { month: "short" })
+
+  return {
+    full: [...Array(12)].map((_, i) => formatFull.format(new Date(2000, i, 1))),
+    abbr: [...Array(12)].map((_, i) => formatAbbr.format(new Date(2000, i, 1)).replace(".", "")),
+  }
+}
+
+const locale = window.APP_LOCALE || "fr"
+const { full: MONTHS_FULL, abbr: MONTHS_ABBR } = getMonthNames(locale)
 
 class RailsDate {
   // Thanks, Javascript, for not supporting keyword parameters neither more than one constructor
@@ -7,16 +17,22 @@ class RailsDate {
   //   - an integer that represents year
   //   - a string that represents the whole date
   //   - another RailsDate you can use as base
-  constructor(platypus, month = null, day = null) {
+  constructor(platypus, month = null, day = null, hour = null, minute = null) {
     switch (platypus.constructor) {
       case String:
-        this._applyDate(new Date(platypus.slice(0, 10) + "T00:00:00"))
+        const [datePart, timePart] = platypus.split("T")
+        const [yearDate, monthDate, dayDate] = datePart.split("-").map(Number)
+        let hourDate = 0, minuteDate = 0
+        if (timePart) {
+          [hourDate, minuteDate] = timePart.split(":").map(Number)
+        }
+        this._applyDate(new Date(yearDate, monthDate - 1, dayDate, hourDate, minuteDate))
         break
       case RailsDate:
         this._applyDate(platypus.date())
         break
       case Number:
-        this._applyDate(new Date(platypus, (month || 1) - 1, day || 1))
+        this._applyDate(new Date(platypus, (month || 1) - 1, day || 1, hour || 0, minute || 0))
         break
     }
   }
@@ -27,6 +43,17 @@ class RailsDate {
 
   date() {
     return new Date(this._date)
+  }
+
+  dateTime() {
+    const proposedDate = this.date()
+    const yyyy = proposedDate.getFullYear()
+    const mm = String(proposedDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(proposedDate.getDate()).padStart(2, '0')
+    const hh = String(proposedDate.getHours()).padStart(2, '0')
+    const min = String(proposedDate.getMinutes()).padStart(2, '0')
+
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`
   }
 
   monthYear() {
@@ -45,9 +72,9 @@ class RailsDate {
   }
 
   yearsForwards(years) {
-    const new_date = new Date(this._date)
-    new_date.setFullYear(this._date.getFullYear() + years)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setFullYear(this._date.getFullYear() + years)
+    this._applyDate(newDate)
 
     return this
   }
@@ -57,9 +84,9 @@ class RailsDate {
   }
 
   monthsForwards(months) {
-    const new_date = new Date(this._date)
-    new_date.setMonth(this._date.getMonth() + months)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setMonth(this._date.getMonth() + months)
+    this._applyDate(newDate)
 
     return this
   }
@@ -69,9 +96,9 @@ class RailsDate {
   }
 
   daysForwards(days) {
-    const new_date = new Date(this._date)
-    new_date.setDate(this._date.getDate() + days)
-    this._applyDate(new_date)
+    const newDate = new Date(this._date)
+    newDate.setDate(this._date.getDate() + days)
+    this._applyDate(newDate)
 
     return this
   }
@@ -85,7 +112,7 @@ class RailsDate {
 
   setMonth(month) {
     this.month = month
-    this._date.setMonth(month)
+    this._date.setMonth(month - 1)
 
     return this
   }
@@ -101,6 +128,8 @@ class RailsDate {
     this.year = date.getFullYear()
     this.month = date.getMonth() + 1
     this.day = date.getDate()
+    this.hour = date.getHours()
+    this.minute = date.getMinutes()
 
     this._date = date
   }

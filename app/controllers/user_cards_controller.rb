@@ -2,28 +2,48 @@
 
 class UserCardsController < ApplicationController
   include TabsConcern
+  include ContextHelper
 
-  before_action :set_user, only: %i[index new create edit update destroy]
   before_action :set_user_card, only: %i[edit update destroy]
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
     params[:include_inactive] ||= "false"
     conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-    @user_cards = current_user.user_cards.includes(:card).where(conditions).order(:user_card_name)
+
+    @user_cards = Logic::UserCards.find_by(current_user, conditions)
+
+    respond_to do |format|
+      format.html
+
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+      end
+    end
   end
 
   def new
-    @user_card = UserCard.new
+    @user_card = current_user.user_cards.new
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :user_card) if params[:no_user_card]
+      end
+    end
   end
 
   def create
+    index
     @user_card = Logic::UserCards.create(user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction)
+    if @user_card.active?
+      @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -32,12 +52,16 @@ class UserCardsController < ApplicationController
   def edit; end
 
   def update
+    index
     @user_card = Logic::UserCards.update(@user_card, user_card_params)
-    @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
 
-    if @card_transaction
-      set_user_cards
-      set_tabs(active_menu: :new, active_sub_menu: :card_transaction) if @user_card.active?
+    if @user_card.active?
+      @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card) if @user_card.valid?
+
+      if @card_transaction
+        set_user_cards
+        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name)
+      end
     end
 
     respond_to(&:turbo_stream)
@@ -45,6 +69,7 @@ class UserCardsController < ApplicationController
 
   def destroy
     @user_card.destroy if @user_card.card_transactions.empty?
+    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
     index
 
     respond_to(&:turbo_stream)
@@ -54,13 +79,17 @@ class UserCardsController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_user_card
-    @user_card = UserCard.find(params[:id])
+    @user_card = current_user.user_cards.find(params[:id])
   end
 
   # Only allow a list of trusted parameters through.
   def user_card_params
-    params.require(:user_card).permit(
-      :user_card_name, :current_closing_date, :current_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id
-    )
+    ret_params = params.require(:user_card)
+    if ret_params[:current_closing_date].present? && ret_params[:current_due_date].present?
+      ret_params[:due_date_day]        = ret_params[:current_due_date].to_date.day
+      ret_params[:days_until_due_date] = ret_params[:current_due_date].to_date - ret_params[:current_closing_date].to_date
+    end
+
+    ret_params.permit(:user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id)
   end
 end

@@ -2,19 +2,60 @@
 
 module Logic
   class CashInstallments
-    def self.find_by_span(current_user, span)
-      l_date = Date.current.prev_month((span / 2) + 1).beginning_of_month
-      r_date = Date.current.next_month((span / 2) - 1).end_of_month
+    def self.find_by_ref_month_year(user, month, year, raw_conditions)
+      search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
 
-      current_user
+      case [ raw_conditions[:paid], raw_conditions[:pending] ]
+      when %w[false false] then return []
+      when %w[true true]   then paid = nil
+      when %w[true false]  then paid = true
+      when %w[false true]  then paid = false
+      end
+
+      conditions = {
+        price: raw_conditions[:installments_price],
+        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
+                            **raw_conditions[:associations] }.compact_blank
+      }.compact_blank
+
+      conditions.merge!(paid:) if paid.in?([ true, false ])
+
+      fetch_cash_installments(user, month, year, conditions, search_term_condition)
+    end
+
+    def self.find_by_query(user, entity_id, query)
+      user
         .cash_installments
-        .includes(cash_transaction: %i[categories entities])
-        .joins(:cash_transaction)
-        .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", l_date, r_date)
-        .order("installments.date DESC")
-        .group_by { |t| Date.new(t.year, t.month) }
-        .sort
-        .reverse
+        .includes(cash_transaction: %i[category_transactions entity_transactions])
+        .where(cash_transaction: { entity_transactions: { entity_id: } })
+        .where("cash_transaction.description ILIKE ?", "%#{query}%")
+    end
+
+    def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
+      user.cash_installments
+          .where(year:, month:)
+          .includes(cash_transaction: %i[categories entities])
+          .where(conditions)
+          .where(search_term_condition)
+          .order(:order_id)
+    end
+
+    def self.build_conditions_from_params(params)
+      params.delete(:controller)
+      params.delete(:action)
+
+      return {} if params.blank?
+
+      installments_price = build_cash_transaction_price_range_conditions(params)
+      params[:price] = build_price_range_conditions(params)
+      params[:cash_installments_count] = build_installments_count_range_conditions(params)
+
+      associations = build_conditions_for_associations(params)
+
+      {
+        price: installments_price,
+        cash_transaction: { **params.compact_blank, **associations.compact_blank }.compact_blank
+      }.compact_blank
     end
   end
 end

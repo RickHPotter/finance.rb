@@ -30,7 +30,7 @@
 !/tmp/storage/.keep
 
 /public/assets
-public/coverage/
+coverage/
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
@@ -46,3 +46,5 @@ config/credentials.yml.enc
 /doc
 .yardoc
 .env
+
+/config/credentials/production.key

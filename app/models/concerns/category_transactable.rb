@@ -7,7 +7,7 @@ module CategoryTransactable
   included do
     # @relationships ...........................................................
     has_many :category_transactions, as: :transactable, dependent: :destroy
-    has_many :categories, through: :category_transactions
+    has_many :categories, -> { order(:category_name) }, through: :category_transactions
     accepts_nested_attributes_for :category_transactions, allow_destroy: true, reject_if: :all_blank
   end
 
@@ -16,7 +16,7 @@ module CategoryTransactable
   # @return [ActiveRecord::Relation] Helper method for finding custom `categories`.
   #
   def custom_categories
-    categories.where(built_in: false)
+    categories.where("built_in = false OR category_name IN ('INVESTMENT', 'BORROW RETURN')")
   end
 
   # @param [Hash] options.

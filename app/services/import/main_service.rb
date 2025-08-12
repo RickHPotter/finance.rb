@@ -2,7 +2,7 @@
 
 module Import
   class MainService
-    attr_reader :hash_cards_collection, :hash_cash_collection, :finder_service, :card_transaction_creator_service, :cash_transaction_creator_service
+    attr_reader :user_hash, :hash_cards_collection, :hash_cash_collection, :finder_service, :card_transaction_creator_service, :cash_transaction_creator_service
     attr_accessor :cards_collection, :cash_collection, :user, :user_id, :categories, :entities, :user_banks, :user_cards
 
     delegate :log_with,                                to: LoggerService
@@ -13,7 +13,9 @@ module Import
     delegate :create_category_and_entity_transactions, to: :finder_service
     delegate :create_card_transactions,                to: :card_transaction_creator_service
 
-    def initialize(hash_collection, cash_transaction_sheet)
+    def initialize(user_hash, hash_collection, cash_transaction_sheet)
+      @user_hash = user_hash
+
       @hash_cards_collection = hash_collection.except(cash_transaction_sheet)
       @hash_cash_collection  = hash_collection[cash_transaction_sheet]
       @categories = {}
@@ -28,7 +30,7 @@ module Import
 
     def import
       log_with do
-        create_user
+        create_user(user_hash)
         @card_transaction_creator_service.run
         @cash_transaction_creator_service.run
       end

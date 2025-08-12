@@ -11,6 +11,7 @@ module HasExchanges
 
     # @callbacks ..............................................................
     before_save :update_entity_transaction_status
+    after_save :update_exchange_count
   end
 
   # @public_class_methods .....................................................
@@ -28,5 +29,16 @@ module HasExchanges
     return self.status = :finished if exchanges.blank? || exchanges.map(&:exchange_type).uniq == [ "non_monetary" ]
 
     self.status = :pending
+  end
+
+  # Sets the `exchanges_count` of each record of `exchanges` based on the `exchanges_count` of given `self`.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # @return [void].
+  #
+  def update_exchange_count
+    exchanges_count = exchanges.count
+    exchanges.each { |i| i.update(exchanges_count:) }
   end
 end

@@ -1,2 +1,7 @@
-<%= turbo_stream.update :notification, partial: "shared/flash"  %>
-<%= turbo_stream.remove @card_transaction %>
+<% if @card_transaction.destroyed? %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyeda, CardTransaction) }) %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context)) %>
+<% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyeda, CardTransaction) }) %>
+<% end %>

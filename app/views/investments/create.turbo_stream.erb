@@ -1,0 +1,8 @@
+<% if @investment.errors.empty? %>
+  <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Investment) }) %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% else %>
+  <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @investment)) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Investment) }) %>
+<% end %>

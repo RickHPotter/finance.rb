@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+
+`export CONTAINER_HOSTNAME=$(hostname)`

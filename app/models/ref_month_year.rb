@@ -32,7 +32,11 @@ class RefMonthYear
   # @return [String] Formatted `month` and `year` string in the format "MONTH <YEAR>".
   #
   def month_year
-    "#{MONTHS_ABBR[@month - 1].upcase} <#{@year - 2000}>"
+    I18n.l(Date.new(@year, @month), format: "%b <%y>").upcase
+  end
+
+  def numeric_month_year
+    I18n.l(Date.new(@year, @month), format: "%m/%Y")
   end
 
   # Initialises a new {RefMonthYear} instance from a string.
@@ -42,12 +46,14 @@ class RefMonthYear
   # @example Create a new RefMonthYear instance:
   #   ref_month_year = RefMonthYear.from_string("NOV <24>")
   #
+  # @note The `MONTH` of `month_year` is expected to be in either `MONTHS_ABBR` or `MONTHS_FULL`.
+  #
   # @return [RefMonthYear] A new instance of {RefMonthYear}.
   #
   def self.from_string(month_year)
     month, year = month_year.split
 
-    month = [ *MONTHS_ABBR, *MONTHS_FULL ].map(&:parameterize).index(month.parameterize) + 1
+    month = [ *PTBR_MONTHS_FULL, *MONTHS_ABBR, *MONTHS_FULL ].map(&:parameterize).index(month.parameterize) + 1
     year = year.gsub(/[^\d.-]+/, "").rjust(4, "20").to_i
 
     RefMonthYear.new(month, year.to_i)
@@ -55,7 +61,7 @@ class RefMonthYear
 
   # Gets the span of dates according to a `pivot date` respecting the boundary of `max_date`.
   #
-  # @param pivot_date [Date] The pivot date, usually the `Date.current`.
+  # @param pivot_date [Date] The pivot date, usually the `Time.zone.today`.
   # @param max_date [Date] The maximum date, the boundary of the span.
   # @param interval [Integer] The interval, amount of months in the span.
   #

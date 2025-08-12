@@ -1,28 +1,12 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: investments
-#
-#  id                   :bigint           not null, primary key
-#  description          :string
-#  price                :integer          not null
-#  date                 :date             not null
-#  month                :integer          not null
-#  year                 :integer          not null
-#  user_id              :bigint           not null
-#  user_bank_account_id :bigint           not null
-#  cash_transaction_id  :bigint
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe Investment, type: :model do
   include FactoryHelper
 
-  let!(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
-  let!(:cash_transaction) { subject.cash_transaction }
+  let(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
+  let(:cash_transaction) { subject.cash_transaction }
   let!(:investments) do
     build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
       inv.save(date: subject.date + i + 1)
@@ -31,7 +15,7 @@ RSpec.describe Investment, type: :model do
 
   shared_examples "investment cop" do
     it "sums the investments correctly" do
-      expect(cash_transaction.price).to be_within(0.01).of cash_transaction.investments.sum(:price).round(2)
+      expect(cash_transaction.price).to eq cash_transaction.investments.sum(:price)
     end
 
     it "generates the comment that references every investments day" do
@@ -63,7 +47,7 @@ RSpec.describe Investment, type: :model do
     end
   end
 
-  # FIXME: move this to request spec when the view is ready
+  # TODO: move this to request spec when the view is ready
   describe "[ business logic ]" do
     context "( when new investments are created )" do
       before { cash_transaction.reload }
@@ -125,7 +109,7 @@ RSpec.describe Investment, type: :model do
       it "creates or uses another cash_transaction that fits the FK change" do
         expect(subject.cash_transaction).to eq cash_transaction
         expect(subject.cash_transaction.investments.count).to eq(investments.size + 1)
-        expect(subject.cash_transaction.price).to be_within(0.01).of([ subject, *investments ].sum(&:price).round(2))
+        expect(subject.cash_transaction.price).to eq([ subject, *investments ].sum(&:price))
 
         subject.update(user_bank_account: random_custom_create(:user_bank_account, reference: { user: subject.user }))
         investments.first.cash_transaction.reload
@@ -133,8 +117,37 @@ RSpec.describe Investment, type: :model do
         expect(subject.cash_transaction).to_not eq cash_transaction
         expect(subject.cash_transaction.investments.count).to eq(1)
         expect(investments.first.cash_transaction.investments.count).to eq(investments.size)
-        expect(investments.first.cash_transaction.price).to be_within(0.01).of(investments.sum(&:price).round(2))
+        expect(investments.first.cash_transaction.price).to eq investments.sum(&:price)
       end
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: investments
+#
+#  id                   :bigint           not null, primary key
+#  date                 :datetime         not null
+#  description          :string
+#  month                :integer          not null
+#  price                :integer          not null
+#  year                 :integer          not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  cash_transaction_id  :bigint           indexed
+#  user_bank_account_id :bigint           not null, indexed
+#  user_id              :bigint           not null, indexed
+#
+# Indexes
+#
+#  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_user_bank_account_id  (user_bank_account_id)
+#  index_investments_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
+#  fk_rails_...  (user_id => users.id)
+#

@@ -11,7 +11,10 @@ en:
         last_name: Last Name
         email: Email
         password: Password
+        new_password: New Password
         password_confirmation: Password Confirmation
+        new_password_confirmation: New Password Confirmation
+        remember_me: Remember Me
         created_at: Created at
         updated_at: Updated at
 
@@ -28,6 +31,9 @@ pt-BR:
         last_name: Sobrenome
         email: Email
         password: Senha
+        new_password: Nova senha
         password_confirmation: Confirmação de senha
+        new_password_confirmation: Confirmação de nova senha
+        remember_me: Sempre lembrar
         created_at: Criado em
         updated_at: Atualizado em

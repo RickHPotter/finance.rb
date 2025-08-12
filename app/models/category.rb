@@ -1,46 +1,10 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: categories
-#
-#  id            :bigint           not null, primary key
-#  category_name :string           not null
-#  built_in      :boolean          default(FALSE), not null
-#  user_id       :bigint           not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#
 class Category < ApplicationRecord
   # @extends ..................................................................
-  BG_COLOURS = {
-    "FOOD" => "bg-meat",
-    "GROCERY" => "bg-lettuce",
-    "EDUCATION" => "bg-book",
-    "RENT" => "bg-urgency",
-    "NEEDS" => "bg-urgency",
-    "GIFT" => "bg-gift",
-    "TRANSPORT" => "bg-honda",
-    "SALARY" => "bg-money",
-    "CARD PAYMENT" => "bg-money",
-    "CARD ADVANCE" => "bg-money",
-    "CARD DISCOUNT" => "bg-money",
-    "CARD REVERSAL" => "bg-money",
-    "DEPOSIT" => "bg-money",
-    "PROMO" => "bg-money",
-    "INVESTMENT" => "bg-gold",
-    "SELL" => "bg-oldmoney",
-    "LEISURE" => "bg-fun",
-    "BILL" => "bg-gray-400",
-    "FEES" => "bg-gray-400",
-    "BET" => "bg-gray-600",
-    "GODSEND" => "bg-greek",
-    "EXCHANGE" => "bg-yellow-400",
-    "EXCHANGE RETURN" => "bg-yellow-600"
-  }.freeze
-
   # @includes .................................................................
   include HasActive
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -53,6 +17,7 @@ class Category < ApplicationRecord
 
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: :user_id }
+  validates :colour, presence: true
   validates :built_in, inclusion: { in: [ true, false ] }
 
   # @callbacks ................................................................
@@ -71,9 +36,38 @@ class Category < ApplicationRecord
     built_in
   end
 
-  # FIXME: later there will be a colour-picker and a colour column for this table
   def bg_colour
-    BG_COLOURS[category_name]
+    COLOURS.dig(colour, :bg)
+  end
+
+  def from_bg
+    COLOURS.dig(colour, :from)
+  end
+
+  def via_bg
+    COLOURS.dig(colour, :via)
+  end
+
+  def to_bg
+    COLOURS.dig(colour, :to)
+  end
+
+  def text_colour
+    COLOURS.dig(colour, :text)
+  end
+
+  def name
+    return model_attribute(self, attributes["category_name"].parameterize(separator: "_")).upcase if built_in?
+
+    attributes["category_name"]
+  end
+
+  def update_card_transactions_count_and_total
+    update_columns(card_transactions_count: card_transactions.count, card_transactions_total: card_transactions.sum(:price))
+  end
+
+  def update_cash_transactions_count_and_total
+    update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
   end
 
   # @protected_instance_methods ...............................................
@@ -92,3 +86,30 @@ class Category < ApplicationRecord
 
   # @private_instance_methods .................................................
 end
+
+# == Schema Information
+#
+# Table name: categories
+#
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  built_in                :boolean          default(FALSE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  category_name           :string           not null, uniquely indexed => [user_id]
+#  colour                  :string           default("white"), not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed, uniquely indexed => [category_name]
+#
+# Indexes
+#
+#  index_categories_on_user_id           (user_id)
+#  index_category_name_on_composite_key  (user_id,category_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#

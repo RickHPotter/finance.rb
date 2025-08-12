@@ -1,0 +1,52 @@
+<div class="flex justify-between mb-6 bg-white p-4 shadow-md rounded-lg">
+  <%= link_to action_model(:newa, Entity),
+              new_entity_path,
+              class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+              data: { turbo_frame: :center_container } %>
+
+  <% include_inactive = params[:include_inactive] == "false" %>
+  <%= link_to include_inactive ? action_message(:show_inactive) : action_message(:hide_inactive),
+              entities_path(include_inactive:),
+              class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+              data: { turbo_frame: :center_container } %>
+</div>
+
+<div class="min-w-full">
+  <%= turbo_frame_tag :entities do %>
+    <div class="min-h-screen" data-controller="datatable">
+      <%= text_field_tag :search, nil,
+                         type: :text, placeholder: "#{action_message(:search)}...",
+                         class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                         data: { action: "input->datatable#filter" } %>
+
+      <div class="my-4" data-datatable-target="table">
+        <div class="rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
+          <div class="bg-slate-300 grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate">
+            <div class="col-span-2"></div>
+            <%= content_tag :div, pluralise_model(CardTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
+            <%= content_tag :div, pluralise_model(CashTransaction, 2), class: "text-center col-span-2 text-slate-600" %>
+            <div></div>
+          </div>
+
+          <div class="bg-slate-300 grid grid-cols-7 py-1 border-b border-slate-400 font-semibold text-black font-graduate">
+            <%= content_tag :div, model_attribute(Entity, :entity_name), class: "col-span-2 text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :count), class: "text-center" %>
+            <%= content_tag :div, model_attribute(Entity, :spent), class: "text-center" %>
+
+            <%= content_tag :div, t(:datatable_actions), class: "text-center" %>
+          </div>
+
+          <% if @entities.present? %>
+            <%= render @entities %>
+          <% else %>
+            <%= content_tag :div, class: "border-b border-slate-200 py-2 my-2 text-lg bg-white" do %>
+              <%= t(:rows_not_found) %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

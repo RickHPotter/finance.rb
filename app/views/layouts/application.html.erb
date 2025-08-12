@@ -1,29 +1,89 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Finance</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title><%= t("pages.title") %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#1a202c">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/pwa_logos/128.png" type="image/png">
+    <link rel="apple-touch-icon" href="/pwa_logos/512.png">
 
+    <%= stylesheet_link_tag "tailwind", data: { turbo_track: :reload } %>
+    <%= stylesheet_link_tag "application", data: { turbo_track: :reload } %>
+    <%= stylesheet_link_tag "components/tom-select" %>
+    <%= stylesheet_link_tag "components/select" %>
     <%= combobox_style_tag %>
-
-    <%= javascript_importmap_tags %>
+    <%= javascript_include_tag "application", data: { turbo_track: :reload }, type: :module %>
   </head>
 
-  <body class="h-screen bg-zinc-300 dark:bg-gray-900 text-black dark:text-white">
-    <main class="antialiased">
-      <div class="p-3">
+  <body class="h-screen bg-gray-900 text-white">
+    <%= content_tag :main, class: "antialiased max-w-auto max-w-[1420px] mx-auto" do %>
+      <%= turbo_frame_tag :notification do %>
         <%= render "shared/flash" %>
-        <%= render "shared/dark_mode" %>
-      </div>
+      <% end %>
 
-      <section class="container mx-auto mt-16 px-5 flex">
-        <%= yield %>
-      </section>
-    </main>
+      <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
+        <% yield %>
+      <% end %>
+    <% end %>
   </body>
+
+<footer class="antialiased pt-2 max-w-auto max-w-[1420px] mx-auto bg-gray-900 text-white">
+  <div class="flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <span>
+        <%= locale_link("pt-BR", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
+          <%= image_tag "https://cdn.icon-icons.com/icons2/1694/PNG/512/brbrazilflag_111698.png", size: "25x15", title: "Português" %>
+        <% end %>
+      </span>
+      <span>
+        <%= locale_link("en", class: "flex p-2 text-sm text-white hover:bg-gray-600") do %>
+          <%= image_tag "https://static.vecteezy.com/system/resources/previews/005/416/914/original/flag-of-united-kingdom-illustration-free-vector.jpg", size: "25x15", title: "English" %>
+        <% end %>
+      </span>
+    </div>
+
+    <div class="flex gap-2">
+      <div class="text-sm text-white hover:bg-gray-600">
+        <%= link_to donation_pages_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+          <%= t(:donate) %>
+          <%= render_icon(:heart) %>
+        <% end %>
+      </div>
+      <% if current_user %>
+        <div class="text-sm text-white hover:bg-gray-600">
+          <%= link_to destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete } do %>
+            <%= t(:sign_out) %>
+            <%= render_icon(:leave) %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex md:hidden justify-center pt-16 mb-2">
+    <a class="flex items-center text-sm text-gray-600 hover:text-gray-500" href="https://rickhpotter.github.io/30fev_docs.ts/" target="_blank">
+      <%= t("pages.docs") %>
+    </a>
+  </div>
+
+  <div class="hidden md:flex justify-center pt-16 mb-2">
+    <a class="flex items-center text-sm text-gray-600 hover:text-gray-500" href="https://rickhpotter.github.io/30fev_docs.ts/" target="_blank">
+      <%= t("pages.docs") %>
+    </a>
+  </div>
+
+  <% if current_user %>
+    <div class="hidden md:flex justify-center pt-2 mb-2">
+      <%= link_to "Download Backup", admin_data_backup_path, class: "text-sm text-indigo-700 hover:text-indigo-500" %>
+    </div>
+  <% end %>
+</footer>
 </html>
+
+<script>
+  window.APP_LOCALE = "<%= I18n.locale %>"
+</script>

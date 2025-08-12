@@ -1,0 +1,5 @@
+<%= turbo_stream.replace(:center_container, template: "user_bank_accounts/new", locals: { user_bank_account: @user_bank_account }) %>
+<%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+<% if params[:no_user_bank_account] %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:user_bank_account_needed, CashTransaction) }) %>
+<% end %>

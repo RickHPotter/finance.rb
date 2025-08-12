@@ -1,0 +1,53 @@
+en:
+  activerecord:
+    models:
+      budget:
+        one: Budget
+        other: Budgets
+    attributes:
+      budget:
+        id: ID
+        date: Date
+        description: Description
+        active: Active
+        value: Budget Value
+        remaining_value: Remaining Value
+        month: Month
+        year: Year
+        month_year: Month/Year Reference
+        inclusive: Inclusive
+        category_id: Category
+        entity_id: Entity
+        categories: Categories
+        entities: Entities
+        user_id: User
+        total_amount: Total Remaining Amount
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      budget:
+        one: Orçamento
+        other: Orçamentos
+    attributes:
+      budget:
+        id: ID
+        date: Data
+        description: Descrição
+        active: Ativo
+        value: Valor do Orçamento
+        remaining_value: Valor Restante
+        month: Mês
+        year: Ano
+        month_year: Referência Mês/Ano
+        inclusive: Inclusivo
+        category_id: Categoria
+        entity_id: Entidade
+        categories: Categorias
+        entities: Entidades
+        user_id: Usuário
+        total_amount: Valor Restante Total
+        created_at: Criado em
+        updated_at: Atualizado em

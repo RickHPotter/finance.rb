@@ -1,20 +1,9 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: categories
-#
-#  id            :bigint           not null, primary key
-#  category_name :string           not null
-#  built_in      :boolean          default(FALSE), not null
-#  user_id       :bigint           not null
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#
 require "rails_helper"
 
 RSpec.describe Category, type: :model do
-  let!(:subject) { build(:category, :random, built_in: false) }
+  let(:subject) { build(:category, :random, built_in: false) }
 
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
@@ -42,9 +31,38 @@ RSpec.describe Category, type: :model do
     context "( public methods )" do
       it "returns built_in value" do
         expect(subject.built_in?).to eq false
+        expect(Category.built_in).to_not include(subject)
         subject.update(built_in: true)
         expect(subject.built_in?).to eq true
+        expect(Category.built_in).to include(subject)
       end
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: categories
+#
+#  id                      :bigint           not null, primary key
+#  active                  :boolean          default(TRUE), not null
+#  built_in                :boolean          default(FALSE), not null
+#  card_transactions_count :integer          default(0), not null
+#  card_transactions_total :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  cash_transactions_total :integer          default(0), not null
+#  category_name           :string           not null, uniquely indexed => [user_id]
+#  colour                  :string           default("white"), not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed, uniquely indexed => [category_name]
+#
+# Indexes
+#
+#  index_categories_on_user_id           (user_id)
+#  index_category_name_on_composite_key  (user_id,category_name) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#

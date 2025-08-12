@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "awesome_print"
-
 # Creating Custom Methods for FactoryBot
 module FactoryHelper
   # Creates a {FactoryBot} object based on the specified model given a reference (fk),

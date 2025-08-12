@@ -1,31 +1,12 @@
 # frozen_string_literal: true
 
-# == Schema Information
-#
-# Table name: installments
-#
-#  id                      :bigint           not null, primary key
-#  number                  :integer          not null
-#  date                    :date             not null
-#  month                   :integer          not null
-#  year                    :integer          not null
-#  starting_price          :integer          not null
-#  price                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  installment_type        :string           not null
-#  card_installments_count :integer          default(0)
-#  cash_installments_count :integer          default(0)
-#  card_transaction_id     :bigint
-#  cash_transaction_id     :bigint
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#
 class CardInstallment < Installment
   # @extends ..................................................................
   delegate :user, :user_id, :user_card, :user_card_id, to: :card_transaction, allow_nil: true
 
   # @includes .................................................................
   include CashTransactable
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -35,23 +16,35 @@ class CardInstallment < Installment
   validates :card_installments_count, presence: true
 
   # @callbacks ................................................................
-  before_validation :set_installment_type, on: :create
-  before_validation :set_paid,             on: :create
+  before_validation :set_installment_type, :set_paid, on: :create
+  after_save :check_paid_situation
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
-  scope :by, ->(month:, year:, user_id:, user_card_id:) { joins(:card_transaction).where(month:, year:, card_transaction: { user_id:, user_card_id: }) }
+  scope :by_categories, ->(categories) { joins(card_transaction: :categories).where(card_transaction: { categories: }) }
+  scope :by_entities, ->(entities) { joins(card_transaction: :entities).where(card_transaction: { entities: }) }
+  scope :by_categories_and_entities, ->(categories, entities) { joins(card_transaction: %i[categories entities]).where(card_transaction: { categories:, entities: }) }
+  scope :by_categories_or_entities, lambda { |categories, entities|
+    joins(card_transaction: %i[categories entities]).where(card_transaction: { categories: }).or(
+      joins(card_transaction: %i[categories entities]).where(card_transaction: { entities: })
+    ).distinct
+  }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
-  # Generates a `date` for the associated `cash_transaction`, picking the `current_due_date` of `user_card` based on the `current_closing_date`.
+  # Retrieves the `reference_date` for the associated `card_transaction` through `user_card.references`, based on `month` and `year`.
   #
   # @return [Date].
   #
-  def cash_transaction_date
-    card_transaction.cash_transaction_date.next_month(number - 1)
+  def card_payment_date
+    reference = user_card.find_or_create_reference_for(date)
+    reference.reference_date
+  end
+
+  def transactable
+    card_transaction
   end
 
   # @protected_instance_methods ...............................................
@@ -62,8 +55,8 @@ class CardInstallment < Installment
   #
   # @return [String] The generated description.
   #
-  def description
-    "CARD PAYMENT [ #{user_card.user_card_name} - #{month_year} ]"
+  def cash_transaction_description
+    "#{model_attribute(Category, :card_payment).upcase} [ #{user_card.user_card_name} - #{month_year} ]"
   end
 
   # Generates a `comment` for the associated `cash_transaction` based on the `user_card` and `month` and `year`.
@@ -71,11 +64,11 @@ class CardInstallment < Installment
   # @return [String] The generated comment.
   #
   def comment
-    installments = CardInstallment.by(month:, year:, user_id:, user_card_id:)
+    installments = user_card.card_installments.where(month:, year:)
 
     x, y = installments.partition { |installment| installment.card_installments_count == 1 }
-    in_one = x.sum(&:price).round(2)
-    spread = y.sum(&:price).round(2)
+    in_one = x.sum(&:price)
+    spread = y.sum(&:price)
 
     "Upfront: #{in_one}, Installments: #{spread}"
   end
@@ -119,8 +112,56 @@ class CardInstallment < Installment
   # @return [void].
   #
   def set_paid
-    return if paid.present?
+    return if [ false, true ].include?(paid)
 
-    self.paid = date.present? && Date.current >= date
+    self.paid = date.present? && Time.zone.today >= date
+  end
+
+  # Sets `card_transaction.paid` as true if all its installments were paid.
+  #
+  # @note This is a method that is called after_save.
+  #
+  # @return [void].
+  #
+  def check_paid_situation
+    card_transaction.update_columns(paid: card_transaction.card_installments.where(paid: false).empty?)
   end
 end
+
+# == Schema Information
+#
+# Table name: installments
+#
+#  id                      :bigint           not null, primary key
+#  balance                 :integer
+#  card_installments_count :integer          default(0)
+#  cash_installments_count :integer          default(0)
+#  date                    :datetime         not null, indexed => [date_year, date_month]
+#  date_month              :integer          not null, indexed => [date_year, date]
+#  date_year               :integer          not null, indexed => [date_month, date]
+#  installment_type        :string           not null
+#  month                   :integer          not null
+#  number                  :integer          not null
+#  paid                    :boolean          default(FALSE)
+#  price                   :integer          not null, indexed
+#  starting_price          :integer          not null
+#  year                    :integer          not null
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  card_transaction_id     :bigint           indexed
+#  cash_transaction_id     :bigint           indexed
+#  order_id                :integer          indexed
+#
+# Indexes
+#
+#  idx_installments_order_id                  (order_id)
+#  idx_installments_price                     (price)
+#  idx_installments_year_month_date           (date_year,date_month,date)
+#  index_installments_on_card_transaction_id  (card_transaction_id)
+#  index_installments_on_cash_transaction_id  (cash_transaction_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (card_transaction_id => card_transactions.id)
+#  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#

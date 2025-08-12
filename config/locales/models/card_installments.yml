@@ -1,0 +1,53 @@
+en:
+  activerecord:
+    models:
+      card_installment:
+        one: Card Installment
+        other: Card Installments
+    attributes:
+      card_installment:
+        self: Card Installment
+        count: Count
+        id: ID
+        date: Date
+        price: Price
+        starting_price: Original Price
+        already_paid: Already Paid
+        pay: Pay
+        paid: Paid
+        not_paid: Not Paid
+        month: Month
+        year: Year
+        balance: Balance
+        card_installment: Installment
+        card_installments_count: Installments Count
+        card_installments_count_short: Installments
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      card_installment:
+        one: Parcela
+        other: Parcelas
+    attributes:
+      card_installment:
+        self: Parcela
+        count: Quantidade
+        id: ID
+        date: Data
+        price: Preço
+        starting_price: Preço Inicial
+        already_paid: Já Pago
+        pay: Pagar
+        paid: Paga
+        not_paid: Pendente
+        month: Mês
+        year: Ano
+        balance: Saldo
+        card_installment: Parcela
+        card_installments_count: Quantidade de Parcelas
+        card_installments_count_short: Parcelas
+        created_at: Criado em
+        updated_at: Atualizado em

@@ -1,0 +1,32 @@
+{
+  "name": "<%= Rails.application.config_for(:settings).dig(:site, :name) %>",
+  "short_name": "<%= Rails.application.config_for(:settings).dig(:site, :short_name) %>",
+  "icons": [
+    {
+      "src": "/pwa_logos/512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/pwa_logos/512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/",
+  "id": "finance-rb",
+  "display": "standalone",
+  "scope": "/",
+  "description": "<%= Rails.application.config_for(:settings).dig(:site, :description) %>",
+  "categories": "<%= Rails.application.config_for(:settings).dig(:site, :keywords) %>",
+  "theme_color": "#1a202c",
+  "background_color": "#1a202c",
+  "shortcuts": [
+    {
+      "name": "<%= t('pages.title') %>",
+      "description": "<%= t('pages.subtitle') %>",
+      "url": "<%= pages_path %>"
+    }
+  ]
+}
