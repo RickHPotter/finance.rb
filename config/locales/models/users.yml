@@ -11,7 +11,7 @@ en:
         last_name: Last Name
         email: Email
         password: Password
-        new_password: New Password (leave blank if you don't want to change it)
+        new_password: New Password
         password_confirmation: Password Confirmation
         new_password_confirmation: New Password Confirmation
         remember_me: Remember Me
@@ -31,7 +31,7 @@ pt-BR:
         last_name: Sobrenome
         email: Email
         password: Senha
-        new_password: Nova senha (deixe em branco se não quiser alterar)
+        new_password: Nova senha
         password_confirmation: Confirmação de senha
         new_password_confirmation: Confirmação de nova senha
         remember_me: Sempre lembrar

@@ -8,8 +8,8 @@
     <%= csp_meta_tag %>
 
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/pwa_logos/ios/128.png" type="image/png">
-    <link rel="apple-touch-icon" href="/pwa_logos/ios/512.png">
+    <link rel="icon" href="/pwa_logos/128.png" type="image/png">
+    <link rel="apple-touch-icon" href="/pwa_logos/512.png">
 
     <%= stylesheet_link_tag "tailwind", data: { turbo_track: :reload } %>
     <%= stylesheet_link_tag "application", data: { turbo_track: :reload } %>
@@ -53,12 +53,14 @@
           <%= render_icon(:heart) %>
         <% end %>
       </div>
-      <div class="text-sm text-white hover:bg-gray-600">
-        <%= link_to destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete } do %>
-          <%= t(:sign_out) %>
-          <%= render_icon(:leave) %>
-        <% end %>
-      </div>
+      <% if current_user %>
+        <div class="text-sm text-white hover:bg-gray-600">
+          <%= link_to destroy_user_session_path, class: "flex items-center gap-2 p-2", data: { turbo_method: :delete } do %>
+            <%= t(:sign_out) %>
+            <%= render_icon(:leave) %>
+          <% end %>
+        </div>
+      <% end %>
     </div>
   </div>
 

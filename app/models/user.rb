@@ -87,7 +87,7 @@ class User < ApplicationRecord
     )
   end
 
-  # TODO: setting up a free SMTP server comes first
+  # TODO: make more visible to the user that they need to confirm their email
   # and maybe even before that, switching from Devise to Auth-Zero
   def set_confirmed_at
     self.confirmed_at = Time.zone.today

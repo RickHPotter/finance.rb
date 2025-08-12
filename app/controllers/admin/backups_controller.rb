@@ -12,7 +12,7 @@ class Admin::BackupsController < ApplicationController
     return head :not_found unless path
 
     send_file path,
-              filename: "30fev backup.xlsx",
+              filename: "30fev - #{I18n.l(Time.zone.now, format: '%Y %b %d %Hh%Mm')}.xlsx",
               type: "application/zip",
               disposition: "attachment"
   end

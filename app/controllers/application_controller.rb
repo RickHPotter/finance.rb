@@ -4,7 +4,7 @@
 class ApplicationController < ActionController::Base
   # @callbacks ...............................................................
   before_action :configure_permitted_parameters, if: :devise_controller?
-  before_action :authenticate_user!
+  before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_locale
 
   # @protected_instance_methods ..............................................

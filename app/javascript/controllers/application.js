@@ -25,26 +25,36 @@ document.addEventListener("click", (event) => {
 })
 
 document.addEventListener("DOMContentLoaded", () => {
-  const validStandalonePaths = ["/", "/sidekiq", "/up", "/users", "/lalas"]
+  const devisePaths = [
+    "/users/sign_in",
+    "/users/sign_up",
+    "/users/password/new",
+    "/users/password/edit",
+    "/users/confirmation/new",
+    "/users/unlock/new"
+  ]
+  const otherPaths = ["/", "/up", "/lalas"]
+
+  if (devisePaths.includes(window.location.pathname)) return
+  if (otherPaths.includes(window.location.pathname)) return
+
   const fullPath = window.location.pathname + window.location.search + window.location.hash
 
-  if (!validStandalonePaths.includes(window.location.pathname)) {
-    Turbo.visit("/")
+  Turbo.visit("/")
 
-    document.addEventListener("turbo:load", () => {
-      console.info("you have been turbo hijacked")
-      const centerFrame = document.getElementById("center_container")
+  document.addEventListener("turbo:load", () => {
+    console.info("you have been turbo hijacked")
+    const centerFrame = document.getElementById("center_container")
 
-      if (centerFrame) {
-        const url = new URL(fullPath, window.location.origin)
-        if (!url.searchParams.has("format")) {
-          url.searchParams.set("format", "turbo_stream")
-        }
-
-        centerFrame.src = url.pathname + url.search + url.hash
+    if (centerFrame) {
+      const url = new URL(fullPath, window.location.origin)
+      if (!url.searchParams.has("format")) {
+        url.searchParams.set("format", "turbo_stream")
       }
-    })
-  }
+
+      centerFrame.src = url.pathname + url.search + url.hash
+    }
+  })
 })
 
 document.addEventListener("keyup", (e) => {
