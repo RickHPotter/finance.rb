@@ -3,7 +3,7 @@
 require "zip"
 
 module Export
-  class DatabaseBackupService
+  class DataBackupService
     BACKUP_DIR = Rails.root.join("storage", "backups")
 
     attr_reader :path

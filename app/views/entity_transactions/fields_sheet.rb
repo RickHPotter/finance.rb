@@ -101,25 +101,27 @@ module Views
                 end
               end
 
-              div(class: "pt-3 md:pt-0") do
-                div do
-                  div(class: "grid grid-cols-2 justify-between items-center gap-1") do
-                    bold_label(form, :standalone, "entity_transaction_standalone_#{form.index}")
-                    bold_label(form, :card_bound, "entity_transaction_card_bound_#{form.index}")
-                  end
+              if transactable.is_a? CardTransaction
+                div(class: "pt-3 md:pt-0") do
+                  div do
+                    div(class: "grid grid-cols-2 justify-between items-center gap-1") do
+                      bold_label(form, :standalone, "entity_transaction_standalone_#{form.index}")
+                      bold_label(form, :card_bound, "entity_transaction_card_bound_#{form.index}")
+                    end
 
-                  div(class: "grid grid-cols-2 justify-between items-center gap-1") do
-                    radio_button_tag("bound_type_#{form.index}", :standalone,
-                                     checked: entity_transaction.exchanges.first&.standalone?,
-                                     id: "entity_transaction_standalone_#{form.index}",
-                                     class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
-                                     data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+                    div(class: "grid grid-cols-2 justify-between items-center gap-1") do
+                      radio_button_tag("bound_type_#{form.index}", :standalone,
+                                       checked: entity_transaction.exchanges.first&.standalone?,
+                                       id: "entity_transaction_standalone_#{form.index}",
+                                       class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
+                                       data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
 
-                    radio_button_tag("bound_type_#{form.index}", :card_bound,
-                                     checked: entity_transaction.exchanges.first&.card_bound? || !entity_transaction.exchanges.first&.standalone?,
-                                     id: "entity_transaction_card_bound_#{form.index}",
-                                     class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
-                                     data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+                      radio_button_tag("bound_type_#{form.index}", :card_bound,
+                                       checked: entity_transaction.exchanges.first&.card_bound? || !entity_transaction.exchanges.first&.standalone?,
+                                       id: "entity_transaction_card_bound_#{form.index}",
+                                       class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
+                                       data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+                    end
                   end
                 end
               end
@@ -159,15 +161,15 @@ module Views
 
           PopoverContent(class: "w-40") do
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
-              "Full Price"
+              model_attribute(Exchange, :full_price)
             end
 
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
-              "Half Price"
+              model_attribute(Exchange, :half_price)
             end
 
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
-              "Third Price"
+              model_attribute(Exchange, :third_price)
             end
           end
         end

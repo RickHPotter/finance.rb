@@ -11,10 +11,19 @@ module Views
       end
 
       def view_template
+        transactable = form.options[:parent_builder].options[:parent_builder].object
+        if transactable.is_a?(CashTransaction)
+          :standalone
+        elsif exchange.new_record?
+          :card_bound
+        else
+          exchange.bound_type
+        end => bound_type
+
         div(class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" }) do
           form.hidden_field :id
           form.hidden_field :number, class: :exchange_number
-          form.hidden_field :bound_type, class: :bound_type, value: exchange.new_record? ? :card_bound : exchange.bound_type
+          form.hidden_field :bound_type, class: :bound_type, value: bound_type
           form.hidden_field :exchange_type, value: :monetary
           form.hidden_field :month, class: :exchange_month
           form.hidden_field :year, class: :exchange_year

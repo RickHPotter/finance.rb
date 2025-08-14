@@ -4,7 +4,7 @@ class Admin::BackupsController < ApplicationController
   def data_backup
     return head :unauthorized unless current_user
 
-    service = Export::DatabaseBackupService.new(current_user)
+    service = Export::DataBackupService.new(current_user)
     service.run!
 
     path = service.path

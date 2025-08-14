@@ -2,7 +2,13 @@
   <div class="min-w-full">
     <%= turbo_frame_tag :user_cards do %>
       <div class="min-h-screen" data-controller="datatable">
-        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
+        <div class="p-3 mb-6 bg-white rounded-lg shadow-sm grid grid-cols-1 gap-2">
+          <% include_inactive = params[:include_inactive] == "false" %>
+          <%= link_to include_inactive ? action_message(:show_inactive) : action_message(:hide_inactive),
+                      user_cards_path(include_inactive:),
+                      class: "p-1 rounded-sm border border-slate-700 bg-sky-500 hover:bg-blue-400 transition-colors text-white shadow-lg font-thin",
+                      data: { turbo_frame: :center_container } %>
+
           <%= text_field_tag :search, nil,
                              type: :text, placeholder: "#{action_message(:search)}...",
                              class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
