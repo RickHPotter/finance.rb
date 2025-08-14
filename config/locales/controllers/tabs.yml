@@ -1,6 +1,6 @@
 en:
   tabs:
-    basic: Basics
+    basic: Registrations
     card_transaction: Card Transactions
     cash_transaction: Cash Transactions
     user_bank_account: Accounts
@@ -14,7 +14,7 @@ en:
 
 pt-BR:
   tabs:
-    basic: Básicos
+    basic: Cadastros
     card_transaction: Lançamentos de Cartão
     cash_transaction: Pagamentos de Dinheiro
     user_bank_account: Contas

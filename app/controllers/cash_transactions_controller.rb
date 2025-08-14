@@ -37,6 +37,7 @@ class CashTransactionsController < ApplicationController
       user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id,
       date: Time.zone.now
     )
+    @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id]) if cash_transaction_params[:entity_id]
     @cash_transaction.build_month_year
 
     respond_to do |format|

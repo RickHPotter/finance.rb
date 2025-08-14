@@ -14,6 +14,7 @@ gem "pg"
 gem "propshaft"
 gem "puma"
 gem "redis"
+gem "rufus-scheduler"
 gem "solid_cache"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
@@ -21,8 +22,8 @@ gem "turbo-rails"
 
 # ViewComponent
 gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
-# gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
 gem "view_component"
+# gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
 
 # Authentication
 gem "devise"
@@ -33,13 +34,13 @@ gem "dockerfile-rails"
 gem "dotenv-rails"
 gem "kamal", require: false
 
+# EXCEL
 gem "csv"
 gem "roo"
+gem "write_xlsx"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
-
-gem "write_xlsx"
 
 group :development, :test do
   gem "bullet"

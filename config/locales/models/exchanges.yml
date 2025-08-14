@@ -18,6 +18,9 @@ en:
         card_bound: Card Bound
         created_at: Created at
         updated_at: Updated at
+        full_price: Full Price
+        half_price: Half Price
+        third_price: Third Price
 
 pt-BR:
   activerecord:
@@ -39,3 +42,6 @@ pt-BR:
         card_bound: Cartão
         created_at: Criado em
         updated_at: Atualizado em
+        full_price: Preço Completo
+        half_price: Metade do Preço
+        third_price: Um Terço do Preço

@@ -11,7 +11,7 @@ export default class extends Controller {
   }
 
   initializeTomSelect() {
-    new TomSelect(this.element, {
+    const tom = new TomSelect(this.element, {
       plugins: {
         remove_button:{ title: "Remove this item" },
         clear_button: { title: "Remove all selected options" },
@@ -19,7 +19,12 @@ export default class extends Controller {
       persist: false,
       allowEmptyOption: true,
       placeholder: this.element.dataset.placeholder
-    });
+    })
+
+    tom.on("item_add", () => {
+      tom.setTextboxValue("")
+      tom.refreshOptions(false)
+    })
 
     if (!this.element.querySelector(".clear-button")) { return }
 
@@ -36,14 +41,14 @@ export default class extends Controller {
       labelField: "description",
       searchField: "description",
       load: function(query, callback) {
-        var url = `/cash_transactions/inspect?entity_id=${entityId}&query=` + encodeURIComponent(query);
+        var url = `/cash_transactions/inspect?entity_id=${entityId}&query=` + encodeURIComponent(query)
         fetch(url)
           .then(response => response.json())
           .then(json => {
-            callback(json);
+            callback(json)
           }).catch(()=>{
-            callback();
-          });
+            callback()
+          })
       },
       render: {
         option: function(item, escape) {
@@ -99,6 +104,6 @@ export default class extends Controller {
           </div>`
         }
       },
-    });
+    })
   }
 }

@@ -57,7 +57,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           cached_icon :quote
           form.text_area \
             :comment,
-            class: "text-gray-500 p-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none caret-transparent",
+            class: "text-gray-500 p-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
             data: { controller: "text-area-autogrow blinking-placeholder", text: model_attribute(card_transaction, :comment_placeholder) }
         end
 
