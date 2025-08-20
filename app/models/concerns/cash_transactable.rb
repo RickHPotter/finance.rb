@@ -133,7 +133,7 @@ module CashTransactable
              category_transactions_attributes:,
              entity_transactions_attributes:,
              cash_installments_attributes: [
-               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date, month:, year:, paid: }
+               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date.end_of_day, month:, year:, paid: }
              ])
   end
 

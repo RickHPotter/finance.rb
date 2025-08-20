@@ -100,7 +100,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def destroy
-    card_installment = CardInstallment.find_by(id: params[:card_installment_id])
+    card_installment = CardInstallment.find_by(id: params[:card_installment_id]) || @card_transaction.card_installments.first
 
     @user_card = @card_transaction.user_card
     @card_transaction.destroy
@@ -122,10 +122,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     if params[:commit] == "Update"
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.update(
-            @card_transaction,
-            Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction)
-          )
+          set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
+
+          render turbo_stream: [
+            turbo_stream.update(@card_transaction, Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction)),
+            turbo_stream.update(:tabs, partial: "shared/tabs")
+          ]
         end
       end
     else
@@ -180,7 +182,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
       [ statement_month.strftime("%Y%m").to_i ]
     else
-      [ max_date.strftime("%Y%m").to_i ]
+      [ [ today, max_date ].min.strftime("%Y%m").to_i ]
     end => default_active_month_years
 
     years = (min_date.year..max_date.year)

@@ -32,8 +32,7 @@ module Views
           span(class: "flex justify-between items-center text-sm font-medium text-black mx-auto bg-gray-200 border border-gray-300 rounded-sm") do
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1
-                     #{'opacity-0' if exchange.card_bound? || exchange.new_record?}",
+              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1 #{'opacity-0' if bound_type == :card_bound}",
               data: { action: "click->entity-transaction#prevMonth", entity_transaction_target: :button }
             ) do
               "←"
@@ -49,8 +48,7 @@ module Views
 
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1
-                     #{'opacity-0' if exchange.card_bound? || exchange.new_record?}",
+              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1 #{'opacity-0' if bound_type == :card_bound}",
               data: { action: "click->entity-transaction#nextMonth", entity_transaction_target: :button }
             ) do
               "→"

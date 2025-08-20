@@ -145,7 +145,9 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     cash_transaction.update_columns(price: updated_price, date:, month:, year:)
     cash_transaction.cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
 
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call
+    min_date = changes[:date]&.compact_blank&.min || date
+
+    Logic::RecalculateBalancesService.new(user:, year: min_date.year || date.year, month: min_date.month).call
     Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 

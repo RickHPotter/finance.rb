@@ -2,10 +2,10 @@
 
 module Logic
   class RecalculateBalancesService
-    def initialize(user:, year:, month:)
+    def initialize(user:, year: nil, month: nil)
       @user = user
-      @year = year
-      @month = month
+      @year = year || user.cash_installments.minimum(:year)
+      @month = month || 1
     end
 
     def call

@@ -19,7 +19,7 @@ class Views::Investments::Form < Views::Base
   end
 
   def view_template
-    turbo_frame_tag dom_id @investment do
+    turbo_frame_tag dom_id investment do
       form_with(
         model: investment,
         id: :investment_form,
@@ -31,7 +31,7 @@ class Views::Investments::Form < Views::Base
         div(class: "w-full mb-6") do
           form.text_field :description,
                           class: outdoor_input_class,
-                          autofocus: true,
+                          autofocus: investment.user_bank_account.nil?,
                           autocomplete: :off,
                           value: investment.new_record? ? model_attribute(investment, :description_placeholder) : investment.description,
                           data: { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
@@ -63,6 +63,7 @@ class Views::Investments::Form < Views::Base
           div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
             TextField \
               form, :price,
+              autofocus: investment.user_bank_account.present?,
               inputmode: :numeric,
               svg: :money,
               id: :transaction_price,

@@ -128,7 +128,7 @@ class CashTransaction < ApplicationRecord
     min_date = [
       date,
       Date.new(year, month),
-      Date.new(changes[:year] || year, changes[:month] || month)
+      Date.new(changes[:year]&.min || year, changes[:month]&.min || month)
     ].min
 
     Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call

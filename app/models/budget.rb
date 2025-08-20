@@ -98,7 +98,7 @@ class Budget < ApplicationRecord
   end
 
   def trigger_balance_recalculation
-    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.first || year, month: changes[:month]&.first || month).call
+    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
   end
 end
 

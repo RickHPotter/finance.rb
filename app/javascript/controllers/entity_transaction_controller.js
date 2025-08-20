@@ -51,7 +51,8 @@ export default class extends Controller {
 
         const priceToBeReturnedInput = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
 
-        if (priceToBeReturnedInput === 0 || ( price > 0 === priceToBeReturnedInput > 0 ) && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
+        if (price > 0 === priceToBeReturnedInput > 0 && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
+          console.log()
           this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         }
 
@@ -249,10 +250,14 @@ export default class extends Controller {
   }
 
   prevMonth({ target }) {
+    if (target.classList.contains("opacity-0")) { return }
+
     this.updateExchangeDate(target, -1)
   }
 
   nextMonth({ target }) {
+    if (target.classList.contains("opacity-0")) { return }
+
     this.updateExchangeDate(target, 1)
   }
 
