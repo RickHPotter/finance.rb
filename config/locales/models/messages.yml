@@ -1,0 +1,21 @@
+en:
+  activerecord:
+    models:
+      message:
+        one: Message
+        other: Messages
+    attributes:
+      message:
+        id: ID
+        body_placeholder: Type your message
+
+pt-BR:
+  activerecord:
+    models:
+      message:
+        one: Mensagem
+        other: Mensagens
+    attributes:
+      message:
+        id: ID
+        body_placeholder: Digite sua mensagem

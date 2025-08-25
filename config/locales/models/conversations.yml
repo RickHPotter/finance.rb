@@ -1,0 +1,21 @@
+en:
+  activerecord:
+    models:
+      conversation:
+        one: Conversation
+        other: Conversations
+    attributes:
+      conversation:
+        id: ID
+        chat_with: Chat with
+
+pt-BR:
+  activerecord:
+    models:
+      conversation:
+        one: Conversa
+        other: Conversas
+    attributes:
+      conversation:
+        id: ID
+        chat_with: Fale com

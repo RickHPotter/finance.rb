@@ -7,6 +7,7 @@ en:
     user_card: Cards
     category: Categories
     entity: Entities
+    conversation: Conversations
     pix: Pix
     budget: Budget
     investment: Investment
@@ -21,6 +22,7 @@ pt-BR:
     user_card: Cartões
     category: Categorias
     entity: Entidades
+    conversation: Conversas
     pix: Pix
     budget: Orçamento
     investment: Investimento

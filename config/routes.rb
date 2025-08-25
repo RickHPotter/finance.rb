@@ -83,5 +83,9 @@ Rails.application.routes.draw do
     get :data_backup, to: "backups#data_backup"
   end
 
+  resources :conversations, only: %i[index show create] do
+    resources :messages, only: :create
+  end
+
   root "pages#index"
 end

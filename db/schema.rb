@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_01_105224) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_25_183512) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -141,6 +141,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_105224) do
     t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
   end
 
+  create_table "conversations", force: :cascade do |t|
+    t.bigint "sender_id", null: false
+    t.bigint "recipient_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["recipient_id"], name: "index_conversations_on_recipient_id"
+    t.index ["sender_id"], name: "index_conversations_on_sender_id"
+  end
+
   create_table "entities", force: :cascade do |t|
     t.string "entity_name", null: false
     t.boolean "active", default: true, null: false
@@ -232,6 +241,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_105224) do
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
 
+  create_table "messages", force: :cascade do |t|
+    t.bigint "conversation_id", null: false
+    t.bigint "user_id", null: false
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["conversation_id"], name: "index_messages_on_conversation_id"
+    t.index ["user_id"], name: "index_messages_on_user_id"
+  end
+
   create_table "references", force: :cascade do |t|
     t.bigint "user_card_id", null: false
     t.integer "month", null: false
@@ -312,6 +331,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_105224) do
   add_foreign_key "cash_transactions", "users"
   add_foreign_key "categories", "users"
   add_foreign_key "category_transactions", "categories"
+  add_foreign_key "conversations", "users", column: "recipient_id"
+  add_foreign_key "conversations", "users", column: "sender_id"
   add_foreign_key "entities", "users"
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "cash_transactions"
@@ -321,6 +342,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_01_105224) do
   add_foreign_key "investments", "cash_transactions"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
+  add_foreign_key "messages", "conversations"
+  add_foreign_key "messages", "users"
   add_foreign_key "references", "user_cards"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"

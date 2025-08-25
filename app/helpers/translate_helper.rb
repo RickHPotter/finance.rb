@@ -81,18 +81,6 @@ module TranslateHelper
     "#{I18n.t("gerund.#{action_name}")} #{controller_name.singularize.capitalize}"
   end
 
-  # Dynamically generates a submit button label based on the current controller action.
-  #
-  # @example Get submit button label:
-  #   submit
-  #   # => "Create" or "Update" (depending on the controller action)
-  #
-  # @return [String] Submit button label for the current controller action.
-  #
-  def submit
-    I18n.t("actions.#{action_name}")
-  end
-
   # @return [String] Action shortcut for I18n.
   #
   def action_message(action)

@@ -48,6 +48,7 @@ en:
     submit: "Submit"
     select: "Select one"
     selecta: "Select one"
+    send: "Send"
     toggle_sign: "Toggle Sign"
     calculate_installments_price: "Calculate Installments Price"
 
@@ -125,6 +126,7 @@ pt-BR:
     submit: "Salvar"
     select: "Selecione um"
     selecta: "Selecione uma"
+    send: "Enviar"
     toggle_sign: "Inverter Sinal"
     calculate_installments_price: "Calcular Preço das Parcelas"
 

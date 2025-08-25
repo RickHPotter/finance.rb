@@ -24,6 +24,10 @@ class User < ApplicationRecord
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
 
+  # FIXME: pretty sure this does not work for recipient
+  has_many :conversations, foreign_key: :sender_id
+  has_many :messages
+
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
   validates :email, uniqueness: true

@@ -56,6 +56,21 @@ class RailsDate {
     return `${yyyy}-${mm}-${dd}T${hh}:${min}`
   }
 
+  humanisedDateTime() {
+    const proposedDate = this.date()
+    const yyyy = proposedDate.getFullYear()
+    const mm = String(proposedDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(proposedDate.getDate()).padStart(2, '0')
+    const hh = String(proposedDate.getHours()).padStart(2, '0')
+    const min = String(proposedDate.getMinutes()).padStart(2, '0')
+
+    if (locale == "en") {
+      return `${MONTHS_FULL[this.month - 1].toLowerCase()} ${dd} ${hh}:${min}`
+    } else {
+      return `${dd} ${MONTHS_FULL[this.month - 1].toLowerCase()} ${hh}:${min}`
+    }
+  }
+
   monthYear() {
     if (!this.year)  { return }
     if (!this.month) { return }

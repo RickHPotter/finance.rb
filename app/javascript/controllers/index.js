@@ -13,6 +13,9 @@ application.register("autosave", AutosaveController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import ChatController from "./chat_controller"
+application.register("chat", ChatController)
+
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
 
