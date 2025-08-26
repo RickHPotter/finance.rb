@@ -214,12 +214,13 @@ export default class extends Controller {
   }
 
   // search
-  submitWithDelay() {
-    clearTimeout(this.debounceTimeout)
-
-    this.debounceTimeout = setTimeout(() => {
-      this.element.requestSubmit()
-    }, 800)
+  // NOTE: debounce set to OFF temporarily to see how the users react (haha)
+  submitWithDelay(event) {
+    // clearTimeout(this.debounceTimeout)
+    //
+    // this.debounceTimeout = setTimeout(() => {
+    //   this.element.requestSubmit()
+    // }, 800)
   }
 
   submit() {
@@ -271,22 +272,43 @@ export default class extends Controller {
     })
   }
 
-  async _updateInstallmentsPrices() {
-    const totalCents = parseInt(_removeMask(this.priceInputTarget.value))
-    const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+  // FIXME: this way will be a legacy and will serve as a user_card setting
+  // async _updateInstallmentsPrices() {
+  //   const totalCents = parseInt(_removeMask(this.priceInputTarget.value))
+  //   const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+  //
+  //   const baseCents = Math.floor(totalCents / installmentsCount)
+  //   const remainder = totalCents - baseCents * installmentsCount
+  //
+  //   await this._updateInstallmentsFields(installmentsCount)
+  //
+  //   let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+  //   if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
+  //
+  //   visibleInstallmentsInputs.forEach((input, index) => {
+  //     const valueCents = baseCents + (index < remainder ? 1 : 0)
+  //     const value = (valueCents / 100).toFixed(2)
+  //     input.value = _applyMask(value)
+  //   })
+  // }
 
-    const baseCents = Math.floor(totalCents / installmentsCount)
+  async _updateInstallmentsPrices() {
+    const totalCents        = parseInt(_removeMask(this.priceInputTarget.value), 10)
+    const installmentsCount = parseInt(this.installmentsCountInputTarget.value, 10)
+
+    const baseCents = totalCents >= 0
+      ? Math.floor(totalCents / installmentsCount)
+      : Math.ceil(totalCents / installmentsCount)
+
     const remainder = totalCents - baseCents * installmentsCount
 
     await this._updateInstallmentsFields(installmentsCount)
 
-    let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
-    if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
+    const visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility?.() ?? true)
 
     visibleInstallmentsInputs.forEach((input, index) => {
-      const valueCents = baseCents + (index < remainder ? 1 : 0)
-      const value = (valueCents / 100).toFixed(2)
-      input.value = _applyMask(value)
+      const valueCents = index === 0 ? (baseCents + remainder) : baseCents
+      input.value = _applyMask((valueCents / 100).toFixed(2))
     })
   }
 

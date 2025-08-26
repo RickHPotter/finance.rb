@@ -8,6 +8,7 @@ class Entity < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :entity_user, class_name: "User", optional: true
 
   has_many :entity_transactions, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
@@ -47,14 +48,17 @@ end
 #  entity_name             :string           not null, uniquely indexed => [user_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
+#  entity_user_id          :bigint           indexed
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
 #
 # Indexes
 #
+#  index_entities_on_entity_user_id    (entity_user_id)
 #  index_entities_on_user_id           (user_id)
 #  index_entity_name_on_composite_key  (user_id,entity_name) UNIQUE
 #
 # Foreign Keys
 #
+#  fk_rails_...  (entity_user_id => users.id)
 #  fk_rails_...  (user_id => users.id)
 #

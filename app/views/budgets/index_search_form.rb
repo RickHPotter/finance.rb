@@ -75,6 +75,8 @@ class Views::Budgets::IndexSearchForm < Views::Base
           end
         end
       end
+
+      form.submit :search, class: :hidden
     end
   end
 

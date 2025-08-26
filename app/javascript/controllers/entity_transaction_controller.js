@@ -167,17 +167,19 @@ export default class extends Controller {
     const totalCents     = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
     const exchangesCount = parseInt(this.exchangesCountInputTarget.value)
 
-    const baseCents = Math.floor(totalCents / exchangesCount)
+    const baseCents = totalCents >= 0
+      ? Math.floor(totalCents / exchangesCount)
+      : Math.ceil(totalCents / exchangesCount)
+
     const remainder = totalCents - baseCents * exchangesCount
 
     await this._updateExchangesFields(exchangesCount)
 
-    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility())
+    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility?.() ?? true)
 
     visibleExchangesInputs.forEach((input, index) => {
-      const valueCents = baseCents + (index < remainder ? 1 : 0)
-      const value = (valueCents / 100).toFixed(2)
-      input.value = this._applyMask(value)
+      const valueCents = index === 0 ? (baseCents + remainder) : baseCents
+      input.value = this._applyMask((valueCents / 100).toFixed(2))
     })
   }
 

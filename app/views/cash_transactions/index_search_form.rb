@@ -193,6 +193,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           end
         end
       end
+
+      form.submit :search, class: :hidden
     end
   end
 

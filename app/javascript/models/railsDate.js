@@ -100,9 +100,16 @@ class RailsDate {
 
   monthsForwards(months) {
     const newDate = new Date(this._date)
-    newDate.setMonth(this._date.getMonth() + months)
-    this._applyDate(newDate)
+    const targetMonth = this._date.getMonth() + months
+    const targetYear = this._date.getFullYear()
 
+    const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate()
+
+    const newDay = Math.min(this._date.getDate(), lastDayOfTargetMonth)
+
+    newDate.setFullYear(targetYear, targetMonth, newDay)
+
+    this._applyDate(newDate)
     return this
   }
 

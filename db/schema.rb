@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_25_183512) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_27_003554) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -161,6 +161,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_183512) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "entity_user_id"
+    t.index ["entity_user_id"], name: "index_entities_on_entity_user_id"
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
@@ -334,6 +336,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_183512) do
   add_foreign_key "conversations", "users", column: "recipient_id"
   add_foreign_key "conversations", "users", column: "sender_id"
   add_foreign_key "entities", "users"
+  add_foreign_key "entities", "users", column: "entity_user_id"
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "cash_transactions"
   add_foreign_key "exchanges", "entity_transactions"
