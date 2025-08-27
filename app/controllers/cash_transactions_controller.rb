@@ -165,23 +165,6 @@ class CashTransactionsController < ApplicationController
     }
   end
 
-  def inspect
-    @cash_installments = Logic::CashInstallments.find_by_query(current_user, params[:entity_id], params[:query])
-
-    render json: @cash_installments.map { |ci|
-      {
-        id: ci.id,
-        date: I18n.l(ci.date.to_date, format: :shorter),
-        price: from_cent_based_to_float(ci.price, "R$"),
-        description: ci.cash_transaction.description,
-        cash_installments_count: ci.cash_installments_count,
-        pretty_installments: pretty_installments(ci.number, ci.cash_installments_count),
-        bg_colour: ci.cash_transaction.categories&.first&.bg_colour,
-        categories: ci.cash_transaction.categories.map(&:category_name)
-      }
-    }
-  end
-
   private
 
   # Use callbacks to share common setup or constraints between actions.

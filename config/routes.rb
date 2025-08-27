@@ -41,7 +41,6 @@ Rails.application.routes.draw do
   resources :cash_transactions, except: :show do
     collection do
       get :month_year
-      get :inspect
     end
   end
 
