@@ -1,5 +1,8 @@
 <%= content_tag :div, class: "rounded-lg shadow-sm overflow-hidden my-3", data: { id: category.id, datatable_target: :row } do %>
-  <%= content_tag :div, class: "p-4 bg-gradient-to-r #{category.from_bg} #{category.via_bg} to-white #{category.text_colour}" do %>
+  <% bg = solid_or_gradient_style(category) %>
+  <% text = auto_text_color(category.hex_colour) %>
+
+  <%= content_tag :div, class: "p-4 whitespace-nowrap border-0 rounded-sm shadow-md", style: "background-clip: padding-box; #{bg}; #{text}" do %>
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <%= render_icon :category %>

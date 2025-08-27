@@ -3,7 +3,10 @@
                 data: { id: category.id, datatable_target: :row } do %>
 
     <div class="col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold">
-      <%= content_tag :span, category.name, class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md #{category.bg_colour} #{category.text_colour}" %>
+      <% bg = solid_or_gradient_style(category) %>
+      <% text = auto_text_color(category.hex_colour) %>
+
+      <%= content_tag :span, category.name, class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md", style: "background-clip: padding-box; #{bg}; #{text}" %>
     </div>
 
     <div class="jump_to_card_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">

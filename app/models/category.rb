@@ -36,24 +36,10 @@ class Category < ApplicationRecord
     built_in
   end
 
-  def bg_colour
-    COLOURS.dig(colour, :bg)
-  end
+  def hex_colour
+    return colour if colour.start_with?("#")
 
-  def from_bg
-    COLOURS.dig(colour, :from)
-  end
-
-  def via_bg
-    COLOURS.dig(colour, :via)
-  end
-
-  def to_bg
-    COLOURS.dig(colour, :to)
-  end
-
-  def text_colour
-    COLOURS.dig(colour, :text)
+    COLOURS.dig(colour, :hex)
   end
 
   def name

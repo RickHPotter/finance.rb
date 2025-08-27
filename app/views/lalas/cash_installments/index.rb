@@ -7,6 +7,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :cash_installments
 
@@ -18,23 +19,28 @@ class Views::Lalas::CashInstallments::Index < Views::Base
   def view_template
     if mobile
       cash_installments.each do |cash_installment|
-        render_mobile_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction
+        style = solid_or_gradient_style(cash_transaction.categories)
+
+        render_mobile_cash_installment(cash_installment, cash_transaction, style)
       end
     else
       cash_installments.each do |cash_installment|
-        render_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction
+        style = solid_or_gradient_style(cash_transaction.categories)
+
+        render_cash_installment(cash_installment, cash_transaction, style)
       end
     end
   end
 
-  def render_mobile_cash_installment(cash_installment)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, style)
     turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
-
       icon = choose_icon(cash_installment)
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-4",
+        class: "rounded-lg shadow-sm overflow-hidden my-4",
+        style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
@@ -78,12 +84,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
             div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
               cash_transaction.entities.each do |entity|
-                Link(
-                  href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-                  size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-xs",
-                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-                ) do
+                span(class: "flex flex-col items-center w-16 text-center text-xs") do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
                   span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
                 end
@@ -95,24 +96,23 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     end
   end
 
-  def render_cash_installment(cash_installment)
+  def render_cash_installment(cash_installment, cash_transaction, style)
     turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
-
       icon = choose_icon(cash_installment)
 
       div(
-        class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
-                  hover:opacity-80".squish,
+        class: "grid grid-cols-8 border-b border-slate-200 hover:opacity-80",
+        style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
         div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 pl-2") do
-          span(class: "px-1 rounded-sm text-slate-900 mr-auto") do
-            format = cash_transaction.investment? ? "%B %Y" : :shorter
-            I18n.l(cash_installment.date, format:)
+          date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
+          div(class: "grid grid-cols-1") do
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
+            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
           end
         end
 
@@ -139,12 +139,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
           cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
             entity = entity_transaction.entity
 
-            Link(
-              href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-              size: :xs,
-              class: "grid grid-cols-1 text-xs mx-auto",
-              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-            ) do
+            span(class: "grid grid-cols-1 text-xs mx-auto") do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
               span(class: :entity_entity_name) { entity.entity_name }
             end
@@ -163,17 +158,6 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         end
       end
     end
-  end
-
-  def solid_colour_or_gradient(cash_transaction)
-    if cash_transaction.categories.count > 1
-      return [
-        cash_transaction.categories.first.from_bg, *cash_transaction.categories[1..-2].map(&:via_bg),
-        cash_transaction.categories.last.to_bg
-      ].join(" ")
-    end
-
-    cash_transaction.categories.first&.bg_colour
   end
 
   def choose_icon(cash_installment)

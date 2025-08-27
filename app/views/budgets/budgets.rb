@@ -86,7 +86,10 @@ class Views::Budgets::Budgets < Views::Base
           div(class: "flex items-center justify-between gap-2") do
             div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
               budget.categories.each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1  #{category.bg_colour.sub('bg', 'border')} text-xs") do
+                span(
+                  class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
+                  style: "border-color: #{category.hex_colour}"
+                ) do
                   category.name
                 end
               end
@@ -143,7 +146,7 @@ class Views::Budgets::Budgets < Views::Base
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
           budget.categories.each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm #{category.bg_colour} border-1 border-white text-sm") do
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm border-1 border-white text-sm", style: "background: #{category.hex_colour}") do
               category.name
             end
           end

@@ -8,6 +8,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :cash_installments
 
@@ -21,15 +22,17 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
+        style = solid_or_gradient_style(cash_transaction.categories)
 
-        render_mobile_cash_installment(cash_installment, cash_transaction, avatar_name)
+        render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
+        style = solid_or_gradient_style(cash_transaction.categories)
 
-        render_cash_installment(cash_installment, cash_transaction, avatar_name)
+        render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
     end
   end
@@ -41,7 +44,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, avatar_name) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
@@ -57,7 +60,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-4 #{'animate-pulse' if should_display_link_to_pay}",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 #{'animate-pulse' if should_display_link_to_pay}",
+        style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
@@ -98,7 +102,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             div(class: "text-xs text-start flex-1 flex items-center") do
               if should_display_link_to_pay
                 button(
-                  class: "hover:bg-white hover:text-honda hover:rounded-full hover:scale-160 transition-all duration-200",
+                  class: "hover:bg-white hover:text-red-400 hover:rounded-full hover:scale-160 transition-all duration-200",
                   title: model_attribute(cash_installment, :pay),
                   data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
                 ) do
@@ -158,15 +162,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
+  def render_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
-                  hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}".squish,
+        class: "grid grid-cols-12 border-b border-slate-200 hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}",
+        style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -176,7 +180,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           if should_display_link_to_pay
             button(
               type: :button,
-              class: "hover:bg-white hover:text-honda hover:rounded-full hover:scale-160",
+              class: "hover:bg-white hover:text-red-500 hover:rounded-full hover:scale-160",
               title: model_attribute(cash_installment, :pay),
               data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
             ) do
@@ -270,17 +274,6 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
       end
     end
-  end
-
-  def solid_colour_or_gradient(cash_transaction)
-    if cash_transaction.categories.count > 1
-      return [
-        cash_transaction.categories.first.from_bg, *cash_transaction.categories[1..-2].map(&:via_bg),
-        cash_transaction.categories.last.to_bg
-      ].join(" ")
-    end
-
-    cash_transaction.categories.first&.bg_colour
   end
 
   def choose_link_and_icon(cash_installment)

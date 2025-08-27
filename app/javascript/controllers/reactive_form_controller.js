@@ -364,7 +364,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
   }
@@ -393,7 +393,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
   }

@@ -8,6 +8,7 @@ class Views::CardInstallments::Index < Views::Base
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :card_installments, :user_card_id
 
@@ -20,21 +21,26 @@ class Views::CardInstallments::Index < Views::Base
   def view_template
     if mobile
       card_installments.each do |card_installment|
-        render_mobile_card_installment(card_installment)
+        card_transaction = card_installment.card_transaction
+        style = solid_or_gradient_style(card_transaction.categories)
+
+        render_mobile_card_installment(card_installment, card_transaction, style)
       end
     else
       card_installments.each do |card_installment|
-        render_card_installment(card_installment)
+        card_transaction = card_installment.card_transaction
+        style = solid_or_gradient_style(card_transaction.categories)
+
+        render_card_installment(card_installment, card_transaction, style)
       end
     end
   end
 
-  def render_mobile_card_installment(card_installment)
+  def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
-      card_transaction = card_installment.card_transaction
-
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{card_transaction.categories&.first&.bg_colour} my-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-2",
+        style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
@@ -94,12 +100,11 @@ class Views::CardInstallments::Index < Views::Base
     end
   end
 
-  def render_card_installment(card_installment)
+  def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
-      card_transaction = card_installment.card_transaction
-
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(card_transaction)} hover:opacity-60",
+        class: "grid grid-cols-12 border-b border-slate-200 hover:opacity-60",
+        style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
@@ -207,16 +212,5 @@ class Views::CardInstallments::Index < Views::Base
         end
       end
     end
-  end
-
-  def solid_colour_or_gradient(card_transaction)
-    if card_transaction.categories.count > 1
-      return [
-        card_transaction.categories.first.from_bg, *card_transaction.categories[1..-2].map(&:via_bg),
-        card_transaction.categories.last.to_bg
-      ].join(" ")
-    end
-
-    card_transaction.categories.first&.bg_colour
   end
 end

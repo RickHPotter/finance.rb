@@ -31,7 +31,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |_form|
+              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       div class: "mb-6 flex gap-4 flex-wrap" do
         month_year_selector(default_year:, years:, active_month_years:)
       end
@@ -49,9 +49,9 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
             data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         end
       end
-    end
 
-    form.submit :search, class: :hidden
+      form.submit :search, class: :hidden
+    end
   end
 
   def month_year_selector(default_year:, years:, active_month_years:)

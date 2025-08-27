@@ -183,7 +183,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def categories_json
     current_user.categories.to_h do |c|
-      [ c.id, c.bg_colour ]
+      [ c.id, c.hex_colour ]
     end.to_json
   end
 

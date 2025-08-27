@@ -9,12 +9,14 @@ class Views::Budgets::CategoryFields < Views::Base
 
   def view_template
     budget_category = form.object
-    budget_category_colour = budget_category&.category&.bg_colour
 
     div(class: "nested-form-wrapper", data: { new_record: budget_category.new_record?, reactive_form_target: "categoryWrapper" }) do
       div(class: "flex w-full my-1") do
         span(class: "flex items-center text-sm font-medium text-black") do
-          div(class: "category_container flex items-center justify-center px-2 py-1 rounded-sm border-1 border-black text-sm #{budget_category_colour}") do
+          div(
+            class: "category_container flex items-center justify-center px-2 py-1 rounded-sm border-1 border-black text-sm",
+            style: "background: #{budget_category&.category&.hex_colour}"
+          ) do
             span(class: "categories_category_name text-nowrap", data: { dynamic_description_target: :category }) do
               budget_category&.category&.name
             end
