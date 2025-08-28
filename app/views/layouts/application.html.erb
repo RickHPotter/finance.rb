@@ -27,6 +27,10 @@
         <%= render "shared/flash" %>
       <% end %>
 
+      <% if Rails.env.development? && current_user %>
+        <h1 class="mt-2 text-center"><%= "Hi, #{current_user.first_name}" %></h1>
+      <% end %>
+
       <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
         <% yield %>
       <% end %>

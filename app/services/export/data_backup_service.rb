@@ -74,7 +74,7 @@ module Export
       end
     end
 
-    def export_final # rubocop:disable Metrics/AbcSize
+    def export_final
       sheet = @workbook.add_worksheet("CASH")
 
       min_date_cash = CashTransaction.order(:year, :month).first

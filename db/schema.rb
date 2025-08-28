@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_27_003554) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_28_220001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -141,13 +141,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_27_003554) do
     t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
   end
 
-  create_table "conversations", force: :cascade do |t|
-    t.bigint "sender_id", null: false
-    t.bigint "recipient_id", null: false
+  create_table "conversation_participants", force: :cascade do |t|
+    t.bigint "conversation_id", null: false
+    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["recipient_id"], name: "index_conversations_on_recipient_id"
-    t.index ["sender_id"], name: "index_conversations_on_sender_id"
+    t.index ["conversation_id"], name: "index_conversation_participants_on_conversation_id"
+    t.index ["user_id"], name: "index_conversation_participants_on_user_id"
+  end
+
+  create_table "conversations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "entities", force: :cascade do |t|
@@ -247,6 +252,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_27_003554) do
     t.bigint "conversation_id", null: false
     t.bigint "user_id", null: false
     t.text "body"
+    t.datetime "read_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
@@ -333,8 +339,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_27_003554) do
   add_foreign_key "cash_transactions", "users"
   add_foreign_key "categories", "users"
   add_foreign_key "category_transactions", "categories"
-  add_foreign_key "conversations", "users", column: "recipient_id"
-  add_foreign_key "conversations", "users", column: "sender_id"
+  add_foreign_key "conversation_participants", "conversations"
+  add_foreign_key "conversation_participants", "users"
   add_foreign_key "entities", "users"
   add_foreign_key "entities", "users", column: "entity_user_id"
   add_foreign_key "entity_transactions", "entities"

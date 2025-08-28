@@ -3,10 +3,10 @@
 class ConversationsController < ApplicationController
   include TabsConcern
 
-  before_action :set_tabs, only: :index
+  before_action :set_tabs, only: %i[index show]
 
   def index
-    @conversations = Conversation.where("sender_id = :user_id OR recipient_id = :user_id", user_id: current_user.id)
+    @conversations = current_user.conversations
 
     render Views::Conversations::Index.new(conversations: @conversations)
   end
@@ -14,16 +14,13 @@ class ConversationsController < ApplicationController
   def show
     @conversation = Conversation.find(params[:id])
     @messages = @conversation.messages.order(created_at: :asc)
+    @messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
 
     render Views::Conversations::Show.new(conversation: @conversation)
   end
 
   def create
-    @conversation = if Conversation.between(params[:sender_id], params[:recipient_id]).exists?
-                      Conversation.between(params[:sender_id], params[:recipient_id]).first
-                    else
-                      Conversation.create!(conversation_params)
-                    end
+    @conversation = Conversation.create!(conversation_params)
 
     redirect_to @conversation
   end
@@ -31,6 +28,6 @@ class ConversationsController < ApplicationController
   private
 
   def conversation_params
-    params.permit(:sender_id, :recipient_id)
+    params.permit(conversation_participants_attributes: %i[id user_id _destroy])
   end
 end

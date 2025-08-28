@@ -11,6 +11,8 @@ class Message < ApplicationRecord
                         target: "messages_#{conversation.id}",
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
+
+  scope :unread, -> { where(read_at: nil) }
 end
 
 # == Schema Information
@@ -19,6 +21,7 @@ end
 #
 #  id              :bigint           not null, primary key
 #  body            :text
+#  read_at         :datetime
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  conversation_id :bigint           not null, indexed

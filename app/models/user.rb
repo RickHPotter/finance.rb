@@ -24,9 +24,11 @@ class User < ApplicationRecord
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
 
-  # FIXME: pretty sure this does not work for recipient
-  has_many :conversations, foreign_key: :sender_id
-  has_many :messages
+  has_many :conversation_participants, dependent: :destroy
+  has_many :conversations, through: :conversation_participants
+
+  has_many :sent_messages, ->(user) { where(user_id: user.id) }, through: :conversations, source: :messages
+  has_many :received_messages, ->(user) { where.not(user_id: user.id) }, through: :conversations, source: :messages
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true

@@ -27,19 +27,25 @@ module TabsConcern
   def set_variables
     set_sublinks
 
-    basic_link = (@basic_tab.find(&:default)            || @basic_tab.first).link
-    card_link  = (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link
-    cash_link  = (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link
+    @main_tab = [
+      Item.new(t("tabs.basic"),
+               :exchange,
+               (@basic_tab.find(&:default) || @basic_tab.first).link,
+               @active_menu == :basic,
+               @basic_tab.map(&:notification_type).max),
 
-    @main_items = [
-      { label: t("tabs.basic"),            icon: :exchange, link: basic_link, default: @active_menu == :basic },
-      { label: t("tabs.card_transaction"), icon: :wallet,   link: card_link,  default: @active_menu == :card },
-      { label: t("tabs.cash_transaction"), icon: :cash,     link: cash_link,  default: @active_menu == :cash }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
+      Item.new(t("tabs.card_transaction"),
+               :wallet,
+               (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link,
+               @active_menu == :card,
+               @card_transaction_tab.map(&:notification_type).max),
 
-    @main_tab = @main_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+      Item.new(t("tabs.cash_transaction"),
+               :cash,
+               (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link,
+               @active_menu == :cash,
+               @cash_transaction_tab.map(&:notification_type).max)
+    ]
 
     @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile
 
@@ -53,17 +59,15 @@ module TabsConcern
   end
 
   def set_basic_sublinks
-    @basic_items = [
-      { label: t("tabs.user_bank_account"), icon: :bank,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
-      { label: t("tabs.user_card"),         icon: :credit_card, link: user_cards_path,         default: @active_sub_menu == :user_card },
-      { label: t("tabs.category"),          icon: :category,    link: categories_path,         default: @active_sub_menu == :category },
-      { label: t("tabs.entity"),            icon: :user_circle, link: entities_path,           default: @active_sub_menu == :entity },
-      { label: t("tabs.conversation"),      icon: :message,     link: conversations_path,      default: @active_sub_menu == :conversation }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
+    converstion_notification_type = current_user.received_messages.unread.any? ? 1 : 0
 
-    @basic_tab = @basic_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+    @basic_tab = [
+      Item.new(t("tabs.user_bank_account"), :bank,        user_bank_accounts_path, @active_sub_menu == :user_bank_account),
+      Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card),
+      Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category),
+      Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity),
+      Item.new(t("tabs.conversation"),      :message,     conversation_path(1),    @active_sub_menu == :conversation, converstion_notification_type)
+    ]
   end
 
   def set_card_transaction_sublinks
@@ -71,32 +75,26 @@ module TabsConcern
 
     @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      Components::TabsComponent::Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, :center_container)
+      Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default)
     end
 
     if @card_transaction_tab.present?
-      @card_transaction_tab << Components::TabsComponent::Item.new(action_message(:search),
-                                                                   :magnifying_glass,
-                                                                   search_card_transactions_path,
-                                                                   @active_sub_menu.to_sym == :search,
-                                                                   :center_container)
+      @card_transaction_tab << Item.new(
+        action_message(:search), :magnifying_glass, search_card_transactions_path, @active_sub_menu.to_sym == :search
+      )
       return
     end
 
     @card_transaction_tab <<
-      Components::TabsComponent::Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, :center_container)
+      Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false)
   end
 
   def set_cash_transaction_sublinks
-    @cash_transaction_items = [
-      { label: t("tabs.pix"),        icon: :mobile,      link: cash_transactions_path, default: @active_sub_menu == :pix },
-      { label: t("tabs.budget"),     icon: :piggy_bank,  link: budgets_path,           default: @active_sub_menu == :budget },
-      { label: t("tabs.investment"), icon: :trending_up, link: investments_path,       default: @active_sub_menu == :investment },
-      { label: t("tabs.balance"),    icon: :chart,       link: balances_path,          default: @active_sub_menu == :balance }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
-
-    @cash_transaction_tab = @cash_transaction_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+    @cash_transaction_tab = [
+      Item.new(t("tabs.pix"),        :mobile,      cash_transactions_path, @active_sub_menu == :pix),
+      Item.new(t("tabs.budget"),     :piggy_bank,  budgets_path,           @active_sub_menu == :budget),
+      Item.new(t("tabs.investment"), :trending_up, investments_path,       @active_sub_menu == :investment),
+      Item.new(t("tabs.balance"),    :chart,       balances_path,          @active_sub_menu == :balance)
+    ]
   end
 end

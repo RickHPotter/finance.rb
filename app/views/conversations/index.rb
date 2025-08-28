@@ -24,7 +24,9 @@ class Views::Conversations::Index < Views::Base
         div(class: "p-1 md:p-2 lg:p-3") do
           div(class: "text-center text-black pt-2") do
             turbo_frame_tag :center_container do
-              render Views::Conversations::Show.new(conversation: @conversations.first)
+              @conversations.each do |conversation|
+                turbo_stream_from conversation
+              end
             end
           end
         end

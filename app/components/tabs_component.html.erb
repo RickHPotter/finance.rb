@@ -9,13 +9,24 @@
 
     <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
     <% @items.each_with_index do |item, index| %>
-      <%= content_tag :li, class: "scale-75 md:scale-100 z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
+      <%= content_tag :li, class: "ring-1 rounded-lg ring-gray-800 scale-75 md:scale-100 z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
         <%= link_to item.link,
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },
                     class: "z-30 mb-0 flex items-center justify-center rounded-lg border-0 bg-inherit px-4 py-1 transition-all ease-in-out",
                     data: { turbo_frame: item.turbo_frame, turbo_prefetch: false, material_tailwind_tab_target: "tabLink", id: index, **extra_data },
                     tabindex: "-1" do %>
+
+            <% notification = "bg-orange-500" if item.notification_type == 1 %>
+            <% notification = "bg-red-500" if item.notification_type == 2 %>
+
+            <% if notification %>
+              <span class="absolute flex size-3 z-30 left-3 pointer-events-none">
+                <span class="relative inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                <span class="absolute inline-flex rounded-full size-3 <%= notification %>">
+                </span>
+              </span>
+            <% end %>
 
             <%= content_tag :span, class: "pointer-events-none" do %>
               <%= helpers.render_icon item.icon %>
