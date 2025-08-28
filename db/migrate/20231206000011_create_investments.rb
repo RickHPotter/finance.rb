@@ -3,6 +3,8 @@
 # Investment Migration
 class CreateInvestments < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:investments)
+
     create_table :investments do |t|
       t.string :description, null: true
       t.datetime :date, null: false

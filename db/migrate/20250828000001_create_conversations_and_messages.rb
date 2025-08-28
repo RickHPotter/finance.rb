@@ -4,8 +4,11 @@ class CreateConversationsAndMessages < ActiveRecord::Migration[8.0]
   def change
     # FIXME: remove later BEGIN
     drop_table :messages, if_exists: true
+    drop_table :conversation_participants, if_exists: true
     drop_table :conversations, if_exists: true
     # FIXME: remove later END
+
+    return if table_exists?(:conversations) && table_exists?(:conversation_participants) && table_exists?(:messages)
 
     create_table :conversations do |t|
       t.timestamps

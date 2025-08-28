@@ -3,6 +3,8 @@
 # UserCard Migration
 class CreateUserCards < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:user_cards)
+
     create_table :user_cards do |t|
       t.string :user_card_name, null: false
       t.integer :days_until_due_date, null: false

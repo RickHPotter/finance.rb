@@ -3,6 +3,8 @@
 # Category[Cash/Card]Transaction Migration
 class CreateCategoryTransactions < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:category_transactions)
+
     create_table :category_transactions do |t|
       t.references :category, null: false, foreign_key: true
       t.references :transactable, null: false, polymorphic: true

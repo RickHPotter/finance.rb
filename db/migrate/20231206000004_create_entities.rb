@@ -1,23 +1,25 @@
 # frozen_string_literal: true
 
-# Category Migration
-class CreateCategories < ActiveRecord::Migration[8.0]
+# Entity Migration
+class CreateEntities < ActiveRecord::Migration[8.0]
   def change
-    create_table :categories do |t|
-      t.string :category_name, null: false
-      t.boolean :built_in, null: false, default: false
+    return if table_exists?(:entities)
+
+    create_table :entities do |t|
+      t.string :entity_name, null: false
       t.boolean :active, null: false, default: true
-      t.string :colour, null: false, default: :white
+      t.string :avatar_name, null: false, default: "people/0.png"
       t.integer :card_transactions_count, null: false, default: 0
       t.integer :card_transactions_total, null: false, default: 0
       t.integer :cash_transactions_count, null: false, default: 0
       t.integer :cash_transactions_total, null: false, default: 0
 
       t.references :user, null: false, foreign_key: true
+      t.references :entity_user, null: true, foreign_key: { to_table: :users }
 
       t.timestamps
 
-      t.index %w[user_id category_name], name: "index_category_name_on_composite_key", unique: true
+      t.index %w[user_id entity_name], name: "index_entity_name_on_composite_key", unique: true
     end
   end
 end

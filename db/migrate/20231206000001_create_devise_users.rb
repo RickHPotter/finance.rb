@@ -3,6 +3,8 @@
 # Devise User Migration
 class CreateDeviseUsers < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:users)
+
     create_table :users do |t|
       ## Database authenticatable
       t.string :email,              null: false, default: ""

@@ -3,6 +3,8 @@
 # Entity/Transaction Migration
 class CreateEntityTransactions < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:entity_transactions)
+
     create_table :entity_transactions do |t|
       t.boolean :is_payer, null: false, default: false
       t.integer :status, null: false, default: 0

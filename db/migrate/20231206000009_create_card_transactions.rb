@@ -3,6 +3,8 @@
 # CardTransaction Migration
 class CreateCardTransactions < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:card_transactions)
+
     create_table :card_transactions do |t|
       t.string :description, null: false
       t.text :comment

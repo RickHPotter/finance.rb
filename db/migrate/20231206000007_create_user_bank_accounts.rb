@@ -3,6 +3,8 @@
 # UserBankAccount Migration
 class CreateUserBankAccounts < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:user_bank_accounts)
+
     create_table :user_bank_accounts do |t|
       t.string :user_bank_account_name
       t.integer :agency_number

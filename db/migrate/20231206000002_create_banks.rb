@@ -3,6 +3,8 @@
 # Bank Migration
 class CreateBanks < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:banks)
+
     create_table :banks do |t|
       t.string :bank_name, null: false
       t.integer :bank_code, null: false

@@ -2,6 +2,8 @@
 
 class CreateBudgets < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:budgets)
+
     create_table :budgets do |t|
       t.integer :order_id, null: true
       t.string :description, null: false

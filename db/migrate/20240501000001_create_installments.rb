@@ -3,6 +3,8 @@
 # CardTransaction/CashTransaction Installments Migration
 class CreateInstallments < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:installments)
+
     create_table :installments do |t|
       t.integer :order_id, null: true
       t.integer :number, null: false

@@ -3,6 +3,8 @@
 # Exchange Migration
 class CreateExchanges < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:exchanges)
+
     create_table :exchanges do |t|
       t.string :bound_type, null: false, default: :standalone
       t.integer :exchange_type, null: false, default: 0

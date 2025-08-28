@@ -3,6 +3,8 @@
 # Card Migration
 class CreateCards < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:cards)
+
     create_table :cards do |t|
       t.string :card_name, null: false
 

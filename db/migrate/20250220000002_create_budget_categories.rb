@@ -2,6 +2,8 @@
 
 class CreateBudgetCategories < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:budget_categories)
+
     create_table :budget_categories do |t|
       t.references :budget, null: false, foreign_key: true
       t.references :category, null: false, foreign_key: true

@@ -3,6 +3,8 @@
 # CashTransaction Migration
 class CreateCashTransactions < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:cash_transactions)
+
     create_table :cash_transactions do |t|
       t.string :description, null: false
       t.text :comment

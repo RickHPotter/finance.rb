@@ -2,6 +2,8 @@
 
 class CreateReferences < ActiveRecord::Migration[8.0]
   def change
+    return if table_exists?(:references)
+
     create_table :references do |t|
       t.references :user_card, null: false, foreign_key: true
       t.integer :month, null: false
