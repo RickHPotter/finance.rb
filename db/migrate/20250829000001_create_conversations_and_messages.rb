@@ -24,6 +24,7 @@ class CreateConversationsAndMessages < ActiveRecord::Migration[8.0]
       t.references :conversation, null: false, foreign_key: true
       t.references :user, null: false, foreign_key: true
       t.text :body
+      t.text :headers
       t.datetime :read_at
 
       t.timestamps

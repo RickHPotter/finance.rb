@@ -6,6 +6,8 @@ class UserCard < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :current_closing_date, :current_due_date
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :card
@@ -77,21 +79,27 @@ class UserCard < ApplicationRecord
     saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
   end
 
+  # FIXME: idk even know what to say
   def update_references_and_payments
-    month_years = card_installments_invoices.pluck(:month, :year).uniq
+    return if current_due_date.nil?
+
+    month_years = card_installments_invoices.where(paid: false).order(:year, :month).pluck(:month, :year).uniq
 
     month_years.each do |month, year|
-      next if references.exists?(month:, year:)
-
       card_payment = card_installments_invoices.find_by(month:, year:)
       next if card_payment.nil?
+      next if card_payment.paid?
 
-      references.create(
-        month:,
-        year:,
-        reference_closing_date: card_payment.date - days_until_due_date.days,
-        reference_date: card_payment.date
-      )
+      reference = references.find_by(month:, year:)
+      reference&.destroy
+
+      this_month_due_date = current_due_date.change(month:, year:)
+      before_closing_date = this_month_due_date - days_until_due_date.days - 1.day
+      new_reference = find_or_create_reference_for(before_closing_date)
+      new_reference_date = new_reference.reference_date
+
+      card_payment.update(date: new_reference_date)
+      card_payment.cash_installments.first.update(date: new_reference_date)
     end
   end
 end
