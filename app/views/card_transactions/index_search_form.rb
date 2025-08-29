@@ -16,7 +16,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :user_card, :categories, :entities
+              :user_card, :categories, :entities,
+              :count_by_month_year
 
   def initialize(url:, index_context: {})
     @url = url
@@ -35,6 +36,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
     @user_card = index_context[:user_card]
+    @count_by_month_year = index_context[:count_by_month_year]
 
     set_all_categories
     set_entities
@@ -182,7 +184,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors

@@ -40,7 +40,7 @@ module ColoursHelper
 
       "background-image: #{linear_gradient_css(colours)};"
     else
-      hex = categories.first.hex_colour
+      hex = categories.first&.hex_colour || "#000000"
       "background-color: #{hex};"
     end
   end

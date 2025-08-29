@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Item
-  attr_reader :label, :icon, :link, :default, :notification_type, :turbo_frame
+  attr_accessor :label, :icon, :link, :default, :notification_type, :turbo_frame
 
   def initialize(label, icon, link, default, notification_type = 0, turbo_frame = :center_container) # rubocop:disable Metrics/ParameterLists
     @label = label

@@ -3,13 +3,13 @@
 <% else %>
   <div <%= "data-controller=material-tailwind-tab data-load-on-empty-content=center_container" unless @dependent %>>
 <% end %>
-  <ul class="relative flex list-none rounded-xl p-1 overflow-x-auto"
+  <ul class="relative flex list-none rounded-xl p-1 overflow-x-auto scale-90 md:scale-100"
       data-tabs="tabs" data-default="<%= @default %>" data-material-tailwind-tab-target="tabList"
       role="list">
 
     <% extra_data = @dependent ? { action: "click->material-tailwind-tab#updateParentLink", parent_id: @dependent_no } : {} %>
     <% @items.each_with_index do |item, index| %>
-      <%= content_tag :li, class: "ring-1 rounded-lg ring-gray-800 scale-75 md:scale-100 z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
+      <%= content_tag :li, class: "ring-1 rounded-lg ring-gray-800 z-30 flex-auto text-center w-1/#{@items.count}", data: { material_tailwind_tab_target: :tabItem } do %>
         <%= link_to item.link,
                     role: "tab",
                     aria: { selected: item.default, controls: "tab-item-#{index}" },

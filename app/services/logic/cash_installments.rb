@@ -39,23 +39,5 @@ module Logic
           .where(search_term_condition)
           .order(:order_id)
     end
-
-    def self.build_conditions_from_params(params)
-      params.delete(:controller)
-      params.delete(:action)
-
-      return {} if params.blank?
-
-      installments_price = build_cash_transaction_price_range_conditions(params)
-      params[:price] = build_price_range_conditions(params)
-      params[:cash_installments_count] = build_installments_count_range_conditions(params)
-
-      associations = build_conditions_for_associations(params)
-
-      {
-        price: installments_price,
-        cash_transaction: { **params.compact_blank, **associations.compact_blank }.compact_blank
-      }.compact_blank
-    end
   end
 end

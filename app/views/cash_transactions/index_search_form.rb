@@ -18,7 +18,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :paid, :pending,
-              :user_bank_account_id, :categories, :entities
+              :user_bank_account_id, :categories, :entities,
+              :count_by_month_year
 
   def initialize(url:, index_context: {})
     @url = url
@@ -39,6 +40,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
+    @count_by_month_year = index_context[:count_by_month_year]
 
     set_all_categories
     set_entities
@@ -200,7 +202,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_cash_transaction_path(format: :turbo_stream),
                 id: "new_cash_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors

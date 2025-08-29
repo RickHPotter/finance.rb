@@ -104,7 +104,7 @@ class CashTransactionsController < ApplicationController
     end
   end
 
-  def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
     min_date = cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     max_date = cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
@@ -142,6 +142,12 @@ class CashTransactionsController < ApplicationController
     end => active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
+    if action_name.in? %w[create update]
+      Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
+    else
+      Logic::CashTransactions.find_count_based_on_search(current_user, cash_transaction_params, search_cash_transaction_params)
+    end => count_by_month_year
+
     @index_context = {
       current_user:,
       years:,
@@ -161,7 +167,8 @@ class CashTransactionsController < ApplicationController
       paid:,
       pending:,
       skip_budgets:,
-      force_mobile:
+      force_mobile:,
+      count_by_month_year:
     }
   end
 

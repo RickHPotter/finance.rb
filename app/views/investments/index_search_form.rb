@@ -12,7 +12,8 @@ class Views::Investments::IndexSearchForm < Views::Base
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
               :user_bank_account_id,
-              :user_bank_accounts
+              :user_bank_accounts,
+              :count_by_month_year
 
   def initialize(index_context: {})
     @index_context = index_context
@@ -22,6 +23,7 @@ class Views::Investments::IndexSearchForm < Views::Base
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
     @user_bank_account_id = index_context[:user_bank_account_id]
+    @count_by_month_year = index_context[:count_by_month_year]
 
     set_user_bank_accounts
   end
@@ -76,7 +78,7 @@ class Views::Investments::IndexSearchForm < Views::Base
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_investment_path(format: :turbo_stream),
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors

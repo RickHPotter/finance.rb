@@ -82,6 +82,12 @@ class LalasController < ApplicationController
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
+    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
+      User.first,
+      card_transaction_params.merge(user_card_id: @user_card&.id || [], category_id:, entity_id:),
+      search_card_transaction_params
+    )
+
     @index_context = {
       current_user: User.first,
       years:,
@@ -98,7 +104,8 @@ class LalasController < ApplicationController
       from_installments_count:,
       to_installments_count:,
       user_card: @user_card,
-      force_mobile:
+      force_mobile:,
+      count_by_month_year:
     }
   end
 
@@ -120,8 +127,14 @@ class LalasController < ApplicationController
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(
+      User.first,
+      cash_transaction_params.merge(category_id:, entity_id:),
+      search_cash_transaction_params
+    )
+
     @index_context = {
-      current_user:,
+      current_user: User.first,
       years:,
       default_year:,
       active_month_years:,
@@ -133,7 +146,8 @@ class LalasController < ApplicationController
       paid:,
       pending:,
       skip_budgets:,
-      force_mobile:
+      force_mobile:,
+      count_by_month_year:
     }
   end
 

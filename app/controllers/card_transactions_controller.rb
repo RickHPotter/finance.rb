@@ -213,6 +213,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     end => active_month_years
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
+    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
+      current_user,
+      card_transaction_params.merge(user_card_id: @user_card&.id || []),
+      search_card_transaction_params
+    )
+
     @index_context = {
       current_user:,
       years:,
@@ -229,7 +235,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       from_installments_count:,
       to_installments_count:,
       user_card: @user_card,
-      force_mobile:
+      force_mobile:,
+      count_by_month_year:
     }
   end
 

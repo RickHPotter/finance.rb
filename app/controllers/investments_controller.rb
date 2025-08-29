@@ -110,13 +110,20 @@ class InvestmentsController < ApplicationController
     search_term = search_investment_params[:search_term]
     user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
 
+    count_by_month_year = Logic::Investments.find_count_based_on_search(
+      current_user,
+      investment_params,
+      search_investment_params
+    )
+
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
       search_term:,
-      user_bank_account_id:
+      user_bank_account_id:,
+      count_by_month_year:
     }
   end
 

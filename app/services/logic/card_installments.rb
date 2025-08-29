@@ -7,8 +7,8 @@ module Logic
       year         = month_year[0..3]
       month        = month_year[4..]
       search_term  = search_params.delete(:search_term) || ""
-      entity_ids   = card_transaction_params.delete(:entity_id).presence
       category_ids = card_transaction_params.delete(:category_id).presence
+      entity_ids   = card_transaction_params.delete(:entity_id).presence
 
       joins      = { card_transaction: %i[categories entities] }
       inclusions = joins
@@ -26,8 +26,8 @@ module Logic
                      .where("card_transactions.description ILIKE ?", "%#{search_term}%")
                      .where("installments.year = ? AND installments.month = ?", year, month)
 
-      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
+      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
 
       relation.distinct.order("installments.date, installments.id")
     end
@@ -42,9 +42,15 @@ module Logic
       card_transaction_params[:price] = build_price_range_conditions(search_params)
       card_transaction_params[:card_installments_count] = build_installments_count_range_conditions(search_params)
 
+      if card_transaction_params.is_a? Hash
+        card_transaction_params
+      else
+        card_transaction_params.to_unsafe_h
+      end => params
+
       {
         price: installments_price,
-        card_transaction: card_transaction_params.to_unsafe_h.compact_blank
+        card_transaction: params.without(:card_installments_attributes, :category_transactions_attributes, :entity_transactions_attributes).compact_blank
       }.compact_blank
     end
 
@@ -82,6 +88,30 @@ module Logic
       from_installments_count, to_installments_count = to_installments_count, from_installments_count if from_installments_count > to_installments_count
 
       (from_installments_count..to_installments_count)
+    end
+
+    def self.find_count_based_on_search(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+      search_term  = search_params.delete(:search_term) || ""
+      category_ids = card_transaction_params.delete(:category_id).presence&.compact_blank
+      entity_ids   = card_transaction_params.delete(:entity_id).presence&.compact_blank
+
+      card_installment_ids = card_transaction_params[:card_installment_ids]
+      return user.card_installments.where(id: card_installment_ids) if card_installment_ids.present?
+
+      conditions = build_conditions_from_params(card_transaction_params, search_params)
+      conditions[:card_transaction] = conditions[:card_transaction].except("date") if conditions[:card_transaction].present?
+
+      relation = user.card_installments
+                     .left_joins({ card_transaction: %i[categories entities] })
+                     .where(conditions)
+                     .where("card_transactions.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
+      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+
+      relation = relation.distinct.select("installments.id, installments.month, installments.year")
+
+      relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
     end
   end
 end
