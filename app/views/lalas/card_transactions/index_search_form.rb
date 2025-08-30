@@ -25,7 +25,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
     @user_card = index_context[:user_card]
-    @count_by_month_year = index_context[:count_by_month_year]
+    @count_by_month_year = index_context[:count_by_month_year] || {}
   end
 
   def view_template

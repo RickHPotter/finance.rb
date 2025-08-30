@@ -34,9 +34,9 @@ module Logic
       search_term = search_investment_params.delete(:search_term) || ""
 
       if investment_params.is_a?(Hash)
-        investment_params
+        investment_params.except("date", "price")
       else
-        investment_params.to_unsafe_h
+        investment_params.to_unsafe_h.except("date", "price")
       end => params
 
       params.filter! do |_, value|

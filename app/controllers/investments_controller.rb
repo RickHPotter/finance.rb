@@ -90,12 +90,19 @@ class InvestmentsController < ApplicationController
     default_year = @investment.year
     active_month_years = [ Date.new(@investment.year, @investment.month, 1).strftime("%Y%m").to_i ]
 
+    count_by_month_year = Logic::Investments.find_count_based_on_search(
+      current_user,
+      investment_params,
+      search_investment_params
+    )
+
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
-      user_bank_account_id: [ @investment.user_bank_account_id ]
+      user_bank_account_id: [ @investment.user_bank_account_id ],
+      count_by_month_year:
     }
   end
 

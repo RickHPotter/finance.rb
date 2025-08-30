@@ -103,6 +103,8 @@ class BudgetsController < ApplicationController
     entity_id = [ budget_params[:entity_id] ].flatten&.compact_blank
     search_term = search_budget_params[:search_term]
 
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_user, {}, {}) if @budget&.active?
+
     @index_context = {
       current_user:,
       years:,
@@ -110,7 +112,8 @@ class BudgetsController < ApplicationController
       active_month_years:,
       search_term:,
       category_id:,
-      entity_id:
+      entity_id:,
+      count_by_month_year:
     }
   end
 

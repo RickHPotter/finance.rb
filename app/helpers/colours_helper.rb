@@ -36,7 +36,7 @@ module ColoursHelper
   end
 
   def rgb_to_hex(rgb)
-    "#" + rgb.map { |v| v.to_s(16).rjust(2, "0") }.join
+    "##{rgb.map { |v| v.to_s(16).rjust(2, '0') }.join}"
   end
 
   def relative_luminance(rgb)

@@ -23,7 +23,7 @@ class Views::Investments::IndexSearchForm < Views::Base
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
     @user_bank_account_id = index_context[:user_bank_account_id]
-    @count_by_month_year = index_context[:count_by_month_year]
+    @count_by_month_year = index_context[:count_by_month_year] || {}
 
     set_user_bank_accounts
   end

@@ -8,7 +8,7 @@ class Views::Shared::MonthYearSelector < Views::Base
 
   attr_reader :current_user, :form_id, :default_year, :years, :active_month_years, :count_by_month_year
 
-  def initialize(current_user:, form_id:, default_year:, years:, active_month_years:, count_by_month_year: []) # rubocop:disable Metrics/ParameterLists
+  def initialize(current_user:, form_id:, default_year:, years:, active_month_years:, count_by_month_year: {}) # rubocop:disable Metrics/ParameterLists
     @current_user = current_user
     @form_id = form_id
     @default_year = default_year

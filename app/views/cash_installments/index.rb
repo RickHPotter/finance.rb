@@ -143,7 +143,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto bg-white", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
               cash_transaction.entities.each do |entity|
                 Link(
                   href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),

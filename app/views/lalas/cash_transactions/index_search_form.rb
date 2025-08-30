@@ -27,7 +27,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
-    @count_by_month_year = index_context[:count_by_month_year]
+    @count_by_month_year = index_context[:count_by_month_year] || {}
   end
 
   def view_template
