@@ -110,7 +110,7 @@ end
 #  active          :boolean          default(TRUE), not null
 #  balance         :integer
 #  description     :string           not null
-#  inclusive       :boolean          default(TRUE), not null
+#  inclusive       :boolean          default(FALSE), not null
 #  month           :integer          not null
 #  remaining_value :integer          not null
 #  starting_value  :integer          not null

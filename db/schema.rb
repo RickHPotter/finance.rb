@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_29_000001) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -51,7 +51,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_29_000001) do
     t.integer "starting_value", null: false
     t.integer "remaining_value", null: false
     t.integer "balance"
-    t.boolean "inclusive", default: true, null: false
+    t.boolean "inclusive", default: false, null: false
     t.boolean "active", default: true, null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false

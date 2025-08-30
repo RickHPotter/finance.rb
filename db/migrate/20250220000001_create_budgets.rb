@@ -13,7 +13,7 @@ class CreateBudgets < ActiveRecord::Migration[8.0]
       t.integer :starting_value, null: false
       t.integer :remaining_value, null: false
       t.integer :balance, null: true
-      t.boolean :inclusive, null: false, default: true
+      t.boolean :inclusive, null: false, default: false
       t.boolean :active, null: false, default: true
 
       t.references :user, null: false, foreign_key: true
