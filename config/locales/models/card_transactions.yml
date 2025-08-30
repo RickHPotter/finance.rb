@@ -21,6 +21,7 @@ en:
         user_card_id: Card
         month: Month
         year: Year
+        reference_month_year: Reference Month/Year
         card_installment: Installment
         card_installments_count: Installments Count
         card_installments_count_short: Installments
@@ -66,6 +67,7 @@ pt-BR:
         user_card_id: Cartão
         month: Mês
         year: Ano
+        reference_month_year: Referência Mês/Ano
         card_installment: Parcela
         card_installments_count: Quantidade de Parcelas
         card_installments_count_short: Parcelas

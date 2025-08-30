@@ -36,7 +36,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
     @user_card = index_context[:user_card]
-    @count_by_month_year = index_context[:count_by_month_year]
+    @count_by_month_year = index_context[:count_by_month_year] || []
 
     set_all_categories
     set_entities

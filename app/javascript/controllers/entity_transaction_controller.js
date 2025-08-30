@@ -231,6 +231,8 @@ export default class extends Controller {
 
     const proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
     proposedDate.monthsForwards(startingNumber)
+    proposedDate.setHour(0)
+    proposedDate.setMinute(0)
 
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()

@@ -27,8 +27,8 @@
               form, :current_closing_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
-              min: ( Date.current.prev_month.beginning_of_month - 15.days ).strftime("%Y-%m-%d"),
-              max: ( Date.current.next_month.end_of_month + 15.days ).strftime("%Y-%m-%d"),
+              min: ( Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
+              max: ( Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
               value: @user_card.new_record? ? Date.current : @user_card.calculate_reference_date(Date.current) - @user_card.days_until_due_date
             %>
       </div>
@@ -39,8 +39,8 @@
               form, :current_due_date,
               type: :date, svg: :calendar,
               class: "font-graduate",
-              min: ( Date.current.prev_month.beginning_of_month - 15.days ).strftime("%Y-%m-%d"),
-              max: ( Date.current.next_month.end_of_month + 15.days ).strftime("%Y-%m-%d"),
+              min: ( Date.current.prev_month.beginning_of_month - 15.days).strftime("%Y-%m-%d"),
+              max: ( Date.current.next_month.end_of_month + 15.days).strftime("%Y-%m-%d"),
               value: @user_card.new_record? ? Date.current + 7.days : @user_card.calculate_reference_date(Date.current)
             %>
       </div>

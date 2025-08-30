@@ -66,7 +66,11 @@ module TabsConcern
       Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card),
       Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category),
       Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity),
-      Item.new(t("tabs.conversation"),      :message,     conversation_path(1),    @active_sub_menu == :conversation, converstion_notification_type)
+      Item.new(t("tabs.conversation"),
+               :message,
+               conversation_path(1, format: :turbo_stream),
+               @active_sub_menu == :conversation,
+               converstion_notification_type)
     ]
   end
 

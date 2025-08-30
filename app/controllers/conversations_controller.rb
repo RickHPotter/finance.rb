@@ -13,10 +13,18 @@ class ConversationsController < ApplicationController
 
   def show
     @conversation = Conversation.find(params[:id])
-    @messages = @conversation.messages.order(created_at: :asc)
+    @messages = @conversation.messages.order(:created_at)
     @messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
 
-    render Views::Conversations::Show.new(conversation: @conversation)
+    respond_to do |format|
+      format.html do
+        render Views::Conversations::Show.new(conversation: @conversation)
+      end
+
+      format.turbo_stream do
+        set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+      end
+    end
   end
 
   def create

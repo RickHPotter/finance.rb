@@ -3,7 +3,7 @@ import RailsDate from "../models/railsDate"
 
 // Connects to data-controller="chat"
 export default class extends Controller {
-  static targets = ["scroll", "messageTime", "messageAlignment", "messageColour", "input", "form"]
+  static targets = ["scroll", "messageTime", "messageAlignment", "messageColour", "messageAction", "input", "form"]
 
   connect() {
     this.localiseDates()
@@ -35,9 +35,11 @@ export default class extends Controller {
     if (currentUserId === messageUserId) {
       this.messageAlignmentTarget.classList.add("justify-end")
       this.messageColourTarget.classList.add("bg-blue-500", "text-white", "rounded-br-none")
+      if (this.hasMessageActionTarget) { this.messageActionTarget.classList.add("hidden") }
     } else {
       this.messageAlignmentTarget.classList.add("justify-start")
       this.messageColourTarget.classList.add("bg-gray-300", "text-gray-900", "rounded-bl-none")
+      if (this.hasMessageActionTarget) { this.messageActionTarget.classList.remove("hidden") }
     }
 
     if (!this.hasMessageTarget) { return }

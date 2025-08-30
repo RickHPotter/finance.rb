@@ -10,6 +10,7 @@ class CardTransaction < ApplicationRecord
   include EntityTransactable
   include HasAdvancePayments
   include Budgetable
+  include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :duplicate

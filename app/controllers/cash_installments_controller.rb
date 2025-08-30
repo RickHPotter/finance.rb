@@ -22,7 +22,7 @@ class CashInstallmentsController < ApplicationController
     cash_installments = CashInstallment.where(id: params[:ids]).order(:order_id)
     min_date = [ *cash_installments.pluck(:date), date ].min
 
-    cash_installments.map! do |cash_installment|
+    cash_installments.each do |cash_installment|
       update_installment(cash_installment, date)
     end
 

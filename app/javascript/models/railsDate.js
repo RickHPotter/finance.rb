@@ -146,6 +146,16 @@ class RailsDate {
     return this
   }
 
+  setHour(hour) {
+    this.hour = hour
+    this._date.setHours(hour)
+  }
+
+  setMinute(minute) {
+    this.minute = minute
+    this._date.setMinutes(minute)
+  }
+
   _applyDate(date) {
     this.year = date.getFullYear()
     this.month = date.getMonth() + 1

@@ -22,6 +22,7 @@ en:
         user_card_id: Card
         month: Month
         year: Year
+        reference_month_year: Reference Month/Year
         balance: Balance
         cash_installment: Installment
         cash_installments_count: Installments Count
@@ -65,6 +66,7 @@ pt-BR:
         user_card_id: Cartão
         month: Mês
         year: Ano
+        reference_month_year: Referência Mês/Ano
         balance: Saldo
         cash_installment: Parcela
         cash_installments_count: Quantidade de Parcelas

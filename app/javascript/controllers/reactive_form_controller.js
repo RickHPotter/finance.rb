@@ -214,13 +214,12 @@ export default class extends Controller {
   }
 
   // search
-  // NOTE: debounce set to OFF temporarily to see how the users react (haha)
   submitWithDelay(event) {
-    // clearTimeout(this.debounceTimeout)
-    //
-    // this.debounceTimeout = setTimeout(() => {
-    //   this.element.requestSubmit()
-    // }, 800)
+    clearTimeout(this.debounceTimeout)
+
+    this.debounceTimeout = setTimeout(() => {
+      this.element.requestSubmit()
+    }, 900)
   }
 
   submit() {

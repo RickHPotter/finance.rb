@@ -9,6 +9,7 @@ class CashTransaction < ApplicationRecord
   include CategoryTransactable
   include EntityTransactable
   include Budgetable
+  include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :flag_for_balance_recalculation
@@ -59,9 +60,9 @@ class CashTransaction < ApplicationRecord
     cash_installments.each_with_index do |installment, index|
       next if installment.paid?
 
-      installment.date = date + index.months
-      installment.month = installment.date.month
-      installment.year = installment.date.year
+      installment.date ||= date + index.months
+      installment.month ||= installment.date.month
+      installment.year ||= installment.date.year
     end
   end
 

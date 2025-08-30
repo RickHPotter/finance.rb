@@ -32,13 +32,25 @@ class CashTransactionsController < ApplicationController
 
   def show; end
 
-  def new
+  def new # rubocop:disable Metrics/AbcSize
     @cash_transaction = current_user.cash_transactions.new(
       user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id,
       date: Time.zone.now
     )
+    @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id]) if cash_transaction_params[:category_id]
     @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id]) if cash_transaction_params[:entity_id]
-    @cash_transaction.build_month_year
+
+    if cash_transaction_params[:cash_installments_attributes].present?
+      @cash_transaction.cash_installments = []
+      @cash_transaction.cash_installments_attributes = cash_transaction_params[:cash_installments_attributes]
+      @cash_transaction.description = cash_transaction_params[:description]
+      @cash_transaction.price = cash_transaction_params[:price]
+      @cash_transaction.date = cash_transaction_params[:date]
+      @cash_transaction.month = cash_transaction_params[:month]
+      @cash_transaction.year = cash_transaction_params[:year]
+    else
+      @cash_transaction.build_month_year
+    end
 
     respond_to do |format|
       format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }

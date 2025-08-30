@@ -16,14 +16,6 @@ class Views::Conversations::Show < Views::Base
 
   def view_template
     div(class: "w-full") do
-      div(class: "flex justify-center mb-10") do
-        div(class: "w-screen") do
-          turbo_frame_tag :tabs do
-            render partial "shared/tabs"
-          end
-        end
-      end
-
       participants = conversation.users
       friend = participants.where.not(id: current_user.id).first
 
@@ -40,7 +32,7 @@ class Views::Conversations::Show < Views::Base
 
                 div(class: "flex-1 overflow-y-auto p-4 space-y-2 bg-slate-100", id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
                   turbo_stream_from conversation
-                  render Views::Messages::Index.new(messages: conversation.messages)
+                  render Views::Messages::Index.new(messages: conversation.messages.order(:created_at))
                 end
 
                 div(class: "p-3 bg-slate-200 border-t border-slate-300") do

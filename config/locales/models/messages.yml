@@ -8,6 +8,9 @@ en:
       message:
         id: ID
         body_placeholder: Type your message
+        hello: Hello
+        ivemadeatransactiononyou: I made a transaction referencing you.
+        click_down_below: Click down below to match this transaction on your app.
 
 pt-BR:
   activerecord:
@@ -19,3 +22,6 @@ pt-BR:
       message:
         id: ID
         body_placeholder: Digite sua mensagem
+        hello: Olá
+        ivemadeatransactiononyou: Eu fiz uma transação referenciando você.
+        click_down_below: Clique abaixo para vincular essa transação ao seu app.

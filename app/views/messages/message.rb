@@ -10,6 +10,8 @@ class Views::Messages::Message < Views::Base
 
   include TranslateHelper
 
+  include TranslateHelper
+
   def initialize(message:)
     @message = message
   end
