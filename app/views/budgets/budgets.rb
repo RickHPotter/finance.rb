@@ -8,6 +8,7 @@ class Views::Budgets::Budgets < Views::Base
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :budgets, :show_rows_not_found
 
@@ -45,7 +46,7 @@ class Views::Budgets::Budgets < Views::Base
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-950 text-slate-100 my-4 #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-slate-100 my-4 #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
@@ -88,7 +89,7 @@ class Views::Budgets::Budgets < Views::Base
               budget.categories.each do |category|
                 span(
                   class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
-                  style: "border-color: #{category.hex_colour}"
+                  style: "border-color: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
                 ) do
                   category.name
                 end
@@ -114,7 +115,7 @@ class Views::Budgets::Budgets < Views::Base
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80",
+        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-900 text-slate-100 hover:opacity-80",
         draggable: true,
         data: {
           id: budget.id,
@@ -146,7 +147,10 @@ class Views::Budgets::Budgets < Views::Base
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
           budget.categories.each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm border-1 border-white text-sm", style: "background: #{category.hex_colour}") do
+            span(
+              class: "px-2 py-1 flex items-center justify-center rounded-sm border-1 border-white text-sm",
+              style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+            ) do
               category.name
             end
           end
@@ -157,7 +161,7 @@ class Views::Budgets::Budgets < Views::Base
           budget.budget_entities.order(:entity_id).includes(:entity).each do |budget_entity|
             entity = budget_entity.entity
 
-            div(class: "grid grid-cols-1 text-xs mx-auto") do
+            div(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
               span(class: :entity_entity_name) { entity.entity_name }
             end

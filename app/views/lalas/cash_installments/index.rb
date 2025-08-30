@@ -139,7 +139,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
           cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
             entity = entity_transaction.entity
 
-            span(class: "grid grid-cols-1 text-xs mx-auto") do
+            span(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
               span(class: :entity_entity_name) { entity.entity_name }
             end

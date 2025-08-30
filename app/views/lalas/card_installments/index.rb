@@ -109,7 +109,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
                 info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
                 info += " (#{exchanges_count})" if exchanges_count > 1
 
-                span(class: "grid grid-cols-1 text-xs mx-auto") do
+                span(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
                   plain "#{entity.entity_name} #{info}"
                 end
@@ -196,7 +196,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             info += " (#{exchanges_count})" if exchanges_count > 1
 
             span(
-              class: "grid grid-cols-1 text-xs mx-auto",
+              class: "flex-1 grid grid-cols-1 text-xs mx-auto",
               data: { turbo_frame: :center_container, turbo_prefetch: "false" }
             ) do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"

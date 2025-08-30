@@ -44,12 +44,12 @@ class Views::CardInstallments::Index < Views::Base
         data: { id: card_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               if user_card_id.nil?
                 link_to card_transaction.user_card.user_card_name,
                         card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
-                        class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-950 border-1 border-slate-200 text-slate-200",
+                        class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               end
 
@@ -58,7 +58,7 @@ class Views::CardInstallments::Index < Views::Base
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: :center_container }
 
-              span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
             end
@@ -86,7 +86,7 @@ class Views::CardInstallments::Index < Views::Base
                 Link(
                   href: new_card_transaction_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-xs",
+                  class: "flex flex-col items-center w-16 text-center text-xs text-inherit",
                   data: { turbo_frame: :center_container, turbo_prefetch: "false" }
                 ) do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
@@ -113,23 +113,23 @@ class Views::CardInstallments::Index < Views::Base
         div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           date, time = I18n.l(card_installment.date, format: :shorter).split(",")
           div(class: "grid grid-cols-1") do
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
+            span(class: "rounded-xs text-xs mr-auto") { date }
+            span(class: "rounded-xs text-xs mr-auto") { time }
           end
 
           if user_card_id.nil?
             link_to card_transaction.user_card.user_card_name,
                     card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-950 border-1 border-slate-200 text-slate-200",
+                    class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
           end
 
           link_to card_transaction.description, edit_card_transaction_path(card_transaction),
                   id: "edit_card_transaction_#{card_transaction.id}",
-                  class: "flex-1 truncate text-md underline underline-offset-[3px]",
+                  class: "flex-5 truncate text-md underline underline-offset-[3px]",
                   data: { turbo_frame: :center_container }
 
-          span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
             pretty_installments(card_installment.number, card_installment.card_installments_count)
           end
         end
@@ -182,7 +182,7 @@ class Views::CardInstallments::Index < Views::Base
             Link(
               href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
               size: :xs,
-              class: "grid grid-cols-1 text-xs mx-auto",
+              class: "flex-1 grid grid-cols-1 text-xs mx-auto text-inherit",
               data: { turbo_frame: :center_container, turbo_prefetch: "false" }
             ) do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
@@ -198,7 +198,11 @@ class Views::CardInstallments::Index < Views::Base
 
         div(class: "py-2 flex items-center justify-center") do
           div(class: "flex items-center justify-center px-2 ml-auto rounded-md") do
-            link_to(duplicate_card_transaction_path(card_transaction), class: "p-1 bg-white border", data: { turbo_frame: :center_container }) do
+            link_to(
+              duplicate_card_transaction_path(card_transaction),
+              class: "p-1 bg-slate-200 border border-slate-200 text-black",
+              data: { turbo_frame: :center_container }
+            ) do
               cached_icon :copy
             end
 

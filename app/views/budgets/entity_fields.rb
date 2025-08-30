@@ -34,7 +34,7 @@ module Views
                 button(type: :button,
                        class: "inline-flex items-center p-1 ms-2 text-sm bg-white text-black rounded-xs",
                        aria_label: "Remove",
-                       data: { action: "click->reactive-form#removeEntity" }) do
+                       data: { action: "click->reactive-form#removeEntity dynamic-description#updateDescription" }) do
                   cached_icon(:little_x)
                 end
               end

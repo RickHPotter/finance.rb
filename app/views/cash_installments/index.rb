@@ -53,7 +53,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       div(class: "relative") do
         div(
           class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold
-                  text-black text-sm z-40 #{'animate-pulse' if should_display_link_to_pay}"
+                  text-sm z-40 #{'animate-pulse' if should_display_link_to_pay}"
         ) do
           from_cent_based_to_float(cash_installment.balance, "R$")
         end
@@ -65,8 +65,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 underline underline-offset-[3px]") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
+            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 underline") do
               if cash_transaction.investment?
                 default_year = cash_transaction.year
                 active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
@@ -74,7 +74,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md",
+                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               elsif cash_transaction.card_payment? || cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -83,16 +83,16 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md",
+                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "cash_transaction_description truncate text-md",
+                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
                         data: { turbo_frame: :center_container }
               end
 
-              span(class: "flex-shrink p-1 rounded-sm bg-white border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: "flex-shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -143,12 +143,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+            div(class: "flex flex-wrap justify-end gap-2 ml-auto bg-white", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
               cash_transaction.entities.each do |entity|
                 Link(
                   href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-xs",
+                  class: "flex flex-col items-center w-16 text-center",
+                  # style: "color: inherit;",
                   data: { turbo_frame: :center_container, turbo_prefetch: "false" }
                 ) do
                   image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
@@ -176,7 +177,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 pl-2") do
+        div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
           if should_display_link_to_pay
             button(
               type: :button,
@@ -202,12 +203,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
           date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
           div(class: "grid grid-cols-1 mr-auto") do
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
+            span(class: "rounded-xs text-xs mr-auto") { date }
+            span(class: "rounded-xs text-xs mr-auto") { time }
           end
         end
 
-        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
+        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           if cash_transaction.investment?
             default_year = cash_transaction.year
             active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
@@ -215,7 +216,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
             link_to cash_transaction.description,
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "cash_transaction_description flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
           elsif cash_transaction.card_payment? || cash_transaction.card_advance?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -224,16 +225,17 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
             link_to cash_transaction.description,
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "cash_transaction_description flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
           else
             link_to cash_transaction.description,
                     edit_cash_transaction_path(cash_transaction),
                     id: "edit_cash_transaction_#{cash_transaction.id}",
-                    class: "cash_transaction_description flex-1 truncate text-md",
+                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: :center_container }
           end
-          span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
+
+          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
           end
         end
@@ -254,7 +256,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             Link(
               href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
               size: :xs,
-              class: "grid grid-cols-1 text-xs mx-auto",
+              class: "flex-1 grid grid-cols-1 text-xs mx-auto text-inherit",
               data: { turbo_frame: :center_container, turbo_prefetch: "false" }
             ) do
               image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
@@ -267,7 +269,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "flex items-center justify-center font-lekton font-bold text-black whitespace-nowrap ml-auto") do
+        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           div(class: "p-1 rounded-md shadow-sm border border-black") do
             from_cent_based_to_float(cash_installment.balance, "R$")
           end
