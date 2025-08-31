@@ -38,8 +38,12 @@ class Views::CashTransactions::MonthYear < Views::Base
           end
         end
 
-        render Views::CashInstallments::Index.new(mobile:, cash_installments:)
-        render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
+        if cash_installments.present? || budgets.present?
+          render Views::CashInstallments::Index.new(mobile:, cash_installments:)
+          render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
+        else
+          div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+        end
       end
     end
   end

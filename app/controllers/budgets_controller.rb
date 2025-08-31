@@ -25,7 +25,7 @@ class BudgetsController < ApplicationController
     month          = month_year[4..].to_i
     month_year_str = I18n.l(Date.new(year, month, 1), format: "%B %Y")
 
-    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_user, month, year, budget_params)
+    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_user, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
 
     render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:)
   end

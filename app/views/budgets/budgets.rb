@@ -46,11 +46,11 @@ class Views::Budgets::Budgets < Views::Base
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-slate-100 my-4 #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-zinc-50 my-4 #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-slate-100 text-sm font-semibold") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               link_to budget.description,
                       edit_budget_path(budget),
@@ -66,7 +66,7 @@ class Views::Budgets::Budgets < Views::Base
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1") do
-              span(class: "flex items-center justify-start gap-2 rounded-sm text-slate-100") do
+              span(class: "flex items-center justify-start gap-2 rounded-sm") do
                 case budget.remaining_value <=> budget.value
                 when -1
                   :x_circle
@@ -80,6 +80,7 @@ class Views::Budgets::Budgets < Views::Base
                 span(class: "rounded-xs text-xs mr-auto") { I18n.l(budget.date, format: "%B %Y") }
               end
             end
+
             div(class: "whitespace-nowrap") do
               from_cent_based_to_float(budget.remaining_value, "R$")
             end
@@ -89,7 +90,7 @@ class Views::Budgets::Budgets < Views::Base
               budget.categories.each do |category|
                 span(
                   class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
-                  style: "border-color: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+                  style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
                 ) do
                   category.name
                 end
@@ -115,7 +116,7 @@ class Views::Budgets::Budgets < Views::Base
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-900 text-slate-100 hover:opacity-80",
+        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-900 text-zinc-50 hover:opacity-80",
         draggable: true,
         data: {
           id: budget.id,
@@ -123,7 +124,7 @@ class Views::Budgets::Budgets < Views::Base
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
         }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-100 pl-2") do
+        div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
           span(class: "size-4", title: pluralise_model(budget, 1)) { cached_icon(:piggy_safe) }
 
           month, year = I18n.l(budget.date, format: "%B %Y").split
@@ -148,7 +149,7 @@ class Views::Budgets::Budgets < Views::Base
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
           budget.categories.each do |category|
             span(
-              class: "px-2 py-1 flex items-center justify-center rounded-sm border-1 border-white text-sm",
+              class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
               style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
             ) do
               category.name
@@ -172,7 +173,7 @@ class Views::Budgets::Budgets < Views::Base
           from_cent_based_to_float(budget.remaining_value, "R$")
         end
 
-        div(class: "flex items-center justify-center font-lekton font-bold text-white whitespace-nowrap ml-auto") do
+        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           div(class: "p-1 rounded-md shadow-sm border border-white") do
             from_cent_based_to_float(budget.balance, "R$")
           end

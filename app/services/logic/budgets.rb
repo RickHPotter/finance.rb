@@ -44,15 +44,16 @@ module Logic
     end
 
     def self.build_conditions_from_params(params)
-      category_id = (params.delete(:category_id).presence || {}).compact_blank
-      entity_id = (params.delete(:entity_id).presence || {}).compact_blank
+      category_id = (params.delete(:category_id).presence&.compact_blank || {}).compact_blank
+      entity_id = (params.delete(:entity_id).presence&.compact_blank || {}).compact_blank
 
       {
+        search_term: params["search_term"],
         associations: {
           categories: { id: category_id }.compact_blank,
           entities: { id: entity_id }.compact_blank
         }
-      }
+      }.compact_blank
     end
   end
 end

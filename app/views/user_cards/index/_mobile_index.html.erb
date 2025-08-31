@@ -16,7 +16,13 @@
         </div>
 
         <div class="mb-8" data-datatable-target="table">
-          <%= render @user_cards %>
+          <% if @user_cards.present? %>
+            <%= render @user_cards %>
+          <% else %>
+            <%= content_tag :div, class: "border-b border-slate-200 py-2 my-2 text-lg bg-white" do %>
+              <%= t(:rows_not_found) %>
+            <% end %>
+          <% end %>
         </div>
       </div>
 

@@ -41,7 +41,11 @@ class Views::Investments::MonthYear < Views::Base
           end
         end
 
-        render_mobile_investments
+        if investments.present?
+          render_mobile_investments
+        else
+          div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+        end
       end
     end
   end
