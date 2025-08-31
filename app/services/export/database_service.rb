@@ -40,7 +40,7 @@ module Export
 
       Rails.logger.info "✅ Backup saved to #{file_path}"
 
-      BackupMailer.send_backup(file_path: file_path).deliver_now
+      BackupMailer.send_backup(file_path:).deliver_now
 
       Rails.logger.info "✅ Email sent!"
     end

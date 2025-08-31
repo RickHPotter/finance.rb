@@ -10,7 +10,7 @@
   "author": "Rick H Potter",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@floating-ui/dom": "^1.6.13",
+    "@floating-ui/dom": "^1.7.4",
     "@hotwired/stimulus": "^3.2.2",
     "@hotwired/turbo-rails": "^8.0.13",
     "@josefarias/hotwire_combobox": "^0.3.2",

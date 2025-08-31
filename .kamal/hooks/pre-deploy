@@ -1,3 +1,5 @@
 #!/usr/bin/env ruby
 
 `export CONTAINER_HOSTNAME=$(hostname)`
+
+# `kamal app exec --primary "bin/rails runner 'DbBackupJob.perform_now'"`

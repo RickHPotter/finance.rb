@@ -126,16 +126,33 @@ class RailsDate {
   }
 
   setYear(year) {
-    this.year = year
-    this._date.setFullYear(year)
+    const day = this._date.getDate()
+    const monthIndex = this._date.getMonth()
 
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate()
+    const safeDay = Math.min(day, lastDay)
+
+    this._date.setDate(1)
+    this._date.setFullYear(year)
+    this._date.setDate(safeDay)
+
+    this._applyDate(new Date(this._date))
     return this
   }
 
   setMonth(month) {
-    this.month = month
-    this._date.setMonth(month - 1)
+    const day = this._date.getDate()
+    const year = this._date.getFullYear()
+    const targetMonthIndex = month - 1
 
+    const lastDay = new Date(year, targetMonthIndex + 1, 0).getDate()
+    const safeDay = Math.min(day, lastDay)
+
+    this._date.setDate(1)
+    this._date.setMonth(targetMonthIndex)
+    this._date.setDate(safeDay)
+
+    this._applyDate(new Date(this._date))
     return this
   }
 

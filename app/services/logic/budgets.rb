@@ -2,9 +2,19 @@
 
 module Logic
   class Budgets
-    def self.create(budget_params)
-      budget = Budget.new(budget_params)
-      _handle_creation(budget)
+    def self.create(budget_params, multiple_budget_params)
+      multiple_references = multiple_budget_params[:month_years]
+      if multiple_references.nil?
+        budget = Budget.new(budget_params)
+        _handle_creation(budget)
+      else
+        budgets = multiple_references.map do |month_year|
+          date = month_year.to_date
+          Budget.create(budget_params.merge(year: date.year, month: date.month))
+        end
+
+        budgets.first
+      end
     end
 
     def self.update(budget, budget_params)

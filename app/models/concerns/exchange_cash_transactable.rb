@@ -163,7 +163,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    description = exchanges_count > 1 ? "#{transactable.description} #{number}/#{exchanges_count}" : transactable.description
+    count = entity_transaction.exchanges.size
+    description = count > 1 ? "#{transactable.description} #{number}/#{count}" : transactable.description
 
     transactable
       .slice(:user_card_id)

@@ -15,6 +15,7 @@ en:
         month: Month
         year: Year
         month_year: Month/Year Reference
+        month_years: Month/Year References
         inclusive: Inclusive
         category_id: Category
         entity_id: Entity
@@ -42,6 +43,7 @@ pt-BR:
         month: Mês
         year: Ano
         month_year: Referência Mês/Ano
+        month_years: Referências Mês/Ano
         inclusive: Inclusivo
         category_id: Categoria
         entity_id: Entidade

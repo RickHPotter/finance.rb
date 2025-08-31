@@ -69,14 +69,54 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
           div(class: "w-full lg:w-1/4 mb-2") do
             bold_label(form, :month_year)
-            budget_date = budget.new_record? ? Time.zone.today : Date.new(budget.year, budget.month, 1)
-            TextField \
-              form, :month_year,
-              type: :month,
-              svg: :calendar,
-              class: "font-graduate",
-              value: budget_date.strftime("%Y-%m"),
-              data: { dynamic_description_target: :monthYear, action: "input->dynamic-description#updateDescription" }
+
+            if budget.new_record?
+              Combobox term: model_attribute(budget, :month_years) do
+                ComboboxTrigger(placeholder: model_attribute(budget, :month_year))
+
+                ComboboxPopover do
+                  div(class: "my-1") do
+                    ComboboxSearchInput(placeholder: action_message(:type))
+                  end
+
+                  ComboboxList do
+                    ComboboxEmptyState { I18n.t(:rows_not_found) }
+
+                    ComboboxItem(class: "mt-1") do
+                      ComboboxToggleAllCheckbox(name: "all", value: action_message(:all))
+                      span { action_message(:select_all) }
+                    end
+
+                    current_year = Date.today.year
+                    next_year = current_year + 1
+                    [ current_year, next_year ].each do |year|
+                      ComboboxListGroup label: year do
+                        (1..12).each do |month|
+                          value = Date.new(year, month)
+                          next if value < Time.zone.today
+
+                          month = I18n.t("date.month_names")[month]
+
+                          ComboboxItem do
+                            ComboboxCheckbox(name: "month_years[]", value:)
+                            span { month }
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+            else
+              budget_date = budget.new_record? ? Time.zone.today : Date.new(budget.year, budget.month, 1)
+              TextField \
+                form, :month_year,
+                type: :month,
+                svg: :calendar,
+                class: "font-graduate",
+                value: budget_date.strftime("%Y-%m"),
+                data: { dynamic_description_target: :monthYear, action: "input->dynamic-description#updateDescription" }
+            end
           end
 
           div do

@@ -164,9 +164,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
+    t.bigint "entity_user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "entity_user_id"
     t.index ["entity_user_id"], name: "index_entities_on_entity_user_id"
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"

@@ -76,6 +76,9 @@ application.register("ruby-ui--calendar", RubyUi__CalendarController)
 import RubyUi__CalendarInputController from "./ruby_ui/calendar_input_controller"
 application.register("ruby-ui--calendar-input", RubyUi__CalendarInputController)
 
+import RubyUi__ComboboxController from "./ruby_ui/combobox_controller"
+application.register("ruby-ui--combobox", RubyUi__ComboboxController)
+
 import RubyUi__PopoverController from "./ruby_ui/popover_controller"
 application.register("ruby-ui--popover", RubyUi__PopoverController)
 

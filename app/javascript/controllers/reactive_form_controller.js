@@ -255,7 +255,6 @@ export default class extends Controller {
     }
 
     visibleInstallmentsWrappers.forEach((target, index) => {
-
       target.querySelector(".installment_number").value = index + 1
 
       const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)

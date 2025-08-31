@@ -42,9 +42,9 @@ class BudgetsController < ApplicationController
   end
 
   def create
-    @budget = Logic::Budgets.create(budget_params)
+    @budget = Logic::Budgets.create(budget_params, multiple_budget_params)
 
-    if @budget
+    if @budget.valid?
       load_based_on_save
       build_index_context
       set_tabs(active_menu: :cash, active_sub_menu: :pix)
@@ -65,7 +65,7 @@ class BudgetsController < ApplicationController
   def update
     @budget = Logic::Budgets.update(@budget, budget_params)
 
-    if @budget
+    if @budget.valid?
       load_based_on_save
       build_index_context
       set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
@@ -126,6 +126,10 @@ class BudgetsController < ApplicationController
 
   def search_budget_params
     params.permit(:search_term, :month_year)
+  end
+
+  def multiple_budget_params
+    params.permit(month_years: [])
   end
 
   # Only allow a list of trusted parameters through.

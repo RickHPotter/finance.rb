@@ -119,9 +119,18 @@ class CashTransactionsController < ApplicationController
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
     min_date = cash_installments.where(paid: true).minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     max_date = cash_installments.where(paid: true).maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    cur_date = Time.zone.today.clamp(min_date, max_date)
-    cur_date += 1.month if cur_date == Date.current
-    default_active_month_years = [ cur_date.strftime("%Y%m").to_i ]
+
+    cur_date = Time.zone.today.clamp(min_date, max_date).beginning_of_month
+    next_date = cur_date + 1.month
+
+    if cash_installments.exists?(paid: false, year: cur_date.month, month: cur_date.month) ||
+       !cash_installments.exists?(paid: true, year: next_date.month, month: next_date.month)
+      cur_date
+    else
+      next_date
+    end => date
+
+    default_active_month_years = [ date.strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
 
     category_id = [ cash_transaction_params[:category_id] ].flatten&.compact_blank
