@@ -64,6 +64,9 @@ application.register("price-mask", PriceMaskController)
 import PriceSumController from "./price_sum_controller"
 application.register("price-sum", PriceSumController)
 
+import PushController from "./push_controller"
+application.register("push", PushController)
+
 import PwaInstallationController from "./pwa_installation_controller"
 application.register("pwa-installation", PwaInstallationController)
 

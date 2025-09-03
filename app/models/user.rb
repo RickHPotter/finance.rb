@@ -30,6 +30,8 @@ class User < ApplicationRecord
   has_many :sent_messages, ->(user) { where(user_id: user.id) }, through: :conversations, source: :messages
   has_many :received_messages, ->(user) { where.not(user_id: user.id) }, through: :conversations, source: :messages
 
+  has_many :subscriptions, dependent: :destroy
+
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
   validates :email, uniqueness: true

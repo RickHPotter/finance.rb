@@ -22,6 +22,7 @@ class Budget < ApplicationRecord
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, inclusion: { in: [ true, false ] }
+  validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
   before_validation :set_starting_value, :set_inclusive
@@ -99,6 +100,29 @@ class Budget < ApplicationRecord
 
   def trigger_balance_recalculation
     Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+  end
+
+  def uniqueness_of_budget # rubocop:disable Metrics/AbcSize
+    current_ref_month_year_budgets = user.budgets.where(month:, year:)
+    return if current_ref_month_year_budgets.empty?
+
+    category_ids = budget_categories.map(&:category_id)
+    entity_ids = budget_entities.map(&:entity_id)
+
+    if inclusive
+      same_budget = current_ref_month_year_budgets.joins(:categories, :entities).where(categories: { id: category_ids }, entities: { id: entity_ids })
+
+      errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget")) if same_budget.present?
+    else
+      same_category = current_ref_month_year_budgets.joins(:categories).where(categories: { id: category_ids })
+      same_entity = current_ref_month_year_budgets.joins(:entities).where(entities: { id: entity_ids })
+
+      error_messages = []
+      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category.present?
+      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget") if same_entity.present?
+
+      errors.add(:base, error_messages.join(" ")) if error_messages.present?
+    end
   end
 end
 

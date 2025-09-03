@@ -8,4 +8,16 @@ if Rails.env.production?
 
     Export::DatabaseService.backup
   end
+
+  scheduler.cron "0 9 * * *" do
+    Rails.logger.info "Running daily due payment notifier"
+
+    DuePaymentsNotifier.new.call
+  end
+
+  scheduler.cron "0 17 * * *" do
+    Rails.logger.info "Running nightly due payment notifier"
+
+    DuePaymentsNotifier.new.call
+  end
 end

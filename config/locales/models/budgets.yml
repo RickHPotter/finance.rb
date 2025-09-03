@@ -25,6 +25,13 @@ en:
         total_amount: Total Remaining Amount
         created_at: Created at
         updated_at: Updated at
+    errors:
+      models:
+        budget:
+          same_category_budget: There is already a budget for this category.
+          same_entity_budget: There is already a budget for this entity.
+          same_budget: There is already a budget for this category and entity.
+
 
 pt-BR:
   activerecord:
@@ -53,3 +60,9 @@ pt-BR:
         total_amount: Valor Restante Total
         created_at: Criado em
         updated_at: Atualizado em
+    errors:
+      models:
+        budget:
+          same_category_budget: Já existe um orçamento para essa categoria.
+          same_entity_budget: Já existe um orçamento para essa entidade.
+          same_budget: Já existe um orçamento para essa categoria e entidade.

@@ -4,5 +4,5 @@
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") if @budget.active? %>
 <% else %>
   <%= turbo_stream.replace(:center_container, Views::Budgets::New.new(current_user:, budget: @budget)) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Budget) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @budget.errors.full_messages&.join || notification_model(:not_created, Budget) }) %>
 <% end %>

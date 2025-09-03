@@ -23,7 +23,7 @@ class Views::Shared::MonthYearSelector < Views::Base
       text_field_tag :active_month_years, active_month_years.to_json, class: :hidden, data: { month_year_selector_target: "monthYears" }
 
       years.each do |year|
-        div(class: ("active" if year == default_year), data: { month_year_selector_target: "monthYearContainer", year: }) do
+        div(class: year == default_year ? "active" : "", data: { month_year_selector_target: "monthYearContainer", year: }) do
           div(class: "flex justify-between") do
             div(class: "flex items-center gap-4") do
               button(

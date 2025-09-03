@@ -139,11 +139,46 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def update_cash_transaction_and_installment(updated_price:)
+  # FIXME: refactor
+  def update_cash_transaction_and_installment(updated_price:) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     _destroy_cash_transaction and return if updated_price.zero?
 
     cash_transaction.update_columns(price: updated_price, date:, month:, year:)
-    cash_transaction.cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
+
+    cash_installments = cash_transaction.cash_installments
+
+    if cash_installments.all?(&:paid?)
+      cash_installments_count = cash_installments.count + 1
+
+      last_cash_installment = cash_installments.order(:number).last
+      if date > last_cash_installment.date
+        date
+      else
+        last_cash_installment.date + 1.day
+      end => new_date
+
+      cash_installments.create(number: cash_installments_count, date: new_date, month:, year:, price:, cash_installments_count:)
+      cash_installments.update_all(cash_installments_count:)
+    elsif cash_installments.one?
+      cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
+    else
+      paid_price = cash_installments.where(paid: true).sum(:price)
+
+      pending_installments = cash_installments.where(paid: false)
+      pending_count = pending_installments.count
+      pending_price = updated_price - paid_price
+
+      remaining_price = pending_price
+
+      pending_installments.each do |cash_installment|
+        price = pending_price / pending_count
+        remaining_price -= price
+
+        cash_installment.update_columns(price:)
+      end
+
+      pending_installments.first.update_columns(price: pending_installments.first.price + remaining_price) if remaining_price.positive?
+    end
 
     min_date = changes[:date]&.compact_blank&.min || date
 

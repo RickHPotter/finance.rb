@@ -94,8 +94,10 @@ module TabsConcern
   end
 
   def set_cash_transaction_sublinks
+    cash_notification_type = current_user.cash_installments.due_today.any? ? 1 : 0
+
     @cash_transaction_tab = [
-      Item.new(t("tabs.pix"),        :mobile,      cash_transactions_path, @active_sub_menu == :pix),
+      Item.new(t("tabs.pix"),        :mobile,      cash_transactions_path, @active_sub_menu == :pix, cash_notification_type),
       Item.new(t("tabs.budget"),     :piggy_bank,  budgets_path,           @active_sub_menu == :budget),
       Item.new(t("tabs.investment"), :trending_up, investments_path,       @active_sub_menu == :investment),
       Item.new(t("tabs.balance"),    :chart,       balances_path,          @active_sub_menu == :balance)

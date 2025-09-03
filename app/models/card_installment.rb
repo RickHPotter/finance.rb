@@ -21,6 +21,7 @@ class CardInstallment < Installment
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CardInstallment) }
+
   scope :by_categories, ->(categories) { joins(card_transaction: :categories).where(card_transaction: { categories: }) }
   scope :by_entities, ->(entities) { joins(card_transaction: :entities).where(card_transaction: { entities: }) }
   scope :by_categories_and_entities, ->(categories, entities) { joins(card_transaction: %i[categories entities]).where(card_transaction: { categories:, entities: }) }

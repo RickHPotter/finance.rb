@@ -29,12 +29,13 @@ class CashInstallmentsController < ApplicationController
     Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
 
     @cash_installment = cash_installments.first
+
     handle_save
   end
 
   def update_installment(cash_installment, date)
     params = { date:, paid: true }
-    params.merge!(year: date.year, month: date.month) if cash_installment.date.month > date.month
+    params.merge!(year: date.year, month: date.month) if cash_installment.date.month != date.month
 
     cash_installment.update(params)
     cash_installment
@@ -60,6 +61,8 @@ class CashInstallmentsController < ApplicationController
     years = [ date.year ]
     default_year = years.first
 
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
+
     @index_context = {
       current_user:,
       years:,
@@ -73,7 +76,8 @@ class CashInstallmentsController < ApplicationController
       to_price: nil,
       from_installments_count: nil,
       to_installments_count: nil,
-      user_card: @user_card
+      user_card: @user_card,
+      count_by_month_year:
     }
   end
 

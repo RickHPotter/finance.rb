@@ -10,8 +10,8 @@ Rails.application.routes.draw do
   #   confirmations: "users/confirmations"
   # }
 
-  get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  get "serviceworker" => "rails/pwa#serviceworker", as: :pwa_serviceworker, constraints: { format: "js" }
+  get "manifest" => "rails/pwa#manifest", as: :pwa_manifest, constraints: { format: "json" }
 
   resources :lalas do
     collection do
@@ -85,6 +85,8 @@ Rails.application.routes.draw do
   resources :conversations, only: %i[index show create] do
     resources :messages, only: :create
   end
+
+  resources :subscriptions, only: :create
 
   root "pages#index"
 end

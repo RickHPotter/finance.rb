@@ -169,18 +169,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
 
     if @user_card && max_date > today
-      due_date = today.change(day: @user_card.due_date_day)
 
-      closing_date = due_date - @user_card.days_until_due_date.days
-      closing_date += 1.month if closing_date <= today
+      reference = @user_card.references.where(reference_closing_date: [ Date.tomorrow.. ]).order(:reference_closing_date).first
 
-      statement_month = if today > closing_date
-                          today + 2.months
-                        else
-                          today + 1.months
-                        end
+      month_year_reference = Date.new(reference.year, reference.month)
 
-      [ statement_month.strftime("%Y%m").to_i ]
+      [ month_year_reference.strftime("%Y%m").to_i ]
     else
       [ [ today, max_date ].min.strftime("%Y%m").to_i ]
     end => default_active_month_years

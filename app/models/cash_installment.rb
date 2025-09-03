@@ -18,6 +18,8 @@ class CashInstallment < Installment
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
+
+  scope :due_today, -> { where(paid: false, date: [ Time.zone.today.beginning_of_day..Time.zone.today.end_of_day ]) }
   scope :by_categories, ->(categories) { joins(cash_transaction: :categories).where(cash_transaction: { categories: }) }
   scope :by_entities, ->(entities) { joins(cash_transaction: :entities).where(cash_transaction: { entities: }) }
   scope :by_categories_and_entities, ->(categories, entities) { joins(cash_transaction: %i[categories entities]).where(cash_transaction: { categories:, entities: }) }

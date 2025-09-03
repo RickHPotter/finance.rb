@@ -92,8 +92,10 @@ module Logic
 
     def self.find_count_based_on_search(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       search_term  = search_params.delete(:search_term) || ""
-      category_ids = card_transaction_params.delete(:category_id).presence&.compact_blank
-      entity_ids   = card_transaction_params.delete(:entity_id).presence&.compact_blank
+      category_ids = card_transaction_params.delete(:category_id).presence
+      category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
+      entity_ids   = card_transaction_params.delete(:entity_id).presence
+      entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
 
       card_installment_ids = card_transaction_params[:card_installment_ids]
       return user.card_installments.where(id: card_installment_ids) if card_installment_ids.present?

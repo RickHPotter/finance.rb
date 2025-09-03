@@ -66,7 +66,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       ) do
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 underline") do
+            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               if cash_transaction.investment?
                 default_year = cash_transaction.year
                 active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
@@ -74,7 +74,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
+                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               elsif cash_transaction.card_payment? || cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -83,12 +83,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
                 link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
+                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "cash_transaction_description truncate text-md underline-offset-[3px]",
+                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container }
               end
 
@@ -136,8 +136,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+              border = style.split("; color:").last
               cash_transaction.categories.each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
                   category.name
                 end
               end
@@ -148,8 +149,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 Link(
                   href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
-                  class: "flex flex-col items-center w-16 text-center",
-                  # style: "color: inherit;",
+                  class: "flex flex-col items-center w-16 text-center text-inherit",
                   data: { turbo_frame: :center_container, turbo_prefetch: "false" }
                 ) do
                   image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
@@ -242,7 +242,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
           cash_transaction.categories.each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+            border = style.split("; color:").last
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
               category.name
             end
           end

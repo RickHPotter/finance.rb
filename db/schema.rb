@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -164,9 +164,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
-    t.bigint "entity_user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "entity_user_id"
     t.index ["entity_user_id"], name: "index_entities_on_entity_user_id"
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
@@ -272,6 +272,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
     t.index ["user_card_id"], name: "index_references_on_user_card_id"
   end
 
+  create_table "subscriptions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.text "endpoint"
+    t.text "p256dh"
+    t.text "auth"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_subscriptions_on_user_id"
+  end
+
   create_table "user_bank_accounts", force: :cascade do |t|
     t.string "user_bank_account_name"
     t.integer "agency_number"
@@ -355,6 +365,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_000001) do
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "users"
   add_foreign_key "references", "user_cards"
+  add_foreign_key "subscriptions", "users"
   add_foreign_key "user_bank_accounts", "banks"
   add_foreign_key "user_bank_accounts", "users"
 end

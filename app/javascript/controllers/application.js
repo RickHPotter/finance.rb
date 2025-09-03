@@ -116,3 +116,16 @@ document.addEventListener("keydown", (e) => {
     document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
   }
 })
+
+const registerServiceWorker = async () => {
+  if (navigator.serviceWorker) {
+    try {
+      await navigator.serviceWorker.register("/serviceworker.js")
+      console.log("Service worker registered!")
+    } catch (error) {
+      console.error("Error registering service worker: ", error)
+    }
+  }
+}
+
+registerServiceWorker()
