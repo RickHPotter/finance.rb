@@ -1,11 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
-import Chart from "chart.js/auto"
+import ApexCharts from "apexcharts"
 
 export default class extends Controller {
-  static targets = ["canvas", "preset", "slider", "sliderLabel"]
+  static targets = ["chart", "preset"]
   static values = { url: String }
 
   connect() {
+    this.isTouch = "ontouchstart" in document.documentElement
+
     fetch(this.urlValue)
       .then(r => r.json())
       .then(data => {
@@ -14,19 +16,8 @@ export default class extends Controller {
       })
   }
 
-  updateFilter({ currentTarget }) {
-    if (currentTarget === this.sliderTarget && this.sliderTarget.value > 0) {
-      this.presetTarget.value = "custom"
-    } else {
-      this.sliderTarget.value = 0
-      this.sliderLabelTarget.textContent = `0%`
-    }
-
-    this.render()
-  }
-
   render() {
-    const preset = this.presetTarget?.value || "all"
+    const preset = this.presetTarget?.value || "from_now"
     const now = new Date()
     const currentYm = now.getFullYear() * 100 + now.getMonth() + 1
 
@@ -43,80 +34,151 @@ export default class extends Controller {
         const ym = parseInt(d.raw_month_year)
         return ym >= from && ym <= to
       })
-    } else if (preset === "custom") {
-      const percent = parseInt(this.sliderTarget.value)
-      const startIndex = Math.floor((percent / 100) * this.rawData.length)
-      this.sliderLabelTarget.textContent = `${percent}%`
-      filtered = this.rawData.slice(startIndex)
     }
 
-    const labels = filtered.map(p => p.label)
-    const balances = filtered.map(p => p.y)
+    let trueMaxPoint = null
+    let trueMinPoint = null
 
-    const max = Math.max(...balances)
-    const min = Math.min(...balances)
+    if (filtered.length > 0) {
+      trueMaxPoint = filtered.reduce((prev, current) => (prev.y > current.y) ? prev : current)
+      trueMinPoint = filtered.reduce((prev, current) => (prev.y < current.y) ? prev : current)
+    }
 
-    const lastIndexesByLabel = {}
-    labels.forEach((label, i) => {
-      lastIndexesByLabel[label] = i
-    })
+    let finalData = []
+    if (filtered.length > 250) {
+      const groupedByMonth = filtered.reduce((acc, curr) => {
+        (acc[curr.raw_month_year] = acc[curr.raw_month_year] || []).push(curr)
+        return acc
+      }, {})
 
-    const pointColors = balances.map((val, index) => {
-      if (val === max) return "rgba(0, 200, 80, 1)"
-      if (val === min) return "rgba(255, 80, 80, 1)"
-      if (lastIndexesByLabel[labels[index]] === index) {
-        return "rgba(255, 200, 0, 1)"
+      for (const monthYear in groupedByMonth) {
+        const monthData = groupedByMonth[monthYear]
+        if (monthData.length > 0) {
+          const firstPoint = monthData[0]
+          const lastPoint = monthData[monthData.length - 1]
+          let highestInMonth = monthData[0]
+          let lowestInMonth = monthData[0]
+
+          monthData.forEach(point => {
+            if (point.y > highestInMonth.y) {
+              highestInMonth = point
+            }
+            if (point.y < lowestInMonth.y) {
+              lowestInMonth = point
+            }
+          })
+
+          finalData.push(firstPoint)
+
+          if (lowestInMonth.x !== firstPoint.x && lowestInMonth.x !== lastPoint.x && highestInMonth.x !== lowestInMonth.x) {
+            finalData.push(lowestInMonth)
+          }
+
+          if (highestInMonth.x !== firstPoint.x && highestInMonth.x !== lastPoint.x && highestInMonth.x !== lowestInMonth.x) {
+            finalData.push(highestInMonth)
+          }
+
+          finalData.push(lastPoint)
+        }
       }
-      return "rgba(0, 180, 200, 1)"
+    } else {
+      finalData = filtered
+    }
+
+    finalData.sort((a, b) => {
+      const aDate = new Date(a.raw_month_year.toString().slice(0, 4), parseInt(a.raw_month_year.toString().slice(4)) - 1)
+      const bDate = new Date(b.raw_month_year.toString().slice(0, 4), parseInt(b.raw_month_year.toString().slice(4)) - 1)
+      return aDate - bDate
     })
 
-    const pointRadius = labels.map((label, index) =>
-      lastIndexesByLabel[label] === index ? 5 : 3
-    )
+    const defaultMarkerColour = "#0B00F0"
+    const highestMarketColour = "#228B22"
+    const lowestMarketColour  = "#F00F50"
+
+    const highestPointIndex = finalData.findIndex(p => p.y === trueMaxPoint.y && p.raw_month_year === trueMaxPoint.raw_month_year);
+    const lowestPointIndex = finalData.findIndex(p => p.y === trueMinPoint.y && p.raw_month_year === trueMinPoint.raw_month_year);
+
+    const seriesData = finalData.map((p, i) => {
+      return { x: i, y: p.y }
+    })
 
     if (this.chart) this.chart.destroy()
 
-    this.chart = new Chart(this.canvasTarget, {
-      type: "line",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: this.canvasTarget.dataset.subtitle,
-          data: balances,
-          borderColor: "rgba(0, 180, 200, 1)",
-          backgroundColor: "rgba(0, 180, 200, 0.1)",
-          pointRadius: pointRadius,
-          pointHoverRadius: 6,
-          tension: 0.3,
-          fill: true,
-          pointBackgroundColor: pointColors
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: ctx => `R$ ${(ctx.parsed.y).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              maxRotation: 60,
-              minRotation: 30,
-              autoSkip: true,
-              maxTicksLimit: window.innerWidth < 640 ? 5 : 20
-            }
-          },
-          y: {
-            ticks: {
-              callback: val => "R$ " + val.toLocaleString("pt-BR")
-            }
+    const options = {
+      chart: {
+        type: "area",
+        height: this.chartTarget.offsetHeight,
+        toolbar: {
+          show: true,
+          tools: {
+            download: true,
+            selection: true,
+            zoom: !this.isTouch,
+            zoomin: true,
+            zoomout: true,
+            pan: true,
+            reset: true
           }
         }
-      }
-    })
+      },
+      dataLabels: {
+        enabled: true,
+        offsetY: -12,
+        style: {
+          fontSize: '8px',
+          colors: ['#444444']
+        },
+      },
+      colors: ['#444444'],
+      series: [{
+        name: this.chartTarget.dataset.subtitle,
+        data: seriesData
+      }],
+      xaxis: {
+        type: "category",
+        categories: finalData.map(p => p.label)
+      },
+      yaxis: {
+        labels: { show: false }
+      },
+      markers: {
+        size: 5,
+        colors: [defaultMarkerColour],
+        strokeColors: "#FFF",
+        shape: "circle",
+        discrete: [
+          {
+            seriesIndex: 0,
+            dataPointIndex: highestPointIndex,
+            fillColor: highestMarketColour,
+            strokeColor: "#FFF",
+            size: 5,
+            shape: "circle"
+          },
+          {
+            seriesIndex: 0,
+            dataPointIndex: lowestPointIndex,
+            fillColor: lowestMarketColour,
+            strokeColor: "#FFF",
+            size: 5,
+            shape: "circle"
+          }
+        ]
+      },
+      stroke: { curve: "smooth", width: 2 },
+      tooltip: {
+        x: {
+          formatter: (val, { dataPointIndex }) => {
+            return finalData[dataPointIndex].label
+          }
+        },
+        y: {
+          formatter: val => `R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+        }
+      },
+    }
+
+    this.chart = new ApexCharts(this.chartTarget, options)
+    this.chart.render()
   }
 }

@@ -111,15 +111,17 @@ class Budget < ApplicationRecord
 
     if inclusive
       same_budget = current_ref_month_year_budgets.joins(:categories, :entities).where(categories: { id: category_ids }, entities: { id: entity_ids })
+      return if same_budget.empty?
+      return if same_budget.pluck(:id) == [ id ]
 
-      errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget")) if same_budget.present?
+      errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget"))
     else
       same_category = current_ref_month_year_budgets.joins(:categories).where(categories: { id: category_ids })
       same_entity = current_ref_month_year_budgets.joins(:entities).where(entities: { id: entity_ids })
 
       error_messages = []
-      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category.present?
-      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget") if same_entity.present?
+      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category.present? && same_category.pluck(:id) != [ id ]
+      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget") if same_entity.present? && same_entity.pluck(:id) != [ id ]
 
       errors.add(:base, error_messages.join(" ")) if error_messages.present?
     end

@@ -28,7 +28,7 @@ class Logic::MonthlyBalanceBuilder
       if balances.present?
         balances.each do |balance|
           result << {
-            x: x,
+            x:,
             y: balance,
             label: "#{I18n.l(current_date, format: '%b').upcase} #{current_date.strftime('%Y')}",
             raw_month_year: current_date.strftime("%Y%m").to_i
