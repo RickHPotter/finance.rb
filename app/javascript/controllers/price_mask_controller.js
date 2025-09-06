@@ -48,14 +48,24 @@ export default class extends Controller {
 
   applyMask({ target }) {
     const value = _removeMask(target.value)
+    const min = target.dataset.min ? parseInt(target.dataset.min) : undefined
+    const max = target.dataset.max ? parseInt(target.dataset.max) : undefined
 
-    if (!target.dataset.sign) {
+    if (!target.dataset.sign && min == undefined && max == undefined) {
       target.value = _applyMask(value)
     }
 
     let absValue = Math.abs(value)
     if (target.dataset.sign == "-") {
       absValue = absValue * -1
+    }
+
+    if (min && absValue < min) {
+      absValue = min
+    }
+
+    if (max && absValue > max) {
+      absValue = max
     }
 
     target.value = _applyMask(absValue.toString())

@@ -28,11 +28,11 @@ module Views
 
             div(class: "col-span-4 flex items-center") do
               data = {}
-              data = { action: "click->reactive-form#setPaid" } if installment.installment_type == "CashInstallment"
+              data = { action: "click->reactive-form#togglePaid" } if installment.installment_type == "CashInstallment"
 
               button(
                 type: :button,
-                class: "flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{installment.paid ? 'bg-green-400' : 'bg-orange-600'}",
+                class: "installment_paid_colour flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{installment.paid ? 'bg-green-400' : 'bg-orange-600'}",
                 data:
               )
 
@@ -59,7 +59,7 @@ module Views
                   type: "datetime-local",
                   value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
                   class: "installment_date w-full outline-hidden appearance-none bg-transparent border-0 font-graduate text-[0.8rem]",
-                  data: { reactive_form_target: :dateInput }
+                  data: { reactive_form_target: :dateInput, action: "input->reactive-form#setPaidIfPastCurrentDay" }
               end
             end
 

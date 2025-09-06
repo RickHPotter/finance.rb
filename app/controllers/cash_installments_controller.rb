@@ -3,13 +3,31 @@
 class CashInstallmentsController < ApplicationController
   include TranslateHelper
 
-  def pay
-    date = Time.zone.parse(cash_installment_params[:date]) || Time.zone.now
+  before_action :set_cash_installment, only: %i[pay]
 
-    cash_installment = current_user.cash_installments.find(params[:id])
-    min_date = [ cash_installment.date, date ].min
+  def pay # rubocop:disable Metrics/AbcSize
+    cash_installment_date  = @cash_installment.date
+    cash_installment_price = @cash_installment.price
 
-    @cash_installment = update_installment(cash_installment, date)
+    price = cash_installment_price
+    date  = Time.zone.now
+
+    price = cash_installment_params[:price].to_i            if cash_installment_params[:price].present?
+    date  = Time.zone.parse(cash_installment_params[:date]) if cash_installment_params[:date].present?
+
+    min_date = [ cash_installment_date, date ].min
+
+    @cash_installment = update_installment(@cash_installment, date, price)
+
+    if cash_installment_price != price
+      if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
+        cash_installment_date
+      else
+        cash_installment_date + 1.day
+      end => new_date
+
+      Logic::Manipulation::CashInstallment.new(@cash_installment).split_installment(new_date, cash_installment_price - price)
+    end
 
     Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
 
@@ -33,9 +51,10 @@ class CashInstallmentsController < ApplicationController
     handle_save
   end
 
-  def update_installment(cash_installment, date)
+  def update_installment(cash_installment, date, price = nil)
     params = { date:, paid: true }
     params.merge!(year: date.year, month: date.month) if cash_installment.date.month != date.month
+    params.merge!(price:) if price
 
     cash_installment.update(params)
     cash_installment
@@ -81,8 +100,13 @@ class CashInstallmentsController < ApplicationController
     }
   end
 
+  # Use callbacks to share common setup or constraints between actions.
+  def set_cash_installment
+    @cash_installment = current_user.cash_installments.find(params[:id])
+  end
+
   # Only allow a list of trusted parameters through.
   def cash_installment_params
-    params.require(:cash_installment).permit(:date)
+    params.require(:cash_installment).permit(:price, :date)
   end
 end

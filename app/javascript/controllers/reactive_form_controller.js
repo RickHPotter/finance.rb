@@ -107,7 +107,7 @@ export default class extends Controller {
   }
 
   updateInstallmentsDates() {
-    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today().toISOString().slice(0, 16) }
+    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.now() }
 
     const railsDueDate = this._getDueDate()
     this._updateWrappers(railsDueDate)
@@ -120,7 +120,30 @@ export default class extends Controller {
     await this._updateInstallmentsPrices()
   }
 
-  setPaid({ target }) {
+  setPaidIfPastCurrentDay({ target }) {
+    const thisDate = new RailsDate(target.value)
+    const pastCurrentDay = new Date > thisDate.date()
+
+    this.setPaid(target, pastCurrentDay)
+  }
+
+  setPaid(target, paid = true) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const paidInput = installmentWrapper.querySelector(".installment_paid")
+    const installmentPaidColour = installmentWrapper.querySelector(".installment_paid_colour")
+
+    paidInput.checked = paid
+
+    if (paid) {
+      installmentPaidColour.classList.add("bg-green-400")
+      installmentPaidColour.classList.remove("bg-orange-600")
+    } else {
+      installmentPaidColour.classList.remove("bg-green-400")
+      installmentPaidColour.classList.add("bg-orange-600")
+    }
+  }
+
+  togglePaid({ target }) {
     const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
     const paidInput = installmentWrapper.querySelector(".installment_paid")
 
@@ -264,6 +287,10 @@ export default class extends Controller {
       target.querySelector(".installment_date").value = proposedDate.dateTime()
       target.querySelector(".installment_month").value = startingRailsDate.month
       target.querySelector(".installment_year").value = startingRailsDate.year
+
+      if (target.querySelector("[data-action='click->reactive-form#togglePaid']")) {
+        this.setPaidIfPastCurrentDay({ target: target.querySelector(".installment_date") })
+      }
 
       startingRailsDate.monthsForwards(1)
       proposedDate.monthsForwards(1)

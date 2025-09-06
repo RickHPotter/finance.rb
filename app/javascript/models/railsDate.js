@@ -41,6 +41,10 @@ class RailsDate {
     return new Date().toISOString().slice(0, 10)
   }
 
+  static now() {
+    return new Date().toISOString().slice(0, 16)
+  }
+
   date() {
     return new Date(this._date)
   }

@@ -44,7 +44,27 @@ class Views::CashInstallments::PayModal < Views::Base
             end
           end
         end
-        form_with(model: cash_installment, url: pay_cash_installment_path(cash_installment.id)) do |form|
+        form_with(
+          model: cash_installment, url: pay_cash_installment_path(cash_installment.id),
+          data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
+        ) do |form|
+          prices_range = [ -1, cash_installment.price ]
+          positive = cash_installment.price.to_i.positive?
+          prices_range[0] = 1 if positive
+          sign = positive ? "+" : "-"
+
+          div(class: "mx-auto pb-4 text-center") do
+            bold_label(form, :price)
+
+            TextField \
+              form, :price,
+              svg: :money,
+              id: :transaction_price,
+              class: "font-graduate",
+              disabled: cash_installment.cash_transaction.card_payment? || cash_installment.cash_transaction.card_advance?,
+              data: { price_mask_target: :input, action: "input->price-mask#applyMask", sign:, min: prices_range.min, max: prices_range.max }
+          end
+
           div(class: "mx-auto pb-4 text-center") do
             bold_label(form, :payment_date)
 
