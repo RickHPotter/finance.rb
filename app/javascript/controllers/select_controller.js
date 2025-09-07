@@ -9,7 +9,7 @@ export default class extends Controller {
   initializeTomSelect() {
     const tom = new TomSelect(this.element, {
       plugins: {
-        remove_button:{ title: "Remove this item" },
+        remove_button: { title: "Remove this item" },
         clear_button: { title: "Remove all selected options" },
       },
       persist: false,

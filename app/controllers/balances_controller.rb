@@ -10,8 +10,16 @@ class BalancesController < ApplicationController
     render Views::Balances::Index.new(mobile: @mobile)
   end
 
-  def json
-    result = Logic::MonthlyBalanceBuilder.new(user: current_user).call
+  def cash_balance_json
+    result = Logic::Finder::CashBalanceJson.new(user: current_user).call
+    render json: result
+  end
+
+  def transaction_balance_json
+    month_year_one = params[:month_year_one]&.to_date
+    month_year_two = params[:month_year_two]&.to_date
+
+    result = Logic::Finder::TransactionBalanceJson.new(user: current_user, month_year_one:, month_year_two:).call
     render json: result
   end
 end

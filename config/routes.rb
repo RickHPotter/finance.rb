@@ -35,7 +35,10 @@ Rails.application.routes.draw do
   resources :categories, except: :show
   resources :entities, except: :show
   resources :balances, only: :index do
-    get :json, on: :collection
+    collection do
+      get :cash_balance_json
+      get :transaction_balance_json
+    end
   end
 
   resources :cash_transactions, except: :show do

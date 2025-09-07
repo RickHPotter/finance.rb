@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Logic::MonthlyBalanceBuilder
+class Logic::Finder::CashBalanceJson
   def initialize(user:)
     @user = user
   end

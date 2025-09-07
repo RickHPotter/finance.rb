@@ -58,7 +58,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
 
       div(class: "flex justify-between items-center gap-2") do
-        div(class: "flex-1") do
+        div(class: "flex-1 w-1/2") do
           TextFieldTag \
             :search_term,
             svg: :magnifying_glass,
@@ -66,6 +66,24 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
             placeholder: "#{action_message(:search)}...",
             value: search_term,
             data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+        end
+
+        div(class: "w-1/4 hidden md:block") do
+          form.select :category_id, categories,
+                      { multiple: true, selected: category_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
+        end
+
+        div(class: "w-1/4 hidden md:block") do
+          form.select :entity_id, entities,
+                      { multiple: true, selected: entity_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
         end
 
         Sheet(id: "advanced_filter") do
@@ -82,7 +100,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
             end
 
             SheetMiddle do
-              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+              div class: "md:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
                 form.select :category_id, categories,
                             { multiple: true, selected: category_id },
                             { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
@@ -90,7 +108,9 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                 form.select :entity_id, entities,
                             { multiple: true, selected: entity_id },
                             { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+              end
 
+              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
                 div(class: "grid grid-cols-2 gap-y-2 items-center justify-center w-full mx-auto") do
                   thin__label(form, :paid)
                   thin__label(form, :not_paid)
