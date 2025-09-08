@@ -68,7 +68,7 @@ class LalasController < ApplicationController
     years = (min_date.year..max_date.year)
 
     card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
-    category_id = User.first.categories.where(category_name: [ "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]).ids
+    category_id = User.first.categories.where(category_name: [ "EXCHANGE" ]).ids
     entity_id = User.first.entities.where(entity_name: "LALA").ids
     search_term = search_card_transaction_params[:search_term]
     from_ct_price = search_card_transaction_params[:from_ct_price]
@@ -115,7 +115,7 @@ class LalasController < ApplicationController
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
 
-    category_id = User.first.categories.where(category_name: [ "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]).ids
+    category_id = User.first.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
     entity_id = User.first.entities.where(entity_name: "LALA").ids
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]

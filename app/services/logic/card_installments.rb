@@ -33,6 +33,7 @@ module Logic
     end
 
     def self.build_conditions_from_params(card_transaction_params, search_params)
+      card_transaction_params.delete(:duplicate)
       search_params.delete(:controller)
       search_params.delete(:action)
 

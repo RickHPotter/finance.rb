@@ -5,6 +5,7 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
 export default class extends Controller {
+  static values = { type: String }
   static targets = [
     "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
@@ -44,6 +45,15 @@ export default class extends Controller {
     if (this.hasEntityIconsTarget) {
       this.entityIcons = JSON.parse(this.entityIconsTarget.value)
     }
+
+    if (this.element.dataset.operationType) {
+      this.operationType = this.element.dataset.operationType
+    }
+
+    const userCardInput = this.element.querySelector("#hw_card_transaction_user_card_id > fieldset > input")
+    if (userCardInput) {
+      this.userCard = parseInt(userCardInput.value)
+    }
   }
 
   clear({ target }) {
@@ -55,6 +65,27 @@ export default class extends Controller {
   }
 
   // Installments
+  setIniDate({ target }) {
+    this.transactionDate = target.value
+  }
+
+  setEndDate({ target }) {
+    if (this.transactionDate == target.value) { return }
+
+    this.transactionDate = target.value
+    this.requestSubmit({ target })
+  }
+
+  requestSubmitBasedOnUserCardChange({ target }) {
+    if (!this.userCard) { return }
+
+    const userCardId = parseInt(target.querySelector("input").value)
+    if (this.userCard == userCardId) { return }
+
+    this.userCard = target.querySelector("input").value
+    this.requestSubmit({ target })
+  }
+
   requestSubmit({ target }) {
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
@@ -120,7 +151,27 @@ export default class extends Controller {
     await this._updateInstallmentsPrices()
   }
 
+  updateExchangeWhenDuplicating({ target }) {
+    if (this.operationType !== "duplicate") { return }
+
+    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
+    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategory   = selectedCategories.find((element) => element.value === exchangeCategoryId)
+    if (!exchangeCategory) { return }
+
+    const returnPrices = this.element.querySelectorAll("[data-entity-transaction-target='priceToBeReturnedInput']")
+    const totalPrices = this.element.querySelectorAll("[data-entity-transaction-target='priceInput']")
+    const inputs = Array.from(returnPrices).concat(Array.from(totalPrices)).filter((el) => parseInt(_removeMask(this.priceInputTarget.value)) !== 0)
+
+    inputs.forEach((input) => {
+      input.value = this.priceInputTarget.value
+      input.dispatchEvent(new Event("input"))
+    })
+  }
+
   setPaidIfPastCurrentDay({ target }) {
+    if (this.typeValue !== "CashTransaction") { return }
+
     const thisDate = new RailsDate(target.value)
     const pastCurrentDay = new Date > thisDate.date()
 

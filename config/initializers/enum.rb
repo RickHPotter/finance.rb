@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 def rikki = -> { Import::FromRikkiExcel.run }
+def rikki_rec = -> { Logic::RecalculateBalancesService.new(user: User.first).call }
 def gigi = -> { Import::FromGigiExcel.run }
+def gigi_rec = -> { Logic::RecalculateBalancesService.new(user: User.second).call }
 
 PTBR_MONTHS_FULL = %w[Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro].freeze
 MONTHS_FULL = %w[Janvier Fevrier Mars Avril Mai June Jui Août Septembre Octobre Novembre Decembre].freeze

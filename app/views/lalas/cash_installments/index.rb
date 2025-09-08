@@ -20,14 +20,14 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     if mobile
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
-        style = solid_or_gradient_style(cash_transaction.categories)
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
 
         render_mobile_cash_installment(cash_installment, cash_transaction, style)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
-        style = solid_or_gradient_style(cash_transaction.categories)
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
 
         render_cash_installment(cash_installment, cash_transaction, style)
       end
@@ -75,7 +75,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-              cash_transaction.categories.each do |category|
+              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
                 span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                   category.name
                 end
@@ -83,7 +83,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             end
 
             div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-              cash_transaction.entities.each do |entity|
+              cash_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
                 span(class: "flex flex-col items-center w-16 text-center text-xs") do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
                   span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
@@ -127,7 +127,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         end
 
         div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          cash_transaction.categories.each do |category|
+          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
               category.name
             end

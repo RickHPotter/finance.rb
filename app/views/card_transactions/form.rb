@@ -27,15 +27,28 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
     @user_cards << card_transaction.user_card.slice(:user_card_name, :id).values if card_transaction.user_card.inactive?
   end
 
+  def which_target_to_autofocus(card_transaction)
+    return :date                 if card_transaction.duplicate && params[:commit] != "Update"
+    return :description          if params[:commit] != "Update"
+    return :category_transaction if card_transaction.category_transactions.empty?
+    return :entity_transaction   if card_transaction.entity_transactions.empty?
+
+    :date
+  end
+
   def view_template
     user_card_date = card_transaction.user_card.calculate_reference_date(card_transaction.date).to_datetime
+    autofocus_target = which_target_to_autofocus(card_transaction)
 
     turbo_frame_tag dom_id @card_transaction do
-      form_with model: card_transaction,
-                id: :transaction_form,
-                class: "contents text-black",
-                data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+      form_with(
+        model: card_transaction,
+        id: :transaction_form,
+        class: "contents text-black",
+        data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks", operation_type: card_transaction.operation_type }
+      ) do |form|
         form.hidden_field :user_id, value: current_user.id
+        form.hidden_field :duplicate
 
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,     entities_json,   disabled: true, data: { reactive_form_target: :entityIcons }
@@ -48,7 +61,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         div(class: "w-full mb-6") do
           form.text_field :description,
                           class: outdoor_input_class,
-                          autofocus: params[:commit] != "Update",
+                          autofocus: autofocus_target == :description,
                           autocomplete: :off,
                           data: { controller: "blinking-placeholder", text: model_attribute(card_transaction, :description) }
         end
@@ -70,7 +83,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               render_in: { partial: "card_transactions/user_card" },
               include_blank: false,
               placeholder: model_attribute(card_transaction, :user_card_id),
-              data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmit", value: ".hw-combobox__input" }
+              data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmitBasedOnUserCardChange", value: ".hw-combobox__input" }
           end
 
           div(id: "hw_category_id", class: "hw-cb w-full lg:w-2/12 mb-3 plus-icon") do
@@ -80,7 +93,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :category_id),
-              autofocus: params[:commit] == "Update" && card_transaction.category_transactions.empty?,
+              autofocus: autofocus_target == :category_transaction,
               data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
           end
 
@@ -91,7 +104,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(card_transaction, :entity_id),
-              autofocus: params[:commit] == "Update" && card_transaction.category_transactions.any? && card_transaction.entity_transactions.empty?,
+              autofocus: autofocus_target == :entity_transaction,
               data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
           end
 
@@ -102,7 +115,8 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               type: "datetime-local", svg: :calendar,
               value: card_transaction.date.strftime("%Y-%m-%dT%H:%M"),
               class: "font-graduate transaction-date",
-              data: { reactive_form_target: :dateInput, action: "focusout->reactive-form#requestSubmit" }
+              autofocus: autofocus_target == :date,
+              data: { reactive_form_target: :dateInput, action: "focusin->reactive-form#setIniDate focusout->reactive-form#setEndDate" }
           end
 
           positive = card_transaction.price.to_i.positive?
@@ -126,10 +140,12 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                 id: :transaction_price,
                 class: "sign-based font-graduate",
                 autocomplete: :off,
-                data: { price_mask_target: :input,
-                        reactive_form_target: :priceInput,
-                        action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
-                        sign: }
+                data: {
+                  price_mask_target: :input,
+                  reactive_form_target: :priceInput,
+                  action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating",
+                  sign:
+                }
             end
 
             Button(
@@ -208,29 +224,31 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "w-full my-2") do
-          Button(type: :submit, variant: :purple) { action_model(:submit, card_transaction) }
-        end
-
-        if card_transaction.can_be_destroyed?
-          div(class: "w-full mb-2") do
-            Button(
-              link: duplicate_card_transaction_path(card_transaction),
-              data: { turbo_frame: "center_container" }
-            ) do
-              action_model(:duplicate, card_transaction)
-            end
+        div(class: "flex w-full my-2") do
+          div(class: "w-full") do
+            Button(type: :submit, variant: :purple) { action_message(:submit) }
           end
 
-          div(class: "w-full") do
-            Button(
-              id: "delete_card_transaction_#{card_transaction.id}",
-              type: :submit,
-              variant: :destructive,
-              link: card_transaction_path(card_transaction),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) do
-              action_model(:destroy, card_transaction)
+          if card_transaction.can_be_destroyed?
+            div(class: "w-full") do
+              Button(
+                link: duplicate_card_transaction_path(card_transaction),
+                data: { turbo_frame: "center_container" }
+              ) do
+                action_message(:duplicate)
+              end
+            end
+
+            div(class: "w-full") do
+              Button(
+                id: "delete_card_transaction_#{card_transaction.id}",
+                type: :submit,
+                variant: :destructive,
+                link: card_transaction_path(card_transaction),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+              ) do
+                action_message(:destroy)
+              end
             end
           end
         end

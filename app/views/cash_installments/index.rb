@@ -22,7 +22,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(cash_transaction.categories)
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
 
         render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
@@ -30,7 +30,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(cash_transaction.categories)
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
 
         render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
@@ -137,7 +137,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               border = style.split("; color:").last
-              cash_transaction.categories.each do |category|
+              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
                 span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
                   category.name
                 end
@@ -145,7 +145,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             end
 
             div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-              cash_transaction.entities.each do |entity|
+              cash_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
                 Link(
                   href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
@@ -241,7 +241,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          cash_transaction.categories.each do |category|
+          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
             border = style.split("; color:").last
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
               category.name

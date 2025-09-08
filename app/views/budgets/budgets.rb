@@ -87,7 +87,7 @@ class Views::Budgets::Budgets < Views::Base
           end
           div(class: "flex items-center justify-between gap-2") do
             div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-              budget.categories.each do |category|
+              budget.budget_categories.order(:id).map(&:category).each do |category|
                 span(
                   class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
                   style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
@@ -98,7 +98,7 @@ class Views::Budgets::Budgets < Views::Base
             end
 
             div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-              budget.entities.each do |entity|
+              budget.budget_entities.order(:id).map(&:entity).each do |entity|
                 div(class: "flex flex-col items-center w-16 text-center text-xs") do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
                   span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
@@ -147,7 +147,7 @@ class Views::Budgets::Budgets < Views::Base
         end
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-          budget.categories.each do |category|
+          budget.budget_categories.order(:id).map(&:category).each do |category|
             span(
               class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
               style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"

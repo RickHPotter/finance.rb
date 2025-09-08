@@ -29,7 +29,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
       form_with model: cash_transaction,
                 id: :transaction_form,
                 class: "contents text-black",
-                data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+                data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }
@@ -201,8 +201,8 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "grid grid-cols-1 lg:flex items-center justify-center gap-2 mx-auto") do
-          Button(type: :submit, variant: :purple) { action_model(:submit, cash_transaction) }
+        div(class: "flex items-center justify-center gap-2 w-full mx-auto") do
+          Button(type: :submit, variant: :purple) { action_message(:submit) }
 
           if cash_transaction.can_be_destroyed?
             Button(
@@ -212,7 +212,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               link: cash_transaction_path(cash_transaction),
               data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
             ) do
-              action_model(:destroy, cash_transaction)
+              action_message(:destroy)
             end
           end
 

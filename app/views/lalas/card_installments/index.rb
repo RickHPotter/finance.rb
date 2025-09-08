@@ -21,14 +21,14 @@ class Views::Lalas::CardInstallments::Index < Views::Base
     if mobile
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.categories)
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
 
         render_mobile_card_installment(card_installment, card_transaction, style)
       end
     else
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.categories)
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
 
         render_card_installment(card_installment, card_transaction, style)
       end
@@ -92,7 +92,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
                 end
               else
 
-                card_transaction.categories.each do |category|
+                card_transaction.category_transactions.order(:id).map(&:category).each do |category|
                   span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
                     category.name
                   end
@@ -175,7 +175,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
               end
             end
           else
-            card_transaction.categories.each do |category|
+            card_transaction.category_transactions.order(:id).map(&:category).each do |category|
               span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
                 category.name
               end

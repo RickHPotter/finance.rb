@@ -74,14 +74,14 @@ export default class extends Controller {
     await this._updateExchangesPrices()
   }
 
-  updatePrice() {
+  async updatePrice() {
     const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value)) * - 1
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
     if (Math.abs(priceToBeReturned) > Math.abs(price)) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
     this._addBorderToPriceInputs(totalPrice)
-    this._updateExchangesPrices()
+    await this._updateExchangesPrices()
   }
 
   _addBorderToPriceInputs(totalPrice) {
@@ -175,7 +175,7 @@ export default class extends Controller {
 
     await this._updateExchangesFields(exchangesCount)
 
-    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility?.() ?? true)
+    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.style.display !== "none")
 
     visibleExchangesInputs.forEach((input, index) => {
       const valueCents = index === 0 ? (baseCents + remainder) : baseCents

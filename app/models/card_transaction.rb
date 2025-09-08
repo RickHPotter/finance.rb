@@ -118,6 +118,13 @@ class CardTransaction < ApplicationRecord
     persisted?
   end
 
+  def operation_type
+    return :edit      if persisted?
+    return :duplicate if duplicate
+
+    :new
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 

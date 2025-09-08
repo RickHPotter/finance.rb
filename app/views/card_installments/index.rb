@@ -22,14 +22,14 @@ class Views::CardInstallments::Index < Views::Base
     if mobile
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.categories)
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
 
         render_mobile_card_installment(card_installment, card_transaction, style)
       end
     else
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.categories)
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
 
         render_card_installment(card_installment, card_transaction, style)
       end
@@ -74,7 +74,7 @@ class Views::CardInstallments::Index < Views::Base
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              card_transaction.categories.each do |category|
+              card_transaction.category_transactions.order(:id).map(&:category).each do |category|
                 span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                   category.name
                 end
@@ -82,7 +82,7 @@ class Views::CardInstallments::Index < Views::Base
             end
 
             div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entities.each do |entity|
+              card_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
                 Link(
                   href: new_card_transaction_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
@@ -159,7 +159,7 @@ class Views::CardInstallments::Index < Views::Base
               end
             end
           else
-            card_transaction.categories.each do |category|
+            card_transaction.category_transactions.order(:id).map(&:category).each do |category|
               span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
                 category.name
               end
@@ -171,7 +171,7 @@ class Views::CardInstallments::Index < Views::Base
           class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
           data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
         ) do
-          card_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
+          card_transaction.entity_transactions.order(:id).includes(:entity).each do |entity_transaction|
             entity = entity_transaction.entity
             exchanges_count = entity_transaction.exchanges_count
             price_to_be_returned = entity_transaction.price_to_be_returned

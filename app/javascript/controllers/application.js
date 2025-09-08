@@ -22,6 +22,10 @@ document.addEventListener("click", (event) => {
     event.preventDefault()
     link.click()
   }
+
+  if (link) {
+    document.querySelector("body").scrollTo(0, 0)
+  }
 })
 
 document.addEventListener("DOMContentLoaded", () => {
