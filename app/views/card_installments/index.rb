@@ -103,14 +103,14 @@ class Views::CardInstallments::Index < Views::Base
   def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 hover:opacity-60",
+        class: "grid grid-cols-12 border-b border-slate-200",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 hover:opacity-65") do
           date, time = I18n.l(card_installment.date, format: :shorter).split(",")
           div(class: "grid grid-cols-1") do
             span(class: "rounded-xs text-xs mr-auto") { date }
@@ -134,7 +134,10 @@ class Views::CardInstallments::Index < Views::Base
           end
         end
 
-        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+        div(
+          class: "col-span-3 py-2 flex items-center justify-center gap-2 hover:opacity-65",
+          data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }
+        ) do
           if card_transaction.categories.count > 1
             first_one = card_transaction.categories.first
             remaining = card_transaction.categories[1..]
@@ -168,7 +171,7 @@ class Views::CardInstallments::Index < Views::Base
         end
 
         div(
-          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2 hover:opacity-65",
           data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
         ) do
           card_transaction.entity_transactions.order(:id).includes(:entity).each do |entity_transaction|
@@ -192,7 +195,7 @@ class Views::CardInstallments::Index < Views::Base
           end
         end
 
-        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto hover:opacity-65") do
           from_cent_based_to_float(card_installment.price, "R$")
         end
 
@@ -206,12 +209,17 @@ class Views::CardInstallments::Index < Views::Base
               cached_icon :copy
             end
 
-            link_to card_transaction_path(card_transaction, card_installment_id: card_installment.id),
-                    id: "delete_card_transaction_#{card_transaction.id}",
-                    class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
-                    data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") } do
-              cached_icon :destroy
-            end
+            LinkWithConfirmation(
+              id: card_transaction.id,
+              icon: :destroy,
+              link_params: {
+                href: card_transaction_path(card_transaction, card_installment_id: card_installment.id),
+                size: :xs,
+                id: "delete_card_transaction_#{card_transaction.id}",
+                class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
+                data: { turbo_method: :delete }
+              }
+            )
           end
         end
       end

@@ -21,7 +21,6 @@ class CardTransaction < ApplicationRecord
 
   # @validations ..............................................................
   validates :description, :card_installments_count, presence: true
-  validate :reference_date_is_valid
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
@@ -129,16 +128,6 @@ class CardTransaction < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
-
-  def reference_date_is_valid
-    # return if imported
-    # return false if errors.any?
-    #
-    # reference_date = user_card.calculate_reference_date(date)
-    # reference = user_card.references.find_by(month: reference_date.month, year: reference_date.year)
-    #
-    # errors.add(:date, "Invalid reference date") if reference.month != month || reference.year != year
-  end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #

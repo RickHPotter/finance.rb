@@ -12,6 +12,7 @@ en:
         active: Active
         value: Budget Value
         remaining_value: Remaining Value
+        remaining: Remaining
         month: Month
         year: Year
         month_year: Month/Year Reference
@@ -47,6 +48,7 @@ pt-BR:
         active: Ativo
         value: Valor do Orçamento
         remaining_value: Valor Restante
+        remaining: Restante
         month: Mês
         year: Ano
         month_year: Referência Mês/Ano

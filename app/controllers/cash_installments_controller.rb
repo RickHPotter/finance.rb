@@ -67,7 +67,7 @@ class CashInstallmentsController < ApplicationController
       @mobile = true
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context)),
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
           turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CashInstallment) })
         ]
       end

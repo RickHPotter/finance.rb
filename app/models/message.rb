@@ -3,6 +3,8 @@
 class Message < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include TranslateHelper
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :conversation
@@ -17,6 +19,7 @@ class Message < ApplicationRecord
                         target: "messages_#{conversation.id}",
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
+  after_create_commit :send_email
 
   # @scopes ...................................................................
   scope :unread, -> { where(read_at: nil) }
@@ -26,6 +29,41 @@ class Message < ApplicationRecord
   # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+
+  private
+
+  def send_email
+    title = user.full_name
+    body =  model_attribute(self, :you_have_a_new_message)
+    url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.fun" : "localhost")
+
+    friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id)
+
+    friends_to_notify.each do |friend|
+      friend_user = friend.user
+      I18n.locale = friend_user.locale
+
+      friend_user.subscriptions.each do |subscription|
+        WebPush.payload_send(
+          message: { title:, body:, url: }.to_json,
+          endpoint: subscription.endpoint,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+          vapid:
+        )
+      end
+    end
+
+    I18n.locale = user.locale
+  end
+
+  def vapid
+    {
+      subject: "mailto:30fevfun@gmail.com",
+      public_key: Rails.application.credentials.dig(:vapid, :public_key),
+      private_key: Rails.application.credentials.dig(:vapid, :private_key)
+    }
+  end
 end
 
 # == Schema Information

@@ -11,6 +11,7 @@ en:
         hello: Hello
         ivemadeatransactiononyou: I made a transaction referencing you.
         click_down_below: Click down below to match this transaction on your app.
+        you_have_a_new_message: You have a new message
 
 pt-BR:
   activerecord:
@@ -25,3 +26,4 @@ pt-BR:
         hello: Olá
         ivemadeatransactiononyou: Eu fiz uma transação referenciando você.
         click_down_below: Clique abaixo para vincular essa transação ao seu app.
+        you_have_a_new_message: Vocês tem uma nova mensagem

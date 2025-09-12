@@ -21,7 +21,7 @@ module Views
             data: { new_record: entity_transaction.new_record?, reactive_form_target: "entityWrapper", controller: "entity-transaction" }) do
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
-              if transactable.is_a?(CashTransaction) && transactable.exchange_return?
+              if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
                 div(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
                   div(class: "flex items-center gap-2 flex-1") do
                     content

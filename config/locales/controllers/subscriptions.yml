@@ -3,7 +3,7 @@ en:
     due_payment_notifier:
       title: "Due Payments"
       body:
-        one: "You have one pending payment due today"
+        one: "You have pending payment"
         other: "You have %{count} pending payments due today"
 
 pt-BR:
@@ -11,5 +11,5 @@ pt-BR:
     due_payment_notifier:
       title: "Pagamentos Vencidos"
       body:
-        one: "Você tem um pagamento que vence hoje"
+        one: "Você tem pagamento pendente"
         other: "Você tem %{count} pagamentos que vencem hoje"

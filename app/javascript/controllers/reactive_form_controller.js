@@ -159,13 +159,24 @@ export default class extends Controller {
     const exchangeCategory   = selectedCategories.find((element) => element.value === exchangeCategoryId)
     if (!exchangeCategory) { return }
 
-    const returnPrices = this.element.querySelectorAll("[data-entity-transaction-target='priceToBeReturnedInput']")
-    const totalPrices = this.element.querySelectorAll("[data-entity-transaction-target='priceInput']")
-    const inputs = Array.from(returnPrices).concat(Array.from(totalPrices)).filter((el) => parseInt(_removeMask(this.priceInputTarget.value)) !== 0)
+    const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
 
-    inputs.forEach((input) => {
-      input.value = this.priceInputTarget.value
-      input.dispatchEvent(new Event("input"))
+    entityTransactionWrappers.forEach((wrapper) => {
+      const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
+      const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
+      const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
+
+      if (parseInt(_removeMask(price.value)) === 0) { return }
+      if (parseInt(_removeMask(priceToBeReturned.value) === 0)) { return }
+
+      price.value = this.priceInputTarget.value
+      price.dispatchEvent(new Event("input"))
+
+      priceToBeReturned.value = this.priceInputTarget.value
+      priceToBeReturned.dispatchEvent(new Event("input"))
+
+      exchangesCount.value = this.installmentsCountInputTarget.value
+      exchangesCount.dispatchEvent(new Event("input"))
     })
   }
 
@@ -314,7 +325,7 @@ export default class extends Controller {
   }
 
   _updateWrappers(startingRailsDate) {
-    const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
+    const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.style.display !== "none")
     const firstVisibleInstallment = visibleInstallmentsWrappers[0]
 
     if (!firstVisibleInstallment) return

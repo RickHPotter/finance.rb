@@ -25,7 +25,7 @@ class InvestmentsController < ApplicationController
 
     investments = Logic::Investments.find_ref_month_year_by_params(current_user, investment_params, search_investment_params)
 
-    render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:)
+    render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:, current_user:)
   end
 
   def new

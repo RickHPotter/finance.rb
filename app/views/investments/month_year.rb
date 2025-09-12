@@ -7,14 +7,16 @@ class Views::Investments::MonthYear < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount
+  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_bg_colour
 
-  def initialize(mobile:, month_year:, month_year_str:, investments:)
+  def initialize(mobile:, month_year:, month_year_str:, investments:, current_user:)
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @investments = investments
     @total_amount = investments.sum(:price)
+
+    @investment_bg_colour = current_user.categories.built_in.find_by(category_name: "INVESTMENT").hex_colour
   end
 
   def view_template
@@ -96,6 +98,7 @@ class Views::Investments::MonthYear < Views::Base
       turbo_frame_tag dom_id investment do
         div(
           class: "rounded-lg shadow-sm overflow-hidden bg-slate-200 my-2",
+          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
           div(class: "p-4") do
@@ -131,14 +134,15 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-6 border-b border-slate-200 bg-gradient-to-r hover:opacity-60",
+          class: "grid grid-cols-6 border-b border-slate-200 bg-gradient-to-r",
+          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
-          div(class: "p-2 flex items-center justify-between") do
+          div(class: "p-2 flex items-center justify-between hover:opacity-65") do
             span(class: "px-1 rounded-sm text-slate-900 mx-auto") { I18n.l(investment.date, format: :shorter) }
           end
 
-          div(class: "col-span-2 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+          div(class: "col-span-2 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 hover:opacity-65") do
             link_to investment.description,
                     edit_investment_path(investment),
                     id: "edit_investment_#{investment.id}",
@@ -146,25 +150,30 @@ class Views::Investments::MonthYear < Views::Base
                     data: { turbo_frame: :center_container }
           end
 
-          div(class: "py-2 flex items-center justify-center gap-2") do
+          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
                     new_investment_path(next_day: true, investment: { user_bank_account_id: investment.user_bank_account_id }),
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm underline text-indigo-400",
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm underline bg-white border-black text-indigo-600",
                     data: { turbo_frame: :center_container }
           end
 
-          div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+          div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto hover:opacity-65") do
             from_cent_based_to_float(investment.price, "R$")
           end
 
           div(class: "py-2 flex items-center justify-center") do
             div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
-              link_to investment,
-                      id: "delete_investment_#{investment.id}",
-                      class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
-                      data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") } do
-                cached_icon :destroy
-              end
+              LinkWithConfirmation(
+                id: investment.id,
+                icon: :destroy,
+                link_params: {
+                  href: investment_path(investment),
+                  size: :xs,
+                  id: "delete_investment_#{investment.id}",
+                  class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
+                  data: { turbo_method: :delete }
+                }
+              )
             end
           end
         end

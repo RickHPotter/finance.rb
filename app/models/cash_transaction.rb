@@ -91,7 +91,9 @@ class CashTransaction < ApplicationRecord
   end
 
   def can_be_destroyed?
-    persisted? && categories.exclude?(user.built_in_category("EXCHANGE RETURN"))
+    return false if card_payment? || card_advance? || exchange_return?
+
+    persisted?
   end
 
   # @protected_instance_methods ...............................................

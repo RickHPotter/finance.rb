@@ -2,7 +2,6 @@
 
 class Views::Shared::MonthYearSelector < Views::Base
   include Phlex::Rails::Helpers::TextFieldTag
-  include Phlex::Rails::Helpers::LinkTo
 
   include ContextHelper
 

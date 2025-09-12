@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Budgets::MonthYear < Views::Base
-  include Phlex::Rails::Helpers::DOMID
-  include Phlex::Rails::Helpers::LinkTo
-
   include TranslateHelper
   include CacheHelper
 
@@ -34,8 +31,7 @@ class Views::Budgets::MonthYear < Views::Base
           div(class: "flex gap-2 absolute left-0 bottom-4") do
             span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg") { month_year_str }
 
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum,
-                 data: { price: total_amount }) do
+            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end
@@ -69,7 +65,7 @@ class Views::Budgets::MonthYear < Views::Base
             div(class: "py-3 col-span-5") { model_attribute(Budget, :description) }
             div(class: "py-3 col-span-3") { model_attribute(Budget, :categories) }
             div(class: "py-3 col-span-2") { model_attribute(Budget, :entities) }
-            div(class: "py-3 text-end")   { model_attribute(Budget, :remaining_value) }
+            div(class: "py-3 text-end")   { model_attribute(Budget, :remaining) }
             div(class: "py-3 text-end")   { model_attribute(CashTransaction, :balance) }
           end
 

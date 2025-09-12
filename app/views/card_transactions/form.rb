@@ -165,7 +165,10 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                 value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
                 class: "font-graduate",
                 onclick: "this.select();",
-                data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
+                data: {
+                  reactive_form_target: :installmentsCountInput,
+                  action: "input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
+                }
             end
           end
         end
@@ -240,15 +243,16 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             end
 
             div(class: "w-full") do
-              Button(
-                id: "delete_card_transaction_#{card_transaction.id}",
-                type: :submit,
-                variant: :destructive,
-                link: card_transaction_path(card_transaction),
-                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-              ) do
-                action_message(:destroy)
-              end
+              LinkWithConfirmation(
+                id: card_transaction.id,
+                text: action_message(:destroy),
+                link_params: {
+                  href: card_transaction_path(card_transaction),
+                  id: "delete_card_transaction_#{card_transaction.id}",
+                  variant: :destructive,
+                  data: { turbo_method: :delete }
+                }
+              )
             end
           end
         end

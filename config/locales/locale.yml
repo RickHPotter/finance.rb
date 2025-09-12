@@ -1,4 +1,10 @@
 en:
+  confirmation:
+    sure: "Are you sure?"
+    yes: "Yes"
+    no: "No"
+    confirm: "Confirm"
+    cancel: "Cancel"
   notification:
     created: "%{model} was successfully created."
     not_created: "%{model} was not created."
@@ -17,12 +23,6 @@ en:
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
-  confirmation:
-    sure: "Are you sure?"
-    yes: "Yes"
-    no: "No"
-    confirm: "Confirm"
-    cancel: "Cancel"
   gerund:
     index: "Listing"
     show: "Details of"

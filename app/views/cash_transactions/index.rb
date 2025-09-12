@@ -6,11 +6,12 @@ class Views::CashTransactions::Index < Views::Base
 
   include CacheHelper
 
-  attr_reader :index_context, :current_user
+  attr_reader :index_context, :current_user, :mobile
 
-  def initialize(index_context: {})
+  def initialize(index_context: {}, mobile: false)
     @index_context = index_context
     @current_user = index_context[:current_user]
+    @mobile = mobile
   end
 
   def view_template
@@ -20,7 +21,7 @@ class Views::CashTransactions::Index < Views::Base
           turbo_frame_tag :cash_transactions do
             div class: "min-h-screen", data: { controller: "datatable" } do
               div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm" do
-                render IndexSearchForm.new(url: cash_transactions_path, index_context:)
+                render IndexSearchForm.new(url: cash_transactions_path, index_context:, mobile:)
               end
 
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,

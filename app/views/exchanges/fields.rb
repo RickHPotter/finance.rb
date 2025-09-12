@@ -14,10 +14,10 @@ module Views
         transactable = form.options[:parent_builder].options[:parent_builder].object
         if transactable.is_a?(CashTransaction)
           :standalone
-        elsif exchange.new_record?
+        elsif exchange.new_record? && !transactable.duplicate
           :card_bound
         else
-          exchange.bound_type
+          exchange.bound_type.to_sym
         end => bound_type
 
         div(class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" }) do

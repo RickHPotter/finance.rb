@@ -76,7 +76,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: :center_container, turbo_prefetch: false }
-              elsif cash_transaction.card_payment? || cash_transaction.card_advance?
+              elsif cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
                 default_year = card_.year
                 active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
@@ -117,8 +117,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                   cached_icon(:check_calendar)
                 end
               else
-                button(class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200",
-                       title: model_attribute(cash_installment, :already_paid)) do
+                button(
+                  class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200",
+                  title: model_attribute(cash_installment, :already_paid)
+                ) do
                   cached_icon(icon)
                 end
               end
@@ -218,7 +220,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: :center_container, turbo_prefetch: false }
-          elsif cash_transaction.card_payment? || cash_transaction.card_advance?
+          elsif cash_transaction.card_advance?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
             default_year = card_.year
             active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"

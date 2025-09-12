@@ -11,7 +11,7 @@ class CashTransactionsController < ApplicationController
 
     respond_to do |format|
       format.html do
-        render Views::CashTransactions::Index.new(index_context: @index_context)
+        render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)
       end
 
       format.turbo_stream do

@@ -38,7 +38,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "w-full mb-6") do
           form.text_field :description,
-                          class: outdoor_input_class,
+                          class: cash_transaction.card_payment? ? outdoor_readonly_input_class : outdoor_input_class,
                           autofocus: true,
                           autocomplete: :off,
                           data: { controller: "blinking-placeholder", text: model_attribute(cash_transaction, :description) }
@@ -49,6 +49,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           form.text_area \
             :comment,
             class: "text-gray-500 p-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
+            disabled: cash_transaction.card_payment?,
             data: { controller: "text-area-autogrow blinking-placeholder", text: model_attribute(cash_transaction, :comment_placeholder) }
         end
 
@@ -70,7 +71,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(cash_transaction, :category_id),
-              disabled: cash_transaction.exchange_return?,
+              disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
               data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
           end
 
@@ -81,7 +82,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               mobile_at: "360px",
               include_blank: false,
               placeholder: model_attribute(cash_transaction, :entity_id),
-              disabled: cash_transaction.exchange_return?,
+              disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
               data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
           end
 
@@ -105,6 +106,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               class: "w-1/12 #{sign_bg_colour} border border-black",
               tabindex: -1,
               title: action_message(:toggle_sign),
+              disabled: cash_transaction.card_payment?,
               data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
             ) { sign }
 
@@ -116,6 +118,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                 id: :transaction_price,
                 class: "sign-based font-graduate",
                 autocomplete: :off,
+                disabled: cash_transaction.card_payment?,
                 data: { price_mask_target: :input,
                         reactive_form_target: :priceInput,
                         action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
@@ -127,6 +130,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               class: "w-1/12 border border-black",
               tabindex: -1,
               title: action_message(:calculate_installments_price),
+              disabled: cash_transaction.card_payment?,
               data: { action: "click->reactive-form#updateFullPrice" }
             ) { "=" }
 
@@ -139,6 +143,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                 value: [ cash_transaction.cash_installments.size, cash_transaction.cash_installments_count, 1 ].max,
                 class: "font-graduate",
                 onclick: "this.select();",
+                disabled: cash_transaction.card_payment?,
                 data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
             end
           end
@@ -188,10 +193,8 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             end
           end
 
-          if cash_transaction.entity_transactions.count > 1
-            entity_transactions_association = cash_transaction.entity_transactions.includes(:entity,
-                                                                                            :exchanges)
-          end
+          entity_transactions_association = cash_transaction.entity_transactions.includes(:entity, :exchanges) if cash_transaction.entity_transactions.count > 1
+
           form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields|
             render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
           end
@@ -205,18 +208,34 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           Button(type: :submit, variant: :purple) { action_message(:submit) }
 
           if cash_transaction.can_be_destroyed?
-            Button(
-              id: "delete_cash_transaction_#{cash_transaction.id}",
-              type: :submit,
-              variant: :destructive,
-              link: cash_transaction_path(cash_transaction),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) do
-              action_message(:destroy)
-            end
+            LinkWithConfirmation(
+              id: cash_transaction.id,
+              text: action_message(:destroy),
+              link_params: {
+                href: cash_transaction_path(cash_transaction),
+                id: "delete_cash_transaction_#{cash_transaction.id}",
+                variant: :destructive,
+                data: { turbo_method: :delete }
+              }
+            )
           end
 
           card_transactions_sheet if cash_transaction.exchange_return?
+
+          if cash_transaction.card_payment?
+            card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
+            default_year = card_.year
+            active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
+
+            Link(
+              href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+              variant: :outline,
+              class: "flex flex-col items-center text-center text-inherit",
+              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+            ) do
+              action_model(:index, CardTransaction, 2)
+            end
+          end
         end
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }

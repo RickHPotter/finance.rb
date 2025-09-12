@@ -8,14 +8,17 @@ module Views
 
       include CacheHelper
 
-      attr_reader :form, :installment
+      attr_reader :form, :transactable, :installment
 
       def initialize(form:)
         @form = form
+        @transactable = form.options[:parent_builder].object
         @installment = form.object
       end
 
       def view_template
+        readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
+
         div(class: "nested-form-wrapper", data: { new_record: installment.new_record?, reactive_form_target: "installmentWrapper" }) do
           span(class: "flex justify-between items-center text-sm font-medium text-black mx-auto bg-gray-200 border border-gray-300 rounded-sm") do
             button(
@@ -69,9 +72,9 @@ module Views
             form.text_field \
               :price,
               inputmode: :numeric,
-              class:
-                "sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
-                focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
+              class: "sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
+                     focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
+              readonly:,
               data: { price_mask_target: :input, reactive_form_target: :priceInstallmentInput, action: "input->price-mask#applyMask", sign: }
           end
 

@@ -6,6 +6,10 @@ if Rails.env.production?
   scheduler.cron "0 0 * * *" do
     Rails.logger.info "Running daily backup job"
 
+    User.find_each do |user|
+      Logic::RecalculateBalancesService.new(user:).call
+    end
+
     Export::DatabaseService.backup
   end
 

@@ -201,15 +201,16 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           Button(type: :submit, variant: :purple) { action_model(:submit, budget) }
 
           if budget.persisted?
-            Button(
-              id: "delete_budget_#{budget.id}",
-              type: :submit,
-              variant: :destructive,
-              link: budget_path(budget),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) do
-              action_model(:destroy, budget)
-            end
+            LinkWithConfirmation(
+              id: budget.id,
+              text: action_model(:destroy, budget),
+              link_params: {
+                href: budget_path(budget),
+                id: "delete_budget_#{budget.id}",
+                variant: :destructive,
+                data: { turbo_method: :delete }
+              }
+            )
 
             card_transactions_sheet
             cash_transactions_sheet

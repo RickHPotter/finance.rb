@@ -29,6 +29,18 @@ export default class extends Controller {
       })
   }
 
+  destroyEverything() {
+    if (this.chart && typeof this.chart.destroy === "function") {
+      this.chart.destroy()
+      this.chart = null
+    }
+
+    if (this.negativePieChart) { this.negativePieChart.destroy() }
+    if (this.positivePieChart) { this.positivePieChart.destroy() }
+    if (this.negativeTransactionsPieChart) { this.negativeTransactionsPieChart.destroy() }
+    if (this.positiveTransactionsPieChart) { this.positiveTransactionsPieChart.destroy() }
+  }
+
   getFilteredData(preset) {
     const now = new Date()
     const currentYm = now.getFullYear() * 100 + now.getMonth() + 1
@@ -51,11 +63,7 @@ export default class extends Controller {
   }
 
   rerender() {
-    if (this.chart) { this.chart.destroy() }
-    if (this.negativePieChart) { this.negativePieChart.destroy() }
-    if (this.positivePieChart) { this.positivePieChart.destroy() }
-    if (this.negativeTransactionsPieChart) { this.negativeTransactionsPieChart.destroy() }
-    if (this.positiveTransactionsPieChart) { this.positiveTransactionsPieChart.destroy() }
+    this.destroyEverything()
 
     this.pieRealmTarget.classList.add("hidden")
 
@@ -87,6 +95,8 @@ export default class extends Controller {
       year--
     }
     this.currentMonth = year * 100 + month
+
+    this.destroyEverything()
     this.renderMonthCharts()
   }
 
@@ -99,6 +109,8 @@ export default class extends Controller {
       year++
     }
     this.currentMonth = year * 100 + month
+
+    this.destroyEverything()
     this.renderMonthCharts()
   }
 
@@ -402,6 +414,7 @@ export default class extends Controller {
         }
       }
     }
+
     this.chart = new ApexCharts(this.chartTarget, areaOptions)
     this.chart.render()
 

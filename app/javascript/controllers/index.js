@@ -19,6 +19,9 @@ application.register("chat", ChatController)
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
 
+import ConfirmController from "./confirm_controller"
+application.register("confirm", ConfirmController)
+
 import CursorController from "./cursor_controller"
 application.register("cursor", CursorController)
 

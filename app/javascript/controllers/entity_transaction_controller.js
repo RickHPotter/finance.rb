@@ -52,7 +52,6 @@ export default class extends Controller {
         const priceToBeReturnedInput = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
 
         if (price > 0 === priceToBeReturnedInput > 0 && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
-          console.log()
           this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         }
 
@@ -227,7 +226,7 @@ export default class extends Controller {
 
     startingRailsDate.monthsForwards(startingNumber)
 
-    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
+    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
 
     const proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
     proposedDate.monthsForwards(startingNumber)

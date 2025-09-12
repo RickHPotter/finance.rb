@@ -1,5 +1,5 @@
 <% if @budget.valid? %>
-  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context)) %>
+  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updated, Budget) }) %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") if @budget.active? %>
 <% else %>
