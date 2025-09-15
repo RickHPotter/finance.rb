@@ -140,6 +140,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                 id: :transaction_price,
                 class: "sign-based font-graduate",
                 autocomplete: :off,
+                onclick: "this.select();",
                 data: {
                   price_mask_target: :input,
                   reactive_form_target: :priceInput,

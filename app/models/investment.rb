@@ -9,6 +9,8 @@ class Investment < ApplicationRecord
   include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :min_date
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_bank_account
@@ -17,6 +19,9 @@ class Investment < ApplicationRecord
   validates :price, :date, :description, presence: true
 
   # @callbacks ................................................................
+  after_save :set_min_date
+  after_commit :update_cash_balance, :update_associations_total
+
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
   # @protected_instance_methods ...............................................
@@ -44,7 +49,8 @@ class Investment < ApplicationRecord
   # @return [String] The generated comment.
   #
   def comment
-    "Days: [#{cash_transaction.investments.order(:date).map(&:day).join(', ')}]"
+    days = I18n.t("datetime.prompts.day").pluralize
+    "#{days}: [#{cash_transaction.investments.order(:date).map(&:day).join(', ')}]"
   end
 
   # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the investment entries.
@@ -72,6 +78,30 @@ class Investment < ApplicationRecord
   end
 
   # @private_instance_methods .................................................
+
+  private
+
+  def set_min_date
+    self.min_date = [
+      *changes[:date],
+      *previous_changes[:date],
+      cash_transaction.date.beginning_of_month,
+      Date.new(changes[:year]&.min || year, changes[:month]&.min || month)
+    ].compact_blank.min
+  end
+
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
+
+    self.min_date ||= date
+    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+  end
+
+  def update_associations_total
+    return if destroyed?
+
+    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
+  end
 end
 
 # == Schema Information

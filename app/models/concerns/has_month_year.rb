@@ -110,18 +110,11 @@ module HasMonthYear
   # @return [void].
   #
   def set_month_year
-    return if imported?
     return if instance_of?(CardInstallment)
+    return if respond_to?(:imported) && imported?
     build_month_year and return if instance_of?(CardTransaction)
 
     self.month ||= date.month
     self.year  ||= date.year
-  end
-
-  def imported?
-    impoted_cash_transaction  = instance_of?(CashTransaction) && imported
-    imported_cash_installment = instance_of?(CashInstallment) && cash_transaction&.imported
-
-    impoted_cash_transaction || imported_cash_installment
   end
 end

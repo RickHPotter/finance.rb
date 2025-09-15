@@ -63,10 +63,14 @@ module TranslateHelper
   #
   # @return [String] Human-readable attribute name based on the model and attribute.
   #
-  def model_attribute(model, attribute)
+  def model_attribute(model, attribute, fallback = nil)
     model = model.class if model.is_a?(ActiveRecord::Base)
     model = model.model_name.singular
-    I18n.t("activerecord.attributes.#{model}.#{attribute}")
+
+    return I18n.t("activerecord.attributes.#{model}.#{attribute}") if fallback.nil?
+    return I18n.t("activerecord.attributes.#{model}.#{attribute}") if I18n.exists?("activerecord.attributes.#{model}.#{attribute}")
+
+    fallback
   end
 
   # Dynamically generates a panel title based on the current controller action and the singularised capitalised name of the controller.

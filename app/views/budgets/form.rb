@@ -132,6 +132,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
                   svg: :money,
                   class: "font-graduate",
                   value: budget.value || -10_000,
+                  onclick: "this.select();",
                   data: { dynamic_description_target: :value,
                           price_mask_target: :input, action: "input->price-mask#applyMask input->dynamic-description#updateDescription",
                           sign: "-" }

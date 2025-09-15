@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Logic::Finder::TransactionBalanceJson
+  include TranslateHelper
+
   def initialize(user:, month_year_one:, month_year_two:)
     month_year_two ||= month_year_one
 
@@ -16,7 +18,14 @@ class Logic::Finder::TransactionBalanceJson
 
     items.map do |item|
       color = categories[item[:category_name]]
-      item.slice(:type, :id, :category_name).merge(color:, price: item[:price].to_f / 100)
+      category_name = item[:category_name]
+      category_name = model_attribute(Category, item[:category_name].parameterize(separator: "_"), category_name).upcase
+
+      item.slice(:type, :id).merge(
+        color:,
+        category_name:,
+        price: item[:price].to_f / 100
+      )
     end
   end
 

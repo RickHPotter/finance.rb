@@ -28,7 +28,7 @@ module Components
       ) do
         div(class: "bg-white p-6 rounded-lg shadow-lg") do
           div(class: "flex") do
-            h1(class: "text-2xl mb-4 flex-1 text-start") do
+            h1(class: "text-2xl mb-4 flex-1 text-start text-gray-900") do
               I18n.t("confirmation.sure")
             end
 
@@ -45,12 +45,12 @@ module Components
             end
           end
 
-          div(class: "flex justify-center gap-4 text-md") do
+          div(class: "flex justify-center gap-4 text-md text-white") do
             Button(type: :button, variant: :destructive, class: "font-bold py-2 px-4 rounded", data: { action: "confirm#proceed", modal_hide: modal_id }) do
               I18n.t("confirmation.confirm")
             end
 
-            Button(type: :button, variant: :outline, class: "font-bold py-2 px-4 rounded", data: { modal_hide: modal_id }) do
+            Button(type: :button, variant: :outline, class: "font-bold py-2 px-4 rounded text-gray-900", data: { modal_hide: modal_id }) do
               I18n.t("confirmation.cancel")
             end
           end

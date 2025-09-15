@@ -68,6 +68,8 @@ group :development do
   gem "ruby_ui", require: false
   gem "web-console"
 
+  gem "rorvswild"
+
   # NEOVIM IDE
   gem "neovim"
   gem "solargraph"

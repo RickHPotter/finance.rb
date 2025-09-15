@@ -37,6 +37,13 @@ class CashInstallment < Installment
   end
 
   # @protected_instance_methods ...............................................
+
+  protected
+
+  def imported?
+    cash_transaction.imported
+  end
+
   # @private_instance_methods .................................................
 
   private

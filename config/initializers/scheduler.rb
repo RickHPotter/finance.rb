@@ -7,7 +7,7 @@ if Rails.env.production?
     Rails.logger.info "Running daily backup job"
 
     User.find_each do |user|
-      Logic::RecalculateBalancesService.new(user:).call
+      RecalculateBalanceJob.perform_later(user:)
     end
 
     Export::DatabaseService.backup

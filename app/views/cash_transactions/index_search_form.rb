@@ -143,6 +143,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                     svg: :money,
                     value: from_ct_price,
                     placeholder: model_attribute(CashTransaction, :from_ct_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
 
@@ -156,6 +157,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                     svg: :money,
                     value: to_ct_price,
                     placeholder: model_attribute(CashTransaction, :to_ct_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
               end
@@ -172,6 +174,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                     svg: :money,
                     value: from_price,
                     placeholder: model_attribute(CashTransaction, :from_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
 
@@ -185,6 +188,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                     svg: :money,
                     value: to_price || nil,
                     placeholder: model_attribute(CashTransaction, :to_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
               end

@@ -71,6 +71,7 @@ class CardInstallment < Installment
     in_one = x.sum(&:price)
     spread = y.sum(&:price)
 
+    # TODO: this is not language agnostic
     "Upfront: #{in_one}, Installments: #{spread}"
   end
 

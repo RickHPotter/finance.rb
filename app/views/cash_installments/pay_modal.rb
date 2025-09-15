@@ -61,6 +61,7 @@ class Views::CashInstallments::PayModal < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
+              onclick: "this.select();",
               disabled: cash_installment.cash_transaction.card_payment? || cash_installment.cash_transaction.card_advance?,
               data: { price_mask_target: :input, action: "input->price-mask#applyMask", sign:, min: prices_range.min, max: prices_range.max }
           end

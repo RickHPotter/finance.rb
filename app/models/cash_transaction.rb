@@ -12,7 +12,7 @@ class CashTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :flag_for_balance_recalculation
+  attr_accessor :min_date
 
   # @relationships ............................................................
   belongs_to :user
@@ -29,10 +29,8 @@ class CashTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_cash_installments
-  before_save :set_flag_for_balance_recalculation
-  after_destroy :trigger_balance_recalculation
-  after_commit :trigger_balance_recalculation, on: %i[create update], if: :flag_for_balance_recalculation
-  after_commit :update_associations_total
+  after_save :set_min_date
+  after_commit :update_cash_balance, :update_associations_total, unless: :card_payment?
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -79,11 +77,15 @@ class CashTransaction < ApplicationRecord
   end
 
   def card_payment?
-    categories.pluck(:category_name).include? "CARD PAYMENT"
+    return categories.pluck(:category_name).include? "CARD PAYMENT" if persisted?
+
+    cash_transaction_type == "CardInstallment"
   end
 
   def card_advance?
     categories.pluck(:category_name).include? "CARD ADVANCE"
+
+    cash_transaction_type == "CardTransaction"
   end
 
   def exchange_return?
@@ -117,27 +119,25 @@ class CashTransaction < ApplicationRecord
     self.paid = cash_transaction_type == "Investment"
   end
 
-  def set_flag_for_balance_recalculation
-    return if imported
-
-    cash_transaction_changes = changes.slice(:price, :date).present?
-    cash_installments_changes = cash_installments.any? { |i| i.changes.slice(:price, :date).present? }
-    cash_installments_count_change = cash_installments.count != cash_installments.size
-
-    self.flag_for_balance_recalculation = cash_transaction_changes || cash_installments_changes || cash_installments_count_change
+  def set_min_date
+    self.min_date = [
+      *changes[:date],
+      *previous_changes[:date],
+      cash_installments.order(:date).first.date.beginning_of_month,
+      Date.new(changes[:year]&.min || year, changes[:month]&.min || month)
+    ].compact_blank.min
   end
 
-  def trigger_balance_recalculation
-    min_date = [
-      date,
-      Date.new(year, month),
-      Date.new(changes[:year]&.min || year, changes[:month]&.min || month)
-    ].min
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
 
+    self.min_date ||= cash_installments.order(:date).first.date.beginning_of_month
     Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total
+    return if destroyed?
+
     Logic::RecalculateCountAndTotalService.new(cash_transaction: self).call
   end
 end

@@ -4,7 +4,7 @@ module Logic
   class RecalculateBalancesService
     def initialize(user:, year: nil, month: nil)
       @user = user
-      @year = year || user.cash_installments.minimum(:year)
+      @year = year || user.cash_installments.minimum(:year) || 2000
       @month = month || 1
     end
 
@@ -18,7 +18,7 @@ module Logic
     private
 
     def set_order_and_balance
-      @date_threshold = Date.new(@year, @month, 1)
+      @date_threshold = Date.new(@year, @month).in_time_zone(Time.zone.now.time_zone.name)
 
       @past_budget           = @user.budgets.where("year < ? OR (year = ? AND month < ?)", @year, @year, @month).order(:order_id).last
       @past_cash_installment = @user.cash_installments

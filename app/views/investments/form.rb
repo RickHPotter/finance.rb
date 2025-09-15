@@ -68,6 +68,7 @@ class Views::Investments::Form < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
+              onclick: "this.select();",
               data: { price_mask_target: :input,
                       reactive_form_target: :priceInput,
                       action: "input->price-mask#applyMask" }

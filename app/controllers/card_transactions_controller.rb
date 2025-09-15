@@ -103,6 +103,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     card_installment = CardInstallment.find_by(id: params[:card_installment_id]) || @card_transaction.card_installments.first
 
     @user_card = @card_transaction.user_card
+    @card_transaction.update_columns(date: @card_transaction.card_installments.order(:date).first.date)
     @card_transaction.destroy
     index
 

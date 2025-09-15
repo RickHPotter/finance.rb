@@ -86,6 +86,7 @@ class CashTransactionsController < ApplicationController
 
   def destroy
     @user_bank_account = @cash_transaction.user_bank_account
+    @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
     @cash_transaction.destroy
     index
 

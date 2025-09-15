@@ -13,9 +13,8 @@ module CashTransactable
 
     # @callbacks ..............................................................
     before_save :attach_cash_transaction
-    after_save :fix_cash_transaction
-    after_commit :update_cash_transaction, on: %i[create update]
-    after_commit :update_or_destroy_cash_transaction, on: :destroy
+    after_save :fix_cash_transaction, :update_cash_transaction
+    after_destroy :update_or_destroy_cash_transaction
   end
 
   # @public_class_methods .....................................................
@@ -51,8 +50,15 @@ module CashTransactable
     return if previous_cash_transaction_id == cash_transaction_id
 
     previous_cash_transaction = CashTransaction.find_by(id: previous_cash_transaction_id)
-    previous_cash_transaction.investments&.first&.touch
-    previous_cash_transaction.card_installments&.first&.touch
+
+    if is_a?(Investment)
+      investments = previous_cash_transaction.investments
+      price = investments.sum(:price)
+      previous_cash_transaction.update_columns(price:, comment: investments.first.comment)
+      previous_cash_transaction.cash_installments.first.update_columns(price:)
+    else
+      previous_cash_transaction.card_installments&.first&.touch
+    end
 
     association = cash_transaction.cash_transaction_type.underscore.pluralize
     previous_cash_transaction.destroy if previous_cash_transaction.public_send(association).empty?
@@ -63,7 +69,7 @@ module CashTransactable
   # Updates the associated `cash_transaction` with the sum of `price`s,
   # updating also `comment` describing the days of associated `self`s.
   #
-  # @note This is a method that is called after_commit.
+  # @note This is a method that is called after_save.
   #
   # @see {CashTransaction}.
   #
@@ -72,9 +78,6 @@ module CashTransactable
   def update_cash_transaction
     cash_transaction.update_columns(price: full_price, comment:)
     cash_transaction.cash_installments.first.update_columns(price: full_price)
-
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call
-    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -83,7 +86,7 @@ module CashTransactable
   # In case it is zero, it destroys the associated `cash_transaction`.
   # Otherwise, it updates the `cash_transaction` using {#update_cash_transaction}.
   #
-  # @note This is a method that is called after_commit.
+  # @note This is a method that is called after_destroy.
   #
   # @see {#update_cash_transaction}.
   #

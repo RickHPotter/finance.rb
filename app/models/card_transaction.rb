@@ -25,7 +25,8 @@ class CardTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
-  after_commit :update_associations_total
+  after_save :update_month_year
+  after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
   # @class_methods ............................................................
@@ -125,6 +126,13 @@ class CardTransaction < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
+
+  protected
+
+  def imported?
+    imported
+  end
+
   # @private_instance_methods .................................................
 
   private
@@ -145,8 +153,29 @@ class CardTransaction < ApplicationRecord
     card_installments.new(number: 1, price:, date:) if card_installments.empty?
   end
 
+  def update_month_year
+    return if destroyed?
+
+    cash_transaction = card_installments.order(:year, :month, :date).first.cash_transaction
+    self.year        = cash_transaction.date.year
+    self.month       = cash_transaction.date.month
+  end
+
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+
+    cash_transaction = card_installments.order(:date).first.cash_transaction
+    Logic::RecalculateBalancesService.new(user:, year: cash_transaction.date.year, month: cash_transaction.date.month).call
+  end
+
   def update_associations_total
-    Logic::RecalculateCountAndTotalService.new(card_transaction: self).call
+    if destroyed?
+      CashTransaction.new(categories: user.categories.where(category_name: "CARD PAYMENT"), entities: user.entities.where(entity_name: user_card.user_card_name))
+    else
+      card_installments.first.cash_transaction
+    end => cash_transaction
+
+    Logic::RecalculateCountAndTotalService.new(card_transaction: self, cash_transaction:).call
   end
 end
 

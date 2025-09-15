@@ -100,6 +100,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     svg: :money,
                     value: from_ct_price,
                     placeholder: model_attribute(CardTransaction, :from_ct_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
 
@@ -113,6 +114,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     svg: :money,
                     value: to_ct_price,
                     placeholder: model_attribute(CardTransaction, :to_ct_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
               end
@@ -129,6 +131,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     svg: :money,
                     value: from_price,
                     placeholder: model_attribute(CardTransaction, :from_price),
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
 
@@ -141,6 +144,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     :to_price,
                     svg: :money,
                     value: to_price || nil,
+                    onclick: "this.select();",
                     data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
                 end
               end
