@@ -179,11 +179,6 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
       pending_installments.first.update_columns(price: pending_installments.first.price + remaining_price) if remaining_price.positive?
     end
-
-    min_date = changes[:date]&.compact_blank&.min || date
-
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year || date.year, month: min_date.month).call
-    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   def exchanges_price(with_updated_price: false)

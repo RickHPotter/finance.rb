@@ -2,6 +2,7 @@
 
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
+  include BenchmarkedActions
 
   before_action :set_tabs
   before_action :set_card_transaction, only: %i[edit update destroy]

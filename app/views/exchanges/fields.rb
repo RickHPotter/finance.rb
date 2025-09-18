@@ -74,6 +74,7 @@ module Views
               class:
                 "dynamic-price sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
                 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
+              onclick: "this.select();",
               data: { price_mask_target: :input, entity_transaction_target: :priceExchangeInput, action: "input->price-mask#applyMask" }
           end
 

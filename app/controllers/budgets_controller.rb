@@ -2,6 +2,7 @@
 
 class BudgetsController < ApplicationController
   include TabsConcern
+  include BenchmarkedActions
 
   before_action :set_budget, only: %i[edit update destroy]
 

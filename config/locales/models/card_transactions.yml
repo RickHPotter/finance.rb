@@ -23,6 +23,7 @@ en:
         year: Year
         reference_month_year: Reference Month/Year
         card_installment: Installment
+        installments_count: Installments Count
         card_installments_count: Installments Count
         card_installments_count_short: Installments
         category_id: Category
@@ -69,6 +70,7 @@ pt-BR:
         year: Ano
         reference_month_year: Referência Mês/Ano
         card_installment: Parcela
+        installments_count: Quantidade de Parcelas
         card_installments_count: Quantidade de Parcelas
         card_installments_count_short: Parcelas
         category_id: Categoria

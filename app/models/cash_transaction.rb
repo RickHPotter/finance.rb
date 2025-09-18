@@ -30,7 +30,7 @@ class CashTransaction < ApplicationRecord
   before_validation :set_paid, on: :create
   after_initialize :build_default_cash_installments
   after_save :set_min_date
-  after_commit :update_cash_balance, :update_associations_total, unless: :card_payment?
+  after_commit :update_cash_balance, :update_associations_total, unless: -> { card_payment? || exchange_return? }
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -89,13 +89,24 @@ class CashTransaction < ApplicationRecord
   end
 
   def exchange_return?
-    categories.pluck(:category_name).include?("EXCHANGE RETURN")
+    return true if persisted? && categories.pluck(:category_name).include?("EXCHANGE RETURN")
+    return true if destroyed? && original_categories.include?(user.categories.where(category_name: "EXCHANGE RETURN").first.id)
+
+    cash_transaction_type == "Exchange"
   end
 
   def can_be_destroyed?
     return false if card_payment? || card_advance? || exchange_return?
 
     persisted?
+  end
+
+  def installments
+    cash_installments
+  end
+
+  def installments_count
+    cash_installments_count
   end
 
   # @protected_instance_methods ...............................................

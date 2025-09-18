@@ -125,6 +125,14 @@ class CardTransaction < ApplicationRecord
     :new
   end
 
+  def installments
+    card_installments
+  end
+
+  def installments_count
+    card_installments_count
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -164,8 +172,10 @@ class CardTransaction < ApplicationRecord
   def update_cash_balance
     Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
 
-    cash_transaction = card_installments.order(:date).first.cash_transaction
-    Logic::RecalculateBalancesService.new(user:, year: cash_transaction.date.year, month: cash_transaction.date.month).call
+    card_payment_transaction = card_installments.order(:date).first&.cash_transaction
+    exchange_cash_transaction = entity_transactions.map(&:exchanges).flatten.min_by(&:date)&.cash_transaction
+    min_date = [ card_payment_transaction&.date, exchange_cash_transaction&.date ].compact_blank.min
+    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total

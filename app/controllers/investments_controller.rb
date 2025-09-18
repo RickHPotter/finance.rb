@@ -2,6 +2,7 @@
 
 class InvestmentsController < ApplicationController
   include TabsConcern
+  include BenchmarkedActions
 
   before_action :set_investment, only: %i[edit update destroy]
 

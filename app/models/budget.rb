@@ -6,7 +6,7 @@ class Budget < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :flag_for_balance_recalculation
+  attr_accessor :recalculate_balance
 
   # @relationships ............................................................
   belongs_to :user
@@ -27,8 +27,8 @@ class Budget < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_starting_value, :set_inclusive
   before_save :set_remaining_value
-  before_save :set_flag_for_balance_recalculation
-  after_commit :trigger_balance_recalculation, on: %i[create update], if: :flag_for_balance_recalculation
+  before_save :set_recalculate_balance
+  after_commit :update_cash_balance, if: -> { recalculate_balance }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -94,11 +94,15 @@ class Budget < ApplicationRecord
 
   private
 
-  def set_flag_for_balance_recalculation
-    self.flag_for_balance_recalculation = changes.slice(:price, :remaining_value, :month, :year).present?
+  def set_recalculate_balance
+    return if [ false, true ].include?(recalculate_balance)
+
+    self.recalculate_balance = changes.slice(:price, :remaining_value, :month, :year).present?
   end
 
-  def trigger_balance_recalculation
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+
     Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
   end
 

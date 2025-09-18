@@ -69,8 +69,8 @@ module Logic
       end
 
       on_duplicate_key_update = { conflict_target: [ :id ], columns: %i[balance order_id] }
-      CashInstallment.import(cash_installments, on_duplicate_key_update:)
-      Budget.import(budgets, on_duplicate_key_update:)
+      CashInstallment.import(cash_installments, on_duplicate_key_update:, validate: false)
+      Budget.import(budgets, on_duplicate_key_update:, validate: false)
     end
 
     def sort_key(item)
