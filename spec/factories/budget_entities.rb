@@ -2,17 +2,14 @@
 
 FactoryBot.define do
   factory :budget_entity do
-    transactable { custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-    category { custom_create(:category, options: { user: transactable.user }) }
+    entity { custom_create(:entity) }
 
     trait :different do
-      transactable { different_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-      category { different_custom_create(:category, options: { user: transactable.user }) }
+      entity { different_custom_create(:entity) }
     end
 
     trait :random do
-      transactable { random_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-      category { random_custom_create(:category, options: { user: transactable.user }) }
+      entity { random_custom_create(:entity) }
     end
   end
 end

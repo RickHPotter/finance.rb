@@ -12,7 +12,18 @@ export default class extends Controller {
   ]
 
   connect() {
-    initModals()
+    this.initModalOnce()
+  }
+
+  initModalOnce() {
+    const modalEl = this.element.querySelector("[data-modal-id]")
+    if (!modalEl) return
+
+    const existing = window.FlowbiteInstances?.getInstance("Modal", modalEl.id)
+    if (!existing) {
+      console.log("hello")
+      initModals()
+    }
   }
 
   async toggleExchanges({ target }) {

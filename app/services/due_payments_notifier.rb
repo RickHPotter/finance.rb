@@ -2,12 +2,14 @@
 
 class DuePaymentsNotifier
   def call
-    title = I18n.t("subscriptions.due_payment_notifier.title")
-    url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.fun" : "localhost")
-
     User.find_each do |user|
       due_today = user.cash_installments.due_today
       next if due_today.none?
+
+      I18n.locale = user.locale
+
+      title = I18n.t("subscriptions.due_payment_notifier.title")
+      url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.fun" : "localhost")
 
       user.subscriptions.each do |subscription|
         due_today.each do |cash_installment|
@@ -21,6 +23,8 @@ class DuePaymentsNotifier
         Rails.logger.error("Push failed: #{e.message}")
       end
     end
+
+    I18n.locale = I18n.default_locale
   end
 
   def payload_send(title:, body:, url:, subscription:)

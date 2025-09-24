@@ -25,12 +25,17 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def view_template
-    turbo_frame_tag dom_id @cash_transaction do
+    turbo_frame_tag dom_id cash_transaction do
       form_with model: cash_transaction,
                 id: :transaction_form,
                 class: "contents text-black",
                 data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
+        form.hidden_field :reference_transactable_type,
+                          value: cash_transaction.reference_transactable_type || params.dig(:cash_transaction, :reference_transactable_type)
+        form.hidden_field :reference_transactable_id,
+                          value: cash_transaction.reference_transactable_id   || params.dig(:cash_transaction, :reference_transactable_id)
+
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }
         hidden_field_tag :exchange_category_id,   exchange_category.id,   disabled: true, id: :exchange_category_id
@@ -152,7 +157,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :cash_installments, CashInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
               render Views::Installments::Fields.new(form: installment_fields)
             end
@@ -163,14 +168,14 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             render Views::Installments::Fields.new(form: installment_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
         end
 
         div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields|
               render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
             end
@@ -181,31 +186,30 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
         end
 
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
               render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
             end
           end
 
           entity_transactions_association = cash_transaction.entity_transactions.includes(:entity, :exchanges) if cash_transaction.entity_transactions.count > 1
-
           form.fields_for :entity_transactions, entity_transactions_association do |entity_transaction_fields|
             render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "flex items-center justify-center gap-2 w-full mx-auto") do
+        div(class: "grid grid-cols-1 lg:flex items-center justify-center gap-2 mx-auto") do
           Button(type: :submit, variant: :purple) { action_message(:submit) }
 
           if cash_transaction.can_be_destroyed?

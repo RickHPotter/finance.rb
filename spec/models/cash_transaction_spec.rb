@@ -34,29 +34,33 @@ end
 #
 # Table name: cash_transactions
 #
-#  id                      :bigint           not null, primary key
-#  cash_installments_count :integer          default(0), not null
-#  cash_transaction_type   :string
-#  comment                 :text
-#  date                    :datetime         not null
-#  description             :string           not null
-#  imported                :boolean          default(FALSE)
-#  month                   :integer          not null
-#  paid                    :boolean          default(FALSE)
-#  price                   :integer          not null
-#  starting_price          :integer          not null
-#  year                    :integer          not null
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#  user_bank_account_id    :bigint           indexed
-#  user_card_id            :bigint           indexed
-#  user_id                 :bigint           not null, indexed
+#  id                          :bigint           not null, primary key
+#  cash_installments_count     :integer          default(0), not null
+#  cash_transaction_type       :string
+#  comment                     :text
+#  date                        :datetime         not null
+#  description                 :string           not null
+#  imported                    :boolean          default(FALSE)
+#  month                       :integer          not null
+#  paid                        :boolean          default(FALSE)
+#  price                       :integer          not null
+#  reference_transactable_type :string           indexed => [reference_transactable_id], uniquely indexed => [reference_transactable_id]
+#  starting_price              :integer          not null
+#  year                        :integer          not null
+#  created_at                  :datetime         not null
+#  updated_at                  :datetime         not null
+#  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
+#  user_bank_account_id        :bigint           indexed
+#  user_card_id                :bigint           indexed
+#  user_id                     :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_cash_transactions_on_user_bank_account_id  (user_bank_account_id)
-#  index_cash_transactions_on_user_card_id          (user_card_id)
-#  index_cash_transactions_on_user_id               (user_id)
+#  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
+#  index_cash_transactions_on_user_bank_account_id     (user_bank_account_id)
+#  index_cash_transactions_on_user_card_id             (user_card_id)
+#  index_cash_transactions_on_user_id                  (user_id)
+#  index_reference_transactable_on_cash_composite_key  (reference_transactable_type,reference_transactable_id) UNIQUE
 #
 # Foreign Keys
 #

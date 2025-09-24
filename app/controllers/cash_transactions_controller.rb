@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-class CashTransactionsController < ApplicationController
+class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
-  include BenchmarkedActions
 
   before_action :set_tabs
   before_action :set_cash_transaction, only: %i[edit update destroy]
@@ -231,7 +230,10 @@ class CashTransactionsController < ApplicationController
     return {} if params[:cash_transaction].blank?
 
     params.require(:cash_transaction).permit(
-      %i[id description comment date month year price paid user_id user_bank_account_id category_id entity_id],
+      %i[
+        id description comment date month year price paid user_id user_bank_account_id
+        reference_transactable_type reference_transactable_id category_id entity_id
+      ],
       user_bank_account_id: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],

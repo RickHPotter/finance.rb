@@ -9,7 +9,7 @@ en:
 pt-BR:
   subscriptions:
     due_payment_notifier:
-      title: "Pagamentos Vencidos"
+      title: "Pagamentos A Vencer"
       body:
         one: "Você tem pagamento pendente"
         other: "Você tem %{count} pagamentos que vencem hoje"

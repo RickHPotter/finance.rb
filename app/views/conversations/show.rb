@@ -19,10 +19,10 @@ class Views::Conversations::Show < Views::Base
       participants = conversation.users
       friend = participants.where.not(id: current_user.id).first
 
-      div(class: "mx-1 break-words bg-white shadow-md shadow-red-50 rounded-lg") do
-        div(class: "p-1 md:p-2 lg:p-3") do
-          div(class: "text-center text-black pt-2") do
-            turbo_frame_tag :center_container do
+      turbo_frame_tag :center_container do
+        div(class: "mx-1 break-words bg-white shadow-md shadow-red-50 rounded-lg") do
+          div(class: "p-1 md:p-2 lg:p-3") do
+            div(class: "text-center text-black pt-2") do
               div(class: "flex justify-between flex-col h-[75vh] bg-white rounded-lg shadow-md overflow-hidden", data: { controller: :chat }) do
                 div(class: "flex p-4 bg-slate-200 border-b border-slate-300") do
                   image_tag(asset_path("avatars/dogs/10.png"), class: "w-6 h-6 rounded-full")

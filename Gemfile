@@ -68,7 +68,8 @@ group :development do
   gem "ruby_ui", require: false
   gem "web-console"
 
-  gem "rorvswild"
+  # APM // cant work this out of the box without redis, id like to avoid that in prod for now
+  gem "rails_performance"
 
   # NEOVIM IDE
   gem "neovim"

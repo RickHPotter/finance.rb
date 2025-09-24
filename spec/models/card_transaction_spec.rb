@@ -44,11 +44,13 @@ end
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
 #  price                       :integer          not null, indexed
+#  reference_transactable_type :string           indexed => [reference_transactable_id], uniquely indexed => [reference_transactable_id]
 #  starting_price              :integer          not null
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
+#  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  user_card_id                :bigint           not null, indexed
 #  user_id                     :bigint           not null, indexed
 #
@@ -57,8 +59,10 @@ end
 #  idx_card_transactions_description_trgm                  (description) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)
+#  index_reference_transactable_on_card_composite_key      (reference_transactable_type,reference_transactable_id) UNIQUE
 #
 # Foreign Keys
 #

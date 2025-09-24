@@ -64,7 +64,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       return
     end
 
-    existing_cash_transaction = user.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions)
+    existing_cash_transaction = user.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions.except(:skip_recalculate_balance))
 
     if existing_cash_transaction
       self.cash_transaction = existing_cash_transaction
@@ -206,6 +206,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
              month:,
              user_id: user.id,
              cash_transaction_type: model_name.name,
+             skip_recalculate_balance: true,
              category_transactions_attributes:,
              entity_transactions_attributes:)
   end

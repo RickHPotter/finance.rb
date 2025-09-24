@@ -32,6 +32,7 @@ en:
           same_category_budget: There is already a budget for this category.
           same_entity_budget: There is already a budget for this entity.
           same_budget: There is already a budget for this category and entity.
+          missing_categories_or_entities: Please select at least one category or entity.
 
 
 pt-BR:
@@ -68,3 +69,4 @@ pt-BR:
           same_category_budget: Já existe um orçamento para essa categoria.
           same_entity_budget: Já existe um orçamento para essa entidade.
           same_budget: Já existe um orçamento para essa categoria e entidade.
+          missing_categories_or_entities: Selecione pelo menos uma categoria ou entidade.

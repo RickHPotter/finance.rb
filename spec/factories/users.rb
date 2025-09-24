@@ -27,6 +27,7 @@ end
 # Table name: users
 #
 #  id                     :bigint           not null, primary key
+#  admin                  :boolean          default(FALSE), not null
 #  confirmation_sent_at   :datetime
 #  confirmation_token     :string           uniquely indexed
 #  confirmed_at           :datetime

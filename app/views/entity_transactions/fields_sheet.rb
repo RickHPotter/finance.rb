@@ -134,7 +134,7 @@ module Views
               class: "overflow-y-auto max-h-80 pt-2 grid grid-cols-1 gap-3 pb-3",
               data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
             ) do
-              template(data: { nested_form_target: "template" }) do
+              template(data_nested_form_target: "template") do
                 form.fields_for :exchanges, Exchange.new, child_index: "NEW_NESTED_RECORD" do |exchange_fields|
                   render ::Views::Exchanges::Fields.new(form: exchange_fields)
                 end
@@ -145,7 +145,7 @@ module Views
                 render ::Views::Exchanges::Fields.new(form: exchange_fields)
               end
 
-              div(data: { nested_form_target: "target" })
+              div(data_nested_form_target: "target")
 
               button(type: :button, class: :hidden, tabindex: -1, data: { entity_transaction_target: :addExchange, action: "nested-form#addChildNested" })
             end

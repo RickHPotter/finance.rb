@@ -86,26 +86,28 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmitBasedOnUserCardChange", value: ".hw-combobox__input" }
           end
 
-          div(id: "hw_category_id", class: "hw-cb w-full lg:w-2/12 mb-3 plus-icon") do
-            combobox_tag \
-              :category_transaction,
-              @categories,
-              mobile_at: "360px",
-              include_blank: false,
-              placeholder: model_attribute(card_transaction, :category_id),
-              autofocus: autofocus_target == :category_transaction,
-              data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
-          end
+          div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
+            div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
+              combobox_tag \
+                :category_transaction,
+                @categories,
+                mobile_at: "360px",
+                include_blank: false,
+                placeholder: model_attribute(card_transaction, :category_id),
+                autofocus: autofocus_target == :category_transaction,
+                data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+            end
 
-          div(id: "hw_entity_id", class: "hw-cb w-full lg:w-2/12 mb-3 user-icon") do
-            combobox_tag \
-              :entity_transaction,
-              @entities,
-              mobile_at: "360px",
-              include_blank: false,
-              placeholder: model_attribute(card_transaction, :entity_id),
-              autofocus: autofocus_target == :entity_transaction,
-              data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+            div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
+              combobox_tag \
+                :entity_transaction,
+                @entities,
+                mobile_at: "360px",
+                include_blank: false,
+                placeholder: model_attribute(card_transaction, :entity_id),
+                autofocus: autofocus_target == :entity_transaction,
+                data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+            end
           end
 
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
@@ -176,7 +178,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
               render Views::Installments::Fields.new(form: installment_fields)
             end
@@ -187,14 +189,14 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             render Views::Installments::Fields.new(form: installment_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
         end
 
         div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :category_transactions, CategoryTransaction.new, child_index: "NEW_RECORD" do |category_transaction_fields|
               render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
             end
@@ -205,14 +207,14 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             render Views::CategoryTransactions::Fields.new(form: category_transaction_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
         end
 
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
               render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
             end
@@ -223,38 +225,32 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
           end
 
-          div(data: { nested_form_target: "target" })
+          div(data_nested_form_target: "target")
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "flex w-full my-2") do
-          div(class: "w-full") do
-            Button(type: :submit, variant: :purple) { action_message(:submit) }
-          end
+        div(class: "grid grid-cols-1 lg:flex items-center justify-center gap-2 mx-auto") do
+          Button(type: :submit, variant: :purple) { action_message(:submit) }
 
           if card_transaction.can_be_destroyed?
-            div(class: "w-full") do
-              Button(
-                link: duplicate_card_transaction_path(card_transaction),
-                data: { turbo_frame: "center_container" }
-              ) do
-                action_message(:duplicate)
-              end
+            Button(
+              link: duplicate_card_transaction_path(card_transaction),
+              data: { turbo_frame: "center_container" }
+            ) do
+              action_message(:duplicate)
             end
 
-            div(class: "w-full") do
-              LinkWithConfirmation(
-                id: card_transaction.id,
-                text: action_message(:destroy),
-                link_params: {
-                  href: card_transaction_path(card_transaction),
-                  id: "delete_card_transaction_#{card_transaction.id}",
-                  variant: :destructive,
-                  data: { turbo_method: :delete }
-                }
-              )
-            end
+            LinkWithConfirmation(
+              id: card_transaction.id,
+              text: action_message(:destroy),
+              link_params: {
+                href: card_transaction_path(card_transaction),
+                id: "delete_card_transaction_#{card_transaction.id}",
+                variant: :destructive,
+                data: { turbo_method: :delete }
+              }
+            )
           end
         end
 

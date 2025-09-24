@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -76,9 +76,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
     t.bigint "advance_cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "reference_transactable_type"
+    t.bigint "reference_transactable_id"
     t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
     t.index ["description"], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["price"], name: "idx_card_transactions_price"
+    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_card_transactions_on_reference_transactable"
+    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_card_composite_key", unique: true
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
   end
@@ -109,6 +113,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
     t.bigint "user_bank_account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "reference_transactable_type"
+    t.bigint "reference_transactable_id"
+    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
+    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
     t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_cash_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_cash_transactions_on_user_id"
@@ -164,9 +172,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
     t.bigint "user_id", null: false
-    t.bigint "entity_user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "entity_user_id"
     t.index ["entity_user_id"], name: "index_entities_on_entity_user_id"
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
@@ -331,6 +339,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_04_140109) do
     t.string "locale", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "admin", default: false, null: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

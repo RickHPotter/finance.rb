@@ -9,6 +9,8 @@ FactoryBot.define do
     remaining_value { -10_000 }
     inclusive { false }
     user { custom_create(:user) }
+
+    budget_categories { build_list(:budget_category, 1, :random) }
   end
 end
 

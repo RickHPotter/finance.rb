@@ -170,7 +170,6 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           end
 
           budget_categories_association = budget.budget_categories.includes(:category) if budget.budget_categories.count > 1
-
           form.fields_for :budget_categories, budget_categories_association do |budget_category_fields|
             render CategoryFields.new(form: budget_category_fields)
           end
@@ -182,7 +181,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
         div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
             data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data: { nested_form_target: "template" }) do
+          template(data_nested_form_target: "template") do
             form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields|
               render EntityFields.new(form: budget_entity_fields)
             end

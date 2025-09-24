@@ -22,13 +22,14 @@ class Budget < ApplicationRecord
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, inclusion: { in: [ true, false ] }
+  validate :presence_of_categories_or_entities, if: -> { errors.empty? }
   validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
   before_validation :set_starting_value, :set_inclusive
   before_save :set_remaining_value
   before_save :set_recalculate_balance
-  after_commit :update_cash_balance, if: -> { recalculate_balance }
+  after_commit :update_cash_balance, if: -> { recalculate_balance || destroyed? }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -104,6 +105,12 @@ class Budget < ApplicationRecord
     Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
 
     Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+  end
+
+  def presence_of_categories_or_entities
+    return if budget_categories.present? || budget_entities.present?
+
+    errors.add(:base, I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
   end
 
   def uniqueness_of_budget # rubocop:disable Metrics/AbcSize
