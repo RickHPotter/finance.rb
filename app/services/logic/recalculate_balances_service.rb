@@ -23,7 +23,7 @@ module Logic
       @past_budget           = @user.budgets.where("year < ? OR (year = ? AND month < ?)", @year, @year, @month).order(:order_id).last
       @past_cash_installment = @user.cash_installments
                                     .where("installments.date < ?", @date_threshold)
-                                    .where("make_date(installments.year, installments.month, 1) < make_date(#{@year}, #{@month}, 1)")
+                                    .where("make_date(installments.year, installments.month, 1) < make_date(?, ?, 1)", @year, @month)
                                     .order(:order_id).last
 
       @running_balance = @past_budget&.balance || @past_cash_installment&.balance || 0
