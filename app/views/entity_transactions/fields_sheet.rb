@@ -140,7 +140,7 @@ module Views
                 end
               end
 
-              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction) if entity_transaction.exchanges.count > 1
+              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges.count > 1
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
                 render ::Views::Exchanges::Fields.new(form: exchange_fields)
               end
