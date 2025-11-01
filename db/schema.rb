@@ -10,14 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
+ActiveRecord::Schema[8.1].define(version: 2025_09_23_225859) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
 
   create_table "banks", force: :cascade do |t|
-    t.string "bank_name", null: false
     t.integer "bank_code", null: false
+    t.string "bank_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -34,8 +34,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
 
   create_table "budget_entities", force: :cascade do |t|
     t.bigint "budget_id", null: false
-    t.bigint "entity_id", null: false
     t.datetime "created_at", null: false
+    t.bigint "entity_id", null: false
     t.datetime "updated_at", null: false
     t.index ["budget_id", "entity_id"], name: "index_budget_entities_on_composite_key", unique: true
     t.index ["budget_id"], name: "index_budget_entities_on_budget_id"
@@ -43,41 +43,41 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "budgets", force: :cascade do |t|
-    t.integer "order_id"
-    t.string "description", null: false
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "value", null: false
-    t.integer "starting_value", null: false
-    t.integer "remaining_value", null: false
-    t.integer "balance"
-    t.boolean "inclusive", default: false, null: false
     t.boolean "active", default: true, null: false
-    t.bigint "user_id", null: false
+    t.integer "balance"
     t.datetime "created_at", null: false
+    t.string "description", null: false
+    t.boolean "inclusive", default: false, null: false
+    t.integer "month", null: false
+    t.integer "order_id"
+    t.integer "remaining_value", null: false
+    t.integer "starting_value", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.integer "value", null: false
+    t.integer "year", null: false
     t.index ["order_id"], name: "idx_budgets_order_id"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end
 
   create_table "card_transactions", force: :cascade do |t|
-    t.string "description", null: false
-    t.text "comment"
-    t.datetime "date", null: false
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
-    t.boolean "paid", default: false
-    t.boolean "imported", default: false
-    t.integer "card_installments_count", default: 0, null: false
-    t.bigint "user_id", null: false
-    t.bigint "user_card_id", null: false
     t.bigint "advance_cash_transaction_id"
+    t.integer "card_installments_count", default: 0, null: false
+    t.text "comment"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "reference_transactable_type"
+    t.datetime "date", null: false
+    t.string "description", null: false
+    t.boolean "imported", default: false
+    t.integer "month", null: false
+    t.boolean "paid", default: false
+    t.integer "price", null: false
     t.bigint "reference_transactable_id"
+    t.string "reference_transactable_type"
+    t.integer "starting_price", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_card_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "year", null: false
     t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
     t.index ["description"], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["price"], name: "idx_card_transactions_price"
@@ -88,8 +88,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "cards", force: :cascade do |t|
-    t.string "card_name", null: false
     t.bigint "bank_id", null: false
+    t.string "card_name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_cards_on_bank_id"
@@ -97,24 +97,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "cash_transactions", force: :cascade do |t|
-    t.string "description", null: false
-    t.text "comment"
-    t.datetime "date", null: false
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
-    t.boolean "paid", default: false
-    t.boolean "imported", default: false
-    t.string "cash_transaction_type"
     t.integer "cash_installments_count", default: 0, null: false
-    t.bigint "user_id", null: false
-    t.bigint "user_card_id"
-    t.bigint "user_bank_account_id"
+    t.string "cash_transaction_type"
+    t.text "comment"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "reference_transactable_type"
+    t.datetime "date", null: false
+    t.string "description", null: false
+    t.boolean "imported", default: false
+    t.integer "month", null: false
+    t.boolean "paid", default: false
+    t.integer "price", null: false
     t.bigint "reference_transactable_id"
+    t.string "reference_transactable_type"
+    t.integer "starting_price", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_bank_account_id"
+    t.bigint "user_card_id"
+    t.bigint "user_id", null: false
+    t.integer "year", null: false
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
     t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
@@ -123,26 +123,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "categories", force: :cascade do |t|
-    t.string "category_name", null: false
-    t.boolean "built_in", default: false, null: false
     t.boolean "active", default: true, null: false
-    t.string "colour", default: "white", null: false
+    t.boolean "built_in", default: false, null: false
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "card_transactions_total", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
-    t.bigint "user_id", null: false
+    t.string "category_name", null: false
+    t.string "colour", default: "white", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["user_id", "category_name"], name: "index_category_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_categories_on_user_id"
   end
 
   create_table "category_transactions", force: :cascade do |t|
     t.bigint "category_id", null: false
-    t.string "transactable_type", null: false
-    t.bigint "transactable_id", null: false
     t.datetime "created_at", null: false
+    t.bigint "transactable_id", null: false
+    t.string "transactable_type", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id", "transactable_type", "transactable_id"], name: "index_category_transactions_on_composite_key", unique: true
     t.index ["category_id"], name: "index_category_transactions_on_category_id"
@@ -151,9 +151,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
 
   create_table "conversation_participants", force: :cascade do |t|
     t.bigint "conversation_id", null: false
-    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["conversation_id"], name: "index_conversation_participants_on_conversation_id"
     t.index ["user_id"], name: "index_conversation_participants_on_user_id"
   end
@@ -164,32 +164,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "entities", force: :cascade do |t|
-    t.string "entity_name", null: false
     t.boolean "active", default: true, null: false
     t.string "avatar_name", default: "people/0.png", null: false
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "card_transactions_total", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
-    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.string "entity_name", null: false
     t.bigint "entity_user_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["entity_user_id"], name: "index_entities_on_entity_user_id"
     t.index ["user_id", "entity_name"], name: "index_entity_name_on_composite_key", unique: true
     t.index ["user_id"], name: "index_entities_on_user_id"
   end
 
   create_table "entity_transactions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "entity_id", null: false
+    t.integer "exchanges_count", default: 0, null: false
     t.boolean "is_payer", default: false, null: false
-    t.integer "status", default: 0, null: false
     t.integer "price", default: 0, null: false
     t.integer "price_to_be_returned", default: 0, null: false
-    t.integer "exchanges_count", default: 0, null: false
-    t.bigint "entity_id", null: false
-    t.string "transactable_type", null: false
+    t.integer "status", default: 0, null: false
     t.bigint "transactable_id", null: false
-    t.datetime "created_at", null: false
+    t.string "transactable_type", null: false
     t.datetime "updated_at", null: false
     t.index ["entity_id", "transactable_type", "transactable_id"], name: "index_entity_transactions_on_composite_key", unique: true
     t.index ["entity_id"], name: "index_entity_transactions_on_entity_id"
@@ -198,41 +198,41 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
 
   create_table "exchanges", force: :cascade do |t|
     t.string "bound_type", default: "standalone", null: false
-    t.integer "exchange_type", default: 0, null: false
-    t.integer "number", default: 1, null: false
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
-    t.integer "exchanges_count", default: 0, null: false
-    t.bigint "entity_transaction_id", null: false
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.datetime "date", null: false
+    t.bigint "entity_transaction_id", null: false
+    t.integer "exchange_type", default: 0, null: false
+    t.integer "exchanges_count", default: 0, null: false
     t.integer "month", null: false
+    t.integer "number", default: 1, null: false
+    t.integer "price", null: false
+    t.integer "starting_price", null: false
+    t.datetime "updated_at", null: false
     t.integer "year", null: false
     t.index ["cash_transaction_id"], name: "index_exchanges_on_cash_transaction_id"
     t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
   end
 
   create_table "installments", force: :cascade do |t|
-    t.integer "order_id"
-    t.integer "number", null: false
-    t.datetime "date", null: false
-    t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
-    t.virtual "date_month", type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "starting_price", null: false
-    t.integer "price", null: false
     t.integer "balance"
-    t.boolean "paid", default: false
-    t.string "installment_type", null: false
     t.integer "card_installments_count", default: 0
-    t.integer "cash_installments_count", default: 0
     t.bigint "card_transaction_id"
+    t.integer "cash_installments_count", default: 0
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
+    t.datetime "date", null: false
+    t.virtual "date_month", type: :integer, null: false, as: "EXTRACT(month FROM date)", stored: true
+    t.virtual "date_year", type: :integer, null: false, as: "EXTRACT(year FROM date)", stored: true
+    t.string "installment_type", null: false
+    t.integer "month", null: false
+    t.integer "number", null: false
+    t.integer "order_id"
+    t.boolean "paid", default: false
+    t.integer "price", null: false
+    t.integer "starting_price", null: false
     t.datetime "updated_at", null: false
+    t.integer "year", null: false
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
     t.index ["date_year", "date_month", "date"], name: "idx_installments_year_month_date"
@@ -241,105 +241,105 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_23_225859) do
   end
 
   create_table "investments", force: :cascade do |t|
-    t.string "description"
-    t.datetime "date", null: false
-    t.integer "month", null: false
-    t.integer "year", null: false
-    t.integer "price", null: false
-    t.bigint "user_id", null: false
-    t.bigint "user_bank_account_id", null: false
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
+    t.datetime "date", null: false
+    t.string "description"
+    t.integer "month", null: false
+    t.integer "price", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_bank_account_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "year", null: false
     t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
 
   create_table "messages", force: :cascade do |t|
-    t.bigint "conversation_id", null: false
-    t.bigint "user_id", null: false
     t.text "body"
+    t.bigint "conversation_id", null: false
+    t.datetime "created_at", null: false
     t.text "headers"
     t.datetime "read_at"
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["user_id"], name: "index_messages_on_user_id"
   end
 
   create_table "references", force: :cascade do |t|
-    t.bigint "user_card_id", null: false
+    t.datetime "created_at", null: false
     t.integer "month", null: false
-    t.integer "year", null: false
     t.date "reference_closing_date", null: false
     t.date "reference_date", null: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_card_id", null: false
+    t.integer "year", null: false
     t.index ["user_card_id", "month", "year"], name: "idx_references_user_card_month_year", unique: true
     t.index ["user_card_id"], name: "index_references_on_user_card_id"
   end
 
   create_table "subscriptions", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.text "endpoint"
-    t.text "p256dh"
     t.text "auth"
     t.datetime "created_at", null: false
+    t.text "endpoint"
+    t.text "p256dh"
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_subscriptions_on_user_id"
   end
 
   create_table "user_bank_accounts", force: :cascade do |t|
-    t.string "user_bank_account_name"
-    t.integer "agency_number"
     t.integer "account_number"
     t.boolean "active", default: true, null: false
+    t.integer "agency_number"
     t.integer "balance", default: 0, null: false
+    t.bigint "bank_id", null: false
     t.integer "cash_transactions_count", default: 0, null: false
     t.integer "cash_transactions_total", default: 0, null: false
-    t.bigint "user_id", null: false
-    t.bigint "bank_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "user_bank_account_name"
+    t.bigint "user_id", null: false
     t.index ["bank_id"], name: "index_user_bank_accounts_on_bank_id"
     t.index ["user_id"], name: "index_user_bank_accounts_on_user_id"
   end
 
   create_table "user_cards", force: :cascade do |t|
-    t.string "user_card_name", null: false
+    t.boolean "active", default: true, null: false
+    t.bigint "card_id", null: false
+    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "card_transactions_total", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.integer "credit_limit", null: false
     t.integer "days_until_due_date", null: false
     t.integer "due_date_day", default: 1, null: false
     t.integer "min_spend", null: false
-    t.integer "credit_limit", null: false
-    t.boolean "active", default: true, null: false
-    t.integer "card_transactions_count", default: 0, null: false
-    t.integer "card_transactions_total", default: 0, null: false
-    t.bigint "user_id", null: false
-    t.bigint "card_id", null: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "user_card_name", null: false
+    t.bigint "user_id", null: false
     t.index ["card_id"], name: "index_user_cards_on_card_id"
     t.index ["user_id", "card_id", "user_card_name"], name: "index_user_cards_on_on_composite_key", unique: true
     t.index ["user_id"], name: "index_user_cards_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "admin", default: false, null: false
+    t.datetime "confirmation_sent_at"
+    t.string "confirmation_token"
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
-    t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.string "confirmation_token"
-    t.string "unconfirmed_email"
-    t.datetime "confirmed_at"
-    t.datetime "confirmation_sent_at"
     t.string "first_name", null: false
     t.string "last_name", null: false
     t.string "locale", null: false
-    t.datetime "created_at", null: false
+    t.datetime "remember_created_at"
+    t.datetime "reset_password_sent_at"
+    t.string "reset_password_token"
+    t.string "unconfirmed_email"
     t.datetime "updated_at", null: false
-    t.boolean "admin", default: false, null: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

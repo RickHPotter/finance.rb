@@ -68,7 +68,7 @@ module TabsConcern
       Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity),
       Item.new(t("tabs.conversation"),
                :message,
-               conversation_path(1, format: :turbo_stream),
+               conversation_path(1),
                @active_sub_menu == :conversation,
                converstion_notification_type)
     ]

@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_locale
   # TODO: keep this for in development to see if it detects any bugs
-  after_action :check_reasoning, if: -> { Rails.env.development? && action_name.in?(%w[create update destroy pay pay_multiple]) }
+  after_action :check_reasoning, if: -> { Rails.env.development? && !devise_controller? && action_name.in?(%w[create update destroy pay pay_multiple]) }
 
   # @protected_instance_methods ..............................................
 

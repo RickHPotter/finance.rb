@@ -7,7 +7,15 @@ class BalancesController < ApplicationController
   before_action :set_tabs, only: :index
 
   def index
-    render Views::Balances::Index.new(mobile: @mobile)
+    respond_to do |format|
+      format.html do
+        render Views::Balances::Index.new(mobile: @mobile)
+      end
+
+      format.turbo_stream do
+        set_tabs(active_menu: :cash, active_sub_menu: :balance)
+      end
+    end
   end
 
   def cash_balance_json
