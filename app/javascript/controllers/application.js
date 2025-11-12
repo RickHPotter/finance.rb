@@ -68,6 +68,20 @@ document.addEventListener("keydown", (e) => {
     const distance = key === "j" ? 500 : -500
     document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
   }
+
+  if (key === "d") {
+    e.preventDefault()
+
+    const selectors = ["#card_transaction_description", "#cash_transaction_description", "#investment_description"]
+    selectors.forEach(selector => {
+      const descriptionInput = document.querySelector(selector)
+      if (!descriptionInput) return
+
+      const textLength = descriptionInput.value.length
+      descriptionInput.focus()
+      descriptionInput.setSelectionRange(textLength, textLength)
+    })
+  }
 })
 
 const registerServiceWorker = async () => {
@@ -118,8 +132,8 @@ function updateHistory(newUrl, action = "push") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const otherPaths = ["/up"]
   const otherDomains = ["/lalas"]
+  const otherPaths = ["/up"]
   const devisePaths = [
     "/users/sign_in",
     "/users/sign_up",
@@ -130,12 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
   ]
 
   if (otherPaths.includes(window.location.pathname)) return
-  if (otherDomains.find(domain => window.location.pathname.startsWith(domain))) return
   if (devisePaths.includes(window.location.pathname)) return
 
-  const currentPath = window.location.pathname
+  const currentPath   = window.location.pathname
+  const currentDomain = otherDomains.find(domain => window.location.pathname.startsWith(domain))
 
-  if ("/".includes(currentPath)) {
+  if ("/".includes(currentPath) || currentDomain?.includes(currentPath)) {
     currentFrameUrl = currentPath
     window.history.replaceState(
       { turbo_frame_history: true, frame_url: currentPath },
@@ -167,7 +181,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }, { once: true })
   }, { once: true })
 
-  Turbo.visit("/", { action: "replace" })
+  if (currentDomain) {
+    Turbo.visit(currentDomain, { action: "replace" })
+  } else {
+    Turbo.visit("/", { action: "replace" })
+  }
 })
 
 document.addEventListener("turbo:click", (event) => {

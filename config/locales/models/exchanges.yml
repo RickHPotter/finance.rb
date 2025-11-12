@@ -35,7 +35,7 @@ pt-BR:
         month_year: Mês/Ano
         exchanges_count: Quantidade de Trocas
         exchange_type: Tipo de Troca
-        bound_type: Tipo de Conta
+        bound_type: Tipo de Vínculo
         monetary: Monetário
         non_monetary: Não Monetário
         standalone: Simples

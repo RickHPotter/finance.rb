@@ -34,7 +34,7 @@ class Views::Lalas::CashTransactions::MonthYearContainer < Views::Base
       }
 
       active_month_years.sort.each do |month_year|
-        turbo_frame_tag "month_year_container_#{month_year}", src: cash_transactions_month_year_lalas_path(custom_params.merge(month_year:))
+        turbo_frame_tag "month_year_container_#{month_year}", src: month_year_lalas_cash_transactions_path(custom_params.merge(month_year:))
       end
     end
   end

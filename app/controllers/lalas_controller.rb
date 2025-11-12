@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Controller for Unauthenticated User Lala
 class LalasController < ApplicationController
   include TranslateHelper
 
@@ -167,11 +168,11 @@ class LalasController < ApplicationController
   private
 
   def set_variables
-    @main_items = [ { label: t("tabs.pix"), icon: :mobile, link: cash_transactions_lalas_path, default: @active_menu == :pix } ]
+    @main_items = [ { label: t("tabs.pix"), icon: :mobile, link: lalas_cash_transactions_path, default: @active_menu == :pix } ]
 
     card_items = User.first.user_cards.active.pluck(:id, :user_card_name).map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      { label: user_card_name, icon: :credit_card, link: card_transactions_lalas_path(user_card_id:), default: }
+      { label: user_card_name, icon: :credit_card, link: lalas_card_transactions_path(user_card_id:), default: }
     end
 
     @main_items += card_items

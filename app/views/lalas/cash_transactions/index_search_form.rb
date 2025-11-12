@@ -31,7 +31,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
   end
 
   def view_template
-    form_with url: cash_transactions_lalas_path,
+    form_with url: lalas_cash_transactions_path,
               id: :search_form,
               method: :get,
               class: "w-full",

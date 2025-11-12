@@ -29,7 +29,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
   end
 
   def view_template
-    form_with url: card_transactions_lalas_path,
+    form_with url: lalas_card_transactions_path,
               id: :search_form,
               method: :get,
               class: "w-full",

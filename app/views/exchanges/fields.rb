@@ -5,6 +5,8 @@ module Views
     class Fields < Views::Base
       attr_reader :form, :exchange
 
+      include CacheHelper
+
       def initialize(form:)
         @form = form
         @exchange = form.object
@@ -20,7 +22,15 @@ module Views
           exchange.bound_type.to_sym
         end => bound_type
 
-        div(class: "nested-exchange-wrapper", data: { new_record: exchange.new_record?, entity_transaction_target: "exchangeWrapper" }) do
+        div(
+          class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md #{locked? ? 'border-red-300' : 'border-green-300'}",
+          data: {
+            new_record: exchange.new_record?,
+            entity_transaction_target: "exchangeWrapper",
+            exchange_lock_target: "exchange",
+            locked: locked?.to_s
+          }
+        ) do
           form.hidden_field :id
           form.hidden_field :number, class: :exchange_number
           form.hidden_field :bound_type, class: :bound_type, value: bound_type
@@ -29,57 +39,75 @@ module Views
           form.hidden_field :year, class: :exchange_year
           form.hidden_field :_destroy, class: :exchange_destroy
 
-          span(class: "flex justify-between items-center text-sm font-medium text-black mx-auto bg-gray-200 border border-gray-300 rounded-sm") do
+          div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
+            visibility_handles = "opacity-0 pointer-events-none" if bound_type == :card_bound
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1 #{'opacity-0' if bound_type == :card_bound}",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition #{visibility_handles}",
               data: { action: "click->entity-transaction#prevMonth", entity_transaction_target: :button }
-            ) do
-              "←"
-            end
+            ) { "←" }
 
-            div(class: "col-span-4 flex items-center") do
-              button(type: :button, class: "flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{exchange.cash_transaction&.paid ? 'bg-green-400' : 'bg-orange-600'}")
-
-              span(class: "exchange_month_year font-victor font-semibold text-orange-950", data: { entity_transaction_target: :monthYearExchange }) do
-                exchange.month_year if exchange.month
-              end
+            div(class: "flex items-center gap-2") do
+              div(class: "w-3 h-3 rounded-full #{exchange.cash_transaction&.paid ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
+              span(
+                class: "exchange_month_year font-victor font-semibold text-gray-900 tracking-wide",
+                data: { entity_transaction_target: :monthYearExchange }
+              ) { exchange.month_year if exchange.month }
             end
 
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1 #{'opacity-0' if bound_type == :card_bound}",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition #{visibility_handles}",
               data: { action: "click->entity-transaction#nextMonth", entity_transaction_target: :button }
-            ) do
-              "→"
-            end
+            ) { "→" }
           end
 
-          div(class: "grid grid-cols-3 w-full") do
-            div(class: "col-span-2") do
-              div(class: "flex justify-center items-center text-sm text-gray-900 bg-gray-200 border border-gray-300 cursor-pointer rounded-none rounded-s-lg") do
-                form.text_field \
-                  :date,
-                  id: :exchange_date,
-                  type: "datetime-local",
-                  value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
-                  class: "exchange_date w-full outline-hidden appearance-none bg-transparent border-0 font-graduate text-[0.8rem]",
-                  data: { entity_transaction_target: :dateInput }
+          div(class: "flex-1 grid gap-1") do
+            form.text_field \
+              :date,
+              id: :exchange_date,
+              type: "datetime-local",
+              value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
+              class: "exchange_date
+                      w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+              data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
+
+            div(class: "flex gap-1") do
+              form.text_field \
+                :price,
+                inputmode: :numeric,
+                class: "dynamic-price sign-based price-input
+                        w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                onclick: "this.select();",
+                data: {
+                  price_mask_target: :input,
+                  entity_transaction_target: :priceExchangeInput,
+                  exchange_lock_target: :price,
+                  action: "input->price-mask#applyMask"
+                }
+
+              div do
+                button(
+                  type: "button",
+                  class: "p-1.5 rounded-md bg-green-200 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  data: { exchange_lock_target: :lockBtn, action: "click->exchange-lock#lock" }
+                ) { cached_icon :unlocked_padlock }
+
+                button(
+                  type: "button",
+                  class: "p-1.5 rounded-md bg-red-200 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  data: { exchange_lock_target: :unlockBtn, action: "click->exchange-lock#unlock" }
+                ) { cached_icon :locked_padlock }
               end
             end
-
-            form.text_field \
-              :price,
-              inputmode: :numeric,
-              class:
-                "dynamic-price sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
-                focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
-              onclick: "this.select();",
-              data: { price_mask_target: :input, entity_transaction_target: :priceExchangeInput, action: "input->price-mask#applyMask" }
           end
 
           button(type: :button, class: :hidden, tabindex: -1, data: { entity_transaction_target: "delExchange", action: "nested-form#remove" })
         end
+      end
+
+      def locked?
+        exchange.cash_transaction&.paid? || false
       end
     end
   end

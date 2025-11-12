@@ -43,6 +43,9 @@ application.register("entity-transaction", EntityTransactionController)
 import ExchangeController from "./exchange_controller"
 application.register("exchange", ExchangeController)
 
+import ExchangeLockController from "./exchange_lock_controller"
+application.register("exchange-lock", ExchangeLockController)
+
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 

@@ -13,16 +13,6 @@ Rails.application.routes.draw do
   get "serviceworker" => "rails/pwa#serviceworker", as: :pwa_serviceworker, constraints: { format: "js" }
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest, constraints: { format: "json" }
 
-  resources :lalas do
-    collection do
-      get :card_transactions
-      get :card_transactions_month_year
-
-      get :cash_transactions
-      get :cash_transactions_month_year
-    end
-  end
-
   resources :pages, only: :index do
     collection do
       get :donation
@@ -90,6 +80,24 @@ Rails.application.routes.draw do
   end
 
   resources :subscriptions, only: :create
+
+  resources :lalas, only: :index
+
+  namespace :lalas do
+    resources :card_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+
+    resources :cash_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+  end
 
   root "pages#index"
 end

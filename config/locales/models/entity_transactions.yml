@@ -16,6 +16,7 @@ en:
         price: Price
         price_to_be_returned: Price to be returned
         exchanges_count: Exchanges Count
+        bound_type: Bound Type
         standalone: Standalone
         card_bound: Card Bound
         created_at: Created at
@@ -39,6 +40,7 @@ pt-BR:
         price: Valor
         price_to_be_returned: Valor a ser devolvido
         exchanges_count: Quantidade de Trocas
+        bound_type: Tipo de Vínculo
         standalone: Simples
         card_bound: Cartão
         created_at: Criado em
