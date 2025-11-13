@@ -23,7 +23,8 @@ module Views
         end => bound_type
 
         div(
-          class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md #{locked? ? 'border-red-300' : 'border-green-300'}",
+          class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md
+                  #{locked? ? 'border-red-300' : 'border-green-300'}",
           data: {
             new_record: exchange.new_record?,
             entity_transaction_target: "exchangeWrapper",

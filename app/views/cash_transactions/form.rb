@@ -69,26 +69,28 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               data: { reactive_form_target: :input }
           end
 
-          div(id: "hw_category_id", class: "hw-cb w-full lg:w-2/12 mb-3 plus-icon") do
-            combobox_tag \
-              :category_transaction,
-              @categories,
-              mobile_at: "360px",
-              include_blank: false,
-              placeholder: model_attribute(cash_transaction, :category_id),
-              disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-              data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
-          end
+          div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
+            div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
+              combobox_tag \
+                :category_transaction,
+                @categories,
+                mobile_at: "360px",
+                include_blank: false,
+                placeholder: model_attribute(cash_transaction, :category_id),
+                disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
+                data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+            end
 
-          div(id: "hw_entity_id", class: "hw-cb w-full lg:w-2/12 mb-3 user-icon") do
-            combobox_tag \
-              :entity_transaction,
-              @entities,
-              mobile_at: "360px",
-              include_blank: false,
-              placeholder: model_attribute(cash_transaction, :entity_id),
-              disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-              data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+            div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
+              combobox_tag \
+                :entity_transaction,
+                @entities,
+                mobile_at: "360px",
+                include_blank: false,
+                placeholder: model_attribute(cash_transaction, :entity_id),
+                disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
+                data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+            end
           end
 
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do

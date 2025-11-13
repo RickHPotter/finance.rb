@@ -69,7 +69,7 @@ module Views
                               sign: }
                   end
 
-                  render_helper_popover(target: :priceToBeReturnedInput, icon: :arrow_down_right)
+                  render_helper_popover(target: :priceToBeReturnedInput, icon: :arrow_down_left)
                 end
               end
 

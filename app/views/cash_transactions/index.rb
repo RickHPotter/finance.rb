@@ -30,11 +30,20 @@ class Views::CashTransactions::Index < Views::Base
                                                                                :user_bank_account_id, :active_month_years, :skip_budgets))
             end
 
-            link_to new_cash_transaction_path(format: :turbo_stream),
-                    style: "margin: 30px",
-                    class: "flex md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg items-center justify-center z-50
-                           active:scale-95 transition-transform",
-                    data: { turbo_frame: :center_container } do
+            link_to(
+              "#",
+              id: "jumpToBottomBtn",
+              class: "flex items-center justify-center md:hidden fixed bottom-0 right-0 m-4 bg-gray-300 text-black rounded-full shadow-lg z-50",
+              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 'n', bubbles: true}); document.dispatchEvent(e);"
+            ) do
+              cached_icon :bigger_bottom
+            end
+
+            link_to(
+              new_cash_transaction_path(format: :turbo_stream),
+              class: "flex items-center justify-center md:hidden fixed bottom-16 right-0 m-4 bg-blue-600 text-white rounded-full shadow-lg z-50",
+              data: { turbo_frame: :center_container }
+            ) do
               cached_icon :bigger_plus
             end
           end
