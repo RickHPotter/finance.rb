@@ -24,6 +24,8 @@ class Views::Pages::Index < Views::Base
             end
           end
 
+          render Views::Pages::Calculator.new
+
           div(class: "text-center text-black pt-2") do
             turbo_frame_tag :center_container
           end

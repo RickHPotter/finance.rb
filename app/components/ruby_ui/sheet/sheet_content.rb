@@ -13,6 +13,7 @@ module RubyUI
     def initialize(side: :right, **attrs)
       @side = side
       @side_classes = SIDE_CLASS[side]
+      @no_blur = attrs.delete(:no_blur) == true
       super(**attrs)
     end
 
@@ -77,9 +78,12 @@ module RubyUI
       div(
         data_state: "open",
         data_action: "click->ruby-ui--sheet-content#close",
-        class:
-        "fixed pointer-events-auto inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out
-        data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+        class: if @no_blur
+                 ""
+               else
+                 "fixed pointer-events-auto inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out
+                  data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+               end
       )
     end
   end
