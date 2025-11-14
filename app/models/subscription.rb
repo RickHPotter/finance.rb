@@ -7,6 +7,7 @@ end
 # == Schema Information
 #
 # Table name: subscriptions
+# Database name: primary
 #
 #  id         :bigint           not null, primary key
 #  auth       :text

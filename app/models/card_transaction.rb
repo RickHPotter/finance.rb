@@ -193,6 +193,7 @@ end
 # == Schema Information
 #
 # Table name: card_transactions
+# Database name: primary
 #
 #  id                          :bigint           not null, primary key
 #  card_installments_count     :integer          default(0), not null

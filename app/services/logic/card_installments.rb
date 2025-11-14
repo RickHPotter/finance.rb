@@ -2,13 +2,14 @@
 
 module Logic
   class CardInstallments
-    def self.find_ref_month_year_by_params(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+    def self.find_ref_month_year_by_params(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       month_year   = search_params.delete(:month_year)
       year         = month_year[0..3]
       month        = month_year[4..]
       search_term  = search_params.delete(:search_term) || ""
       category_ids = card_transaction_params.delete(:category_id).presence
       entity_ids   = card_transaction_params.delete(:entity_id).presence
+      order_by     = search_params.delete(:order_by)
 
       joins      = { card_transaction: %i[categories entities] }
       inclusions = joins
@@ -29,7 +30,14 @@ module Logic
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
 
-      relation.distinct.order("installments.date, installments.id")
+      if order_by == "transaction_date"
+        order_clause = "card_transactions.date, installments.id"
+        relation = relation.select("installments.*", "card_transactions.date")
+      else
+        order_clause = "installments.date, installments.id"
+      end
+
+      relation.distinct.order(order_clause)
     end
 
     def self.build_conditions_from_params(card_transaction_params, search_params)

@@ -17,6 +17,7 @@ end
 # == Schema Information
 #
 # Table name: budgets
+# Database name: primary
 #
 #  id              :bigint           not null, primary key
 #  active          :boolean          default(TRUE), not null

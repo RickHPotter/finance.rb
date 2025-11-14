@@ -219,3 +219,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .no-selection::selection {
   @apply !bg-transparent
 }
+
+.turbo-progress-bar {
+  background: #fb0000;
+  height: 5px;
+}

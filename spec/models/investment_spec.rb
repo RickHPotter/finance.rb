@@ -126,6 +126,7 @@ end
 # == Schema Information
 #
 # Table name: investments
+# Database name: primary
 #
 #  id                   :bigint           not null, primary key
 #  date                 :datetime         not null

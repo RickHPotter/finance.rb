@@ -20,6 +20,7 @@ end
 # == Schema Information
 #
 # Table name: entities
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null

@@ -21,6 +21,7 @@ end
 # == Schema Information
 #
 # Table name: conversation_participants
+# Database name: primary
 #
 #  id              :bigint           not null, primary key
 #  created_at      :datetime         not null

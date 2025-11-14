@@ -14,6 +14,8 @@ en:
         comment: Comment
         comment_placeholder: Any comment about?
         date: Date
+        card_transaction_date: Card Transaction Date
+        card_installment_date: Card Installment Date
         price: Price
         starting_price: Original Price
         paid: Paid
@@ -61,6 +63,8 @@ pt-BR:
         comment: Comentário
         comment_placeholder: Algum comentário?
         date: Data
+        card_transaction_date: Data da Transação
+        card_installment_date: Data da Parcela
         price: Preço
         starting_price: Preço Inicial
         paid: Pago

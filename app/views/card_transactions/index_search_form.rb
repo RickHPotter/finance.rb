@@ -3,6 +3,8 @@
 class Views::CardTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::SelectTag
+  include Phlex::Rails::Helpers::OptionsForSelect
 
   include TranslateHelper
   include ComponentsHelper
@@ -175,6 +177,20 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     svg: :number,
                     min: 1, max: 72,
                     value: to_installments_count || 72
+                end
+              end
+
+              div class: "my-auto pt-4" do
+                label(class: "font-poetsen-one font-thin text-gray-500", for: :order_by) { I18n.t(:order) }
+
+                select_tag(:order_by, class: input_class, data: { controller: "select", placeholder: action_message(:selecta) }) do
+                  options_for_select(
+                    [
+                      [ model_attribute(CardTransaction, :card_installment_date), "installment_date" ],
+                      [ model_attribute(CardTransaction, :card_transaction_date), "transaction_date" ]
+                    ],
+                    index_context[:order_by] || "installment_date"
+                  )
                 end
               end
             end

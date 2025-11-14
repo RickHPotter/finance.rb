@@ -28,6 +28,7 @@ end
 # == Schema Information
 #
 # Table name: conversations
+# Database name: primary
 #
 #  id         :bigint           not null, primary key
 #  created_at :datetime         not null

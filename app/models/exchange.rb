@@ -30,6 +30,7 @@ end
 # == Schema Information
 #
 # Table name: exchanges
+# Database name: primary
 #
 #  id                    :bigint           not null, primary key
 #  bound_type            :string           default("standalone"), not null

@@ -40,22 +40,40 @@ export default class extends Controller {
     }
   }
 
+  _sanitizeExpression(expression) {
+    let sanitized = expression.replace(/[^0-9+\-*/.()]/g, "")
+
+    sanitized = sanitized.replace(/([+\-*/])\s*([+\-*/])+/g, "$1")
+    sanitized = sanitized.replace(/^([+\*/])(?=[0-9(])/g, "")
+    sanitized = sanitized.replace(/[+\-*/]$/, "")
+
+    return sanitized
+  }
+
   calculate() {
     this.removeMessage()
 
     try {
       const expression = this.displayTarget.value
-      const operands = ["+", "-", "*", "/"]
-      const operandsInExpression = operands.some(op => expression.includes(op))
+      const sanitizedExpression = this._sanitizeExpression(expression)
 
-      if (expression.trim() === "" || operandsInExpression === false) {
+      if (sanitizedExpression.trim() === "") {
+        this.showMessage("alert", "Please enter a valid mathematical expression.")
         return
       }
 
-      let result = eval(expression)
+      const operands = ["+", "-", "*", "/"]
+      const operandsInExpression = operands.some(op => sanitizedExpression.includes(op))
+
+      if (operandsInExpression === false) {
+        this.showMessage("alert", "Please enter a valid mathematical expression with at least one operator.")
+        return
+      }
+
+      let result = Function('return ' + sanitizedExpression)()
 
       if (result === undefined) {
-        this.showMessage("alert", "Oops. Undefined, bitch.")
+        this.showMessage("alert", "Oops. Undefined result.")
         return
       } else {
         result = result.toFixed(2)
@@ -64,7 +82,7 @@ export default class extends Controller {
       this.displayTarget.value = result
       this.addToHistory(expression, result)
     } catch (e) {
-      this.showMessage("alert", "Oops. " + e.message)
+      this.showMessage("alert", "Oops. Invalid expression: " + e.message)
     }
   }
 

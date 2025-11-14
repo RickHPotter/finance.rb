@@ -53,6 +53,7 @@ end
 # == Schema Information
 #
 # Table name: cash_transactions
+# Database name: primary
 #
 #  id                          :bigint           not null, primary key
 #  cash_installments_count     :integer          default(0), not null

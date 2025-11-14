@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_locale
+  before_action :redirect_turbo_stream_requests_to_html
   # TODO: keep this for in development to see if it detects any bugs
   after_action :check_reasoning, if: -> { Rails.env.development? && !devise_controller? && action_name.in?(%w[create update destroy pay pay_multiple]) }
 
@@ -43,5 +44,14 @@ class ApplicationController < ActionController::Base
 
     new_state = current_user.cash_installments.order(:order_id).pluck(:balance)
     @f.lee if current_state != new_state
+  end
+
+  # @private_instance_methods ................................................
+  private
+
+  def redirect_turbo_stream_requests_to_html
+    return if request.original_fullpath.exclude?(".turbo_stream")
+
+    redirect_to url_for, status: :moved_permanently
   end
 end

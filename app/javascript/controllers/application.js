@@ -88,7 +88,7 @@ const registerServiceWorker = async () => {
   if (navigator.serviceWorker) {
     try {
       await navigator.serviceWorker.register("/serviceworker.js")
-      console.log("Service worker registered!")
+      console.info("%c Service worker registered!", "color: green")
     } catch (error) {
       console.error("Error registering service worker: ", error)
     }

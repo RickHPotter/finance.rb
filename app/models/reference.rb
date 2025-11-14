@@ -43,6 +43,7 @@ end
 # == Schema Information
 #
 # Table name: references
+# Database name: primary
 #
 #  id                     :bigint           not null, primary key
 #  month                  :integer          not null, uniquely indexed => [user_card_id, year]

@@ -13,6 +13,9 @@ application.register("autosave", AutosaveController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import CalculatorController from "./calculator_controller"
+application.register("calculator", CalculatorController)
+
 import ChatController from "./chat_controller"
 application.register("chat", ChatController)
 
@@ -34,6 +37,9 @@ application.register("datatable", DatatableController)
 import DatepickerController from "./datepicker_controller"
 application.register("datepicker", DatepickerController)
 
+import DragController from "./drag_controller"
+application.register("drag", DragController)
+
 import DynamicDescriptionController from "./dynamic_description_controller"
 application.register("dynamic-description", DynamicDescriptionController)
 
@@ -54,12 +60,6 @@ application.register("material-tailwind-tab", MaterialTailwindTabController)
 
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
-
-import CalculatorController from "./calculator_controller"
-application.register("calculator", CalculatorController)
-
-import DragController from "./drag_controller"
-application.register("drag", DragController)
 
 import MonthlyBalanceController from "./monthly_balance_controller"
 application.register("monthly-balance", MonthlyBalanceController)

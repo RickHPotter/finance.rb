@@ -30,7 +30,7 @@ class Views::CardTransactions::Index < Views::Base
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
-                                                                               :user_card, :active_month_years))
+                                                                               :user_card, :active_month_years, :order_by))
             end
 
             link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),

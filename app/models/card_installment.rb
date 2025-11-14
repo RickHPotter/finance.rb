@@ -133,6 +133,7 @@ end
 # == Schema Information
 #
 # Table name: installments
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  balance                 :integer

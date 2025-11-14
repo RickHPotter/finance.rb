@@ -193,6 +193,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     from_installments_count = search_card_transaction_params[:from_installments_count]
     to_installments_count = search_card_transaction_params[:to_installments_count]
     force_mobile = search_card_transaction_params[:force_mobile]
+    order_by = search_card_transaction_params[:order_by]
 
     if params[:all_month_years]
       associations = {}
@@ -231,6 +232,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       to_installments_count:,
       user_card: @user_card,
       force_mobile:,
+      order_by:,
       count_by_month_year:
     }
   end
@@ -254,6 +256,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_count
         month_year
         force_mobile
+        order_by
       ]
     )
   end
