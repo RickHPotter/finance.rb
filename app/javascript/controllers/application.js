@@ -237,3 +237,9 @@ window.addEventListener("popstate", (event) => {
     centerFrame.src = url.pathname + url.search + url.hash
   }
 })
+
+document.addEventListener("turbo:frame-render", (event) => {
+  if (event.target.id === "center_container") {
+    document.querySelector("turbo-frame#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+})

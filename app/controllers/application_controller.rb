@@ -50,8 +50,8 @@ class ApplicationController < ActionController::Base
   private
 
   def redirect_turbo_stream_requests_to_html
-    return if request.original_fullpath.exclude?(".turbo_stream")
+    return unless request.get? && request.path.ends_with?(".turbo_stream")
 
-    redirect_to url_for, status: :moved_permanently
+    redirect_to request.original_fullpath.sub(".turbo_stream", ""), status: :moved_permanently
   end
 end

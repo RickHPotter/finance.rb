@@ -50,18 +50,23 @@ module CashTransactable
     return if previous_cash_transaction_id == cash_transaction_id
 
     previous_cash_transaction = CashTransaction.find_by(id: previous_cash_transaction_id)
+    return unless previous_cash_transaction
 
-    if is_a?(Investment)
-      investments = previous_cash_transaction.investments
-      price = investments.sum(:price)
-      previous_cash_transaction.update_columns(price:, comment: investments.first.comment)
-      previous_cash_transaction.cash_installments.first.update_columns(price:)
+    association_name = previous_cash_transaction.cash_transaction_type.underscore.pluralize
+    all_transactables = previous_cash_transaction.public_send(association_name)
+    remaining_transactables = all_transactables.where.not(id:)
+
+    if remaining_transactables.any?
+      new_price = remaining_transactables.sum(:price)
+      new_comment = remaining_transactables.first.comment
+      previous_cash_transaction.update_columns(price: new_price, comment: new_comment)
+      if previous_cash_transaction.cash_installments.any?
+        previous_cash_transaction.cash_installments.first.update_columns(price: new_price)
+        Logic::RecalculateBalancesService.new(user:, year: previous_cash_transaction.year, month: previous_cash_transaction.month).call
+      end
     else
-      previous_cash_transaction.card_installments&.first&.touch
+      previous_cash_transaction.destroy
     end
-
-    association = cash_transaction.cash_transaction_type.underscore.pluralize
-    previous_cash_transaction.destroy if previous_cash_transaction.public_send(association).empty?
   end
 
   # Updates the associated `cash_transaction` with `self` model details.

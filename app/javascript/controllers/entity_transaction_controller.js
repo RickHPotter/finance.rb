@@ -134,12 +134,10 @@ export default class extends Controller {
       this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = true)
 
       this.monthYearExchangeTarget.textContent = ""
-      this.buttonTargets.forEach((element) => element.classList.add("opacity-0"))
       const railsDueDate = this._getDueDate()
       this._updateWrappers(railsDueDate, 0)
     } else {
       this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = false)
-      this.buttonTargets.forEach((element) => element.classList.remove("opacity-0"))
     }
   }
 
@@ -270,9 +268,14 @@ export default class extends Controller {
       proposedDate.setMinute(0)
     }
 
+    startingRailsDate.monthsForwards(startingNumber)
+    proposedDate.monthsForwards(startingNumber)
+
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
-      startingRailsDate.monthsForwards(1)
-      proposedDate.monthsForwards(1)
+      if (index > 0) {
+        startingRailsDate.monthsForwards(1)
+        proposedDate.monthsForwards(1)
+      }
 
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
       target.querySelector(".exchange_date").value = proposedDate.dateTime()
@@ -290,14 +293,10 @@ export default class extends Controller {
   }
 
   prevMonth({ target }) {
-    if (target.classList.contains("opacity-0")) { return }
-
     this.updateExchangeDate(target, -1)
   }
 
   nextMonth({ target }) {
-    if (target.classList.contains("opacity-0")) { return }
-
     this.updateExchangeDate(target, 1)
   }
 
@@ -308,6 +307,8 @@ export default class extends Controller {
     const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
     const monthInput = exchangeWrapper.querySelector(".exchange_month")
     const yearInput = exchangeWrapper.querySelector(".exchange_year")
+    const dateInput = exchangeWrapper.querySelector(".exchange_date")
+    const boundTypeInput = exchangeWrapper.querySelector(".bound_type")
 
     const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
     date.monthsForwards(count)
@@ -315,6 +316,12 @@ export default class extends Controller {
     monthYearInput.textContent = date.monthYear()
     monthInput.value = date.month
     yearInput.value = date.year
+
+    if (boundTypeInput.value === "card_bound") {
+      const exchangeDate = new RailsDate(dateInput.value)
+      exchangeDate.monthsForwards(count)
+      dateInput.value = exchangeDate.dateTime()
+    }
   }
 
   updateReferenceMonthYear(event) {

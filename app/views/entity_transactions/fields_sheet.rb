@@ -113,7 +113,7 @@ module Views
                               has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :standalone,
-                                       checked: entity_transaction.exchanges.first&.standalone?,
+                                       checked: entity_transaction.new_record? || entity_transaction.exchanges.first&.standalone?,
                                        id: "entity_transaction_standalone_#{form.index}",
                                        class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
                                        data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
@@ -128,7 +128,7 @@ module Views
                               has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :card_bound,
-                                       checked: entity_transaction.exchanges.first&.card_bound? || !entity_transaction.exchanges.first&.standalone?,
+                                       checked: entity_transaction.exchanges.first&.card_bound?,
                                        id: "entity_transaction_card_bound_#{form.index}",
                                        class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
                                        data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })

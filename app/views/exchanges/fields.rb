@@ -41,10 +41,9 @@ module Views
           form.hidden_field :_destroy, class: :exchange_destroy
 
           div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
-            visibility_handles = "opacity-0 pointer-events-none" if bound_type == :card_bound
             button(
               type: :button,
-              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition #{visibility_handles}",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
               data: { action: "click->entity-transaction#prevMonth", entity_transaction_target: :button }
             ) { "←" }
 
@@ -58,7 +57,7 @@ module Views
 
             button(
               type: :button,
-              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition #{visibility_handles}",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
               data: { action: "click->entity-transaction#nextMonth", entity_transaction_target: :button }
             ) { "→" }
           end
@@ -71,6 +70,7 @@ module Views
               value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
               class: "exchange_date
                       w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+              readonly: bound_type == :card_bound,
               data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
 
             div(class: "flex gap-1") do

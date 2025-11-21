@@ -238,7 +238,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
               variant: :outline,
               class: "flex flex-col items-center text-center text-inherit",
-              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+              data: { turbo_frame: "center_container", turbo_prefetch: "false" }
             ) do
               action_model(:index, CardTransaction, 2)
             end
@@ -284,16 +284,24 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
         SheetMiddle(class: "overflow-y-auto flex-1") do
           SheetMiddle do
-            card_transactions = cash_transaction.exchanges.map(&:entity_transaction).map(&:transactable)
-            years = [ card_transactions.map(&:year).uniq ]
+            exchanges = cash_transaction.exchanges
+            entity_transactions = exchanges.map(&:entity_transaction).flatten
+            card_transactions_ids = entity_transactions.pluck(:transactable_id)
+
+            reference = cash_transaction.exchanges.first
+            year, month = reference.slice(:year, :month).values
 
             index_context = {
               current_user:,
-              years:,
-              default_year: years.last,
-              active_month_years: card_transactions.map { |ct| Date.new(ct.year, ct.month).strftime("%Y%m").to_i }.sort.uniq,
+              years: [ year ],
+              default_year: year,
+              active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
               search_term: "",
-              card_installment_ids: current_user.card_installments.where(card_transaction_id: card_transactions.pluck(:id)).order(:date, :id).pluck(:id),
+              card_installment_ids: current_user
+                            .card_installments
+                            .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
+                            .order(:order_id)
+                            .ids,
               category_id: [ exchange_category.id ],
               entity_id: cash_transaction.entities.pluck(:id),
               user_bank_account_id: nil,

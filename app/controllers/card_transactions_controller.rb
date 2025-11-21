@@ -59,7 +59,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction) }
-      format.turbo_stream
+      format.turbo_stream do
+        set_tabs(active_menu: :card, active_sub_menu: @card_transaction&.user_card&.user_card_name)
+      end
     end
   end
 

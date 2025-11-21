@@ -87,7 +87,7 @@ class Views::CardInstallments::Index < Views::Base
                   href: new_card_transaction_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream),
                   size: :xs,
                   class: "flex flex-col items-center w-16 text-center text-xs text-inherit",
-                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+                  data: { turbo_frame: "center_container", turbo_prefetch: "false" }
                 ) do
                   image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
                   span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
@@ -186,7 +186,7 @@ class Views::CardInstallments::Index < Views::Base
               href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
               size: :xs,
               class: "flex-1 grid grid-cols-1 text-xs mx-auto text-inherit",
-              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
+              data: { turbo_frame: "center_container", turbo_prefetch: "false" }
             ) do
               image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
               span(class: :entity_entity_name) { entity.entity_name }

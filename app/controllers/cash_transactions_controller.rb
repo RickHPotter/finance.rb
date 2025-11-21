@@ -32,7 +32,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def show; end
 
-  def new # rubocop:disable Metrics/AbcSize
+  def new # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     @cash_transaction = current_user.cash_transactions.new(
       user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id,
       date: Time.zone.now
@@ -54,7 +54,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
-      format.turbo_stream
+      format.turbo_stream do
+        set_tabs(active_menu: :cash, active_sub_menu: :pix)
+      end
     end
   end
 
@@ -62,7 +64,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @cash_transaction = current_user.cash_transactions.includes(:cash_installments).find(params[:id])
 
     respond_to do |format|
-      format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
+      format.html { render Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction) }
       format.turbo_stream do
         set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end

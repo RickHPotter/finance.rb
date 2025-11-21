@@ -109,5 +109,8 @@ application.register("ruby-ui--tabs", RubyUi__TabsController)
 import SelectController from "./select_controller"
 application.register("select", SelectController)
 
+import StreamLinkController from "./stream_link_controller"
+application.register("stream-link", StreamLinkController)
+
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
