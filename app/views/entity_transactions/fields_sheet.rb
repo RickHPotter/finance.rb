@@ -23,6 +23,12 @@ module Views
         positive = transactable.price.to_i.positive?
         sign = positive ? "-" : "+"
 
+        if entity_transaction.exchanges.empty? || entity_transaction.exchanges.first&.standalone?
+          :standalone
+        else
+          :card_bound
+        end => default_bound_type
+
         SheetContent(side: :top, class: "max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto", data: { controller: "price-mask" }) do
           SheetHeader do
             SheetTitle(class: "entities_entity_name") { entity_transaction&.entity&.entity_name }
@@ -102,7 +108,7 @@ module Views
               end
 
               if transactable.is_a? CardTransaction
-                div(class: "") do
+                div do
                   bold_label(form, :bound_type, "entity_transaction_bound_type_#{form.index}")
 
                   div(class: "flex justify-start gap-1") do
@@ -113,7 +119,7 @@ module Views
                               has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :standalone,
-                                       checked: entity_transaction.new_record? || entity_transaction.exchanges.first&.standalone?,
+                                       checked: default_bound_type == :standalone,
                                        id: "entity_transaction_standalone_#{form.index}",
                                        class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
                                        data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
@@ -128,7 +134,7 @@ module Views
                               has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :card_bound,
-                                       checked: entity_transaction.exchanges.first&.card_bound?,
+                                       checked: default_bound_type == :card_bound,
                                        id: "entity_transaction_card_bound_#{form.index}",
                                        class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
                                        data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
@@ -147,13 +153,13 @@ module Views
             ) do
               template(data_nested_form_target: "template") do
                 form.fields_for :exchanges, Exchange.new, child_index: "NEW_NESTED_RECORD" do |exchange_fields|
-                  render ::Views::Exchanges::Fields.new(form: exchange_fields)
+                  render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
                 end
               end
 
               exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges.count > 1
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
-                render ::Views::Exchanges::Fields.new(form: exchange_fields)
+                render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
               end
 
               div(data_nested_form_target: "target")

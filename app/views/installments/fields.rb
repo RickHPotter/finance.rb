@@ -19,7 +19,10 @@ module Views
       def view_template
         readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
 
-        div(class: "nested-form-wrapper", data: { new_record: installment.new_record?, reactive_form_target: "installmentWrapper" }) do
+        wrapper_classes = %w[nested-form-wrapper]
+        wrapper_classes << "hidden" if installment.marked_for_destruction?
+
+        div(class: wrapper_classes.join(" "), data: { new_record: installment.new_record?, reactive_form_target: "installmentWrapper" }) do
           span(class: "flex justify-between items-center text-sm font-medium text-black mx-auto bg-gray-200 border border-gray-300 rounded-sm") do
             button(
               type: :button,

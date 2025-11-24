@@ -26,6 +26,21 @@ document.addEventListener("keyup", (e) => {
     return
   }
 
+  // SET THEME
+  // if (key === "t") {
+  //   e.preventDefault()
+  //   document.getElementById("theme_toggle")?.click()
+  //   return
+  // }
+
+  // SCROLL TO TOP
+  if (key === "t") {
+    e.preventDefault()
+    document.querySelector("turbo-frame#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
+
+    return
+  }
+
   // SCROLL TO LAST PAID
   if (key === "n") {
     e.preventDefault()
@@ -35,13 +50,6 @@ document.addEventListener("keyup", (e) => {
     lastPaidTransaction.scrollIntoView({ behavior: "smooth", block: "center" })
     lastPaidTransaction.querySelector(".cash_transaction_description").classList.add("animate-bounce")
     setTimeout(() => lastPaidTransaction.querySelector(".cash_transaction_description").classList.remove("animate-bounce"), 3000)
-    return
-  }
-
-  // SET THEME
-  if (key === "t") {
-    e.preventDefault()
-    document.getElementById("theme_toggle")?.click()
     return
   }
 

@@ -207,4 +207,10 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
     previous_messages.update_all(superseded_by_id: new_message.id)
   end
+
+  def supersede_previous_messages(conversation, new_message)
+    previous_messages = conversation.messages.where(reference_transactable: self).where(superseded_by_id: nil).where.not(id: new_message.id)
+
+    previous_messages.update_all(superseded_by_id: new_message.id)
+  end
 end

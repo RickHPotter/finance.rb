@@ -222,5 +222,5 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .turbo-progress-bar {
   background: #fb0000;
-  height: 5px;
+  height: 3px;
 }

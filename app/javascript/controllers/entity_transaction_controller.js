@@ -11,7 +11,7 @@ export default class extends Controller {
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"
   ]
 
-  connect() {
+  async connect() {
     this.initModalOnce()
   }
 
@@ -22,6 +22,36 @@ export default class extends Controller {
     const existing = window.FlowbiteInstances?.getInstance("Modal", modalEl.id)
     if (!existing) {
       initModals()
+    }
+  }
+
+  async updateExchangeDate(target, count) {
+    const exchangeWrapper = target.closest("[data-entity-transaction-target='exchangeWrapper']")
+    if (exchangeWrapper.dataset.locked === "true") { return }
+
+    const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
+    const monthInput = exchangeWrapper.querySelector(".exchange_month")
+    const yearInput = exchangeWrapper.querySelector(".exchange_year")
+    const dateInput = exchangeWrapper.querySelector(".exchange_date")
+    const boundTypeInput = exchangeWrapper.querySelector(".bound_type")
+
+    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
+    date.monthsForwards(count)
+
+    monthYearInput.textContent = date.monthYear()
+    monthInput.value = date.month
+    yearInput.value = date.year
+
+    if (boundTypeInput.value === "card_bound") {
+      const userCardId = document.querySelector("[name='card_transaction[user_card_id]']")?.value
+      if (userCardId) {
+        const response = await fetch(`/user_cards/${userCardId}/reference_date?year=${date.year}&month=${date.month}`)
+        const data = await response.json()
+        if (data.reference_date) {
+          const referenceDate = new RailsDate(data.reference_date)
+          dateInput.value = referenceDate.dateTime()
+        }
+      }
     }
   }
 
@@ -136,6 +166,9 @@ export default class extends Controller {
       this.monthYearExchangeTarget.textContent = ""
       const railsDueDate = this._getDueDate()
       this._updateWrappers(railsDueDate, 0)
+
+      const prevMonthTarget = this.element.querySelector("[data-entity-transaction-target='button']")
+      this.updateExchangeDate(prevMonthTarget, 0)
     } else {
       this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = false)
     }
@@ -298,30 +331,6 @@ export default class extends Controller {
 
   nextMonth({ target }) {
     this.updateExchangeDate(target, 1)
-  }
-
-  updateExchangeDate(target, count) {
-    const exchangeWrapper = target.closest("[data-entity-transaction-target='exchangeWrapper']")
-    if (exchangeWrapper.dataset.locked === "true") { return }
-
-    const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
-    const monthInput = exchangeWrapper.querySelector(".exchange_month")
-    const yearInput = exchangeWrapper.querySelector(".exchange_year")
-    const dateInput = exchangeWrapper.querySelector(".exchange_date")
-    const boundTypeInput = exchangeWrapper.querySelector(".bound_type")
-
-    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
-    date.monthsForwards(count)
-
-    monthYearInput.textContent = date.monthYear()
-    monthInput.value = date.month
-    yearInput.value = date.year
-
-    if (boundTypeInput.value === "card_bound") {
-      const exchangeDate = new RailsDate(dateInput.value)
-      exchangeDate.monthsForwards(count)
-      dateInput.value = exchangeDate.dateTime()
-    }
   }
 
   updateReferenceMonthYear(event) {

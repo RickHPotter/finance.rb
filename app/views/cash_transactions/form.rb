@@ -24,7 +24,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
     set_entities
   end
 
-  def view_template
+  def view_template # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     turbo_frame_tag dom_id cash_transaction do
       form_with model: cash_transaction,
                 id: :transaction_form,
@@ -165,7 +165,14 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             end
           end
 
-          cash_installments = cash_transaction.new_record? ? cash_transaction.cash_installments : cash_transaction.cash_installments.order(:date, :number)
+          if cash_transaction.new_record?
+            cash_transaction.cash_installments
+          elsif cash_transaction.edit_phase
+            cash_transaction.cash_installments.sort_by(&:number)
+          else
+            cash_transaction.cash_installments.order(:date, :number)
+          end => cash_installments
+
           form.fields_for :cash_installments, cash_installments do |installment_fields|
             render Views::Installments::Fields.new(form: installment_fields)
           end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_09_23_225859) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_23_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -262,9 +262,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_09_23_225859) do
     t.datetime "created_at", null: false
     t.text "headers"
     t.datetime "read_at"
+    t.bigint "reference_transactable_id"
+    t.string "reference_transactable_type"
+    t.bigint "superseded_by_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
+    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_messages_on_reference_transactable"
+    t.index ["superseded_by_id"], name: "index_messages_on_superseded_by_id"
     t.index ["user_id"], name: "index_messages_on_user_id"
   end
 
@@ -372,6 +377,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_09_23_225859) do
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
   add_foreign_key "messages", "conversations"
+  add_foreign_key "messages", "messages", column: "superseded_by_id"
   add_foreign_key "messages", "users"
   add_foreign_key "references", "user_cards"
   add_foreign_key "subscriptions", "users"

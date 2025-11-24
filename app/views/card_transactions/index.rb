@@ -33,12 +33,28 @@ class Views::CardTransactions::Index < Views::Base
                                                                                :user_card, :active_month_years, :order_by))
             end
 
-            link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
-                    style: "margin: 30px",
-                    class: "flex md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg items-center justify-center z-50
-                           active:scale-95 transition-transform",
-                    data: { turbo_frame: :center_container } do
+            link_to(
+              "#",
+              class: "flex items-center justify-center md:hidden fixed bottom-0 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
+              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 'n', bubbles: true}); document.dispatchEvent(e);"
+            ) do
+              cached_icon :bigger_bottom
+            end
+
+            link_to(
+              new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
+              class: "flex items-center justify-center md:hidden fixed bottom-14 right-2 m-2 bg-blue-600 text-white rounded-full shadow-lg z-50",
+              data: { turbo_frame: :center_container }
+            ) do
               cached_icon :bigger_plus
+            end
+
+            link_to(
+              "#",
+              class: "flex items-center justify-center md:hidden fixed bottom-28 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
+              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 't', bubbles: true}); document.dispatchEvent(e);"
+            ) do
+              cached_icon :bigger_top
             end
           end
         end

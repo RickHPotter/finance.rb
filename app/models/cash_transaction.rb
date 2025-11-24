@@ -12,7 +12,7 @@ class CashTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :skip_recalculate_balance
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance
 
   # @relationships ............................................................
   belongs_to :user
@@ -31,7 +31,7 @@ class CashTransaction < ApplicationRecord
   before_validation :set_paid, on: :create
   after_initialize :build_default_cash_installments
   after_save :set_min_date
-  after_commit :update_cash_balance, :update_associations_total, unless: -> { card_payment? || (skip_recalculate_balance && exchange_return?) }
+  after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
@@ -96,6 +96,13 @@ class CashTransaction < ApplicationRecord
     cash_transaction_type == "Exchange"
   end
 
+  def borrow_return?
+    return true if persisted? && categories.pluck(:category_name).include?("BORROW RETURN")
+    return true if destroyed? && original_categories.include?(user.categories.where(category_name: "BORROW RETURN").first.id)
+
+    reference_transactable&.user_id != user.id
+  end
+
   def can_be_destroyed?
     return false if card_payment? || card_advance? || exchange_return?
 
@@ -141,6 +148,8 @@ class CashTransaction < ApplicationRecord
   end
 
   def update_cash_balance
+    return if skip_recalculate_balance
+
     Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
 
     self.min_date ||= cash_installments.order(:date).first.date.beginning_of_month

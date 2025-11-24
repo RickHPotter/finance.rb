@@ -74,6 +74,38 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>
     </div>
 
+    <!-- TODO: implement this later, the changes here should propagate to card_bound prevMonth and nextMonth -->
+    <% if Rails.env.development? && user_card.persisted? && user_card.references.any? %>
+      <div class="w-full mt-8 mb-8">
+        <h3 class="text-lg font-bold mb-4">Card References</h3>
+        <div class="rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
+          <div class="bg-slate-300 grid grid-cols-5 py-1 gap-1 border-b border-slate-400 font-semibold text-black font-graduate">
+            <div class="text-center"><%= model_attribute(Reference, :year) %></div>
+            <div class="text-center"><%= model_attribute(Reference, :month) %></div>
+            <div class="text-center"><%= model_attribute(Reference, :reference_closing_date) %></div>
+            <div class="text-center"><%= model_attribute(Reference, :reference_date) %></div>
+            <div class="text-center"><%= t(:datatable_actions) %></div>
+          </div>
+
+          <% user_card.references.order(:year, :month).limit(12).each do |reference| %>
+            <div class="grid grid-cols-5 gap-2 border-b border-slate-200 <%= cycle("bg-gray-100", "bg-gray-200") %> hover:bg-white">
+              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= reference.year %></div>
+              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= I18n.t("date.month_names")[reference.month] %></div>
+              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= l(reference.reference_closing_date, format: :short) %></div>
+              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= l(reference.reference_date, format: :short) %></div>
+              <div class="flex items-center justify-center">
+                <%= link_to edit_user_card_reference_path(user_card, reference),
+                            class: "text-blue-600 hover:text-blue-800 mx-2",
+                            data: { turbo_frame: :center_container } do %>
+                  <%= render_icon :pencil %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
     <div class="w-full">
       <%= render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, user_card) } %>
     </div>

@@ -4,7 +4,7 @@ class UserCardsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_user_card, only: %i[edit update destroy]
+  before_action :set_user_card, only: %i[edit update destroy reference_date]
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
 
   def index
@@ -75,11 +75,19 @@ class UserCardsController < ApplicationController
     respond_to(&:turbo_stream)
   end
 
+  def reference_date
+    date = Date.new(params[:year].to_i, params[:month].to_i)
+    reference = @user_card.references.find_by(year: params[:year].to_i, month: params[:month].to_i)
+    reference ||= @user_card.find_or_create_reference_for(date)
+
+    render json: { reference_date: reference.reference_date }
+  end
+
   private
 
   # Use callbacks to share common setup or constraints between actions.
   def set_user_card
-    @user_card = current_user.user_cards.find(params[:id])
+    @user_card = current_user.user_cards.find(params[:id] || params[:user_card_id])
   end
 
   # Only allow a list of trusted parameters through.

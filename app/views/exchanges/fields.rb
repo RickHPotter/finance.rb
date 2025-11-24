@@ -3,25 +3,17 @@
 module Views
   module Exchanges
     class Fields < Views::Base
-      attr_reader :form, :exchange
+      attr_reader :form, :exchange, :bound_type
 
       include CacheHelper
 
-      def initialize(form:)
+      def initialize(form:, bound_type:)
         @form = form
         @exchange = form.object
+        @bound_type = bound_type
       end
 
       def view_template
-        transactable = form.options[:parent_builder].options[:parent_builder].object
-        if transactable.is_a?(CashTransaction)
-          :standalone
-        elsif exchange.new_record? && !transactable.duplicate
-          :card_bound
-        else
-          exchange.bound_type.to_sym
-        end => bound_type
-
         div(
           class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md
                   #{locked? ? 'border-red-300' : 'border-green-300'}",

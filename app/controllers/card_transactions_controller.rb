@@ -117,6 +117,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def duplicate
     @card_transaction = CardTransaction.duplicate(params[:id])
+    @card_transaction.price = 0
+    @card_transaction.card_installments.each { |ci| ci.price = 0 }
 
     render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)
   end
@@ -175,9 +177,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
       reference = @user_card.references.where(reference_closing_date: [ Date.tomorrow.. ]).order(:reference_closing_date).first
 
-      month_year_reference = Date.new(reference.year, reference.month)
-
-      [ month_year_reference.strftime("%Y%m").to_i ]
+      if reference
+        month_year_reference = Date.new(reference.year, reference.month)
+        [ month_year_reference.strftime("%Y%m").to_i ]
+      else
+        [ [ today, max_date ].min.strftime("%Y%m").to_i ]
+      end
     else
       [ [ today, max_date ].min.strftime("%Y%m").to_i ]
     end => default_active_month_years

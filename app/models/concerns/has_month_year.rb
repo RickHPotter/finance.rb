@@ -12,7 +12,6 @@ module HasMonthYear
 
     # @callbacks ..............................................................
     before_validation :set_date, on: :create, if: -> { respond_to?(:date) && date.nil? }
-    before_validation :update_date_from_month_year, if: -> { respond_to?(:month) && (month_changed? || year_changed?) }
     before_validation :check_date
     before_validation :check_number
     before_validation :set_month_year, if: -> { errors.empty? && respond_to?(:month) }
@@ -72,14 +71,6 @@ module HasMonthYear
   # @protected_instance_methods ...............................................
 
   protected
-
-  def update_date_from_month_year
-    return unless month.present? && year.present?
-
-    self.date = date.change(month:, year:)
-  rescue ArgumentError
-    self.date = Date.new(year, month, 1)
-  end
 
   def set_date
     self.date = card_transaction.date&.next_month(number - 1) if instance_of?(CardInstallment)

@@ -20,7 +20,12 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_cards, except: :show
+  resources :user_cards, except: :show do
+    member do
+      get :reference_date
+    end
+    resources :references, only: %i[index edit update], controller: "references"
+  end
   resources :user_bank_accounts, except: :show
   resources :categories, except: :show
   resources :entities, except: :show

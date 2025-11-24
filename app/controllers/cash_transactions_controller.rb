@@ -32,25 +32,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def show; end
 
-  def new # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    @cash_transaction = current_user.cash_transactions.new(
-      user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id,
-      date: Time.zone.now
-    )
-    @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id]) if cash_transaction_params[:category_id]
-    @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id]) if cash_transaction_params[:entity_id]
-
-    if cash_transaction_params[:cash_installments_attributes].present?
-      @cash_transaction.cash_installments = []
-      @cash_transaction.cash_installments_attributes = cash_transaction_params[:cash_installments_attributes]
-      @cash_transaction.description = cash_transaction_params[:description]
-      @cash_transaction.price = cash_transaction_params[:price]
-      @cash_transaction.date = cash_transaction_params[:date]
-      @cash_transaction.month = cash_transaction_params[:month]
-      @cash_transaction.year = cash_transaction_params[:year]
-    else
-      @cash_transaction.build_month_year
-    end
+  def new
+    user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
+    @cash_transaction = current_user.cash_transactions.new(user_bank_account_id:, date: Time.zone.now)
+    handle_params
 
     respond_to do |format|
       format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
@@ -62,6 +47,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def edit
     @cash_transaction = current_user.cash_transactions.includes(:cash_installments).find(params[:id])
+    handle_params
 
     respond_to do |format|
       format.html { render Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction) }
@@ -93,6 +79,41 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     index
 
     respond_to(&:turbo_stream)
+  end
+
+  def handle_params
+    handle_category_params
+    handle_entity_params
+
+    if cash_transaction_params[:cash_installments_attributes].present?
+      @cash_transaction.edit_phase = true if @cash_transaction.persisted?
+
+      @cash_transaction.cash_installments.each(&:mark_for_destruction)
+
+      @cash_transaction.cash_installments_attributes = cash_transaction_params[:cash_installments_attributes]
+      @cash_transaction.description = cash_transaction_params[:description]
+      @cash_transaction.price = cash_transaction_params[:price]
+      @cash_transaction.date = cash_transaction_params[:date]
+      @cash_transaction.month = cash_transaction_params[:month]
+      @cash_transaction.year = cash_transaction_params[:year]
+
+    elsif @cash_transaction.new_record?
+      @cash_transaction.build_month_year
+    end
+  end
+
+  def handle_category_params
+    return if cash_transaction_params[:category_id].nil?
+    return if @cash_transaction.category_transactions.pluck(:category_id).include?(cash_transaction_params[:category_id].to_i)
+
+    @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id])
+  end
+
+  def handle_entity_params
+    return if cash_transaction_params[:entity_id].nil?
+    return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
+
+    @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id])
   end
 
   def handle_save

@@ -32,8 +32,7 @@ class Views::CashTransactions::Index < Views::Base
 
             link_to(
               "#",
-              id: "jumpToBottomBtn",
-              class: "flex items-center justify-center md:hidden fixed bottom-0 right-0 m-4 bg-gray-300 text-black rounded-full shadow-lg z-50",
+              class: "flex items-center justify-center md:hidden fixed bottom-0 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
               onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 'n', bubbles: true}); document.dispatchEvent(e);"
             ) do
               cached_icon :bigger_bottom
@@ -41,10 +40,18 @@ class Views::CashTransactions::Index < Views::Base
 
             link_to(
               new_cash_transaction_path(format: :turbo_stream),
-              class: "flex items-center justify-center md:hidden fixed bottom-16 right-0 m-4 bg-blue-600 text-white rounded-full shadow-lg z-50",
+              class: "flex items-center justify-center md:hidden fixed bottom-14 right-2 m-2 bg-blue-600 text-white rounded-full shadow-lg z-50",
               data: { turbo_frame: :center_container }
             ) do
               cached_icon :bigger_plus
+            end
+
+            link_to(
+              "#",
+              class: "flex items-center justify-center md:hidden fixed bottom-28 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
+              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 't', bubbles: true}); document.dispatchEvent(e);"
+            ) do
+              cached_icon :bigger_top
             end
           end
         end

@@ -9,6 +9,9 @@ class Message < ApplicationRecord
   # @relationships ............................................................
   belongs_to :conversation
   belongs_to :user
+  belongs_to :superseded_by, class_name: "Message", optional: true
+  has_one :supersedes, class_name: "Message", foreign_key: "superseded_by_id"
+  belongs_to :reference_transactable, polymorphic: true, optional: true
 
   # @validations ..............................................................
   validates :body, presence: true
@@ -19,7 +22,7 @@ class Message < ApplicationRecord
                         target: "messages_#{conversation.id}",
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
-  after_create_commit :send_email
+  after_create_commit :send_email, unless: -> { Rails.env.development? }
 
   # @scopes ...................................................................
   scope :unread, -> { where(read_at: nil) }
@@ -71,22 +74,28 @@ end
 # Table name: messages
 # Database name: primary
 #
-#  id              :bigint           not null, primary key
-#  body            :text
-#  headers         :text
-#  read_at         :datetime
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  conversation_id :bigint           not null, indexed
-#  user_id         :bigint           not null, indexed
+#  id                          :bigint           not null, primary key
+#  body                        :text
+#  headers                     :text
+#  read_at                     :datetime
+#  reference_transactable_type :string           indexed => [reference_transactable_id]
+#  created_at                  :datetime         not null
+#  updated_at                  :datetime         not null
+#  conversation_id             :bigint           not null, indexed
+#  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
+#  superseded_by_id            :bigint           indexed
+#  user_id                     :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_messages_on_conversation_id  (conversation_id)
-#  index_messages_on_user_id          (user_id)
+#  index_messages_on_conversation_id         (conversation_id)
+#  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
+#  index_messages_on_superseded_by_id        (superseded_by_id)
+#  index_messages_on_user_id                 (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (conversation_id => conversations.id)
+#  fk_rails_...  (superseded_by_id => messages.id)
 #  fk_rails_...  (user_id => users.id)
 #
