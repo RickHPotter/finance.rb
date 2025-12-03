@@ -10,11 +10,13 @@ en:
         count: Count
         id: ID
         date: Date
+        reference: Reference
         price: Price
         starting_price: Original Price
         already_paid: Already Paid
         change_date: Change Date
         pay: Pay
+        transfer: Transfer
         paid: Paid
         not_paid: Not Paid
         month: Month
@@ -24,6 +26,7 @@ en:
         cash_installments_count: Installments Count
         cash_installments_count_short: Installments
         confirm_payment: Confirm Payment
+        transfer_multiple: Transfer Transactions
         payment_date: Payment Date
         created_at: Created at
         updated_at: Updated at
@@ -40,11 +43,13 @@ pt-BR:
         count: Quantidade
         id: ID
         date: Data
+        reference: Referência
         price: Preço
         starting_price: Preço Inicial
         already_paid: Já Pago
         change_date: Alterar Data
         pay: Pagar
+        transfer: Transferir
         paid: Paga
         not_paid: Pendente
         month: Mês
@@ -54,6 +59,7 @@ pt-BR:
         cash_installments_count: Quantidade de Parcelas
         cash_installments_count_short: Parcelas
         confirm_payment: Confirmar Pagamento
+        transfer_multiple: Transferir Transações
         payment_date: Data de Pagamento
         created_at: Criado em
         updated_at: Atualizado em

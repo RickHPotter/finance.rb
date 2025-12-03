@@ -60,6 +60,22 @@ class CashInstallmentsController < ApplicationController
     cash_installment
   end
 
+  def transfer_multiple
+    cash_installments = CashInstallment.where(id: params[:ids]).order(:order_id)
+    year, month       = params[:reference_date].split("-").map(&:to_i)
+    date              = Time.zone.parse(cash_installment_params[:date]) || Time.zone.now
+
+    min_date          = [ *cash_installments.pluck(:date), date ].min
+
+    cash_installments.update_all(date:, year:, month:)
+
+    Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
+
+    @cash_installment = cash_installments.first
+
+    handle_save
+  end
+
   def handle_save
     build_index_context
 

@@ -39,13 +39,22 @@ class Views::CashTransactions::MonthYear < Views::Base
 
           if cash_installments.any? && cash_installments.none?(&:paid?)
             render Views::CashTransactions::PayMultipleModal.new(cash_installments:)
+            render Views::CashTransactions::TransferMultipleModal.new(cash_installments:)
 
-            Button(
-              class: "absolute right-0 bottom-4",
-              title: model_attribute(CashInstallment, :pay),
-              data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
-            ) do
-              model_attribute(CashInstallment, :pay)
+            div(class: "absolute right-0 bottom-4 flex gap-2") do
+              Button(
+                title: model_attribute(CashInstallment, :pay),
+                data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
+              ) do
+                model_attribute(CashInstallment, :pay)
+              end
+
+              Button(
+                title: model_attribute(CashInstallment, :transfer),
+                data: { modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
+              ) do
+                model_attribute(CashInstallment, :transfer)
+              end
             end
           end
         end
@@ -75,13 +84,22 @@ class Views::CashTransactions::MonthYear < Views::Base
 
           if cash_installments.any? && cash_installments.none?(&:paid?)
             render Views::CashTransactions::PayMultipleModal.new(cash_installments:)
+            render Views::CashTransactions::TransferMultipleModal.new(cash_installments:)
 
-            Button(
-              class: "absolute right-0 bottom-4",
-              title: model_attribute(CashInstallment, :pay),
-              data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
-            ) do
-              model_attribute(CashInstallment, :pay)
+            div(class: "absolute right-0 bottom-4 flex gap-2") do
+              Button(
+                title: model_attribute(CashInstallment, :pay),
+                data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
+              ) do
+                model_attribute(CashInstallment, :pay)
+              end
+
+              Button(
+                title: model_attribute(CashInstallment, :transfer),
+                data: { modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
+              ) do
+                model_attribute(CashInstallment, :transfer)
+              end
             end
           end
         end

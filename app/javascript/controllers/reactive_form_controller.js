@@ -346,7 +346,7 @@ export default class extends Controller {
       proposedDate.monthsForwards(index)
 
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".installment_date").value = proposedDate.dateTime()
+      target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
       target.querySelector(".installment_month").value = startingRailsDate.month
       target.querySelector(".installment_year").value = startingRailsDate.year
 

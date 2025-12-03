@@ -141,24 +141,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
-    min_year = cash_installments.minimum("installments.year") || Time.zone.today.year
-    max_year = cash_installments.maximum("installments.year") || Time.zone.today.year
+    today_zn = Time.zone.today.beginning_of_month
 
-    min_date = cash_installments.where(paid: true).minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = cash_installments.where(paid: true).maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-
-    cur_date = Time.zone.today.clamp(min_date, max_date).beginning_of_month
-    next_date = cur_date + 1.month
-
-    if cash_installments.exists?(paid: false, year: cur_date.month, month: cur_date.month) ||
-       !cash_installments.exists?(paid: true, year: next_date.month, month: next_date.month)
-      cur_date
-    else
-      next_date
-    end => date
-
-    default_active_month_years = [ date.strftime("%Y%m").to_i ]
+    min_year = cash_installments.minimum("installments.year") || today_zn.year
+    max_year = cash_installments.maximum("installments.year") || today_zn.year
     years = (min_year..max_year)
+
+    default_active_month_years =
+      cash_installments.where(paid: false, year: ..today_zn.year, month: ..today_zn.month)
+                       .group(:year, :month)
+                       .pluck(:year, :month)
+                       .map { |y, m| Date.new(y, m).strftime("%Y%m").to_i }
+
+    default_active_month_years = today_zn.strftime("%Y%m").to_i if default_active_month_years.empty?
 
     category_id = [ cash_transaction_params[:category_id] ].flatten&.compact_blank
     entity_id = [ cash_transaction_params[:entity_id] ].flatten&.compact_blank
@@ -190,7 +185,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     else
       params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     end => active_month_years
-    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
+    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || Time.zone.today.year
 
     if action_name.in? %w[create update]
       Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
