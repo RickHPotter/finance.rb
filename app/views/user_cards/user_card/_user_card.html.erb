@@ -11,9 +11,13 @@
     <div class="jump_to_card_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto">
       <% if user_card.card_transactions_count > 0 %>
         <%= link_to user_card.card_transactions_count,
-                    card_transactions_path(user_card_id: user_card.id, format: :turbo_stream),
+                    "#",
                     class: "text-indigo-600 hover:underline",
-                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+                    data: {
+                      controller: "stream-fetcher",
+                      action: "click->stream-fetcher#fetch",
+                      stream_fetcher_url_value: card_transactions_path(user_card_id: user_card.id, format: :turbo_stream)
+                    } %>
       <% else %>
         <%= content_tag :span, user_card.card_transactions_count %>
       <% end %>

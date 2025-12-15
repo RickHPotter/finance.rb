@@ -153,7 +153,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                        .pluck(:year, :month)
                        .map { |y, m| Date.new(y, m).strftime("%Y%m").to_i }
 
-    default_active_month_years = today_zn.strftime("%Y%m").to_i if default_active_month_years.empty?
+    default_active_month_years = [ today_zn.strftime("%Y%m").to_i ] if default_active_month_years.empty?
 
     category_id = [ cash_transaction_params[:category_id] ].flatten&.compact_blank
     entity_id = [ cash_transaction_params[:entity_id] ].flatten&.compact_blank

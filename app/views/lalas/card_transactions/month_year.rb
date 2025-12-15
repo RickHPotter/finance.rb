@@ -48,8 +48,7 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
           div(class: "flex gap-2 absolute left-0 bottom-4") do
             span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg") { I18n.l(month_year_date, format: "%b %Y") }
 
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum,
-                 data: {  price: total_amount }) do
+            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end
@@ -71,8 +70,7 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
           div(class: "flex gap-2 absolute left-0 bottom-4") do
             span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg") { I18n.l(month_year_date, format: "%B %Y") }
 
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg", id: :priceSum,
-                 data: {  price: total_amount }) do
+            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg", id: :priceSum, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

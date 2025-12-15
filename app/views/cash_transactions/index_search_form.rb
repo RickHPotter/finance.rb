@@ -70,24 +70,22 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
             data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         end
 
-        unless mobile
-          div(class: "w-1/4 hidden md:block") do
-            form.select :category_id, categories,
-                        { multiple: true, selected: category_id },
-                        {
-                          class: input_class,
-                          data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
-                        }
-          end
+        div(class: "w-1/4 hidden lg:block") do
+          form.select :category_id, categories,
+                      { multiple: true, selected: category_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
+        end
 
-          div(class: "w-1/4 hidden md:block") do
-            form.select :entity_id, entities,
-                        { multiple: true, selected: entity_id },
-                        {
-                          class: input_class,
-                          data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
-                        }
-          end
+        div(class: "w-1/4 hidden lg:block") do
+          form.select :entity_id, entities,
+                      { multiple: true, selected: entity_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
         end
 
         Sheet(id: "advanced_filter") do
@@ -104,16 +102,14 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
             end
 
             SheetMiddle do
-              if mobile
-                div class: "md:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  form.select :category_id, categories,
-                              { multiple: true, selected: category_id },
-                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
+              div class: "lg:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                form.select :category_id, categories,
+                            { multiple: true, selected: category_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
 
-                  form.select :entity_id, entities,
-                              { multiple: true, selected: entity_id },
-                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
-                end
+                form.select :entity_id, entities,
+                            { multiple: true, selected: entity_id },
+                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
               end
 
               div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do

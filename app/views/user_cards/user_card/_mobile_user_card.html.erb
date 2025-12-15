@@ -13,7 +13,7 @@
                     data: { turbo_frame: :center_container } %>
       </div>
 
-      <%= link_to card_transactions_path(user_card_id: user_card.id, format: :turbo_stream), data: { turbo_frame: :center_container } do %>
+      <%= link_to "#", data: { controller: "stream-fetcher", action: "click->stream-fetcher#fetch", stream_fetcher_url_value: card_transactions_path(user_card_id: user_card.id, format: :turbo_stream) } do %>
         <%= render_icon :jump_to %>
       <% end %>
     </div>

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardTransactions::IndexSearchForm < Views::Base
+class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::SelectTag
@@ -19,9 +19,10 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :user_card, :categories, :entities,
-              :count_by_month_year
+              :count_by_month_year,
+              :mobile
 
-  def initialize(url:, index_context: {})
+  def initialize(url:, index_context: {}, mobile: false)
     @url = url
     @index_context = index_context
     @current_user = index_context[:current_user]
@@ -39,6 +40,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @to_installments_count = index_context[:to_installments_count]
     @user_card = index_context[:user_card]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @mobile = mobile
 
     set_all_categories
     set_entities
@@ -66,6 +68,24 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
             data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
         end
 
+        div(class: "w-1/4 hidden lg:block") do
+          form.select :category_id, categories,
+                      { multiple: true, selected: category_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
+        end
+
+        div(class: "w-1/4 hidden lg:block") do
+          form.select :entity_id, entities,
+                      { multiple: true, selected: entity_id },
+                      {
+                        class: input_class,
+                        data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
+                      }
+        end
+
         Sheet(id: "advanced_filter") do
           SheetTrigger do
             Button(type: :button, icon: true) do
@@ -80,7 +100,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
             end
 
             SheetMiddle do
-              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+              div class: "lg:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
                 form.select :category_id, categories,
                             { multiple: true, selected: category_id },
                             { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }

@@ -64,13 +64,13 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           end
 
           div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
               if card_transaction.categories.count > 2
                 first_two = card_transaction.categories.first(2)
                 remaining = card_transaction.categories[2..]
 
                 first_two.each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                     "#{category.name},"
                   end
                 end
@@ -91,9 +91,8 @@ class Views::Lalas::CardInstallments::Index < Views::Base
                   end
                 end
               else
-
                 card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
+                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
                     category.name
                   end
                 end

@@ -65,8 +65,8 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
               Switch(name: :pending, checked: pending.nil? || pending, data: { action: "change->reactive-form#submit" })
             end
 
-            span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :paid) }
-            span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :not_paid) }
+            span(class: "font-poetsen-one font-thin text-xs text-gray-500") { model_attribute(CashTransaction, :paid) }
+            span(class: "font-poetsen-one font-thin text-xs text-gray-500") { model_attribute(CashTransaction, :not_paid) }
           end
         end
       end

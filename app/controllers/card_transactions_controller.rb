@@ -14,7 +14,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html do
-        render Views::CardTransactions::Index.new(index_context: @index_context)
+        render Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)
       end
 
       format.turbo_stream do
@@ -28,7 +28,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html do
-        render Views::CardTransactions::Index.new(index_context: @index_context, search: true)
+        render Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile)
       end
 
       format.turbo_stream do

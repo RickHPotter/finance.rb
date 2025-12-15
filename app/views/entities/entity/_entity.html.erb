@@ -13,9 +13,13 @@
     <div class="jump_to_card_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.card_transactions_count > 0 %>
         <%= link_to entity.card_transactions_count,
-                    search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                    "#",
                     class: "text-indigo-600 hover:underline",
-                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+                    data: {
+                      controller: "stream-fetcher",
+                      action: "click->stream-fetcher#fetch",
+                      stream_fetcher_url_value: search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream)
+                    } %>
       <% else %>
         <%= content_tag :span, entity.card_transactions_count %>
       <% end %>
@@ -28,9 +32,13 @@
     <div class="jump_to_cash_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md">
       <% if entity.cash_transactions_count > 0 %>
         <%= link_to entity.cash_transactions_count,
-                    cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream),
+                    "#",
                     class: "text-indigo-600 hover:underline",
-                    data: { turbo_frame: :center_container, turbo_prefetch: false } %>
+                    data: {
+                      controller: "stream-fetcher",
+                      action: "click->stream-fetcher#fetch",
+                      stream_fetcher_url_value: cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true, format: :turbo_stream)
+                    } %>
       <% else %>
         <%= content_tag :span, entity.cash_transactions_count %>
       <% end %>
