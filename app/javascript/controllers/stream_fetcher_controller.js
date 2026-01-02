@@ -5,7 +5,7 @@ export default class extends Controller {
 
   async fetch(event) {
     event.preventDefault()
-    
+
     const response = await fetch(this.urlValue, {
       headers: {
         Accept: "text/vnd.turbo-stream.html",

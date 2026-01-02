@@ -57,34 +57,14 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
 
-      div(class: "flex justify-between items-center gap-2") do
-        div(class: "flex-1") do
-          TextFieldTag \
-            :search_term,
-            svg: :magnifying_glass,
-            clearable: true,
-            placeholder: "#{action_message(:search)}...",
-            value: search_term,
-            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
-        end
-
-        div(class: "w-1/4 hidden lg:block") do
-          form.select :category_id, categories,
-                      { multiple: true, selected: category_id },
-                      {
-                        class: input_class,
-                        data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
-                      }
-        end
-
-        div(class: "w-1/4 hidden lg:block") do
-          form.select :entity_id, entities,
-                      { multiple: true, selected: entity_id },
-                      {
-                        class: input_class,
-                        data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
-                      }
-        end
+      div(class: "flex gap-2") do
+        TextFieldTag \
+          :search_term,
+          svg: :magnifying_glass,
+          clearable: true,
+          placeholder: "#{action_message(:search)}...",
+          value: search_term,
+          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
 
         Sheet(id: "advanced_filter") do
           SheetTrigger do
@@ -100,14 +80,16 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
             end
 
             SheetMiddle do
-              div class: "lg:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                form.select :category_id, categories,
-                            { multiple: true, selected: category_id },
-                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
+              if mobile
+                div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                  form.select :category_id, categories,
+                              { multiple: true, selected: category_id },
+                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
 
-                form.select :entity_id, entities,
-                            { multiple: true, selected: entity_id },
-                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+                  form.select :entity_id, entities,
+                              { multiple: true, selected: entity_id },
+                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+                end
               end
 
               div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
@@ -214,6 +196,28 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                 end
               end
             end
+          end
+        end
+      end
+
+      unless mobile
+        div(class: "flex gap-2 mt-1") do
+          div(class: "w-1/2") do
+            form.select :category_id, categories,
+                        { multiple: true, selected: category_id },
+                        {
+                          class: input_class,
+                          data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
+                        }
+          end
+
+          div(class: "w-1/2") do
+            form.select :entity_id, entities,
+                        { multiple: true, selected: entity_id },
+                        {
+                          class: input_class,
+                          data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
+                        }
           end
         end
       end

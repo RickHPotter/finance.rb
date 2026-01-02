@@ -49,6 +49,7 @@ module Logic
         pending: search_params.delete(:pending),
         installments_price: build_cash_transaction_price_range_conditions(search_params),
         cash_installments_count: build_installments_count_range_conditions(search_params),
+        date: build_date_range_conditions(search_params),
         search_term: search_params.delete(:search_term),
         skip_budgets: search_params.delete(:skip_budgets),
         associations:
@@ -112,6 +113,19 @@ module Logic
       (from_installments_count..to_installments_count)
     end
 
+    def self.build_date_range_conditions(search_params)
+      from_date = search_params.delete(:from_date)
+      to_date   = search_params.delete(:to_date)
+      return (Time.zone.local(1900, 1, 1)..Time.zone.local(3000, 1, 1)) if from_date.blank? && to_date.blank?
+
+      from_date = from_date.present? ? Time.zone.parse(from_date) : Time.zone.local(1900, 1, 1)
+      to_date   = to_date.present?   ? Time.zone.parse(to_date)   : Time.zone.local(3000, 1, 1)
+
+      from_date, to_date = to_date, from_date if from_date > to_date
+
+      (from_date.beginning_of_day..to_date.end_of_day)
+    end
+
     def self.build_conditions_for_associations(params)
       category_id = (params.delete(:category_id).presence || {}).compact_blank
       entity_id = (params.delete(:entity_id).presence || {}).compact_blank
@@ -134,6 +148,7 @@ module Logic
 
       conditions = build_conditions_from_cash_transaction_params(cash_transaction_params)
       conditions[:cash_transaction] = conditions[:cash_transaction].except("date") if conditions[:cash_transaction].present?
+      conditions[:date] = build_date_range_conditions(search_params)
 
       case [ search_params[:paid], search_params[:pending] ]
       when %w[false false] then return []

@@ -17,6 +17,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
+              :from_date, :to_date,
               :paid, :pending,
               :user_bank_account_id, :categories, :entities,
               :count_by_month_year,
@@ -38,6 +39,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @from_date = index_context[:from_date]
+    @to_date = index_context[:to_date]
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
@@ -59,34 +62,14 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
 
-      div(class: "flex justify-between items-center gap-2") do
-        div(class: "flex-1 w-1/2") do
-          TextFieldTag \
-            :search_term,
-            svg: :magnifying_glass,
-            clearable: true,
-            placeholder: "#{action_message(:search)}...",
-            value: search_term,
-            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
-        end
-
-        div(class: "w-1/4 hidden lg:block") do
-          form.select :category_id, categories,
-                      { multiple: true, selected: category_id },
-                      {
-                        class: input_class,
-                        data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
-                      }
-        end
-
-        div(class: "w-1/4 hidden lg:block") do
-          form.select :entity_id, entities,
-                      { multiple: true, selected: entity_id },
-                      {
-                        class: input_class,
-                        data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
-                      }
-        end
+      div(class: "flex gap-2") do
+        TextFieldTag \
+          :search_term,
+          svg: :magnifying_glass,
+          clearable: true,
+          placeholder: "#{action_message(:search)}...",
+          value: search_term,
+          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
 
         Sheet(id: "advanced_filter") do
           SheetTrigger do
@@ -102,14 +85,16 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
             end
 
             SheetMiddle do
-              div class: "lg:hidden grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                form.select :category_id, categories,
-                            { multiple: true, selected: category_id },
-                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
+              if mobile
+                div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                  form.select :category_id, categories,
+                              { multiple: true, selected: category_id },
+                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
 
-                form.select :entity_id, entities,
-                            { multiple: true, selected: entity_id },
-                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+                  form.select :entity_id, entities,
+                              { multiple: true, selected: entity_id },
+                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+                end
               end
 
               div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
@@ -217,7 +202,55 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                     value: to_installments_count || 72
                 end
               end
+
+              div(class: "grid grid-cols-11 my-auto mb-1") do
+                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
+                  thin__label(form, :date)
+                end
+
+                div(class: "col-span-5 my-auto") do
+                  TextFieldTag \
+                    :from_date,
+                    type: :date,
+                    svg: :calendar,
+                    value: from_date
+                end
+
+                div(class: "m-auto") do
+                  cached_icon :exchange
+                end
+
+                div(class: "col-span-5 my-auto") do
+                  TextFieldTag \
+                    :to_date,
+                    type: :date,
+                    svg: :calendar,
+                    value: to_date
+                end
+              end
             end
+          end
+        end
+      end
+
+      unless mobile
+        div(class: "flex gap-2 mt-1") do
+          div(class: "w-1/2") do
+            form.select :category_id, categories,
+                        { multiple: true, selected: category_id },
+                        {
+                          class: input_class,
+                          data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
+                        }
+          end
+
+          div(class: "w-1/2") do
+            form.select :entity_id, entities,
+                        { multiple: true, selected: entity_id },
+                        {
+                          class: input_class,
+                          data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
+                        }
           end
         end
       end
