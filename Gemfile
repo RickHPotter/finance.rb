@@ -3,8 +3,8 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.4.1"
-gem "rails", "~> 8.0"
+ruby "4.0.0"
+gem "rails", "~> 8.1"
 
 gem "activerecord-import"
 gem "bootsnap", require: false
@@ -43,11 +43,11 @@ gem "write_xlsx"
 gem "web-push"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
+gem "tzinfo-data", platforms: %i[windows jruby]
 
 group :development, :test do
   gem "bullet"
-  gem "debug", platforms: %i[mri mingw x64_mingw]
+  gem "debug", platforms: %i[mri windows]
   gem "factory_bot_rails"
   gem "faker"
   gem "rspec-rails"
@@ -56,8 +56,6 @@ end
 group :development do
   gem "annotaterb"
   gem "awesome_print"
-  gem "better_errors"
-  gem "binding_of_caller"
   gem "brakeman"
   gem "bundler-audit"
   gem "erb_lint", require: false

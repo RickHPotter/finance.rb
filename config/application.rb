@@ -22,6 +22,7 @@ module Finance
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
+    config.active_support.cache_format_version = 7.1
 
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
@@ -34,6 +35,7 @@ module Finance
     # in config/environments, which are processed later.
     #
     config.time_zone = "Brasilia"
+
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Don't generate system test files.
@@ -48,8 +50,6 @@ module Finance
       g.system_tests false
       g.view_specs false
     end
-
-    config.active_support.cache_format_version = 7.1
 
     # GZip all responses
     config.middleware.use Rack::Deflater
