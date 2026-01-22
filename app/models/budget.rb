@@ -84,7 +84,8 @@ class Budget < ApplicationRecord
 
   def total_price_without_exchanges(installments)
     installments.map do |installment|
-      installment_exchanges_price = installment.transactable.entity_transactions.map(&:exchanges).flatten.sum(&:price) * -1
+      paying_entity_transactions  = installment.transactable.entity_transactions.where(exchanges_count: 1..)
+      installment_exchanges_price = paying_entity_transactions.map(&:exchanges).flatten.select { |e| e.year == year && e.month == month }.sum(&:price) * -1
 
       installment.price - installment_exchanges_price
     end.sum

@@ -21,7 +21,7 @@ module Logic
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      fetch_cash_installments(user, month, year, conditions, search_term_condition)
+      fetch_cash_installments(user, month, year, { conditions:, search_term_condition:, ids: raw_conditions[:cash_installment_ids] })
     end
 
     def self.find_by_query(user, entity_id, query)
@@ -32,13 +32,15 @@ module Logic
         .where("cash_transaction.description ILIKE ?", "%#{query}%")
     end
 
-    def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
-      user.cash_installments
-          .where(year:, month:)
-          .includes(cash_transaction: %i[categories entities])
-          .where(conditions)
-          .where(search_term_condition)
-          .order(:order_id)
+    def self.fetch_cash_installments(user, month, year, options)
+      relation = user.cash_installments
+                     .where(year:, month:)
+                     .includes(cash_transaction: %i[categories entities])
+                     .where(options[:conditions])
+                     .where(options[:search_term_condition])
+
+      relation = relation.where(id: options[:ids]) if options[:ids].present?
+      relation.order(:order_id)
     end
   end
 end

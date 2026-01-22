@@ -157,6 +157,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     category_id = [ cash_transaction_params[:category_id] ].flatten&.compact_blank
     entity_id = [ cash_transaction_params[:entity_id] ].flatten&.compact_blank
+    cash_installment_ids = [ cash_transaction_params[:cash_installment_ids] ].flatten&.compact_blank
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
     from_ct_price = search_cash_transaction_params[:from_ct_price]
@@ -203,6 +204,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       search_term:,
       category_id:,
       entity_id:,
+      cash_installment_ids:,
       user_bank_account_id:,
       from_ct_price:,
       to_ct_price:,
@@ -258,7 +260,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         id description comment date month year price paid user_id user_bank_account_id
         reference_transactable_type reference_transactable_id category_id entity_id
       ],
-      user_bank_account_id: [], category_id: [], entity_id: [],
+      user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [

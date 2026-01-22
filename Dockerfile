@@ -26,7 +26,7 @@ FROM base AS build
 
 # Install packages needed to build gems
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y postgresql-client libpq-dev build-essential git pkg-config && \
+    apt-get install --no-install-recommends -y postgresql-client libpq-dev build-essential git pkg-config libyaml-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems
@@ -67,8 +67,11 @@ COPY --from=build /rails /rails
 # Install PostgreSQL client (v16) and dependencies
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends wget gnupg lsb-release ca-certificates && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    mkdir -p /etc/apt/keyrings && \
+    wget --quiet -O /etc/apt/keyrings/pgdg.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc && \
+    chmod 644 /etc/apt/keyrings/pgdg.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list && \
     apt-get update -qq && \
     apt-get install -y --no-install-recommends postgresql-client-16 libpq5 && \
     rm -rf /var/lib/apt/lists/*

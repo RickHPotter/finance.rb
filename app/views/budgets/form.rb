@@ -214,6 +214,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
             card_transactions_sheet
             cash_transactions_sheet
+            exchange_return_cash_transactions_sheet
           end
         end
 
@@ -324,5 +325,72 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         end
       end
     end
+  end
+
+  def exchange_return_cash_transactions_sheet
+    Sheet do
+      SheetTrigger do
+        Button(type: :button, class: "w-full") do
+          action_model(:index, Exchange, 2)
+        end
+      end
+
+      SheetContent(side: :middle, class: "w-full md:w-1/3 max-h-[90vh] flex flex-col") do
+        SheetHeader do
+          SheetTitle { pluralise_model(Exchange, 2) }
+          SheetDescription do
+            p { budget.categories.map(&:name).join(", ") }
+            p { budget.entities.map(&:entity_name).join(", ") }
+          end
+        end
+
+        SheetMiddle(class: "overflow-y-auto flex-1") do
+          SheetMiddle do
+            index_context = {
+              current_user:,
+              years: [ budget.year ],
+              default_year: budget.year,
+              active_month_years: [ Date.new(budget.year, budget.month).strftime("%Y%m").to_i ],
+              search_term: "",
+              category_id: [],
+              entity_id: [],
+              user_bank_account_id: nil,
+              from_ct_price: nil,
+              to_ct_price: nil,
+              from_price: nil,
+              to_price: nil,
+              from_installments_count: nil,
+              to_installments_count: nil,
+              user_card: nil,
+              skip_budgets: true,
+              include_exchange_return_from_category: true,
+              force_mobile: true,
+              cash_installment_ids: exchange_return_cash_installment_ids
+            }
+
+            render Views::CashTransactions::MonthYearContainer.new(index_context:)
+          end
+        end
+      end
+    end
+  end
+
+  def exchange_return_cash_installment_ids
+    return [ 0 ] unless budget.persisted?
+
+    relevant_card_trx_ids = current_user.card_transactions.joins(:category_transactions).where(category_transactions: { category_id: budget.categories.ids }).ids
+
+    return [ 0 ] if relevant_card_trx_ids.empty?
+
+    exchange_return_cash_installments =
+      current_user.cash_installments
+                  .where(year: budget.year, month: budget.month)
+                  .joins(cash_transaction: { exchanges: :entity_transaction })
+                  .where(entity_transactions: { transactable_type: "CardTransaction", transactable_id: relevant_card_trx_ids })
+                  .ids
+
+    return [ 0 ] if exchange_return_cash_installments.empty?
+
+    exchange_return_cash_installments
   end
 end

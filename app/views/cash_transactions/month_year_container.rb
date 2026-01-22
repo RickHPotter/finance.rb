@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Views::CashTransactions::MonthYearContainer < Views::Base
-  attr_reader :search_term,
+  attr_reader :search_term, :cash_installment_ids,
               :category_id, :entity_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
@@ -13,6 +13,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
+    @cash_installment_ids = index_context[:cash_installment_ids]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
     @from_ct_price = index_context[:from_ct_price]
@@ -35,6 +36,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     turbo_frame_tag :month_year_container do
       custom_params = {
         cash_transaction: {
+          cash_installment_ids:,
           user_bank_account_id:,
           category_id:,
           entity_id:

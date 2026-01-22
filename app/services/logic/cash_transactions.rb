@@ -45,6 +45,7 @@ module Logic
       cash_transaction_params = cash_transaction_params.to_unsafe_h if cash_transaction_params.is_a?(ActionController::Parameters)
       cash_transaction_params.merge({
         price: build_price_range_conditions(search_params),
+        cash_installment_ids: cash_transaction_params[:cash_installment_ids],
         paid: search_params.delete(:paid),
         pending: search_params.delete(:pending),
         installments_price: build_cash_transaction_price_range_conditions(search_params),
