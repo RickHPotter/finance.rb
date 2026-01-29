@@ -109,11 +109,35 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id])
   end
 
-  def handle_entity_params
-    return if cash_transaction_params[:entity_id].nil?
-    return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
+  def handle_entity_params # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    if cash_transaction_params[:entity_id].present?
+      return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
 
-    @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id])
+      @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id])
+    elsif cash_transaction_params[:entity_transactions_attributes].present?
+      current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
+      new_entities = cash_transaction_params[:entity_transactions_attributes].pluck(:entity_id).map(&:to_i)
+      if @cash_transaction.entity_transactions.one? && current_entities == new_entities # means it is persisted
+        @cash_transaction.entity_transactions.each do |entity_transaction|
+          entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes].find do |a|
+            a[:entity_id].to_i == entity_transaction.entity_id
+          end
+
+          entity_transaction.assign_attributes(entity_transactions_attributes.except(:exchanges_attributes))
+
+          entity_transaction.exchanges.each do |exchange|
+            exchanges_attributes = entity_transactions_attributes[:exchanges_attributes].find do |a|
+              a[:number].to_i == exchange.number
+            end
+
+            exchange.assign_attributes(exchanges_attributes)
+          end
+        end
+      else
+        @cash_transaction.entity_transactions.each(&:mark_for_destruction)
+        @cash_transaction.entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes]
+      end
+    end
   end
 
   def handle_save
@@ -264,7 +288,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :exchanges_count, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
