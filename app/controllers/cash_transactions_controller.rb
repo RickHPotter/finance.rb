@@ -46,7 +46,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @cash_transaction = current_user.cash_transactions.includes(:cash_installments).find(params[:id])
+    @cash_transaction = current_user.cash_transactions.find(params[:id])
     handle_params
 
     respond_to do |format|

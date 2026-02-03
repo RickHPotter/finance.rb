@@ -340,10 +340,11 @@ export default class extends Controller {
     }
 
     visibleInstallmentsWrappers.forEach((target, index) => {
-      target.querySelector(".installment_number").value = index + 1
-
       const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
       proposedDate.monthsForwards(index)
+
+      target.querySelector(".installment_number").value = index + 1
+      target.querySelector(".installment_number_display").textContent = index + 1
 
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
       target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
@@ -383,20 +384,36 @@ export default class extends Controller {
     const totalCents        = parseInt(_removeMask(this.priceInputTarget.value), 10)
     const installmentsCount = parseInt(this.installmentsCountInputTarget.value, 10)
 
-    const baseCents = totalCents >= 0
-      ? Math.floor(totalCents / installmentsCount)
-      : Math.ceil(totalCents / installmentsCount)
-
-    const remainder = totalCents - baseCents * installmentsCount
-
     await this._updateInstallmentsFields(installmentsCount)
 
-    const visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility?.() ?? true)
+    const visibleWrappers = this.installmentWrapperTargets.filter(el => el.style.display !== "none")
+    const lockedWrappers = visibleWrappers.filter(el => el.dataset.locked === "true")
+    const unlockedWrappers = visibleWrappers.filter(el => el.dataset.locked !== "true")
 
-    visibleInstallmentsInputs.forEach((input, index) => {
-      const valueCents = index === 0 ? (baseCents + remainder) : baseCents
-      input.value = _applyMask((valueCents / 100).toFixed(2))
+    let lockedPrice = 0
+    lockedWrappers.forEach(wrapper => {
+      const priceInput = wrapper.querySelector("[data-reactive-form-target='priceInstallmentInput']")
+      if (priceInput) {
+        lockedPrice += parseInt(_removeMask(priceInput.value), 10) || 0
+      }
     })
+
+    const remainingPrice = totalCents - lockedPrice
+    const unlockedCount = unlockedWrappers.length
+
+    if (unlockedCount > 0) {
+      const baseCents = remainingPrice >= 0
+        ? Math.floor(remainingPrice / unlockedCount)
+        : Math.ceil(remainingPrice / unlockedCount)
+
+      const remainder = remainingPrice - baseCents * unlockedCount
+
+      unlockedWrappers.forEach((wrapper, index) => {
+        const priceInput = wrapper.querySelector("[data-reactive-form-target='priceInstallmentInput']")
+        const valueCents = index === 0 ? (baseCents + remainder) : baseCents
+        priceInput.value = _applyMask((valueCents / 100).toFixed(2))
+      })
+    }
   }
 
   async _updateInstallmentsFields(newInstallmentsCount) {

@@ -310,11 +310,13 @@ export default class extends Controller {
         proposedDate.monthsForwards(1)
       }
 
+      target.querySelector(".exchange_number").value = index + startingNumber + 1
+      target.querySelector(".exchange_number_display").textContent = index + startingNumber + 1
+
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
       target.querySelector(".exchange_date").value = proposedDate.dateTime()
       target.querySelector(".exchange_month").value = startingRailsDate.month
       target.querySelector(".exchange_year").value = startingRailsDate.year
-      target.querySelector(".exchange_number").value = index + startingNumber + 1
     })
   }
 

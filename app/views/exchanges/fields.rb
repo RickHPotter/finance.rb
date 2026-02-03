@@ -16,7 +16,7 @@ module Views
       def view_template
         div(
           class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md
-                  #{locked? ? 'border-red-300' : 'border-green-300'}",
+                  #{locked? ? 'border-green-300' : 'border-red-300'}",
           data: {
             new_record: exchange.new_record?,
             entity_transaction_target: "exchangeWrapper",
@@ -40,9 +40,14 @@ module Views
             ) { "←" }
 
             div(class: "flex items-center gap-2") do
+              span(class: "exchange_number_display text-gray-300") do
+                exchange.number
+              end
+
               div(class: "w-3 h-3 rounded-full #{exchange.cash_transaction&.paid ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
+
               span(
-                class: "exchange_month_year font-victor font-semibold text-gray-900 tracking-wide",
+                class: "exchange_month_year text-gray-900",
                 data: { entity_transaction_target: :monthYearExchange }
               ) { exchange.month_year if exchange.month }
             end
@@ -60,8 +65,7 @@ module Views
               id: :exchange_date,
               type: "datetime-local",
               value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
-              class: "exchange_date
-                      w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+              class: "exchange_date w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
               readonly: bound_type == :card_bound,
               data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
 
@@ -69,8 +73,7 @@ module Views
               form.text_field \
                 :price,
                 inputmode: :numeric,
-                class: "dynamic-price sign-based price-input
-                        w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                class: "dynamic-price sign-based price-input w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
                 onclick: "this.select();",
                 data: {
                   price_mask_target: :input,
@@ -82,13 +85,13 @@ module Views
               div do
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-green-200 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  class: "p-1.5 rounded-md bg-red-300 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
                   data: { exchange_lock_target: :lockBtn, action: "click->exchange-lock#lock" }
                 ) { cached_icon :unlocked_padlock }
 
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-red-200 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  class: "p-1.5 rounded-md bg-green-100 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
                   data: { exchange_lock_target: :unlockBtn, action: "click->exchange-lock#unlock" }
                 ) { cached_icon :locked_padlock }
               end

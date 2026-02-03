@@ -55,6 +55,9 @@ application.register("exchange-lock", ExchangeLockController)
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 
+import InstallmentLockController from "./installment_lock_controller"
+application.register("installment-lock", InstallmentLockController)
+
 import MaterialTailwindTabController from "./material_tailwind_tab_controller"
 application.register("material-tailwind-tab", MaterialTailwindTabController)
 

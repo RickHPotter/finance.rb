@@ -158,7 +158,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         end
 
         div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
+            data: { controller: "nested-form installment-lock", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data_nested_form_target: "template") do
             form.fields_for :cash_installments, CashInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
               render Views::Installments::Fields.new(form: installment_fields)
@@ -170,7 +170,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           elsif cash_transaction.edit_phase
             cash_transaction.cash_installments.sort_by(&:number)
           else
-            cash_transaction.cash_installments.order(:date, :number)
+            cash_transaction.cash_installments.order(:number)
           end => cash_installments
 
           form.fields_for :cash_installments, cash_installments do |installment_fields|

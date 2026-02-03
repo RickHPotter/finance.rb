@@ -177,14 +177,14 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         end
 
         div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
+            data: { controller: "nested-form installment-lock", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
           template(data_nested_form_target: "template") do
             form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
               render Views::Installments::Fields.new(form: installment_fields)
             end
           end
 
-          card_installments = card_transaction.new_record? ? card_transaction.card_installments : card_transaction.card_installments.order(:date, :number)
+          card_installments = card_transaction.new_record? ? card_transaction.card_installments : card_transaction.card_installments.order(:number)
           form.fields_for :card_installments, card_installments do |installment_fields|
             render Views::Installments::Fields.new(form: installment_fields)
           end
