@@ -38,7 +38,7 @@ class Message < ApplicationRecord
   def send_email
     title = user.full_name
     body =  model_attribute(self, :you_have_a_new_message)
-    url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.fun" : "localhost")
+    url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.com" : "localhost")
 
     friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id)
 

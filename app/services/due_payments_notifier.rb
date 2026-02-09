@@ -9,7 +9,7 @@ class DuePaymentsNotifier
       I18n.locale = user.locale
 
       title = I18n.t("subscriptions.due_payment_notifier.title")
-      url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.fun" : "localhost")
+      url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.com" : "localhost")
 
       user.subscriptions.each do |subscription|
         due_today.each do |cash_installment|
