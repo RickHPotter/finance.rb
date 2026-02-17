@@ -74,8 +74,7 @@
       <%= form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active %>
     </div>
 
-    <!-- TODO: implement this later, the changes here should propagate to card_bound prevMonth and nextMonth -->
-    <% if Rails.env.development? && user_card.persisted? && user_card.references.any? %>
+    <% if user_card.persisted? && user_card.references.any? %>
       <div class="w-full mt-8 mb-8">
         <h3 class="text-lg font-bold mb-4">Card References</h3>
         <div class="rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
@@ -87,17 +86,19 @@
             <div class="text-center"><%= t(:datatable_actions) %></div>
           </div>
 
-          <% user_card.references.order(:year, :month).limit(12).each do |reference| %>
+          <% user_card.references.where(reference_closing_date: Date.current..).order(:year, :month).limit(12).each do |reference| %>
             <div class="grid grid-cols-5 gap-2 border-b border-slate-200 <%= cycle("bg-gray-100", "bg-gray-200") %> hover:bg-white">
-              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= reference.year %></div>
-              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= I18n.t("date.month_names")[reference.month] %></div>
-              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= l(reference.reference_closing_date, format: :short) %></div>
-              <div class="px-1 flex items-center justify-center mx-auto font-semibold"><%= l(reference.reference_date, format: :short) %></div>
+              <div class="px-1 flex items-center justify-center mx-auto"><%= reference.year %></div>
+              <div class="px-1 flex items-center justify-center mx-auto"><%= I18n.t("date.month_names")[reference.month] %></div>
+              <div class="px-1 flex items-center justify-center mx-auto"><%= l(reference.reference_closing_date, format: :short) %></div>
+              <div class="px-1 flex items-center justify-center mx-auto"><%= l(reference.reference_date, format: :short) %></div>
               <div class="flex items-center justify-center">
-                <%= link_to edit_user_card_reference_path(user_card, reference),
-                            class: "text-blue-600 hover:text-blue-800 mx-2",
-                            data: { turbo_frame: :center_container } do %>
+                <%= link_to edit_user_card_reference_path(user_card, reference), class: "text-blue-600 hover:text-blue-800 mx-2", data: { turbo_frame: :center_container } do %>
                   <%= render_icon :pencil %>
+                <% end %>
+
+                <%= link_to merge_user_card_references_path(@user_card, id: reference.id), class: "text-gray-700 hover:text-gray-800 mx-2", data: { turbo_frame: :center_container } do %>
+                  <%= render_icon :uturn_right %>
                 <% end %>
               </div>
             </div>

@@ -1,16 +1,24 @@
 require "rufus-scheduler"
 
-return unless Rails.env.production?
+return if Rails.env.development?
+return if defined?(Rails::Server) && Puma.respond_to?(:stats)
 
 module CronWithLock
-  def self.run(lock_id)
-    acquired = ActiveRecord::Base.connection.select_value("SELECT pg_try_advisory_lock(?)", [ lock_id ])
+  module CronWithLock
+    def self.run(lock_id)
+      acquired = ActiveRecord::Base.connection.select_value(
+        "SELECT pg_try_advisory_lock($1)", [ lock_id ]
+      )
+      return unless [ true, "t" ].include?(acquired)
 
-    return unless acquired
-
-    yield
-  ensure
-    ActiveRecord::Base.connection.execute("SELECT pg_advisory_unlock(?)", [ lock_id ]) if acquired
+      yield
+    ensure
+      if [ true, "t" ].include?(acquired)
+        ActiveRecord::Base.connection.execute(
+          "SELECT pg_advisory_unlock($1)", [ lock_id ]
+        )
+      end
+    end
   end
 end
 

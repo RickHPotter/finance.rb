@@ -24,7 +24,12 @@ Rails.application.routes.draw do
     member do
       get :reference_date
     end
-    resources :references, only: %i[index edit update], controller: "references"
+    resources :references, only: %i[index edit update], controller: "references" do
+      collection do
+        get :merge
+        post :perform_merge
+      end
+    end
   end
   resources :user_bank_accounts, except: :show
   resources :categories, except: :show

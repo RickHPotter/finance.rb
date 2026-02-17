@@ -34,6 +34,26 @@ class UserCard < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def payment_date_settings_changed?
+    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
+  end
+
+  def unpaid_invoices
+    card_installments_invoices.where(paid: false).distinct
+  end
+
+  def unpaid_exchange_installments
+    user.cash_installments
+        .joins(cash_transaction: :categories)
+        .where(
+          paid: false,
+          cash_transaction: {
+            user_card_id: id,
+            categories: { built_in: true, category_name: "EXCHANGE RETURN" }
+          }
+        )
+  end
+
   def find_or_create_reference_for(date)
     reference_date = calculate_reference_date(date)
     reference = references.find_by(month: reference_date.month, year: reference_date.year)
@@ -75,10 +95,6 @@ class UserCard < ApplicationRecord
 
   private
 
-  def payment_date_settings_changed?
-    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
-  end
-
   # After a card's payment settings are updated, this method adjusts the dates of all
   # associated unpaid invoices and exchange-related transactions to align with the new
   # billing cycle. It ensures that financial records remain consistent and accurate.
@@ -102,10 +118,6 @@ class UserCard < ApplicationRecord
     end
   end
 
-  def unpaid_invoices
-    card_installments_invoices.where(paid: false).distinct
-  end
-
   def update_unpaid_exchange_installments
     unpaid_exchange_installments.find_each do |cash_installment|
       new_reference_date = calculate_new_reference_date_for(cash_installment.month, cash_installment.year)
@@ -120,18 +132,6 @@ class UserCard < ApplicationRecord
         exchanges.each { |exchange| exchange.update!(date: new_reference_date) }
       end
     end
-  end
-
-  def unpaid_exchange_installments
-    user.cash_installments
-        .joins(cash_transaction: :categories)
-        .where(
-          paid: false,
-          cash_transaction: {
-            user_card_id: id,
-            categories: { built_in: true, category_name: "EXCHANGE RETURN" }
-          }
-        )
   end
 
   def calculate_new_reference_date_for(month, year)

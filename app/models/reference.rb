@@ -14,6 +14,7 @@ class Reference < ApplicationRecord
 
   # @callbacks ................................................................
   before_save :set_reference_closing_date
+  after_save :set_card_payment_date
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -37,6 +38,21 @@ class Reference < ApplicationRecord
                                     reference_date - user_card.days_until_due_date.days
                                   end
   end
+
+  def set_card_payment_date
+    card_payment = user_card.unpaid_invoices.find_by(month:, year:)
+    return if card_payment.nil?
+
+    min_date = [ card_payment.cash_installments.first.date, reference_date ].compact_blank.min
+
+    new_reference_date = card_payment.date.change(year: reference_date.year, month: reference_date.month, day: reference_date.day)
+
+    card_payment.update_columns(date: new_reference_date)
+    card_payment.cash_installments.first.update_columns(date: new_reference_date)
+
+    Logic::RecalculateBalancesService.new(user: user_card.user, year: min_date.year, month: min_date.month).call
+  end
+
   # @private_instance_methods .................................................
 end
 
