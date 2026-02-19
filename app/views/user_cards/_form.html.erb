@@ -76,7 +76,7 @@
 
     <% if user_card.persisted? && user_card.references.any? %>
       <div class="w-full mt-8 mb-8">
-        <h3 class="text-lg font-bold mb-4">Card References</h3>
+        <h3 class="text-lg font-bold mb-4"><%= pluralise_model(Reference, 2) %></h3>
         <div class="rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden">
           <div class="bg-slate-300 grid grid-cols-5 py-1 gap-1 border-b border-slate-400 font-semibold text-black font-graduate">
             <div class="text-center"><%= model_attribute(Reference, :year) %></div>

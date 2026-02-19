@@ -140,7 +140,7 @@ class BudgetsController < ApplicationController
     ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-") if ret_params[:month_year].present?
 
     ret_params.permit(
-      :description, :value, :inclusive, :month, :year, :active, :user_id, :category_id, :entity_id,
+      :description, :value, :inclusive, :first_installment_only, :month, :year, :active, :user_id, :category_id, :entity_id,
       category_id: [], entity_id: [],
       budget_categories_attributes: %i[id category_id _destroy],
       budget_entities_attributes: %i[id entity_id _destroy]

@@ -59,6 +59,7 @@ module Logic
 
       {
         price: installments_price,
+        number: build_installments_number_range_conditions(search_params),
         card_transaction: params.without(:card_installments_attributes, :category_transactions_attributes, :entity_transactions_attributes).compact_blank
       }.compact_blank
     end
@@ -97,6 +98,18 @@ module Logic
       from_installments_count, to_installments_count = to_installments_count, from_installments_count if from_installments_count > to_installments_count
 
       (from_installments_count..to_installments_count)
+    end
+
+    def self.build_installments_number_range_conditions(search_params)
+      from_installments_number = search_params.delete(:from_installments_number).to_i
+      to_installments_number = search_params.delete(:to_installments_number).to_i
+      return nil if from_installments_number.zero? && to_installments_number.zero?
+
+      from_installments_number ||= 1
+      to_installments_number   ||= from_installments_number if from_installments_number
+      from_installments_number, to_installments_number = to_installments_number, from_installments_number if from_installments_number > to_installments_number
+
+      (from_installments_number..to_installments_number)
     end
 
     def self.find_count_based_on_search(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize

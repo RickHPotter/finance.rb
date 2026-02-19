@@ -199,6 +199,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     to_price = search_card_transaction_params[:to_price]
     from_installments_count = search_card_transaction_params[:from_installments_count]
     to_installments_count = search_card_transaction_params[:to_installments_count]
+    from_installments_number = search_card_transaction_params[:from_installments_number]
+    to_installments_number = search_card_transaction_params[:to_installments_number]
     force_mobile = search_card_transaction_params[:force_mobile]
     order_by = search_card_transaction_params[:order_by]
 
@@ -237,6 +239,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       to_price:,
       from_installments_count:,
       to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
       user_card: @user_card,
       force_mobile:,
       order_by:,
@@ -261,6 +265,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_price
         from_installments_count
         to_installments_count
+        from_installments_number
+        to_installments_number
         month_year
         force_mobile
         order_by

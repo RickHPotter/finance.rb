@@ -30,6 +30,7 @@ en:
     edit: "Editing"
     duplicate: "Duplicating"
     destroy: "Destroying"
+    merge: "Merging"
   actions:
     index: "List"
     search: "Search"
@@ -43,6 +44,7 @@ en:
     duplicate: "Duplicate"
     update: "Update"
     destroy: "Destroy"
+    merge: "Merge"
     all: "All"
     alla: "All"
     submit: "Submit"
@@ -111,6 +113,7 @@ pt-BR:
     edit: "Editando"
     duplicate: "Duplicando"
     destroy: "Deletando"
+    merge: "Mesclando"
   actions:
     index: "Listar"
     search: "Pesquisar"
@@ -124,6 +127,7 @@ pt-BR:
     duplicate: "Duplicar"
     update: "Atualizar"
     destroy: "Deletar"
+    merge: "Mesclar"
     all: "Todos os"
     alla: "Todas as"
     submit: "Salvar"

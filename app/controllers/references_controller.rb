@@ -9,13 +9,11 @@ class ReferencesController < ApplicationController
     render json: @references
   end
 
-  def edit
-    # The view will be rendered automatically
-  end
+  def edit; end
 
   def update
     if @reference.update(reference_params)
-      redirect_to edit_user_card_path(@user_card), notice: "Reference was successfully updated."
+      redirect_to edit_user_card_path(@user_card)
     else
       render :edit, status: :unprocessable_entity
     end
@@ -28,7 +26,7 @@ class ReferencesController < ApplicationController
     target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
 
     if Logic::References.merge(@user_card, source_reference_date, target_reference_date)
-      redirect_to edit_user_card_path(@user_card), notice: "References were successfully merged."
+      redirect_to edit_user_card_path(@user_card)
     else
       render :merge, status: :unprocessable_entity
     end

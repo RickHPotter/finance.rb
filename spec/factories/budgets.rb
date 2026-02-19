@@ -19,20 +19,21 @@ end
 # Table name: budgets
 # Database name: primary
 #
-#  id              :bigint           not null, primary key
-#  active          :boolean          default(TRUE), not null
-#  balance         :integer
-#  description     :string           not null
-#  inclusive       :boolean          default(FALSE), not null
-#  month           :integer          not null
-#  remaining_value :integer          not null
-#  starting_value  :integer          not null
-#  value           :integer          not null
-#  year            :integer          not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  order_id        :integer          indexed
-#  user_id         :bigint           not null, indexed
+#  id                     :bigint           not null, primary key
+#  active                 :boolean          default(TRUE), not null
+#  balance                :integer
+#  description            :string           not null
+#  first_installment_only :boolean          default(FALSE), not null
+#  inclusive              :boolean          default(FALSE), not null
+#  month                  :integer          not null
+#  remaining_value        :integer          not null
+#  starting_value         :integer          not null
+#  value                  :integer          not null
+#  year                   :integer          not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  order_id               :integer          indexed
+#  user_id                :bigint           not null, indexed
 #
 # Indexes
 #

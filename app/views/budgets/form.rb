@@ -141,17 +141,13 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           end
         end
 
-        div(class: "flex items-center justify-center gap-2 w-1/4 mb-3 mx-auto") do
-          # div(class: "w-full lg:w-1/2 mb-2") do
-          #   bold_label(form, :inclusive)
-          #   div(class: "mb-3") do
-          #     form.checkbox \
-          #       :inclusive,
-          #       class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
-          #       checked: budget.new_record? || budget.active,
-          #       data: { dynamic_description_target: :inclusive, action: "change->dynamic-description#updateDescription" }
-          #   end
-          # end
+        div(class: "flex items-center justify-center gap-2 w-1/2 mb-3 mx-auto") do
+          div(class: "w-full lg:w-1/2 mb-2") do
+            bold_label(form, :first_installment_only)
+            div(class: "mb-3") do
+              form.checkbox :first_installment_only, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.first_installment_only
+            end
+          end
 
           div(class: "w-full lg:w-1/2 mb-2") do
             bold_label(form, :active)
@@ -253,6 +249,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         end
 
         SheetMiddle(class: "overflow-y-auto flex-1") do
+          installment_number = budget.first_installment_only ? 1 : nil
+
           SheetMiddle do
             index_context = {
               current_user:,
@@ -269,6 +267,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
               to_price: nil,
               from_installments_count: nil,
               to_installments_count: nil,
+              from_installments_number: installment_number,
+              to_installments_countnumber: installment_number,
               user_card: nil,
               skip_budgets: true,
               force_mobile: true

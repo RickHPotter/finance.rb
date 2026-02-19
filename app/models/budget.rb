@@ -21,12 +21,12 @@ class Budget < ApplicationRecord
   # @validations ..............................................................
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
-  validates :inclusive, inclusion: { in: [ true, false ] }
+  validates :inclusive, :first_installment_only, inclusion: { in: [ true, false ] }
   validate :presence_of_categories_or_entities, if: -> { errors.empty? }
   validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
-  before_validation :set_starting_value, :set_inclusive
+  before_validation :set_starting_value, :set_inclusive, :set_first_installment_only
   before_save :set_remaining_value
   before_save :set_recalculate_balance
   after_commit :update_cash_balance, if: -> { recalculate_balance || destroyed? }
@@ -49,12 +49,23 @@ class Budget < ApplicationRecord
     self.inclusive = false
   end
 
+  def set_first_installment_only
+    return if [ false, true ].include?(first_installment_only)
+
+    self.first_installment_only = false
+  end
+
   def set_remaining_value
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
 
     cash_installments = user.cash_installments.where(month:, year:)
     card_installments = user.card_installments.where(month:, year:)
+
+    if first_installment_only
+      cash_installments = cash_installments.where(number: 1)
+      card_installments = card_installments.where(number: 1)
+    end
 
     if inclusive && category_ids.present? && entity_ids.present?
       inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
@@ -99,7 +110,7 @@ class Budget < ApplicationRecord
   def set_recalculate_balance
     return if [ false, true ].include?(recalculate_balance)
 
-    self.recalculate_balance = changes.slice(:price, :remaining_value, :month, :year).present?
+    self.recalculate_balance = changes.slice(:price, :remaining_value, :month, :year, :first_installment_only).present?
   end
 
   def update_cash_balance
@@ -145,20 +156,21 @@ end
 # Table name: budgets
 # Database name: primary
 #
-#  id              :bigint           not null, primary key
-#  active          :boolean          default(TRUE), not null
-#  balance         :integer
-#  description     :string           not null
-#  inclusive       :boolean          default(FALSE), not null
-#  month           :integer          not null
-#  remaining_value :integer          not null
-#  starting_value  :integer          not null
-#  value           :integer          not null
-#  year            :integer          not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  order_id        :integer          indexed
-#  user_id         :bigint           not null, indexed
+#  id                     :bigint           not null, primary key
+#  active                 :boolean          default(TRUE), not null
+#  balance                :integer
+#  description            :string           not null
+#  first_installment_only :boolean          default(FALSE), not null
+#  inclusive              :boolean          default(FALSE), not null
+#  month                  :integer          not null
+#  remaining_value        :integer          not null
+#  starting_value         :integer          not null
+#  value                  :integer          not null
+#  year                   :integer          not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  order_id               :integer          indexed
+#  user_id                :bigint           not null, indexed
 #
 # Indexes
 #

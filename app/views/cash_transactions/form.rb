@@ -234,7 +234,11 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             )
           end
 
-          card_transactions_sheet if cash_transaction.exchange_return?
+          if cash_transaction.exchange_return?
+            transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
+            card_transactions_sheet if transactables_type.include?("CardTransaction")
+            cash_transactions_sheet if transactables_type.include?("CashTransaction")
+          end
 
           if cash_transaction.card_payment?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -324,6 +328,63 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             }
 
             render Views::CardTransactions::MonthYearContainer.new(index_context:)
+          end
+        end
+      end
+    end
+  end
+
+  def cash_transactions_sheet
+    Sheet do
+      SheetTrigger do
+        Button(type: :button, class: "w-full") do
+          action_model(:index, CashTransaction, 2)
+        end
+      end
+
+      SheetContent(side: :middle, class: "w-full md:w-1/3 max-h-[90vh] flex flex-col") do
+        SheetHeader do
+          SheetTitle { pluralise_model(CashTransaction, 2) }
+          SheetDescription do
+            span { current_user.built_in_category("EXCHANGE RETURN").name }
+          end
+        end
+
+        SheetMiddle(class: "overflow-y-auto flex-1") do
+          SheetMiddle do
+            exchanges = cash_transaction.exchanges
+            entity_transactions = exchanges.map(&:entity_transaction).flatten
+            card_transactions_ids = entity_transactions.pluck(:transactable_id)
+
+            reference = cash_transaction.exchanges.first
+            year, month = reference.slice(:year, :month).values
+
+            index_context = {
+              current_user:,
+              years: [ year ],
+              default_year: year,
+              active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
+              search_term: "",
+              card_installment_ids: current_user
+                            .cash_installments
+                            .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
+                            .order(:order_id)
+                            .ids,
+              category_id: [ exchange_category.id ],
+              entity_id: cash_transaction.entities.pluck(:id),
+              user_bank_account_id: nil,
+              from_ct_price: nil,
+              to_ct_price: nil,
+              from_price: nil,
+              to_price: nil,
+              from_installments_count: nil,
+              to_installments_count: nil,
+              user_card: nil,
+              skip_budgets: true,
+              force_mobile: true
+            }
+
+            render Views::CashTransactions::MonthYearContainer.new(index_context:)
           end
         end
       end
