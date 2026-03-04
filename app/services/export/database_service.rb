@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "open3"
+
 module Export
   class DatabaseService
     DB_CONFIG = Rails.configuration.database_configuration[Rails.env]["primary"]
@@ -32,11 +34,14 @@ module Export
 
       ENV["PGPASSWORD"] ||= DB_CONFIG["password"].to_s
 
-      File.open(file_path, "w") do |file|
-        IO.popen(cmd, err: %i[child out]) do |io|
-          file.write(io.read)
-        end
+      stdout, stderr, status = Open3.capture3(ENV.to_h, *cmd)
+
+      unless status.success?
+        Rails.logger.error("Backup failed: #{stderr.presence || stdout}")
+        raise "pg_dump failed with status #{status.exitstatus}"
       end
+
+      File.write(file_path, stdout)
 
       Rails.logger.info "✅ Backup saved to #{file_path}"
 
