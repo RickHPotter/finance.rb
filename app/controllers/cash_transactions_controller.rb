@@ -3,20 +3,15 @@
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_tabs
   before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :set_cash_tabs
 
   def index
     build_index_context(current_user.cash_installments)
 
     respond_to do |format|
-      format.html do
-        render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.html { render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
@@ -39,9 +34,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.turbo_stream
     end
   end
 
@@ -51,9 +44,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.turbo_stream
     end
   end
 
@@ -156,8 +147,6 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         @index_context[:default_year] = @cash_transaction.cash_installments.first.year
         @index_context[:active_month_years] = @cash_transaction.cash_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }.uniq
         @index_context[:user_bank_account_id] = []
-
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end
 
       respond_to(&:turbo_stream)
@@ -248,6 +237,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def set_cash_tabs
+    set_tabs(active_menu: :cash, active_sub_menu: :pix)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_cash_transaction

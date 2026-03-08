@@ -236,7 +236,7 @@ class Views::CardTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           if card_transaction.can_be_destroyed?
             Button(
               link: duplicate_card_transaction_path(card_transaction),
-              data: { turbo_frame: "center_container" }
+              data: { turbo_frame: "_top" }
             ) do
               action_message(:duplicate)
             end

@@ -1,0 +1,4 @@
+<%= turbo_frame_tag dom_id entity do %>
+  <% path = @mobile ? "mobile_entity" : "entity" %>
+  <%= render "v1/entities/entity/#{path}", entity: %>
+<% end %>

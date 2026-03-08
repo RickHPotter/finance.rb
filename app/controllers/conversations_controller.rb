@@ -3,7 +3,7 @@
 class ConversationsController < ApplicationController
   include TabsConcern
 
-  before_action :set_tabs, only: %i[index show]
+  before_action :set_conversation_tabs, only: %i[index show]
 
   def index
     @conversations = current_user.conversations
@@ -17,13 +17,8 @@ class ConversationsController < ApplicationController
     @messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
 
     respond_to do |format|
-      format.html do
-        render Views::Conversations::Show.new(conversation: @conversation)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :basic, active_sub_menu: :conversation)
-      end
+      format.html { render Views::Conversations::Show.new(conversation: @conversation) }
+      format.turbo_stream
     end
   end
 
@@ -34,6 +29,10 @@ class ConversationsController < ApplicationController
   end
 
   private
+
+  def set_conversation_tabs
+    set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+  end
 
   def conversation_params
     params.permit(conversation_participants_attributes: %i[id user_id _destroy])

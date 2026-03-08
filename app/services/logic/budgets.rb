@@ -64,8 +64,22 @@ module Logic
         associations: {
           categories: { id: category_id }.compact_blank,
           entities: { id: entity_id }.compact_blank
-        }
+        }.compact_blank
       }.compact_blank
+    end
+
+    def self.find_count_based_on_search(user, budget_params, search_params)
+      search_term = search_params.delete(:search_term) || ""
+      raw_conditions = build_conditions_from_params(budget_params.is_a?(Hash) ? budget_params.dup : budget_params.to_unsafe_h)
+
+      relation = user.budgets
+                     .left_joins(:categories, :entities)
+                     .where(raw_conditions[:associations])
+                     .where("budgets.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.distinct.select("budgets.id, budgets.month, budgets.year")
+
+      relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
     end
   end
 end

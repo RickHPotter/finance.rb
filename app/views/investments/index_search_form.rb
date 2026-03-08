@@ -13,9 +13,10 @@ class Views::Investments::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :user_bank_account_id,
               :user_bank_accounts,
-              :count_by_month_year
+              :count_by_month_year,
+              :mobile
 
-  def initialize(index_context: {})
+  def initialize(index_context: {}, mobile: false)
     @index_context = index_context
     @current_user = index_context[:current_user]
     @default_year = index_context[:default_year]
@@ -24,6 +25,7 @@ class Views::Investments::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @mobile = mobile
 
     set_user_bank_accounts
   end
@@ -38,37 +40,41 @@ class Views::Investments::IndexSearchForm < Views::Base
       build_month_year_selector
 
       div(class: "flex justify-between items-center gap-2") do
-        div(class: "flex-1") do
-          TextFieldTag \
-            :search_term,
-            svg: :magnifying_glass,
-            clearable: true,
-            placeholder: "#{action_message(:search)}...",
-            value: search_term,
-            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
-        end
+        TextFieldTag \
+          :search_term,
+          svg: :magnifying_glass,
+          clearable: true,
+          placeholder: "#{action_message(:search)}...",
+          value: search_term,
+          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
 
-        Sheet do
-          SheetTrigger do
-            Button(type: :button, icon: true) do
-              cached_icon(:filter)
-            end
-          end
-
-          SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-            SheetHeader do
-              SheetTitle { pluralise_model(Investment, 2) }
-              SheetDescription { I18n.t(:advanced_filter) }
+        if mobile
+          Sheet(id: "advanced_filter") do
+            SheetTrigger do
+              Button(type: :button, icon: true, class: "scale-105") do
+                cached_icon(:filter)
+              end
             end
 
-            SheetMiddle do
-              div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                form.select :user_bank_account_id, user_bank_accounts,
-                            { multiple: true, selected: user_bank_account_id },
-                            { class: input_class, data: { controller: "select", placeholder: pluralise_model(UserBankAccount, 2) } }
+            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+              SheetHeader do
+                SheetTitle { pluralise_model(Investment, 2) }
+                SheetDescription { I18n.t(:advanced_filter) }
+              end
+
+              SheetMiddle do
+                div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                  render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+                end
               end
             end
           end
+        end
+      end
+
+      unless mobile
+        div(class: "flex gap-2 mt-1") do
+          render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
         end
       end
 
@@ -83,11 +89,17 @@ class Views::Investments::IndexSearchForm < Views::Base
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
                         text-black hover:text-white font-thin items-center gap-2",
-                data: { turbo_frame: :center_container, turbo_prefetch: false } do
+                data: { turbo_frame: :_top, turbo_prefetch: false } do
           span { action_message(:new) }
           span { pluralise_model(Investment, 1) }
         end
       end
     end
+  end
+
+  private
+
+  def selected_user_bank_account_ids
+    Array(user_bank_account_id).map(&:to_s)
   end
 end

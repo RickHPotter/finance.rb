@@ -8,13 +8,8 @@ class Lalas::CashTransactionsController < LalasController
     build_index_context(User.first.cash_installments)
 
     respond_to do |format|
-      format.html do
-        render Views::Lalas::CashTransactions::Index.new(index_context: @index_context)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.html { render Views::Lalas::CashTransactions::Index.new(index_context: @index_context) }
+      format.turbo_stream { set_tabs(active_menu: :cash, active_sub_menu: :pix) }
     end
   end
 

@@ -10,7 +10,15 @@ application.register("hw-combobox", HwComboboxController)
 
 export { application }
 
+document.addEventListener("turbo:frame-render", (event) => {
+  if (event.target.id === "center_container") {
+    document.querySelector("#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+})
+
 document.addEventListener("keyup", (e) => {
+  if (!e.key) { return }
+
   const tag = document.activeElement && document.activeElement.tagName
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
@@ -36,7 +44,7 @@ document.addEventListener("keyup", (e) => {
   // SCROLL TO TOP
   if (key === "t") {
     e.preventDefault()
-    document.querySelector("turbo-frame#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
+    document.querySelector("#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
 
     return
   }
@@ -63,6 +71,8 @@ document.addEventListener("keyup", (e) => {
 })
 
 document.addEventListener("keydown", (e) => {
+  if (!e.key) { return }
+
   const tag = document.activeElement && document.activeElement.tagName
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
@@ -109,6 +119,7 @@ registerServiceWorker()
 
 let currentFrameUrl = null
 let historyStack = []
+const isV1Scope = () => window.location.pathname === "/v1" || window.location.pathname.startsWith("/v1/")
 
 function normalizeUrl(urlString) {
   const url = new URL(urlString, window.location.origin)
@@ -140,7 +151,10 @@ function updateHistory(newUrl, action = "push") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const otherDomains = ["/lalas"]
+  if (!isV1Scope()) return
+
+  const v1BasePath = "/v1"
+  const otherDomains = ["/v1/lalas"]
   const otherPaths = ["/up"]
   const devisePaths = [
     "/users/sign_in",
@@ -157,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const currentPath   = window.location.pathname
   const currentDomain = otherDomains.find(domain => window.location.pathname.startsWith(domain))
 
-  if ("/".includes(currentPath) || currentDomain?.includes(currentPath)) {
+  if (currentPath === v1BasePath || currentPath === currentDomain) {
     currentFrameUrl = currentPath
     window.history.replaceState(
       { turbo_frame_history: true, frame_url: currentPath },
@@ -192,11 +206,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (currentDomain) {
     Turbo.visit(currentDomain, { action: "replace" })
   } else {
-    Turbo.visit("/", { action: "replace" })
+    Turbo.visit(v1BasePath, { action: "replace" })
   }
 })
 
 document.addEventListener("turbo:click", (event) => {
+  if (!isV1Scope()) return
+
   const link = event.target.closest("a")
   if (!link) return
 
@@ -207,6 +223,8 @@ document.addEventListener("turbo:click", (event) => {
 })
 
 document.addEventListener("turbo:submit-end", (event) => {
+  if (!isV1Scope()) return
+
   const form = event.target
   const centerFrame = form.closest("turbo-frame#center_container")
 
@@ -225,6 +243,8 @@ document.addEventListener("turbo:submit-end", (event) => {
 })
 
 window.addEventListener("popstate", (event) => {
+  if (!isV1Scope()) return
+
   const centerFrame = document.getElementById("center_container")
   if (!centerFrame) return
 
@@ -237,17 +257,11 @@ window.addEventListener("popstate", (event) => {
     currentFrameUrl = window.location.pathname + window.location.search + window.location.hash
   }
 
-  if (currentFrameUrl && currentFrameUrl !== "/") {
+  if (currentFrameUrl && currentFrameUrl !== "/v1") {
     const url = new URL(currentFrameUrl, window.location.origin)
     if (!url.searchParams.has("format")) {
       url.searchParams.set("format", "turbo_stream")
     }
     centerFrame.src = url.pathname + url.search + url.hash
-  }
-})
-
-document.addEventListener("turbo:frame-render", (event) => {
-  if (event.target.id === "center_container") {
-    document.querySelector("turbo-frame#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
   }
 })

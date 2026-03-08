@@ -45,7 +45,7 @@ class Views::CardTransactions::Index < Views::Base
             link_to(
               new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
               class: "flex items-center justify-center md:hidden fixed bottom-14 right-2 m-2 bg-blue-600 text-white rounded-full shadow-lg z-50",
-              data: { turbo_frame: :center_container }
+              data: { turbo_frame: :_top }
             ) do
               cached_icon :bigger_plus
             end

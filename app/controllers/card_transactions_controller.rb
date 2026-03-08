@@ -3,7 +3,7 @@
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_tabs
+  before_action :set_card_tabs, except: :index
   before_action :set_card_transaction, only: %i[edit update destroy]
 
   def index
@@ -12,14 +12,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     build_index_context(@user_card.card_installments)
 
-    respond_to do |format|
-      format.html do
-        render Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)
-      end
+    set_card_tabs
 
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
-      end
+    respond_to do |format|
+      format.html { render Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
@@ -27,13 +24,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     build_index_context(current_user.card_installments)
 
     respond_to do |format|
-      format.html do
-        render Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: :search)
-      end
+      format.html { render Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
@@ -59,9 +51,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction) }
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @card_transaction&.user_card&.user_card_name)
-      end
+      format.turbo_stream
     end
   end
 
@@ -70,9 +60,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     respond_to do |format|
       format.html { render Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction) }
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @card_transaction&.user_card&.user_card_name)
-      end
+      format.turbo_stream
     end
   end
 
@@ -161,11 +149,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     build_index_context(@user_card.card_installments)
     @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
 
-    respond_to do |format|
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name)
-      end
-    end
+    respond_to(&:turbo_stream)
   end
 
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
@@ -212,7 +196,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       card_installments
         .joins(card_transaction: associations.keys)
         .where(card_transaction: associations).map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
-        .uniq
+                                              .uniq
     else
       params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     end => active_month_years
@@ -249,6 +233,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def set_card_tabs
+    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_card_transaction

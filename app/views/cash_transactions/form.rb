@@ -249,7 +249,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
               variant: :outline,
               class: "flex flex-col items-center text-center text-inherit",
-              data: { turbo_frame: "center_container", turbo_prefetch: "false" }
+              data: { turbo_frame: "_top", turbo_prefetch: "false" }
             ) do
               action_model(:index, CardTransaction, 2)
             end
@@ -309,10 +309,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
               search_term: "",
               card_installment_ids: current_user
-                            .card_installments
-                            .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
-                            .order(:order_id)
-                            .ids,
+                                    .card_installments
+                                    .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
+                                    .order(:order_id)
+                                    .ids,
               category_id: [ exchange_category.id ],
               entity_id: cash_transaction.entities.pluck(:id),
               user_bank_account_id: nil,
@@ -366,10 +366,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
               active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
               search_term: "",
               card_installment_ids: current_user
-                            .cash_installments
-                            .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
-                            .order(:order_id)
-                            .ids,
+                                    .cash_installments
+                                    .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
+                                    .order(:order_id)
+                                    .ids,
               category_id: [ exchange_category.id ],
               entity_id: cash_transaction.entities.pluck(:id),
               user_bank_account_id: nil,

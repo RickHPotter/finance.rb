@@ -5,10 +5,10 @@
 
     <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
   <% else %>
-    <%= turbo_stream.replace(:center_container, template: "user_cards/index") %>
+    <%= turbo_stream.replace(:center_container, Views::UserCards::Index.new(user_cards: @user_cards, mobile: @mobile)) %>
   <% end %>
 <% else %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, UserCard) }) %>
 
-  <%= turbo_stream.replace(:center_container, template: "user_cards/new", locals: { user_card: @user_card }) %>
+  <%= turbo_stream.replace(:center_container, Views::UserCards::New.new(current_user:, user_card: @user_card, cards: @cards)) %>
 <% end %>

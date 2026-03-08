@@ -30,8 +30,30 @@
         <%= render "shared/flash" %>
       <% end %>
 
-      <%= content_tag :section, class: "flex mt-10 min-h-svh" do %>
-        <% yield %>
+      <%= content_tag :section, class: "mt-10 min-h-svh w-full" do %>
+        <div class="w-full">
+          <div class="flex justify-center mb-10">
+            <div id="tabs" class="w-screen">
+              <%= render "shared/tabs" %>
+            </div>
+          </div>
+
+          <div class="mx-1 break-words bg-white shadow-md shadow-red-50 rounded-lg">
+            <div class="p-1 md:p-2 lg:p-3">
+              <div class="hidden relative" data-controller="price-sum">
+                <div class="absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-50">
+                  <span id="totalPriceSum"></span>
+                </div>
+              </div>
+
+              <%= render Views::Pages::Calculator.new %>
+
+              <div class="text-center text-black pt-2">
+                <%= yield %>
+              </div>
+            </div>
+          </div>
+        </div>
       <% end %>
     <% end %>
   </body>
@@ -53,7 +75,7 @@
 
       <div class="flex gap-2">
         <div class="text-sm text-white hover:bg-gray-600">
-          <%= link_to donation_pages_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: :center_container, turbo_prefetch: false } do %>
+          <%= link_to donation_pages_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: :_top, turbo_prefetch: false } do %>
             <%= t(:donate) %>
             <%= render_icon(:heart) %>
           <% end %>

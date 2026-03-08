@@ -110,7 +110,7 @@ class Views::Messages::Message < Views::Base
       href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: cash_transaction, format: :turbo_stream),
       size: :xs,
       class: "mt-3 flex flex-col items-center text-center text-black bg-lime-400 hover:bg-lime-600 p-3 rounded-xs font-medium shadow",
-      data: { turbo_frame: "center_container", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { action_model(:edit, CashTransaction) }
     end
@@ -135,7 +135,7 @@ class Views::Messages::Message < Views::Base
       href: new_cash_transaction_path(cash_transaction:, format: :turbo_stream),
       size: :xs,
       class: "mt-3 flex flex-col items-center text-center text-black bg-orange-400 hover:bg-orange-600 p-3 rounded-xs font-medium shadow",
-      data: { turbo_frame: "center_container", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { action_model(:create, CashTransaction) }
     end
@@ -149,7 +149,7 @@ class Views::Messages::Message < Views::Base
       data: {
         turbo_method: :delete,
         turbo_confirm: "Are you sure you want to destroy this transaction: #{reference_transactable.description}?",
-        turbo_frame: "center_container",
+        turbo_frame: "_top",
         turbo_prefetch: "false",
         chat_target: :messageAction
       }

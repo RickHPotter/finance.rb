@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ReferencesController < ApplicationController
+  include TabsConcern
+
+  before_action :set_reference_tabs
   before_action :set_user_card, only: %i[index edit update merge perform_merge]
   before_action :set_reference, only: %i[edit update merge]
 
@@ -33,6 +36,10 @@ class ReferencesController < ApplicationController
   end
 
   private
+
+  def set_reference_tabs
+    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+  end
 
   def set_user_card
     @user_card = current_user.user_cards.find(params[:user_card_id])

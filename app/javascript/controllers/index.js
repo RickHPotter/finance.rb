@@ -61,6 +61,9 @@ application.register("installment-lock", InstallmentLockController)
 import MaterialTailwindTabController from "./material_tailwind_tab_controller"
 application.register("material-tailwind-tab", MaterialTailwindTabController)
 
+import MaterialTailwindTabLiteController from "./material_tailwind_tab_lite_controller"
+application.register("material-tailwind-tab-lite", MaterialTailwindTabLiteController)
+
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 

@@ -9,15 +9,11 @@ class Lalas::CardTransactionsController < LalasController
     @user_card ||= User.first.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
     build_index_context(@user_card.card_installments)
+    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
 
     respond_to do |format|
-      format.html do
-        render Views::Lalas::CardTransactions::Index.new(index_context: @index_context)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
-      end
+      format.html { render Views::Lalas::CardTransactions::Index.new(index_context: @index_context) }
+      format.turbo_stream
     end
   end
 

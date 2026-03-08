@@ -1,3 +1,3 @@
 <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
 
-<%= turbo_stream.replace(:center_container, template: "entities/index") %>
+<%= turbo_stream.replace(:center_container, Views::Entities::Index.new(entities: @entities, mobile: @mobile)) %>

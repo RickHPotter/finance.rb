@@ -4,7 +4,8 @@ import { computePosition, autoUpdate, offset, flip } from "@floating-ui/dom";
 // Connects to data-controller="ruby-ui--combobox"
 export default class extends Controller {
   static values = {
-    term: String
+    term: String,
+    reorder: Boolean
   }
 
   static targets = [
@@ -22,6 +23,7 @@ export default class extends Controller {
 
   connect() {
     this.updateTriggerContent()
+    this.initializeOrderTracking()
   }
 
   disconnect() {
@@ -29,14 +31,20 @@ export default class extends Controller {
   }
 
   inputChanged(e) {
+    const input = e.target
     this.updateTriggerContent()
 
-    if (e.target.type == "radio") {
+    if (input.type == "radio") {
       this.closePopover()
     }
 
-    if (this.hasToggleAllTarget && !e.target.checked) {
+    if (this.hasToggleAllTarget && !input.checked) {
       this.toggleAllTarget.checked = false
+    }
+
+    if (this.reorderValue && this.isActualInput(input)) {
+      this.updateSelectedOrder(input)
+      this.reorderItems()
     }
   }
 
@@ -48,6 +56,14 @@ export default class extends Controller {
     const isChecked = this.toggleAllTarget.checked
     this.inputTargets.forEach(input => input.checked = isChecked)
     this.updateTriggerContent()
+    if (this.reorderValue) {
+      if (isChecked) {
+        this.selectedOrder = this.actualInputs().map(input => input.value)
+      } else {
+        this.selectedOrder = []
+      }
+      this.reorderItems()
+    }
   }
 
   updateTriggerContent() {
@@ -71,6 +87,10 @@ export default class extends Controller {
     this.selectedItemIndex = null
     this.itemTargets.forEach(item => item.ariaCurrent = "false")
     this.popoverTarget.showPopover()
+    if (this.hasSearchInputTarget) {
+      this.searchInputTarget.focus()
+      this.searchInputTarget.select()
+    }
   }
 
   closePopover() {
@@ -172,5 +192,64 @@ export default class extends Controller {
 
   updatePopoverWidth() {
     this.popoverTarget.style.width = `${this.triggerTarget.offsetWidth}px`
+  }
+
+  initializeOrderTracking() {
+    this.selectedOrder = []
+    this.originalActualItems = this.actualItemTargets()
+    this.actualItemMap = new Map(
+      this.originalActualItems
+        .map(item => {
+          const input = this.checkboxInput(item)
+          return input ? [input.value, item] : null
+        })
+        .filter(Boolean)
+    )
+
+    if (this.reorderValue) {
+      this.selectedOrder = this.actualInputs().filter(input => input.checked).map(input => input.value)
+      this.reorderItems()
+    }
+  }
+
+  actualItemTargets() {
+    return this.itemTargets.filter(item => {
+      const input = this.checkboxInput(item)
+      return input && input.name && !input.name.includes("_toggle_all")
+    })
+  }
+
+  actualInputs() {
+    return this.actualItemTargets().map(item => this.checkboxInput(item)).filter(Boolean)
+  }
+
+  checkboxInput(item) {
+    return item.querySelector("input[type='checkbox']")
+  }
+
+  isActualInput(input) {
+    return input.name && !input.name.includes("_toggle_all")
+  }
+
+  updateSelectedOrder(input) {
+    const value = input.value
+    this.selectedOrder = this.selectedOrder.filter(v => v !== value)
+    if (input.checked) {
+      this.selectedOrder.push(value)
+    }
+  }
+
+  reorderItems() {
+    if (!this.reorderValue) { return }
+    const actualItems = this.actualItemTargets()
+    if (actualItems.length === 0) { return }
+    const list = actualItems[0].parentElement
+    if (!list) { return }
+
+    const selectedItems = this.selectedOrder.map(value => this.actualItemMap.get(value)).filter(Boolean)
+    const remaining = this.originalActualItems.filter(item => !selectedItems.includes(item))
+
+    selectedItems.forEach(item => list.appendChild(item))
+    remaining.forEach(item => list.appendChild(item))
   }
 }

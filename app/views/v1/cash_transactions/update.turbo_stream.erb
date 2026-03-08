@@ -1,0 +1,10 @@
+<% if @cash_transaction.errors.empty? %>
+  <%= turbo_stream.update(:tabs, partial: "shared/v1/tabs") %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CashTransaction) }) %>
+
+  <%= turbo_stream.replace(:center_container, Views::V1::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
+<% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashTransaction) }) %>
+
+  <%= turbo_stream.replace(:center_container, Views::V1::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction)) %>
+<% end %>

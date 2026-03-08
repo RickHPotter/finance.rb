@@ -57,7 +57,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
 
-      div(class: "flex gap-2") do
+      div(class: "flex justify-between items-center gap-2") do
         TextFieldTag \
           :search_term,
           svg: :magnifying_glass,
@@ -68,7 +68,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
         Sheet(id: "advanced_filter") do
           SheetTrigger do
-            Button(type: :button, icon: true) do
+            Button(type: :button, icon: true, class: "scale-105") do
               cached_icon(:filter)
             end
           end
@@ -82,13 +82,13 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
             SheetMiddle do
               if mobile
                 div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  form.select :category_id, categories,
-                              { multiple: true, selected: category_id },
-                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Category, 2) } }
+                  div do
+                    render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
+                  end
 
-                  form.select :entity_id, entities,
-                              { multiple: true, selected: entity_id },
-                              { class: input_class, data: { controller: "select", placeholder: pluralise_model(Entity, 2) } }
+                  div do
+                    render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
+                  end
                 end
               end
 
@@ -203,21 +203,11 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
       unless mobile
         div(class: "flex gap-2 mt-1") do
           div(class: "w-1/2") do
-            form.select :category_id, categories,
-                        { multiple: true, selected: category_id },
-                        {
-                          class: input_class,
-                          data: { controller: "select", placeholder: pluralise_model(Category, 2), action: "input->reactive-form#submitWithDelay" }
-                        }
+            render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
           end
 
           div(class: "w-1/2") do
-            form.select :entity_id, entities,
-                        { multiple: true, selected: entity_id },
-                        {
-                          class: input_class,
-                          data: { controller: "select", placeholder: pluralise_model(Entity, 2), action: "input->reactive-form#submitWithDelay" }
-                        }
+            render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
           end
         end
       end
@@ -233,12 +223,22 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
                         text-black hover:text-white font-thin items-center gap-2",
-                data: { turbo_frame: :center_container, turbo_prefetch: false } do
+                data: { turbo_frame: :_top, turbo_prefetch: false } do
           span { action_message(:newa) }
           span { pluralise_model(CardTransaction, 1) }
           span(id: "month_year_selector_title") { user_card.user_card_name } if user_card.present?
         end
       end
     end
+  end
+
+  private
+
+  def selected_category_ids
+    Array(category_id).map(&:to_s)
+  end
+
+  def selected_entity_ids
+    Array(entity_id).map(&:to_s)
   end
 end
