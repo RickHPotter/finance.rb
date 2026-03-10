@@ -24,7 +24,7 @@ class Views::Investments::Index < Views::Base
                 render IndexSearchForm.new(index_context:, mobile:)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :user_bank_account_id, :active_month_years))
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :user_bank_account_id, :investment_type_id, :active_month_years))
             end
 
             link_to new_investment_path(format: :turbo_stream),

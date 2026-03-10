@@ -25,8 +25,8 @@ class CreateDeviseUsers < ActiveRecord::Migration[8.0]
 
       t.string :first_name, null: false
       t.string :last_name, null: false
-
       t.string :locale, null: false
+      t.boolean :admin, null: false, default: false
 
       t.timestamps null: false
 

@@ -21,6 +21,9 @@ class CreateConversationsAndMessages < ActiveRecord::Migration[8.0]
     create_table :messages do |t|
       t.references :conversation, null: false, foreign_key: true
       t.references :user, null: false, foreign_key: true
+      t.references :superseded_by, null: true, foreign_key: { to_table: :messages }
+      t.references :reference_transactable, polymorphic: true, index: true
+
       t.text :body
       t.text :headers
       t.datetime :read_at

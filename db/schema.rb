@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_10_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -105,6 +105,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
     t.datetime "date", null: false
     t.string "description", null: false
     t.boolean "imported", default: false
+    t.bigint "investment_type_id"
     t.integer "month", null: false
     t.boolean "paid", default: false
     t.integer "price", null: false
@@ -116,6 +117,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
     t.bigint "user_card_id"
     t.bigint "user_id", null: false
     t.integer "year", null: false
+    t.index ["investment_type_id"], name: "index_cash_transactions_on_investment_type_id"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
     t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
@@ -241,11 +243,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
     t.index ["price"], name: "idx_installments_price"
   end
 
+  create_table "investment_types", force: :cascade do |t|
+    t.boolean "built_in", default: false, null: false
+    t.datetime "created_at", null: false
+    t.string "investment_type_code"
+    t.string "investment_type_name_fallback", null: false
+    t.datetime "updated_at", null: false
+    t.index ["built_in"], name: "index_investment_types_on_built_in"
+    t.index ["investment_type_code"], name: "index_investment_types_on_investment_type_code", unique: true
+  end
+
   create_table "investments", force: :cascade do |t|
     t.bigint "cash_transaction_id"
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description"
+    t.bigint "investment_type_id"
     t.integer "month", null: false
     t.integer "price", null: false
     t.datetime "updated_at", null: false
@@ -253,6 +266,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
     t.bigint "user_id", null: false
     t.integer "year", null: false
     t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
+    t.index ["investment_type_id"], name: "index_investments_on_investment_type_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
@@ -360,6 +374,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
+  add_foreign_key "cash_transactions", "investment_types"
   add_foreign_key "cash_transactions", "user_bank_accounts"
   add_foreign_key "cash_transactions", "user_cards"
   add_foreign_key "cash_transactions", "users"
@@ -375,6 +390,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_151238) do
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"
+  add_foreign_key "investments", "investment_types"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
   add_foreign_key "messages", "conversations"

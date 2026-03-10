@@ -1,0 +1,153 @@
+en:
+  activerecord:
+    models:
+      investment_type:
+        one: Investment Type
+        other: Investment Types
+    attributes:
+      investment_type:
+        renda_fixa_liquidez_diaria: "Fixed Income - Liquidez Diária"
+        renda_fixa_cdb_liquidez_diaria: "Fixed Income - CDB Liquidez Diária"
+        renda_fixa_rdb: "Fixed Income - RDB"
+        renda_fixa_rdb_liquidez_diaria: "Fixed Income - RDB Liquidez Diária"
+        renda_fixa_fundos_di: "Fixed Income - Fundos DI"
+        renda_fixa_tesouro_selic_liquidez_diaria: "Fixed Income - Tesouro Selic (Liquidez Diária)"
+
+        renda_fixa: "Fixed Income"
+        renda_fixa_tesouro_direto: "Government Bonds"
+        renda_fixa_tesouro_selic: "Selic Treasury"
+        renda_fixa_tesouro_prefixado: "Fixed-Rate Treasury"
+        renda_fixa_tesouro_ipca: "Inflation-Linked Treasury"
+        renda_fixa_cdb: "Bank Certificate of Deposit"
+        renda_fixa_lci: "Real Estate Credit Note"
+        renda_fixa_lca: "Agribusiness Credit Note"
+        renda_fixa_lc: "Credit Note"
+        renda_fixa_debentures: "Debentures"
+        renda_fixa_cri: "Real Estate Receivables Certificate"
+        renda_fixa_cra: "Agribusiness Receivables Certificate"
+
+        renda_variavel: "Variable Income"
+        renda_variavel_acoes: "Stocks"
+        renda_variavel_fiis: "Real Estate Investment Trusts"
+        renda_variavel_etfs: "ETFs"
+        renda_variavel_bdrs: "BDRs"
+        renda_variavel_stocks: "International Stocks"
+        renda_variavel_reits: "REITs"
+
+        fundos: "Investment Funds"
+        fundos_renda_fixa: "Fixed Income Funds"
+        fundos_multimercado: "Multimarket Funds"
+        fundos_acoes: "Stock Funds"
+        fundos_cambiais: "Currency Funds"
+        fundos_imobiliarios: "Real Estate Funds"
+
+        previdencia: "Retirement"
+        previdencia_pgbl: "PGBL"
+        previdencia_vgbl: "VGBL"
+
+        cripto: "Cryptocurrencies"
+        cripto_bitcoin: "Bitcoin"
+        cripto_ethereum: "Ethereum"
+        cripto_stablecoins: "Stablecoins"
+        cripto_altcoins: "Altcoins"
+
+        derivativos: "Derivatives"
+        derivativos_opcoes: "Options"
+        derivativos_futuros: "Futures"
+        derivativos_termo: "Term"
+        derivativos_swap: "Swap"
+
+        cambio: "Exchange"
+        cambio_dolar: "Dollar"
+        cambio_euro: "Euro"
+        cambio_outras_moedas: "Other Currencies"
+
+        commodities: "Commodities"
+        commodities_ouro: "Gold"
+        commodities_prata: "Silver"
+        commodities_petroleo: "Petroleum"
+        commodities_agricolas: "Agricultural"
+
+        outros: "Other"
+        outros_poupanca: "Savings"
+        outros_consorcio: "Consortium"
+        outros_emprestimo_p2p: "P2P Loan"
+        outros_crowdfunding: "Crowdfunding"
+        outros_cofrinho: "Piggy Bank"
+
+pt-BR:
+  activerecord:
+    models:
+      investment_type:
+        one: Tipo de Investimento
+        other: Tipos de Investimento
+    attributes:
+      investment_type:
+        renda_fixa_liquidez_diaria: "Renda Fixa - Liquidez Diária"
+        renda_fixa_cdb_liquidez_diaria: "Renda Fixa - CDB Liquidez Diária"
+        renda_fixa_rdb: "Renda Fixa - RDB"
+        renda_fixa_rdb_liquidez_diaria: "Renda Fixa - RDB Liquidez Diária"
+        renda_fixa_fundos_di: "Renda Fixa - Fundos DI"
+        renda_fixa_tesouro_selic_liquidez_diaria: "Renda Fixa - Tesouro Selic (Liquidez Diária)"
+
+        renda_fixa: "Renda Fixa"
+        renda_fixa_tesouro_direto: "Tesouro Direto"
+        renda_fixa_tesouro_selic: "Tesouro Selic"
+        renda_fixa_tesouro_prefixado: "Tesouro Prefixado"
+        renda_fixa_tesouro_ipca: "Tesouro IPCA+"
+        renda_fixa_cdb: "CDB"
+        renda_fixa_lci: "LCI"
+        renda_fixa_lca: "LCA"
+        renda_fixa_lc: "LC"
+        renda_fixa_debentures: "Debêntures"
+        renda_fixa_cri: "CRI"
+        renda_fixa_cra: "CRA"
+
+        renda_variavel: "Renda Variável"
+        renda_variavel_acoes: "Ações"
+        renda_variavel_fiis: "FIIs"
+        renda_variavel_etfs: "ETFs"
+        renda_variavel_bdrs: "BDRs"
+        renda_variavel_stocks: "Stocks (Exterior)"
+        renda_variavel_reits: "REITs"
+
+        fundos: "Fundos de Investimento"
+        fundos_renda_fixa: "Fundos de Renda Fixa"
+        fundos_multimercado: "Fundos Multimercado"
+        fundos_acoes: "Fundos de Ações"
+        fundos_cambiais: "Fundos Cambiais"
+        fundos_imobiliarios: "Fundos Imobiliários"
+
+        previdencia: "Previdência"
+        previdencia_pgbl: "PGBL"
+        previdencia_vgbl: "VGBL"
+
+        cripto: "Criptomoedas"
+        cripto_bitcoin: "Bitcoin"
+        cripto_ethereum: "Ethereum"
+        cripto_stablecoins: "Stablecoins"
+        cripto_altcoins: "Altcoins"
+
+        derivativos: "Derivativos"
+        derivativos_opcoes: "Opções"
+        derivativos_futuros: "Futuros"
+        derivativos_termo: "Termo"
+        derivativos_swap: "Swap"
+
+        cambio: "Câmbio"
+        cambio_dolar: "Dólar"
+        cambio_euro: "Euro"
+        cambio_outras_moedas: "Outras Moedas"
+
+        commodities: "Commodities"
+        commodities_ouro: "Ouro"
+        commodities_prata: "Prata"
+        commodities_petroleo: "Petróleo"
+        commodities_agricolas: "Agrícolas"
+
+        outros: "Outros"
+        outros_poupanca: "Poupança"
+        outros_consorcio: "Consórcio"
+        outros_emprestimo_p2p: "Empréstimo P2P"
+        outros_crowdfunding: "Crowdfunding"
+        outros_cofrinho: "Cofrinho"

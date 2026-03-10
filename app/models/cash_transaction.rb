@@ -18,6 +18,7 @@ class CashTransaction < ApplicationRecord
   belongs_to :user
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, counter_cache: true, optional: true
+  belongs_to :investment_type, optional: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
 
   has_many :card_installments, dependent: :destroy
@@ -183,6 +184,7 @@ end
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  investment_type_id          :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  user_bank_account_id        :bigint           indexed
 #  user_card_id                :bigint           indexed
@@ -190,6 +192,7 @@ end
 #
 # Indexes
 #
+#  index_cash_transactions_on_investment_type_id       (investment_type_id)
 #  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
 #  index_cash_transactions_on_user_bank_account_id     (user_bank_account_id)
 #  index_cash_transactions_on_user_card_id             (user_card_id)
@@ -198,6 +201,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)

@@ -12,7 +12,9 @@ class Views::Investments::IndexSearchForm < Views::Base
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
               :user_bank_account_id,
+              :investment_type_id,
               :user_bank_accounts,
+              :investment_types,
               :count_by_month_year,
               :mobile
 
@@ -24,10 +26,12 @@ class Views::Investments::IndexSearchForm < Views::Base
     @active_month_years = index_context[:active_month_years]
     @search_term = index_context[:search_term]
     @user_bank_account_id = index_context[:user_bank_account_id]
+    @investment_type_id = index_context[:investment_type_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @mobile = mobile
 
     set_user_bank_accounts
+    set_investment_types
   end
 
   def view_template
@@ -64,7 +68,12 @@ class Views::Investments::IndexSearchForm < Views::Base
 
               SheetMiddle do
                 div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+                  div do
+                    render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+                  end
+                  div do
+                    render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
+                  end
                 end
               end
             end
@@ -74,7 +83,13 @@ class Views::Investments::IndexSearchForm < Views::Base
 
       unless mobile
         div(class: "flex gap-2 mt-1") do
-          render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+          div(class: "w-1/2") do
+            render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+          end
+
+          div(class: "w-1/2") do
+            render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
+          end
         end
       end
 
@@ -101,5 +116,9 @@ class Views::Investments::IndexSearchForm < Views::Base
 
   def selected_user_bank_account_ids
     Array(user_bank_account_id).map(&:to_s)
+  end
+
+  def selected_investment_type_ids
+    Array(investment_type_id).map(&:to_s)
   end
 end

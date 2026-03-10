@@ -25,7 +25,10 @@ class InvestmentsController < ApplicationController
   end
 
   def new
-    @investment = current_user.investments.new(user_bank_account_id: investment_params[:user_bank_account_id])
+    @investment = current_user.investments.new(
+      user_bank_account_id: investment_params[:user_bank_account_id],
+      investment_type_id: investment_params[:investment_type_id]
+    )
 
     investments = @investment.user_bank_account.investments if @investment.user_bank_account.present?
     @investment.date = investments.max_by(&:date)&.date     if investments
@@ -83,6 +86,7 @@ class InvestmentsController < ApplicationController
       default_year:,
       active_month_years:,
       user_bank_account_id: [ @investment.user_bank_account_id ],
+      investment_type_id: [ @investment.investment_type_id ],
       count_by_month_year:
     }
   end
@@ -97,6 +101,7 @@ class InvestmentsController < ApplicationController
 
     search_term = search_investment_params[:search_term]
     user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
+    investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
 
     count_by_month_year = Logic::Investments.find_count_based_on_search(current_user, investment_params, search_investment_params)
 
@@ -107,6 +112,7 @@ class InvestmentsController < ApplicationController
       active_month_years:,
       search_term:,
       user_bank_account_id:,
+      investment_type_id:,
       count_by_month_year:
     }
   end
@@ -133,6 +139,9 @@ class InvestmentsController < ApplicationController
     ret_params = params.require(:investment)
     ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 
-    ret_params.permit(:description, :price, :date, :month, :year, :user_id, :user_bank_account_id, user_bank_account_id: [])
+    ret_params.permit(
+      :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id,
+      user_bank_account_id: [], investment_type_id: []
+    )
   end
 end

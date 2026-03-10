@@ -20,6 +20,7 @@ class CreateCardTransactions < ActiveRecord::Migration[8.0]
       t.references :user, null: false, foreign_key: true
       t.references :user_card, null: false, foreign_key: true
       t.references :advance_cash_transaction, foreign_key: { to_table: :cash_transactions }
+      t.references :reference_transactable, null: true, polymorphic: true
 
       t.timestamps
 
@@ -27,6 +28,8 @@ class CreateCardTransactions < ActiveRecord::Migration[8.0]
 
       t.index [ :description ], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
       t.index [ :price ],       name: "idx_card_transactions_price"
+
+      t.index %w[reference_transactable_type reference_transactable_id], name: "index_reference_transactable_on_card_composite_key", unique: true
     end
   end
 end

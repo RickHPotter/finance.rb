@@ -120,6 +120,7 @@ module CashTransactable
       user_id:,
       cash_transaction_type: model_name.name,
       category_transactions:,
+      investment_type_id: (investment_type_id if respond_to? :investment_type_id),
       user_card_id: (user_card_id if respond_to? :user_card_id),
       user_bank_account_id: (user_bank_account_id if respond_to? :user_bank_account_id)
     }.compact_blank

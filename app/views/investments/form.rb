@@ -9,13 +9,14 @@ class Views::Investments::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :investment, :user_bank_accounts
+  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types
 
   def initialize(current_user:, investment:)
     @current_user = current_user
     @investment = investment
 
     set_user_bank_accounts
+    set_investment_types
   end
 
   def view_template
@@ -38,7 +39,7 @@ class Views::Investments::Form < Views::Base
         end
 
         div(class: "lg:flex lg:gap-2 w-full pb-3") do
-          div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-4/12 mb-3 lg:mb-0 wallet-icon") do
+          div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
             form.combobox \
               :user_bank_account_id,
               @user_bank_accounts,
@@ -50,7 +51,16 @@ class Views::Investments::Form < Views::Base
                       value: ".hw-combobox__input" }
           end
 
-          div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
+          div(id: "hw_investment_investment_type_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
+            form.combobox \
+              :investment_type_id,
+              @investment_types,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: model_attribute(investment, :investment_type_id)
+          end
+
+          div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
             TextField \
               form, :date,
               id: :investment_date,
@@ -60,7 +70,7 @@ class Views::Investments::Form < Views::Base
               data: { reactive_form_target: :dateInput }
           end
 
-          div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
+          div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
             TextField \
               form, :price,
               autofocus: investment.user_bank_account.present?,

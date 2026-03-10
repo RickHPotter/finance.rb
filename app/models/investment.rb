@@ -14,6 +14,7 @@ class Investment < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_bank_account
+  belongs_to :investment_type, optional: true
 
   # @validations ..............................................................
   validates :price, :date, :description, presence: true
@@ -33,7 +34,12 @@ class Investment < ApplicationRecord
   # @return [String] The generated description.
   #
   def cash_transaction_description
-    "#{pluralise_model(Investment, 1).upcase} #{user_bank_account.user_bank_account_name} #{month_year}"
+    [
+      pluralise_model(Investment, 1).upcase,
+      investment_type&.display_name&.upcase,
+      user_bank_account.user_bank_account_name,
+      month_year
+    ].compact_blank.join(" ")
   end
 
   # Generates a `date` for the associated `cash_transaction`, picking the end of given `month` for the `cash_transaction`.
@@ -118,18 +124,21 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
+#  investment_type_id   :bigint           indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
 #
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_investment_type_id    (investment_type_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)
 #

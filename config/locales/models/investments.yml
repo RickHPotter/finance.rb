@@ -18,6 +18,7 @@ en:
         cash_transaction_id: Cash Transaction
         user_bank_accounts: Accounts
         total_amount: Total Amount
+        investment_type_id: Investment Type
         created_at: Created at
         updated_at: Updated at
 
@@ -41,5 +42,6 @@ pt-BR:
         cash_transaction_id: Movimentação
         user_bank_accounts: Contas
         total_amount: Valor Total
+        investment_type_id: Tipo de Investimento
         created_at: Criado em
         updated_at: Atualizado em
