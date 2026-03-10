@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+SERVICE="financerb"
+CONTAINER_FILTER="${SERVICE}-web"
+CRON_FILE="/etc/cron.d/${SERVICE}"
+CRON_LOG="/var/log/${SERVICE}-cron.log"
+
+HOSTS=$(echo "$KAMAL_HOSTS" | tr ',' ' ')
+
+for HOST in $HOSTS; do
+  echo "Installing cron schedule on ${HOST} (${CRON_FILE})"
+
+  # Use kamal's SSH session instead of direct ssh
+  kamal accessory exec cron -H "$HOST" -- bash -c "cat > ${CRON_FILE} <<'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+TZ=America/Sao_Paulo
+
+0 0 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:daily_backup' >> ${CRON_LOG} 2>&1
+0 9 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
+0 17 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
+EOF
+chmod 644 ${CRON_FILE} && touch ${CRON_LOG}"
+done
