@@ -97,14 +97,7 @@ class Views::Budgets::Budgets < Views::Base
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-              budget.budget_entities.order(:id).map(&:entity).each do |entity|
-                div(class: "flex flex-col items-center w-16 text-center text-xs") do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
-                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
-                end
-              end
-            end
+            render_mobile_entities(budget)
           end
         end
       end
@@ -157,17 +150,7 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
 
-        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-            data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-          budget.budget_entities.order(:entity_id).includes(:entity).each do |budget_entity|
-            entity = budget_entity.entity
-
-            div(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: :entity_entity_name) { entity.entity_name }
-            end
-          end
-        end
+        render_desktop_entities(budget)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto #{'animate-pulse' if tight_budget}") do
           from_cent_based_to_float(budget.remaining_value, "R$")
@@ -179,6 +162,42 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
       end
+    end
+  end
+
+  def render_mobile_entities(budget)
+    items = budget_entity_popover_items(budget, :id)
+
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: budget.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count),
+      variant: :budget
+    )
+  end
+
+  def render_desktop_entities(budget)
+    render Views::Entities::Popover.new(
+      items: budget_entity_popover_items(budget, :entity_id),
+      mobile: false,
+      target_ids: budget.entities.map(&:id),
+      trigger_label: "",
+      variant: :budget
+    )
+  end
+
+  def budget_entity_popover_items(budget, sort_key)
+    budget.budget_entities.sort_by(&sort_key).filter_map do |budget_entity|
+      entity = budget_entity.entity
+      next if entity.nil?
+
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name,
+        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      }
     end
   end
 end

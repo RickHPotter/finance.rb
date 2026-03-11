@@ -27,12 +27,32 @@ class Views::Budgets::Index < Views::Base
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :active_month_years))
             end
 
-            link_to new_budget_path(format: :turbo_stream),
-                    style: "margin: 30px",
-                    class: "flex md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg items-center justify-center z-50
-                           active:scale-95 transition-transform",
-                    data: { turbo_frame: :_top } do
-              cached_icon :bigger_plus
+            div(class: "md:hidden") do
+              link_to(
+                "#",
+                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
+                style: "display: flex; visibility: hidden;",
+                data: { mobile_scroll_nav: "bottom" }
+              ) do
+                cached_icon :bigger_bottom
+              end
+
+              link_to(
+                new_budget_path(format: :turbo_stream),
+                class: "flex items-center justify-center fixed bottom-4 right-3 h-14 w-14 bg-blue-600 text-white rounded-full shadow-lg z-50",
+                data: { turbo_frame: :_top, mobile_scroll_nav: "plus" }
+              ) do
+                cached_icon :bigger_plus
+              end
+
+              link_to(
+                "#",
+                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
+                style: "display: flex; visibility: hidden;",
+                data: { mobile_scroll_nav: "top" }
+              ) do
+                cached_icon :bigger_top
+              end
             end
           end
         end

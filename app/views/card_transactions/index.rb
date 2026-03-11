@@ -34,28 +34,32 @@ class Views::CardTransactions::Index < Views::Base
                                                                                :user_card, :active_month_years, :order_by))
             end
 
-            link_to(
-              "#",
-              class: "flex items-center justify-center md:hidden fixed bottom-0 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
-              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 'n', bubbles: true}); document.dispatchEvent(e);"
-            ) do
-              cached_icon :bigger_bottom
-            end
+            div(class: "md:hidden") do
+              link_to(
+                "#",
+                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
+                style: "display: flex; visibility: hidden;",
+                data: { mobile_scroll_nav: "bottom" }
+              ) do
+                cached_icon :bigger_bottom
+              end
 
-            link_to(
-              new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
-              class: "flex items-center justify-center md:hidden fixed bottom-14 right-2 m-2 bg-blue-600 text-white rounded-full shadow-lg z-50",
-              data: { turbo_frame: :_top }
-            ) do
-              cached_icon :bigger_plus
-            end
+              link_to(
+                new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
+                class: "flex items-center justify-center fixed bottom-4 right-3 h-14 w-14 bg-blue-600 text-white rounded-full shadow-lg z-50",
+                data: { turbo_frame: :_top, mobile_scroll_nav: "plus" }
+              ) do
+                cached_icon :bigger_plus
+              end
 
-            link_to(
-              "#",
-              class: "flex items-center justify-center md:hidden fixed bottom-28 right-2 m-2 bg-gray-300 text-black rounded-full shadow-lg z-50",
-              onclick: "event.preventDefault(); const e = new KeyboardEvent('keyup', {key: 't', bubbles: true}); document.dispatchEvent(e);"
-            ) do
-              cached_icon :bigger_top
+              link_to(
+                "#",
+                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
+                style: "display: flex; visibility: hidden;",
+                data: { mobile_scroll_nav: "top" }
+              ) do
+                cached_icon :bigger_top
+              end
             end
           end
         end

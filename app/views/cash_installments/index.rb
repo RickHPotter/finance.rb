@@ -274,100 +274,25 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_mobile_entities(cash_transaction, avatar_name)
-    entities = entities_for(cash_transaction, :id)
+    items = cash_entity_popover_items(cash_transaction, avatar_name, :id)
 
-    div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-      if entities.one?
-        entities.each do |entity|
-          render_entity_link(entity,
-                             avatar_name,
-                             avatar_class: "size-6 mb-1",
-                             wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
-                             name_class: "entity_entity_name truncate block max-w-full leading-tight")
-        end
-      else
-        details(class: "ml-auto w-full") do
-          summary(class: "list-none flex items-center justify-end gap-2 cursor-pointer") do
-            render_entity_avatar_stack(entities, avatar_name, avatar_class: "size-6", limit: 3)
-            span(class: "text-xs underline underline-offset-[3px] whitespace-nowrap") { pluralise_model(Entity, entities.count) }
-          end
-
-          div(class: "mt-2 flex flex-wrap justify-end gap-2") do
-            entities.each do |entity|
-              render_entity_link(entity,
-                                 avatar_name,
-                                 avatar_class: "size-6 mb-1",
-                                 wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
-                                 name_class: "entity_entity_name truncate block max-w-full leading-tight")
-            end
-          end
-        end
-      end
-    end
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count).upcase,
+      variant: :cash
+    )
   end
 
   def render_desktop_entities(cash_transaction, avatar_name)
-    entities = entities_for(cash_transaction, :entity_id)
-
-    div(
-      class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-      data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }
-    ) do
-      if entities.one?
-        entity = entities.first
-        button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
-          render_entity_link(entity,
-                             avatar_name,
-                             avatar_class: "size-5",
-                             wrapper_class: "flex items-center gap-2 text-xs text-inherit",
-                             name_class: "entity_entity_name")
-        end
-      else
-        Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
-          PopoverTrigger(class: "w-full") do
-            button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
-              render_entity_avatar_stack(entities, avatar_name, avatar_class: "size-5", limit: 2)
-              span { "+" }
-            end
-          end
-
-          PopoverContent(class: "z-50 !opacity-100 mr-2") do
-            div(class: "flex flex-col gap-2 min-w-36") do
-              entities.each do |entity|
-                render_entity_link(entity,
-                                   avatar_name,
-                                   avatar_class: "size-5",
-                                   wrapper_class: "flex items-center gap-2 text-xs text-inherit",
-                                   name_class: "entity_entity_name")
-              end
-            end
-          end
-        end
-      end
-    end
-  end
-
-  def render_entity_link(entity, avatar_name, avatar_class:, wrapper_class:, name_class:)
-    Link(
-      href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-      size: :xs,
-      class: wrapper_class,
-      data: { turbo_frame: "_top", turbo_prefetch: "false" }
-    ) do
-      image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white rounded-full #{avatar_class}"
-      span(class: name_class) { entity.entity_name }
-    end
-  end
-
-  def render_entity_avatar_stack(entities, avatar_name, avatar_class:, limit:)
-    div(class: "flex items-center") do
-      entities.first(limit).each_with_index do |entity, index|
-        image_tag(
-          asset_path("avatars/#{avatar_name || entity.avatar_name}"),
-          class: "bg-white rounded-full border border-white #{avatar_class} #{'-ml-2' if index.positive?}"
-        )
-      end
-    end
+    render Views::Entities::Popover.new(
+      items: cash_entity_popover_items(cash_transaction, avatar_name, :entity_id),
+      mobile: false,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: "",
+      variant: :cash
+    )
   end
 
   def categories_for(cash_transaction)
@@ -376,6 +301,17 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def entities_for(cash_transaction, sort_key)
     cash_transaction.entity_transactions.sort_by(&sort_key).filter_map(&:entity)
+  end
+
+  def cash_entity_popover_items(cash_transaction, avatar_name, sort_key)
+    entities_for(cash_transaction, sort_key).map do |entity|
+      {
+        name: entity.entity_name,
+        avatar_name: avatar_name || entity.avatar_name,
+        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      }
+    end
   end
 
   def render_row_checkbox(cash_installment, mobile: false)

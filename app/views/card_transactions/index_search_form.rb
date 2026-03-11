@@ -185,7 +185,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
               div class: "my-auto pt-4" do
                 label(class: "font-poetsen-one font-thin text-gray-500", for: :order_by) { I18n.t(:order) }
 
-                select_tag(:order_by, class: input_class, data: { controller: "select", placeholder: action_message(:selecta) }) do
+                select_tag(:order_by, class: input_class_without_icon, data: { placeholder: action_message(:selecta) }) do
                   options_for_select(
                     [
                       [ model_attribute(CardTransaction, :card_installment_date), "installment_date" ],

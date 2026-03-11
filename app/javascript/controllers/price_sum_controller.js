@@ -1,10 +1,36 @@
 import { Controller } from "@hotwired/stimulus"
-import { _applyMask, _removeMask } from "../utils/mask.js"
+import { _applyMask } from "../utils/mask.js"
 
 export default class extends Controller {
   connect() {
-    document.addEventListener("turbo:click", () => this.element.classList.add("hidden"))
-    document.addEventListener("turbo:frame-load", () => this.toggleBookmark())
+    this.hide = this.hide.bind(this)
+    this.refresh = this.refresh.bind(this)
+
+    document.addEventListener("turbo:click", this.hide)
+    document.addEventListener("turbo:frame-load", this.refresh)
+    document.addEventListener("turbo:load", this.refresh)
+    document.addEventListener("turbo:render", this.refresh)
+    window.addEventListener("popstate", this.refresh)
+    window.addEventListener("pageshow", this.refresh)
+
+    this.refresh()
+  }
+
+  disconnect() {
+    document.removeEventListener("turbo:click", this.hide)
+    document.removeEventListener("turbo:frame-load", this.refresh)
+    document.removeEventListener("turbo:load", this.refresh)
+    document.removeEventListener("turbo:render", this.refresh)
+    window.removeEventListener("popstate", this.refresh)
+    window.removeEventListener("pageshow", this.refresh)
+  }
+
+  hide() {
+    this.element.classList.add("hidden")
+  }
+
+  refresh() {
+    requestAnimationFrame(() => this.toggleBookmark())
   }
 
   toggleBookmark() {
@@ -26,8 +52,10 @@ export default class extends Controller {
   }
 
   updateSum() {
-    const price = Array.from(document.querySelectorAll("#priceSum")).reduce((acc, span) => acc + parseInt(span.dataset.price), 0)
+    const price = Array.from(document.querySelectorAll("#priceSum")).reduce((acc, span) => acc + parseInt(span.dataset.price || "0", 10), 0)
     const totalPriceSpan = document.querySelector("#totalPriceSum")
+    if (!totalPriceSpan) { return }
+
     totalPriceSpan.textContent = _applyMask(price.toString())
   }
 }

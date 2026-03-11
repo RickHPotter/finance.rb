@@ -73,6 +73,9 @@ application.register("month-year-selector", MonthYearSelectorController)
 import MonthlyBalanceController from "./monthly_balance_controller"
 application.register("monthly-balance", MonthlyBalanceController)
 
+import MobileScrollNavController from "./mobile_scroll_nav_controller"
+application.register("mobile-scroll-nav", MobileScrollNavController)
+
 import NestedFormController from "./nested_form_controller"
 application.register("nested-form", NestedFormController)
 

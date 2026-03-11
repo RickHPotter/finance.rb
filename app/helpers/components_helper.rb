@@ -4,6 +4,14 @@
 module ComponentsHelper
   # @return [String] tailwind class for input.
   #
+  def input_class_without_icon
+    "block w-full border-1 border-gray-300 focus:ring-1 focus:ring-indigo-600 rounded-md shadow-xs outline-hidden appearance-none bg-white
+    text-[0.8rem] sm:text-sm disabled:cursor-not-allowed disabled:bg-gray-100
+    text-gray-900".squish
+  end
+
+  # @return [String] tailwind class for input.
+  #
   def input_class
     "block w-full ps-12 border-1 border-gray-300 focus:ring-1 focus:ring-indigo-600 rounded-md shadow-xs outline-hidden appearance-none bg-white
     text-[0.8rem] sm:text-sm disabled:cursor-not-allowed disabled:bg-gray-100

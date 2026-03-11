@@ -86,7 +86,7 @@ class InvestmentsController < ApplicationController
       default_year:,
       active_month_years:,
       user_bank_account_id: [ @investment.user_bank_account_id ],
-      investment_type_id: [ @investment.investment_type_id ],
+      investment_type_id: [ @investment.investment_type_id ].compact_blank,
       count_by_month_year:
     }
   end

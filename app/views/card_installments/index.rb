@@ -192,102 +192,39 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_mobile_entities(card_transaction)
-    entity_transactions = card_transaction.entity_transactions.order(:id).includes(:entity)
+    items = entity_popover_items(card_transaction, :id)
 
-    div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-      if entity_transactions.one?
-        entity_transactions.each do |entity_transaction|
-          render_entity_link(entity_transaction,
-                             wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
-                             avatar_class: "size-6 mb-1",
-                             name_class: "entity_entity_name truncate block max-w-full leading-tight",
-                             info_class: "hidden entity_exchanges_info")
-        end
-      else
-        details(class: "ml-auto w-full") do
-          summary(class: "list-none flex items-center justify-end gap-2 cursor-pointer") do
-            render_entity_avatar_stack(entity_transactions, avatar_class: "size-6", limit: 3)
-            span(class: "text-xs underline underline-offset-[3px] whitespace-nowrap") { pluralise_model(Entity, entity_transactions.count) }
-          end
-
-          div(class: "mt-2 flex flex-wrap justify-end gap-2") do
-            entity_transactions.each do |entity_transaction|
-              render_entity_link(entity_transaction,
-                                 wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
-                                 avatar_class: "size-6 mb-1",
-                                 name_class: "entity_entity_name truncate block max-w-full leading-tight",
-                                 info_class: "hidden entity_exchanges_info")
-            end
-          end
-        end
-      end
-    end
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: card_transaction.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count).upcase,
+      variant: :card
+    )
   end
 
   def render_desktop_entities(card_transaction)
-    entity_transactions = card_transaction.entity_transactions.order(:id).includes(:entity)
-
-    div(
-      class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2 hover:opacity-65",
-      data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
-    ) do
-      if entity_transactions.one?
-        entity_transaction = entity_transactions.first
-        button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
-          render_entity_link(entity_transaction,
-                             wrapper_class: "flex items-center gap-2 text-xs text-inherit",
-                             avatar_class: "size-5",
-                             name_class: "entity_entity_name",
-                             info_class: "hidden entity_exchanges_info")
-        end
-      else
-        Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
-          PopoverTrigger(class: "w-full") do
-            button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
-              render_entity_avatar_stack(entity_transactions, avatar_class: "size-5", limit: 2)
-              span { "+" }
-            end
-          end
-
-          PopoverContent(class: "z-50 !opacity-100 mr-2") do
-            div(class: "flex flex-col gap-2 min-w-36") do
-              entity_transactions.each do |entity_transaction|
-                render_entity_link(entity_transaction,
-                                   wrapper_class: "flex items-center gap-2 text-xs text-inherit",
-                                   avatar_class: "size-5",
-                                   name_class: "entity_entity_name",
-                                   info_class: "hidden entity_exchanges_info")
-              end
-            end
-          end
-        end
-      end
-    end
+    render Views::Entities::Popover.new(
+      items: entity_popover_items(card_transaction, :id),
+      mobile: false,
+      target_ids: card_transaction.entities.map(&:id),
+      trigger_label: "",
+      variant: :card
+    )
   end
 
-  def render_entity_link(entity_transaction, wrapper_class:, avatar_class:, name_class:, info_class:)
-    entity = entity_transaction.entity
+  def entity_popover_items(card_transaction, sort_key)
+    card_transaction.entity_transactions.order(:id).includes(:entity).sort_by(&sort_key).map do |entity_transaction|
+      entity = entity_transaction.entity
 
-    Link(
-      href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
-      size: :xs,
-      class: wrapper_class,
-      data: { turbo_frame: "center_container", turbo_prefetch: "false" }
-    ) do
-      image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white rounded-full #{avatar_class}"
-      span(class: name_class) { entity.entity_name }
-      span(class: info_class) { entity_exchanges_info(entity_transaction) }
-    end
-  end
-
-  def render_entity_avatar_stack(entity_transactions, avatar_class:, limit:)
-    div(class: "flex items-center") do
-      entity_transactions.first(limit).each_with_index do |entity_transaction, index|
-        image_tag(
-          asset_path("avatars/#{entity_transaction.entity.avatar_name}"),
-          class: "bg-white rounded-full border border-white #{avatar_class} #{'-ml-2' if index.positive?}"
-        )
-      end
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name,
+        href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        data: { turbo_frame: "center_container", turbo_prefetch: "false" },
+        info_class: "hidden entity_exchanges_info",
+        info_text: entity_exchanges_info(entity_transaction)
+      }
     end
   end
 
