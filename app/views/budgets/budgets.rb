@@ -28,7 +28,7 @@ class Views::Budgets::Budgets < Views::Base
         render_budget(budget)
       end
     elsif show_rows_not_found
-      div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+      div(class: "text-lg") { I18n.t(:rows_not_found) }
     end
   end
 
@@ -46,7 +46,7 @@ class Views::Budgets::Budgets < Views::Base
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-zinc-50 my-4 #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
@@ -116,7 +116,7 @@ class Views::Budgets::Budgets < Views::Base
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-900 text-zinc-50 hover:opacity-80",
+        class: "grid grid-cols-12 bg-indigo-900 text-zinc-50 hover:opacity-80 transition-all",
         draggable: true,
         data: {
           id: budget.id,

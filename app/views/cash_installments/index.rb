@@ -10,11 +10,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   include CacheHelper
   include ColoursHelper
 
-  attr_reader :mobile, :cash_installments
+  attr_reader :mobile, :cash_installments, :index_context
 
-  def initialize(mobile:, cash_installments:)
+  def initialize(mobile:, cash_installments:, index_context: {})
     @mobile = mobile
     @cash_installments = cash_installments
+    @index_context = index_context
   end
 
   def view_template
@@ -44,11 +45,11 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
-      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(class: "relative") do
         div(
@@ -60,10 +61,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 #{'animate-pulse' if should_display_link_to_pay}",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay}",
         style: "background-clip: padding-box; #{style}",
-        data: { id: cash_installment.id, datatable_target: :row }
+        data: { id: cash_installment.id, datatable_target: :row, action: "click->datatable#toggleCardSelection" }
       ) do
+        render_row_checkbox(cash_installment, mobile: true)
+
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
@@ -75,6 +78,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 link_to cash_transaction.description,
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
+                        title: cash_transaction.comment,
                         data: { turbo_frame: :_top, turbo_prefetch: false }
               elsif cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -84,11 +88,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 link_to cash_transaction.description,
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
+                        title: cash_transaction.comment,
                         data: { turbo_frame: :_top, turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
+                        title: cash_transaction.comment,
                         data: { turbo_frame: :_top }
               end
 
@@ -146,67 +152,57 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-              cash_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
-                Link(
-                  href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-                  size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-inherit",
-                  data: { turbo_frame: "_top", turbo_prefetch: "false" }
-                ) do
-                  image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
-                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
-                end
-              end
-            end
+            render_mobile_entities(cash_transaction, avatar_name)
           end
         end
       end
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
+  def render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
-      render Views::CashInstallments::PayModal.new(cash_installment:) if should_display_link_to_pay || cash_transaction.card_payment?
+      render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}",
+        class: "grid grid-cols-12 hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
-          if should_display_link_to_pay
-            button(
-              type: :button,
-              class: "hover:bg-white hover:text-red-500 hover:rounded-full hover:scale-160",
-              title: model_attribute(cash_installment, :pay),
-              data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-            ) do
-              cached_icon(icon)
+        render_row_checkbox(cash_installment) do
+          div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do
+            if should_display_link_to_pay
+              button(
+                type: :button,
+                class: "hover:bg-white hover:text-red-500 hover:rounded-full hover:scale-160",
+                title: model_attribute(cash_installment, :pay),
+                data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
+              ) do
+                cached_icon(icon)
+              end
+            elsif cash_transaction.card_payment?
+              button(
+                class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
+                title: model_attribute(cash_installment, :change_date),
+                data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
+              ) do
+                cached_icon(:check_calendar)
+              end
+            else
+              span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160", title: model_attribute(cash_installment, :already_paid)) do
+                cached_icon(icon)
+              end
             end
-          elsif cash_transaction.card_payment?
-            button(
-              class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
-              title: model_attribute(cash_installment, :change_date),
-              data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-            ) do
-              cached_icon(:check_calendar)
-            end
-          else
-            span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160", title: model_attribute(cash_installment, :already_paid)) do
-              cached_icon(icon)
-            end
-          end
 
-          date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
-          div(class: "grid grid-cols-1 mr-auto") do
-            span(class: "rounded-xs text-xs mr-auto") { date }
-            span(class: "rounded-xs text-xs mr-auto") { time }
+            date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
+            div(class: "grid grid-cols-1 mr-auto") do
+              span(class: "rounded-xs text-xs mr-auto") { date }
+              span(class: "rounded-xs text-xs mr-auto") { time }
+            end
           end
         end
 
@@ -219,6 +215,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             link_to cash_transaction.description,
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
+                    title: cash_transaction.comment,
                     data: { turbo_frame: :_top, turbo_prefetch: false }
           elsif cash_transaction.card_advance?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -228,12 +225,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             link_to cash_transaction.description,
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
+                    title: cash_transaction.comment,
                     data: { turbo_frame: :_top, turbo_prefetch: false }
           else
             link_to cash_transaction.description,
                     edit_cash_transaction_path(cash_transaction),
                     id: "edit_cash_transaction_#{cash_transaction.id}",
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
+                    title: cash_transaction.comment,
                     data: { turbo_frame: :_top }
           end
 
@@ -251,28 +250,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-            data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-          cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
-            entity = entity_transaction.entity
-
-            Link(
-              href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-              size: :xs,
-              class: "flex-1 grid grid-cols-1 text-xs mx-auto text-inherit",
-              data: { turbo_frame: "_top", turbo_prefetch: "false" }
-            ) do
-              image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: :entity_entity_name) { entity.entity_name }
-            end
-          end
-        end
+        render_desktop_entities(cash_transaction, avatar_name)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
           div(class: "p-1 rounded-md shadow-sm border border-black") do
             from_cent_based_to_float(cash_installment.balance, "R$")
           end
@@ -286,6 +270,130 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     in [ true,  _     ] then [ false, :check_square ]
     in [ false, true  ] then [ true,  :warning_octagon ]
     in [ false, false ] then [ true,  :x_circle ]
+    end
+  end
+
+  def render_mobile_entities(cash_transaction, avatar_name)
+    entities = cash_transaction.entity_transactions.order(:id).includes(:entity).map(&:entity)
+
+    div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
+      if entities.one?
+        entities.each do |entity|
+          render_entity_link(entity,
+                             avatar_name,
+                             avatar_class: "size-6 mb-1",
+                             wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
+                             name_class: "entity_entity_name truncate block max-w-full leading-tight")
+        end
+      else
+        details(class: "ml-auto w-full") do
+          summary(class: "list-none flex items-center justify-end gap-2 cursor-pointer") do
+            render_entity_avatar_stack(entities, avatar_name, avatar_class: "size-6", limit: 3)
+            span(class: "text-xs underline underline-offset-[3px] whitespace-nowrap") { pluralise_model(Entity, entities.count) }
+          end
+
+          div(class: "mt-2 flex flex-wrap justify-end gap-2") do
+            entities.each do |entity|
+              render_entity_link(entity,
+                                 avatar_name,
+                                 avatar_class: "size-6 mb-1",
+                                 wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
+                                 name_class: "entity_entity_name truncate block max-w-full leading-tight")
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def render_desktop_entities(cash_transaction, avatar_name)
+    entities = cash_transaction.entity_transactions.order(:entity_id).includes(:entity).map(&:entity)
+
+    div(
+      class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
+      data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }
+    ) do
+      if entities.one?
+        entity = entities.first
+        button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
+          render_entity_link(entity,
+                             avatar_name,
+                             avatar_class: "size-5",
+                             wrapper_class: "flex items-center gap-2 text-xs text-inherit",
+                             name_class: "entity_entity_name")
+        end
+      else
+        Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
+          PopoverTrigger(class: "w-full") do
+            button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
+              render_entity_avatar_stack(entities, avatar_name, avatar_class: "size-5", limit: 2)
+              span { "+" }
+            end
+          end
+
+          PopoverContent(class: "z-50 !opacity-100 mr-2") do
+            div(class: "flex flex-col gap-2 min-w-36") do
+              entities.each do |entity|
+                render_entity_link(entity,
+                                   avatar_name,
+                                   avatar_class: "size-5",
+                                   wrapper_class: "flex items-center gap-2 text-xs text-inherit",
+                                   name_class: "entity_entity_name")
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def render_entity_link(entity, avatar_name, avatar_class:, wrapper_class:, name_class:)
+    Link(
+      href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+      size: :xs,
+      class: wrapper_class,
+      data: { turbo_frame: "_top", turbo_prefetch: "false" }
+    ) do
+      image_tag asset_path("avatars/#{avatar_name || entity.avatar_name}"), class: "bg-white rounded-full #{avatar_class}"
+      span(class: name_class) { entity.entity_name }
+    end
+  end
+
+  def render_entity_avatar_stack(entities, avatar_name, avatar_class:, limit:)
+    div(class: "flex items-center") do
+      entities.first(limit).each_with_index do |entity, index|
+        image_tag(
+          asset_path("avatars/#{avatar_name || entity.avatar_name}"),
+          class: "bg-white rounded-full border border-white #{avatar_class} #{'-ml-2' if index.positive?}"
+        )
+      end
+    end
+  end
+
+  def render_row_checkbox(cash_installment, mobile: false)
+    div(class: "flex items-center gap-1 relative px-2") do
+      label(class: "group inline-flex cursor-pointer items-center justify-center") do
+        input(
+          type: :checkbox,
+          value: cash_installment.id,
+          class: "peer sr-only",
+          disabled: cash_installment.paid?,
+          data: { datatable_target: :checkbox, action: "change->datatable#toggleSelection" }
+        )
+
+        unless mobile
+          span(
+            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+                peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
+                peer-focus:ring-2 peer-focus:ring-blue-300 size-6
+                peer-disabled:bg-slate-300 peer-disabled:text-slate-400"
+          ) do
+            span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
+          end
+        end
+      end
+
+      yield if block_given?
     end
   end
 end

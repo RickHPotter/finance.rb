@@ -3,15 +3,16 @@
 class Views::CashTransactions::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :budgets, :total_amount
+  attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :budgets, :total_amount, :index_context
 
-  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, budgets:)
+  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, budgets:, index_context: {})
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @cash_installments = cash_installments
     @budgets = budgets
     @total_amount = cash_installments.sum(&:price) + budgets.sum(&:remaining_value)
+    @index_context = index_context
   end
 
   def view_template
@@ -25,7 +26,7 @@ class Views::CashTransactions::MonthYear < Views::Base
   end
 
   def render_mobile_month_year
-    div(class: "mb-8", data: { datatable_target: :table }) do
+    div(class: "mb-8", data: { datatable_target: :table, month_year_group: month_year }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
         div(class: "pb-2 pt-6 text-slate-800 flex gap-2 relative") do
           div(class: "flex gap-2 absolute left-0 bottom-4") do
@@ -37,30 +38,10 @@ class Views::CashTransactions::MonthYear < Views::Base
             end
           end
 
-          if cash_installments.any? && cash_installments.none?(&:paid?)
-            render Views::CashTransactions::PayMultipleModal.new(cash_installments:)
-            render Views::CashTransactions::TransferMultipleModal.new(cash_installments:)
-
-            div(class: "absolute right-0 bottom-4 flex gap-2") do
-              Button(
-                title: model_attribute(CashInstallment, :pay),
-                data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
-              ) do
-                model_attribute(CashInstallment, :pay)
-              end
-
-              Button(
-                title: model_attribute(CashInstallment, :transfer),
-                data: { modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
-              ) do
-                model_attribute(CashInstallment, :transfer)
-              end
-            end
-          end
         end
 
         if cash_installments.present? || budgets.present?
-          render Views::CashInstallments::Index.new(mobile:, cash_installments:)
+          render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
           render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
         else
           div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
@@ -70,7 +51,7 @@ class Views::CashTransactions::MonthYear < Views::Base
   end
 
   def render_month_year
-    div(class: "mb-8", data: { datatable_target: :table }) do
+    div(class: "mb-8", data: { datatable_target: :table, month_year_group: month_year }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
         div(class: "pb-2 pt-4 text-slate-800 flex gap-2 relative") do
           div(class: "flex gap-2 absolute left-0 bottom-4") do
@@ -82,31 +63,11 @@ class Views::CashTransactions::MonthYear < Views::Base
             end
           end
 
-          if cash_installments.any? && cash_installments.none?(&:paid?)
-            render Views::CashTransactions::PayMultipleModal.new(cash_installments:)
-            render Views::CashTransactions::TransferMultipleModal.new(cash_installments:)
-
-            div(class: "absolute right-0 bottom-4 flex gap-2") do
-              Button(
-                title: model_attribute(CashInstallment, :pay),
-                data: { modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
-              ) do
-                model_attribute(CashInstallment, :pay)
-              end
-
-              Button(
-                title: model_attribute(CashInstallment, :transfer),
-                data: { modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
-              ) do
-                model_attribute(CashInstallment, :transfer)
-              end
-            end
-          end
         end
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
           div(class: "grid grid-cols-12 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3 col-span-5") { model_attribute(CashTransaction, :description) }
+            div(class: "py-3 col-span-5 pl-10") { model_attribute(CashTransaction, :description) }
             div(class: "py-3 col-span-3") { model_attribute(CashTransaction, :categories) }
             div(class: "py-3 col-span-2") { model_attribute(CashTransaction, :entities) }
             div(class: "py-3 text-end")   { model_attribute(CashTransaction, :price) }
@@ -114,7 +75,7 @@ class Views::CashTransactions::MonthYear < Views::Base
           end
 
           if cash_installments.present? || budgets.present?
-            render Views::CashInstallments::Index.new(mobile:, cash_installments:)
+            render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
             render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
           else
             div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }

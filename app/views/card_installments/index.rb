@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base
+class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
@@ -39,7 +39,7 @@ class Views::CardInstallments::Index < Views::Base
   def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-2 hover:opacity-80 transition-all",
         style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row }
       ) do
@@ -81,19 +81,7 @@ class Views::CardInstallments::Index < Views::Base
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
-                Link(
-                  href: new_card_transaction_path(card_transaction: { entity_id: entity.id }, format: :turbo_stream),
-                  size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-xs text-inherit",
-                  data: { turbo_frame: "center_container", turbo_prefetch: "false" }
-                ) do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
-                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
-                end
-              end
-            end
+            render_mobile_entities(card_transaction)
           end
         end
       end
@@ -103,7 +91,7 @@ class Views::CardInstallments::Index < Views::Base
   def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200",
+        class: "grid grid-cols-12 hover:opacity-80 transition-all",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: card_installment.id,
@@ -170,30 +158,7 @@ class Views::CardInstallments::Index < Views::Base
           end
         end
 
-        div(
-          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2 hover:opacity-65",
-          data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
-        ) do
-          card_transaction.entity_transactions.order(:id).includes(:entity).each do |entity_transaction|
-            entity = entity_transaction.entity
-            exchanges_count = entity_transaction.exchanges_count
-            price_to_be_returned = entity_transaction.price_to_be_returned
-            info = ""
-            info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
-            info += " (#{exchanges_count})" if exchanges_count > 1
-
-            Link(
-              href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
-              size: :xs,
-              class: "flex-1 grid grid-cols-1 text-xs mx-auto text-inherit",
-              data: { turbo_frame: "center_container", turbo_prefetch: "false" }
-            ) do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: :entity_entity_name) { entity.entity_name }
-              span(class: "hidden entity_exchanges_info") { info }
-            end
-          end
-        end
+        render_desktop_entities(card_transaction)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto hover:opacity-65") do
           from_cent_based_to_float(card_installment.price, "R$")
@@ -224,5 +189,112 @@ class Views::CardInstallments::Index < Views::Base
         end
       end
     end
+  end
+
+  def render_mobile_entities(card_transaction)
+    entity_transactions = card_transaction.entity_transactions.order(:id).includes(:entity)
+
+    div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
+      if entity_transactions.one?
+        entity_transactions.each do |entity_transaction|
+          render_entity_link(entity_transaction,
+                             wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
+                             avatar_class: "size-6 mb-1",
+                             name_class: "entity_entity_name truncate block max-w-full leading-tight",
+                             info_class: "hidden entity_exchanges_info")
+        end
+      else
+        details(class: "ml-auto w-full") do
+          summary(class: "list-none flex items-center justify-end gap-2 cursor-pointer") do
+            render_entity_avatar_stack(entity_transactions, avatar_class: "size-6", limit: 3)
+            span(class: "text-xs underline underline-offset-[3px] whitespace-nowrap") { pluralise_model(Entity, entity_transactions.count) }
+          end
+
+          div(class: "mt-2 flex flex-wrap justify-end gap-2") do
+            entity_transactions.each do |entity_transaction|
+              render_entity_link(entity_transaction,
+                                 wrapper_class: "flex flex-col items-center w-16 text-center text-inherit",
+                                 avatar_class: "size-6 mb-1",
+                                 name_class: "entity_entity_name truncate block max-w-full leading-tight",
+                                 info_class: "hidden entity_exchanges_info")
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def render_desktop_entities(card_transaction)
+    entity_transactions = card_transaction.entity_transactions.order(:id).includes(:entity)
+
+    div(
+      class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2 hover:opacity-65",
+      data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
+    ) do
+      if entity_transactions.one?
+        entity_transaction = entity_transactions.first
+        button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
+          render_entity_link(entity_transaction,
+                             wrapper_class: "flex items-center gap-2 text-xs text-inherit",
+                             avatar_class: "size-5",
+                             name_class: "entity_entity_name",
+                             info_class: "hidden entity_exchanges_info")
+        end
+      else
+        Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
+          PopoverTrigger(class: "w-full") do
+            button(class: "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black") do
+              render_entity_avatar_stack(entity_transactions, avatar_class: "size-5", limit: 2)
+              span { "+" }
+            end
+          end
+
+          PopoverContent(class: "z-50 !opacity-100 mr-2") do
+            div(class: "flex flex-col gap-2 min-w-36") do
+              entity_transactions.each do |entity_transaction|
+                render_entity_link(entity_transaction,
+                                   wrapper_class: "flex items-center gap-2 text-xs text-inherit",
+                                   avatar_class: "size-5",
+                                   name_class: "entity_entity_name",
+                                   info_class: "hidden entity_exchanges_info")
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def render_entity_link(entity_transaction, wrapper_class:, avatar_class:, name_class:, info_class:)
+    entity = entity_transaction.entity
+
+    Link(
+      href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+      size: :xs,
+      class: wrapper_class,
+      data: { turbo_frame: "center_container", turbo_prefetch: "false" }
+    ) do
+      image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white rounded-full #{avatar_class}"
+      span(class: name_class) { entity.entity_name }
+      span(class: info_class) { entity_exchanges_info(entity_transaction) }
+    end
+  end
+
+  def render_entity_avatar_stack(entity_transactions, avatar_class:, limit:)
+    div(class: "flex items-center") do
+      entity_transactions.first(limit).each_with_index do |entity_transaction, index|
+        image_tag(
+          asset_path("avatars/#{entity_transaction.entity.avatar_name}"),
+          class: "bg-white rounded-full border border-white #{avatar_class} #{'-ml-2' if index.positive?}"
+        )
+      end
+    end
+  end
+
+  def entity_exchanges_info(entity_transaction)
+    info = ""
+    info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
+    info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
+    info
   end
 end

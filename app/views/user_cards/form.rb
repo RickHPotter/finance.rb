@@ -105,7 +105,12 @@ class Views::UserCards::Form < Views::Base
           form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: user_card.new_record? || user_card.active
         end
 
-        if user_card.persisted? && user_card.references.any?
+        unpaid_month_years = user_card.unpaid_invoices.distinct.pluck(:month, :year).to_set
+        unpaid_references = user_card.references
+                                     .select { |reference| unpaid_month_years.include?([ reference.month, reference.year ]) }
+                                     .sort_by { |reference| [ reference.year, reference.month ] }
+
+        if user_card.persisted? && unpaid_references.any?
           div(class: "w-full mt-8 mb-8") do
             h3(class: "text-lg font-bold mb-4") { pluralise_model(Reference, 2) }
 
@@ -118,7 +123,7 @@ class Views::UserCards::Form < Views::Base
                 div(class: "text-center") { I18n.t(:datatable_actions) }
               end
 
-              user_card.references.where(reference_closing_date: Date.current..).order(:year, :month).limit(12).each_with_index do |reference, index|
+              unpaid_references.each_with_index do |reference, index|
                 row_class = index.even? ? "bg-gray-100" : "bg-gray-200"
 
                 div(class: "grid grid-cols-5 gap-2 border-b border-slate-200 #{row_class} hover:bg-white") do

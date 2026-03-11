@@ -40,6 +40,28 @@
 
           <div class="mx-1 break-words bg-white shadow-md shadow-red-50 rounded-lg">
             <div class="p-1 md:p-2 lg:p-3">
+              <div class="hidden xl:block" data-controller="history-nav">
+                <button
+                  type="button"
+                  class="fixed left-4 top-1/2 -translate-y-1/2 z-40 rounded-full border border-slate-300 bg-white/90 p-3 text-black shadow-lg transition-all hover:bg-slate-100"
+                  title="Back"
+                  data-history-nav-target="back"
+                  data-action="click->history-nav#back"
+                >
+                  ←
+                </button>
+
+                <button
+                  type="button"
+                  class="fixed right-4 top-1/2 -translate-y-1/2 z-40 rounded-full border border-slate-300 bg-white/90 p-3 text-black shadow-lg transition-all hover:bg-slate-100"
+                  title="Forward"
+                  data-history-nav-target="forward"
+                  data-action="click->history-nav#forward"
+                >
+                  →
+                </button>
+              </div>
+
               <div class="hidden relative" data-controller="price-sum">
                 <div class="absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-50">
                   <span id="totalPriceSum"></span>

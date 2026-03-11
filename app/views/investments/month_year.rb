@@ -79,7 +79,7 @@ class Views::Investments::MonthYear < Views::Base
           if investments.present?
             render_investments
           else
-            div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+            div(class: "text-lg") { I18n.t(:rows_not_found) }
           end
 
           div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
@@ -98,7 +98,7 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "rounded-lg shadow-sm overflow-hidden bg-slate-200 my-2",
+          class: "rounded-lg shadow-sm overflow-hidden bg-slate-200 my-2 hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
@@ -118,14 +118,12 @@ class Views::Investments::MonthYear < Views::Base
               end
             end
 
-            div(class: "py-2 flex items-center gap-2") do
-              div(class: "flex flex-wrap gap-1") do
-                if investment.investment_type.nil?
-                  plain "-"
-                else
-                  div(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs ellipsis") do
-                    investment.investment_type.display_name.upcase
-                  end
+            div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
+              if investment.investment_type.nil?
+                plain "-"
+              else
+                div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full") do
+                  investment.investment_type.display_name.upcase
                 end
               end
             end
@@ -147,11 +145,11 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-7 border-b border-slate-200 bg-gradient-to-r",
+          class: "grid grid-cols-7 bg-gradient-to-r hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
-          div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
+          div(class: "flex items-center justify-between gap-2 rounded-sm pl-4") do
             date, time = I18n.l(investment.date, format: :shorter).split(",")
             div(class: "grid grid-cols-1 mr-auto") do
               span(class: "rounded-xs text-xs mr-auto") { date }
@@ -174,14 +172,14 @@ class Views::Investments::MonthYear < Views::Base
                     data: { turbo_frame: :_top }
           end
 
-          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
-            div(class: "flex flex-wrap gap-1") do
-              if investment.investment_type.nil?
-                plain "-"
-              else
-                div(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs ellipsis") do
-                  investment.investment_type.display_name.upcase
-                end
+          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
+            if investment.investment_type.nil?
+              plain "-"
+            else
+              title = investment.investment_type.display_name.upcase
+
+              div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full", title:) do
+                title
               end
             end
           end

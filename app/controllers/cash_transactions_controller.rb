@@ -22,7 +22,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, cash_transaction_params, search_cash_transaction_params)
 
-    render Views::CashTransactions::MonthYear.new(mobile:, month_year:, month_year_str:, cash_installments:, budgets:)
+    render Views::CashTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      month_year_str:,
+      cash_installments:,
+      budgets:,
+      index_context: month_year_index_context(mobile)
+    )
   end
 
   def show; end
@@ -285,5 +292,29 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
+  end
+
+  def month_year_index_context(mobile)
+    {
+      default_year: params[:default_year],
+      active_month_years: params[:active_month_years].present? ? JSON.parse(params[:active_month_years]).map(&:to_i) : [],
+      search_term: search_cash_transaction_params[:search_term],
+      category_id: [ cash_transaction_params[:category_id] ].flatten.compact_blank,
+      entity_id: [ cash_transaction_params[:entity_id] ].flatten.compact_blank,
+      cash_installment_ids: [ cash_transaction_params[:cash_installment_ids] ].flatten.compact_blank,
+      user_bank_account_id: [ cash_transaction_params[:user_bank_account_id] ].flatten.compact_blank,
+      from_ct_price: search_cash_transaction_params[:from_ct_price],
+      to_ct_price: search_cash_transaction_params[:to_ct_price],
+      from_price: search_cash_transaction_params[:from_price],
+      to_price: search_cash_transaction_params[:to_price],
+      from_installments_count: search_cash_transaction_params[:from_installments_count],
+      to_installments_count: search_cash_transaction_params[:to_installments_count],
+      from_date: search_cash_transaction_params[:from_date],
+      to_date: search_cash_transaction_params[:to_date],
+      paid: search_cash_transaction_params[:paid],
+      pending: search_cash_transaction_params[:pending],
+      skip_budgets: search_cash_transaction_params[:skip_budgets],
+      force_mobile: mobile
+    }
   end
 end

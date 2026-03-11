@@ -47,6 +47,30 @@ export default class extends Controller {
     this._updateContainer()
   }
 
+  selectAll(event) {
+    event.preventDefault()
+
+    let changed = false
+
+    this.monthYearTargets.forEach(button => {
+      const month = parseInt(button.dataset.monthYear)
+      const count = parseInt(button.dataset.count || "0")
+
+      if (count <= 0 || this.activeMonths.has(month)) return
+
+      this.activeMonths.add(month)
+      button.dataset.active = ""
+      button.classList.remove(...inactive_bg)
+      button.classList.add(...active_bg)
+      changed = true
+    })
+
+    if (!changed) return
+
+    this._syncFormState()
+    document.getElementById(this.element.dataset.formId)?.requestSubmit()
+  }
+
   toggleMonth(button) {
     const month = parseInt(button.dataset.monthYear)
 
@@ -97,9 +121,7 @@ export default class extends Controller {
     this.activeMonths.add(month)
     target.classList.remove(...inactive_bg)
     target.classList.add(...active_bg)
-
-    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
-    this.defaultYearTarget.value = this.defaultYear
+    this._syncFormState()
 
     const formId = this.element.dataset.formId
     const form = document.getElementById(formId)
@@ -111,12 +133,17 @@ export default class extends Controller {
     target.classList.remove(...active_bg)
     target.classList.add(...inactive_bg)
 
-    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
+    this._syncFormState()
 
     const frame = document.querySelector(`turbo-frame#month_year_container_${month}`)
     if (frame) {
       frame.remove()
       document.dispatchEvent(new Event("turbo:frame-load"))
     }
+  }
+
+  _syncFormState() {
+    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
+    this.defaultYearTarget.value = this.defaultYear
   }
 }

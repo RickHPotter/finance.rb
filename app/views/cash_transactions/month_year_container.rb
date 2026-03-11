@@ -8,7 +8,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_installments_count, :to_installments_count,
               :from_date, :to_date,
               :paid, :pending,
-              :user_bank_account_id, :active_month_years,
+              :user_bank_account_id, :active_month_years, :default_year,
               :skip_budgets, :force_mobile
 
   def initialize(index_context: {})
@@ -28,6 +28,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @active_month_years = index_context[:active_month_years]
+    @default_year = index_context[:default_year]
     @skip_budgets = index_context[:skip_budgets]
     @force_mobile = index_context[:force_mobile]
   end
@@ -52,6 +53,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         to_date:,
         paid:,
         pending:,
+        default_year:,
+        active_month_years: active_month_years.to_json,
         skip_budgets:,
         force_mobile:
       }

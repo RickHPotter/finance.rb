@@ -2,15 +2,17 @@
 
 class Views::CashInstallments::PayModal < Views::Base
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :cash_installment
+  attr_reader :cash_installment, :index_context
 
-  def initialize(cash_installment:)
+  def initialize(cash_installment:, index_context: {})
     @cash_installment = cash_installment
+    @index_context = index_context
   end
 
   def view_template
@@ -48,6 +50,8 @@ class Views::CashInstallments::PayModal < Views::Base
           model: cash_installment, url: pay_cash_installment_path(cash_installment.id),
           data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
         ) do |form|
+          hidden_field_tag :index_context_json, index_context.to_json
+
           prices_range = [ -1, cash_installment.price ]
           positive = cash_installment.price.to_i.positive?
           prices_range[0] = 1 if positive

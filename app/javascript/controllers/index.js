@@ -55,6 +55,9 @@ application.register("exchange-lock", ExchangeLockController)
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 
+import HistoryNavController from "./history_nav_controller"
+application.register("history-nav", HistoryNavController)
+
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
 

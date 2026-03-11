@@ -4,6 +4,7 @@ class Views::Shared::MonthYearSelector < Views::Base
   include Phlex::Rails::Helpers::TextFieldTag
 
   include ContextHelper
+  include TranslateHelper
 
   attr_reader :current_user, :form_id, :default_year, :years, :active_month_years, :count_by_month_year
 
@@ -27,26 +28,36 @@ class Views::Shared::MonthYearSelector < Views::Base
             div(class: "flex items-center gap-4") do
               button(
                 type: :button,
-                class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-600 p-1
+                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors
                              #{'opacity-10 pointer-events-none' if year == years.first}",
                 data: { action: "click->month-year-selector#prevYear", year: }
               ) do
                 "←"
               end
 
-              span(class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-600 p-1") { year }
+              span(class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-zinc-200 p-1") { year }
 
               button(
                 type: :button,
-                class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-600 p-1
+                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors
                              #{'opacity-10 pointer-events-none' if year == years.last}",
                 data: { action: "click->month-year-selector#nextYear", year: }
               ) do
                 "→"
               end
+
+              button(
+                type: :button,
+                class: "text-lg rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors",
+                data: { action: "click->month-year-selector#selectAll" }
+              ) do
+                action_message(:select_all)
+              end
             end
 
-            div(class: "flex items-center gap-4", &)
+            div(class: "flex items-center gap-4") do
+              yield if block_given?
+            end
           end
 
           div(class: "grid 2xl:grid-cols-12 xl:grid-cols-6 lg:grid-cols-4 grid-cols-3 pt-3 gap-2") do
@@ -74,6 +85,7 @@ class Views::Shared::MonthYearSelector < Views::Base
                   month_year_selector_target: "monthYear",
                   action: "mousedown->month-year-selector#activate mouseup->month-year-selector#stop",
                   month_year:,
+                  count:,
                   active: active_month_years.include?(month_year)
                 }
               ) do
