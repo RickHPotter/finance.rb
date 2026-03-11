@@ -23,7 +23,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+        style = solid_or_gradient_style(categories_for(cash_transaction))
 
         render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
@@ -31,7 +31,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+        style = solid_or_gradient_style(categories_for(cash_transaction))
 
         render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
       end
@@ -45,7 +45,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name) # rubocop:disable Metrics/PerceivedComplexity
+  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
 
@@ -145,7 +145,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               border = style.split("; color:").last
-              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+              categories_for(cash_transaction).each do |category|
                 span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
                   category.name
                 end
@@ -242,7 +242,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+          categories_for(cash_transaction).each do |category|
             border = style.split("; color:").last
             span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
               category.name
@@ -274,7 +274,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_mobile_entities(cash_transaction, avatar_name)
-    entities = cash_transaction.entity_transactions.order(:id).includes(:entity).map(&:entity)
+    entities = entities_for(cash_transaction, :id)
 
     div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
       if entities.one?
@@ -307,7 +307,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_desktop_entities(cash_transaction, avatar_name)
-    entities = cash_transaction.entity_transactions.order(:entity_id).includes(:entity).map(&:entity)
+    entities = entities_for(cash_transaction, :entity_id)
 
     div(
       class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
@@ -368,6 +368,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         )
       end
     end
+  end
+
+  def categories_for(cash_transaction)
+    cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+  end
+
+  def entities_for(cash_transaction, sort_key)
+    cash_transaction.entity_transactions.sort_by(&sort_key).filter_map(&:entity)
   end
 
   def render_row_checkbox(cash_installment, mobile: false)

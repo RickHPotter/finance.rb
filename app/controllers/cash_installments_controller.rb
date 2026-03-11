@@ -121,7 +121,7 @@ class CashInstallmentsController < ApplicationController
     }
   end
 
-  def build_index_context_from_selection
+  def build_index_context_from_selection # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     return false if params[:index_context_json].blank?
 
     context = JSON.parse(params[:index_context_json]).with_indifferent_access
@@ -151,7 +151,7 @@ class CashInstallmentsController < ApplicationController
     force_mobile = ActiveModel::Type::Boolean.new.cast(context[:force_mobile])
     active_month_years = Array(context[:active_month_years]).map(&:to_i)
     default_year = context[:default_year].presence&.to_i
-    default_year ||= active_month_years.max&.to_s&.first(4)&.to_i
+    default_year ||= active_month_years.max.to_s.first(4).to_i if active_month_years.any?
     default_year ||= today_zn.year
 
     cash_transaction_filters = {
@@ -207,7 +207,7 @@ class CashInstallmentsController < ApplicationController
   end
 
   def selected_cash_installments
-    current_user.cash_installments.where(id: selected_ids, paid: false).order(:order_id)
+    current_user.cash_installments.includes(:cash_transaction).where(id: selected_ids, paid: false).order(:order_id)
   end
 
   def selected_ids

@@ -24,6 +24,7 @@ module Logic
       search_term = search_investment_params.delete(:search_term) || ""
 
       user.investments
+          .includes(:user_bank_account, :investment_type)
           .where(investment_params)
           .where("description ILIKE ?", "%#{search_term}%")
           .where("year = ? AND month = ?", year, month)

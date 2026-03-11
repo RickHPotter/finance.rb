@@ -294,7 +294,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
-  def month_year_index_context(mobile)
+  def month_year_index_context(mobile) # rubocop:disable Metrics/AbcSize
     {
       default_year: params[:default_year],
       active_month_years: params[:active_month_years].present? ? JSON.parse(params[:active_month_years]).map(&:to_i) : [],

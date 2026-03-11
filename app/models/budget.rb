@@ -55,12 +55,12 @@ class Budget < ApplicationRecord
     self.first_installment_only = false
   end
 
-  def set_remaining_value
+  def set_remaining_value # rubocop:disable Metrics/AbcSize
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
 
-    cash_installments = user.cash_installments.where(month:, year:)
-    card_installments = user.card_installments.where(month:, year:)
+    cash_installments = user.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    card_installments = user.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
 
     if first_installment_only
       cash_installments = cash_installments.where(number: 1)

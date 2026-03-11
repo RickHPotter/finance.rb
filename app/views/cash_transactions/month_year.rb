@@ -5,7 +5,7 @@ class Views::CashTransactions::MonthYear < Views::Base
 
   attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :budgets, :total_amount, :index_context
 
-  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, budgets:, index_context: {})
+  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, budgets:, index_context: {}) # rubocop:disable Metrics/ParameterLists
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
@@ -37,7 +37,6 @@ class Views::CashTransactions::MonthYear < Views::Base
               from_cent_based_to_float(total_amount, "R$")
             end
           end
-
         end
 
         if cash_installments.present? || budgets.present?
@@ -62,7 +61,6 @@ class Views::CashTransactions::MonthYear < Views::Base
               from_cent_based_to_float(total_amount, "R$")
             end
           end
-
         end
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do

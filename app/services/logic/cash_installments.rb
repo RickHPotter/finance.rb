@@ -35,7 +35,13 @@ module Logic
     def self.fetch_cash_installments(user, month, year, options)
       relation = user.cash_installments
                      .where(year:, month:)
-                     .includes(cash_transaction: %i[categories entities])
+                     .includes(cash_transaction: [
+                                 :categories,
+                                 :entities,
+                                 :card_installments,
+                                 { category_transactions: :category },
+                                 { entity_transactions: :entity }
+                               ])
                      .where(options[:conditions])
                      .where(options[:search_term_condition])
 
