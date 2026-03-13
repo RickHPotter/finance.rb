@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::CheckBoxTag
@@ -112,122 +112,42 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                 end
               end
 
-              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :price)
-                  thin__label(form, :self)
-                end
+              PriceRangeFields(
+                form:,
+                object: CashTransaction,
+                from_field: :from_ct_price,
+                to_field: :to_ct_price,
+                from_value: from_ct_price,
+                to_value: to_ct_price,
+                subject_label_key: :self
+              )
 
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_ct_price,
-                    svg: :money,
-                    value: from_ct_price,
-                    placeholder: model_attribute(CashTransaction, :from_ct_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
+              PriceRangeFields(
+                form:,
+                object: CashTransaction,
+                from_field: :from_price,
+                to_field: :to_price,
+                from_value: from_price,
+                to_value: to_price,
+                subject_label_key: :cash_installment
+              )
 
-                div(class: "hidden lg:flex m-auto") do
-                  cached_icon :exchange
-                end
+              InstallmentsCountRangeFields(
+                form:,
+                from_field: :from_installments_count,
+                to_field: :to_installments_count,
+                from_value: from_installments_count || 1,
+                to_value: to_installments_count || 72,
+                subject_label_key: :cash_installment
+              )
 
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_ct_price,
-                    svg: :money,
-                    value: to_ct_price,
-                    placeholder: model_attribute(CashTransaction, :to_ct_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-              end
-
-              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :price)
-                  thin__label(form, :cash_installment)
-                end
-
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_price,
-                    svg: :money,
-                    value: from_price,
-                    placeholder: model_attribute(CashTransaction, :from_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-
-                div(class: "hidden lg:flex m-auto") do
-                  cached_icon :exchange
-                end
-
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_price,
-                    svg: :money,
-                    value: to_price || nil,
-                    placeholder: model_attribute(CashTransaction, :to_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-              end
-
-              div class: "grid grid-cols-11 my-auto mb-1" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :count)
-                  thin__label(form, :cash_installment)
-                end
-
-                div class: "col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_installments_count,
-                    type: :number,
-                    svg: :number,
-                    min: 1, max: 72,
-                    value: from_installments_count || 1
-                end
-
-                div(class: "m-auto") do
-                  cached_icon :exchange
-                end
-
-                div class: "col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_installments_count,
-                    type: :number,
-                    svg: :number,
-                    min: 1, max: 72,
-                    value: to_installments_count || 72
-                end
-              end
-
-              div(class: "grid grid-cols-11 my-auto mb-1") do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :date)
-                end
-
-                div(class: "col-span-5 my-auto") do
-                  TextFieldTag \
-                    :from_date,
-                    type: :date,
-                    svg: :calendar,
-                    value: from_date
-                end
-
-                div(class: "m-auto") do
-                  cached_icon :exchange
-                end
-
-                div(class: "col-span-5 my-auto") do
-                  TextFieldTag \
-                    :to_date,
-                    type: :date,
-                    svg: :calendar,
-                    value: to_date
-                end
-              end
+              DateRangeFields(
+                form:,
+                from_field: :from_date,
+                to_field: :to_date,
+                from_value: from_date,
+                to_value: to_date
+              )
             end
           end
         end
@@ -251,7 +171,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_cash_transaction_path(format: :turbo_stream),
                 id: "new_cash_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors

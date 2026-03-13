@@ -88,8 +88,10 @@ export default class extends Controller {
     this.itemTargets.forEach(item => item.ariaCurrent = "false")
     this.popoverTarget.showPopover()
     if (this.hasSearchInputTarget) {
-      this.searchInputTarget.focus()
-      this.searchInputTarget.select()
+      requestAnimationFrame(() => {
+        this.searchInputTarget.focus()
+        this.searchInputTarget.select()
+      })
     }
   }
 

@@ -34,8 +34,9 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
   end
 
   def view_template
-    turbo_frame_tag :month_year_container do
-      custom_params = {
+    render Views::Shared::MonthYearContainer.new(
+      active_month_years:,
+      custom_params: {
         cash_transaction: {
           cash_installment_ids:,
           user_bank_account_id:,
@@ -57,11 +58,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         active_month_years: active_month_years.to_json,
         skip_budgets:,
         force_mobile:
-      }
-
-      active_month_years.sort.each do |month_year|
-        turbo_frame_tag "month_year_container_#{month_year}", src: month_year_cash_transactions_path(custom_params.merge(month_year:))
-      end
-    end
+      },
+      path_lambda: ->(params) { month_year_cash_transactions_path(params) }
+    )
   end
 end

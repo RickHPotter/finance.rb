@@ -73,7 +73,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               if cash_transaction.investment?
                 default_year = cash_transaction.year
                 active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
-                investment = { user_bank_account_id: cash_transaction.user_bank_account_id }
+                investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment.investment_type_id }
 
                 link_to cash_transaction.description,
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
@@ -210,7 +210,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           if cash_transaction.investment?
             default_year = cash_transaction.year
             active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
-            investment = { user_bank_account_id: cash_transaction.user_bank_account_id }
+            investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investments.first.investment_type_id }
 
             link_to cash_transaction.description,
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),

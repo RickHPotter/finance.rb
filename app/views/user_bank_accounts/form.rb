@@ -2,7 +2,6 @@
 
 class Views::UserBankAccounts::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::DOMID
 
   include TranslateHelper

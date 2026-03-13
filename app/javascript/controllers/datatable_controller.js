@@ -1,24 +1,35 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["table", "row", "category", "entity", "checkbox", "bulkBar", "selectedCount"]
+  static targets = ["row", "checkbox", "bulkBar"]
 
   connect() {
-    this.initialise()
-    this.syncBulkBars()
-  }
-
-  initialise() {
-    document.addEventListener("dragover", (event) => {
+    this.onDocumentDragOver = this.onDocumentDragOver || ((event) => {
       event.preventDefault()
     })
 
-    document.addEventListener("drop", (event) => {
+    this.onDocumentDrop = this.onDocumentDrop || ((event) => {
       const transactionId = event.dataTransfer.getData("text/plain")
       const monthBtn = event.target.closest("[data-month-year-selector-target='monthYear']")
       // TODO: implement dragging to another month, or maybe even to another card
       // implement also a toast with undo button and, obviously the undo functionality
     })
+
+    this.initialise()
+    this.syncBulkBars()
+  }
+
+  disconnect() {
+    document.removeEventListener("dragover", this.onDocumentDragOver)
+    document.removeEventListener("drop", this.onDocumentDrop)
+  }
+
+  initialise() {
+    document.removeEventListener("dragover", this.onDocumentDragOver)
+    document.removeEventListener("drop", this.onDocumentDrop)
+
+    document.addEventListener("dragover", this.onDocumentDragOver)
+    document.addEventListener("drop", this.onDocumentDrop)
   }
 
   filter(event) {

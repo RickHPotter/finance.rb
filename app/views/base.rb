@@ -6,12 +6,16 @@ module Views
 
     register_output_helper :combobox_tag
 
+    def rails_view_context
+      context[:rails_view_context]
+    end
+
     def params
-      context[:rails_view_context].params
+      rails_view_context.params
     end
 
     def request
-      context[:rails_view_context].request
+      rails_view_context.request
     end
 
     def thin__label(form, field)

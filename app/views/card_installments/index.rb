@@ -39,7 +39,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-2 hover:opacity-80 transition-all",
+        class: "rounded-lg shadow-sm overflow-hidden my-2",
         style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row }
       ) do
@@ -98,7 +98,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 hover:opacity-65") do
+        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           date, time = I18n.l(card_installment.date, format: :shorter).split(",")
           div(class: "grid grid-cols-1") do
             span(class: "rounded-xs text-xs mr-auto") { date }
@@ -123,7 +123,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(
-          class: "col-span-3 py-2 flex items-center justify-center gap-2 hover:opacity-65",
+          class: "col-span-3 py-2 flex items-center justify-center gap-2",
           data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }
         ) do
           if card_transaction.categories.count > 1
@@ -160,7 +160,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         render_desktop_entities(card_transaction)
 
-        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto hover:opacity-65") do
+        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           from_cent_based_to_float(card_installment.price, "R$")
         end
 

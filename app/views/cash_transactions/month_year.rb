@@ -3,12 +3,12 @@
 class Views::CashTransactions::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :budgets, :total_amount, :index_context
+  attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context
 
-  def initialize(mobile:, month_year:, month_year_str:, cash_installments:, budgets:, index_context: {}) # rubocop:disable Metrics/ParameterLists
-    @month_year = month_year
+  def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {})
     @mobile = mobile
-    @month_year_str = month_year_str
+    @month_year = month_year
+    @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")
     @cash_installments = cash_installments
     @budgets = budgets
     @total_amount = cash_installments.sum(&:price) + budgets.sum(&:remaining_value)
@@ -28,16 +28,7 @@ class Views::CashTransactions::MonthYear < Views::Base
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table, month_year_group: month_year }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
-        div(class: "pb-2 pt-6 text-slate-800 flex gap-2 relative") do
-          div(class: "flex gap-2 absolute left-0 bottom-4") do
-            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg") { month_year_str }
-
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum,
-                 data: { price: total_amount }) do
-              from_cent_based_to_float(total_amount, "R$")
-            end
-          end
-        end
+        render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%b %Y"), total_amount:, mobile:)
 
         if cash_installments.present? || budgets.present?
           render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
@@ -52,16 +43,7 @@ class Views::CashTransactions::MonthYear < Views::Base
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table, month_year_group: month_year }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
-        div(class: "pb-2 pt-4 text-slate-800 flex gap-2 relative") do
-          div(class: "flex gap-2 absolute left-0 bottom-4") do
-            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg") { month_year_str }
-
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg", id: :priceSum,
-                 data: { price: total_amount }) do
-              from_cent_based_to_float(total_amount, "R$")
-            end
-          end
-        end
+        render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:)
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
           div(class: "grid grid-cols-12 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do

@@ -2,6 +2,7 @@
 
 class Views::Lalas::CashInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
+  include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
@@ -39,7 +40,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
       icon = choose_icon(cash_installment)
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2",
         style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
@@ -73,50 +74,17 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
+          div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-              if cash_transaction.categories.count > 2
-                first_two = cash_transaction.categories.first(2)
-                remaining = cash_transaction.categories[2..]
-
-                first_two.each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
-                    "#{category.name},"
-                  end
-                end
-
-                Popover(options: { placement: "top" }, class: "rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                  PopoverTrigger(class: "w-full") do
-                    Button(size: :xs, class: "p-1 text-xs") do
-                      "+#{cash_transaction.categories.count - 2}"
-                    end
-                  end
-
-                  PopoverContent(class: "w-40") do
-                    remaining.each do |category|
-                      p(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                        category.name
-                      end
-                    end
-                  end
-                end
-              else
-                cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
-                    category.name
-                  end
+              border = style.split("; color:").last
+              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
+                  category.name
                 end
               end
             end
 
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-              cash_transaction.entity_transactions.order(:id).map(&:entity).each do |entity|
-                span(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-                  plain entity.entity_name
-                end
-              end
-            end
+            render_mobile_entities(cash_transaction)
           end
         end
       end
@@ -128,7 +96,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
       icon = choose_icon(cash_installment)
 
       div(
-        class: "grid grid-cols-11 border-b border-slate-200 hover:opacity-65",
+        class: "grid grid-cols-12 hover:opacity-80",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
@@ -151,66 +119,26 @@ class Views::Lalas::CashInstallments::Index < Views::Base
           end
         end
 
-        div(
-          class: "col-span-2 py-2 flex items-center justify-center gap-2",
-          data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }
-        ) do
-          if cash_transaction.categories.count > 1
-            first_one = cash_transaction.categories.first
-            remaining = cash_transaction.categories[1..]
-
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              first_one.name
-            end
-
-            Popover(options: { placement: "right" },
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              PopoverTrigger(class: "w-full") do
-                button(class: "text-xs") do
-                  "+#{cash_transaction.categories.count - 1}"
-                end
-              end
-
-              PopoverContent(class: "z-50 !opacity-100 ml-2") do
-                remaining.each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-                    category.name
-                  end
-                end
-              end
-            end
-          else
-            cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-                category.name
-              end
+        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+          border = style.split("; color:").last
+          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
+              category.name
             end
           end
         end
 
-        div(
-          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-          data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }
-        ) do
-          cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
-            entity = entity_transaction.entity
-
-            span(class: "flex-1 grid grid-cols-1 text-xs mx-auto") do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-              plain entity.entity_name
-            end
-          end
-        end
+        render_desktop_entities(cash_transaction)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "py-2 px-2 flex items-center justify-center gap-2 font-lekton font-bold whitespace-nowrap ml-auto") do
-          span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
+        div(class: "py-2 px-2 font-lekton font-bold whitespace-nowrap ml-auto") do
+          span(class: "flex items-center justify-center gap-2 hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
             cached_icon(icon)
+            span { cash_installment.paid ? "Sim" : "Não" }
           end
-          span { cash_installment.paid ? "Sim" : "Não" }
         end
       end
     end
@@ -221,6 +149,41 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     in [ true,  _     ] then :check_square
     in [ false, true  ] then :warning_octagon
     in [ false, false ] then :x_circle
+    end
+  end
+
+  def render_mobile_entities(cash_transaction)
+    items = entity_popover_items(cash_transaction, :id)
+
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count).upcase,
+      variant: :cash
+    )
+  end
+
+  def render_desktop_entities(cash_transaction)
+    render Views::Entities::Popover.new(
+      items: entity_popover_items(cash_transaction, :entity_id),
+      mobile: false,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: "",
+      variant: :cash
+    )
+  end
+
+  def entities_for(cash_transaction, sort_key)
+    cash_transaction.entity_transactions.sort_by(&sort_key).filter_map(&:entity)
+  end
+
+  def entity_popover_items(cash_transaction, sort_key)
+    entities_for(cash_transaction, sort_key).map do |entity|
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name
+      }
     end
   end
 end

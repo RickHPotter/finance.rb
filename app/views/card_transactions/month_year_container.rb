@@ -30,8 +30,9 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
   end
 
   def view_template
-    turbo_frame_tag :month_year_container do
-      custom_params = {
+    render Views::Shared::MonthYearContainer.new(
+      active_month_years:,
+      custom_params: {
         card_transaction: {
           card_installment_ids:,
           user_card_id:,
@@ -49,11 +50,8 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
         to_installments_number:,
         order_by:,
         force_mobile:
-      }
-
-      active_month_years.sort.each do |month_year|
-        turbo_frame_tag "month_year_container_#{month_year}", src: month_year_card_transactions_path(custom_params.merge(month_year:))
-      end
-    end
+      },
+      path_lambda: ->(params) { month_year_card_transactions_path(params) }
+    )
   end
 end

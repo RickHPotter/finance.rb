@@ -15,7 +15,9 @@ module Components
 
     def view_template(&)
       modal_id = "linkWithConfirmDialog_#{id}"
+      trigger_id = link_params[:id] || "linkWithConfirmTrigger_#{id}"
 
+      link_params[:id] = trigger_id
       link_params[:data] ||= {}
       link_params[:data][:modal_target] = modal_id
       link_params[:data][:modal_toggle] = modal_id
@@ -24,7 +26,7 @@ module Components
         id: modal_id,
         class: "hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)]",
         tabindex: "-1",
-        data: { controller: :confirm, confirm_target: :dialog }
+        data: { controller: :confirm, confirm_link_id_value: trigger_id }
       ) do
         div(class: "bg-white p-6 rounded-lg shadow-lg") do
           div(class: "flex") do

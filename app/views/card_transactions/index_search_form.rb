@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CardTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::SelectTag
@@ -92,95 +92,34 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                 end
               end
 
-              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :price)
-                  thin__label(form, :self)
-                end
+              PriceRangeFields(
+                form:,
+                object: CardTransaction,
+                from_field: :from_ct_price,
+                to_field: :to_ct_price,
+                from_value: from_ct_price,
+                to_value: to_ct_price,
+                subject_label_key: :self
+              )
 
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_ct_price,
-                    svg: :money,
-                    value: from_ct_price,
-                    placeholder: model_attribute(CardTransaction, :from_ct_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
+              PriceRangeFields(
+                form:,
+                object: CardTransaction,
+                from_field: :from_price,
+                to_field: :to_price,
+                from_value: from_price,
+                to_value: to_price,
+                subject_label_key: :card_installment
+              )
 
-                div(class: "hidden lg:flex m-auto") do
-                  cached_icon :exchange
-                end
-
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_ct_price,
-                    svg: :money,
-                    value: to_ct_price,
-                    placeholder: model_attribute(CardTransaction, :to_ct_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-              end
-
-              div class: "grid grid-cols-11 gap-y-1 my-auto mb-2" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :price)
-                  thin__label(form, :card_installment)
-                end
-
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_price,
-                    svg: :money,
-                    value: from_price,
-                    placeholder: model_attribute(CardTransaction, :from_price),
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-
-                div(class: "hidden lg:flex m-auto") do
-                  cached_icon :exchange
-                end
-
-                div class: "col-span-11 lg:col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_price,
-                    svg: :money,
-                    value: to_price || nil,
-                    onclick: "this.select();",
-                    data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
-                end
-              end
-
-              div class: "grid grid-cols-11 my-auto mb-1" do
-                div class: "col-span-11 font-graduate flex gap-1 justify-center" do
-                  thin__label(form, :count)
-                  thin__label(form, :card_installment)
-                end
-
-                div class: "col-span-5 my-auto" do
-                  TextFieldTag \
-                    :from_installments_count,
-                    type: :number,
-                    svg: :number,
-                    min: 1, max: 72,
-                    value: from_installments_count || 1
-                end
-
-                div(class: "m-auto") do
-                  cached_icon :exchange
-                end
-
-                div class: "col-span-5 my-auto" do
-                  TextFieldTag \
-                    :to_installments_count,
-                    type: :number,
-                    svg: :number,
-                    min: 1, max: 72,
-                    value: to_installments_count || 72
-                end
-              end
+              InstallmentsCountRangeFields(
+                form:,
+                from_field: :from_installments_count,
+                to_field: :to_installments_count,
+                from_value: from_installments_count || 1,
+                to_value: to_installments_count || 72,
+                subject_label_key: :card_installment
+              )
 
               div class: "my-auto pt-4" do
                 label(class: "font-poetsen-one font-thin text-gray-500", for: :order_by) { I18n.t(:order) }
@@ -218,7 +157,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors

@@ -156,7 +156,7 @@ class Views::Budgets::Budgets < Views::Base
           from_cent_based_to_float(budget.remaining_value, "R$")
         end
 
-        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
           div(class: "p-1 rounded-md shadow-sm border border-white") do
             from_cent_based_to_float(budget.balance, "R$")
           end

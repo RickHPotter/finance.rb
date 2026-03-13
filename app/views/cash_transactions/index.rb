@@ -33,38 +33,21 @@ class Views::CashTransactions::Index < Views::Base
                                                                                :from_date, :to_date,
                                                                                :user_bank_account_id, :active_month_years, :skip_budgets))
 
-              div(
-                class: "hidden fixed inset-x-3 bottom-20 md:bottom-6 md:left-1/2 md:right-auto md:inset-x-auto md:-translate-x-1/2 z-50",
-                data: { datatable_target: :bulkBar }
-              ) do
-                div(class: "pointer-events-auto rounded-2xl border border-slate-300 bg-white/95 backdrop-blur shadow-2xl px-5 py-4 md:px-6 md:py-4") do
-                  div(class: "flex flex-col md:flex-row md:items-center md:justify-center gap-3 md:gap-5") do
-                    div(class: "text-base font-semibold text-slate-800 whitespace-nowrap text-center md:text-left") do
-                      span(data: { datatable_target: :selectedCount }) { "0" }
-                      plain " "
-                      plain action_message(:selected)
-                    end
-
-                    div(class: "flex gap-2 md:gap-3") do
-                      Button(
-                        title: model_attribute(CashInstallment, :pay),
-                        class: "flex-1 md:flex-none md:min-w-32",
-                        data: { action: "click->datatable#prepareBulkAction", modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
-                      ) do
-                        model_attribute(CashInstallment, :pay)
-                      end
-
-                      Button(
-                        title: model_attribute(CashInstallment, :transfer),
-                        class: "flex-1 md:flex-none md:min-w-32",
-                        data: { action: "click->datatable#prepareBulkAction", modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
-                      ) do
-                        model_attribute(CashInstallment, :transfer)
-                      end
-                    end
-                  end
-                end
-              end
+              BulkActionBar(
+                selected_label: action_message(:selected),
+                actions: [
+                  {
+                    title: model_attribute(CashInstallment, :pay),
+                    label: model_attribute(CashInstallment, :pay),
+                    data: { action: "click->datatable#prepareBulkAction", modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
+                  },
+                  {
+                    title: model_attribute(CashInstallment, :transfer),
+                    label: model_attribute(CashInstallment, :transfer),
+                    data: { action: "click->datatable#prepareBulkAction", modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
+                  }
+                ]
+              )
             end
 
             div(class: "md:hidden") do

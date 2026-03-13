@@ -18,14 +18,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def month_year
     mobile = search_cash_transaction_params[:force_mobile] || @mobile
     month_year = search_cash_transaction_params[:month_year]
-    month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
     cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, cash_transaction_params, search_cash_transaction_params)
 
     render Views::CashTransactions::MonthYear.new(
       mobile:,
       month_year:,
-      month_year_str:,
       cash_installments:,
       budgets:,
       index_context: month_year_index_context(mobile)

@@ -2,7 +2,6 @@
 
 class Views::Entities::Entity < Views::Base
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath

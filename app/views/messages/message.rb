@@ -5,7 +5,6 @@ class Views::Messages::Message < Views::Base
   attr_reader :message
 
   include Phlex::Rails::Helpers::DOMID
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::LinkTo
 
   include TranslateHelper

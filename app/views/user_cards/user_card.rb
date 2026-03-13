@@ -2,7 +2,6 @@
 
 class Views::UserCards::UserCard < Views::Base
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::TurboFrameTag
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::Cycle
 

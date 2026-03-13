@@ -261,7 +261,7 @@ class Views::V1::CashTransactions::IndexSearchForm < Views::Base # rubocop:disab
 
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
-      render Views::Shared::MonthYearSelector.new(current_user:, form_id: :search_form, default_year:, years:, active_month_years:, count_by_month_year:) do
+      render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_v1_cash_transaction_path(format: :turbo_stream),
                 id: "new_cash_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
