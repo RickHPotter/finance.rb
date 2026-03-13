@@ -13,13 +13,14 @@ class CreateInvestmentTypes < ActiveRecord::Migration[7.1]
     add_index :investment_types, :investment_type_code, unique: true
     add_index :investment_types, :built_in
 
-    add_reference :investments, :investment_type, foreign_key: true
-    add_reference :cash_transactions, :investment_type, foreign_key: true
+    add_reference :investments,       :investment_type, foreign_key: true, null: false
+    add_reference :cash_transactions, :investment_type, foreign_key: true, null: true
 
     investment_types = [
       # ============================================================================
       # RENDA FIXA - LIQUIDEZ DIÁRIA (Fixed Income - Daily Liquidity)
       # ============================================================================
+      { code: "renda_fixa", name: "Renda Fixa", built_in: true },
       { code: "renda_fixa_liquidez_diaria", name: "Renda Fixa - Liquidez Diária", built_in: true },
       { code: "renda_fixa_cdb_liquidez_diaria", name: "Renda Fixa - CDB Liquidez Diária", built_in: true },
       { code: "renda_fixa_rdb", name: "Renda Fixa - RDB", built_in: true },
@@ -29,7 +30,6 @@ class CreateInvestmentTypes < ActiveRecord::Migration[7.1]
       # ============================================================================
       # RENDA FIXA (Fixed Income)
       # ============================================================================
-      { code: "renda_fixa", name: "Renda Fixa", built_in: true },
       { code: "renda_fixa_tesouro_direto", name: "Renda Fixa - Tesouro Direto", built_in: true },
       { code: "renda_fixa_tesouro_selic", name: "Renda Fixa - Tesouro Selic", built_in: true },
       { code: "renda_fixa_tesouro_prefixado", name: "Renda Fixa - Tesouro Prefixado", built_in: true },

@@ -8,7 +8,15 @@ RSpec.describe Investment, type: :model do
   let(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
   let(:cash_transaction) { subject.cash_transaction }
   let!(:investments) do
-    build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
+    build_list(
+      :investment,
+      3,
+      :random,
+      user: subject.user,
+      user_bank_account: subject.user_bank_account,
+      investment_type: subject.investment_type,
+      date: subject.date
+    ) do |inv, i|
       inv.save(date: subject.date + i + 1)
     end
   end
@@ -36,7 +44,7 @@ RSpec.describe Investment, type: :model do
 
     context "( associations )" do
       ob_models = %i[cash_transaction]
-      bt_models = %i[user user_bank_account]
+      bt_models = %i[user user_bank_account investment_type]
       hm_models = %i[category_transactions categories]
       na_models = %i[category_transactions]
 
@@ -137,7 +145,7 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
-#  investment_type_id   :bigint           indexed
+#  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
 #

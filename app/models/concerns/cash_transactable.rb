@@ -81,7 +81,7 @@ module CashTransactable
   # @return [void].
   #
   def update_cash_transaction
-    cash_transaction.update_columns(price: full_price, comment:)
+    cash_transaction.update_columns(description: cash_transaction_description, price: full_price, comment:)
     cash_transaction.cash_installments.first.update_columns(price: full_price)
   end
 

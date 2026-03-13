@@ -14,7 +14,7 @@ class Investment < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_bank_account
-  belongs_to :investment_type, optional: true
+  belongs_to :investment_type
 
   # @validations ..............................................................
   validates :price, :date, :description, presence: true
@@ -35,7 +35,6 @@ class Investment < ApplicationRecord
   #
   def cash_transaction_description
     [
-      pluralise_model(Investment, 1).upcase,
       investment_type&.display_name&.upcase,
       user_bank_account.user_bank_account_name,
       month_year
@@ -124,7 +123,7 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
-#  investment_type_id   :bigint           indexed
+#  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
 #
