@@ -34,11 +34,6 @@ class CardInstallment < Installment
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
-
-  # Retrieves the `reference_date` for the associated `card_transaction` through `user_card.references`, based on `month` and `year`.
-  #
-  # @return [Date].
-  #
   def card_payment_date
     reference = user_card.find_or_create_reference_for(date)
     reference.reference_date
@@ -47,10 +42,6 @@ class CardInstallment < Installment
   def transactable
     card_transaction
   end
-
-  # @protected_instance_methods ...............................................
-
-  protected
 
   # Generates a `description` for the associated `cash_transaction` based on the `user_card` name and `month_year`.
   #
@@ -74,6 +65,10 @@ class CardInstallment < Installment
     # TODO: this is not language agnostic
     "Upfront: #{in_one}, Installments: #{spread}"
   end
+
+  # @protected_instance_methods ...............................................
+
+  protected
 
   # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the card invoice.
   #

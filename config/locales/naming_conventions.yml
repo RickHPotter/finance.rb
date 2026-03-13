@@ -1,0 +1,59 @@
+en:
+  naming_conventions:
+    title: "Update Naming Convention"
+    description: "Preview description changes for Investment, Exchange Return, Card Payment, and Card Advance before applying them."
+    preview: "Update Naming Convention"
+    refresh_preview: "Refresh Preview"
+    preview_again: "Preview Again"
+    no_changes_found: "No naming convention changes were found."
+    no_changes_applied: "No naming convention changes were applied."
+    no_changes_needed: "No naming convention changes were needed."
+    updated:
+      one: "Updated naming convention for 1 record."
+      other: "Updated naming convention for %{count} records."
+    will_update:
+      one: "1 record will be updated."
+      other: "%{count} records will be updated."
+    did_update:
+      one: "1 record updated."
+      other: "%{count} records updated."
+    conventions:
+      investment: "Investment"
+      exchange_return: "Exchange Return"
+      card_payment: "Card Payment"
+      card_advance: "Card Advance"
+    group:
+      card_transaction: "CardTransaction"
+      installments_count: "installments_count"
+      exchanges_count: "exchanges_count"
+      entity: "entity"
+
+pt-BR:
+  naming_conventions:
+    title: "Atualizar Convenção de Nomenclatura"
+    description: "Visualize as mudanças de descrição para Investimento, Retorno de Troca, Pagamento de Cartão e Adiantamento de Cartão antes de aplicá-las."
+    preview: "Atualizar Convenção de Nomenclatura"
+    refresh_preview: "Atualizar Prévia"
+    preview_again: "Visualizar Novamente"
+    no_changes_found: "Nenhuma mudança de convenção de nomenclatura foi encontrada."
+    no_changes_applied: "Nenhuma mudança de convenção de nomenclatura foi aplicada."
+    no_changes_needed: "Nenhuma mudança de convenção de nomenclatura era necessária."
+    updated:
+      one: "Convenção de nomenclatura atualizada para 1 registro."
+      other: "Convenção de nomenclatura atualizada para %{count} registros."
+    will_update:
+      one: "1 registro será atualizado."
+      other: "%{count} registros serão atualizados."
+    did_update:
+      one: "1 registro atualizado."
+      other: "%{count} registros atualizados."
+    conventions:
+      investment: "Investimento"
+      exchange_return: "Retorno de Troca"
+      card_payment: "Pagamento de Cartão"
+      card_advance: "Adiantamento de Cartão"
+    group:
+      card_transaction: "Transação de Cartão"
+      installments_count: "quantidade_de_parcelas"
+      exchanges_count: "quantidade_de_trocas"
+      entity: "entidade"

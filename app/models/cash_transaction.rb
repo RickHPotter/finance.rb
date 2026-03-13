@@ -35,6 +35,11 @@ class CashTransaction < ApplicationRecord
   after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
+  scope :investment, -> { where(cash_transaction_type: "Investment") }
+  scope :card_payment, -> { where(cash_transaction_type: "CardInstallment") }
+  scope :card_advance, -> { where(cash_transaction_type: "CardTransaction") }
+  scope :exchange_return, -> { where(cash_transaction_type: "Exchange") }
+
   # @public_instance_methods ..................................................
 
   def entity_bundle

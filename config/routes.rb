@@ -194,6 +194,11 @@ Rails.application.routes.draw do
 
   resources :subscriptions, only: :create
 
+  resource :naming_convention, only: [] do
+    post :preview
+    patch :update
+  end
+
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
   end

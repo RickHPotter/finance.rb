@@ -25,9 +25,6 @@ class Investment < ApplicationRecord
 
   # @scopes ...................................................................
   # @public_instance_methods ..................................................
-  # @protected_instance_methods ...............................................
-
-  protected
 
   # Generates a `description` for the associated `cash_transaction` based on the `user`'s `bank_name` and `month_year`.
   #
@@ -57,6 +54,10 @@ class Investment < ApplicationRecord
     days = I18n.t("datetime.prompts.day").pluralize
     "#{days}: [#{cash_transaction.investments.order(:date).map(&:day).join(', ')}]"
   end
+
+  # @protected_instance_methods ...............................................
+
+  protected
 
   # Generates a `category_transactions` for the associated `cash_transaction` that mounts up the investment entries.
   #

@@ -22,8 +22,17 @@ class Views::Shared::AppFooter < Views::Base
 
       if current_user
         div(class: "hidden md:flex justify-center mb-2") do
-          link_to "Download Backup", admin_data_backup_path, class: "text-sm text-indigo-700 hover:text-indigo-500"
+          div(class: "flex items-center gap-4") do
+            link_to I18n.t("naming_conventions.title"),
+                    "#",
+                    class: "text-sm text-indigo-700 hover:text-indigo-500",
+                    data: { modal_target: "namingConventionModal", modal_toggle: "namingConventionModal" }
+
+            link_to "Download Backup", admin_data_backup_path, class: "text-sm text-indigo-700 hover:text-indigo-500"
+          end
         end
+
+        render Views::NamingConventions::Modal.new
       end
     end
   end
