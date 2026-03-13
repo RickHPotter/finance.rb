@@ -3,35 +3,40 @@
 class ReferencesController < ApplicationController
   include TabsConcern
 
-  before_action :set_reference_tabs
   before_action :set_user_card, only: %i[index edit update merge perform_merge]
   before_action :set_reference, only: %i[edit update merge]
+  before_action :set_reference_tabs
 
   def index
     @references = @user_card.references
     render json: @references
   end
 
-  def edit; end
+  def edit
+    render Views::References::Edit.new(reference: @reference, user_card: @user_card)
+  end
 
   def update
     if @reference.update(reference_params)
       redirect_to edit_user_card_path(@user_card)
     else
-      render :edit, status: :unprocessable_entity
+      render Views::References::Edit.new(reference: @reference, user_card: @user_card), status: :unprocessable_entity
     end
   end
 
-  def merge; end
+  def merge
+    render Views::References::Merge.new(reference: @reference, user_card: @user_card)
+  end
 
   def perform_merge
     source_reference_date = "#{merge_reference_params[:source_reference_date]}-01"
     target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
+    @reference = @user_card.find_or_create_reference_for(source_reference_date.to_date)
 
     if Logic::References.merge(@user_card, source_reference_date, target_reference_date)
       redirect_to edit_user_card_path(@user_card)
     else
-      render :merge, status: :unprocessable_entity
+      render Views::References::Merge.new(reference: @reference, user_card: @user_card), status: :unprocessable_entity
     end
   end
 

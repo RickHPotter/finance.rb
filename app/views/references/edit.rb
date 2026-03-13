@@ -1,0 +1,49 @@
+# frozen_string_literal: true
+
+class Views::References::Edit < Views::Base
+  include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::LinkTo
+
+  include TranslateHelper
+
+  attr_reader :reference, :user_card
+
+  def initialize(reference:, user_card:)
+    @reference = reference
+    @user_card = user_card
+  end
+
+  def view_template
+    turbo_frame_tag :center_container do
+      div(class: "bg-white p-4 shadow-md rounded-lg") do
+        h1(class: "text-2xl font-bold mb-4") { action_model(:edit, reference) }
+
+        form_with(model: reference, url: user_card_reference_path(user_card, reference), method: :patch) do |form|
+          div(class: "grid grid-cols-2 gap-4") do
+            div(class: "mb-4") do
+              form.label :reference_closing_date, model_attribute(reference, :reference_closing_date), class: "block text-sm font-medium text-gray-700"
+              form.date_field :reference_closing_date,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            end
+
+            div(class: "mb-4") do
+              form.label :reference_date, model_attribute(reference, :reference_date), class: "block text-sm font-medium text-gray-700"
+              form.date_field :reference_date,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            end
+          end
+
+          div(class: "flex items-center justify-between") do
+            form.submit action_model(:update, reference),
+                        class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md
+                                text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+
+            link_to I18n.t("confirmation.cancel"),
+                    edit_user_card_path(user_card),
+                    class: "py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          end
+        end
+      end
+    end
+  end
+end

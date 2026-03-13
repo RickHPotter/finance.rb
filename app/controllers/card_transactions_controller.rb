@@ -3,8 +3,8 @@
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_card_tabs, except: :index
   before_action :set_card_transaction, only: %i[edit update destroy]
+  before_action :set_card_tabs, except: :index
 
   def index
     @user_card = current_user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
@@ -235,7 +235,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   private
 
   def set_card_tabs
-    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
+    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || @card_transaction&.user_card&.user_card_name || :search)
   end
 
   # Use callbacks to share common setup or constraints between actions.

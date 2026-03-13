@@ -108,7 +108,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             div(class: "text-xs text-start flex-1 flex items-center") do
               if should_display_link_to_pay
                 button(
-                  class: "hover:bg-white hover:text-red-400 hover:rounded-full hover:scale-160 transition-all duration-200",
+                  class: "hover:bg-white hover:text-red-400 hover:rounded-full transition-all duration-200",
                   title: model_attribute(cash_installment, :pay),
                   data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
                 ) do
@@ -116,7 +116,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 end
               elsif cash_transaction.card_payment?
                 button(
-                  class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
+                  class: "hover:bg-white hover:text-blue-600 hover:rounded-sm",
                   title: model_attribute(cash_installment, :change_date),
                   data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
                 ) do
@@ -124,7 +124,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 end
               else
                 button(
-                  class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200",
+                  class: "hover:bg-white hover:text-money hover:rounded-full transition-all duration-200",
                   title: model_attribute(cash_installment, :already_paid)
                 ) do
                   cached_icon(icon)
@@ -143,14 +143,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
 
           div(class: "flex flex-wrap items-center gap-1") do
-            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-              border = style.split("; color:").last
-              categories_for(cash_transaction).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
-                  category.name
-                end
-              end
-            end
+            render_mobile_categories(cash_transaction, style)
 
             render_mobile_entities(cash_transaction, avatar_name)
           end
@@ -178,7 +171,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             if should_display_link_to_pay
               button(
                 type: :button,
-                class: "hover:bg-white hover:text-red-500 hover:rounded-full hover:scale-160",
+                class: "hover:bg-white hover:text-red-500 hover:rounded-full",
                 title: model_attribute(cash_installment, :pay),
                 data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
               ) do
@@ -186,14 +179,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             elsif cash_transaction.card_payment?
               button(
-                class: "hover:bg-white hover:text-blue-600 hover:rounded-sm hover:scale-160",
+                class: "hover:bg-white hover:text-blue-600 hover:rounded-sm",
                 title: model_attribute(cash_installment, :change_date),
                 data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
               ) do
                 cached_icon(:check_calendar)
               end
             else
-              span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160", title: model_attribute(cash_installment, :already_paid)) do
+              span(class: "hover:bg-white hover:text-money hover:rounded-sm", title: model_attribute(cash_installment, :already_paid)) do
                 cached_icon(icon)
               end
             end
@@ -241,14 +234,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          categories_for(cash_transaction).each do |category|
-            border = style.split("; color:").last
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
-              category.name
-            end
-          end
-        end
+        render_desktop_categories(cash_transaction, style)
 
         render_desktop_entities(cash_transaction, avatar_name)
 
@@ -295,8 +281,39 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
+  def render_mobile_categories(cash_transaction, style)
+    render Views::Categories::Popover.new(
+      items: cash_category_popover_items(cash_transaction, style),
+      mobile: true,
+      target_ids: cash_transaction.categories.map(&:id),
+      trigger_label: pluralise_model(Category, categories_for(cash_transaction).count).upcase,
+      variant: :cash
+    )
+  end
+
+  def render_desktop_categories(cash_transaction, style)
+    render Views::Categories::Popover.new(
+      items: cash_category_popover_items(cash_transaction, style),
+      mobile: false,
+      target_ids: cash_transaction.categories.map(&:id),
+      trigger_label: "",
+      variant: :cash
+    )
+  end
+
   def categories_for(cash_transaction)
     cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+  end
+
+  def cash_category_popover_items(cash_transaction, style)
+    border = style.split("; color:").last
+
+    categories_for(cash_transaction).map do |category|
+      {
+        name: category.name,
+        style: "border-color: #{border}"
+      }
+    end
   end
 
   def entities_for(cash_transaction, sort_key)
@@ -329,7 +346,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           span(
             class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
-                peer-focus:ring-2 peer-focus:ring-blue-300 size-6
+                peer-focus:ring-2 peer-focus:ring-blue-300 size-4
                 peer-disabled:bg-slate-300 peer-disabled:text-slate-400"
           ) do
             span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }

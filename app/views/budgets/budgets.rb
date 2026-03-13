@@ -86,16 +86,7 @@ class Views::Budgets::Budgets < Views::Base
             end
           end
           div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-              budget.budget_categories.order(:id).map(&:category).each do |category|
-                span(
-                  class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
-                  style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
-                ) do
-                  category.name
-                end
-              end
-            end
+            render_mobile_categories(budget)
 
             render_mobile_entities(budget)
           end
@@ -139,16 +130,7 @@ class Views::Budgets::Budgets < Views::Base
           end
         end
 
-        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-          budget.budget_categories.order(:id).map(&:category).each do |category|
-            span(
-              class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs",
-              style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
-            ) do
-              category.name
-            end
-          end
-        end
+        render_desktop_categories(budget)
 
         render_desktop_entities(budget)
 
@@ -187,6 +169,26 @@ class Views::Budgets::Budgets < Views::Base
     )
   end
 
+  def render_mobile_categories(budget)
+    render Views::Categories::Popover.new(
+      items: budget_category_popover_items(budget),
+      mobile: true,
+      target_ids: budget.categories.map(&:id),
+      trigger_label: pluralise_model(Category, budget.categories.count).upcase,
+      variant: :budget
+    )
+  end
+
+  def render_desktop_categories(budget)
+    render Views::Categories::Popover.new(
+      items: budget_category_popover_items(budget),
+      mobile: false,
+      target_ids: budget.categories.map(&:id),
+      trigger_label: "",
+      variant: :budget
+    )
+  end
+
   def budget_entity_popover_items(budget, sort_key)
     budget.budget_entities.sort_by(&sort_key).filter_map do |budget_entity|
       entity = budget_entity.entity
@@ -197,6 +199,15 @@ class Views::Budgets::Budgets < Views::Base
         avatar_name: entity.avatar_name,
         href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
         data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      }
+    end
+  end
+
+  def budget_category_popover_items(budget)
+    budget.budget_categories.sort_by(&:id).filter_map(&:category).map do |category|
+      {
+        name: category.name,
+        style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
       }
     end
   end

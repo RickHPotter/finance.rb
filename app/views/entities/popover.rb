@@ -31,14 +31,14 @@ class Views::Entities::Popover < Views::Base
     else
       Popover(options: { placement: "top-end" }, class: "ml-auto w-full") do
         PopoverTrigger(class: "w-full") do
-          button(class: mobile_trigger_button_class) do
+          button(type: :button, class: mobile_trigger_button_class) do
             render_avatar_stack(items, avatar_class: "size-6", limit: 3)
             span(class: mobile_trigger_label_class) { trigger_label }
           end
         end
 
         PopoverContent(class: "z-50 !opacity-100 mr-2") do
-          div(class: "flex flex-wrap justify-end gap-2 min-w-36") do
+          div(class: "flex flex-wrap justify-end gap-1 min-w-36") do
             items.each do |item|
               render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6 mb-1", name_class: mobile_name_class)
             end
@@ -50,13 +50,13 @@ class Views::Entities::Popover < Views::Base
 
   def render_desktop
     if items.one?
-      button(class: desktop_single_button_class) do
+      button(type: :button, class: desktop_single_button_class) do
         render_item(items.first, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: "entity_entity_name")
       end
     else
       Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
         PopoverTrigger(class: "w-full") do
-          button(class: desktop_trigger_button_class) do
+          button(type: :button, class: desktop_trigger_button_class) do
             render_avatar_stack(items, avatar_class: "size-5", limit: 2)
             span { "+" }
           end
@@ -107,12 +107,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_container_class
-    case variant
-    when %i[card cash]
-      "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2"
-    else
-      "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2 hover:opacity-65"
-    end
+    "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2"
   end
 
   def mobile_item_wrapper_class
@@ -120,12 +115,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_item_wrapper_class
-    case variant
-    when :budget
-      "flex items-center gap-2 text-xs text-black"
-    else
-      "flex items-center gap-2 text-xs text-inherit"
-    end
+    "flex items-center gap-2 text-xs text-inherit"
   end
 
   def mobile_name_class
@@ -133,30 +123,15 @@ class Views::Entities::Popover < Views::Base
   end
 
   def mobile_trigger_button_class
-    case variant
-    when %i[card cash]
-      "w-full flex items-center justify-end gap-2 cursor-pointer"
-    else
-      "w-full flex flex-col items-center justify-end gap-2 cursor-pointer"
-    end
+    "w-full flex items-center justify-end gap-1 cursor-pointer"
   end
 
   def mobile_trigger_label_class
-    case variant
-    when %i[card cash]
-      "text-xs underline underline-offset-[3px] whitespace-nowrap"
-    else
-      "entity_entity_name truncate block max-w-full leading-tight"
-    end
+    "text-xs underline underline-offset-[3px] whitespace-nowrap"
   end
 
   def desktop_single_button_class
-    case variant
-    when :budget
-      "flex items-center gap-2 rounded-md border border-white px-2 py-1 text-xs text-zinc-50"
-    else
-      "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black"
-    end
+    "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-inherit"
   end
 
   def desktop_trigger_button_class

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
@@ -10,12 +10,13 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   include CacheHelper
   include ColoursHelper
 
-  attr_reader :mobile, :card_installments, :user_card_id
+  attr_reader :mobile, :card_installments, :user_card_id, :entity_links
 
-  def initialize(mobile:, card_installments:, user_card_id:)
+  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true)
     @mobile = mobile
     @card_installments = card_installments
     @user_card_id = user_card_id
+    @entity_links = entity_links
   end
 
   def view_template
@@ -73,13 +74,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
 
           div(class: "flex flex-wrap items-center gap-1") do
-            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
-                  category.name
-                end
-              end
-            end
+            render_mobile_categories(card_transaction)
 
             render_mobile_entities(card_transaction)
           end
@@ -122,41 +117,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        div(
-          class: "col-span-3 py-2 flex items-center justify-center gap-2",
-          data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }
-        ) do
-          if card_transaction.categories.count > 1
-            first_one = card_transaction.categories.first
-            remaining = card_transaction.categories[1..]
-
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              first_one.name
-            end
-
-            Popover(options: { placement: "right" }, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-              PopoverTrigger(class: "w-full") do
-                button(class: "text-xs") do
-                  "+#{card_transaction.categories.count - 1}"
-                end
-              end
-
-              PopoverContent(class: "z-50 !opacity-100 ml-2") do
-                remaining.each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-                    category.name
-                  end
-                end
-              end
-            end
-          else
-            card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
-                category.name
-              end
-            end
-          end
-        end
+        render_desktop_categories(card_transaction)
 
         render_desktop_entities(card_transaction)
 
@@ -213,14 +174,35 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
+  def render_mobile_categories(card_transaction)
+    render Views::Categories::Popover.new(
+      items: card_category_popover_items(card_transaction),
+      mobile: true,
+      target_ids: card_transaction.categories.map(&:id),
+      trigger_label: pluralise_model(Category, card_transaction.categories.count).upcase,
+      variant: :card
+    )
+  end
+
+  def render_desktop_categories(card_transaction)
+    render Views::Categories::Popover.new(
+      items: card_category_popover_items(card_transaction),
+      mobile: false,
+      target_ids: card_transaction.categories.map(&:id),
+      trigger_label: "",
+      variant: :card
+    )
+  end
+
   def entity_popover_items(card_transaction, sort_key)
     card_transaction.entity_transactions.order(:id).includes(:entity).sort_by(&sort_key).map do |entity_transaction|
       entity = entity_transaction.entity
+      href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream) : nil
 
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
-        href: new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        href:,
         data: { turbo_frame: "center_container", turbo_prefetch: "false" },
         info_class: "hidden entity_exchanges_info",
         info_text: entity_exchanges_info(entity_transaction)
@@ -233,5 +215,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
     info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
     info
+  end
+
+  def card_category_popover_items(card_transaction)
+    card_transaction.category_transactions.sort_by(&:id).filter_map(&:category).map do |category|
+      {
+        name: category.name,
+        style: "border-color: black"
+      }
+    end
   end
 end

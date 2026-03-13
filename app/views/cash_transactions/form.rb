@@ -125,39 +125,9 @@ class Views::CashTransactions::Form < Views::Base
 
         SheetMiddle(class: "overflow-y-auto flex-1") do
           SheetMiddle do
-            exchanges = cash_transaction.exchanges
-            entity_transactions = exchanges.map(&:entity_transaction).flatten
-            card_transactions_ids = entity_transactions.pluck(:transactable_id)
-
-            reference = cash_transaction.exchanges.first
-            year, month = reference.slice(:year, :month).values
-
-            index_context = {
-              current_user:,
-              years: [ year ],
-              default_year: year,
-              active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
-              search_term: "",
-              card_installment_ids: current_user
-                                    .card_installments
-                                    .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
-                                    .order(:order_id)
-                                    .ids,
-              category_id: [ exchange_category.id ],
-              entity_id: cash_transaction.entities.pluck(:id),
-              user_bank_account_id: nil,
-              from_ct_price: nil,
-              to_ct_price: nil,
-              from_price: nil,
-              to_price: nil,
-              from_installments_count: nil,
-              to_installments_count: nil,
-              user_card: nil,
-              skip_budgets: true,
-              force_mobile: true
-            }
-
-            render Views::CardTransactions::MonthYearContainer.new(index_context:)
+            exchanges = exchange_sheet_exchanges_for("CardTransaction")
+            render_bound_card_transactions_sheet(exchanges)
+            render_exchange_transaction_groups(exchanges.standalone, CardTransaction)
           end
         end
       end
@@ -182,42 +152,73 @@ class Views::CashTransactions::Form < Views::Base
 
         SheetMiddle(class: "overflow-y-auto flex-1") do
           SheetMiddle do
-            exchanges = cash_transaction.exchanges
-            entity_transactions = exchanges.map(&:entity_transaction).flatten
-            card_transactions_ids = entity_transactions.pluck(:transactable_id)
-
-            reference = cash_transaction.exchanges.first
-            year, month = reference.slice(:year, :month).values
-
-            index_context = {
-              current_user:,
-              years: [ year ],
-              default_year: year,
-              active_month_years: [ Date.new(year, month).strftime("%Y%m") ],
-              search_term: "",
-              card_installment_ids: current_user
-                                    .cash_installments
-                                    .where(year: reference.year, month: reference.month, card_transaction_id: card_transactions_ids)
-                                    .order(:order_id)
-                                    .ids,
-              category_id: [ exchange_category.id ],
-              entity_id: cash_transaction.entities.pluck(:id),
-              user_bank_account_id: nil,
-              from_ct_price: nil,
-              to_ct_price: nil,
-              from_price: nil,
-              to_price: nil,
-              from_installments_count: nil,
-              to_installments_count: nil,
-              user_card: nil,
-              skip_budgets: true,
-              force_mobile: true
-            }
-
-            render Views::CashTransactions::MonthYearContainer.new(index_context:)
+            exchanges = exchange_sheet_exchanges_for("CashTransaction")
+            render_exchange_transaction_groups(exchanges, CashTransaction)
           end
         end
       end
     end
+  end
+
+  def exchange_sheet_exchanges_for(transactable_type)
+    cash_transaction.exchanges
+                    .joins(:entity_transaction)
+                    .where(entity_transactions: { transactable_type: })
+                    .order(:year, :month, :number, :date)
+  end
+
+  def render_bound_card_transactions_sheet(exchanges)
+    card_bound_exchanges = exchanges.card_bound
+    return if card_bound_exchanges.blank?
+
+    related_transaction_ids = card_bound_exchanges.pluck(:entity_transaction_id).uniq
+    related_transaction_ids = EntityTransaction.where(id: related_transaction_ids).pluck(:transactable_id).uniq
+    installments = current_user.card_installments
+                               .includes(card_transaction: %i[categories entities entity_transactions])
+                               .where(card_transaction_id: related_transaction_ids)
+                               .where(year: cash_transaction.year, month: cash_transaction.month)
+                               .order(:order_id)
+
+    render Views::Transactions::CardBoundTransactionsSheet.new(
+      label: I18n.t("activerecord.attributes.exchange.card_bound"),
+      installments:,
+      user_card_id: cash_transaction.user_card_id
+    )
+  end
+
+  def render_exchange_transaction_groups(exchanges, transaction_class)
+    transactions = standalone_exchange_transactions(exchanges)
+    return if transactions.empty?
+
+    render Views::Transactions::StandaloneTransactionsSheet.new(transactions:, transaction_class:)
+  end
+
+  def standalone_exchange_transactions(exchanges)
+    transactions = exchanges.filter_map { |exchange| exchange.entity_transaction.transactable }.uniq(&:id)
+
+    preload_standalone_transactions(transactions)
+    transactions
+  end
+
+  def preload_standalone_transactions(transactions)
+    cash_transactions, card_transactions = transactions.partition { |transaction| transaction.is_a?(CashTransaction) }
+
+    ActiveRecord::Associations::Preloader.new(
+      records: cash_transactions,
+      associations: [
+        { category_transactions: :category },
+        { entity_transactions: :entity },
+        :cash_installments
+      ]
+    ).call
+
+    ActiveRecord::Associations::Preloader.new(
+      records: card_transactions,
+      associations: [
+        { category_transactions: :category },
+        { entity_transactions: :entity },
+        :card_installments
+      ]
+    ).call
   end
 end

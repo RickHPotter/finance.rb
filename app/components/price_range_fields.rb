@@ -7,7 +7,7 @@ module Components
 
     attr_reader :form, :from_field, :to_field, :from_value, :to_value, :object, :subject_label_key
 
-    def initialize(form:, object:, from_field:, to_field:, from_value:, to_value:, subject_label_key:)
+    def initialize(form:, object:, from_field:, to_field:, from_value:, to_value:, subject_label_key:) # rubocop:disable Metrics/ParameterLists
       @form = form
       @object = object
       @from_field = from_field

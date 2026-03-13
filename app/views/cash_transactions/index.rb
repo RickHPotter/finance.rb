@@ -50,33 +50,7 @@ class Views::CashTransactions::Index < Views::Base
               )
             end
 
-            div(class: "md:hidden") do
-              link_to(
-                "#",
-                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
-                style: "display: flex; visibility: hidden;",
-                data: { mobile_scroll_nav: "bottom" }
-              ) do
-                cached_icon :bigger_bottom
-              end
-
-              link_to(
-                new_cash_transaction_path(format: :turbo_stream),
-                class: "flex items-center justify-center fixed bottom-4 right-3 h-14 w-14 bg-blue-600 text-white rounded-full shadow-lg z-50",
-                data: { turbo_frame: :_top, mobile_scroll_nav: "plus" }
-              ) do
-                cached_icon :bigger_plus
-              end
-
-              link_to(
-                "#",
-                class: "opacity-0 translate-y-2 pointer-events-none flex items-center justify-center fixed bottom-24 right-3 h-12 w-12 bg-gray-300/95 text-black rounded-full shadow-lg z-50 transition-all duration-200",
-                style: "display: flex; visibility: hidden;",
-                data: { mobile_scroll_nav: "top" }
-              ) do
-                cached_icon :bigger_top
-              end
-            end
+            render Views::Shared::MobileFloatingNav.new(new_href: new_cash_transaction_path(format: :turbo_stream))
           end
         end
       end
