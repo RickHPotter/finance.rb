@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Subscription < ApplicationRecord
+class PushSubscription < ApplicationRecord
+  self.table_name = "subscriptions"
+
   belongs_to :user
 end
 

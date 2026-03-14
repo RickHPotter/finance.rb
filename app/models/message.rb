@@ -46,7 +46,7 @@ class Message < ApplicationRecord
       friend_user = friend.user
       I18n.locale = friend_user.locale
 
-      friend_user.subscriptions.each do |subscription|
+      friend_user.push_subscriptions.each do |subscription|
         WebPush.payload_send(
           message: { title:, body:, url: }.to_json,
           endpoint: subscription.endpoint,

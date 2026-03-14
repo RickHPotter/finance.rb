@@ -21,16 +21,16 @@ export default class extends Controller {
     const convertedKey = this.urlBase64ToUint8Array(vapidPublicKey)
 
     try {
-      const subscription = await registration.pushManager.subscribe({
+      const push_subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: convertedKey
       })
 
       // Send subscription to Rails backend
-      await fetch("/subscriptions", {
+      await fetch("/push_subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription })
+        body: JSON.stringify({ push_subscription })
       })
 
       alert("✅ Notifications enabled!")

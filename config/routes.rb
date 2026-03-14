@@ -96,7 +96,7 @@ Rails.application.routes.draw do
     resources :messages, only: :create
   end
 
-  resources :subscriptions, only: :create
+  resources :push_subscriptions, only: :create
 
   resource :naming_convention, only: [] do
     post :preview
