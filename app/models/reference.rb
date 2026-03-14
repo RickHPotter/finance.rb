@@ -4,6 +4,8 @@ class Reference < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :skip_reference_closing_date_calculation
+
   # @relationships ............................................................
   belongs_to :user_card
 
@@ -32,6 +34,8 @@ class Reference < ApplicationRecord
   protected
 
   def set_reference_closing_date
+    return if skip_reference_closing_date_calculation
+
     self.reference_closing_date = if user_card.nil?
                                     reference_date - 1.day
                                   else

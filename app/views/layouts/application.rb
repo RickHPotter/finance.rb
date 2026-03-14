@@ -28,8 +28,6 @@ class Views::Layouts::Application < Views::Base
 
         stylesheet_link_tag("tailwind", data: { turbo_track: :reload })
         stylesheet_link_tag("application", data: { turbo_track: :reload })
-        stylesheet_link_tag("components/tom-select")
-        stylesheet_link_tag("components/select")
 
         combobox_style_tag
         javascript_include_tag("application", data: { turbo_track: :reload }, type: :module)
@@ -69,7 +67,7 @@ class Views::Layouts::Application < Views::Base
                     end
                   end
 
-                  render Views::Pages::Calculator.new
+                  render Views::Static::Calculator.new
 
                   div(class: "text-center text-black pt-2", &)
                 end

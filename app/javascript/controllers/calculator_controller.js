@@ -100,7 +100,7 @@ export default class extends Controller {
 
   showMessage(type, message) {
     const frame = document.querySelector("turbo-frame#notification")
-    frame.src = `pages/notification?${type}=${message}`
+    frame.src = `static/notification?${type}=${message}`
   }
 
   removeMessage() {

@@ -65,7 +65,7 @@ RSpec.describe "CardTransactions", type: :request do
   describe "[ #create ]" do
     it "creates one new record with one installment and non-paying entities" do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [] } ]
-      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
       check_non_paying_entities(new_card_transaction)
@@ -90,7 +90,7 @@ RSpec.describe "CardTransactions", type: :request do
         }
       ]
 
-      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
       check_paying_entities(new_card_transaction)
@@ -115,13 +115,13 @@ RSpec.describe "CardTransactions", type: :request do
         }
       ]
 
-      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
       card_transaction_one = CardTransaction.last
 
       sign_in user
 
       card_transaction.date += 40.days # 1 month is sometimes not enough
-      expect { post card_transactions_path, params: card_transaction.params }.to change(CardTransaction, :count).by(1)
+      expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
       card_transaction_two = CardTransaction.last
 
       check_paying_entities(card_transaction_one)
@@ -133,7 +133,7 @@ RSpec.describe "CardTransactions", type: :request do
   describe "[ #update ]" do
     before do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, price_to_be_returned: -2200, exchanges_attributes: [] } ]
-      post card_transactions_path, params: card_transaction.params
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
       @existing_card_transaction = CardTransaction.last
 
       sign_in user
@@ -141,38 +141,38 @@ RSpec.describe "CardTransactions", type: :request do
 
     it "updates the record to have a non_paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: false })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_non_paying_entities(@existing_card_transaction)
     end
 
     it "updates the record to have one paying entity" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
       card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_paying_entities(@existing_card_transaction)
     end
 
     it "updates the record to change the exchange_type to :non_monetary then to :monetary" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :non_monetary })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
 
       sign_in user
 
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
     end
 
     it "updates the record to change the exchange_type to :monetary then to :non_monetary" do
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :monetary })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
 
       sign_in user
 
       card_transaction.use_base(@existing_card_transaction, entity_transactions_options: { is_payer: true, exchange_type: :non_monetary })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
       check_exchanges(@existing_card_transaction.entity_transactions.first.exchanges)
     end
 
@@ -180,7 +180,7 @@ RSpec.describe "CardTransactions", type: :request do
       cash_transaction_one = @existing_card_transaction.card_installments.first.cash_transaction
 
       card_transaction.use_base(@existing_card_transaction, card_transaction_options: { user_card_id: user_card_two.id })
-      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params)
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
 
       cash_transaction_two = @existing_card_transaction.card_installments.first.cash_transaction
 
@@ -195,7 +195,7 @@ RSpec.describe "CardTransactions", type: :request do
       (1..3).each do |i|
         sign_in user
         card_transaction.description = i
-        post card_transactions_path, params: card_transaction.params
+        post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
       end
     end
 
@@ -207,10 +207,53 @@ RSpec.describe "CardTransactions", type: :request do
 
         sign_in user
 
-        expect { delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:) }.to change(CardTransaction, :count).by(-1)
+        expect do
+          delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:), headers: turbo_stream_headers
+        end.to change(CardTransaction, :count).by(-1)
         expect(card_transaction_to_be_deleted.card_installments).to_not be_present
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end
+    end
+  end
+
+  describe "[ #duplicate ]" do
+    it "renders a duplicated transaction form without creating a new record" do
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+      existing_card_transaction = CardTransaction.last
+
+      expect { get duplicate_card_transaction_path(existing_card_transaction) }.not_to change(CardTransaction, :count)
+      follow_redirect! if response.redirect?
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(existing_card_transaction.description)
+    end
+  end
+
+  describe "[ #pay_in_advance ]" do
+    before do
+      card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] } ]
+      card_transaction.price = -500
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+    end
+
+    it "creates a CARD ADVANCE transaction and its linked cash transaction" do
+      expect do
+        post pay_in_advance_card_transactions_path, params: {
+          card_transaction: {
+            user_card_id: user_card_one.id,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            price: 200
+          }
+        }, headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(1)
+
+      advanced_card_transaction = CardTransaction.last
+
+      expect(advanced_card_transaction.categories.pluck(:category_name)).to include("CARD ADVANCE")
+      expect(advanced_card_transaction.price).to eq(200)
+      expect(advanced_card_transaction.advance_cash_transaction).to be_present
+      expect(advanced_card_transaction.advance_cash_transaction.price).to eq(-200)
     end
   end
 end

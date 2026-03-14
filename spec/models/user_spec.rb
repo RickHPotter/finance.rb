@@ -23,7 +23,9 @@ RSpec.describe User, type: :model do
     context "( associations )" do
       hm_models = %i[card_transactions card_installments advance_cash_transactions
                      cash_transactions cash_installments
-                     user_cards user_bank_accounts categories entities]
+                     user_cards user_bank_accounts budgets categories entities
+                     investments conversation_participants conversations subscriptions
+                     sent_messages received_messages]
 
       hm_models.each { |model| it { should have_many(model) } }
     end
@@ -33,7 +35,7 @@ RSpec.describe User, type: :model do
     context "( callbacks )" do
       it "creates built_in categories on create" do
         subject.save
-        built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE", "EXCHANGE RETURN" ]
+        built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]
         expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
       end
     end
@@ -41,6 +43,12 @@ RSpec.describe User, type: :model do
     context "( public methods )" do
       it "returns full_name" do
         expect(subject.full_name).to eq("John Doe")
+      end
+
+      it "returns a built-in category by name" do
+        subject.save
+
+        expect(subject.built_in_category("EXCHANGE RETURN")).to eq(subject.categories.find_by(category_name: "EXCHANGE RETURN"))
       end
     end
   end

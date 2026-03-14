@@ -15,7 +15,12 @@ Rails.application.routes.draw do
   get "serviceworker" => "rails/pwa#serviceworker", as: :pwa_serviceworker, constraints: { format: "js" }
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest, constraints: { format: "json" }
 
-  resources :pages, only: [] do
+  resource :static, only: [], controller: "static" do
+    get :donation
+    get :notification
+  end
+
+  resources :pages, only: [], controller: "static" do
     collection do
       get :donation
       get :notification

@@ -37,7 +37,7 @@ RSpec.describe Investment, type: :model do
         expect(subject).to be_valid
       end
 
-      %i[price date].each do |attribute|
+      %i[price date description].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
     end

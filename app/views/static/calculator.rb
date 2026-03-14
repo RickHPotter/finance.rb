@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-class Views::Pages::Calculator < Views::Base
+class Views::Static::Calculator < Views::Base
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
 
   def view_template
     Sheet do
-      SheetTrigger(class: "flex justify-center items-center fixed bottom-0 right-0 hidden sm:block rounded-full shadow-lg z-50") do
+      SheetTrigger(class: "justify-center items-center fixed bottom-0 right-0 hidden sm:block rounded-full shadow-lg z-50") do
         Button(type: :button, icon: true, class: "m-4 bg-orange-600 text-black") do
           cached_icon(:calculator)
         end
