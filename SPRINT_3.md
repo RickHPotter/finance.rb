@@ -54,6 +54,9 @@ too visible to ignore.
     `category_transactable_spec`, `entity_transactable_spec`, `budgetable_spec`.
   - Requests group: `card_transactions_spec`, `cash_transactions_spec`, `pages_spec`,
     and any missing request specs for current Sprint 2 features.
+  - Removed unused gem jbuilder.
+  - Removed unused js libs (TomSelect, chart.js, chartkick, flowbite-datepicker, and stimulus-use).
+  - Removed unused stimulus controllers (AutocompleteSelect, DarkMode, and Datepicker)
 
 ### JIRAYA-02/be-01: Create a first-class `Subscription` flow
 

@@ -8,7 +8,6 @@ gem "rails", "~> 8.1"
 
 gem "activerecord-import"
 gem "bootsnap", require: false
-gem "jbuilder"
 gem "jsbundling-rails"
 gem "pg"
 gem "propshaft"

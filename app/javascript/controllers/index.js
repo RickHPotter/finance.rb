@@ -4,9 +4,6 @@
 
 import { application } from "./application"
 
-import AutocompleteSelectController from "./autocomplete_select_controller"
-application.register("autocomplete-select", AutocompleteSelectController)
-
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 
@@ -28,14 +25,8 @@ application.register("confirm", ConfirmController)
 import CursorController from "./cursor_controller"
 application.register("cursor", CursorController)
 
-import DarkModeController from "./dark_mode_controller"
-application.register("dark-mode", DarkModeController)
-
 import DatatableController from "./datatable_controller"
 application.register("datatable", DatatableController)
-
-import DatepickerController from "./datepicker_controller"
-application.register("datepicker", DatepickerController)
 
 import DragController from "./drag_controller"
 application.register("drag", DragController)
@@ -114,9 +105,6 @@ application.register("ruby-ui--sheet", RubyUi__SheetController)
 
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
-
-import SelectController from "./select_controller"
-application.register("select", SelectController)
 
 import TabController from "./tab_controller"
 application.register("tab", TabController)

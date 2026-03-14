@@ -2,7 +2,6 @@ import "@hotwired/turbo-rails"
 import { Turbo } from "@hotwired/turbo-rails"
 import "./controllers"
 import "flowbite/dist/flowbite.turbo.js"
-import "chartkick/chart.js"
 
 let busyCount = 0
 let observedFrames = new WeakSet()

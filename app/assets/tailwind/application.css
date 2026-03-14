@@ -6,8 +6,6 @@
 
 @config "../../../config/tailwind.config.js";
 @source "../../../config/safelist.txt";
-@source "../stylesheets/components/tom-select.css";
-@source "../stylesheets/components/select.css";
 
 @theme {
   --breakpoint-xxs: 390px;

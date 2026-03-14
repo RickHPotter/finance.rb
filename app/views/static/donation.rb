@@ -3,16 +3,24 @@
 class Views::Static::Donation < Views::Base
   include CacheHelper
 
+  # rubocop:disable Layout/LineLength
   def options
     [
-      { title: I18n.t("donation.water_title"), subtitle: I18n.t("donation.water_subtitle"), icon: :water, price: "R$ 2.00", qr_code: 2, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553619053116304A279" },
-      { title: I18n.t("donation.coffee_title"), subtitle: I18n.t("donation.coffee_subtitle"), icon: :coffee, price: "R$ 5.00", qr_code: 5, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com52040000530398654045.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553611954286304B113" },
-      { title: I18n.t("donation.juice_title"), subtitle: I18n.t("donation.juice_subtitle"), icon: :juice, price: "R$ 10.00", qr_code: 10, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540510.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553612226516304F748" },
-      { title: I18n.t("donation.wine_title"), subtitle: I18n.t("donation.wine_subtitle"), icon: :wine, price: "R$ 15.00", qr_code: 15, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540515.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536124494963042C5F" },
-      { title: I18n.t("donation.meal_title"), subtitle: I18n.t("donation.meal_subtitle"), icon: :meal, price: "R$ 25.00", qr_code: 25, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540525.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536128946463046744" },
-      { title: I18n.t("donation.restaurant_title"), subtitle: I18n.t("donation.restaurant_subtitle"), icon: :restaurant, price: "R$ 50.00", qr_code: 50, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540550.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553613076856304A164" }
+      { title: I18n.t("donation.water_title"), subtitle: I18n.t("donation.water_subtitle"), icon: :water, price: "R$ 2.00", qr_code: 2,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553619053116304A279" },
+      { title: I18n.t("donation.coffee_title"), subtitle: I18n.t("donation.coffee_subtitle"), icon: :coffee, price: "R$ 5.00", qr_code: 5,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com52040000530398654045.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553611954286304B113" },
+      { title: I18n.t("donation.juice_title"), subtitle: I18n.t("donation.juice_subtitle"), icon: :juice, price: "R$ 10.00", qr_code: 10,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540510.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553612226516304F748" },
+      { title: I18n.t("donation.wine_title"), subtitle: I18n.t("donation.wine_subtitle"), icon: :wine, price: "R$ 15.00", qr_code: 15,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540515.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536124494963042C5F" },
+      { title: I18n.t("donation.meal_title"), subtitle: I18n.t("donation.meal_subtitle"), icon: :meal, price: "R$ 25.00", qr_code: 25,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540525.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536128946463046744" },
+      { title: I18n.t("donation.restaurant_title"), subtitle: I18n.t("donation.restaurant_subtitle"), icon: :restaurant, price: "R$ 50.00", qr_code: 50,
+        pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540550.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553613076856304A164" }
     ]
   end
+  # rubocop:enable Layout/LineLength
 
   def view_template
     turbo_frame_tag :center_container do
