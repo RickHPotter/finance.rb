@@ -179,11 +179,4 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
       end
     end
   end
-  # describe "[ class methods ]" do
-  #   it "#join_exchanges" do
-  #   end
-  #
-  #   it "#undo_join_exchanges" do
-  #   end
-  # end
 end

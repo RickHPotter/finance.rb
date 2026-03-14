@@ -28,5 +28,14 @@ RSpec.describe EntityTransactable, type: :concern do
       expect(card_transaction.paying_transactions).to include(card_transaction.entity_transactions.second)
       expect(card_transaction.paying_entities).to include(entity_two)
     end
+
+    it "remembers original_entities when entities are reassigned" do
+      original_ids = card_transaction.entities.ids.sort
+      entity_three = create(:entity, :random, user:)
+
+      card_transaction.entities = [ entity_three ]
+
+      expect(card_transaction.original_entities).to eq(original_ids)
+    end
   end
 end

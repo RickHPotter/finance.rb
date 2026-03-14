@@ -17,8 +17,16 @@ FactoryBot.define do
       build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
     end
     entity_transactions do
-      self.price = price = 5
-      build_list(:entity_transaction, 1, :random, is_payer: false, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+      build_list(
+        :entity_transaction,
+        1,
+        :random,
+        is_payer: false,
+        entity: random_custom_create(:entity, reference: { user: }),
+        transactable: nil,
+        price: 0,
+        price_to_be_returned: 0
+      )
     end
 
     trait :different do
@@ -37,8 +45,16 @@ FactoryBot.define do
         end
       end
       entity_transactions do
-        self.price = price = 3
-        build_list(:entity_transaction, 1, :random, is_payer: true, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+        build_list(
+          :entity_transaction,
+          1,
+          :random,
+          is_payer: false,
+          entity: random_custom_create(:entity, reference: { user: }),
+          transactable: nil,
+          price: 0,
+          price_to_be_returned: 0
+        )
       end
     end
 
@@ -57,8 +73,16 @@ FactoryBot.define do
         end
       end
       entity_transactions do
-        self.price = price = 3
-        build_list(:entity_transaction, 1, :random, entity: random_custom_create(:entity, reference: { user: }), transactable: nil, price:)
+        build_list(
+          :entity_transaction,
+          1,
+          :random,
+          is_payer: false,
+          entity: random_custom_create(:entity, reference: { user: }),
+          transactable: nil,
+          price: 0,
+          price_to_be_returned: 0
+        )
       end
     end
   end

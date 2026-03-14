@@ -31,5 +31,14 @@ RSpec.describe CategoryTransactable, type: :concern do
     it "#built_in_categories_by" do
       expect(card_transaction.built_in_categories_by).to include(category)
     end
+
+    it "remembers original_categories when categories are reassigned" do
+      original_ids = card_transaction.categories.ids.sort
+      new_category = create(:category, :random, user:, built_in: false)
+
+      card_transaction.categories = [ new_category ]
+
+      expect(card_transaction.original_categories).to eq(original_ids)
+    end
   end
 end
