@@ -3,9 +3,6 @@
 class Views::Conversations::Index < Views::Base
   attr_reader :conversations
 
-  include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::TurboStreamFrom
-
   def initialize(conversations:)
     @conversations = conversations
   end

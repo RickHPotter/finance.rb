@@ -25,7 +25,7 @@ class Views::Shared::Tabs < Views::Base
         render_tabs_content(items:, dependents:, default:, dependent:, dependent_no:)
       end
     else
-      div(data: { controller: "material-tailwind-tab-lite", load_on_empty_content: "center_container" }) do
+      div(data: { controller: "tab", load_on_empty_content: "center_container" }) do
         render_tabs_content(items:, dependents:, default:, dependent:, dependent_no:)
       end
     end

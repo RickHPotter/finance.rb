@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Budgets::Index < Views::Base
-  include Phlex::Rails::Helpers::LinkTo
   include Views::Budgets
 
   include CacheHelper

@@ -3,7 +3,6 @@
 class Views::CardTransactions::Form < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::TextFieldTag
   include Phlex::Rails::Helpers::HiddenFieldTag
   include Phlex::Rails::Helpers::AssetPath
   include Views::CardTransactions

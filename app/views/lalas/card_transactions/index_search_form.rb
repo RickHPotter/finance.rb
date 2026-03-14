@@ -2,7 +2,6 @@
 
 class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::TextFieldTag
 
   include TranslateHelper
   include ComponentsHelper

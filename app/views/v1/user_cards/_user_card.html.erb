@@ -1,4 +1,0 @@
-<%= turbo_frame_tag dom_id user_card do %>
-  <% path = @mobile ? "mobile_user_card" : "user_card" %>
-  <%= render "v1/user_cards/user_card/#{path}", user_card: %>
-<% end %>

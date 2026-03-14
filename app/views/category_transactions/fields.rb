@@ -3,9 +3,6 @@
 module Views
   module CategoryTransactions
     class Fields < Components::Base
-      include Phlex::Rails::Helpers::ImageTag
-      include Phlex::Rails::Helpers::AssetPath
-
       include CacheHelper
 
       attr_reader :form, :transactable, :category_transaction

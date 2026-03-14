@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Pages::Calculator < Views::Base
-  include Phlex::Rails::Helpers::FormWith
-
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper

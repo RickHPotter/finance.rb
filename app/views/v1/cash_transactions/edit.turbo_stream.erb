@@ -1,3 +1,0 @@
-<%= turbo_stream.update(:tabs, partial: "shared/v1/tabs") %>
-
-<%= turbo_stream.replace(:center_container, Views::V1::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction)) %>

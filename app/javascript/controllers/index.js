@@ -52,29 +52,23 @@ application.register("exchange", ExchangeController)
 import ExchangeLockController from "./exchange_lock_controller"
 application.register("exchange-lock", ExchangeLockController)
 
-import IconPickerController from "./icon_picker_controller"
-application.register("icon-picker", IconPickerController)
-
 import HistoryNavController from "./history_nav_controller"
 application.register("history-nav", HistoryNavController)
+
+import IconPickerController from "./icon_picker_controller"
+application.register("icon-picker", IconPickerController)
 
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
 
-import MaterialTailwindTabController from "./material_tailwind_tab_controller"
-application.register("material-tailwind-tab", MaterialTailwindTabController)
-
-import MaterialTailwindTabLiteController from "./material_tailwind_tab_lite_controller"
-application.register("material-tailwind-tab-lite", MaterialTailwindTabLiteController)
+import MobileScrollNavController from "./mobile_scroll_nav_controller"
+application.register("mobile-scroll-nav", MobileScrollNavController)
 
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 
 import MonthlyBalanceController from "./monthly_balance_controller"
 application.register("monthly-balance", MonthlyBalanceController)
-
-import MobileScrollNavController from "./mobile_scroll_nav_controller"
-application.register("mobile-scroll-nav", MobileScrollNavController)
 
 import NamingTabsController from "./naming_tabs_controller"
 application.register("naming-tabs", NamingTabsController)
@@ -124,8 +118,8 @@ application.register("ruby-ui--tabs", RubyUi__TabsController)
 import SelectController from "./select_controller"
 application.register("select", SelectController)
 
-import StreamFetcherController from "./stream_fetcher_controller"
-application.register("stream-fetcher", StreamFetcherController)
+import TabController from "./tab_controller"
+application.register("tab", TabController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)

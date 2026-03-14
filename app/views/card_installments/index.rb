@@ -3,8 +3,6 @@
 class Views::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper

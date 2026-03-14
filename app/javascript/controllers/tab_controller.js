@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Connects to data-controller="material-tailwind-tab-lite"
+// Connects to data-controller="tab"
 export default class extends Controller {
   static targets = ["tabList", "tabLink"]
 
@@ -37,7 +37,7 @@ export default class extends Controller {
     const tabContents = document.querySelectorAll("[data-tab-content]")
 
     tabContents.forEach((tabContent) => {
-      const links = tabContent.previousElementSibling?.querySelectorAll("li a[data-material-tailwind-tab-lite-target=tabLink]") || []
+      const links = tabContent.previousElementSibling?.querySelectorAll("li a[data-tab-target=tabLink]") || []
       const activeLink = Array.from(links).find((link) => link.getAttribute("aria-selected") === "true") || links[0]
       if (!activeLink) { return }
 

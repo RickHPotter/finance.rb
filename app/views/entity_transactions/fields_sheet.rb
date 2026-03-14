@@ -3,8 +3,6 @@
 module Views
   module EntityTransactions
     class FieldsSheet < Components::Base
-      include Phlex::Rails::Helpers::ImageTag
-      include Phlex::Rails::Helpers::AssetPath
       include Phlex::Rails::Helpers::RadioButtonTag
 
       include ComponentsHelper

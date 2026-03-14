@@ -3,7 +3,6 @@
 class Views::Entities::Popover < Views::Base
   include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::LinkTo
 
   attr_reader :items, :mobile, :target_ids, :trigger_label, :variant
 

@@ -19,10 +19,13 @@ gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
 
-# ViewComponent
-gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
-gem "view_component"
+gem "image_processing", "~> 1.2"
+
+# UI
 # gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
+gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
+gem "phlex-rails"
+gem "tailwind_merge", "~> 1.1"
 
 # Authentication
 gem "devise"
@@ -80,7 +83,3 @@ group :test do
   gem "shoulda-matchers"
   gem "simplecov", require: false
 end
-
-gem "phlex-rails"
-
-gem "tailwind_merge", "~> 1.1"

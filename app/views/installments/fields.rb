@@ -3,9 +3,6 @@
 module Views
   module Installments
     class Fields < Components::Base
-      include Phlex::Rails::Helpers::ImageTag
-      include Phlex::Rails::Helpers::AssetPath
-
       include CacheHelper
 
       attr_reader :form, :transactable, :installment

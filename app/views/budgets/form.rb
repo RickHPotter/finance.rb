@@ -3,7 +3,6 @@
 class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
-  include Phlex::Rails::Helpers::TextFieldTag
   include Phlex::Rails::Helpers::HiddenFieldTag
   include Phlex::Rails::Helpers::AssetPath
   include Views::Budgets

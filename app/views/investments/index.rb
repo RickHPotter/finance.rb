@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Investments::Index < Views::Base
-  include Phlex::Rails::Helpers::LinkTo
   include Views::Investments
 
   include CacheHelper

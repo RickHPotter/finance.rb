@@ -13,7 +13,6 @@ module Logic
 
       return false if source_card_payment.nil? || target_card_payment.nil?
 
-      # THE PROBLEM LIES RIGHT HERE, MASTER
       source_card_payment.card_installments.update(target_card_payment.slice(:year, :month))
 
       source_reference = user_card.references.find_by(year: source_date.year, month: source_date.month)

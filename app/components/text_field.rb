@@ -2,8 +2,6 @@
 
 module Components
   class TextField < Base
-    include Phlex::Rails::Helpers::TextFieldTag
-
     include ComponentsHelper
     include CacheHelper
     include TranslateHelper
