@@ -38,13 +38,22 @@ too visible to ignore.
   - [#27](https://github.com/RickHPotter/finance.rb/issues/27)
 
 - Subtasks:
-  - Review outdated specs and align them with current product behaviour.
-  - Increase coverage around references, bulk actions, payment flows, naming linting,
-    conversations, and PWA-specific behaviour.
-  - Continue extracting domain logic from controllers and views where the current
-    implementation still feels improvised.
+  - Review outdated model specs and align them with the validations, associations,
+  - Review outdated concern specs and align them with the current shared business rules.
+  - Review outdated request specs and align them with current controller and product behaviour.
+    predicates, and callback rules that still belong at model level.
 - Extra:
   - Use this sprint to reduce transitional code, not just to add new features.
+  - Models group, passive/domain records: `bank`, `card`, `category`, `entity`,
+    `user`, `user_card`, `user_bank_account`, `investment`.
+  - Models group, transaction records: `card_transaction`, `cash_transaction`,
+    `exchange`, `entity_transaction`, `category_transaction`.
+  - Models group, installment/date/planning records: `card_installment`,
+    `cash_installment`, `budget`, `ref_month_year`.
+  - Concerns group: `cash_transactable_spec`, `exchange_cash_transactable_spec`,
+    `category_transactable_spec`, `entity_transactable_spec`, `budgetable_spec`.
+  - Requests group: `card_transactions_spec`, `cash_transactions_spec`, `pages_spec`,
+    and any missing request specs for current Sprint 2 features.
 
 ### JIRAYA-02/be-01: Create a first-class `Subscription` flow
 
