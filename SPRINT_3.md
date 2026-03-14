@@ -64,6 +64,8 @@ too visible to ignore.
   - [#28](https://github.com/RickHPotter/finance.rb/issues/28)
 
 - Subtasks:
+  - Treat `Subscription` as a recurring financial transaction concept, such as
+    Netflix, ChatGPT, rent, or salary, not as a notification endpoint.
   - Create a built-in category or equivalent convention for subscription-generated
     records.
   - Create a dedicated `Subscription` concept instead of forcing recurrence into

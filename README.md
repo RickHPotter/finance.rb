@@ -42,8 +42,8 @@ Hotwire-driven flows, bulk actions, references, chat, notifications, infrastruct
 improvements, naming consistency, and performance cleanup.
 
 Sprint 3 (`Jiraiya`) is the next more deliberately planned sprint, focused on
-recurrence, scenario planning, analysis screens, stronger consistency rules, and
-faster day-to-day workflows.
+recurring-transaction helpers, scenario planning, analysis screens, stronger
+consistency rules, and faster day-to-day workflows.
 
 For the detailed sprint history:
 
