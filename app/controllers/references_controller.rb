@@ -17,6 +17,8 @@ class ReferencesController < ApplicationController
   end
 
   def update
+    @reference.skip_reference_closing_date_calculation = true
+
     if @reference.update(reference_params)
       redirect_to edit_user_card_path(@user_card)
     else

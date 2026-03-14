@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-class Views::Pages::Donation < Views::Base
+class Views::Static::Donation < Views::Base
   include CacheHelper
 
   def options
     [
-      { title: I18n.t("donation.water_title"), subtitle: I18n.t("donation.water_subtitle"), icon: :water, price: "R$ 2.00", qr_code: 2, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553619053116304A279" }, # rubocop:disable Layout/LineLength
-      { title: I18n.t("donation.coffee_title"), subtitle: I18n.t("donation.coffee_subtitle"), icon: :coffee, price: "R$ 5.00", qr_code: 5, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com52040000530398654045.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553611954286304B113" }, # rubocop:disable Layout/LineLength
-      { title: I18n.t("donation.juice_title"), subtitle: I18n.t("donation.juice_subtitle"), icon: :juice, price: "R$ 10.00", qr_code: 10, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540510.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553612226516304F748" }, # rubocop:disable Layout/LineLength
-      { title: I18n.t("donation.wine_title"), subtitle: I18n.t("donation.wine_subtitle"), icon: :wine, price: "R$ 15.00", qr_code: 15, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540515.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536124494963042C5F" },  # rubocop:disable Layout/LineLength
-      { title: I18n.t("donation.meal_title"), subtitle: I18n.t("donation.meal_subtitle"), icon: :meal, price: "R$ 25.00", qr_code: 25, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540525.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536128946463046744" },  # rubocop:disable Layout/LineLength
-      { title: I18n.t("donation.restaurant_title"), subtitle: I18n.t("donation.restaurant_subtitle"), icon: :restaurant, price: "R$ 50.00", qr_code: 50, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540550.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553613076856304A164" } # rubocop:disable Layout/LineLength
+      { title: I18n.t("donation.water_title"), subtitle: I18n.t("donation.water_subtitle"), icon: :water, price: "R$ 2.00", qr_code: 2, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553619053116304A279" },
+      { title: I18n.t("donation.coffee_title"), subtitle: I18n.t("donation.coffee_subtitle"), icon: :coffee, price: "R$ 5.00", qr_code: 5, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com52040000530398654045.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553611954286304B113" },
+      { title: I18n.t("donation.juice_title"), subtitle: I18n.t("donation.juice_subtitle"), icon: :juice, price: "R$ 10.00", qr_code: 10, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540510.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553612226516304F748" },
+      { title: I18n.t("donation.wine_title"), subtitle: I18n.t("donation.wine_subtitle"), icon: :wine, price: "R$ 15.00", qr_code: 15, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540515.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536124494963042C5F" },
+      { title: I18n.t("donation.meal_title"), subtitle: I18n.t("donation.meal_subtitle"), icon: :meal, price: "R$ 25.00", qr_code: 25, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540525.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr10405536128946463046744" },
+      { title: I18n.t("donation.restaurant_title"), subtitle: I18n.t("donation.restaurant_subtitle"), icon: :restaurant, price: "R$ 50.00", qr_code: 50, pix_key: "00020126710014br.gov.bcb.pix013629b7e080-9dc3-40c7-ad5e-6d98ca82182c020930fev.com520400005303986540550.005802BR5924Luis Henrique da Silva B6008Brasilia62230519daqr1040553613076856304A164" }
     ]
   end
 
@@ -21,12 +21,8 @@ class Views::Pages::Donation < Views::Base
           div(class: "inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4") do
             cached_icon :support
           end
-          h1(class: "text-3xl font-bold text-gray-900 mb-3") do
-            I18n.t("donation.title")
-          end
-          p(class: "text-xl text-gray-600 max-w-2xl mx-auto") do
-            I18n.t("donation.subtitle")
-          end
+          h1(class: "text-3xl font-bold text-gray-900 mb-3") { I18n.t("donation.title") }
+          p(class: "text-xl text-gray-600 max-w-2xl mx-auto") { I18n.t("donation.subtitle") }
         end
 
         div(class: "mb-8") do
@@ -42,9 +38,7 @@ class Views::Pages::Donation < Views::Base
                       h3(class: "text-lg font-medium text-gray-800") { option[:title] }
                       h3(class: "text-xl font-semibold text-gray-900 ml-auto") { option[:price] }
                     end
-                    p(class: "text-gray-600 mb-3 text-sm") do
-                      option[:subtitle]
-                    end
+                    p(class: "text-gray-600 mb-3 text-sm") { option[:subtitle] }
                   end
 
                   SheetContent(side: :middle, data: { action: "close->reactive-form#submit" }) do
@@ -96,7 +90,8 @@ class Views::Pages::Donation < Views::Base
               end
 
               button(
-                class: "flex items-center gap-1 p-2 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200", aria_label: "Copy donation key",
+                class: "flex items-center gap-1 p-2 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200",
+                aria_label: "Copy donation key",
                 data: { clipboard_target: :button, action: "clipboard#copy" }
               ) do
                 cached_icon :copy

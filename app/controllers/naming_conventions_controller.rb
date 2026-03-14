@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class NamingConventionsController < ApplicationController
+  include TabsConcern
+
+  before_action :set_naming_convention_tabs
+
   def preview
     @results = naming_results(dry_run: true)
 
@@ -22,6 +26,10 @@ class NamingConventionsController < ApplicationController
   end
 
   private
+
+  def set_naming_convention_tabs
+    set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+  end
 
   def flash_payload
     changed_count = @results.count { |result| result[:changes].present? }
