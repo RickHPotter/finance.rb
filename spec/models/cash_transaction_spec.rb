@@ -18,7 +18,7 @@ RSpec.describe CashTransaction, type: :model do
 
     context "( associations )" do
       bt_models = %i[user]
-      bto_models = %i[user_card user_bank_account]
+      bto_models = %i[user_card user_bank_account investment_type reference_transactable]
       hm_models = %i[card_installments investments exchanges cash_installments category_transactions categories entity_transactions entities]
       na_models = %i[category_transactions entity_transactions]
 
@@ -26,6 +26,16 @@ RSpec.describe CashTransaction, type: :model do
       bto_models.each { |model| it { should belong_to(model).optional } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+    end
+  end
+
+  describe "[ business logic ]" do
+    it "recognises exchange return cash transactions by category" do
+      exchange_return = subject.user.built_in_category("EXCHANGE RETURN")
+      subject.categories << exchange_return
+      subject.save
+
+      expect(subject.exchange_return?).to be(true)
     end
   end
 end

@@ -19,7 +19,7 @@ RSpec.describe CardTransaction, type: :model do
 
     context "( associations )" do
       bt_models = %i[user user_card]
-      bto_models = %i[advance_cash_transaction]
+      bto_models = %i[advance_cash_transaction reference_transactable]
       hm_models = %i[categories category_transactions entities entity_transactions card_installments]
       na_models = %i[category_transactions entity_transactions card_installments]
 
@@ -27,6 +27,14 @@ RSpec.describe CardTransaction, type: :model do
       bto_models.each { |model| it { should belong_to(model).optional } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+    end
+  end
+
+  describe "[ business logic ]" do
+    it "can be destroyed when persisted" do
+      card_transaction.save!
+
+      expect(card_transaction.can_be_destroyed?).to be(true)
     end
   end
 end
