@@ -207,7 +207,9 @@ RSpec.describe "CardTransactions", type: :request do
 
         sign_in user
 
-        expect { delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:), headers: turbo_stream_headers }.to change(CardTransaction, :count).by(-1)
+        expect do
+          delete card_transaction_path(card_transaction_to_be_deleted, card_installment_id:), headers: turbo_stream_headers
+        end.to change(CardTransaction, :count).by(-1)
         expect(card_transaction_to_be_deleted.card_installments).to_not be_present
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end

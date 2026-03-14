@@ -10,6 +10,7 @@ Use the project binstubs instead of global commands.
 - `bin/dev` starts the local stack from `Procfile.dev` (`rails` on port `3016`, Tailwind watcher, esbuild watcher).
 - `bin/rails db:prepare` syncs the local database.
 - `bin/rspec` runs the full spec suite; target a folder with `bin/rspec spec/models`.
+- `bin/rubocop -A` autocorrects Ruby style issues; run it after each batch of edits before moving on.
 - `bin/ci` runs the local CI sequence: setup, RuboCop, ERB lint, RSpec, Bundler Audit, and Brakeman.
 - `yarn build` bundles JavaScript into `app/assets/builds`.
 
