@@ -1,4 +1,4 @@
-# Jiraya 01 Concern Spec Audit
+# Jiraiya 01 Concern Spec Audit
 
 ## Status
 

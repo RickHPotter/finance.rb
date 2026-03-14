@@ -1,4 +1,4 @@
-# Jiraya 01 Resource Request Spec Audit
+# Jiraiya 01 Resource Request Spec Audit
 
 ## Status
 

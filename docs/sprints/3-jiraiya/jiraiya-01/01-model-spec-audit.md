@@ -1,4 +1,4 @@
-# Jiraya 01 Model Spec Audit
+# Jiraiya 01 Model Spec Audit
 
 ## Status
 
