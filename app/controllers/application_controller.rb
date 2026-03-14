@@ -6,6 +6,9 @@ class ApplicationController < ActionController::Base
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_locale
+  before_action :redirect_turbo_stream_requests_to_html
+  # TODO: keep this for in development to see if it detects any bugs
+  after_action :check_reasoning, if: -> { Rails.env.development? && !devise_controller? && action_name.in?(%w[create update destroy pay pay_multiple]) }
 
   # @protected_instance_methods ..............................................
 
@@ -33,5 +36,22 @@ class ApplicationController < ActionController::Base
       else
         cookies[:locale] || I18n.default_locale
       end
+  end
+
+  def check_reasoning
+    current_state = current_user.cash_installments.order(:order_id).pluck(:balance)
+    Logic::RecalculateBalancesService.new(user: current_user).call
+
+    new_state = current_user.cash_installments.order(:order_id).pluck(:balance)
+    @f.lee if current_state != new_state
+  end
+
+  # @private_instance_methods ................................................
+  private
+
+  def redirect_turbo_stream_requests_to_html
+    return unless request.get? && request.path.ends_with?(".turbo_stream")
+
+    redirect_to request.original_fullpath.sub(".turbo_stream", ""), status: :moved_permanently
   end
 end

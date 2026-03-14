@@ -4,14 +4,31 @@
 class BalancesController < ApplicationController
   include TabsConcern
 
-  before_action :set_tabs, only: :index
+  before_action :set_balance_tabs, only: :index
 
   def index
-    render Views::Balances::Index.new(mobile: @mobile)
+    respond_to do |format|
+      format.html { render Views::Balances::Index.new(mobile: @mobile) }
+      format.turbo_stream
+    end
   end
 
-  def json
-    result = Logic::MonthlyBalanceBuilder.new(user: current_user).call
+  def cash_balance_json
+    result = Logic::Finder::CashBalanceJson.new(user: current_user).call
     render json: result
+  end
+
+  def transaction_balance_json
+    month_year_one = params[:month_year_one]&.to_date
+    month_year_two = params[:month_year_two]&.to_date
+
+    result = Logic::Finder::TransactionBalanceJson.new(user: current_user, month_year_one:, month_year_two:).call
+    render json: result
+  end
+
+  private
+
+  def set_balance_tabs
+    set_tabs(active_menu: :cash, active_sub_menu: :balance)
   end
 end

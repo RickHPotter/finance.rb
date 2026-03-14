@@ -2,17 +2,17 @@
 
 class Views::CardTransactions::Index < Views::Base
   include Views::CardTransactions
-  include Phlex::Rails::Helpers::LinkTo
 
   include CacheHelper
 
-  attr_reader :index_context, :current_user, :user_card, :search, :url
+  attr_reader :index_context, :current_user, :user_card, :search, :url, :mobile
 
-  def initialize(index_context: {}, search: false)
+  def initialize(index_context: {}, search: false, mobile: false)
     @index_context = index_context
     @current_user = index_context[:current_user]
     @user_card = index_context[:user_card]
     @search = search
+    @mobile = mobile
   end
 
   def view_template
@@ -24,22 +24,16 @@ class Views::CardTransactions::Index < Views::Base
           turbo_frame_tag :card_transactions do
             div class: "min-h-screen", data: { controller: "datatable" } do
               div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm" do
-                render IndexSearchForm.new(url:, index_context:)
+                render IndexSearchForm.new(url:, index_context:, mobile:)
               end
 
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
-                                                                               :user_card, :active_month_years))
+                                                                               :user_card, :active_month_years, :order_by))
             end
 
-            link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
-                    style: "margin: 30px",
-                    class: "flex md:hidden fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg items-center justify-center z-50
-                           active:scale-95 transition-transform",
-                    data: { turbo_frame: :center_container } do
-              cached_icon :bigger_plus
-            end
+            render Views::Shared::MobileFloatingNav.new(new_href: new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream))
           end
         end
       end

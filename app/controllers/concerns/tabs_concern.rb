@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :cash, active_sub_menu: :pix)
+  def set_tabs(active_menu: :cash, active_sub_menu: :cash)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -24,22 +24,35 @@ module TabsConcern
 
   private
 
-  def set_variables
+  def set_variables # rubocop:disable Metrics/MethodLength
     set_sublinks
 
-    basic_link = (@basic_tab.find(&:default)            || @basic_tab.first).link
-    card_link  = (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link
-    cash_link  = (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link
-
-    @main_items = [
-      { label: t("tabs.basic"),            icon: :exchange, link: basic_link, default: @active_menu == :basic },
-      { label: t("tabs.card_transaction"), icon: :wallet,   link: card_link,  default: @active_menu == :card },
-      { label: t("tabs.cash_transaction"), icon: :cash,     link: cash_link,  default: @active_menu == :cash }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
-
-    @main_tab = @main_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+    @main_tab = [
+      Item.new(
+        t("tabs.basic"),
+        :exchange,
+        (@basic_tab.find(&:default) || @basic_tab.first).link,
+        @active_menu == :basic,
+        @basic_tab.map(&:notification_type).max,
+        :_top
+      ),
+      Item.new(
+        t("tabs.card_transaction"),
+        :wallet,
+        (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link,
+        @active_menu == :card,
+        @card_transaction_tab.map(&:notification_type).max,
+        :_top
+      ),
+      Item.new(
+        t("tabs.cash_transaction"),
+        :cash,
+        (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link,
+        @active_menu == :cash,
+        @cash_transaction_tab.map(&:notification_type).max,
+        :_top
+      )
+    ]
 
     @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile
 
@@ -53,16 +66,15 @@ module TabsConcern
   end
 
   def set_basic_sublinks
-    @basic_items = [
-      { label: t("tabs.user_bank_account"), icon: :bank,        link: user_bank_accounts_path, default: @active_sub_menu == :user_bank_account },
-      { label: t("tabs.user_card"),         icon: :credit_card, link: user_cards_path,         default: @active_sub_menu == :user_card },
-      { label: t("tabs.category"),          icon: :category,    link: categories_path,         default: @active_sub_menu == :category },
-      { label: t("tabs.entity"),            icon: :user_circle, link: entities_path,           default: @active_sub_menu == :entity }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
+    converstion_notification_type = current_user.received_messages.unread.any? ? 1 : 0
 
-    @basic_tab = @basic_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+    @basic_tab = [
+      Item.new(t("tabs.user_bank_account"), :bank,        user_bank_accounts_path, @active_sub_menu == :user_bank_account, 0, :_top),
+      Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card,         0, :_top),
+      Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category,          0, :_top),
+      Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity,            0, :_top),
+      Item.new(t("tabs.conversation"),      :message,     conversation_path(1),    @active_sub_menu == :conversation,      converstion_notification_type, :_top)
+    ]
   end
 
   def set_card_transaction_sublinks
@@ -70,32 +82,27 @@ module TabsConcern
 
     @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      Components::TabsComponent::Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, :center_container)
+      Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, 0, :_top)
     end
 
     if @card_transaction_tab.present?
-      @card_transaction_tab << Components::TabsComponent::Item.new(action_message(:search),
-                                                                   :magnifying_glass,
-                                                                   search_card_transactions_path,
-                                                                   @active_sub_menu.to_sym == :search,
-                                                                   :center_container)
+      @card_transaction_tab << Item.new(
+        action_message(:search), :magnifying_glass, search_card_transactions_path, @active_sub_menu.to_sym == :search, 0, :_top
+      )
       return
     end
 
-    @card_transaction_tab <<
-      Components::TabsComponent::Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, :center_container)
+    @card_transaction_tab << Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, 0, :_top)
   end
 
   def set_cash_transaction_sublinks
-    @cash_transaction_items = [
-      { label: t("tabs.pix"),        icon: :mobile,      link: cash_transactions_path, default: @active_sub_menu == :pix },
-      { label: t("tabs.budget"),     icon: :piggy_bank,  link: budgets_path,           default: @active_sub_menu == :budget },
-      { label: t("tabs.investment"), icon: :trending_up, link: investments_path,       default: @active_sub_menu == :investment },
-      { label: t("tabs.balance"),    icon: :chart,       link: balances_path,          default: @active_sub_menu == :balance }
-    ].map { |item| item.slice(:label, :icon, :link, :default).values }
+    cash_notification_type = current_user.cash_installments.due_today.any? ? 1 : 0
 
-    @cash_transaction_tab = @cash_transaction_items.map do |label, icon, link, default|
-      Components::TabsComponent::Item.new(label, icon, link, default, :center_container)
-    end
+    @cash_transaction_tab = [
+      Item.new(t("tabs.pix"),        :mobile,      cash_transactions_path, @active_sub_menu == :pix,        cash_notification_type, :_top),
+      Item.new(t("tabs.budget"),     :piggy_bank,  budgets_path,           @active_sub_menu == :budget,     0, :_top),
+      Item.new(t("tabs.investment"), :trending_up, investments_path,       @active_sub_menu == :investment, 0, :_top),
+      Item.new(t("tabs.balance"),    :chart,       balances_path,          @active_sub_menu == :balance,    0, :_top)
+    ]
   end
 end

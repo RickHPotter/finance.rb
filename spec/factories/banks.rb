@@ -20,6 +20,7 @@ end
 # == Schema Information
 #
 # Table name: banks
+# Database name: primary
 #
 #  id         :bigint           not null, primary key
 #  bank_code  :integer          not null

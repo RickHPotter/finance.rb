@@ -34,4 +34,10 @@ module ContextHelper
   def set_all_categories
     @categories = current_user.categories.active.order(:category_name).map { |category| [ category.name, category.id ] }
   end
+
+  def set_investment_types
+    @investment_types = InvestmentType.order(:investment_type_code, :investment_type_name_fallback).map do |investment_type|
+      [ investment_type.display_name, investment_type.id ]
+    end
+  end
 end

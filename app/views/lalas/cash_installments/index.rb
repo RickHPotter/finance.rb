@@ -2,11 +2,10 @@
 
 class Views::Lalas::CashInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
-  include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :cash_installments
 
@@ -18,33 +17,38 @@ class Views::Lalas::CashInstallments::Index < Views::Base
   def view_template
     if mobile
       cash_installments.each do |cash_installment|
-        render_mobile_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction.reload
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+
+        render_mobile_cash_installment(cash_installment, cash_transaction, style)
       end
     else
       cash_installments.each do |cash_installment|
-        render_cash_installment(cash_installment)
+        cash_transaction = cash_installment.cash_transaction.reload
+        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+
+        render_cash_installment(cash_installment, cash_transaction, style)
       end
     end
   end
 
-  def render_mobile_cash_installment(cash_installment)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, style)
     turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
-
       icon = choose_icon(cash_installment)
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{cash_transaction.categories&.first&.bg_colour} my-4",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2",
+        style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
-            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 underline underline-offset-[3px]") do
-              span(class: "truncate text-md") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
+            div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
+              span(class: "truncate text-md underline underline-offset-[3px]") do
                 cash_transaction.description
               end
 
-              span(class: "flex-shrink p-1 rounded-sm bg-white border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -69,111 +73,72 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-              cash_transaction.categories.each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
+              border = style.split("; color:").last
+              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
                   category.name
                 end
               end
             end
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-              cash_transaction.entities.each do |entity|
-                Link(
-                  href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-                  size: :xs,
-                  class: "flex flex-col items-center w-16 text-center text-xs",
-                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-                ) do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
-                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
-                end
-              end
-            end
+            render_mobile_entities(cash_transaction)
           end
         end
       end
     end
   end
 
-  def render_cash_installment(cash_installment)
+  def render_cash_installment(cash_installment, cash_transaction, style)
     turbo_frame_tag dom_id cash_installment do
-      cash_transaction = cash_installment.cash_transaction
-
       icon = choose_icon(cash_installment)
 
       div(
-        class: "grid grid-cols-8 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(cash_transaction)}
-                  hover:opacity-80".squish,
+        class: "grid grid-cols-12 hover:opacity-80",
+        style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
                 action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-900 pl-2") do
-          span(class: "px-1 rounded-sm text-slate-900 mr-auto") do
-            format = cash_transaction.investment? ? "%B %Y" : :shorter
-            I18n.l(cash_installment.date, format:)
+        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+          date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
+          div(class: "grid grid-cols-1") do
+            span(class: "rounded-xs text-xs mr-auto") { date }
+            span(class: "rounded-xs text-xs mr-auto") { time }
           end
-        end
 
-        div(class: "col-span-3 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
-          span(class: " flex-1 truncate text-md") do
+          span(id: "edit_cash_transaction_#{cash_transaction.id}", class: "flex-1 truncate text-md underline underline-offset-[3px]") do
             cash_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
           end
         end
 
-        div(class: "py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          cash_transaction.categories.each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
+          border = style.split("; color:").last
+          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
               category.name
             end
           end
         end
 
-        div(class: "py-2 flex items-center justify-center flex-wrap gap-2",
-            data: { datatable_target: :entity, id: cash_transaction.entities.map(&:id) }) do
-          cash_transaction.entity_transactions.order(:entity_id).includes(:entity).each do |entity_transaction|
-            entity = entity_transaction.entity
-
-            Link(
-              href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-              size: :xs,
-              class: "grid grid-cols-1 text-xs mx-auto",
-              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-            ) do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: :entity_entity_name) { entity.entity_name }
-            end
-          end
-        end
+        render_desktop_entities(cash_transaction)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 
-        div(class: "py-2 px-2 flex items-center justify-center gap-2 font-lekton font-bold whitespace-nowrap ml-auto") do
-          span(class: "hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
+        div(class: "py-2 px-2 font-lekton font-bold whitespace-nowrap ml-auto") do
+          span(class: "flex items-center justify-center gap-2 hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
             cached_icon(icon)
+            span { cash_installment.paid ? "Sim" : "Não" }
           end
-          span { cash_installment.paid ? "Sim" : "Não" }
         end
       end
     end
-  end
-
-  def solid_colour_or_gradient(cash_transaction)
-    if cash_transaction.categories.count > 1
-      return [
-        cash_transaction.categories.first.from_bg, *cash_transaction.categories[1..-2].map(&:via_bg),
-        cash_transaction.categories.last.to_bg
-      ].join(" ")
-    end
-
-    cash_transaction.categories.first&.bg_colour
   end
 
   def choose_icon(cash_installment)
@@ -181,6 +146,41 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     in [ true,  _     ] then :check_square
     in [ false, true  ] then :warning_octagon
     in [ false, false ] then :x_circle
+    end
+  end
+
+  def render_mobile_entities(cash_transaction)
+    items = entity_popover_items(cash_transaction, :id)
+
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count).upcase,
+      variant: :cash
+    )
+  end
+
+  def render_desktop_entities(cash_transaction)
+    render Views::Entities::Popover.new(
+      items: entity_popover_items(cash_transaction, :entity_id),
+      mobile: false,
+      target_ids: cash_transaction.entities.map(&:id),
+      trigger_label: "",
+      variant: :cash
+    )
+  end
+
+  def entities_for(cash_transaction, sort_key)
+    cash_transaction.entity_transactions.sort_by(&sort_key).filter_map(&:entity)
+  end
+
+  def entity_popover_items(cash_transaction, sort_key)
+    entities_for(cash_transaction, sort_key).map do |entity|
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name
+      }
     end
   end
 end

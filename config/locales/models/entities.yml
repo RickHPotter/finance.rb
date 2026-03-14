@@ -7,6 +7,7 @@ en:
     attributes:
       entity:
         id: ID
+        icon: Icon
         entity_name: Entity Name
         active: Active
         user_id: User
@@ -29,6 +30,7 @@ pt-BR:
     attributes:
       entity:
         id: ID
+        icon: Ícone
         entity_name: Nome da Entidade
         active: Ativo
         user_id: Usuário

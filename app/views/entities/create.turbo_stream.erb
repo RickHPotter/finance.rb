@@ -1,12 +1,14 @@
 <% if @entity.errors.empty? %>
   <% if @entity.active? && @card_transaction %>
-  <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, Entity) }) %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+    <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, Entity) }) %>
+
+    <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
   <% else %>
-    <%= turbo_stream.replace(:center_container, template: "entities/index") %>
+    <%= turbo_stream.replace(:center_container, Views::Entities::Index.new(entities: @entities, mobile: @mobile)) %>
   <% end %>
 <% else %>
-  <%= turbo_stream.replace(:center_container, template: "entities/new", locals: { entity: @entity }) %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, Entity) }) %>
+
+  <%= turbo_stream.replace(:center_container, Views::Entities::New.new(current_user:, entity: @entity)) %>
 <% end %>

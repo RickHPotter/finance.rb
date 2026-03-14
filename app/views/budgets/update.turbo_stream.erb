@@ -1,8 +1,14 @@
-<% if @budget %>
-  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context)) %>
+<% if @budget.valid? %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updated, Budget) }) %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") if @budget.active? %>
+
+  <% if @budget.active? %>
+    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+    <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% else %>
+    <%= turbo_stream.replace(:center_container, Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% end %>
 <% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @budget.errors.full_messages&.join || notification_model(:not_updated, Budget) }) %>
+
   <%= turbo_stream.replace(:center_container, Views::Budgets::Edit.new(current_user:, budget: @budget)) %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updated, Budget) }) %>
 <% end %>

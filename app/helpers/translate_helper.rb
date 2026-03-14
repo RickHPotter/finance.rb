@@ -63,10 +63,14 @@ module TranslateHelper
   #
   # @return [String] Human-readable attribute name based on the model and attribute.
   #
-  def model_attribute(model, attribute)
+  def model_attribute(model, attribute, fallback = nil)
     model = model.class if model.is_a?(ActiveRecord::Base)
     model = model.model_name.singular
-    I18n.t("activerecord.attributes.#{model}.#{attribute}")
+
+    return I18n.t("activerecord.attributes.#{model}.#{attribute}") if fallback.nil?
+    return I18n.t("activerecord.attributes.#{model}.#{attribute}") if I18n.exists?("activerecord.attributes.#{model}.#{attribute}")
+
+    fallback
   end
 
   # Dynamically generates a panel title based on the current controller action and the singularised capitalised name of the controller.
@@ -79,18 +83,6 @@ module TranslateHelper
   #
   def panel_title
     "#{I18n.t("gerund.#{action_name}")} #{controller_name.singularize.capitalize}"
-  end
-
-  # Dynamically generates a submit button label based on the current controller action.
-  #
-  # @example Get submit button label:
-  #   submit
-  #   # => "Create" or "Update" (depending on the controller action)
-  #
-  # @return [String] Submit button label for the current controller action.
-  #
-  def submit
-    I18n.t("actions.#{action_name}")
   end
 
   # @return [String] Action shortcut for I18n.

@@ -11,12 +11,15 @@ FactoryBot.define do
     user { custom_create(:user) }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
+    investment_type { custom_create(:investment_type) }
+
     trait :different do
       price { 0.52 }
       date { Date.new(2023, 11, 26) }
 
       user { different_custom_create(:user) }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
+      investment_type { different_custom_create(:investment_type) }
     end
 
     trait :random do
@@ -27,6 +30,7 @@ FactoryBot.define do
 
       user { random_custom_create(:user) }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
+      investment_type { random_custom_create(:investment_type) }
     end
   end
 end
@@ -34,6 +38,7 @@ end
 # == Schema Information
 #
 # Table name: investments
+# Database name: primary
 #
 #  id                   :bigint           not null, primary key
 #  date                 :datetime         not null
@@ -44,18 +49,21 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
+#  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
 #
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_investment_type_id    (investment_type_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)
 #

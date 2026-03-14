@@ -10,6 +10,8 @@ class Exchange < ApplicationRecord
   include ExchangeCashTransactable
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :locked
+
   # @relationships ............................................................
   belongs_to :entity_transaction, counter_cache: true
 
@@ -28,6 +30,7 @@ end
 # == Schema Information
 #
 # Table name: exchanges
+# Database name: primary
 #
 #  id                    :bigint           not null, primary key
 #  bound_type            :string           default("standalone"), not null

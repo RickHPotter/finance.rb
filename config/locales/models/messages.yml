@@ -1,0 +1,37 @@
+en:
+  activerecord:
+    models:
+      message:
+        one: Message
+        other: Messages
+    attributes:
+      message:
+        id: ID
+        body_placeholder: Type your message
+        hello: Hello
+        ivemadeatransactiononyou: I made a transaction referencing you.
+        iveupdatedatransactiononyou: I updated a transaction referencing you.
+        ivedeletedatransactiononyou: I deleted a transaction referencing you.
+        click_down_below: Click down below to match this transaction on your app.
+        you_have_a_new_message: You have a new message
+        outdated_message: Outdated message! Click to see the updated version.
+        already_deleted: This transaction was already deleted.
+
+pt-BR:
+  activerecord:
+    models:
+      message:
+        one: Mensagem
+        other: Mensagens
+    attributes:
+      message:
+        id: ID
+        body_placeholder: Digite sua mensagem
+        hello: Olá
+        ivemadeatransactiononyou: Eu fiz uma transação referenciando você.
+        iveupdatedatransactiononyou: Eu atualizei uma transação referenciando você.
+        ivedeletedatransactiononyou: Eu excluí uma transação referenciando você.
+        click_down_below: Clique abaixo para vincular essa transação ao seu app.
+        you_have_a_new_message: Vocês tem uma nova mensagem
+        outdated_message: Mensagem desatualizada! Clique para ver a versão atualizada.
+        already_deleted: Essa transação já foi excluída.

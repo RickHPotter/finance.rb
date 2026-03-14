@@ -13,8 +13,17 @@ application.register("autosave", AutosaveController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import CalculatorController from "./calculator_controller"
+application.register("calculator", CalculatorController)
+
+import ChatController from "./chat_controller"
+application.register("chat", ChatController)
+
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
+
+import ConfirmController from "./confirm_controller"
+application.register("confirm", ConfirmController)
 
 import CursorController from "./cursor_controller"
 application.register("cursor", CursorController)
@@ -28,6 +37,9 @@ application.register("datatable", DatatableController)
 import DatepickerController from "./datepicker_controller"
 application.register("datepicker", DatepickerController)
 
+import DragController from "./drag_controller"
+application.register("drag", DragController)
+
 import DynamicDescriptionController from "./dynamic_description_controller"
 application.register("dynamic-description", DynamicDescriptionController)
 
@@ -37,17 +49,29 @@ application.register("entity-transaction", EntityTransactionController)
 import ExchangeController from "./exchange_controller"
 application.register("exchange", ExchangeController)
 
+import ExchangeLockController from "./exchange_lock_controller"
+application.register("exchange-lock", ExchangeLockController)
+
+import HistoryNavController from "./history_nav_controller"
+application.register("history-nav", HistoryNavController)
+
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 
-import MaterialTailwindTabController from "./material_tailwind_tab_controller"
-application.register("material-tailwind-tab", MaterialTailwindTabController)
+import InstallmentLockController from "./installment_lock_controller"
+application.register("installment-lock", InstallmentLockController)
+
+import MobileScrollNavController from "./mobile_scroll_nav_controller"
+application.register("mobile-scroll-nav", MobileScrollNavController)
 
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 
 import MonthlyBalanceController from "./monthly_balance_controller"
 application.register("monthly-balance", MonthlyBalanceController)
+
+import NamingTabsController from "./naming_tabs_controller"
+application.register("naming-tabs", NamingTabsController)
 
 import NestedFormController from "./nested_form_controller"
 application.register("nested-form", NestedFormController)
@@ -61,6 +85,9 @@ application.register("price-mask", PriceMaskController)
 import PriceSumController from "./price_sum_controller"
 application.register("price-sum", PriceSumController)
 
+import PushController from "./push_controller"
+application.register("push", PushController)
+
 import PwaInstallationController from "./pwa_installation_controller"
 application.register("pwa-installation", PwaInstallationController)
 
@@ -72,6 +99,9 @@ application.register("ruby-ui--calendar", RubyUi__CalendarController)
 
 import RubyUi__CalendarInputController from "./ruby_ui/calendar_input_controller"
 application.register("ruby-ui--calendar-input", RubyUi__CalendarInputController)
+
+import RubyUi__ComboboxController from "./ruby_ui/combobox_controller"
+application.register("ruby-ui--combobox", RubyUi__ComboboxController)
 
 import RubyUi__PopoverController from "./ruby_ui/popover_controller"
 application.register("ruby-ui--popover", RubyUi__PopoverController)
@@ -87,6 +117,9 @@ application.register("ruby-ui--tabs", RubyUi__TabsController)
 
 import SelectController from "./select_controller"
 application.register("select", SelectController)
+
+import TabController from "./tab_controller"
+application.register("tab", TabController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)

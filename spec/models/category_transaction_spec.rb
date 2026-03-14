@@ -25,6 +25,7 @@ end
 # == Schema Information
 #
 # Table name: category_transactions
+# Database name: primary
 #
 #  id                :bigint           not null, primary key
 #  transactable_type :string           not null, uniquely indexed => [category_id, transactable_id], indexed => [transactable_id]

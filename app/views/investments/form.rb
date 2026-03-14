@@ -9,17 +9,18 @@ class Views::Investments::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :investment, :user_bank_accounts
+  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types
 
   def initialize(current_user:, investment:)
     @current_user = current_user
     @investment = investment
 
     set_user_bank_accounts
+    set_investment_types
   end
 
   def view_template
-    turbo_frame_tag dom_id @investment do
+    turbo_frame_tag dom_id investment do
       form_with(
         model: investment,
         id: :investment_form,
@@ -31,14 +32,14 @@ class Views::Investments::Form < Views::Base
         div(class: "w-full mb-6") do
           form.text_field :description,
                           class: outdoor_input_class,
-                          autofocus: true,
+                          autofocus: investment.user_bank_account.nil?,
                           autocomplete: :off,
                           value: investment.new_record? ? model_attribute(investment, :description_placeholder) : investment.description,
                           data: { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
         end
 
         div(class: "lg:flex lg:gap-2 w-full pb-3") do
-          div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-4/12 mb-3 lg:mb-0 wallet-icon") do
+          div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
             form.combobox \
               :user_bank_account_id,
               @user_bank_accounts,
@@ -50,7 +51,16 @@ class Views::Investments::Form < Views::Base
                       value: ".hw-combobox__input" }
           end
 
-          div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
+          div(id: "hw_investment_investment_type_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
+            form.combobox \
+              :investment_type_id,
+              @investment_types,
+              mobile_at: "360px",
+              include_blank: false,
+              placeholder: model_attribute(investment, :investment_type_id)
+          end
+
+          div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
             TextField \
               form, :date,
               id: :investment_date,
@@ -60,13 +70,15 @@ class Views::Investments::Form < Views::Base
               data: { reactive_form_target: :dateInput }
           end
 
-          div(class: "w-full lg:w-4/12 mb-3 lg:mb-0") do
+          div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
             TextField \
               form, :price,
+              autofocus: investment.user_bank_account.present?,
               inputmode: :numeric,
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
+              onclick: "this.select();",
               data: { price_mask_target: :input,
                       reactive_form_target: :priceInput,
                       action: "input->price-mask#applyMask" }

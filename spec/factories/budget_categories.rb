@@ -2,17 +2,14 @@
 
 FactoryBot.define do
   factory :budget_category do
-    transactable { custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-    category { custom_create(:category, options: { user: transactable.user }) }
+    category { custom_create(:category) }
 
     trait :different do
-      transactable { different_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-      category { different_custom_create(:category, options: { user: transactable.user }) }
+      category { different_custom_create(:category) }
     end
 
     trait :random do
-      transactable { random_custom_create_polymorphic(%i[card_transaction cash_transaction investment]) }
-      category { random_custom_create(:category, options: { user: transactable.user }) }
+      category { random_custom_create(:category) }
     end
   end
 end
@@ -20,6 +17,7 @@ end
 # == Schema Information
 #
 # Table name: budget_categories
+# Database name: primary
 #
 #  id          :bigint           not null, primary key
 #  created_at  :datetime         not null

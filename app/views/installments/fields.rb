@@ -3,76 +3,104 @@
 module Views
   module Installments
     class Fields < Components::Base
-      include Phlex::Rails::Helpers::ImageTag
-      include Phlex::Rails::Helpers::AssetPath
-
       include CacheHelper
 
-      attr_reader :form, :installment
+      attr_reader :form, :transactable, :installment
 
       def initialize(form:)
         @form = form
+        @transactable = form.options[:parent_builder].object
         @installment = form.object
       end
 
       def view_template
-        div(class: "nested-form-wrapper", data: { new_record: installment.new_record?, reactive_form_target: "installmentWrapper" }) do
-          span(class: "flex justify-between items-center text-sm font-medium text-black mx-auto bg-gray-200 border border-gray-300 rounded-sm") do
+        readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
+
+        div(
+          class: "nested-form-wrapper bg-white border rounded-xl p-1 shadow-sm space-y-1 transition hover:shadow-md
+                  #{locked? ? 'border-green-300' : 'border-red-300'} #{'hidden' if installment.marked_for_destruction?}",
+          data: {
+            new_record: installment.new_record?,
+            reactive_form_target: "installmentWrapper",
+            installment_lock_target: "installment",
+            locked: locked?.to_s
+          }
+        ) do
+          div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1",
+              class: "text-md rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
               data: { action: "click->reactive-form#prevMonth" }
-            ) do
-              "←"
-            end
+            ) { "←" }
 
-            div(class: "col-span-4 flex items-center") do
+            div(class: "flex items-center gap-2") do
               data = {}
-              data = { action: "click->reactive-form#setPaid" } if installment.installment_type == "CashInstallment"
+              data = { action: "click->reactive-form#togglePaid" } if installment.installment_type == "CashInstallment"
+
+              span(class: "installment_number_display text-gray-300") do
+                installment.number
+              end
 
               button(
                 type: :button,
-                class: "flex w-3 h-3 rounded-full me-2 flex-shrink-0 #{installment.paid ? 'bg-green-400' : 'bg-orange-600'}",
+                class: "installment_paid_colour w-3 h-3 rounded-full  #{installment.paid ? 'bg-green-400' : 'bg-orange-600'} border border-white shadow-sm",
                 data:
               )
 
-              span(class: "installment_month_year font-victor font-semibold text-orange-950", data: { reactive_form_target: :monthYearInstallment }) do
+              span(class: "installment_month_year text-gray-900", data: { reactive_form_target: :monthYearInstallment }) do
                 installment.month_year if installment.month
               end
             end
 
             button(
               type: :button,
-              class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-1",
+              class: "text-md rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
               data: { action: "click->reactive-form#nextMonth" }
-            ) do
-              "→"
-            end
+            ) { "→" }
           end
 
-          div(class: "grid grid-cols-3 w-full") do
-            div(class: "col-span-2") do
-              div(class: "flex justify-center items-center text-sm text-gray-900 bg-gray-200 border border-gray-300 cursor-pointer rounded-none rounded-s-lg") do
-                form.text_field \
-                  :date,
-                  id: :installment_date,
-                  type: "datetime-local",
-                  value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
-                  class: "installment_date w-full outline-hidden appearance-none bg-transparent border-0 font-graduate text-[0.8rem]",
-                  data: { reactive_form_target: :dateInput }
-              end
-            end
+          div(class: "flex-1 grid gap-1") do
+            form.text_field \
+              :date,
+              id: :installment_date,
+              type: "datetime-local",
+              value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
+              class: "installment_date w-full w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+              data: { reactive_form_target: :dateInput, action: "input->reactive-form#setPaidIfPastCurrentDay" }
 
             positive = installment.price.to_i.positive?
             sign = positive ? "+" : "-"
 
-            form.text_field \
-              :price,
-              inputmode: :numeric,
-              class:
-                "sign-based price-input rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500
-                focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5",
-              data: { price_mask_target: :input, reactive_form_target: :priceInstallmentInput, action: "input->price-mask#applyMask", sign: }
+            div(class: "flex gap-1") do
+              form.text_field \
+                :price,
+                inputmode: :numeric,
+                class: "sign-based price-input
+                        w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+                readonly:,
+                onclick: "this.select();",
+                data: {
+                  price_mask_target: :input,
+                  reactive_form_target: :priceInstallmentInput,
+                  installment_lock_target: :price,
+                  action: "input->price-mask#applyMask",
+                  sign:
+                }
+
+              div do
+                button(
+                  type: "button",
+                  class: "p-1.5 rounded-md bg-red-300 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  data: { installment_lock_target: :lockBtn, action: "click->installment-lock#lock" }
+                ) { cached_icon :unlocked_padlock }
+
+                button(
+                  type: "button",
+                  class: "p-1.5 rounded-md bg-green-100 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  data: { installment_lock_target: :unlockBtn, action: "click->installment-lock#unlock" }
+                ) { cached_icon :locked_padlock }
+              end
+            end
           end
 
           form.check_box :paid, style: "display: none", class: :installment_paid
@@ -84,6 +112,10 @@ module Views
 
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: "delInstallment", action: "nested-form#remove" })
         end
+      end
+
+      def locked?
+        installment&.paid? || false
       end
     end
   end

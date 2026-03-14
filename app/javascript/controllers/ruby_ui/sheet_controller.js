@@ -3,18 +3,23 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["content"]
 
-  initialize() {
-    this.element.insertAdjacentHTML("beforeend", this.contentTarget.innerHTML)
-    this.element.querySelector("[data-controller='ruby-ui--sheet-content']").classList.add("hidden")
+  connect() {
+    this.ensureContent()
+    this.renderedContent()?.classList.add("hidden")
   }
 
   open() {
-    const existingSheetContent = this.element.querySelector("[data-controller='ruby-ui--sheet-content']")
+    this.ensureContent()
+    this.renderedContent()?.classList.remove("hidden")
+  }
 
-    if (existingSheetContent) {
-      existingSheetContent.classList.remove("hidden")
-    } else {
-      this.element.insertAdjacentHTML("beforeend", this.contentTarget.innerHTML)
-    }
+  ensureContent() {
+    if (this.renderedContent()) return
+
+    this.element.insertAdjacentHTML("beforeend", this.contentTarget.innerHTML)
+  }
+
+  renderedContent() {
+    return this.element.querySelector(":scope > div[data-controller='ruby-ui--sheet-content']")
   }
 }

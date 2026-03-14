@@ -22,7 +22,7 @@ RSpec.describe CashTransactable, type: :concern do
   end
 
   def validate(installments_prices)
-    CashTransaction.order(:month, :year).each_with_index do |cash_transaction, index|
+    CashTransaction.order(:year, :month).each_with_index do |cash_transaction, index|
       expect(cash_transaction.comment).to eq "Upfront: 0, Installments: #{installments_prices[index]}"
       expect(cash_transaction.price).to eq installments_prices[index]
     end

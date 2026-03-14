@@ -7,6 +7,22 @@ en:
     until_now: Until Now
     around_now: Around Now (-/+ 3 months)
     custom: Custom
+    types:
+      default: Default
+      high_and_low: Low and High
+      month: Monthly
+      trimester: Trimester
+      semester: Semester
+      year: Year
+    types_titles:
+      default: Balance
+      high: Highest Balance
+      low: Lowest Balance
+      negative_amounts_pie: Outcome Amounts by Category
+      positive_amounts_pie: Income Amounts by Category
+      negative_transactions_pie: Outcome Transactions by Category
+      positive_transactions_pie: Income Transactions by Category
+      period: Throughout the Period
 
 pt-BR:
   balances:
@@ -17,3 +33,19 @@ pt-BR:
     until_now: Até Agora
     around_now: Aproximadamente Agora (-/+ 3 meses)
     custom: Personalizado
+    types:
+      default: Padrão
+      high_and_low: Baixo e Alto
+      month: Mensal
+      trimester: Trimestral
+      semester: Semestral
+      year: Anual
+    types_titles:
+      default: Saldo
+      high: Maior Saldo
+      low: Menor Saldo
+      negative_amounts_pie: Valores de Despesas por Categoria
+      positive_amounts_pie: Valores de Receitas por Categoria
+      negative_transactions_pie: Transações de Despesas por Categoria
+      positive_transactions_pie: Transações de Receitas por Categoria
+      period: Durante o Período

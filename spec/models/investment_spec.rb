@@ -8,7 +8,15 @@ RSpec.describe Investment, type: :model do
   let(:subject) { create(:investment, :random, date: Date.new(2023, 7, 1)) }
   let(:cash_transaction) { subject.cash_transaction }
   let!(:investments) do
-    build_list(:investment, 3, :random, user: subject.user, user_bank_account: subject.user_bank_account, date: subject.date) do |inv, i|
+    build_list(
+      :investment,
+      3,
+      :random,
+      user: subject.user,
+      user_bank_account: subject.user_bank_account,
+      investment_type: subject.investment_type,
+      date: subject.date
+    ) do |inv, i|
       inv.save(date: subject.date + i + 1)
     end
   end
@@ -36,7 +44,7 @@ RSpec.describe Investment, type: :model do
 
     context "( associations )" do
       ob_models = %i[cash_transaction]
-      bt_models = %i[user user_bank_account]
+      bt_models = %i[user user_bank_account investment_type]
       hm_models = %i[category_transactions categories]
       na_models = %i[category_transactions]
 
@@ -126,6 +134,7 @@ end
 # == Schema Information
 #
 # Table name: investments
+# Database name: primary
 #
 #  id                   :bigint           not null, primary key
 #  date                 :datetime         not null
@@ -136,18 +145,21 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
+#  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
 #
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_investment_type_id    (investment_type_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)
 #

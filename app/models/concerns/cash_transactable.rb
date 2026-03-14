@@ -13,9 +13,8 @@ module CashTransactable
 
     # @callbacks ..............................................................
     before_save :attach_cash_transaction
-    after_save :fix_cash_transaction
-    after_commit :update_cash_transaction, on: %i[create update]
-    after_commit :update_or_destroy_cash_transaction, on: :destroy
+    after_save :fix_cash_transaction, :update_cash_transaction
+    after_destroy :update_or_destroy_cash_transaction
   end
 
   # @public_class_methods .....................................................
@@ -51,11 +50,23 @@ module CashTransactable
     return if previous_cash_transaction_id == cash_transaction_id
 
     previous_cash_transaction = CashTransaction.find_by(id: previous_cash_transaction_id)
-    previous_cash_transaction.investments&.first&.touch
-    previous_cash_transaction.card_installments&.first&.touch
+    return unless previous_cash_transaction
 
-    association = cash_transaction.cash_transaction_type.underscore.pluralize
-    previous_cash_transaction.destroy if previous_cash_transaction.public_send(association).empty?
+    association_name = previous_cash_transaction.cash_transaction_type.underscore.pluralize
+    all_transactables = previous_cash_transaction.public_send(association_name)
+    remaining_transactables = all_transactables.where.not(id:)
+
+    if remaining_transactables.any?
+      new_price = remaining_transactables.sum(:price)
+      new_comment = remaining_transactables.first.comment
+      previous_cash_transaction.update_columns(price: new_price, comment: new_comment)
+      if previous_cash_transaction.cash_installments.any?
+        previous_cash_transaction.cash_installments.first.update_columns(price: new_price)
+        Logic::RecalculateBalancesService.new(user:, year: previous_cash_transaction.year, month: previous_cash_transaction.month).call
+      end
+    else
+      previous_cash_transaction.destroy
+    end
   end
 
   # Updates the associated `cash_transaction` with `self` model details.
@@ -63,18 +74,15 @@ module CashTransactable
   # Updates the associated `cash_transaction` with the sum of `price`s,
   # updating also `comment` describing the days of associated `self`s.
   #
-  # @note This is a method that is called after_commit.
+  # @note This is a method that is called after_save.
   #
   # @see {CashTransaction}.
   #
   # @return [void].
   #
   def update_cash_transaction
-    cash_transaction.update_columns(price: full_price, comment:)
+    cash_transaction.update_columns(description: cash_transaction_description, price: full_price, comment:)
     cash_transaction.cash_installments.first.update_columns(price: full_price)
-
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call
-    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -83,7 +91,7 @@ module CashTransactable
   # In case it is zero, it destroys the associated `cash_transaction`.
   # Otherwise, it updates the `cash_transaction` using {#update_cash_transaction}.
   #
-  # @note This is a method that is called after_commit.
+  # @note This is a method that is called after_destroy.
   #
   # @see {#update_cash_transaction}.
   #
@@ -112,6 +120,7 @@ module CashTransactable
       user_id:,
       cash_transaction_type: model_name.name,
       category_transactions:,
+      investment_type_id: (investment_type_id if respond_to? :investment_type_id),
       user_card_id: (user_card_id if respond_to? :user_card_id),
       user_bank_account_id: (user_bank_account_id if respond_to? :user_bank_account_id)
     }.compact_blank
@@ -133,7 +142,7 @@ module CashTransactable
              category_transactions_attributes:,
              entity_transactions_attributes:,
              cash_installments_attributes: [
-               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date, month:, year:, paid: }
+               { number: 1, price: full_price * - 1, installment_type: :CashTransaction, date: card_payment_date.end_of_day, month:, year:, paid: }
              ])
   end
 

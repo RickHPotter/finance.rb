@@ -64,7 +64,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       return
     end
 
-    existing_cash_transaction = user.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions)
+    existing_cash_transaction = user.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions.except(:skip_recalculate_balance))
 
     if existing_cash_transaction
       self.cash_transaction = existing_cash_transaction
@@ -87,18 +87,15 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
     return if (changes.keys - %w[created_at updated_at]).empty?
 
-    if changes[:bound_type].nil?
+    month_or_year_changed = changes[:month].present? || changes[:year].present?
+
+    if changes[:bound_type].nil? && !(card_bound? && month_or_year_changed)
       return if changes.slice(:price, :date, :month, :year).empty?
 
       cash_transaction_price = exchanges_price(with_updated_price: true)
       update_cash_transaction_and_installment(updated_price: cash_transaction_price)
     else
-      if standalone?
-        update_cash_transaction_and_installment(updated_price: exchanges_price - price)
-      else
-        destroy_cash_transaction
-      end
-
+      destroy_cash_transaction
       create_cash_transaction
     end
   end
@@ -118,7 +115,44 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     if should_destroy
       _destroy_cash_transaction
     else
-      update_cash_transaction_and_installment(updated_price: exchanges_price - price)
+      recalculate_old_cash_transaction
+    end
+  end
+
+  def recalculate_old_cash_transaction # rubocop:disable Metrics/MethodLength
+    old_cash_transaction = cash_transaction
+    updated_price = old_cash_transaction.exchanges.sum(:price) - price_in_database
+
+    if updated_price.zero?
+      old_cash_transaction.destroy
+      return
+    end
+
+    old_cash_transaction.update_columns(price: updated_price)
+
+    cash_installments = old_cash_transaction.cash_installments
+
+    if cash_installments.one?
+      cash_installments.first&.update_columns(price: updated_price)
+    elsif cash_installments.any?
+      paid_price = cash_installments.where(paid: true).sum(:price)
+
+      pending_installments = cash_installments.where(paid: false)
+      return if pending_installments.empty?
+
+      pending_count = pending_installments.count
+      pending_price = updated_price - paid_price
+
+      remaining_price = pending_price
+
+      pending_installments.each do |cash_installment|
+        price = pending_price / pending_count
+        remaining_price -= price
+
+        cash_installment.update_columns(price:)
+      end
+
+      pending_installments.first.update_columns(price: pending_installments.first.price + remaining_price) if remaining_price.positive?
     end
   end
 
@@ -139,14 +173,46 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def update_cash_transaction_and_installment(updated_price:)
+  # FIXME: refactor
+  def update_cash_transaction_and_installment(updated_price:) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     _destroy_cash_transaction and return if updated_price.zero?
 
     cash_transaction.update_columns(price: updated_price, date:, month:, year:)
-    cash_transaction.cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
 
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call
-    Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
+    cash_installments = cash_transaction.cash_installments
+
+    if cash_installments.all?(&:paid?)
+      cash_installments_count = cash_installments.count + 1
+
+      last_cash_installment = cash_installments.order(:number).last
+      if date > last_cash_installment.date
+        date
+      else
+        last_cash_installment.date + 1.day
+      end => new_date
+
+      cash_installments.create(number: cash_installments_count, date: new_date, month:, year:, price:, cash_installments_count:)
+      cash_installments.update_all(cash_installments_count:)
+    elsif cash_installments.one?
+      cash_installments.first&.update_columns(price: updated_price, date:, month:, year:)
+    else
+      paid_price = cash_installments.where(paid: true).sum(:price)
+
+      pending_installments = cash_installments.where(paid: false)
+      pending_count = pending_installments.count
+      pending_price = updated_price - paid_price
+
+      remaining_price = pending_price
+
+      pending_installments.each do |cash_installment|
+        price = pending_price / pending_count
+        remaining_price -= price
+
+        cash_installment.update_columns(price:)
+      end
+
+      pending_installments.first.update_columns(price: pending_installments.first.price + remaining_price) if remaining_price.positive?
+    end
   end
 
   def exchanges_price(with_updated_price: false)
@@ -161,7 +227,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @return [Hash] The params for the associated `cash_transaction`.
   #
   def cash_transaction_params
-    description = exchanges_count > 1 ? "#{transactable.description} #{number}/#{exchanges_count}" : transactable.description
+    count = entity_transaction.exchanges.size
+    description = count > 1 ? "#{transactable.description} #{number}/#{count}" : transactable.description
 
     transactable
       .slice(:user_card_id)
@@ -173,6 +240,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
              month:,
              user_id: user.id,
              cash_transaction_type: model_name.name,
+             skip_recalculate_balance: true,
              category_transactions_attributes:,
              entity_transactions_attributes:)
   end

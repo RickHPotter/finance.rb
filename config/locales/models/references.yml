@@ -1,0 +1,35 @@
+en:
+  activerecord:
+    models:
+      reference:
+        one: User Card Reference
+        other: User Card References
+    attributes:
+      reference:
+        id: ID
+        year: Year
+        month: Month
+        reference_closing_date: Reference Closing Date
+        reference_date: Reference Date
+        source_reference_date: Reference to merge FROM
+        target_reference_date: Reference to merge INTO
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      reference:
+        one: Referência de Cartão
+        other: Referências de Cartão
+    attributes:
+      reference:
+        id: ID
+        year: Ano
+        month: Mês
+        reference_closing_date: Data de Fechamento
+        reference_date: Data de Referência
+        source_reference_date: Referência para mesclar DE
+        target_reference_date: Referência para mesclar PARA
+        created_at: Criado em
+        updated_at: Atualizado em

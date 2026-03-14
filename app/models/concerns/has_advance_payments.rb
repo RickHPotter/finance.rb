@@ -26,6 +26,10 @@ module HasAdvancePayments
     categories.map(&:category_name).include? "CARD ADVANCE"
   end
 
+  def card_advance_description
+    "#{model_attribute(Category, :card_advance).upcase} [ #{user_card.user_card_name} - #{month_year} ]"
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -91,7 +95,7 @@ module HasAdvancePayments
   #
   def advance_cash_transaction_params
     {
-      description: "#{model_attribute(Category, :card_advance).upcase}  [ #{user_card.user_card_name} - #{month_year} ]",
+      description: card_advance_description,
       starting_price: price * -1, price: price * -1,
       date:, month: date.month, year: date.year,
       user_id:,

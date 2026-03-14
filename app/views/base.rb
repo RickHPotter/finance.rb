@@ -6,12 +6,16 @@ module Views
 
     register_output_helper :combobox_tag
 
-    def params
-      context[:rails_view_context].params
+    def rails_view_context
+      context[:rails_view_context]
     end
 
-    def thin__label(form, field)
-      span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(form.object, field).downcase }
+    def params
+      rails_view_context.params
+    end
+
+    def request
+      rails_view_context.request
     end
   end
 end

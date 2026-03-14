@@ -6,6 +6,8 @@ class UserCard < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :current_closing_date, :current_due_date
+
   # @relationships ............................................................
   belongs_to :user
   belongs_to :card
@@ -32,6 +34,26 @@ class UserCard < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def payment_date_settings_changed?
+    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
+  end
+
+  def unpaid_invoices
+    card_installments_invoices.where(paid: false).distinct
+  end
+
+  def unpaid_exchange_installments
+    user.cash_installments
+        .joins(cash_transaction: :categories)
+        .where(
+          paid: false,
+          cash_transaction: {
+            user_card_id: id,
+            categories: { built_in: true, category_name: "EXCHANGE RETURN" }
+          }
+        )
+  end
+
   def find_or_create_reference_for(date)
     reference_date = calculate_reference_date(date)
     reference = references.find_by(month: reference_date.month, year: reference_date.year)
@@ -73,32 +95,59 @@ class UserCard < ApplicationRecord
 
   private
 
-  def payment_date_settings_changed?
-    saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
+  # After a card's payment settings are updated, this method adjusts the dates of all
+  # associated unpaid invoices and exchange-related transactions to align with the new
+  # billing cycle. It ensures that financial records remain consistent and accurate.
+  def update_references_and_payments
+    return if current_due_date.nil?
+
+    update_unpaid_card_payments
+    update_unpaid_exchange_installments
+
+    Logic::RecalculateBalancesService.new(user:).call
   end
 
-  def update_references_and_payments
-    month_years = card_installments_invoices.pluck(:month, :year).uniq
+  def update_unpaid_card_payments
+    unpaid_invoices.find_each do |card_payment|
+      new_reference_date = calculate_new_reference_date_for(card_payment.month, card_payment.year)
 
-    month_years.each do |month, year|
-      next if references.exists?(month:, year:)
-
-      card_payment = card_installments_invoices.find_by(month:, year:)
-      next if card_payment.nil?
-
-      references.create(
-        month:,
-        year:,
-        reference_closing_date: card_payment.date - days_until_due_date.days,
-        reference_date: card_payment.date
-      )
+      ApplicationRecord.transaction do
+        card_payment.update!(date: new_reference_date.end_of_day)
+        card_payment.cash_installments.first&.update!(date: new_reference_date.end_of_day)
+      end
     end
+  end
+
+  def update_unpaid_exchange_installments
+    unpaid_exchange_installments.find_each do |cash_installment|
+      new_reference_date = calculate_new_reference_date_for(cash_installment.month, cash_installment.year)
+      cash_transaction = cash_installment.cash_transaction
+      exchanges = cash_transaction.exchanges.card_bound
+
+      next if exchanges.empty?
+
+      ApplicationRecord.transaction do
+        cash_installment.update!(date: new_reference_date)
+        cash_transaction.update!(date: new_reference_date)
+        exchanges.each { |exchange| exchange.update!(date: new_reference_date) }
+      end
+    end
+  end
+
+  def calculate_new_reference_date_for(month, year)
+    references.find_by(month:, year:)&.destroy
+
+    this_month_due_date = current_due_date.change(month:, year:)
+    date_within_previous_cycle = this_month_due_date - days_until_due_date.days - 1.day
+
+    find_or_create_reference_for(date_within_previous_cycle).reference_date
   end
 end
 
 # == Schema Information
 #
 # Table name: user_cards
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null

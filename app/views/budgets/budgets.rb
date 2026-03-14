@@ -3,11 +3,10 @@
 class Views::Budgets::Budgets < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :budgets, :show_rows_not_found
 
@@ -27,7 +26,7 @@ class Views::Budgets::Budgets < Views::Base
         render_budget(budget)
       end
     elsif show_rows_not_found
-      div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+      div(class: "text-lg") { I18n.t(:rows_not_found) }
     end
   end
 
@@ -45,17 +44,17 @@ class Views::Budgets::Budgets < Views::Base
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-950 text-slate-100 my-4 #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-slate-100 text-sm font-semibold") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               link_to budget.description,
                       edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
-                      data: { turbo_frame: :center_container }
+                      data: { turbo_frame: :_top }
 
               span(class: "flex-shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
                 from_cent_based_to_float(budget.value, "R$")
@@ -65,7 +64,7 @@ class Views::Budgets::Budgets < Views::Base
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1") do
-              span(class: "flex items-center justify-start gap-2 rounded-sm text-slate-100") do
+              span(class: "flex items-center justify-start gap-2 rounded-sm") do
                 case budget.remaining_value <=> budget.value
                 when -1
                   :x_circle
@@ -79,27 +78,15 @@ class Views::Budgets::Budgets < Views::Base
                 span(class: "rounded-xs text-xs mr-auto") { I18n.l(budget.date, format: "%B %Y") }
               end
             end
+
             div(class: "whitespace-nowrap") do
               from_cent_based_to_float(budget.remaining_value, "R$")
             end
           end
           div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-              budget.categories.each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1  #{category.bg_colour.sub('bg', 'border')} text-xs") do
-                  category.name
-                end
-              end
-            end
+            render_mobile_categories(budget)
 
-            div(class: "flex flex-wrap justify-end gap-2 ml-auto", data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-              budget.entities.each do |entity|
-                div(class: "flex flex-col items-center w-16 text-center text-xs") do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-6 rounded-full mb-1"
-                  span(class: "entity_entity_name truncate block max-w-full leading-tight") { entity.entity_name }
-                end
-              end
-            end
+            render_mobile_entities(budget)
           end
         end
       end
@@ -111,7 +98,7 @@ class Views::Budgets::Budgets < Views::Base
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 border-b border-slate-200 bg-indigo-950 text-slate-100 hover:opacity-80",
+        class: "grid grid-cols-12 bg-indigo-900 text-zinc-50 hover:opacity-80 transition-all",
         draggable: true,
         data: {
           id: budget.id,
@@ -119,7 +106,7 @@ class Views::Budgets::Budgets < Views::Base
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
         }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm text-slate-100 pl-2") do
+        div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
           span(class: "size-4", title: pluralise_model(budget, 1)) { cached_icon(:piggy_safe) }
 
           month, year = I18n.l(budget.date, format: "%B %Y").split
@@ -134,43 +121,92 @@ class Views::Budgets::Budgets < Views::Base
                   edit_budget_path(budget),
                   id: "edit_budget_#{budget.id}",
                   class: "flex-1 truncate text-md",
-                  data: { turbo_frame: :center_container }
+                  data: { turbo_frame: :_top }
 
           span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 opacity-0") do
             pretty_installments(1, 1)
           end
         end
 
-        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: budget.categories.map(&:id) }) do
-          budget.categories.each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm #{category.bg_colour} border-1 border-white text-sm") do
-              category.name
-            end
-          end
-        end
+        render_desktop_categories(budget)
 
-        div(class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-            data: { datatable_target: :entity, id: budget.entities.map(&:id) }) do
-          budget.budget_entities.order(:entity_id).includes(:entity).each do |budget_entity|
-            entity = budget_entity.entity
-
-            div(class: "grid grid-cols-1 text-xs mx-auto") do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-5 rounded-full mx-auto"
-              span(class: :entity_entity_name) { entity.entity_name }
-            end
-          end
-        end
+        render_desktop_entities(budget)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto #{'animate-pulse' if tight_budget}") do
           from_cent_based_to_float(budget.remaining_value, "R$")
         end
 
-        div(class: "flex items-center justify-center font-lekton font-bold text-white whitespace-nowrap ml-auto") do
+        div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
           div(class: "p-1 rounded-md shadow-sm border border-white") do
             from_cent_based_to_float(budget.balance, "R$")
           end
         end
       end
+    end
+  end
+
+  def render_mobile_entities(budget)
+    items = budget_entity_popover_items(budget, :id)
+
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: budget.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count),
+      variant: :budget
+    )
+  end
+
+  def render_desktop_entities(budget)
+    render Views::Entities::Popover.new(
+      items: budget_entity_popover_items(budget, :entity_id),
+      mobile: false,
+      target_ids: budget.entities.map(&:id),
+      trigger_label: "",
+      variant: :budget
+    )
+  end
+
+  def render_mobile_categories(budget)
+    render Views::Categories::Popover.new(
+      items: budget_category_popover_items(budget),
+      mobile: true,
+      target_ids: budget.categories.map(&:id),
+      trigger_label: pluralise_model(Category, budget.categories.count).upcase,
+      variant: :budget
+    )
+  end
+
+  def render_desktop_categories(budget)
+    render Views::Categories::Popover.new(
+      items: budget_category_popover_items(budget),
+      mobile: false,
+      target_ids: budget.categories.map(&:id),
+      trigger_label: "",
+      variant: :budget
+    )
+  end
+
+  def budget_entity_popover_items(budget, sort_key)
+    budget.budget_entities.sort_by(&sort_key).filter_map do |budget_entity|
+      entity = budget_entity.entity
+      next if entity.nil?
+
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name,
+        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      }
+    end
+  end
+
+  def budget_category_popover_items(budget)
+    budget.budget_categories.sort_by(&:id).filter_map(&:category).map do |category|
+      {
+        name: category.name,
+        style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+      }
     end
   end
 end

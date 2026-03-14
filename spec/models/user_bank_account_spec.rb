@@ -31,6 +31,7 @@ end
 # == Schema Information
 #
 # Table name: user_bank_accounts
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  account_number          :integer

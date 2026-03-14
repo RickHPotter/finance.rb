@@ -76,7 +76,9 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+              value: 1,
+              onclick: "this.select();",
+              data: { price_mask_target: :input, action: "input->price-mask#applyMask", min: 1 }
           end
 
           div(class: "grid grid-cols-2 gap-4 justify-between text-md") do

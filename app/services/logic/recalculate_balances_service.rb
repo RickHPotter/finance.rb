@@ -2,10 +2,10 @@
 
 module Logic
   class RecalculateBalancesService
-    def initialize(user:, year:, month:)
+    def initialize(user:, year: nil, month: nil)
       @user = user
-      @year = year
-      @month = month
+      @year = year || user.cash_installments.minimum(:year) || 2000
+      @month = month || 1
     end
 
     def call
@@ -18,12 +18,12 @@ module Logic
     private
 
     def set_order_and_balance
-      @date_threshold = Date.new(@year, @month, 1)
+      @date_threshold = Date.new(@year, @month).in_time_zone(Time.zone.now.time_zone.name)
 
       @past_budget           = @user.budgets.where("year < ? OR (year = ? AND month < ?)", @year, @year, @month).order(:order_id).last
       @past_cash_installment = @user.cash_installments
                                     .where("installments.date < ?", @date_threshold)
-                                    .where("make_date(installments.year, installments.month, 1) < make_date(#{@year}, #{@month}, 1)")
+                                    .where("make_date(installments.year, installments.month, 1) < make_date(?, ?, 1)", @year, @month)
                                     .order(:order_id).last
 
       @running_balance = @past_budget&.balance || @past_cash_installment&.balance || 0
@@ -69,8 +69,8 @@ module Logic
       end
 
       on_duplicate_key_update = { conflict_target: [ :id ], columns: %i[balance order_id] }
-      CashInstallment.import(cash_installments, on_duplicate_key_update:)
-      Budget.import(budgets, on_duplicate_key_update:)
+      CashInstallment.import(cash_installments, on_duplicate_key_update:, validate: false)
+      Budget.import(budgets, on_duplicate_key_update:, validate: false)
     end
 
     def sort_key(item)

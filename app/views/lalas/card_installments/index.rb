@@ -2,11 +2,10 @@
 
 class Views::Lalas::CardInstallments::Index < Views::Base
   include Phlex::Rails::Helpers::DOMID
-  include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
   include CacheHelper
+  include ColoursHelper
 
   attr_reader :mobile, :card_installments, :user_card_id
 
@@ -19,31 +18,36 @@ class Views::Lalas::CardInstallments::Index < Views::Base
   def view_template
     if mobile
       card_installments.each do |card_installment|
-        render_mobile_card_installment(card_installment)
+        card_transaction = card_installment.card_transaction
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+
+        render_mobile_card_installment(card_installment, card_transaction, style)
       end
     else
       card_installments.each do |card_installment|
-        render_card_installment(card_installment)
+        card_transaction = card_installment.card_transaction
+        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+
+        render_card_installment(card_installment, card_transaction, style)
       end
     end
   end
 
-  def render_mobile_card_installment(card_installment)
+  def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
-      card_transaction = card_installment.card_transaction
-
       div(
-        class: "rounded-lg shadow-sm overflow-hidden #{card_transaction.categories&.first&.bg_colour} my-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2",
+        style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               span(class: "truncate text-md underline underline-offset-[3px]") do
                 card_transaction.description
               end
 
-              span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
             end
@@ -57,73 +61,27 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
-            div(class: "flex justify-between gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              if card_transaction.categories.count > 2
-                first_two = card_transaction.categories.first(2)
-                remaining = card_transaction.categories[2..]
-
-                first_two.each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                    "#{category.name},"
-                  end
-                end
-
-                Popover(options: { placement: "top" }, class: "rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                  PopoverTrigger(class: "w-full") do
-                    Button(size: :xs, class: "p-1 text-xs") do
-                      "+#{card_transaction.categories.count - 2}"
-                    end
-                  end
-
-                  PopoverContent(class: "w-40") do
-                    remaining.each do |category|
-                      p(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                        category.name
-                      end
-                    end
-                  end
-                end
-              else
-
-                card_transaction.categories.each do |category|
-                  span(class: "py-1 rounded-full text-xs font-medium underline underline-offset-[3px]") do
-                    category.name
-                  end
+          div(class: "flex flex-wrap items-center gap-1") do
+            div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+              card_transaction.category_transactions.order(:id).map(&:category).each do |category|
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
+                  category.name
                 end
               end
             end
 
-            div(class: "flex justify-between gap-2", data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }) do
-              card_transaction.entity_transactions.includes(:entity, :exchanges).each do |entity_transaction|
-                entity = entity_transaction.entity
-                exchanges_count = entity_transaction.exchanges_count
-                price_to_be_returned = entity_transaction.price_to_be_returned
-                info = ""
-                info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
-                info += " (#{exchanges_count})" if exchanges_count > 1
-
-                span(
-                  class: "grid grid-cols-1 text-xs mx-auto",
-                  data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-                ) do
-                  image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-                  plain "#{entity.entity_name} #{info}"
-                end
-              end
-            end
+            render_mobile_entities(card_transaction)
           end
         end
       end
     end
   end
 
-  def render_card_installment(card_installment)
+  def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
-      card_transaction = card_installment.card_transaction
-
       div(
-        class: "grid grid-cols-11 border-b border-slate-200 bg-gradient-to-r #{solid_colour_or_gradient(card_transaction)} hover:opacity-60",
+        class: "grid grid-cols-11 hover:opacity-80",
+        style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
@@ -132,23 +90,23 @@ class Views::Lalas::CardInstallments::Index < Views::Base
         div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           date, time = I18n.l(card_installment.date, format: :shorter).split(",")
           div(class: "grid grid-cols-1") do
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { date }
-            span(class: "rounded-xs text-slate-900 text-xs mr-auto") { time }
+            span(class: "rounded-xs text-xs mr-auto") { date }
+            span(class: "rounded-xs text-xs mr-auto") { time }
           end
 
-          span(
-            id: "edit_card_transaction_#{card_transaction.id}",
-            class: "flex-1 truncate text-md underline underline-offset-[3px]"
-          ) do
+          span(id: "edit_card_transaction_#{card_transaction.id}", class: "flex-1 truncate text-md underline underline-offset-[3px]") do
             card_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
             pretty_installments(card_installment.number, card_installment.card_installments_count)
           end
         end
 
-        div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
+        div(
+          class: "col-span-3 py-2 flex items-center justify-center gap-2",
+          data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }
+        ) do
           if card_transaction.categories.count > 1
             first_one = card_transaction.categories.first
             remaining = card_transaction.categories[1..]
@@ -173,7 +131,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
               end
             end
           else
-            card_transaction.categories.each do |category|
+            card_transaction.category_transactions.order(:id).map(&:category).each do |category|
               span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
                 category.name
               end
@@ -181,27 +139,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           end
         end
 
-        div(
-          class: "col-span-2 py-2 flex items-center justify-center flex-wrap gap-2",
-          data: { datatable_target: :entity, id: card_transaction.entities.map(&:id) }
-        ) do
-          card_transaction.entity_transactions.includes(:entity).each do |entity_transaction|
-            entity = entity_transaction.entity
-            exchanges_count = entity_transaction.exchanges_count
-            price_to_be_returned = entity_transaction.price_to_be_returned
-            info = ""
-            info += "[#{from_cent_based_to_float(price_to_be_returned, 'R$')}]" if exchanges_count.positive?
-            info += " (#{exchanges_count})" if exchanges_count > 1
-
-            span(
-              class: "grid grid-cols-1 text-xs mx-auto",
-              data: { turbo_frame: :center_container, turbo_prefetch: "false" }
-            ) do
-              image_tag asset_path("avatars/#{entity.avatar_name}"), class: "bg-white size-4 rounded-full mx-auto"
-              plain "#{entity.entity_name} #{info}"
-            end
-          end
-        end
+        render_desktop_entities(card_transaction)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
           from_cent_based_to_float(card_installment.price, "R$")
@@ -210,14 +148,45 @@ class Views::Lalas::CardInstallments::Index < Views::Base
     end
   end
 
-  def solid_colour_or_gradient(card_transaction)
-    if card_transaction.categories.count > 1
-      return [
-        card_transaction.categories.first.from_bg, *card_transaction.categories[1..-2].map(&:via_bg),
-        card_transaction.categories.last.to_bg
-      ].join(" ")
-    end
+  def render_mobile_entities(card_transaction)
+    items = entity_popover_items(card_transaction, :id)
 
-    card_transaction.categories.first&.bg_colour
+    render Views::Entities::Popover.new(
+      items:,
+      mobile: true,
+      target_ids: card_transaction.entities.map(&:id),
+      trigger_label: pluralise_model(Entity, items.count).upcase,
+      variant: :card
+    )
+  end
+
+  def render_desktop_entities(card_transaction)
+    render Views::Entities::Popover.new(
+      items: entity_popover_items(card_transaction, :id),
+      mobile: false,
+      target_ids: card_transaction.entities.map(&:id),
+      trigger_label: "",
+      variant: :card
+    )
+  end
+
+  def entity_popover_items(card_transaction, sort_key)
+    card_transaction.entity_transactions.order(:id).includes(:entity).sort_by(&sort_key).map do |entity_transaction|
+      entity = entity_transaction.entity
+
+      {
+        name: entity.entity_name,
+        avatar_name: entity.avatar_name,
+        info_class: "hidden entity_exchanges_info",
+        info_text: entity_exchanges_info(entity_transaction)
+      }
+    end
+  end
+
+  def entity_exchanges_info(entity_transaction)
+    info = ""
+    info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
+    info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
+    info
   end
 end

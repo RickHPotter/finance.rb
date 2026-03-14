@@ -12,10 +12,13 @@ en:
         active: Active
         value: Budget Value
         remaining_value: Remaining Value
+        remaining: Remaining
         month: Month
         year: Year
         month_year: Month/Year Reference
+        month_years: Month/Year References
         inclusive: Inclusive
+        first_installment_only: First Installment Only
         category_id: Category
         entity_id: Entity
         categories: Categories
@@ -24,6 +27,14 @@ en:
         total_amount: Total Remaining Amount
         created_at: Created at
         updated_at: Updated at
+    errors:
+      models:
+        budget:
+          same_category_budget: There is already a budget for this category.
+          same_entity_budget: There is already a budget for this entity.
+          same_budget: There is already a budget for this category and entity.
+          missing_categories_or_entities: Please select at least one category or entity.
+
 
 pt-BR:
   activerecord:
@@ -39,10 +50,13 @@ pt-BR:
         active: Ativo
         value: Valor do Orçamento
         remaining_value: Valor Restante
+        remaining: Restante
         month: Mês
         year: Ano
         month_year: Referência Mês/Ano
+        month_years: Referências Mês/Ano
         inclusive: Inclusivo
+        first_installment_only: Apenas 1ª Parcela
         category_id: Categoria
         entity_id: Entidade
         categories: Categorias
@@ -51,3 +65,10 @@ pt-BR:
         total_amount: Valor Restante Total
         created_at: Criado em
         updated_at: Atualizado em
+    errors:
+      models:
+        budget:
+          same_category_budget: Já existe um orçamento para essa categoria.
+          same_entity_budget: Já existe um orçamento para essa entidade.
+          same_budget: Já existe um orçamento para essa categoria e entidade.
+          missing_categories_or_entities: Selecione pelo menos uma categoria ou entidade.

@@ -55,6 +55,7 @@ end
 # == Schema Information
 #
 # Table name: entity_transactions
+# Database name: primary
 #
 #  id                   :bigint           not null, primary key
 #  exchanges_count      :integer          default(0), not null

@@ -10,6 +10,7 @@ class CardTransaction < ApplicationRecord
   include EntityTransactable
   include HasAdvancePayments
   include Budgetable
+  include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :duplicate
@@ -17,15 +18,16 @@ class CardTransaction < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :user_card, counter_cache: true
+  belongs_to :reference_transactable, polymorphic: true, optional: true
 
   # @validations ..............................................................
   validates :description, :card_installments_count, presence: true
-  validate :reference_date_is_valid
 
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
-  after_commit :update_associations_total
+  after_save :update_month_year
+  after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
   # @class_methods ............................................................
@@ -117,20 +119,32 @@ class CardTransaction < ApplicationRecord
     persisted?
   end
 
+  def operation_type
+    return :edit      if persisted?
+    return :duplicate if duplicate
+
+    :new
+  end
+
+  def installments
+    card_installments
+  end
+
+  def installments_count
+    card_installments_count
+  end
+
   # @protected_instance_methods ...............................................
+
+  protected
+
+  def imported?
+    imported
+  end
+
   # @private_instance_methods .................................................
 
   private
-
-  def reference_date_is_valid
-    # return if imported
-    # return false if errors.any?
-    #
-    # reference_date = user_card.calculate_reference_date(date)
-    # reference = user_card.references.find_by(month: reference_date.month, year: reference_date.year)
-    #
-    # errors.add(:date, "Invalid reference date") if reference.month != month || reference.year != year
-  end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
@@ -148,14 +162,38 @@ class CardTransaction < ApplicationRecord
     card_installments.new(number: 1, price:, date:) if card_installments.empty?
   end
 
+  def update_month_year
+    return if destroyed?
+
+    cash_transaction = card_installments.order(:year, :month, :date).first.cash_transaction
+    self.year        = cash_transaction.date.year
+    self.month       = cash_transaction.date.month
+  end
+
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+
+    card_payment_transaction = card_installments.order(:date).first&.cash_transaction
+    exchange_cash_transaction = entity_transactions.map(&:exchanges).flatten.min_by(&:date)&.cash_transaction
+    min_date = [ card_payment_transaction&.date, exchange_cash_transaction&.date ].compact_blank.min
+    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+  end
+
   def update_associations_total
-    Logic::RecalculateCountAndTotalService.new(card_transaction: self).call
+    if destroyed?
+      CashTransaction.new(categories: user.categories.where(category_name: "CARD PAYMENT"), entities: user.entities.where(entity_name: user_card.user_card_name))
+    else
+      card_installments.first.cash_transaction
+    end => cash_transaction
+
+    Logic::RecalculateCountAndTotalService.new(card_transaction: self, cash_transaction:).call
   end
 end
 
 # == Schema Information
 #
 # Table name: card_transactions
+# Database name: primary
 #
 #  id                          :bigint           not null, primary key
 #  card_installments_count     :integer          default(0), not null
@@ -166,11 +204,13 @@ end
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
 #  price                       :integer          not null, indexed
+#  reference_transactable_type :string           indexed => [reference_transactable_id], uniquely indexed => [reference_transactable_id]
 #  starting_price              :integer          not null
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
+#  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  user_card_id                :bigint           not null, indexed
 #  user_id                     :bigint           not null, indexed
 #
@@ -179,8 +219,10 @@ end
 #  idx_card_transactions_description_trgm                  (description) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)
+#  index_reference_transactable_on_card_composite_key      (reference_transactable_type,reference_transactable_id) UNIQUE
 #
 # Foreign Keys
 #

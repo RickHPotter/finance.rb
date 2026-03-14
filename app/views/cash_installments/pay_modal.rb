@@ -2,15 +2,17 @@
 
 class Views::CashInstallments::PayModal < Views::Base
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :cash_installment
+  attr_reader :cash_installment, :index_context
 
-  def initialize(cash_installment:)
+  def initialize(cash_installment:, index_context: {})
     @cash_installment = cash_installment
+    @index_context = index_context
   end
 
   def view_template
@@ -44,7 +46,30 @@ class Views::CashInstallments::PayModal < Views::Base
             end
           end
         end
-        form_with(model: cash_installment, url: pay_cash_installment_path(cash_installment.id)) do |form|
+        form_with(
+          model: cash_installment, url: pay_cash_installment_path(cash_installment.id),
+          data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
+        ) do |form|
+          hidden_field_tag :index_context_json, index_context.to_json
+
+          prices_range = [ -1, cash_installment.price ]
+          positive = cash_installment.price.to_i.positive?
+          prices_range[0] = 1 if positive
+          sign = positive ? "+" : "-"
+
+          div(class: "mx-auto pb-4 text-center") do
+            bold_label(form, :price)
+
+            TextField \
+              form, :price,
+              svg: :money,
+              id: :transaction_price,
+              class: "font-graduate",
+              onclick: "this.select();",
+              disabled: cash_installment.cash_transaction.card_payment? || cash_installment.cash_transaction.card_advance?,
+              data: { price_mask_target: :input, action: "input->price-mask#applyMask", sign:, min: prices_range.min, max: prices_range.max }
+          end
+
           div(class: "mx-auto pb-4 text-center") do
             bold_label(form, :payment_date)
 

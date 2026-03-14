@@ -25,12 +25,13 @@ export default class extends Controller {
       }
     })
 
-    const active   = this.monthYearContainerTargets.find(e => e.classList.contains("active"))
+    const active = this.monthYearContainerTargets.find(e => e.classList.contains("active")) || this.monthYearContainerTargets[0]
+    if (!active) return
+
     const inactive = this.monthYearContainerTargets.filter(e => e !== active)
 
-    this.defaultYear = active.dataset.year
+    this.defaultYear = parseInt(active.dataset.year, 10)
     inactive.forEach(e => e.classList.add("hidden"))
-    this.userCardId = document.querySelector("turbo-frame#month_year_container").dataset.userCardId
   }
 
   prevYear(event) {
@@ -45,6 +46,30 @@ export default class extends Controller {
 
     this.defaultYear++
     this._updateContainer()
+  }
+
+  selectAll(event) {
+    event.preventDefault()
+
+    let changed = false
+
+    this.monthYearTargets.forEach(button => {
+      const month = parseInt(button.dataset.monthYear)
+      const count = parseInt(button.dataset.count || "0")
+
+      if (count <= 0 || this.activeMonths.has(month)) return
+
+      this.activeMonths.add(month)
+      button.dataset.active = ""
+      button.classList.remove(...inactive_bg)
+      button.classList.add(...active_bg)
+      changed = true
+    })
+
+    if (!changed) return
+
+    this._syncFormState()
+    document.getElementById(this.element.dataset.formId)?.requestSubmit()
   }
 
   toggleMonth(button) {
@@ -67,6 +92,8 @@ export default class extends Controller {
   stop(event) {
     this.buttonEnd = event.currentTarget
 
+    if (!this.buttonStart || !this.buttonEnd) return
+
     const firstMonthYear = this.buttonStart.dataset.monthYear
     const lastMonthYear = this.buttonEnd.dataset.monthYear
 
@@ -86,7 +113,7 @@ export default class extends Controller {
       e.classList.add("hidden")
     })
 
-    const chosenMonthYear = this.monthYearContainerTargets.find(e => parseInt(e.dataset.year) === this.defaultYear)
+    const chosenMonthYear = this.monthYearContainerTargets.find(e => parseInt(e.dataset.year, 10) === this.defaultYear)
     if (chosenMonthYear) {
       chosenMonthYear.classList.remove("hidden")
       chosenMonthYear.classList.add("active")
@@ -97,13 +124,11 @@ export default class extends Controller {
     this.activeMonths.add(month)
     target.classList.remove(...inactive_bg)
     target.classList.add(...active_bg)
-
-    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
-    this.defaultYearTarget.value = this.defaultYear
+    this._syncFormState()
 
     const formId = this.element.dataset.formId
     const form = document.getElementById(formId)
-    form.requestSubmit()
+    form?.requestSubmit()
   }
 
   _removeMonthYearContainer(target, month) {
@@ -111,12 +136,17 @@ export default class extends Controller {
     target.classList.remove(...active_bg)
     target.classList.add(...inactive_bg)
 
-    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
+    this._syncFormState()
 
     const frame = document.querySelector(`turbo-frame#month_year_container_${month}`)
     if (frame) {
       frame.remove()
       document.dispatchEvent(new Event("turbo:frame-load"))
     }
+  }
+
+  _syncFormState() {
+    this.monthYearsTarget.value = JSON.stringify(Array.from(this.activeMonths))
+    this.defaultYearTarget.value = this.defaultYear
   }
 }

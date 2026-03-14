@@ -4,18 +4,14 @@ class InvestmentsController < ApplicationController
   include TabsConcern
 
   before_action :set_investment, only: %i[edit update destroy]
+  before_action :set_investment_tabs
 
   def index
     build_index_context
 
     respond_to do |format|
-      format.html do
-        render Views::Investments::Index.new(index_context: @index_context)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :investment)
-      end
+      format.html { render Views::Investments::Index.new(index_context: @index_context, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
@@ -25,11 +21,14 @@ class InvestmentsController < ApplicationController
 
     investments = Logic::Investments.find_ref_month_year_by_params(current_user, investment_params, search_investment_params)
 
-    render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:)
+    render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:, current_user:)
   end
 
   def new
-    @investment = current_user.investments.new(user_bank_account_id: investment_params[:user_bank_account_id])
+    @investment = current_user.investments.new(
+      user_bank_account_id: investment_params[:user_bank_account_id],
+      investment_type_id: investment_params[:investment_type_id]
+    )
 
     investments = @investment.user_bank_account.investments if @investment.user_bank_account.present?
     @investment.date = investments.max_by(&:date)&.date     if investments
@@ -38,19 +37,14 @@ class InvestmentsController < ApplicationController
 
     respond_to do |format|
       format.html { render Views::Investments::New.new(current_user:, investment: @investment) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :investment)
-      end
+      format.turbo_stream
     end
   end
 
   def create
     @investment = Logic::Investments.create(investment_params)
 
-    if @investment
-      load_based_on_save
-      set_tabs(active_menu: :cash, active_sub_menu: :investment)
-    end
+    load_based_on_save if @investment
 
     respond_to(&:turbo_stream)
   end
@@ -58,26 +52,20 @@ class InvestmentsController < ApplicationController
   def edit
     respond_to do |format|
       format.html { render Views::Investments::Edit.new(current_user:, investment: @investment) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :investment)
-      end
+      format.turbo_stream
     end
   end
 
   def update
     @investment = Logic::Investments.update(@investment, investment_params)
 
-    if @investment
-      load_based_on_save
-      set_tabs(active_menu: :cash, active_sub_menu: :investment)
-    end
+    load_based_on_save if @investment
 
     respond_to(&:turbo_stream)
   end
 
   def destroy
     @investment.destroy
-    set_tabs(active_menu: :cash, active_sub_menu: :investment)
     build_index_context
 
     respond_to(&:turbo_stream)
@@ -90,12 +78,16 @@ class InvestmentsController < ApplicationController
     default_year = @investment.year
     active_month_years = [ Date.new(@investment.year, @investment.month, 1).strftime("%Y%m").to_i ]
 
+    count_by_month_year = Logic::Investments.find_count_based_on_search(current_user, investment_params, search_investment_params)
+
     @index_context = {
       current_user:,
       years:,
       default_year:,
       active_month_years:,
-      user_bank_account_id: [ @investment.user_bank_account_id ]
+      user_bank_account_id: [ @investment.user_bank_account_id ],
+      investment_type_id: [ @investment.investment_type_id ].compact_blank,
+      count_by_month_year:
     }
   end
 
@@ -109,6 +101,9 @@ class InvestmentsController < ApplicationController
 
     search_term = search_investment_params[:search_term]
     user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
+    investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
+
+    count_by_month_year = Logic::Investments.find_count_based_on_search(current_user, investment_params, search_investment_params)
 
     @index_context = {
       current_user:,
@@ -116,11 +111,17 @@ class InvestmentsController < ApplicationController
       default_year:,
       active_month_years:,
       search_term:,
-      user_bank_account_id:
+      user_bank_account_id:,
+      investment_type_id:,
+      count_by_month_year:
     }
   end
 
   private
+
+  def set_investment_tabs
+    set_tabs(active_menu: :cash, active_sub_menu: :investment)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_investment
@@ -138,6 +139,9 @@ class InvestmentsController < ApplicationController
     ret_params = params.require(:investment)
     ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 
-    ret_params.permit(:description, :price, :date, :month, :year, :user_id, :user_bank_account_id, user_bank_account_id: [])
+    ret_params.permit(
+      :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id,
+      user_bank_account_id: [], investment_type_id: []
+    )
   end
 end

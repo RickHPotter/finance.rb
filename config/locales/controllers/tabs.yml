@@ -1,12 +1,13 @@
 en:
   tabs:
-    basic: Basics
+    basic: Data Registrations
     card_transaction: Card Transactions
     cash_transaction: Cash Transactions
     user_bank_account: Accounts
     user_card: Cards
     category: Categories
     entity: Entities
+    conversation: Conversations
     pix: Pix
     budget: Budget
     investment: Investment
@@ -14,13 +15,14 @@ en:
 
 pt-BR:
   tabs:
-    basic: Básicos
+    basic: Cadastros
     card_transaction: Lançamentos de Cartão
     cash_transaction: Pagamentos de Dinheiro
     user_bank_account: Contas
     user_card: Cartões
     category: Categorias
     entity: Entidades
+    conversation: Conversas
     pix: Pix
     budget: Orçamento
     investment: Investimento

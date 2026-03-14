@@ -4,18 +4,14 @@ class BudgetsController < ApplicationController
   include TabsConcern
 
   before_action :set_budget, only: %i[edit update destroy]
+  before_action :set_budget_tabs
 
   def index
     build_index_context
 
     respond_to do |format|
-      format.html do
-        render Views::Budgets::Index.new(index_context: @index_context)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :budget)
-      end
+      format.html { render Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
@@ -25,7 +21,7 @@ class BudgetsController < ApplicationController
     month          = month_year[4..].to_i
     month_year_str = I18n.l(Date.new(year, month, 1), format: "%B %Y")
 
-    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_user, month, year, budget_params)
+    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_user, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
 
     render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:)
   end
@@ -35,49 +31,42 @@ class BudgetsController < ApplicationController
 
     respond_to do |format|
       format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :budget)
-      end
+      format.turbo_stream
     end
   end
 
   def create
-    @budget = Logic::Budgets.create(budget_params)
+    @budget = Logic::Budgets.create(budget_params, multiple_budget_params)
 
-    if @budget
-      load_based_on_save
-      build_index_context
-      set_tabs(active_menu: :cash, active_sub_menu: :pix)
-    end
-
-    respond_to(&:turbo_stream)
+    handle_save
   end
 
   def edit
     respond_to do |format|
       format.html { render Views::Budgets::Edit.new(current_user:, budget: @budget) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :budget)
-      end
+      format.turbo_stream
     end
   end
 
   def update
     @budget = Logic::Budgets.update(@budget, budget_params)
 
-    if @budget
-      load_based_on_save
-      build_index_context
-      set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
-    end
-
-    respond_to(&:turbo_stream)
+    handle_save
   end
 
   def destroy
     @budget.destroy
-    set_tabs(active_menu: :cash, active_sub_menu: :budget)
     build_index_context
+
+    respond_to(&:turbo_stream)
+  end
+
+  def handle_save
+    if @budget.valid?
+      load_based_on_save
+      build_index_context
+      set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
+    end
 
     respond_to(&:turbo_stream)
   end
@@ -103,6 +92,8 @@ class BudgetsController < ApplicationController
     entity_id = [ budget_params[:entity_id] ].flatten&.compact_blank
     search_term = search_budget_params[:search_term]
 
+    count_by_month_year = Logic::Budgets.find_count_based_on_search(current_user, budget_params, search_budget_params)
+
     @index_context = {
       current_user:,
       years:,
@@ -110,11 +101,16 @@ class BudgetsController < ApplicationController
       active_month_years:,
       search_term:,
       category_id:,
-      entity_id:
+      entity_id:,
+      count_by_month_year:
     }
   end
 
   private
+
+  def set_budget_tabs
+    set_tabs(active_menu: :cash, active_sub_menu: :budget)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_budget
@@ -125,6 +121,10 @@ class BudgetsController < ApplicationController
     params.permit(:search_term, :month_year)
   end
 
+  def multiple_budget_params
+    params.permit(month_years: [])
+  end
+
   # Only allow a list of trusted parameters through.
   def budget_params
     return {} if params[:budget].blank?
@@ -133,7 +133,7 @@ class BudgetsController < ApplicationController
     ret_params[:year], ret_params[:month] = ret_params[:month_year].split("-") if ret_params[:month_year].present?
 
     ret_params.permit(
-      :description, :value, :inclusive, :month, :year, :active, :user_id, :category_id, :entity_id,
+      :description, :value, :inclusive, :first_installment_only, :month, :year, :active, :user_id, :category_id, :entity_id,
       category_id: [], entity_id: [],
       budget_categories_attributes: %i[id category_id _destroy],
       budget_entities_attributes: %i[id entity_id _destroy]

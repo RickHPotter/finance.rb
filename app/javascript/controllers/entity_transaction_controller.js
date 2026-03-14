@@ -11,8 +11,48 @@ export default class extends Controller {
     "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"
   ]
 
-  connect() {
-    initModals()
+  async connect() {
+    this.initModalOnce()
+  }
+
+  initModalOnce() {
+    const modalEl = this.element.querySelector("[data-modal-id]")
+    if (!modalEl) return
+
+    const existing = window.FlowbiteInstances?.getInstance("Modal", modalEl.id)
+    if (!existing) {
+      initModals()
+    }
+  }
+
+  async updateExchangeDate(target, count) {
+    const exchangeWrapper = target.closest("[data-entity-transaction-target='exchangeWrapper']")
+    if (exchangeWrapper.dataset.locked === "true") { return }
+
+    const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
+    const monthInput = exchangeWrapper.querySelector(".exchange_month")
+    const yearInput = exchangeWrapper.querySelector(".exchange_year")
+    const dateInput = exchangeWrapper.querySelector(".exchange_date")
+    const boundTypeInput = exchangeWrapper.querySelector(".bound_type")
+
+    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
+    date.monthsForwards(count)
+
+    monthYearInput.textContent = date.monthYear()
+    monthInput.value = date.month
+    yearInput.value = date.year
+
+    if (boundTypeInput.value === "card_bound") {
+      const userCardId = document.querySelector("[name='card_transaction[user_card_id]']")?.value
+      if (userCardId) {
+        const response = await fetch(`/user_cards/${userCardId}/reference_date?year=${date.year}&month=${date.month}`)
+        const data = await response.json()
+        if (data.reference_date) {
+          const referenceDate = new RailsDate(data.reference_date)
+          dateInput.value = referenceDate.dateTime()
+        }
+      }
+    }
   }
 
   async toggleExchanges({ target }) {
@@ -51,7 +91,7 @@ export default class extends Controller {
 
         const priceToBeReturnedInput = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
 
-        if (priceToBeReturnedInput === 0 || ( price > 0 === priceToBeReturnedInput > 0 ) && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
+        if (price > 0 === priceToBeReturnedInput > 0 && Math.abs(price) < Math.abs(priceToBeReturnedInput)) {
           this.priceToBeReturnedInputTarget.value = this._applyMask(price.toString())
         }
 
@@ -73,14 +113,14 @@ export default class extends Controller {
     await this._updateExchangesPrices()
   }
 
-  updatePrice() {
+  async updatePrice() {
     const totalPrice = parseInt(_removeMask(document.querySelector("#transaction_price").value)) * - 1
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
     if (Math.abs(priceToBeReturned) > Math.abs(price)) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
     this._addBorderToPriceInputs(totalPrice)
-    this._updateExchangesPrices()
+    await this._updateExchangesPrices()
   }
 
   _addBorderToPriceInputs(totalPrice) {
@@ -124,12 +164,13 @@ export default class extends Controller {
       this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = true)
 
       this.monthYearExchangeTarget.textContent = ""
-      this.buttonTargets.forEach((element) => element.classList.add("opacity-0"))
       const railsDueDate = this._getDueDate()
       this._updateWrappers(railsDueDate, 0)
+
+      const prevMonthTarget = this.element.querySelector("[data-entity-transaction-target='button']")
+      this.updateExchangeDate(prevMonthTarget, 0)
     } else {
       this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = false)
-      this.buttonTargets.forEach((element) => element.classList.remove("opacity-0"))
     }
   }
 
@@ -166,18 +207,33 @@ export default class extends Controller {
     const totalCents     = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
     const exchangesCount = parseInt(this.exchangesCountInputTarget.value)
 
-    const baseCents = Math.floor(totalCents / exchangesCount)
-    const remainder = totalCents - baseCents * exchangesCount
-
     await this._updateExchangesFields(exchangesCount)
 
-    const visibleExchangesInputs = this.priceExchangeInputTargets.filter((element) => element.checkVisibility())
+    const visibleExchanges = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
+    const lockedExchanges = visibleExchanges.filter(e => e.dataset.locked === "true")
+    const unlockedExchanges = visibleExchanges.filter(e => e.dataset.locked !== "true")
 
-    visibleExchangesInputs.forEach((input, index) => {
-      const valueCents = baseCents + (index < remainder ? 1 : 0)
-      const value = (valueCents / 100).toFixed(2)
-      input.value = this._applyMask(value)
+    let lockedPrice = 0
+    lockedExchanges.forEach(exchange => {
+      const priceInput = exchange.querySelector("[data-entity-transaction-target='priceExchangeInput']")
+      lockedPrice += parseInt(this._removeMask(priceInput.value))
     })
+
+    const remainingPrice = totalCents - lockedPrice
+    const unlockedCount = unlockedExchanges.length
+
+    if (unlockedCount > 0) {
+      const baseCents = remainingPrice >= 0
+        ? Math.floor(remainingPrice / unlockedCount)
+        : Math.ceil(remainingPrice / unlockedCount)
+      const remainder = remainingPrice - baseCents * unlockedCount
+
+      unlockedExchanges.forEach((exchange, index) => {
+        const priceInput = exchange.querySelector("[data-entity-transaction-target='priceExchangeInput']")
+        const valueCents = index === 0 ? (baseCents + remainder) : baseCents
+        priceInput.value = this._applyMask((valueCents / 100).toFixed(2))
+      })
+    }
   }
 
   async _updateExchangesFields(newExchangesCount) {
@@ -200,6 +256,18 @@ export default class extends Controller {
 
     if (!shouldAddExchanges) { return }
 
+    let railsDueDate
+    const currentVisibleExchanges = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
+
+    if (visibleExchangesCount > 0) {
+        const lastExchange = currentVisibleExchanges[visibleExchangesCount - 1]
+        const month = parseInt(lastExchange.querySelector(".exchange_month").value)
+        const year = parseInt(lastExchange.querySelector(".exchange_year").value)
+        railsDueDate = new RailsDate(year, month, 1)
+    } else {
+        railsDueDate = this._getDueDate()
+    }
+
     if (canUpdateHiddenExchanges) {
       const sliced = this.exchangeWrapperTargets.slice(visibleExchangesCount, newExchangesCount)
 
@@ -215,29 +283,40 @@ export default class extends Controller {
       this.addExchangeTarget.click()
     }
 
-    const railsDueDate = this._getDueDate()
     this._updateWrappers(railsDueDate, visibleExchangesCount)
   }
 
   _updateWrappers(startingRailsDate, startingNumber = 0) {
-    if (startingNumber === 0 && this.monthYearExchangeTarget.textContent.trim() === startingRailsDate.monthYear()) { return }
+    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
+    if (visibleExchangesWrappers.length === 0) { return }
+
+    let proposedDate
+    if (startingNumber > 0) {
+      const prevExchange = visibleExchangesWrappers[startingNumber - 1]
+      const dateValue = prevExchange.querySelector(".exchange_date").value
+      proposedDate = new RailsDate(dateValue)
+    } else {
+      proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
+      proposedDate.setHour(0)
+      proposedDate.setMinute(0)
+    }
 
     startingRailsDate.monthsForwards(startingNumber)
-
-    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.checkVisibility())
-
-    const proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
     proposedDate.monthsForwards(startingNumber)
 
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
+      if (index > 0) {
+        startingRailsDate.monthsForwards(1)
+        proposedDate.monthsForwards(1)
+      }
+
+      target.querySelector(".exchange_number").value = index + startingNumber + 1
+      target.querySelector(".exchange_number_display").textContent = index + startingNumber + 1
+
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
       target.querySelector(".exchange_date").value = proposedDate.dateTime()
       target.querySelector(".exchange_month").value = startingRailsDate.month
       target.querySelector(".exchange_year").value = startingRailsDate.year
-      target.querySelector(".exchange_number").value = index + startingNumber + 1
-
-      startingRailsDate.monthsForwards(1)
-      proposedDate.monthsForwards(1)
     })
   }
 
@@ -256,14 +335,14 @@ export default class extends Controller {
     this.updateExchangeDate(target, 1)
   }
 
-  updateExchangeDate(target, count) {
-    const exchangeWrapper = target.closest("[data-entity-transaction-target='exchangeWrapper']")
+  updateReferenceMonthYear(event) {
+    const dateInput = event.currentTarget
+    const exchangeWrapper = dateInput.closest("[data-entity-transaction-target='exchangeWrapper']")
     const monthYearInput = exchangeWrapper.querySelector(".exchange_month_year")
     const monthInput = exchangeWrapper.querySelector(".exchange_month")
     const yearInput = exchangeWrapper.querySelector(".exchange_year")
 
-    const date = new RailsDate(parseInt(yearInput.value), parseInt(monthInput.value), 1)
-    date.monthsForwards(count)
+    const date = new RailsDate(dateInput.value)
 
     monthYearInput.textContent = date.monthYear()
     monthInput.value = date.month

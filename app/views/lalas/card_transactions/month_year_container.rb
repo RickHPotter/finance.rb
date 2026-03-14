@@ -20,21 +20,21 @@ class Views::Lalas::CardTransactions::MonthYearContainer < Views::Base
   end
 
   def view_template
-    turbo_frame_tag :month_year_container do
-      custom_params = {
-        card_transaction: {
-          card_installment_ids:,
-          user_card_id:,
-          category_id:,
-          entity_id:
-        },
-        search_term:,
-        force_mobile:
-      }
+    custom_params = {
+      card_transaction: {
+        card_installment_ids:,
+        user_card_id:,
+        category_id:,
+        entity_id:
+      },
+      search_term:,
+      force_mobile:
+    }
 
-      active_month_years.sort.each do |month_year|
-        turbo_frame_tag "month_year_container_#{month_year}", src: card_transactions_month_year_lalas_path(custom_params.merge(month_year:))
-      end
-    end
+    render Views::Shared::MonthYearContainer.new(
+      active_month_years:,
+      custom_params:,
+      path_lambda: ->(params) { month_year_lalas_card_transactions_path(params) }
+    )
   end
 end

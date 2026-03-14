@@ -1,0 +1,15 @@
+en:
+  subscriptions:
+    due_payment_notifier:
+      title: "Due Payments"
+      body:
+        one: "You have pending payment"
+        other: "You have %{count} pending payments due today"
+
+pt-BR:
+  subscriptions:
+    due_payment_notifier:
+      title: "Pagamentos A Vencer"
+      body:
+        one: "Você tem pagamento pendente"
+        other: "Você tem %{count} pagamentos que vencem hoje"

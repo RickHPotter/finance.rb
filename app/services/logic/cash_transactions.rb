@@ -45,14 +45,37 @@ module Logic
       cash_transaction_params = cash_transaction_params.to_unsafe_h if cash_transaction_params.is_a?(ActionController::Parameters)
       cash_transaction_params.merge({
         price: build_price_range_conditions(search_params),
+        cash_installment_ids: cash_transaction_params[:cash_installment_ids],
         paid: search_params.delete(:paid),
         pending: search_params.delete(:pending),
         installments_price: build_cash_transaction_price_range_conditions(search_params),
         cash_installments_count: build_installments_count_range_conditions(search_params),
+        date: build_date_range_conditions(search_params),
         search_term: search_params.delete(:search_term),
         skip_budgets: search_params.delete(:skip_budgets),
         associations:
       }.compact_blank)
+    end
+
+    def self.build_conditions_from_cash_transaction_params(params)
+      params.delete(:controller)
+      params.delete(:action)
+
+      return {} if params.blank?
+
+      installments_price = build_cash_transaction_price_range_conditions(params)
+      params[:price] = build_price_range_conditions(params)
+      params[:cash_installments_count] = build_installments_count_range_conditions(params)
+
+      associations = build_conditions_for_associations(params)
+
+      {
+        price: installments_price,
+        cash_transaction: {
+          **params.without(:cash_installments_attributes, :category_transactions_attributes, :entity_transactions_attributes).compact_blank,
+          **associations.compact_blank
+        }.compact_blank
+      }.compact_blank
     end
 
     def self.build_price_range_conditions(search_params)
@@ -91,6 +114,19 @@ module Logic
       (from_installments_count..to_installments_count)
     end
 
+    def self.build_date_range_conditions(search_params)
+      from_date = search_params.delete(:from_date)
+      to_date   = search_params.delete(:to_date)
+      return (Time.zone.local(1900, 1, 1)..Time.zone.local(3000, 1, 1)) if from_date.blank? && to_date.blank?
+
+      from_date = from_date.present? ? Time.zone.parse(from_date) : Time.zone.local(1900, 1, 1)
+      to_date   = to_date.present?   ? Time.zone.parse(to_date)   : Time.zone.local(3000, 1, 1)
+
+      from_date, to_date = to_date, from_date if from_date > to_date
+
+      (from_date.beginning_of_day..to_date.end_of_day)
+    end
+
     def self.build_conditions_for_associations(params)
       category_id = (params.delete(:category_id).presence || {}).compact_blank
       entity_id = (params.delete(:entity_id).presence || {}).compact_blank
@@ -99,6 +135,42 @@ module Logic
         categories: { id: category_id }.compact_blank,
         entities: { id: entity_id }.compact_blank
       }
+    end
+
+    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      search_term = search_params.delete(:search_term) || ""
+      category_ids = cash_transaction_params.delete(:category_id).presence
+      category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
+      entity_ids   = cash_transaction_params.delete(:entity_id).presence
+      entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
+
+      cash_installment_ids = cash_transaction_params[:cash_installment_ids]
+      return user.cash_installments.where(id: cash_installment_ids) if cash_installment_ids.present?
+
+      conditions = build_conditions_from_cash_transaction_params(cash_transaction_params)
+      conditions[:cash_transaction] = conditions[:cash_transaction].except("date") if conditions[:cash_transaction].present?
+      conditions[:date] = build_date_range_conditions(search_params)
+
+      case [ search_params[:paid], search_params[:pending] ]
+      when %w[false false] then return []
+      when %w[true true]   then paid = nil
+      when %w[true false]  then paid = true
+      when %w[false true]  then paid = false
+      end
+
+      conditions.merge!(paid:) if paid.in?([ true, false ])
+
+      relation = user.cash_installments
+                     .left_joins({ cash_transaction: %i[categories entities] })
+                     .where(conditions)
+                     .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
+      relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+
+      relation = relation.distinct.select("installments.id, installments.month, installments.year")
+
+      relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
     end
   end
 end

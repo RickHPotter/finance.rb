@@ -3,8 +3,8 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.4.1"
-gem "rails", "~> 8.0"
+ruby "4.0.0"
+gem "rails", "~> 8.1"
 
 gem "activerecord-import"
 gem "bootsnap", require: false
@@ -13,16 +13,19 @@ gem "jsbundling-rails"
 gem "pg"
 gem "propshaft"
 gem "puma"
-gem "redis"
+gem "solid_cable"
 gem "solid_cache"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
 
-# ViewComponent
-gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
+gem "image_processing", "~> 1.2"
+
+# UI
 # gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
-gem "view_component"
+gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
+gem "phlex-rails"
+gem "tailwind_merge", "~> 1.1"
 
 # Authentication
 gem "devise"
@@ -33,17 +36,20 @@ gem "dockerfile-rails"
 gem "dotenv-rails"
 gem "kamal", require: false
 
+# EXCEL
 gem "csv"
 gem "roo"
+gem "write_xlsx"
+
+# PWA
+gem "web-push"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[mingw mswin x64_mingw jruby]
-
-gem "write_xlsx"
+gem "tzinfo-data", platforms: %i[windows jruby]
 
 group :development, :test do
   gem "bullet"
-  gem "debug", platforms: %i[mri mingw x64_mingw]
+  gem "debug", platforms: %i[mri windows]
   gem "factory_bot_rails"
   gem "faker"
   gem "rspec-rails"
@@ -52,8 +58,6 @@ end
 group :development do
   gem "annotaterb"
   gem "awesome_print"
-  gem "better_errors"
-  gem "binding_of_caller"
   gem "brakeman"
   gem "bundler-audit"
   gem "erb_lint", require: false
@@ -63,6 +67,9 @@ group :development do
   gem "rubocop-rails-omakase", require: false
   gem "ruby_ui", require: false
   gem "web-console"
+
+  # APM // cant work this out of the box without redis, id like to avoid that in prod for now
+  gem "rails_performance"
 
   # NEOVIM IDE
   gem "neovim"
@@ -76,7 +83,3 @@ group :test do
   gem "shoulda-matchers"
   gem "simplecov", require: false
 end
-
-gem "phlex-rails"
-
-gem "tailwind_merge", "~> 1.1"

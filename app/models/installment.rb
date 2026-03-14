@@ -7,6 +7,8 @@ class Installment < ApplicationRecord
   include HasStartingPrice
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :locked
+
   # @relationships ............................................................
   # @validations ..............................................................
   validates :number, :installment_type, presence: true
@@ -23,6 +25,7 @@ end
 # == Schema Information
 #
 # Table name: installments
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  balance                 :integer

@@ -4,7 +4,7 @@
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=3.4.1
+ARG RUBY_VERSION=4.0.0
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 # Rails app lives here
@@ -26,7 +26,7 @@ FROM base AS build
 
 # Install packages needed to build gems
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y postgresql-client libpq-dev build-essential git pkg-config && \
+    apt-get install --no-install-recommends -y postgresql-client libpq-dev build-essential git pkg-config libyaml-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems
@@ -36,7 +36,7 @@ RUN bundle install && \
     bundle exec bootsnap precompile --gemfile
 
 # Install JavaScript dependencies
-ARG NODE_VERSION=23.10.0
+ARG NODE_VERSION=24.13.0
 ARG YARN_VERSION=1.22.22
 ENV PATH=/usr/local/node/bin:$PATH
 RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz -C /tmp/ && \
@@ -64,19 +64,25 @@ FROM base
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
-# Ensure runtime dependencies are installed in the final stage
+# Install PostgreSQL client (v16) and dependencies
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y libpq5 && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install -y --no-install-recommends wget gnupg lsb-release ca-certificates && \
+    mkdir -p /etc/apt/keyrings && \
+    wget --quiet -O /etc/apt/keyrings/pgdg.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc && \
+    chmod 644 /etc/apt/keyrings/pgdg.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install -y --no-install-recommends postgresql-client-16 libpq5 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Run and own only the runtime files as a non-root user for security
+# Create non-root rails user
 RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    useradd --system --uid 1000 --gid 1000 --create-home --shell /bin/bash rails && \
     chown -R rails:rails db log storage tmp
+
 USER 1000:1000
 
-# Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
-
 EXPOSE 3000
 CMD ["./bin/rails", "server"]

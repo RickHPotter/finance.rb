@@ -7,14 +7,16 @@ class Views::Investments::MonthYear < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount
+  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_bg_colour
 
-  def initialize(mobile:, month_year:, month_year_str:, investments:)
+  def initialize(mobile:, month_year:, month_year_str:, investments:, current_user:)
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @investments = investments
     @total_amount = investments.sum(:price)
+
+    @investment_bg_colour = current_user.categories.built_in.find_by(category_name: "INVESTMENT").hex_colour
   end
 
   def view_template
@@ -30,18 +32,13 @@ class Views::Investments::MonthYear < Views::Base
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
-        div(class: "pb-2 pt-6 text-slate-800 flex gap-2 relative") do
-          div(class: "flex gap-2 absolute left-0 bottom-4") do
-            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg") { month_year_str }
+        render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg", id: :priceSum,
-                 data: { price: total_amount }) do
-              from_cent_based_to_float(total_amount, "R$")
-            end
-          end
+        if investments.present?
+          render_mobile_investments
+        else
+          div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
         end
-
-        render_mobile_investments
       end
     end
   end
@@ -49,22 +46,14 @@ class Views::Investments::MonthYear < Views::Base
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
-        div(class: "pb-2 pt-4 text-slate-800 flex gap-2 relative") do
-          div(class: "flex gap-2 absolute left-0 bottom-4") do
-            span(class: "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg") { month_year_str }
-
-            span(class: "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg", id: :priceSum,
-                 data: { price: total_amount }) do
-              from_cent_based_to_float(total_amount, "R$")
-            end
-          end
-        end
+        render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-6 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
+          div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
             div(class: "py-3")            { model_attribute(Investment, :date) }
             div(class: "py-3 col-span-2") { model_attribute(Investment, :description) }
             div(class: "py-3")            { model_attribute(Investment, :user_bank_account_id) }
+            div(class: "py-3")            { model_attribute(Investment, :investment_type_id) }
             div(class: "py-3 text-end")   { model_attribute(Investment, :price) }
             div(class: "py-3")            { I18n.t(:datatable_actions) }
           end
@@ -72,13 +61,13 @@ class Views::Investments::MonthYear < Views::Base
           if investments.present?
             render_investments
           else
-            div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+            div(class: "text-lg") { I18n.t(:rows_not_found) }
           end
 
-          div(class: "grid grid-cols-6 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
-            span(class: "py-3 col-span-4 text-center") { "#{model_attribute(Investment, :total_amount)}:" }
+          div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
+            span(class: "py-3 col-span-5 text-center") { "#{model_attribute(Investment, :total_amount)}:" }
 
-            span(class: "py-3 col-start-5 text-end", id: :totalAmount, data: { price: total_amount }) do
+            span(class: "py-3 col-start-6 text-end", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end
@@ -91,7 +80,8 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "rounded-lg shadow-sm overflow-hidden bg-slate-200 my-2",
+          class: "rounded-lg shadow-sm overflow-hidden bg-slate-200 my-2 hover:opacity-80 transition-all",
+          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
           div(class: "p-4") do
@@ -101,12 +91,22 @@ class Views::Investments::MonthYear < Views::Base
                         edit_investment_path(investment),
                         id: "edit_investment_#{investment.id}",
                         class: "truncate text-md underline underline-offset-[3px]",
-                        data: { turbo_frame: :center_container }
+                        data: { turbo_frame: :_top }
 
                 link_to investment.user_bank_account.user_bank_account_name,
-                        new_investment_path(next_day: true, investment: { user_bank_account_id: investment.user_bank_account_id }),
+                        new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
                         class: "p-1 rounded-sm bg-white border border-black flex-shrink-0",
-                        data: { turbo_frame: :center_container }
+                        data: { turbo_frame: :_top }
+              end
+            end
+
+            div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
+              if investment.investment_type.nil?
+                plain "-"
+              else
+                div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full") do
+                  investment.investment_type.display_name.upcase
+                end
               end
             end
 
@@ -127,40 +127,62 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-6 border-b border-slate-200 bg-gradient-to-r hover:opacity-60",
+          class: "grid grid-cols-7 bg-gradient-to-r hover:opacity-80 transition-all",
+          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
-          div(class: "p-2 flex items-center justify-between") do
-            span(class: "px-1 rounded-sm text-slate-900 mx-auto") { I18n.l(investment.date, format: :shorter) }
+          div(class: "flex items-center justify-between gap-2 rounded-sm pl-4") do
+            date, time = I18n.l(investment.date, format: :shorter).split(",")
+            div(class: "grid grid-cols-1 mr-auto") do
+              span(class: "rounded-xs text-xs mr-auto") { date }
+              span(class: "rounded-xs text-xs mr-auto") { time }
+            end
           end
 
-          div(class: "col-span-2 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+          div(class: "col-span-2 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 hover:opacity-65") do
             link_to investment.description,
                     edit_investment_path(investment),
                     id: "edit_investment_#{investment.id}",
                     class: "flex-1 truncate text-md underline underline-offset-[3px]",
-                    data: { turbo_frame: :center_container }
+                    data: { turbo_frame: :_top }
           end
 
-          div(class: "py-2 flex items-center justify-center gap-2") do
+          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
-                    new_investment_path(next_day: true, investment: { user_bank_account_id: investment.user_bank_account_id }),
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm underline text-indigo-400",
-                    data: { turbo_frame: :center_container }
+                    new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm underline bg-white border-black text-indigo-600",
+                    data: { turbo_frame: :_top }
           end
 
-          div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
+            if investment.investment_type.nil?
+              plain "-"
+            else
+              title = investment.investment_type.display_name.upcase
+
+              div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full", title:) do
+                title
+              end
+            end
+          end
+
+          div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto hover:opacity-65") do
             from_cent_based_to_float(investment.price, "R$")
           end
 
           div(class: "py-2 flex items-center justify-center") do
             div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
-              link_to investment,
-                      id: "delete_investment_#{investment.id}",
-                      class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
-                      data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") } do
-                cached_icon :destroy
-              end
+              LinkWithConfirmation(
+                id: investment.id,
+                icon: :destroy,
+                link_params: {
+                  href: investment_path(investment),
+                  size: :xs,
+                  id: "delete_investment_#{investment.id}",
+                  class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
+                  data: { turbo_method: :delete }
+                }
+              )
             end
           end
         end

@@ -5,6 +5,7 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
 export default class extends Controller {
+  static values = { type: String }
   static targets = [
     "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
@@ -44,6 +45,15 @@ export default class extends Controller {
     if (this.hasEntityIconsTarget) {
       this.entityIcons = JSON.parse(this.entityIconsTarget.value)
     }
+
+    if (this.element.dataset.operationType) {
+      this.operationType = this.element.dataset.operationType
+    }
+
+    const userCardInput = this.element.querySelector("#hw_card_transaction_user_card_id > fieldset > input")
+    if (userCardInput) {
+      this.userCard = parseInt(userCardInput.value)
+    }
   }
 
   clear({ target }) {
@@ -55,6 +65,27 @@ export default class extends Controller {
   }
 
   // Installments
+  setIniDate({ target }) {
+    this.transactionDate = target.value
+  }
+
+  setEndDate({ target }) {
+    if (this.transactionDate == target.value) { return }
+
+    this.transactionDate = target.value
+    this.requestSubmit({ target })
+  }
+
+  requestSubmitBasedOnUserCardChange({ target }) {
+    if (!this.userCard) { return }
+
+    const userCardId = parseInt(target.querySelector("input").value)
+    if (this.userCard == userCardId) { return }
+
+    this.userCard = target.querySelector("input").value
+    this.requestSubmit({ target })
+  }
+
   requestSubmit({ target }) {
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
@@ -107,7 +138,7 @@ export default class extends Controller {
   }
 
   updateInstallmentsDates() {
-    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.today().toISOString().slice(0, 16) }
+    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.now() }
 
     const railsDueDate = this._getDueDate()
     this._updateWrappers(railsDueDate)
@@ -120,7 +151,61 @@ export default class extends Controller {
     await this._updateInstallmentsPrices()
   }
 
-  setPaid({ target }) {
+  updateExchangeWhenDuplicating({ target }) {
+    if (this.operationType !== "duplicate") { return }
+
+    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
+    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategory   = selectedCategories.find((element) => element.value === exchangeCategoryId)
+    if (!exchangeCategory) { return }
+
+    const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
+
+    entityTransactionWrappers.forEach((wrapper) => {
+      const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
+      const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
+      const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
+
+      if (parseInt(_removeMask(price.value)) === 0) { return }
+      if (parseInt(_removeMask(priceToBeReturned.value) === 0)) { return }
+
+      price.value = this.priceInputTarget.value
+      price.dispatchEvent(new Event("input"))
+
+      priceToBeReturned.value = this.priceInputTarget.value
+      priceToBeReturned.dispatchEvent(new Event("input"))
+
+      exchangesCount.value = this.installmentsCountInputTarget.value
+      exchangesCount.dispatchEvent(new Event("input"))
+    })
+  }
+
+  setPaidIfPastCurrentDay({ target }) {
+    if (this.typeValue !== "CashTransaction") { return }
+
+    const thisDate = new RailsDate(target.value)
+    const pastCurrentDay = new Date > thisDate.date()
+
+    this.setPaid(target, pastCurrentDay)
+  }
+
+  setPaid(target, paid = true) {
+    const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
+    const paidInput = installmentWrapper.querySelector(".installment_paid")
+    const installmentPaidColour = installmentWrapper.querySelector(".installment_paid_colour")
+
+    paidInput.checked = paid
+
+    if (paid) {
+      installmentPaidColour.classList.add("bg-green-400")
+      installmentPaidColour.classList.remove("bg-orange-600")
+    } else {
+      installmentPaidColour.classList.remove("bg-green-400")
+      installmentPaidColour.classList.add("bg-orange-600")
+    }
+  }
+
+  togglePaid({ target }) {
     const installmentWrapper = target.closest("[data-reactive-form-target='installmentWrapper']")
     const paidInput = installmentWrapper.querySelector(".installment_paid")
 
@@ -214,12 +299,12 @@ export default class extends Controller {
   }
 
   // search
-  submitWithDelay() {
+  submitWithDelay(event) {
     clearTimeout(this.debounceTimeout)
 
     this.debounceTimeout = setTimeout(() => {
       this.element.requestSubmit()
-    }, 800)
+    }, 900)
   }
 
   submit() {
@@ -240,7 +325,7 @@ export default class extends Controller {
   }
 
   _updateWrappers(startingRailsDate) {
-    const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.checkVisibility())
+    const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.style.display !== "none")
     const firstVisibleInstallment = visibleInstallmentsWrappers[0]
 
     if (!firstVisibleInstallment) return
@@ -255,39 +340,80 @@ export default class extends Controller {
     }
 
     visibleInstallmentsWrappers.forEach((target, index) => {
-
-      target.querySelector(".installment_number").value = index + 1
-
       const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
       proposedDate.monthsForwards(index)
 
+      target.querySelector(".installment_number").value = index + 1
+      target.querySelector(".installment_number_display").textContent = index + 1
+
       target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".installment_date").value = proposedDate.dateTime()
+      target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
       target.querySelector(".installment_month").value = startingRailsDate.month
       target.querySelector(".installment_year").value = startingRailsDate.year
+
+      if (target.querySelector("[data-action='click->reactive-form#togglePaid']")) {
+        this.setPaidIfPastCurrentDay({ target: target.querySelector(".installment_date") })
+      }
 
       startingRailsDate.monthsForwards(1)
       proposedDate.monthsForwards(1)
     })
   }
 
-  async _updateInstallmentsPrices() {
-    const totalCents = parseInt(_removeMask(this.priceInputTarget.value))
-    const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+  // FIXME: this way will be a legacy and will serve as a user_card setting
+  // async _updateInstallmentsPrices() {
+  //   const totalCents = parseInt(_removeMask(this.priceInputTarget.value))
+  //   const installmentsCount = parseInt(this.installmentsCountInputTarget.value)
+  //
+  //   const baseCents = Math.floor(totalCents / installmentsCount)
+  //   const remainder = totalCents - baseCents * installmentsCount
+  //
+  //   await this._updateInstallmentsFields(installmentsCount)
+  //
+  //   let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
+  //   if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
+  //
+  //   visibleInstallmentsInputs.forEach((input, index) => {
+  //     const valueCents = baseCents + (index < remainder ? 1 : 0)
+  //     const value = (valueCents / 100).toFixed(2)
+  //     input.value = _applyMask(value)
+  //   })
+  // }
 
-    const baseCents = Math.floor(totalCents / installmentsCount)
-    const remainder = totalCents - baseCents * installmentsCount
+  async _updateInstallmentsPrices() {
+    const totalCents        = parseInt(_removeMask(this.priceInputTarget.value), 10)
+    const installmentsCount = parseInt(this.installmentsCountInputTarget.value, 10)
 
     await this._updateInstallmentsFields(installmentsCount)
 
-    let visibleInstallmentsInputs = this.priceInstallmentInputTargets.filter((el) => el.checkVisibility())
-    if (baseCents < 0) { visibleInstallmentsInputs = visibleInstallmentsInputs.reverse() }
+    const visibleWrappers = this.installmentWrapperTargets.filter(el => el.style.display !== "none")
+    const lockedWrappers = visibleWrappers.filter(el => el.dataset.locked === "true")
+    const unlockedWrappers = visibleWrappers.filter(el => el.dataset.locked !== "true")
 
-    visibleInstallmentsInputs.forEach((input, index) => {
-      const valueCents = baseCents + (index < remainder ? 1 : 0)
-      const value = (valueCents / 100).toFixed(2)
-      input.value = _applyMask(value)
+    let lockedPrice = 0
+    lockedWrappers.forEach(wrapper => {
+      const priceInput = wrapper.querySelector("[data-reactive-form-target='priceInstallmentInput']")
+      if (priceInput) {
+        lockedPrice += parseInt(_removeMask(priceInput.value), 10) || 0
+      }
     })
+
+    const remainingPrice = totalCents - lockedPrice
+    const unlockedCount = unlockedWrappers.length
+
+    if (unlockedCount > 0) {
+      const baseCents = remainingPrice >= 0
+        ? Math.floor(remainingPrice / unlockedCount)
+        : Math.ceil(remainingPrice / unlockedCount)
+
+      const remainder = remainingPrice - baseCents * unlockedCount
+
+      unlockedWrappers.forEach((wrapper, index) => {
+        const priceInput = wrapper.querySelector("[data-reactive-form-target='priceInstallmentInput']")
+        const valueCents = index === 0 ? (baseCents + remainder) : baseCents
+        priceInput.value = _applyMask((valueCents / 100).toFixed(2))
+      })
+    }
   }
 
   async _updateInstallmentsFields(newInstallmentsCount) {
@@ -342,7 +468,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
   }
@@ -371,7 +497,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").classList.add(this.categoryColours[value])
+    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
   }

@@ -1,4 +1,10 @@
 en:
+  confirmation:
+    sure: "Are you sure?"
+    yes: "Yes"
+    no: "No"
+    confirm: "Confirm"
+    cancel: "Cancel"
   notification:
     created: "%{model} was successfully created."
     not_created: "%{model} was not created."
@@ -17,12 +23,6 @@ en:
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
-  confirmation:
-    sure: "Are you sure?"
-    yes: "Yes"
-    no: "No"
-    confirm: "Confirm"
-    cancel: "Cancel"
   gerund:
     index: "Listing"
     show: "Details of"
@@ -30,6 +30,7 @@ en:
     edit: "Editing"
     duplicate: "Duplicating"
     destroy: "Destroying"
+    merge: "Merging"
   actions:
     index: "List"
     search: "Search"
@@ -43,11 +44,16 @@ en:
     duplicate: "Duplicate"
     update: "Update"
     destroy: "Destroy"
+    merge: "Merge"
     all: "All"
     alla: "All"
     submit: "Submit"
     select: "Select one"
     selecta: "Select one"
+    select_all: "Select All"
+    selected: "selected"
+    type: "Type to search"
+    send: "Send"
     toggle_sign: "Toggle Sign"
     calculate_installments_price: "Calculate Installments Price"
 
@@ -74,6 +80,7 @@ en:
   datatable_actions: "Actions"
   rows_not_found: "No data to display"
   advanced_filter: "Advanced Filter"
+  order: "Order"
 
 pt-BR:
   confirmation:
@@ -107,6 +114,7 @@ pt-BR:
     edit: "Editando"
     duplicate: "Duplicando"
     destroy: "Deletando"
+    merge: "Mesclando"
   actions:
     index: "Listar"
     search: "Pesquisar"
@@ -120,11 +128,16 @@ pt-BR:
     duplicate: "Duplicar"
     update: "Atualizar"
     destroy: "Deletar"
+    merge: "Mesclar"
     all: "Todos os"
     alla: "Todas as"
     submit: "Salvar"
     select: "Selecione um"
     selecta: "Selecione uma"
+    select_all: "Selecionar Todos"
+    selected: "selecionado(s)"
+    type: "Digite para pesquisar"
+    send: "Enviar"
     toggle_sign: "Inverter Sinal"
     calculate_installments_price: "Calcular Preço das Parcelas"
 
@@ -151,3 +164,4 @@ pt-BR:
   datatable_actions: "Ações"
   rows_not_found: "Sem dados para exibir"
   advanced_filter: "Filtro Avançado"
+  order: "Ordem"

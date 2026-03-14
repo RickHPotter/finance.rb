@@ -23,6 +23,7 @@ end
 # == Schema Information
 #
 # Table name: cards
+# Database name: primary
 #
 #  id         :bigint           not null, primary key
 #  card_name  :string           not null, uniquely indexed

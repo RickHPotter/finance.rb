@@ -6,7 +6,7 @@ class Budget < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :flag_for_balance_recalculation
+  attr_accessor :recalculate_balance
 
   # @relationships ............................................................
   belongs_to :user
@@ -21,13 +21,15 @@ class Budget < ApplicationRecord
   # @validations ..............................................................
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
-  validates :inclusive, inclusion: { in: [ true, false ] }
+  validates :inclusive, :first_installment_only, inclusion: { in: [ true, false ] }
+  validate :presence_of_categories_or_entities, if: -> { errors.empty? }
+  validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
-  before_validation :set_starting_value, :set_inclusive
+  before_validation :set_starting_value, :set_inclusive, :set_first_installment_only
   before_save :set_remaining_value
-  before_save :set_flag_for_balance_recalculation
-  after_commit :trigger_balance_recalculation, on: %i[create update], if: :flag_for_balance_recalculation
+  before_save :set_recalculate_balance
+  after_commit :update_cash_balance, if: -> { recalculate_balance || destroyed? }
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -47,12 +49,23 @@ class Budget < ApplicationRecord
     self.inclusive = false
   end
 
-  def set_remaining_value
+  def set_first_installment_only
+    return if [ false, true ].include?(first_installment_only)
+
+    self.first_installment_only = false
+  end
+
+  def set_remaining_value # rubocop:disable Metrics/AbcSize
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
 
-    cash_installments = user.cash_installments.where(month:, year:)
-    card_installments = user.card_installments.where(month:, year:)
+    cash_installments = user.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    card_installments = user.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+
+    if first_installment_only
+      cash_installments = cash_installments.where(number: 1)
+      card_installments = card_installments.where(number: 1)
+    end
 
     if inclusive && category_ids.present? && entity_ids.present?
       inclusive_installments(cash_installments, card_installments, category_ids, entity_ids)
@@ -82,7 +95,8 @@ class Budget < ApplicationRecord
 
   def total_price_without_exchanges(installments)
     installments.map do |installment|
-      installment_exchanges_price = installment.transactable.entity_transactions.map(&:exchanges).flatten.sum(&:price) * -1
+      paying_entity_transactions  = installment.transactable.entity_transactions.where(exchanges_count: 1..)
+      installment_exchanges_price = paying_entity_transactions.map(&:exchanges).flatten.select { |e| e.year == year && e.month == month }.sum(&:price) * -1
 
       installment.price - installment_exchanges_price
     end.sum
@@ -93,33 +107,70 @@ class Budget < ApplicationRecord
 
   private
 
-  def set_flag_for_balance_recalculation
-    self.flag_for_balance_recalculation = changes.slice(:price, :remaining_value, :month, :year).present?
+  def set_recalculate_balance
+    return if [ false, true ].include?(recalculate_balance)
+
+    self.recalculate_balance = changes.slice(:price, :remaining_value, :month, :year, :first_installment_only).present?
   end
 
-  def trigger_balance_recalculation
-    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.first || year, month: changes[:month]&.first || month).call
+  def update_cash_balance
+    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+
+    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+  end
+
+  def presence_of_categories_or_entities
+    return if budget_categories.present? || budget_entities.present?
+
+    errors.add(:base, I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
+  end
+
+  def uniqueness_of_budget # rubocop:disable Metrics/AbcSize
+    current_ref_month_year_budgets = user.budgets.where(month:, year:)
+    return if current_ref_month_year_budgets.empty?
+
+    category_ids = budget_categories.map(&:category_id)
+    entity_ids = budget_entities.map(&:entity_id)
+
+    if inclusive
+      same_budget = current_ref_month_year_budgets.joins(:categories, :entities).where(categories: { id: category_ids }, entities: { id: entity_ids })
+      return if same_budget.empty?
+      return if same_budget.pluck(:id) == [ id ]
+
+      errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget"))
+    else
+      same_category = current_ref_month_year_budgets.joins(:categories).where(categories: { id: category_ids })
+      same_entity = current_ref_month_year_budgets.joins(:entities).where(entities: { id: entity_ids })
+
+      error_messages = []
+      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category.present? && same_category.pluck(:id) != [ id ]
+      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget") if same_entity.present? && same_entity.pluck(:id) != [ id ]
+
+      errors.add(:base, error_messages.join(" ")) if error_messages.present?
+    end
   end
 end
 
 # == Schema Information
 #
 # Table name: budgets
+# Database name: primary
 #
-#  id              :bigint           not null, primary key
-#  active          :boolean          default(TRUE), not null
-#  balance         :integer
-#  description     :string           not null
-#  inclusive       :boolean          default(TRUE), not null
-#  month           :integer          not null
-#  remaining_value :integer          not null
-#  starting_value  :integer          not null
-#  value           :integer          not null
-#  year            :integer          not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  order_id        :integer          indexed
-#  user_id         :bigint           not null, indexed
+#  id                     :bigint           not null, primary key
+#  active                 :boolean          default(TRUE), not null
+#  balance                :integer
+#  description            :string           not null
+#  first_installment_only :boolean          default(FALSE), not null
+#  inclusive              :boolean          default(FALSE), not null
+#  month                  :integer          not null
+#  remaining_value        :integer          not null
+#  starting_value         :integer          not null
+#  value                  :integer          not null
+#  year                   :integer          not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  order_id               :integer          indexed
+#  user_id                :bigint           not null, indexed
 #
 # Indexes
 #

@@ -14,13 +14,14 @@ module Logic
 
       conditions = {
         price: raw_conditions[:installments_price],
+        date: raw_conditions[:date],
         cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
                             **raw_conditions[:associations] }.compact_blank
       }.compact_blank
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      fetch_cash_installments(user, month, year, conditions, search_term_condition)
+      fetch_cash_installments(user, month, year, { conditions:, search_term_condition:, ids: raw_conditions[:cash_installment_ids] })
     end
 
     def self.find_by_query(user, entity_id, query)
@@ -31,31 +32,21 @@ module Logic
         .where("cash_transaction.description ILIKE ?", "%#{query}%")
     end
 
-    def self.fetch_cash_installments(user, month, year, conditions, search_term_condition)
-      user.cash_installments
-          .where(year:, month:)
-          .includes(cash_transaction: %i[categories entities])
-          .where(conditions)
-          .where(search_term_condition)
-          .order(:order_id)
-    end
+    def self.fetch_cash_installments(user, month, year, options)
+      relation = user.cash_installments
+                     .where(year:, month:)
+                     .includes(cash_transaction: [
+                                 :categories,
+                                 :entities,
+                                 :card_installments,
+                                 { category_transactions: :category },
+                                 { entity_transactions: :entity }
+                               ])
+                     .where(options[:conditions])
+                     .where(options[:search_term_condition])
 
-    def self.build_conditions_from_params(params)
-      params.delete(:controller)
-      params.delete(:action)
-
-      return {} if params.blank?
-
-      installments_price = build_cash_transaction_price_range_conditions(params)
-      params[:price] = build_price_range_conditions(params)
-      params[:cash_installments_count] = build_installments_count_range_conditions(params)
-
-      associations = build_conditions_for_associations(params)
-
-      {
-        price: installments_price,
-        cash_transaction: { **params.compact_blank, **associations.compact_blank }.compact_blank
-      }.compact_blank
+      relation = relation.where(id: options[:ids]) if options[:ids].present?
+      relation.order(:order_id)
     end
   end
 end

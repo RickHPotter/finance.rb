@@ -2,9 +2,19 @@
 
 module Logic
   class Budgets
-    def self.create(budget_params)
-      budget = Budget.new(budget_params)
-      _handle_creation(budget)
+    def self.create(budget_params, multiple_budget_params)
+      multiple_references = multiple_budget_params[:month_years]
+      if multiple_references.nil?
+        budget = Budget.new(budget_params)
+        _handle_creation(budget)
+      else
+        budgets = multiple_references.map do |month_year|
+          date = month_year.to_date
+          Budget.create(budget_params.merge(year: date.year, month: date.month))
+        end
+
+        budgets.first
+      end
     end
 
     def self.update(budget, budget_params)
@@ -44,15 +54,32 @@ module Logic
     end
 
     def self.build_conditions_from_params(params)
-      category_id = (params.delete(:category_id).presence || {}).compact_blank
-      entity_id = (params.delete(:entity_id).presence || {}).compact_blank
+      category_id = params.delete(:category_id).presence
+      category_id = [ category_id ].flatten.compact_blank if category_id.present?
+      entity_id   = params.delete(:entity_id).presence
+      entity_id   = [ entity_id ].flatten.compact_blank if entity_id.present?
 
       {
+        search_term: params["search_term"],
         associations: {
           categories: { id: category_id }.compact_blank,
           entities: { id: entity_id }.compact_blank
-        }
-      }
+        }.compact_blank
+      }.compact_blank
+    end
+
+    def self.find_count_based_on_search(user, budget_params, search_params)
+      search_term = search_params.delete(:search_term) || ""
+      raw_conditions = build_conditions_from_params(budget_params.is_a?(Hash) ? budget_params.dup : budget_params.to_unsafe_h)
+
+      relation = user.budgets
+                     .left_joins(:categories, :entities)
+                     .where(raw_conditions[:associations])
+                     .where("budgets.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.distinct.select("budgets.id, budgets.month, budgets.year")
+
+      relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
     end
   end
 end

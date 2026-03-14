@@ -24,6 +24,14 @@ class User < ApplicationRecord
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
 
+  has_many :conversation_participants, dependent: :destroy
+  has_many :conversations, through: :conversation_participants
+
+  has_many :sent_messages, ->(user) { where(user_id: user.id) }, through: :conversations, source: :messages
+  has_many :received_messages, ->(user) { where.not(user_id: user.id) }, through: :conversations, source: :messages
+
+  has_many :subscriptions, dependent: :destroy
+
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
   validates :email, uniqueness: true
@@ -99,8 +107,10 @@ end
 # == Schema Information
 #
 # Table name: users
+# Database name: primary
 #
 #  id                     :bigint           not null, primary key
+#  admin                  :boolean          default(FALSE), not null
 #  confirmation_sent_at   :datetime
 #  confirmation_token     :string           uniquely indexed
 #  confirmed_at           :datetime

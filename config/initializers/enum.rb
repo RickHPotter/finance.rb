@@ -1,13 +1,73 @@
 # frozen_string_literal: true
 
 def rikki = -> { Import::FromRikkiExcel.run }
+def rikki_rec = -> { Logic::RecalculateBalancesService.new(user: User.first).call }
 def gigi = -> { Import::FromGigiExcel.run }
+def gigi_rec = -> { Logic::RecalculateBalancesService.new(user: User.second).call }
 
 PTBR_MONTHS_FULL = %w[Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro].freeze
 MONTHS_FULL = %w[Janvier Fevrier Mars Avril Mai June Jui Août Septembre Octobre Novembre Decembre].freeze
 MONTHS_ABBR = %w[Jan Fev Mars Avril Mai June Jui Août Sept Oct Nov Dec].freeze
 
 COLOURS = ActiveSupport::HashWithIndifferentAccess.new(
+  {
+    # GRAYISH
+    white: { hex: "#f1f5f9" }, # slate-100
+    gray: { hex: "#9ca3af" }, # gray-400
+    slate: { hex: "#64748b" }, # slate-500
+    greek: { hex: "#5b6794" }, # from your --color-greek oklch
+    zinc: { hex: "#71717a" }, # zinc-500
+    stone: { hex: "#78716c" }, # stone-500
+    urgency: { hex: "#595657" }, # from your --color-urgency oklch
+    silver: { hex: "#4b5563" }, # gray-600
+
+    # YELLOWISH
+    fun: { hex: "#f8f67d" }, # --color-fun
+    yellow: { hex: "#facc15" }, # yellow-400
+    gold: { hex: "#eab308" }, # yellow-500 / or --color-gold
+    dirt: { hex: "#ca8a04" }, # yellow-600
+    sand: { hex: "#dfd6ac" }, # oklch(86.53% 0.0526 89.28)
+
+    # BLUEISH
+    cyan: { hex: "#06b6d4" }, # cyan-500
+    sky: { hex: "#0ea5e9" }, # sky-500
+    blue: { hex: "#3b82f6" }, # blue-500
+    indigo: { hex: "#6366f1" }, # indigo-500
+    navy: { hex: "#001861" }, # oklch(25.96% 0.1259 295.14)
+
+    # GREENISH
+    oldmoney: { hex: "#b9c58f" }, # --color-oldmoney
+    lettuce: { hex: "#93c560" }, # --color-lettuce
+    money: { hex: "#34a853" }, # --color-money
+    lime: { hex: "#84cc16" }, # lime-500
+    green: { hex: "#22c55e" }, # green-500
+    emerald: { hex: "#10b981" }, # emerald-500
+    teal: { hex: "#14b8a6" }, # teal-500
+    book: { hex: "#2f7361" }, # --color-book
+    forest: { hex: "#1c6546" }, # oklch(47.45% 0.1627 158.07)
+
+    # REDISH
+    rose: { hex: "#f43f5e" }, # rose-500
+    red: { hex: "#ef4444" }, # red-500
+    gift: { hex: "#ce2d46" }, # --color-gift
+    honda: { hex: "#cc0000" }, # --color-honda
+
+    # ORANGEISH
+    meat: { hex: "#f9906f" }, # --color-meat
+    bronze: { hex: "#c9a95f" }, # --color-bronze
+    amber: { hex: "#f59e0b" }, # amber-500
+    orange: { hex: "#f97316" }, # orange-500
+
+    # PURPLEISH
+    pink: { hex: "#ec4899" }, # pink-500
+    fuchsia: { hex: "#d946ef" }, # fuchsia-500
+    purple: { hex: "#a855f7" }, # purple-500
+    violet: { hex: "#8b5cf6" }, # violet-500
+    plum: { hex: "#6a2d5c" } # oklch(42.34% 0.1601 328.05)
+  }.freeze
+)
+
+OLD_COLOURS = ActiveSupport::HashWithIndifferentAccess.new(
   {
     # GRAYISH
     white: { bg: "bg-slate-100", text: "text-black", from: "from-slate-100", via: "via-slate-100", to: "to-slate-100" },

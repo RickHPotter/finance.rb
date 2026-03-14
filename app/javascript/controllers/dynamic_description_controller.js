@@ -11,6 +11,7 @@ export default class extends Controller {
   updateDescription() {
     // const inclusive = this.inclusiveTarget.checked
     // const separator = inclusive ? " && " : " || "
+
     const separator = " || "
     const categories_and_or_entities = [this.getCategories(), this.getEntities()].filter((value) => value !== "").join(separator)
 
@@ -19,15 +20,17 @@ export default class extends Controller {
   }
 
   getCategories() {
-    if (this.categoryTargets.length === 0) { return "" }
+    const visibleCategoryTargets = this.categoryTargets.filter((el) => el.checkVisibility())
+    if (visibleCategoryTargets.length === 0) { return "" }
 
-    return `[ ${this.categoryTargets.map((category) => category.innerText).join(" | ")} ]`
+    return `[ ${visibleCategoryTargets.map((category) => category.innerText).join(" | ")} ]`
   }
 
   getEntities() {
-    if (this.entityTargets.length === 0) { return "" }
+    const visibleEntityTargets = this.entityTargets.filter((el) => el.checkVisibility())
+    if (visibleEntityTargets.length === 0) { return "" }
 
-    return `( ${this.entityTargets.map((entity) => entity.innerText).join(" | ")} )`
+    return `( ${visibleEntityTargets.map((entity) => entity.innerText).join(" | ")} )`
   }
 
   getMonthYear() {

@@ -41,6 +41,10 @@ class RailsDate {
     return new Date().toISOString().slice(0, 10)
   }
 
+  static now() {
+    return new Date().toISOString().slice(0, 16)
+  }
+
   date() {
     return new Date(this._date)
   }
@@ -54,6 +58,21 @@ class RailsDate {
     const min = String(proposedDate.getMinutes()).padStart(2, '0')
 
     return `${yyyy}-${mm}-${dd}T${hh}:${min}`
+  }
+
+  humanisedDateTime() {
+    const proposedDate = this.date()
+    const yyyy = proposedDate.getFullYear()
+    const mm = String(proposedDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(proposedDate.getDate()).padStart(2, '0')
+    const hh = String(proposedDate.getHours()).padStart(2, '0')
+    const min = String(proposedDate.getMinutes()).padStart(2, '0')
+
+    if (locale == "en") {
+      return `${MONTHS_FULL[this.month - 1].toLowerCase()} ${dd} ${hh}:${min}`
+    } else {
+      return `${dd} ${MONTHS_FULL[this.month - 1].toLowerCase()} ${hh}:${min}`
+    }
   }
 
   monthYear() {
@@ -85,9 +104,16 @@ class RailsDate {
 
   monthsForwards(months) {
     const newDate = new Date(this._date)
-    newDate.setMonth(this._date.getMonth() + months)
-    this._applyDate(newDate)
+    const targetMonth = this._date.getMonth() + months
+    const targetYear = this._date.getFullYear()
 
+    const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate()
+
+    const newDay = Math.min(this._date.getDate(), lastDayOfTargetMonth)
+
+    newDate.setFullYear(targetYear, targetMonth, newDay)
+
+    this._applyDate(newDate)
     return this
   }
 
@@ -104,16 +130,33 @@ class RailsDate {
   }
 
   setYear(year) {
-    this.year = year
-    this._date.setFullYear(year)
+    const day = this._date.getDate()
+    const monthIndex = this._date.getMonth()
 
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate()
+    const safeDay = Math.min(day, lastDay)
+
+    this._date.setDate(1)
+    this._date.setFullYear(year)
+    this._date.setDate(safeDay)
+
+    this._applyDate(new Date(this._date))
     return this
   }
 
   setMonth(month) {
-    this.month = month
-    this._date.setMonth(month - 1)
+    const day = this._date.getDate()
+    const year = this._date.getFullYear()
+    const targetMonthIndex = month - 1
 
+    const lastDay = new Date(year, targetMonthIndex + 1, 0).getDate()
+    const safeDay = Math.min(day, lastDay)
+
+    this._date.setDate(1)
+    this._date.setMonth(targetMonthIndex)
+    this._date.setDate(safeDay)
+
+    this._applyDate(new Date(this._date))
     return this
   }
 
@@ -122,6 +165,16 @@ class RailsDate {
     this._date.setDate(day)
 
     return this
+  }
+
+  setHour(hour) {
+    this.hour = hour
+    this._date.setHours(hour)
+  }
+
+  setMinute(minute) {
+    this.minute = minute
+    this._date.setMinutes(minute)
   }
 
   _applyDate(date) {

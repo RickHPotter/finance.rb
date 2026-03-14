@@ -1,0 +1,15 @@
+# This is the host-level cron file template used by Kamal post-deploy hook.
+# Target location on the VPS:
+#   /etc/cron.d/financerb
+#
+# IMPORTANT:
+# - Keep this file in sync with .kamal/hooks/post-deploy
+# - In /etc/cron.d/* format, each line needs a UNIX user (root below)
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+TZ=America/Sao_Paulo
+
+0 0 * * * root /bin/bash -lc 'c=$(docker ps --filter "name=financerb-web" --format "{{.Names}}" | head -n1); [ -n "$c" ] && docker exec "$c" bin/rails scheduled:daily_backup' >> /var/log/financerb-cron.log 2>&1
+0 9 * * * root /bin/bash -lc 'c=$(docker ps --filter "name=financerb-web" --format "{{.Names}}" | head -n1); [ -n "$c" ] && docker exec "$c" bin/rails scheduled:due_payments' >> /var/log/financerb-cron.log 2>&1
+0 17 * * * root /bin/bash -lc 'c=$(docker ps --filter "name=financerb-web" --format "{{.Names}}" | head -n1); [ -n "$c" ] && docker exec "$c" bin/rails scheduled:due_payments' >> /var/log/financerb-cron.log 2>&1

@@ -1,0 +1,13 @@
+const onPush = (event) => {
+  console.log("[Serviceworker]", "Push event!", event.data.json())
+  const { title, ...options } = event.data.json()
+
+  const showNotification = self.registration.showNotification(title, {
+    icon: "/pwa_logos/128.png", // should have been 192
+    ...options,
+  })
+
+  event.waitUntil(showNotification)
+}
+
+self.addEventListener("push", onPush)

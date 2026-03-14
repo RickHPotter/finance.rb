@@ -21,8 +21,9 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
           entity_transactions: build_list(:entity_transaction, 1,
                                           :random,
                                           entity:, price: 180, is_payer: true,
-                                          exchanges: build_list(:exchange, 2, exchange_type: :monetary, price: 90, entity_transaction: nil) do |ci, i|
-                                            ci.number = i + 1
+                                          exchanges: build_list(:exchange, 2, exchange_type: :monetary, price: 90, entity_transaction: nil) do |exchange, i|
+                                            exchange.number = i + 1
+                                            exchange.date = Time.zone.today + i.months
                                           end,
                                           transactable: nil))
   end

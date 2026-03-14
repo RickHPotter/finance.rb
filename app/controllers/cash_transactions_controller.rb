@@ -1,43 +1,41 @@
 # frozen_string_literal: true
 
-class CashTransactionsController < ApplicationController
+class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_tabs
   before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :set_cash_tabs
 
   def index
     build_index_context(current_user.cash_installments)
 
     respond_to do |format|
-      format.html do
-        render Views::CashTransactions::Index.new(index_context: @index_context)
-      end
-
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.html { render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
+      format.turbo_stream
     end
   end
 
   def month_year
     mobile = search_cash_transaction_params[:force_mobile] || @mobile
     month_year = search_cash_transaction_params[:month_year]
-    month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
     cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, cash_transaction_params, search_cash_transaction_params)
 
-    render Views::CashTransactions::MonthYear.new(mobile:, month_year:, month_year_str:, cash_installments:, budgets:)
+    render Views::CashTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      cash_installments:,
+      budgets:,
+      index_context: month_year_index_context(mobile)
+    )
   end
 
   def show; end
 
   def new
-    @cash_transaction = current_user.cash_transactions.new(
-      user_bank_account_id: params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id,
-      date: Time.zone.now
-    )
-    @cash_transaction.build_month_year
+    user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
+    @cash_transaction = current_user.cash_transactions.new(user_bank_account_id:, date: Time.zone.now)
+    handle_params
 
     respond_to do |format|
       format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
@@ -46,13 +44,12 @@ class CashTransactionsController < ApplicationController
   end
 
   def edit
-    @cash_transaction = current_user.cash_transactions.includes(:cash_installments).find(params[:id])
+    @cash_transaction = current_user.cash_transactions.find(params[:id])
+    handle_params
 
     respond_to do |format|
-      format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
-      format.turbo_stream do
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
-      end
+      format.html { render Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction) }
+      format.turbo_stream
     end
   end
 
@@ -73,10 +70,70 @@ class CashTransactionsController < ApplicationController
 
   def destroy
     @user_bank_account = @cash_transaction.user_bank_account
+    @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
     @cash_transaction.destroy
     index
 
     respond_to(&:turbo_stream)
+  end
+
+  def handle_params
+    handle_category_params
+    handle_entity_params
+
+    if cash_transaction_params[:cash_installments_attributes].present?
+      @cash_transaction.edit_phase = true if @cash_transaction.persisted?
+
+      @cash_transaction.cash_installments.each(&:mark_for_destruction)
+
+      @cash_transaction.cash_installments_attributes = cash_transaction_params[:cash_installments_attributes]
+      @cash_transaction.description = cash_transaction_params[:description]
+      @cash_transaction.price = cash_transaction_params[:price]
+      @cash_transaction.date = cash_transaction_params[:date]
+      @cash_transaction.month = cash_transaction_params[:month]
+      @cash_transaction.year = cash_transaction_params[:year]
+
+    elsif @cash_transaction.new_record?
+      @cash_transaction.build_month_year
+    end
+  end
+
+  def handle_category_params
+    return if cash_transaction_params[:category_id].nil?
+    return if @cash_transaction.category_transactions.pluck(:category_id).include?(cash_transaction_params[:category_id].to_i)
+
+    @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id])
+  end
+
+  def handle_entity_params # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    if cash_transaction_params[:entity_id].present?
+      return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
+
+      @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id])
+    elsif cash_transaction_params[:entity_transactions_attributes].present?
+      current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
+      new_entities = cash_transaction_params[:entity_transactions_attributes].pluck(:entity_id).map(&:to_i)
+      if @cash_transaction.entity_transactions.one? && current_entities == new_entities # means it is persisted
+        @cash_transaction.entity_transactions.each do |entity_transaction|
+          entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes].find do |a|
+            a[:entity_id].to_i == entity_transaction.entity_id
+          end
+
+          entity_transaction.assign_attributes(entity_transactions_attributes.except(:exchanges_attributes))
+
+          entity_transaction.exchanges.each do |exchange|
+            exchanges_attributes = entity_transactions_attributes[:exchanges_attributes].find do |a|
+              a[:number].to_i == exchange.number
+            end
+
+            exchange.assign_attributes(exchanges_attributes)
+          end
+        end
+      else
+        @cash_transaction.entity_transactions.each(&:mark_for_destruction)
+        @cash_transaction.entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes]
+      end
+    end
   end
 
   def handle_save
@@ -95,22 +152,30 @@ class CashTransactionsController < ApplicationController
         @index_context[:default_year] = @cash_transaction.cash_installments.first.year
         @index_context[:active_month_years] = @cash_transaction.cash_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }.uniq
         @index_context[:user_bank_account_id] = []
-
-        set_tabs(active_menu: :cash, active_sub_menu: :pix)
       end
 
       respond_to(&:turbo_stream)
     end
   end
 
-  def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    min_date = cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
-    years = (min_date.year..max_date.year)
+  def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+    today_zn = Time.zone.today.beginning_of_month
+
+    min_year = cash_installments.minimum("installments.year") || today_zn.year
+    max_year = cash_installments.maximum("installments.year") || today_zn.year
+    years = (min_year..max_year)
+
+    default_active_month_years =
+      cash_installments.where(paid: false, year: ..today_zn.year, month: ..today_zn.month)
+                       .group(:year, :month)
+                       .pluck(:year, :month)
+                       .map { |y, m| Date.new(y, m).strftime("%Y%m").to_i }
+
+    default_active_month_years = [ today_zn.strftime("%Y%m").to_i ] if default_active_month_years.empty?
 
     category_id = [ cash_transaction_params[:category_id] ].flatten&.compact_blank
     entity_id = [ cash_transaction_params[:entity_id] ].flatten&.compact_blank
+    cash_installment_ids = [ cash_transaction_params[:cash_installment_ids] ].flatten&.compact_blank
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
     from_ct_price = search_cash_transaction_params[:from_ct_price]
@@ -119,6 +184,8 @@ class CashTransactionsController < ApplicationController
     to_price = search_cash_transaction_params[:to_price]
     from_installments_count = search_cash_transaction_params[:from_installments_count]
     to_installments_count = search_cash_transaction_params[:to_installments_count]
+    from_date = search_cash_transaction_params[:from_date]
+    to_date = search_cash_transaction_params[:to_date]
     paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
     pending = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:pending])
     skip_budgets = search_cash_transaction_params[:skip_budgets]
@@ -139,7 +206,13 @@ class CashTransactionsController < ApplicationController
     else
       params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
     end => active_month_years
-    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
+    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || Time.zone.today.year
+
+    if action_name.in? %w[create update]
+      Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
+    else
+      Logic::CashTransactions.find_count_based_on_search(current_user, cash_transaction_params, search_cash_transaction_params)
+    end => count_by_month_year
 
     @index_context = {
       current_user:,
@@ -149,6 +222,7 @@ class CashTransactionsController < ApplicationController
       search_term:,
       category_id:,
       entity_id:,
+      cash_installment_ids:,
       user_bank_account_id:,
       from_ct_price:,
       to_ct_price:,
@@ -156,32 +230,22 @@ class CashTransactionsController < ApplicationController
       to_price:,
       from_installments_count:,
       to_installments_count:,
+      from_date:,
+      to_date:,
       user_card: @user_card,
       paid:,
       pending:,
       skip_budgets:,
-      force_mobile:
-    }
-  end
-
-  def inspect
-    @cash_installments = Logic::CashInstallments.find_by_query(current_user, params[:entity_id], params[:query])
-
-    render json: @cash_installments.map { |ci|
-      {
-        id: ci.id,
-        date: I18n.l(ci.date.to_date, format: :shorter),
-        price: from_cent_based_to_float(ci.price, "R$"),
-        description: ci.cash_transaction.description,
-        cash_installments_count: ci.cash_installments_count,
-        pretty_installments: pretty_installments(ci.number, ci.cash_installments_count),
-        bg_colour: ci.cash_transaction.categories&.first&.bg_colour,
-        categories: ci.cash_transaction.categories.map(&:category_name)
-      }
+      force_mobile:,
+      count_by_month_year:
     }
   end
 
   private
+
+  def set_cash_tabs
+    set_tabs(active_menu: :cash, active_sub_menu: :pix)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_cash_transaction
@@ -198,6 +262,8 @@ class CashTransactionsController < ApplicationController
         to_price
         from_installments_count
         to_installments_count
+        from_date
+        to_date
         paid
         pending
         month_year
@@ -212,14 +278,41 @@ class CashTransactionsController < ApplicationController
     return {} if params[:cash_transaction].blank?
 
     params.require(:cash_transaction).permit(
-      %i[id description comment date month year price paid user_id user_bank_account_id category_id entity_id],
-      user_bank_account_id: [], category_id: [], entity_id: [],
+      %i[
+        id description comment date month year price paid user_id user_bank_account_id
+        reference_transactable_type reference_transactable_id category_id entity_id
+      ],
+      user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :exchanges_count, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
+  end
+
+  def month_year_index_context(mobile) # rubocop:disable Metrics/AbcSize
+    {
+      default_year: params[:default_year],
+      active_month_years: params[:active_month_years].present? ? JSON.parse(params[:active_month_years]).map(&:to_i) : [],
+      search_term: search_cash_transaction_params[:search_term],
+      category_id: [ cash_transaction_params[:category_id] ].flatten.compact_blank,
+      entity_id: [ cash_transaction_params[:entity_id] ].flatten.compact_blank,
+      cash_installment_ids: [ cash_transaction_params[:cash_installment_ids] ].flatten.compact_blank,
+      user_bank_account_id: [ cash_transaction_params[:user_bank_account_id] ].flatten.compact_blank,
+      from_ct_price: search_cash_transaction_params[:from_ct_price],
+      to_ct_price: search_cash_transaction_params[:to_ct_price],
+      from_price: search_cash_transaction_params[:from_price],
+      to_price: search_cash_transaction_params[:to_price],
+      from_installments_count: search_cash_transaction_params[:from_installments_count],
+      to_installments_count: search_cash_transaction_params[:to_installments_count],
+      from_date: search_cash_transaction_params[:from_date],
+      to_date: search_cash_transaction_params[:to_date],
+      paid: search_cash_transaction_params[:paid],
+      pending: search_cash_transaction_params[:pending],
+      skip_budgets: search_cash_transaction_params[:skip_budgets],
+      force_mobile: mobile
+    }
   end
 end

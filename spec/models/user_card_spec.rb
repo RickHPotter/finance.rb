@@ -31,6 +31,7 @@ end
 # == Schema Information
 #
 # Table name: user_cards
+# Database name: primary
 #
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null

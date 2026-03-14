@@ -1,0 +1,7 @@
+<% if @message.persisted? %>
+  <%= turbo_stream.replace dom_id(@conversation, :messages) do %>
+    <%= render Views::Messages::Form.new(conversation: @conversation) %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, Message) }) %>
+<% end %>

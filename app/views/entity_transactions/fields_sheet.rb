@@ -3,8 +3,6 @@
 module Views
   module EntityTransactions
     class FieldsSheet < Components::Base
-      include Phlex::Rails::Helpers::ImageTag
-      include Phlex::Rails::Helpers::AssetPath
       include Phlex::Rails::Helpers::RadioButtonTag
 
       include ComponentsHelper
@@ -23,61 +21,67 @@ module Views
         positive = transactable.price.to_i.positive?
         sign = positive ? "-" : "+"
 
-        SheetContent(side: :top, class: "max-w-sm md:max-w-2xl mx-auto", data: { controller: "price-mask" }) do
+        if entity_transaction.exchanges.empty? || entity_transaction.exchanges.first&.standalone?
+          :standalone
+        else
+          :card_bound
+        end => default_bound_type
+
+        SheetContent(side: :top, class: "max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto", data: { controller: "price-mask" }) do
           SheetHeader do
             SheetTitle(class: "entities_entity_name") { entity_transaction&.entity&.entity_name }
             SheetDescription { "" }
           end
 
           SheetMiddle do
-            div(class: "grid grid-cols-1 md:grid-cols-2 justify-center gap-1 pb-3") do
+            div(class: "grid grid-cols-1 lg:grid-cols-2 justify-center gap-3 pb-3") do
               div do
                 bold_label(form, :price, "entity_transaction_price_#{form.index}")
 
-                div(class: "grid grid-cols-4 justify-between") do
-                  div(class: "col-span-3") do
+                div(class: "flex gap-1 justify-between") do
+                  div(class: "flex-1") do
                     TextField \
                       form, :price,
                       svg: :money,
                       id: "entity_transaction_price_#{form.index}",
                       class: "font-graduate dynamic-price",
+                      onclick: "this.select();",
                       data: { price_mask_target: :input,
                               entity_transaction_target: :priceInput,
                               action: "input->price-mask#applyMask input->entity-transaction#updatePrice",
                               sign: }
                   end
 
-                  render_helper_popover(target: :priceInput, icon: :arrow_down_left_micro)
+                  render_helper_popover(target: :priceInput, icon: :arrow_down_left)
                 end
               end
 
               div do
                 bold_label(form, :price_to_be_returned, "entity_transaction_price_to_be_returned_#{form.index}")
 
-                div(class: "grid grid-cols-4 justify-between") do
-                  div(class: "col-span-3") do
+                div(class: "flex gap-1 justify-between") do
+                  div(class: "flex-1") do
                     TextField \
                       form, :price_to_be_returned,
                       svg: :money,
                       id: "entity_transaction_price_to_be_returned_#{form.index}",
                       class: "font-graduate dynamic-price",
+                      onclick: "this.select();",
                       data: { price_mask_target: :input,
                               entity_transaction_target: :priceToBeReturnedInput,
                               action: "input->price-mask#applyMask input->entity-transaction#updatePrice input->entity-transaction#toggleExchanges",
                               sign: }
                   end
 
-                  render_helper_popover(target: :priceToBeReturnedInput, icon: :arrow_down_right_micro)
+                  render_helper_popover(target: :priceToBeReturnedInput, icon: :arrow_down_left)
                 end
               end
-            end
 
-            div(class: "grid grid-cols-1 md:grid-cols-2 justify-center gap-1 pb-3") do
               div do
                 bold_label(form, :exchanges_count, "entity_transaction_exchanges_count_#{form.index}")
 
-                div(class: "grid grid-cols-4 justify-between") do
-                  div(class: "col-span-3") do
+                div(class: "flex gap-1 justify-between") do
+                  div(class: "flex-1") do
                     TextFieldTag :exchanges_count,
                                  type: :number,
                                  svg: :number,
@@ -101,25 +105,40 @@ module Views
                 end
               end
 
-              div(class: "pt-3 md:pt-0") do
+              if transactable.is_a? CardTransaction
                 div do
-                  div(class: "grid grid-cols-2 justify-between items-center gap-1") do
-                    bold_label(form, :standalone, "entity_transaction_standalone_#{form.index}")
-                    bold_label(form, :card_bound, "entity_transaction_card_bound_#{form.index}")
-                  end
+                  bold_label(form, :bound_type, "entity_transaction_bound_type_#{form.index}")
 
-                  div(class: "grid grid-cols-2 justify-between items-center gap-1") do
-                    radio_button_tag("bound_type_#{form.index}", :standalone,
-                                     checked: entity_transaction.exchanges.first&.standalone?,
-                                     id: "entity_transaction_standalone_#{form.index}",
-                                     class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
-                                     data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+                  div(class: "flex justify-start gap-1") do
+                    label(
+                      for: "entity_transaction_standalone_#{form.index}",
+                      class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
+                              text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
+                              has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
+                    ) do
+                      radio_button_tag("bound_type_#{form.index}", :standalone,
+                                       checked: default_bound_type == :standalone,
+                                       id: "entity_transaction_standalone_#{form.index}",
+                                       class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
+                                       data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
 
-                    radio_button_tag("bound_type_#{form.index}", :card_bound,
-                                     checked: entity_transaction.exchanges.first&.card_bound? || !entity_transaction.exchanges.first&.standalone?,
-                                     id: "entity_transaction_card_bound_#{form.index}",
-                                     class: "w-4 h-4 border-gray-300 focus:ring-blue-500 my-2 m-auto",
-                                     data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+                      span { model_attribute(form.object, :standalone).downcase }
+                    end
+
+                    label(
+                      for: "entity_transaction_card_bound_#{form.index}",
+                      class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
+                              text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
+                              has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
+                    ) do
+                      radio_button_tag("bound_type_#{form.index}", :card_bound,
+                                       checked: default_bound_type == :card_bound,
+                                       id: "entity_transaction_card_bound_#{form.index}",
+                                       class: "w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer",
+                                       data: { entity_transaction_target: :boundType, action: "entity-transaction#fillInBoundType" })
+
+                      span { model_attribute(form.object, :card_bound).downcase }
+                    end
                   end
                 end
               end
@@ -127,21 +146,21 @@ module Views
 
             div(
               id: "exchanges_nested",
-              class: "overflow-y-auto max-h-80 pt-2 grid grid-cols-1 gap-3 pb-3",
-              data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
+              class: "overflow-y-auto max-h-[calc(100vh-22rem)] pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 sm:max-h-[calc(100vh-12rem)]",
+              data: { controller: "nested-form exchange-lock", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
             ) do
-              template(data: { nested_form_target: "template" }) do
+              template(data_nested_form_target: "template") do
                 form.fields_for :exchanges, Exchange.new, child_index: "NEW_NESTED_RECORD" do |exchange_fields|
-                  render ::Views::Exchanges::Fields.new(form: exchange_fields)
+                  render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
                 end
               end
 
-              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction) if entity_transaction.exchanges.count > 1
+              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges.count > 1
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
-                render ::Views::Exchanges::Fields.new(form: exchange_fields)
+                render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
               end
 
-              div(data: { nested_form_target: "target" })
+              div(data_nested_form_target: "target")
 
               button(type: :button, class: :hidden, tabindex: -1, data: { entity_transaction_target: :addExchange, action: "nested-form#addChildNested" })
             end
@@ -159,15 +178,15 @@ module Views
 
           PopoverContent(class: "w-40") do
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
-              "Full Price"
+              model_attribute(Exchange, :full_price)
             end
 
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
-              "Half Price"
+              model_attribute(Exchange, :half_price)
             end
 
             Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
-              "Third Price"
+              model_attribute(Exchange, :third_price)
             end
           end
         end

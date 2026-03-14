@@ -24,10 +24,35 @@ module Logic
       search_term = search_investment_params.delete(:search_term) || ""
 
       user.investments
+          .includes(:user_bank_account, :investment_type)
           .where(investment_params)
           .where("description ILIKE ?", "%#{search_term}%")
           .where("year = ? AND month = ?", year, month)
           .order(:date)
+    end
+
+    def self.find_count_based_on_search(user, investment_params, search_investment_params)
+      search_term = search_investment_params.delete(:search_term) || ""
+
+      if investment_params.is_a?(Hash)
+        investment_params.except("date", "price")
+      else
+        investment_params.to_unsafe_h.except("date", "price")
+      end => params
+
+      params.filter! do |_, value|
+        value = value.compact_blank if value.is_a?(Array) || value.is_a?(Hash)
+
+        value.present?
+      end
+
+      relation = user.investments
+                     .where(params)
+                     .where("description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.distinct.select("investments.id, investments.month, investments.year")
+
+      relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
     end
   end
 end
