@@ -41,11 +41,11 @@ class Views::Entities::Form < Views::Base
           form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active
         end
 
-        div(class: "w-full") { render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, entity) } }
+        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, entity) } }
 
         if entity.persisted?
           div(class: "w-full") do
-            render RubyUI::Button.new(
+            Button(
               id: "delete_entity_#{entity.id}",
               type: :submit,
               variant: :destructive,

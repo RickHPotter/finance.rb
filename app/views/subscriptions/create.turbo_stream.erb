@@ -1,0 +1,10 @@
+<% if @subscription.errors.empty? %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Subscription) }) %>
+
+  <%= turbo_stream.replace(:center_container, Views::Subscriptions::Index.new(subscriptions: @subscriptions, mobile: @mobile)) %>
+<% else %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Subscription) }) %>
+
+  <%= turbo_stream.replace(:center_container, Views::Subscriptions::New.new(current_user:, subscription: @subscription)) %>
+<% end %>

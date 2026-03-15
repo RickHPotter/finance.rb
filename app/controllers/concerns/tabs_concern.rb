@@ -102,7 +102,8 @@ module TabsConcern
       Item.new(t("tabs.pix"),        :mobile,      cash_transactions_path, @active_sub_menu == :pix,        cash_notification_type, :_top),
       Item.new(t("tabs.budget"),     :piggy_bank,  budgets_path,           @active_sub_menu == :budget,     0, :_top),
       Item.new(t("tabs.investment"), :trending_up, investments_path,       @active_sub_menu == :investment, 0, :_top),
-      Item.new(t("tabs.balance"),    :chart,       balances_path,          @active_sub_menu == :balance,    0, :_top)
+      Item.new(t("tabs.subscription"), :refresh,   subscriptions_path,     @active_sub_menu == :subscription, 0, :_top),
+      Item.new(t("tabs.balance"), :chart, balances_path, @active_sub_menu == :balance, 0, :_top)
     ]
   end
 end

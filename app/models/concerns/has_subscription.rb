@@ -9,7 +9,7 @@ module HasSubscription
     attr_accessor :original_subscription_id
 
     # @relationships ..........................................................
-    belongs_to :subscription, optional: true
+    belongs_to :subscription, optional: true, counter_cache: true
 
     # @callbacks ..............................................................
     before_destroy :remember_subscription_id, prepend: true

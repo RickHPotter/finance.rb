@@ -145,11 +145,11 @@ class Views::UserCards::Form < Views::Base
           end
         end
 
-        div(class: "w-full") { render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, user_card) } }
+        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, user_card) } }
 
         if user_card.persisted?
           div(class: "w-full") do
-            render RubyUI::Button.new(
+            Button(
               id: "delete_user_card_#{user_card.id}",
               type: :submit,
               variant: :destructive,

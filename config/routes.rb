@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-Rails.application.routes.draw do
+Rails.application.routes.draw do # rubocop:disable Metrics/BlockLength
   get "up" => "rails/health#show", as: :rails_health_check
 
   root "cash_transactions#index"
@@ -92,6 +92,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :subscriptions, except: :show
+
   resources :conversations, only: %i[index show create] do
     resources :messages, only: :create
   end
@@ -124,5 +126,4 @@ Rails.application.routes.draw do
       end
     end
   end
-
 end

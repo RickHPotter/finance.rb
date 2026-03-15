@@ -63,11 +63,11 @@ class Views::UserBankAccounts::Form < Views::Base
                         checked: user_bank_account.new_record? || user_bank_account.active
         end
 
-        div(class: "w-full") { render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, user_bank_account) } }
+        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, user_bank_account) } }
 
         if user_bank_account.persisted?
           div(class: "w-full") do
-            render RubyUI::Button.new(
+            Button(
               id: "delete_user_bank_account_#{user_bank_account.id}",
               type: :submit,
               variant: :destructive,

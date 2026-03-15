@@ -34,21 +34,21 @@ class Views::Layouts::Application < Views::Base
       end
 
       body class: "min-h-screen bg-gray-900 text-white" do
-        ShellContainer(tag: :main, class: "antialiased max-w-auto max-w-[1420px] mx-auto") do
+        ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-[1420px] mx-auto w-full") do
           turbo_frame_tag :notification do
             render partial "shared/flash"
           end
 
-          section class: "mt-10 min-h-svh w-full" do
-            div class: "w-full" do
-              div class: "flex justify-center mb-10" do
+          section class: "mt-10 flex min-h-0 flex-1 flex-col w-full" do
+            div class: "flex min-h-0 flex-1 flex-col w-full" do
+              div class: "mb-10 flex shrink-0 justify-center" do
                 div id: "tabs", class: "w-screen" do
                   render Views::Shared::Tabs.new(main_tab:, sub_tab:, mobile:)
                 end
               end
 
-              PageCard do
-                div class: "p-1 md:p-2 lg:p-3" do
+              PageCard(class: "mx-1 flex min-h-0 flex-1 flex-col break-words rounded-lg bg-white shadow-md shadow-red-50") do
+                div class: "flex min-h-0 flex-1 flex-col p-1 md:p-2 lg:p-3" do
                   div class: "hidden xl:block", data: { controller: "history-nav" } do
                     FloatingNavButton(side: :left, title: "Back", target: :back, action: "click->history-nav#back") do
                       "←"
@@ -69,7 +69,7 @@ class Views::Layouts::Application < Views::Base
 
                   render Views::Static::Calculator.new
 
-                  div(class: "text-center text-black pt-2", &)
+                  div(class: "flex min-h-0 flex-1 flex-col pt-2 text-center text-black", &)
                 end
               end
             end

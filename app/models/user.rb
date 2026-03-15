@@ -90,6 +90,7 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "CARD ADVANCE"),
       Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
       Category.new(built_in: true, category_name: "INVESTMENT"),
+      Category.new(built_in: true, category_name: "SUBSCRIPTION"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
       Category.new(built_in: true, category_name: "BORROW RETURN")

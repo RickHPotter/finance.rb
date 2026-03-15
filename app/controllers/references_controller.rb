@@ -22,7 +22,7 @@ class ReferencesController < ApplicationController
     if @reference.update(reference_params)
       redirect_to edit_user_card_path(@user_card)
     else
-      render Views::References::Edit.new(reference: @reference, user_card: @user_card), status: :unprocessable_entity
+      render Views::References::Edit.new(reference: @reference, user_card: @user_card), status: :unprocessable_content
     end
   end
 
@@ -38,7 +38,7 @@ class ReferencesController < ApplicationController
     if Logic::References.merge(@user_card, source_reference_date, target_reference_date)
       redirect_to edit_user_card_path(@user_card)
     else
-      render Views::References::Merge.new(reference: @reference, user_card: @user_card), status: :unprocessable_entity
+      render Views::References::Merge.new(reference: @reference, user_card: @user_card), status: :unprocessable_content
     end
   end
 
