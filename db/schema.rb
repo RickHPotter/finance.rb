@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_15_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -217,6 +217,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
   end
 
+  create_table "finance_subscriptions", force: :cascade do |t|
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.string "description", null: false
+    t.integer "price", default: 0, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["status"], name: "index_finance_subscriptions_on_status"
+    t.index ["user_id"], name: "index_finance_subscriptions_on_user_id"
+  end
+
   create_table "installments", force: :cascade do |t|
     t.integer "balance"
     t.integer "card_installments_count", default: 0
@@ -387,6 +399,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "cash_transactions"
   add_foreign_key "exchanges", "entity_transactions"
+  add_foreign_key "finance_subscriptions", "users"
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"

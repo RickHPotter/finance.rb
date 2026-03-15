@@ -24,7 +24,7 @@ RSpec.describe User, type: :model do
       hm_models = %i[card_transactions card_installments advance_cash_transactions
                      cash_transactions cash_installments
                      user_cards user_bank_accounts budgets categories entities
-                     investments conversation_participants conversations push_subscriptions
+                     investments conversation_participants conversations subscriptions push_subscriptions
                      sent_messages received_messages]
 
       hm_models.each { |model| it { should have_many(model) } }
