@@ -11,7 +11,7 @@ RSpec.describe Subscription, type: :model do
         expect(subject).to be_valid
       end
 
-      %i[user description status].each do |attribute|
+      %i[description].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
 
@@ -21,6 +21,8 @@ RSpec.describe Subscription, type: :model do
 
     context "( associations )" do
       it { should belong_to(:user) }
+      it { should have_many(:cash_transactions).dependent(:nullify) }
+      it { should have_many(:card_transactions).dependent(:nullify) }
       it { should have_many(:category_transactions).dependent(:destroy) }
       it { should have_many(:entity_transactions).dependent(:destroy) }
     end
@@ -41,6 +43,27 @@ RSpec.describe Subscription, type: :model do
 
         expect(subject).to be_valid
       end
+
+      it "returns all linked transactions ordered by date" do
+        subscription = create(:subscription)
+        older_cash_transaction = create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user),
+                                                           subscription:, date: Date.new(2026, 3, 1), price: 100)
+        newer_card_transaction = create(:card_transaction, user: subscription.user, user_card: create(:user_card, :random, user: subscription.user), subscription:,
+                                                           date: Date.new(2026, 3, 10), price: -50)
+
+        expect(subscription.transactions).to eq([ older_cash_transaction, newer_card_transaction ])
+        expect(subscription.transactions_count).to eq(2)
+      end
+
+      it "refreshes cached price from linked transactions" do
+        subscription = create(:subscription, price: 999)
+        create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user), subscription:, price: 200)
+        create(:card_transaction, user: subscription.user, user_card: create(:user_card, :random, user: subscription.user), subscription:, price: -75)
+
+        subscription.refresh_price!
+
+        expect(subscription.reload.price).to eq(125)
+      end
     end
   end
 end
@@ -50,14 +73,16 @@ end
 # Table name: finance_subscriptions
 # Database name: primary
 #
-#  id          :bigint           not null, primary key
-#  comment     :text
-#  description :string           not null
-#  price       :integer          default(0), not null
-#  status      :string           default("active"), not null, indexed
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  user_id     :bigint           not null, indexed
+#  id                      :bigint           not null, primary key
+#  card_transactions_count :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  comment                 :text
+#  description             :string           not null
+#  price                   :integer          default(0), not null
+#  status                  :string           default("active"), not null, indexed
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #

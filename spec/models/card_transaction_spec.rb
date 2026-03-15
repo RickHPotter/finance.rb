@@ -19,7 +19,7 @@ RSpec.describe CardTransaction, type: :model do
 
     context "( associations )" do
       bt_models = %i[user user_card]
-      bto_models = %i[advance_cash_transaction reference_transactable]
+      bto_models = %i[advance_cash_transaction reference_transactable subscription]
       hm_models = %i[categories category_transactions entities entity_transactions card_installments]
       na_models = %i[category_transactions entity_transactions card_installments]
 
@@ -60,6 +60,7 @@ end
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
+#  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
 #  user_id                     :bigint           not null, indexed
 #
@@ -69,6 +70,7 @@ end
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
+#  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)
 #  index_reference_transactable_on_card_composite_key      (reference_transactable_type,reference_transactable_id) UNIQUE
@@ -76,6 +78,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)
 #

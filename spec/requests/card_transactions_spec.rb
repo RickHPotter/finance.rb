@@ -11,6 +11,7 @@ RSpec.describe "CardTransactions", type: :request do
   let(:exchange_category) { user.built_in_category("EXCHANGE") }
   let(:entity_one) { create(:entity, :random, user:) }
   let(:entity_two) { create(:entity, :random, user:) }
+  let(:subscription) { create(:subscription, user:) }
 
   let(:card_transaction) do
     Params::CardTransactions.new(
@@ -20,7 +21,8 @@ RSpec.describe "CardTransactions", type: :request do
         month: Time.zone.today.month,
         year: Time.zone.today.year,
         user_id: user.id,
-        user_card_id: user_card_one.id
+        user_card_id: user_card_one.id,
+        subscription_id: subscription.id
       },
       card_installments: { count: 1 },
       category_transactions: [],
@@ -68,8 +70,10 @@ RSpec.describe "CardTransactions", type: :request do
       expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
       new_card_transaction = CardTransaction.last
 
+      expect(new_card_transaction.subscription).to eq(subscription)
       check_non_paying_entities(new_card_transaction)
       check_card_installments(new_card_transaction.card_installments)
+      expect(subscription.reload.price).to eq(-20_000)
     end
 
     it "creates one new record with two installments and two paying entities" do
@@ -187,6 +191,17 @@ RSpec.describe "CardTransactions", type: :request do
       expect(cash_transaction_one).to_not eq cash_transaction_two
       expect(CashTransaction.exists?(cash_transaction_one.id)).to be_falsey
       expect(CashTransaction.exists?(cash_transaction_two.id)).to be_truthy
+    end
+
+    it "updates the linked subscription" do
+      other_subscription = create(:subscription, user:)
+      card_transaction.use_base(@existing_card_transaction, card_transaction_options: { subscription_id: other_subscription.id })
+
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
+
+      expect(@existing_card_transaction.reload.subscription).to eq(other_subscription)
+      expect(subscription.reload.price).to eq(0)
+      expect(other_subscription.reload.price).to eq(-20_000)
     end
   end
 

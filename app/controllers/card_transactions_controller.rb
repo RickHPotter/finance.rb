@@ -267,7 +267,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return {} if params[:card_transaction].blank?
 
     params.require(:card_transaction).permit(
-      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate],
+      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id],
       card_installment_ids: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],

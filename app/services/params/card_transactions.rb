@@ -2,7 +2,8 @@
 
 module Params
   class CardTransactions
-    attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :card_installments, :category_transactions, :entity_transactions
+    attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :subscription_id, :card_installments, :category_transactions,
+                  :entity_transactions
 
     def initialize(card_transaction: {}, card_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_card_transaction(card_transaction)
@@ -23,6 +24,7 @@ module Params
           paid:,
           user_id:,
           user_card_id:,
+          subscription_id:,
           card_installments_attributes:,
           category_transactions_attributes:,
           entity_transactions_attributes:
@@ -84,6 +86,7 @@ module Params
       @paid         = card_transaction_options[:paid]         || card_transaction[:paid]
       @user_id      = card_transaction_options[:user_id]      || card_transaction[:user_id]
       @user_card_id = card_transaction_options[:user_card_id] || card_transaction[:user_card_id]
+      @subscription_id = card_transaction_options[:subscription_id] || card_transaction[:subscription_id]
     end
 
     def assign_card_installments(card_installments)

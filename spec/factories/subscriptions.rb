@@ -19,14 +19,16 @@ end
 # Table name: finance_subscriptions
 # Database name: primary
 #
-#  id          :bigint           not null, primary key
-#  comment     :text
-#  description :string           not null
-#  price       :integer          default(0), not null
-#  status      :string           default("active"), not null, indexed
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  user_id     :bigint           not null, indexed
+#  id                      :bigint           not null, primary key
+#  card_transactions_count :integer          default(0), not null
+#  cash_transactions_count :integer          default(0), not null
+#  comment                 :text
+#  description             :string           not null
+#  price                   :integer          default(0), not null
+#  status                  :string           default("active"), not null, indexed
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #

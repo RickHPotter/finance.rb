@@ -8,6 +8,7 @@ class CardTransaction < ApplicationRecord
   include HasCardInstallments
   include CategoryTransactable
   include EntityTransactable
+  include HasSubscription
   include HasAdvancePayments
   include Budgetable
   include FriendNotifiable
@@ -211,6 +212,7 @@ end
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
+#  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
 #  user_id                     :bigint           not null, indexed
 #
@@ -220,6 +222,7 @@ end
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
+#  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)
 #  index_reference_transactable_on_card_composite_key      (reference_transactable_type,reference_transactable_id) UNIQUE
@@ -227,6 +230,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)
 #
