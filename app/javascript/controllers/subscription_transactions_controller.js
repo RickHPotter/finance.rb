@@ -13,6 +13,7 @@ export default class extends Controller {
   connect() {
     this.modalElement = document.getElementById("subscriptionAddTransactionModal")
     this.editingRow = null
+    this.resetReferenceMonthState()
     this.boundCloseModal = this.closeModal.bind(this)
     this.modalElement?.querySelectorAll('[data-modal-hide="subscriptionAddTransactionModal"]').forEach((element) => {
       element.addEventListener("click", this.boundCloseModal)
@@ -31,6 +32,7 @@ export default class extends Controller {
   openCustomModal(event) {
     event.preventDefault()
     this.editingRow = null
+    this.resetReferenceMonthState()
     this.configureModalMode()
     this.applyDefaultType()
     this.populateDefaults()
@@ -44,6 +46,7 @@ export default class extends Controller {
     if (!row) return
 
     this.editingRow = null
+    this.resetReferenceMonthState()
     this.populateNextFromRow(row)
     this.showModal()
   }
@@ -57,6 +60,7 @@ export default class extends Controller {
     const input = this.typeInputTargets.find((candidate) => candidate.value === type)
     if (input) input.checked = true
 
+    this.resetReferenceMonthState()
     this.configureModalMode()
     this.changeType()
     this.populateFromRow(this.editingRow)
@@ -76,8 +80,13 @@ export default class extends Controller {
   }
 
   syncDates() {
+    const derivedStartMonth = this.referenceMonthYearFor(this.startDateInputTarget.value)
+    if (derivedStartMonth && (this.selectedType === "cash" || !this.startMonthYearDirty)) {
+      this.startMonthYearInputTarget.value = derivedStartMonth
+    }
+
     const startMonth = this.startMonthYearInputTarget.value
-    const endMonth = this.endMonthYearInputTarget.value
+    let endMonth = this.endMonthYearInputTarget.value
     const startDate = this.startDateInputTarget.value
 
     if (this.editingRow && startMonth) {
@@ -89,6 +98,7 @@ export default class extends Controller {
 
     if (startMonth && endMonth && endMonth < startMonth) {
       this.endMonthYearInputTarget.value = startMonth
+      endMonth = startMonth
     }
 
     if (!startDate && startMonth) {
@@ -126,6 +136,7 @@ export default class extends Controller {
   closeModal(event) {
     event?.preventDefault()
     this.editingRow = null
+    this.resetReferenceMonthState()
     this.configureModalMode()
     this.hideModal()
   }
@@ -155,7 +166,7 @@ export default class extends Controller {
     const typeCardField = latestTypeRow?.querySelector('input[name$="[user_card_id]"]')
 
     this.startDateInputTarget.value = this.bumpMonth(overallDateField?.value || this.today)
-    this.startMonthYearInputTarget.value = this.startDateInputTarget.value.slice(0, 7)
+    this.startMonthYearInputTarget.value = this.referenceMonthYearFor(this.startDateInputTarget.value)
     this.endMonthYearInputTarget.value = this.startMonthYearInputTarget.value
     this.priceInputTarget.value = typePriceField?.value || 0
 
@@ -197,13 +208,11 @@ export default class extends Controller {
   generatedRows() {
     const interval = parseInt(this.intervalInputTarget.value || "1", 10)
     const startDateValue = this.startDateInputTarget.value || this.defaultStartDateFor(this.startMonthYearInputTarget.value)
-    const startDate = new Date(`${startDateValue}T00:00:00`)
     const months = this.monthSeries(interval)
 
     return months.map((monthYearValue, index) => {
-      const date = new Date(startDate)
-      date.setMonth(date.getMonth() + (index * interval))
-      return { dateValue: this.formatDate(date), monthYearValue }
+      const dateValue = index === 0 ? startDateValue : this.addMonthsToDateValue(startDateValue, index * interval)
+      return { dateValue, monthYearValue }
     })
   }
 
@@ -235,11 +244,18 @@ export default class extends Controller {
 
   fillRow(wrapper, dateValue, monthYearValue) {
     const dateField = wrapper.querySelector('input[name$="[date]"]')
+    const monthField = wrapper.querySelector('input[name$="[month]"]')
+    const yearField = wrapper.querySelector('input[name$="[year]"]')
     const priceField = wrapper.querySelector('input[name$="[price]"]')
     const accountField = wrapper.querySelector('input[name$="[user_bank_account_id]"]')
     const cardField = wrapper.querySelector('input[name$="[user_card_id]"]')
 
     if (dateField) dateField.value = dateValue
+    if (monthField && yearField && monthYearValue) {
+      const [year, month] = monthYearValue.split("-")
+      monthField.value = month
+      yearField.value = year
+    }
     if (priceField) {
       priceField.value = this.unmaskedPriceValue
       priceField.setAttribute("value", this.unmaskedPriceValue)
@@ -294,6 +310,19 @@ export default class extends Controller {
     this.nextButtonTarget.disabled = !this.latestOverallRow()
   }
 
+  resetReferenceMonthState() {
+    this.startMonthYearDirty = false
+    this.endMonthYearDirty = false
+  }
+
+  markStartMonthYearDirty() {
+    this.startMonthYearDirty = true
+  }
+
+  markEndMonthYearDirty() {
+    this.endMonthYearDirty = true
+  }
+
   findTarget(type) {
     return this.targetTargets.find((target) => target.dataset.kind === type) || this.targetTargets[0]
   }
@@ -304,6 +333,11 @@ export default class extends Controller {
 
   get selectedType() {
     return this.typeInputTargets.find((input) => input.checked)?.value || "card"
+  }
+
+  get selectedCardOption() {
+    return Array.from(this.cardInputTarget?.options || [])
+      .find((option) => option.value === this.cardInputTarget.value)
   }
 
   parseNumber(value) {
@@ -339,6 +373,57 @@ export default class extends Controller {
 
     const date = this.selectedType === "card" ? new Date(year, month - 2, 1) : new Date(year, month - 1, 1)
     return this.formatDate(date)
+  }
+
+  referenceMonthYearFor(dateValue) {
+    if (!dateValue) return ""
+    if (this.selectedType !== "card") return dateValue.slice(0, 7)
+
+    const cardOption = this.selectedCardOption
+    if (!cardOption) return dateValue.slice(0, 7)
+
+    const dueDateDay = parseInt(cardOption.dataset.dueDateDay || "", 10)
+    const daysUntilDueDate = parseInt(cardOption.dataset.daysUntilDueDate || "", 10)
+    if (Number.isNaN(dueDateDay) || Number.isNaN(daysUntilDueDate)) return dateValue.slice(0, 7)
+
+    const referenceDate = this.calculateCardReferenceDate(dateValue, dueDateDay, daysUntilDueDate)
+    return this.formatMonth(referenceDate)
+  }
+
+  // Mirrors UserCard#calculate_reference_date so the modal preview matches persisted card rows.
+  calculateCardReferenceDate(dateValue, dueDateDay, daysUntilDueDate) {
+    const transactionDate = new Date(`${dateValue}T00:00:00`)
+    let dueDate = this.dateWithDay(transactionDate, dueDateDay)
+    if (transactionDate >= dueDate) dueDate = this.addMonths(dueDate, 1)
+
+    const closingDate = new Date(dueDate)
+    closingDate.setDate(closingDate.getDate() - daysUntilDueDate)
+
+    if (closingDate > transactionDate) return dueDate
+
+    return this.addMonths(dueDate, 1)
+  }
+
+  dateWithDay(date, day) {
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    return new Date(date.getFullYear(), date.getMonth(), Math.min(day, lastDay))
+  }
+
+  addMonths(date, count) {
+    const copy = new Date(date)
+    copy.setMonth(copy.getMonth() + count)
+    return copy
+  }
+
+  addMonthsToDateValue(dateValue, count) {
+    const date = new Date(`${dateValue}T00:00:00`)
+    date.setMonth(date.getMonth() + count)
+    return this.formatDate(date)
+  }
+
+  normalizedDateValue(value) {
+    const match = `${value || ""}`.match(/\d{4}-\d{2}-\d{2}/)
+    return match ? match[0] : ""
   }
 
   formatDate(date) {
@@ -390,7 +475,7 @@ export default class extends Controller {
     const cardField = row.querySelector('input[name$="[user_card_id]"]')
     const rowMonthYear = row.dataset.sortMonthYear
 
-    this.startDateInputTarget.value = dateField?.value || this.today
+    this.startDateInputTarget.value = this.normalizedDateValue(dateField?.value) || this.today
     this.startMonthYearInputTarget.value = rowMonthYear || this.startDateInputTarget.value.slice(0, 7)
     this.endMonthYearInputTarget.value = this.startMonthYearInputTarget.value
     this.priceInputTarget.value = priceField?.value || 0
@@ -413,10 +498,10 @@ export default class extends Controller {
     const priceField = row.querySelector('input[name$="[price]"]')
     const accountField = row.querySelector('input[name$="[user_bank_account_id]"]')
     const cardField = row.querySelector('input[name$="[user_card_id]"]')
-    const currentDate = dateField?.value || this.today
-    const currentMonthYear = row.dataset.sortMonthYear || currentDate.slice(0, 7)
+    const currentDate = this.normalizedDateValue(dateField?.value) || this.today
     const nextDate = this.bumpMonth(currentDate)
-    const nextMonthYear = this.bumpMonthYear(currentMonthYear)
+    this.cardInputTarget.value = cardField?.value || ""
+    const nextMonthYear = this.referenceMonthYearFor(nextDate)
 
     this.startDateInputTarget.value = nextDate
     this.startMonthYearInputTarget.value = nextMonthYear
@@ -424,7 +509,6 @@ export default class extends Controller {
     this.intervalInputTarget.value = "1"
     this.priceInputTarget.value = priceField?.value || 0
     this.cashAccountInputTarget.value = accountField?.value || ""
-    this.cardInputTarget.value = cardField?.value || ""
     this.applyPriceMask()
     this.syncDates()
   }

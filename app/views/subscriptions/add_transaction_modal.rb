@@ -8,11 +8,12 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :user_cards, :user_bank_accounts
+  attr_reader :user_cards, :user_bank_accounts, :user_card_options
 
-  def initialize(user_cards:, user_bank_accounts:)
+  def initialize(user_cards:, user_bank_accounts:, user_card_options:)
     @user_cards = user_cards
     @user_bank_accounts = user_bank_accounts
+    @user_card_options = user_card_options
   end
 
   def view_template
@@ -44,7 +45,7 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
           select_tag(
             :subscription_interval_months,
             id: :subscription_interval_months,
-            class: "w-full border border-slate-300 rounded-lg p-2 bg-white",
+            class: "w-full rounded-lg border border-slate-300 bg-white p-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400",
             data: { action: "change->subscription-transactions#syncDates", subscription_transactions_target: "intervalInput" }
           ) do
             options_for_select(
@@ -90,7 +91,10 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
             svg: :calendar,
             class: "font-graduate w-full",
             required: true,
-            data: { action: "input->subscription-transactions#syncDates", subscription_transactions_target: "startMonthYearInput" }
+            data: {
+              action: "input->subscription-transactions#markStartMonthYearDirty input->subscription-transactions#syncDates",
+              subscription_transactions_target: "startMonthYearInput"
+            }
           )
         end
 
@@ -104,7 +108,10 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
             svg: :calendar,
             class: "font-graduate w-full",
             required: true,
-            data: { action: "input->subscription-transactions#syncDates", subscription_transactions_target: "endMonthYearInput" }
+            data: {
+              action: "input->subscription-transactions#markEndMonthYearDirty input->subscription-transactions#syncDates",
+              subscription_transactions_target: "endMonthYearInput"
+            }
           )
         end
 
@@ -157,10 +164,10 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
             :subscription_card,
             id: :subscription_card,
             class: "w-full border border-slate-300 rounded-lg p-2 bg-white",
-            data: { subscription_transactions_target: "cardInput" }
+            data: { action: "change->subscription-transactions#syncDates", subscription_transactions_target: "cardInput" }
           ) do
             option(value: "") { model_attribute(CardTransaction, :user_card_id) }
-            options_for_select(user_cards)
+            options_for_select(user_card_options)
           end
         end
 

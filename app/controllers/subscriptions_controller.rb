@@ -9,10 +9,11 @@ class SubscriptionsController < ApplicationController
   before_action :set_subscription_tabs
 
   def index
-    @subscriptions = current_user.subscriptions.includes(:categories, :entities).order(:status, :description)
+    build_index_context
+    @subscriptions = subscriptions_scope
 
     respond_to do |format|
-      format.html { render Views::Subscriptions::Index.new(subscriptions: @subscriptions, mobile: @mobile) }
+      format.html { render Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile) }
       format.turbo_stream
     end
   end
@@ -46,11 +47,17 @@ class SubscriptionsController < ApplicationController
   end
 
   def destroy
-    @subscription.destroy
+    @subscription.destroy if @subscription.can_be_destroyed?
     load_subscriptions
 
     respond_to do |format|
-      format.html { redirect_to subscriptions_path, notice: notification_model(:destroyed, Subscription) }
+      format.html do
+        if @subscription.destroyed?
+          redirect_to subscriptions_path, notice: notification_model(:destroyed, Subscription)
+        else
+          redirect_to subscriptions_path, alert: notification_model(:not_destroyed, Subscription)
+        end
+      end
       format.turbo_stream
     end
   end
@@ -66,7 +73,33 @@ class SubscriptionsController < ApplicationController
   end
 
   def load_subscriptions
-    @subscriptions = current_user.subscriptions.includes(:categories, :entities).order(:status, :description)
+    @subscriptions = subscriptions_scope
+  end
+
+  def build_index_context
+    @index_context = {
+      current_user:,
+      search_term: search_subscription_params[:search_term],
+      category_id: Array(subscription_filter_params[:category_id]).compact_blank,
+      entity_id: Array(subscription_filter_params[:entity_id]).compact_blank,
+      status: Array(subscription_filter_params[:status]).compact_blank
+    }
+  end
+
+  def subscriptions_scope
+    build_index_context if @index_context.blank?
+
+    scope = current_user.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
+    scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
+    scope = scope.where(entities: { id: @index_context[:entity_id] }) if @index_context[:entity_id].present?
+
+    if @index_context[:search_term].present?
+      search_term = "%#{@index_context[:search_term].strip}%"
+      scope = scope.where("finance_subscriptions.description ILIKE :search OR finance_subscriptions.comment ILIKE :search", search: search_term)
+    end
+
+    scope.distinct.order(:status, :description)
   end
 
   def assign_associations
@@ -106,7 +139,17 @@ class SubscriptionsController < ApplicationController
     params.require(:subscription).permit(
       :description, :comment, :price, :status, :user_id, :category_id, :entity_id,
       cash_transactions_attributes: %i[id date price paid user_bank_account_id _destroy],
-      card_transactions_attributes: %i[id date price paid user_card_id _destroy]
+      card_transactions_attributes: %i[id date month year price paid user_card_id _destroy]
     )
+  end
+
+  def search_subscription_params
+    params.permit(:search_term)
+  end
+
+  def subscription_filter_params
+    return {} if params[:subscription].blank?
+
+    params.require(:subscription).permit(category_id: [], entity_id: [], status: [])
   end
 end

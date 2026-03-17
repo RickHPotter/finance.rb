@@ -24,6 +24,8 @@ class Views::Subscriptions::CardTransactionFields < Views::Base
       }
     ) do
       form.hidden_field :date
+      form.hidden_field :month
+      form.hidden_field :year
       form.hidden_field :user_card_id
       form.hidden_field :price, data: { subscription_transactions_target: "transactionPriceInput" }
 

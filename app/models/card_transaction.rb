@@ -27,7 +27,7 @@ class CardTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
-  after_save :update_month_year
+  after_save :update_month_year, :sync_subscription_installment
   after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
@@ -163,8 +163,20 @@ class CardTransaction < ApplicationRecord
     card_installments.new(number: 1, price:, date:) if card_installments.empty?
   end
 
+  def sync_subscription_installment
+    return if subscription_id.blank? || card_installments_count != 1
+
+    card_installments.first&.update_columns(
+      price:,
+      starting_price: price,
+      date:,
+      month:,
+      year:
+    )
+  end
+
   def update_month_year
-    return if destroyed?
+    return if destroyed? || subscription_id.present?
 
     cash_transaction = card_installments.order(:year, :month, :date).first.cash_transaction
     self.year        = cash_transaction.date.year

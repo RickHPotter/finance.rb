@@ -32,7 +32,7 @@ class CashTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_cash_installments
-  after_save :set_min_date
+  after_save :sync_subscription_installment, :set_min_date
   after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
@@ -131,6 +131,18 @@ class CashTransaction < ApplicationRecord
 
   def build_default_cash_installments
     cash_installments.new(number: 1, price:, date:) if cash_installments.empty?
+  end
+
+  def sync_subscription_installment
+    return if subscription_id.blank? || cash_installments_count != 1
+
+    cash_installments.first&.update_columns(
+      price:,
+      starting_price: price,
+      date:,
+      month:,
+      year:
+    )
   end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.

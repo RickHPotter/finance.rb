@@ -2,7 +2,7 @@
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Subscription) }) %>
 
-  <%= turbo_stream.replace(:center_container, Views::Subscriptions::Index.new(subscriptions: @subscriptions, mobile: @mobile)) %>
+  <%= turbo_stream.replace(:center_container, Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)) %>
 <% else %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Subscription) }) %>
 

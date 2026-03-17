@@ -13,8 +13,8 @@ class Subscription < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  has_many :cash_transactions, dependent: :nullify, inverse_of: :subscription
-  has_many :card_transactions, dependent: :nullify, inverse_of: :subscription
+  has_many :cash_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
+  has_many :card_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
   accepts_nested_attributes_for :cash_transactions, allow_destroy: true, reject_if: :all_blank
   accepts_nested_attributes_for :card_transactions, allow_destroy: true, reject_if: :all_blank
 
@@ -50,6 +50,10 @@ class Subscription < ApplicationRecord
 
   def refresh_price!
     update_columns(price: cash_transactions.sum(:price) + card_transactions.sum(:price))
+  end
+
+  def can_be_destroyed?
+    transactions_count.zero?
   end
 
   # @protected_instance_methods ...............................................
@@ -105,16 +109,23 @@ class Subscription < ApplicationRecord
       installment.assign_attributes(
         number: 1,
         price: transaction.price,
+        starting_price: transaction.price,
         date: transaction.date,
         month: transaction.date&.month || transaction.month,
         year: transaction.date&.year || transaction.year,
         paid: transaction.paid
       )
-      transaction.cash_installments_count = 1
     when CardTransaction
       installment = transaction.card_installments.first || transaction.card_installments.build
-      installment.assign_attributes(number: 1, price: transaction.price, date: transaction.date, paid: transaction.paid)
-      transaction.card_installments_count = 1
+      installment.assign_attributes(
+        number: 1,
+        price: transaction.price,
+        starting_price: transaction.price,
+        date: transaction.date,
+        month: transaction.month,
+        year: transaction.year,
+        paid: transaction.paid
+      )
     end
   end
 
@@ -124,7 +135,7 @@ class Subscription < ApplicationRecord
     if transaction.is_a?(CashTransaction)
       transaction.month = transaction.date.month
       transaction.year = transaction.date.year
-    elsif transaction.user_card_id.present?
+    elsif transaction.user_card_id.present? && (transaction.month.blank? || transaction.year.blank?)
       transaction.build_month_year
     end
   end

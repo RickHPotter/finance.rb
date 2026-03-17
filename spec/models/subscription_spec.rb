@@ -21,8 +21,8 @@ RSpec.describe Subscription, type: :model do
 
     context "( associations )" do
       it { should belong_to(:user) }
-      it { should have_many(:cash_transactions).dependent(:nullify) }
-      it { should have_many(:card_transactions).dependent(:nullify) }
+      it { should have_many(:cash_transactions).dependent(:restrict_with_exception) }
+      it { should have_many(:card_transactions).dependent(:restrict_with_exception) }
       it { should have_many(:category_transactions).dependent(:destroy) }
       it { should have_many(:entity_transactions).dependent(:destroy) }
       it { should accept_nested_attributes_for(:cash_transactions) }
@@ -75,6 +75,15 @@ RSpec.describe Subscription, type: :model do
         expect(subscription.reload.price).to eq(125)
       end
 
+      it "can be destroyed only when it has no linked transactions" do
+        subscription = create(:subscription)
+        expect(subscription).to be_can_be_destroyed
+
+        create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user), subscription:)
+
+        expect(subscription.reload).not_to be_can_be_destroyed
+      end
+
       it "propagates subscription metadata into linked cash transactions" do
         subscription = build(:subscription, description: "Gym", comment: "Monthly")
         category = create(:category, :random, user: subscription.user)
@@ -93,7 +102,7 @@ RSpec.describe Subscription, type: :model do
         expect(cash_transaction.comment).to eq("Monthly")
         expect(cash_transaction.categories.map(&:category_name)).to include(category.category_name, "SUBSCRIPTION")
         expect(cash_transaction.entities).to include(entity)
-        expect(cash_transaction.cash_installments_count).to eq(1)
+        expect(cash_transaction.cash_installments.size).to eq(1)
       end
 
       it "requires a card for linked card transactions" do
@@ -102,6 +111,59 @@ RSpec.describe Subscription, type: :model do
 
         expect(subscription).to be_invalid
         expect(subscription.card_transactions.first.errors[:user_card_id]).to be_present
+      end
+
+      it "derives linked card transaction month and year from the card billing cycle" do
+        subscription = build(:subscription)
+        user_card = create(:user_card, user: subscription.user, due_date_day: 10, days_until_due_date: 5)
+
+        subscription.card_transactions.build(user_card:, date: Date.new(2026, 3, 6), price: -100)
+
+        subscription.valid?
+
+        card_transaction = subscription.card_transactions.first
+
+        expect(card_transaction.month).to eq(4)
+        expect(card_transaction.year).to eq(2026)
+      end
+
+      it "keeps an explicit linked card transaction month and year override" do
+        subscription = build(:subscription)
+        user_card = create(:user_card, user: subscription.user, due_date_day: 10, days_until_due_date: 5)
+
+        subscription.card_transactions.build(user_card:, date: Date.new(2026, 3, 6), month: 3, year: 2026, price: -100)
+
+        subscription.valid?
+
+        card_transaction = subscription.card_transactions.first
+
+        expect(card_transaction.month).to eq(3)
+        expect(card_transaction.year).to eq(2026)
+        expect(card_transaction.card_installments.first.month).to eq(3)
+        expect(card_transaction.card_installments.first.year).to eq(2026)
+      end
+
+      it "updates linked installment prices when a linked transaction price changes" do
+        subscription = create(:subscription)
+        user_card = create(:user_card, user: subscription.user)
+        card_transaction = create(:card_transaction, user: subscription.user, user_card:, subscription:, price: -1_600)
+
+        subscription.reload.update!(
+          card_transactions_attributes: {
+            "0" => { id: card_transaction.id, date: card_transaction.date, price: -1_100, user_card_id: user_card.id }
+          }
+        )
+
+        expect(card_transaction.reload.price).to eq(-1_100)
+        expect(card_transaction.card_installments.first.price).to eq(-1_100)
+        expect(card_transaction.card_installments.first.starting_price).to eq(-1_100)
+      end
+
+      it "raises when trying to destroy a subscription with linked transactions" do
+        subscription = create(:subscription)
+        create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user), subscription:)
+
+        expect { subscription.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
       end
     end
   end

@@ -141,7 +141,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
 
           div(class: "flex flex-wrap items-center gap-1") do
-            render_mobile_categories(cash_transaction, style)
+            render_mobile_categories(cash_transaction)
 
             render_mobile_entities(cash_transaction, avatar_name)
           end
@@ -232,7 +232,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        render_desktop_categories(cash_transaction, style)
+        render_desktop_categories(cash_transaction)
 
         render_desktop_entities(cash_transaction, avatar_name)
 
@@ -279,9 +279,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def render_mobile_categories(cash_transaction, style)
+  def render_mobile_categories(cash_transaction)
     render Views::Categories::Popover.new(
-      items: cash_category_popover_items(cash_transaction, style),
+      items: cash_category_popover_items(cash_transaction),
       mobile: true,
       target_ids: cash_transaction.categories.map(&:id),
       trigger_label: pluralise_model(Category, categories_for(cash_transaction).count).upcase,
@@ -289,9 +289,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def render_desktop_categories(cash_transaction, style)
+  def render_desktop_categories(cash_transaction)
     render Views::Categories::Popover.new(
-      items: cash_category_popover_items(cash_transaction, style),
+      items: cash_category_popover_items(cash_transaction),
       mobile: false,
       target_ids: cash_transaction.categories.map(&:id),
       trigger_label: "",
@@ -303,13 +303,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
   end
 
-  def cash_category_popover_items(cash_transaction, style)
-    border = style.split("; color:").last
-
+  def cash_category_popover_items(cash_transaction)
     categories_for(cash_transaction).map do |category|
       {
-        name: category.name,
-        style: "border-color: #{border}"
+        name: category.name
       }
     end
   end

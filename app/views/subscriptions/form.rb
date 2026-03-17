@@ -75,7 +75,7 @@ class Views::Subscriptions::Form < Views::Base
                 class: "w-64"
               ) { action_model(:submit, subscription) }
 
-              if subscription.persisted?
+              if subscription.persisted? && subscription.can_be_destroyed?
                 Button(
                   id: "delete_subscription_#{subscription.id}",
                   type: :submit,
@@ -90,7 +90,11 @@ class Views::Subscriptions::Form < Views::Base
           end
         end
 
-        render Views::Subscriptions::AddTransactionModal.new(user_cards: @user_cards, user_bank_accounts: @user_bank_accounts)
+        render Views::Subscriptions::AddTransactionModal.new(
+          user_cards: @user_cards,
+          user_bank_accounts: @user_bank_accounts,
+          user_card_options: subscription_modal_user_card_options
+        )
       end
     end
   end
@@ -178,5 +182,18 @@ class Views::Subscriptions::Form < Views::Base
 
   def next_transaction_button_class
     "rounded-sm border border-emerald-800 bg-emerald-600 px-3 py-2 font-thin text-white shadow-lg transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+  end
+
+  def subscription_modal_user_card_options
+    current_user.user_cards.active.order(:user_card_name).map do |user_card|
+      [
+        user_card.user_card_name,
+        user_card.id,
+        {
+          "data-due-date-day": user_card.due_date_day,
+          "data-days-until-due-date": user_card.days_until_due_date
+        }
+      ]
+    end
   end
 end

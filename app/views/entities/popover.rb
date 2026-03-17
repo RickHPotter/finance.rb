@@ -24,14 +24,17 @@ class Views::Entities::Popover < Views::Base
 
   def render_mobile
     if items.one?
-      items.each do |item|
-        render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6 mb-1", name_class: mobile_name_class)
-      end
+      render_item(
+        items.first,
+        wrapper_class: mobile_single_item_wrapper_class,
+        avatar_class: mobile_trigger_avatar_class,
+        name_class: mobile_trigger_label_class
+      )
     else
-      Popover(options: { placement: "top-end" }, class: "ml-auto w-full") do
+      Popover(options: { placement: "top-end" }, class: mobile_popover_class) do
         PopoverTrigger(class: "w-full") do
           button(type: :button, class: mobile_trigger_button_class) do
-            render_avatar_stack(items, avatar_class: "size-6", limit: 3)
+            render_avatar_stack(items, avatar_class: mobile_trigger_avatar_class, limit: 3)
             span(class: mobile_trigger_label_class) { trigger_label }
           end
         end
@@ -102,6 +105,8 @@ class Views::Entities::Popover < Views::Base
   end
 
   def mobile_container_class
+    return "flex h-full items-center justify-center gap-2" if variant == :subscription
+
     "flex flex-wrap justify-end gap-2 ml-auto"
   end
 
@@ -113,6 +118,12 @@ class Views::Entities::Popover < Views::Base
     "flex flex-col items-center w-16 text-center text-inherit"
   end
 
+  def mobile_single_item_wrapper_class
+    alignment = "items-center"
+    width = variant == :subscription ? "" : "w-full"
+    "#{width} flex min-h-[3.25rem] flex-col justify-center gap-1 text-inherit #{alignment}".strip
+  end
+
   def desktop_item_wrapper_class
     "flex items-center gap-2 text-xs text-inherit"
   end
@@ -122,11 +133,21 @@ class Views::Entities::Popover < Views::Base
   end
 
   def mobile_trigger_button_class
-    "w-full flex items-center justify-end gap-1 cursor-pointer"
+    return "inline-flex min-h-[3.25rem] flex-col items-center justify-center gap-1 cursor-pointer" if variant == :subscription
+
+    "w-full flex min-h-[3.25rem] flex-col items-center justify-center gap-1 cursor-pointer"
   end
 
   def mobile_trigger_label_class
-    "text-xs underline underline-offset-[3px] whitespace-nowrap"
+    "block min-w-16 text-xs underline underline-offset-[3px] text-center"
+  end
+
+  def mobile_popover_class
+    variant == :subscription ? "inline-flex" : "ml-auto w-full"
+  end
+
+  def mobile_trigger_avatar_class
+    "size-6"
   end
 
   def desktop_single_button_class
