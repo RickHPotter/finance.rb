@@ -31,7 +31,7 @@ class Views::Subscriptions::Index < Views::Base
           action_model(:newa, Subscription),
           new_subscription_path,
           class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-          data: { turbo_frame: :_top }
+          data: { turbo_frame: "_top" }
         )
       end
 
@@ -57,7 +57,7 @@ class Views::Subscriptions::Index < Views::Base
                     render Views::Subscriptions::Subscription.new(subscription:, mobile: false)
                   end
                 else
-                  div(class: "border-b border-slate-200 bg-white py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+                  div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
                 end
               end
             end
@@ -91,7 +91,7 @@ class Views::Subscriptions::Index < Views::Base
             new_subscription_path,
             style: "margin: 30px",
             class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
-            data: { turbo_frame: :_top }
+            data: { turbo_frame: "_top" }
           ) { cached_icon(:bigger_plus) }
         end
       end

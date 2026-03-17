@@ -78,14 +78,14 @@ module Params
     private
 
     def assign_card_transaction(card_transaction, card_transaction_options: {})
-      @description  = card_transaction_options[:description]  || card_transaction[:description]
-      @date         = card_transaction_options[:date]         || card_transaction[:date]
-      @month        = card_transaction_options[:month]        || card_transaction[:month]
-      @year         = card_transaction_options[:year]         || card_transaction[:year]
-      @price        = card_transaction_options[:price]        || card_transaction[:price]
-      @paid         = card_transaction_options[:paid]         || card_transaction[:paid]
-      @user_id      = card_transaction_options[:user_id]      || card_transaction[:user_id]
-      @user_card_id = card_transaction_options[:user_card_id] || card_transaction[:user_card_id]
+      @description     = card_transaction_options[:description]     || card_transaction[:description]
+      @date            = card_transaction_options[:date]            || card_transaction[:date]
+      @month           = card_transaction_options[:month]           || card_transaction[:month]
+      @year            = card_transaction_options[:year]            || card_transaction[:year]
+      @price           = card_transaction_options[:price]           || card_transaction[:price]
+      @paid            = card_transaction_options[:paid]            || card_transaction[:paid]
+      @user_id         = card_transaction_options[:user_id]         || card_transaction[:user_id]
+      @user_card_id    = card_transaction_options[:user_card_id]    || card_transaction[:user_card_id]
       @subscription_id = card_transaction_options[:subscription_id] || card_transaction[:subscription_id]
     end
 

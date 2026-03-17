@@ -45,7 +45,8 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
           select_tag(
             :subscription_interval_months,
             id: :subscription_interval_months,
-            class: "w-full rounded-lg border border-slate-300 bg-white p-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400",
+            class: "w-full rounded-lg border border-slate-300 bg-white p-2
+                    disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400",
             data: { action: "change->subscription-transactions#syncDates", subscription_transactions_target: "intervalInput" }
           ) do
             options_for_select(

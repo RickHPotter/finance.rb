@@ -38,7 +38,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
             user_bank_account.cash_transactions_count,
             cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { user_bank_account.cash_transactions_count }
@@ -60,7 +60,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
         div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
           link_to(edit_user_bank_account_path(user_bank_account), id: "edit_user_bank_account_#{user_bank_account.id}",
                                                                   class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                                                  data: { turbo_frame: :_top }) { cached_icon(:pencil) }
+                                                                  data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
 
           link_to(user_bank_account_path(user_bank_account), id: "delete_user_bank_account_#{user_bank_account.id}",
                                                              class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
@@ -82,12 +82,12 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
               edit_user_bank_account_path(user_bank_account),
               id: "edit_user_bank_account_#{user_bank_account.id}",
               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-              data: { turbo_frame: :_top }
+              data: { turbo_frame: "_top" }
             )
           end
 
           link_to(cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
-                  data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
         end
       end
 

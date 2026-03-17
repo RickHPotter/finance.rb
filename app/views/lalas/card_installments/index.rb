@@ -177,7 +177,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
-        info_class: "hidden entity_exchanges_info",
+        info_class: "entity_exchanges_info text-[10px] leading-tight text-zinc-500",
         info_text: entity_exchanges_info(entity_transaction)
       }
     end

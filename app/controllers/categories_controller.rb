@@ -47,6 +47,10 @@ class CategoriesController < ApplicationController
     if @category.valid? && @category.active? && !@category.built_in?
       @card_transaction = Logic::CardTransactions.create_from(category: @category)
       set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name || :search)
+    else
+      params[:include_inactive] ||= "false"
+      conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
+      @categories = current_user.categories.where(conditions).order(category_name: :asc)
     end
 
     respond_to(&:turbo_stream)

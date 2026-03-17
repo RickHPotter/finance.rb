@@ -52,9 +52,7 @@ class Views::Entities::Popover < Views::Base
 
   def render_desktop
     if items.one?
-      button(type: :button, class: desktop_single_button_class) do
-        render_item(items.first, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: "entity_entity_name")
-      end
+      render_item(items.first, wrapper_class: desktop_single_button_class, avatar_class: "size-5", name_class: "entity_entity_name")
     else
       Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
         PopoverTrigger(class: "w-full") do
@@ -90,7 +88,7 @@ class Views::Entities::Popover < Views::Base
   def render_item_content(item, avatar_class:, name_class:)
     image_tag asset_path("avatars/#{item[:avatar_name]}"), class: "bg-white rounded-full #{avatar_class}"
     span(class: name_class) { item[:name] }
-    span(class: item[:info_class]) { item[:info_text] } if item[:info_class].present?
+    span(class: item[:info_class]) { item[:info_text] } if item[:info_class].present? && item[:info_text].present?
   end
 
   def render_avatar_stack(items, avatar_class:, limit:)
@@ -151,7 +149,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_single_button_class
-    "flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-inherit"
+    "inline-flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-inherit"
   end
 
   def desktop_trigger_button_class

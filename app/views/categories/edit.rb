@@ -20,7 +20,7 @@ class Views::Categories::Edit < Views::Base
             pluralise_model(Category, 2),
             categories_path,
             class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-            data: { turbo_frame: :_top }
+            data: { turbo_frame: "_top" }
           )
         end
 

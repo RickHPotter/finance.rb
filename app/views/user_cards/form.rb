@@ -131,11 +131,14 @@ class Views::UserCards::Form < Views::Base
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_closing_date, format: :short) }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_date, format: :short) }
                   div(class: "flex items-center justify-center") do
-                    link_to(edit_user_card_reference_path(user_card, reference), class: "text-blue-600 hover:text-blue-800 mx-2", data: { turbo_frame: :_top }) do
+                    link_to(edit_user_card_reference_path(user_card, reference), class: "text-blue-600 hover:text-blue-800 mx-2", data: { turbo_frame: "_top" }) do
                       cached_icon(:pencil)
                     end
-                    link_to(merge_user_card_references_path(user_card, id: reference.id), class: "text-gray-700 hover:text-gray-800 mx-2",
-                                                                                          data: { turbo_frame: :_top }) do
+                    link_to(
+                      merge_user_card_references_path(user_card, id: reference.id),
+                      class: "text-gray-700 hover:text-gray-800 mx-2",
+                      data: { turbo_frame: "_top" }
+                    ) do
                       cached_icon(:uturn_right)
                     end
                   end

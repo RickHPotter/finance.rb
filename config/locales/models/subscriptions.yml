@@ -11,7 +11,7 @@ en:
         description_placeholder: SUBSCRIPTION
         comment: Comment
         comment_placeholder: Notes about how this subscription behaves...
-        price: Generated Amount
+        price: Price
         status: Status
         category_id: Category
         entity_id: Entity

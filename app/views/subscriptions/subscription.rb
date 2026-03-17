@@ -60,7 +60,7 @@ class Views::Subscriptions::Subscription < Views::Base
           edit_subscription_path(subscription),
           id: "edit_subscription_#{subscription.id}",
           class: "mx-1 rounded-4xl bg-sky-200 text-blue-600 hover:text-blue-800",
-          data: { turbo_frame: :_top }
+          data: { turbo_frame: "_top" }
         ) { cached_icon(:pencil) }
       end
     end
@@ -78,7 +78,7 @@ class Views::Subscriptions::Subscription < Views::Base
           edit_subscription_path(subscription),
           id: "edit_subscription_#{subscription.id}",
           class: "block text-lg font-semibold text-slate-900 underline underline-offset-[3px]",
-          data: { turbo_frame: :_top }
+          data: { turbo_frame: "_top" }
         )
 
         p(class: "mt-2 text-sm text-slate-500") { subscription.comment } if subscription.comment.present?

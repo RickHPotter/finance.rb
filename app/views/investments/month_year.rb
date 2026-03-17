@@ -61,7 +61,7 @@ class Views::Investments::MonthYear < Views::Base
           if investments.present?
             render_investments
           else
-            div(class: "text-lg") { I18n.t(:rows_not_found) }
+            div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
           end
 
           div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
@@ -91,12 +91,12 @@ class Views::Investments::MonthYear < Views::Base
                         edit_investment_path(investment),
                         id: "edit_investment_#{investment.id}",
                         class: "truncate text-md underline underline-offset-[3px]",
-                        data: { turbo_frame: :_top }
+                        data: { turbo_frame: "_top" }
 
                 link_to investment.user_bank_account.user_bank_account_name,
                         new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
                         class: "p-1 rounded-sm bg-white border border-black flex-shrink-0",
-                        data: { turbo_frame: :_top }
+                        data: { turbo_frame: "_top" }
               end
             end
 
@@ -144,14 +144,14 @@ class Views::Investments::MonthYear < Views::Base
                     edit_investment_path(investment),
                     id: "edit_investment_#{investment.id}",
                     class: "flex-1 truncate text-md underline underline-offset-[3px]",
-                    data: { turbo_frame: :_top }
+                    data: { turbo_frame: "_top" }
           end
 
           div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
                     new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
                     class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm underline bg-white border-black text-indigo-600",
-                    data: { turbo_frame: :_top }
+                    data: { turbo_frame: "_top" }
           end
 
           div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do

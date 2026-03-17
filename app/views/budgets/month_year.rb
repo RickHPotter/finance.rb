@@ -54,7 +54,7 @@ class Views::Budgets::MonthYear < Views::Base
           if budgets.present?
             render Views::Budgets::Budgets.new(mobile:, budgets:)
           else
-            div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+            div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
           end
 
           div(class: "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do

@@ -106,27 +106,23 @@ class Subscription < ApplicationRecord
     case transaction
     when CashTransaction
       installment = transaction.cash_installments.first || transaction.cash_installments.build
-      installment.assign_attributes(
-        number: 1,
-        price: transaction.price,
-        starting_price: transaction.price,
-        date: transaction.date,
-        month: transaction.date&.month || transaction.month,
-        year: transaction.date&.year || transaction.year,
-        paid: transaction.paid
-      )
+      month       = transaction.date&.month || transaction.month
+      year        = transaction.date&.year || transaction.year
     when CardTransaction
       installment = transaction.card_installments.first || transaction.card_installments.build
-      installment.assign_attributes(
-        number: 1,
-        price: transaction.price,
-        starting_price: transaction.price,
-        date: transaction.date,
-        month: transaction.month,
-        year: transaction.year,
-        paid: transaction.paid
-      )
+      month       = transaction.month
+      year        = transaction.year
     end
+
+    installment.assign_attributes(
+      number: 1,
+      price: transaction.price,
+      starting_price: transaction.price,
+      date: transaction.date,
+      month:,
+      year:,
+      paid: transaction.paid
+    )
   end
 
   def sync_transaction_month_year(transaction)

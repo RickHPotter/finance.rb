@@ -181,7 +181,9 @@ class Views::Subscriptions::Form < Views::Base
   end
 
   def next_transaction_button_class
-    "rounded-sm border border-emerald-800 bg-emerald-600 px-3 py-2 font-thin text-white shadow-lg transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+    "rounded-sm border border-emerald-800 bg-emerald-600 px-3 py-2
+     font-thin text-white shadow-lg transition-colors hover:bg-emerald-700
+     disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
   end
 
   def subscription_modal_user_card_options
