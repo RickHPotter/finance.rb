@@ -25,14 +25,17 @@ class InvestmentsController < ApplicationController
   end
 
   def new
-    @investment = current_user.investments.new(
-      user_bank_account_id: investment_params[:user_bank_account_id],
-      investment_type_id: investment_params[:investment_type_id]
-    )
+    user_bank_account_id = investment_params[:user_bank_account_id]
+    investment_type_id = investment_params[:investment_type_id]
 
-    investments = @investment.user_bank_account.investments if @investment.user_bank_account.present?
-    @investment.date = investments.max_by(&:date)&.date     if investments
-    @investment.date = @investment.date + 1.day             if params[:next_day]
+    @investment = current_user.investments.new(user_bank_account_id:, investment_type_id:)
+
+    if user_bank_account_id && investment_type_id
+      investments = @investment.user_bank_account.investments.where(investment_type_id:)
+      @investment.date = investments.maximum(:date)
+    end
+
+    @investment.date = @investment.date + 1.day if params[:next_day]
     @investment.date ||= Time.zone.now
 
     respond_to do |format|

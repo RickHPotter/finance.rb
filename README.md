@@ -41,9 +41,9 @@ Sprint 2 (`Sasuke`) focused on product hardening: better mobile and PWA experien
 Hotwire-driven flows, bulk actions, references, chat, notifications, infrastructure
 improvements, naming consistency, and performance cleanup.
 
-Sprint 3 (`Jiraya`) is the next more deliberately planned sprint, focused on
-recurrence, scenario planning, analysis screens, stronger consistency rules, and
-faster day-to-day workflows.
+Sprint 3 (`Jiraiya`) is the next more deliberately planned sprint, focused on
+recurring-transaction helpers, scenario planning, analysis screens, stronger
+consistency rules, and faster day-to-day workflows.
 
 For the detailed sprint history:
 

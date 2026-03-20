@@ -8,6 +8,7 @@ class CardTransaction < ApplicationRecord
   include HasCardInstallments
   include CategoryTransactable
   include EntityTransactable
+  include HasSubscription
   include HasAdvancePayments
   include Budgetable
   include FriendNotifiable
@@ -26,7 +27,7 @@ class CardTransaction < ApplicationRecord
   # @callbacks ................................................................
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
-  after_save :update_month_year
+  after_save :update_month_year, :sync_subscription_installment
   after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
@@ -162,8 +163,20 @@ class CardTransaction < ApplicationRecord
     card_installments.new(number: 1, price:, date:) if card_installments.empty?
   end
 
+  def sync_subscription_installment
+    return if subscription_id.blank? || card_installments_count != 1
+
+    card_installments.first&.update_columns(
+      price:,
+      starting_price: price,
+      date:,
+      month:,
+      year:
+    )
+  end
+
   def update_month_year
-    return if destroyed?
+    return if destroyed? || subscription_id.present?
 
     cash_transaction = card_installments.order(:year, :month, :date).first.cash_transaction
     self.year        = cash_transaction.date.year
@@ -211,6 +224,7 @@ end
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
+#  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
 #  user_id                     :bigint           not null, indexed
 #
@@ -220,6 +234,7 @@ end
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
+#  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
 #  index_card_transactions_on_user_id                      (user_id)
 #  index_reference_transactable_on_card_composite_key      (reference_transactable_type,reference_transactable_id) UNIQUE
@@ -227,6 +242,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)
 #

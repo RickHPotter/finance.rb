@@ -25,16 +25,16 @@ class Views::Categories::Popover < Views::Base
     if items.one?
       render_pill(items.first, class: mobile_pill_class)
     else
-      Popover(options: { placement: "top-end" }, class: "ml-auto") do
+      Popover(options: { placement: "top-start" }, class: mobile_popover_class) do
         PopoverTrigger(class: "w-full") do
           button(type: :button, class: mobile_trigger_button_class) do
             render_pill(items.first, class: mobile_pill_class)
-            span(class: mobile_trigger_label_class) { trigger_label }
+            span(class: mobile_counter_class) { "+#{items.count - 1}" }
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 mr-2") do
-          div(class: "flex max-w-56 flex-wrap justify-end gap-1") do
+        PopoverContent(class: "z-50 !opacity-100") do
+          div(class: "flex max-w-56 flex-wrap justify-start gap-1") do
             items.each do |item|
               render_pill(item, class: mobile_pill_class)
             end
@@ -72,7 +72,9 @@ class Views::Categories::Popover < Views::Base
   end
 
   def mobile_container_class
-    "ml-auto flex flex-wrap items-center justify-end gap-1"
+    return "flex h-full items-center justify-center gap-1" if variant == :subscription
+
+    "flex flex-wrap items-center justify-start gap-1"
   end
 
   def desktop_container_class
@@ -88,15 +90,25 @@ class Views::Categories::Popover < Views::Base
   end
 
   def base_pill_class(size_class)
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 #{size_class}"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black #{size_class}"
   end
 
   def mobile_trigger_button_class
-    "flex items-center justify-end gap-1"
+    return "inline-flex items-center justify-center gap-1" if variant == :subscription
+
+    "flex w-full items-center justify-start gap-1"
   end
 
   def mobile_trigger_label_class
     "text-xs underline underline-offset-[3px] whitespace-nowrap"
+  end
+
+  def mobile_popover_class
+    variant == :subscription ? "inline-flex" : "w-full"
+  end
+
+  def mobile_counter_class
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs"
   end
 
   def desktop_counter_class

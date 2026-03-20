@@ -104,7 +104,7 @@ class Views::Investments::IndexSearchForm < Views::Base
                 id: "new_card_transaction",
                 class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
                         text-black hover:text-white font-thin items-center gap-2",
-                data: { turbo_frame: :_top, turbo_prefetch: false } do
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
           span { action_message(:new) }
           span { pluralise_model(Investment, 1) }
         end

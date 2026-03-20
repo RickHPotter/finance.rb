@@ -36,3 +36,21 @@ RSpec.describe InvestmentType, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: investment_types
+# Database name: primary
+#
+#  id                            :bigint           not null, primary key
+#  built_in                      :boolean          default(FALSE), not null, indexed
+#  investment_type_code          :string           uniquely indexed
+#  investment_type_name_fallback :string           not null
+#  created_at                    :datetime         not null
+#  updated_at                    :datetime         not null
+#
+# Indexes
+#
+#  index_investment_types_on_built_in              (built_in)
+#  index_investment_types_on_investment_type_code  (investment_type_code) UNIQUE
+#

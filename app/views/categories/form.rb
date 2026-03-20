@@ -43,11 +43,11 @@ class Views::Categories::Form < Views::Base
           form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: category.new_record? || category.active
         end
 
-        div(class: "w-full") { render RubyUI::Button.new(type: :submit, variant: :purple) { action_model(:submit, category) } }
+        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, category) } }
 
         if category.persisted? && category.built_in == false
           div(class: "w-full") do
-            render RubyUI::Button.new(
+            Button(
               id: "delete_category_#{category.id}",
               type: :submit,
               variant: :destructive,

@@ -77,7 +77,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                         investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         title: cash_transaction.comment,
-                        data: { turbo_frame: :_top, turbo_prefetch: false }
+                        data: { turbo_frame: "_top", turbo_prefetch: false }
               elsif cash_transaction.card_advance?
                 card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
                 default_year = card_.year
@@ -87,13 +87,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                         card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         title: cash_transaction.comment,
-                        data: { turbo_frame: :_top, turbo_prefetch: false }
+                        data: { turbo_frame: "_top", turbo_prefetch: false }
               else
                 link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
                         id: "edit_cash_transaction_#{cash_transaction.id}",
                         class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
                         title: cash_transaction.comment,
-                        data: { turbo_frame: :_top }
+                        data: { turbo_frame: "_top" }
               end
 
               span(class: "flex-shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
@@ -141,7 +141,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
 
           div(class: "flex flex-wrap items-center gap-1") do
-            render_mobile_categories(cash_transaction, style)
+            render_mobile_categories(cash_transaction)
 
             render_mobile_entities(cash_transaction, avatar_name)
           end
@@ -207,7 +207,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                     investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     title: cash_transaction.comment,
-                    data: { turbo_frame: :_top, turbo_prefetch: false }
+                    data: { turbo_frame: "_top", turbo_prefetch: false }
           elsif cash_transaction.card_advance?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
             default_year = card_.year
@@ -217,14 +217,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                     card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     title: cash_transaction.comment,
-                    data: { turbo_frame: :_top, turbo_prefetch: false }
+                    data: { turbo_frame: "_top", turbo_prefetch: false }
           else
             link_to cash_transaction.description,
                     edit_cash_transaction_path(cash_transaction),
                     id: "edit_cash_transaction_#{cash_transaction.id}",
                     class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
                     title: cash_transaction.comment,
-                    data: { turbo_frame: :_top }
+                    data: { turbo_frame: "_top" }
           end
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
@@ -232,7 +232,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           end
         end
 
-        render_desktop_categories(cash_transaction, style)
+        render_desktop_categories(cash_transaction)
 
         render_desktop_entities(cash_transaction, avatar_name)
 
@@ -279,9 +279,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def render_mobile_categories(cash_transaction, style)
+  def render_mobile_categories(cash_transaction)
     render Views::Categories::Popover.new(
-      items: cash_category_popover_items(cash_transaction, style),
+      items: cash_category_popover_items(cash_transaction),
       mobile: true,
       target_ids: cash_transaction.categories.map(&:id),
       trigger_label: pluralise_model(Category, categories_for(cash_transaction).count).upcase,
@@ -289,9 +289,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def render_desktop_categories(cash_transaction, style)
+  def render_desktop_categories(cash_transaction)
     render Views::Categories::Popover.new(
-      items: cash_category_popover_items(cash_transaction, style),
+      items: cash_category_popover_items(cash_transaction),
       mobile: false,
       target_ids: cash_transaction.categories.map(&:id),
       trigger_label: "",
@@ -303,30 +303,40 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
   end
 
-  def cash_category_popover_items(cash_transaction, style)
-    border = style.split("; color:").last
-
+  def cash_category_popover_items(cash_transaction)
     categories_for(cash_transaction).map do |category|
       {
-        name: category.name,
-        style: "border-color: #{border}"
+        name: category.name
       }
     end
   end
 
   def entities_for(cash_transaction, sort_key)
-    cash_transaction.entity_transactions.sort_by(&sort_key).filter_map(&:entity)
+    cash_transaction.entity_transactions.includes(:entity).sort_by(&sort_key)
   end
 
   def cash_entity_popover_items(cash_transaction, avatar_name, sort_key)
-    entities_for(cash_transaction, sort_key).map do |entity|
+    entities_for(cash_transaction, sort_key).map do |entity_transaction|
+      entity = entity_transaction.entity
+
+      next if entity.nil?
+
       {
         name: entity.entity_name,
         avatar_name: avatar_name || entity.avatar_name,
-        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
-        data: { turbo_frame: "_top", turbo_prefetch: "false" }
+        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
+        data: { turbo_frame: "_top", turbo_prefetch: "false" },
+        info_class: "entity_exchanges_info text-[10px] leading-tight opacity-60",
+        info_text: entity_exchanges_info(entity_transaction)
       }
     end
+  end
+
+  def entity_exchanges_info(entity_transaction)
+    info = ""
+    info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
+    info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
+    info
   end
 
   def render_row_checkbox(cash_installment, mobile: false)

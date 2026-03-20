@@ -33,14 +33,14 @@ class Views::UserCards::Index < Views::Base
         action_model(:new, UserCard),
         new_user_card_path,
         class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-        data: { turbo_frame: :_top }
+        data: { turbo_frame: "_top" }
       )
 
       link_to(
         include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
         user_cards_path(include_inactive: include_inactive?),
         class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-        data: { turbo_frame: :_top }
+        data: { turbo_frame: "_top" }
       )
     end
 
@@ -99,7 +99,7 @@ class Views::UserCards::Index < Views::Base
                 include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
                 user_cards_path(include_inactive: include_inactive?),
                 class: "p-1 rounded-sm border border-slate-700 bg-sky-500 hover:bg-blue-400 transition-colors text-white shadow-lg font-thin",
-                data: { turbo_frame: :_top }
+                data: { turbo_frame: "_top" }
               )
 
               text_field_tag(
@@ -127,7 +127,7 @@ class Views::UserCards::Index < Views::Base
             new_user_card_path,
             style: "margin: 30px",
             class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
-            data: { turbo_frame: :_top }
+            data: { turbo_frame: "_top" }
           ) { cached_icon(:bigger_plus) }
         end
       end

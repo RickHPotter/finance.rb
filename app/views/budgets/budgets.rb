@@ -54,7 +54,7 @@ class Views::Budgets::Budgets < Views::Base
                       edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
-                      data: { turbo_frame: :_top }
+                      data: { turbo_frame: "_top" }
 
               span(class: "flex-shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
                 from_cent_based_to_float(budget.value, "R$")
@@ -121,7 +121,7 @@ class Views::Budgets::Budgets < Views::Base
                   edit_budget_path(budget),
                   id: "edit_budget_#{budget.id}",
                   class: "flex-1 truncate text-md",
-                  data: { turbo_frame: :_top }
+                  data: { turbo_frame: "_top" }
 
           span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 opacity-0") do
             pretty_installments(1, 1)
@@ -195,7 +195,7 @@ class Views::Budgets::Budgets < Views::Base
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
-        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, format: :turbo_stream),
+        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
         data: { turbo_frame: "_top", turbo_prefetch: "false" }
       }
     end

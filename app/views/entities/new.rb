@@ -20,7 +20,7 @@ class Views::Entities::New < Views::Base
             pluralise_model(Entity, 2),
             entities_path,
             class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-            data: { turbo_frame: :_top }
+            data: { turbo_frame: "_top" }
           )
         end
 

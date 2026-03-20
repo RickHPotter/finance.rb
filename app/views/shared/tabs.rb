@@ -33,20 +33,19 @@ class Views::Shared::Tabs < Views::Base
 
   def render_tabs_content(items:, dependents:, default:, dependent:, dependent_no:)
     ul(
-      class: "relative flex list-none rounded-xl p-1 overflow-x-auto",
+      class: tabs_list_classes(dependent:),
       data: { tabs: "tabs", default:, material_tailwind_tab_lite_target: "tabList" },
       role: :list
     ) do
       extra_data = dependent ? { action: "click->material-tailwind-tab-lite#updateParentLink", parent_id: dependent_no } : {}
 
       items.each_with_index do |item, index|
-        li(class: "ring-1 rounded-lg ring-gray-800 z-30 flex-auto text-center w-1/#{items.count}") do
+        li(class: tabs_item_classes(items.count)) do
           link_to(
             item.link,
             role: :tab,
             aria: { selected: item.default, controls: "tab-item-#{index}" },
-            class: "relative z-30 mb-0 flex items-center justify-center rounded-lg border-0 px-4 py-1 transition-opacity duration-300
-                   #{item.default ? 'bg-sky-500 text-white' : 'bg-inherit'}".squish,
+            class: tabs_link_classes(item.default),
             data: {
               turbo_frame: item.turbo_frame,
               turbo_prefetch: false,
@@ -60,14 +59,14 @@ class Views::Shared::Tabs < Views::Base
             notification = "bg-red-500" if item.notification_type == 2
 
             if notification
-              span(class: "absolute flex size-2 md:size-3 z-30 left-2 pointer-events-none") do
+              span(class: notification_classes) do
                 span(class: "relative inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-80")
                 span(class: "absolute inline-flex rounded-full size-2 md:size-3 #{notification}")
               end
             end
 
             span(class: "pointer-events-none") { cached_icon(item.icon) }
-            span(class: "ml-1 pointer-events-none text-slate-100 text-xs md:text-md font-light md:font-bold text-nowrap") { item.label }
+            span(class: tabs_label_classes) { item.label }
           end
         end
       end
@@ -81,5 +80,46 @@ class Views::Shared::Tabs < Views::Base
         render_tabs(items: partial_items, default: current_index_is_default, dependent: true, dependent_no: index)
       end
     end
+  end
+
+  def tabs_list_classes(dependent:)
+    return "relative flex list-none rounded-xl p-1 overflow-x-auto" unless mobile
+
+    base_classes = "
+      relative flex list-none overflow-x-auto overscroll-x-contain whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none]
+      justify-center gap-1 rounded-2xl border border-slate-700/70 bg-slate-900/60 px-1.5 py-1
+      ".squish
+
+    "#{base_classes} #{dependent ? 'mt-2' : 'shadow-sm'}".squish
+  end
+
+  def tabs_item_classes(items_count)
+    return "ring-1 rounded-lg ring-gray-800 z-30 flex-auto text-center w-1/#{items_count}" unless mobile
+
+    "relative z-30 shrink-0 text-center"
+  end
+
+  def tabs_link_classes(default_tab)
+    unless mobile
+      return "relative z-30 mb-0 flex items-center justify-center rounded-lg border-0 px-4 py-1 transition-opacity duration-300
+        #{default_tab ? 'bg-sky-500 text-white' : 'bg-inherit'}".squish
+    end
+
+    state_classes = default_tab ? "bg-sky-500 text-white shadow-sm shadow-sky-950/50" : "bg-slate-900/80 text-slate-300 ring-1 ring-slate-700/70"
+
+    "relative z-30 mb-0 flex min-h-8 items-center justify-center gap-1 rounded-2xl border-0 px-2 py-1 text-[10px]
+      font-medium transition-all duration-200 #{state_classes}".squish
+  end
+
+  def notification_classes
+    return "absolute flex size-2 md:size-3 z-30 left-2 pointer-events-none" unless mobile
+
+    "absolute top-1.5 right-1.5 flex size-2 z-30 pointer-events-none"
+  end
+
+  def tabs_label_classes
+    return "ml-1 pointer-events-none text-slate-100 text-xs md:text-md font-light md:font-bold text-nowrap" unless mobile
+
+    "pointer-events-none text-slate-100 text-[10px] font-medium text-nowrap"
   end
 end

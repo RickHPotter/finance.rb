@@ -235,7 +235,15 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   private
 
   def set_card_tabs
-    set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || @card_transaction&.user_card&.user_card_name || :search)
+    set_tabs(active_menu: :card, active_sub_menu: card_tab_name_for_state)
+  end
+
+  def card_tab_name_for_state
+    selected_user_card_for_tabs&.user_card_name || @card_transaction&.user_card&.user_card_name || :search
+  end
+
+  def selected_user_card_for_tabs
+    @user_card || current_user.user_cards.find_by(id: params[:user_card_id] || params.dig(:card_transaction, :user_card_id))
   end
 
   # Use callbacks to share common setup or constraints between actions.
@@ -267,7 +275,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return {} if params[:card_transaction].blank?
 
     params.require(:card_transaction).permit(
-      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate],
+      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id],
       card_installment_ids: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],

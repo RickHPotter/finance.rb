@@ -26,7 +26,7 @@ class Views::Shared::MobileFloatingNav < Views::Base
       link_to(
         new_href,
         class: "flex items-center justify-center fixed bottom-4 right-3 h-14 w-14 bg-blue-600 text-white rounded-full shadow-lg z-50",
-        data: { turbo_frame: :_top, mobile_scroll_nav: "plus" }.merge(new_data)
+        data: { turbo_frame: "_top", mobile_scroll_nav: "plus" }.merge(new_data)
       ) do
         cached_icon :bigger_plus
       end

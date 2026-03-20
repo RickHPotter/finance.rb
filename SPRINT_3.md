@@ -3,15 +3,15 @@
 <!--toc:start-->
 - [SUMMARY](#summary)
   - [INTRODUCTION](#introduction)
-  - [SPRINT PLANNING III: JIRAYA](#sprint-planning-iii-jiraya)
-    - [JIRAYA-01/app-01: Increase confidence and continue refactoring](#jiraya-01app-01-increase-confidence-and-continue-refactoring)
-    - [JIRAYA-02/be-01: Create a first-class `Subscription` flow](#jiraya-02be-01-create-a-first-class-subscription-flow)
-    - [JIRAYA-03/fe-01: Rethink datatables, filters, and ordering](#jiraya-03fe-01-rethink-datatables-filters-and-ordering)
-    - [JIRAYA-04/be-02: Tighten financial safety rules](#jiraya-04be-02-tighten-financial-safety-rules)
-    - [JIRAYA-05/fe-02: Consolidate data entry UX](#jiraya-05fe-02-consolidate-data-entry-ux)
-    - [JIRAYA-06/app-02: Create `Context` as scenario planning](#jiraya-06app-02-create-context-as-scenario-planning)
-    - [JIRAYA-07/fe-03: Create detail dashboards for core finance models](#jiraya-07fe-03-create-detail-dashboards-for-core-finance-models)
-    - [JIRAYA-08/fe-04: Refine conversations and create a first assistant flow](#jiraya-08fe-04-refine-conversations-and-create-a-first-assistant-flow)
+  - [SPRINT PLANNING III: JIRAIYA](#sprint-planning-iii-jiraiya)
+    - [JIRAIYA-01/app-01: Increase confidence and continue refactoring](#jiraiya-01app-01-increase-confidence-and-continue-refactoring)
+    - [JIRAIYA-02/be-01: Create a first-class `Subscription` flow](#jiraiya-02be-01-create-a-first-class-subscription-flow)
+    - [JIRAIYA-03/fe-01: Rethink datatables, filters, and ordering](#jiraiya-03fe-01-rethink-datatables-filters-and-ordering)
+    - [JIRAIYA-04/be-02: Tighten financial safety rules](#jiraiya-04be-02-tighten-financial-safety-rules)
+    - [JIRAIYA-05/fe-02: Consolidate data entry UX](#jiraiya-05fe-02-consolidate-data-entry-ux)
+    - [JIRAIYA-06/app-02: Create `Context` as scenario planning](#jiraiya-06app-02-create-context-as-scenario-planning)
+    - [JIRAIYA-07/fe-03: Create detail dashboards for core finance models](#jiraiya-07fe-03-create-detail-dashboards-for-core-finance-models)
+    - [JIRAIYA-08/fe-04: Refine conversations and create a first assistant flow](#jiraiya-08fe-04-refine-conversations-and-create-a-first-assistant-flow)
   - [CONCLUSION](#conclusion)
 <!--toc:end-->
 
@@ -26,13 +26,13 @@ opportunity now is to improve recurrence, speed up data entry, strengthen busine
 rules, improve analysis screens, and reduce the parts of the codebase that still feel
 transitional.
 
-## SPRINT PLANNING III: JIRAYA
+## SPRINT PLANNING III: JIRAIYA
 
 Sprint 3 should be planned more deliberately than Sprint 2. The goal is not to chase
 many disconnected fixes, but to pick a few product and architecture gaps that are now
 too visible to ignore.
 
-### JIRAYA-01/app-01: Increase confidence and continue refactoring
+### JIRAIYA-01/app-01: Increase confidence and continue refactoring
 
 - Issues:
   - [#27](https://github.com/RickHPotter/finance.rb/issues/27)
@@ -58,12 +58,14 @@ too visible to ignore.
   - Removed unused js libs (TomSelect, chart.js, chartkick, flowbite-datepicker, and stimulus-use).
   - Removed unused stimulus controllers (AutocompleteSelect, DarkMode, and Datepicker)
 
-### JIRAYA-02/be-01: Create a first-class `Subscription` flow
+### JIRAIYA-02/be-01: Create a first-class `Subscription` flow
 
 - Issues:
   - [#28](https://github.com/RickHPotter/finance.rb/issues/28)
 
 - Subtasks:
+  - Treat `Subscription` as a recurring financial transaction concept, such as
+    Netflix, ChatGPT, rent, or salary, not as a notification endpoint.
   - Create a built-in category or equivalent convention for subscription-generated
     records.
   - Create a dedicated `Subscription` concept instead of forcing recurrence into
@@ -75,7 +77,7 @@ too visible to ignore.
 - Extra:
   - NA.
 
-### JIRAYA-03/fe-01: Rethink datatables, filters, and ordering
+### JIRAIYA-03/fe-01: Rethink datatables, filters, and ordering
 
 - Issues:
   - [#29](https://github.com/RickHPotter/finance.rb/issues/29)
@@ -88,7 +90,7 @@ too visible to ignore.
   - Review whether current index screens need a dedicated search language or just a
     stronger structured filter UI.
 
-### JIRAYA-04/be-02: Tighten financial safety rules
+### JIRAIYA-04/be-02: Tighten financial safety rules
 
 - Issues:
   - [#30](https://github.com/RickHPotter/finance.rb/issues/30)
@@ -105,7 +107,7 @@ too visible to ignore.
 - Extra:
   - Keep this part narrow and rule-driven; it is easy for these changes to become too broad.
 
-### JIRAYA-05/fe-02: Consolidate data entry UX
+### JIRAIYA-05/fe-02: Consolidate data entry UX
 
 - Issues:
   - [#31](https://github.com/RickHPotter/finance.rb/issues/31)
@@ -122,7 +124,7 @@ too visible to ignore.
 - Extra:
   - Keep new UI work aligned with the current stack: Phlex, Tailwind, Turbo, and Stimulus.
 
-### JIRAYA-06/app-02: Create `Context` as scenario planning
+### JIRAIYA-06/app-02: Create `Context` as scenario planning
 
 - Issues:
   - [#32](https://github.com/RickHPotter/finance.rb/issues/32)
@@ -138,7 +140,7 @@ too visible to ignore.
   - Treat this as a premium-oriented feature from the beginning, even if the first
     version is intentionally small.
 
-### JIRAYA-07/fe-03: Create detail dashboards for core finance models
+### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 
 - Issues:
   - [#33](https://github.com/RickHPotter/finance.rb/issues/33)
@@ -151,7 +153,7 @@ too visible to ignore.
 - Extra:
   - Reuse existing Phlex and `ruby_ui` patterns instead of treating these as isolated pages.
 
-### JIRAYA-08/fe-04: Refine conversations and create a first assistant flow
+### JIRAIYA-08/fe-04: Refine conversations and create a first assistant flow
 
 - Issues:
   - [#34](https://github.com/RickHPotter/finance.rb/issues/34)

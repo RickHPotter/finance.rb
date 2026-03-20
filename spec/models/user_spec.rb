@@ -24,7 +24,7 @@ RSpec.describe User, type: :model do
       hm_models = %i[card_transactions card_installments advance_cash_transactions
                      cash_transactions cash_installments
                      user_cards user_bank_accounts budgets categories entities
-                     investments conversation_participants conversations subscriptions
+                     investments conversation_participants conversations subscriptions push_subscriptions
                      sent_messages received_messages]
 
       hm_models.each { |model| it { should have_many(model) } }
@@ -35,7 +35,7 @@ RSpec.describe User, type: :model do
     context "( callbacks )" do
       it "creates built_in categories on create" do
         subject.save
-        built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]
+        built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "SUBSCRIPTION", "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]
         expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
       end
     end

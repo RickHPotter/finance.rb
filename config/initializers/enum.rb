@@ -153,6 +153,7 @@ RIKKI_COLOURS = {
   "EXCHANGE" => :dirt,
   "EXCHANGE RETURN" => :yellow,
   "BORROW RETURN" => :yellow,
+  "SUBSCRIPTION" => :lime,
   "MIDDLEWARE" => :gold
 }.freeze
 
@@ -204,7 +205,8 @@ GIGI_COLOURS = {
   "EMP" => :dirt,
   "EXCHANGE" => :dirt,
   "EXCHANGE RETURN" => :yellow,
-  "BORROW RETURN" => :yellow
+  "BORROW RETURN" => :yellow,
+  "SUBSCRIPTION" => :lime
 }.freeze
 
 GIGI_ICONS = {

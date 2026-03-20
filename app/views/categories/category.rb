@@ -42,7 +42,7 @@ class Views::Categories::Category < Views::Base
             category.card_transactions_count,
             search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { category.card_transactions_count }
@@ -61,7 +61,7 @@ class Views::Categories::Category < Views::Base
             category.cash_transactions_count,
             cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { category.cash_transactions_count }
@@ -78,7 +78,7 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
           link_to(edit_category_path(category), id: "edit_category_#{category.id}",
                                                 class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                                data: { turbo_frame: :_top }) { cached_icon(:pencil) }
+                                                data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
 
           if category.built_in == false
             link_to(category_path(category), id: "delete_category_#{category.id}",
@@ -101,7 +101,7 @@ class Views::Categories::Category < Views::Base
             cached_icon :category
             link_to(category.name, edit_category_path(category), id: "edit_category_#{category.id}",
                                                                  class: "text-lg font-semibold underline underline-offset-[3px]",
-                                                                 data: { turbo_frame: :_top })
+                                                                 data: { turbo_frame: "_top" })
           end
         end
       end
@@ -126,7 +126,7 @@ class Views::Categories::Category < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(category.card_transactions_total, "R$") }
               link_to(search_card_transactions_path(card_transaction: { category_id: category.id }, all_month_years: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end
@@ -150,7 +150,7 @@ class Views::Categories::Category < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(category.cash_transactions_total, "R$") }
               link_to(cash_transactions_path(cash_transaction: { category_id: category.id }, all_month_years: true, mobile: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end

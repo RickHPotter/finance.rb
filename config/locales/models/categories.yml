@@ -21,6 +21,7 @@ en:
         exchange_return: Lend Return
         borrow_return: Borrow Return
         investment: Investment
+        subscription: Subscription
 
 pt-BR:
   activerecord:
@@ -45,3 +46,4 @@ pt-BR:
         exchange_return: Acerto Empréstimo
         borrow_return: Retorno Empréstimo
         investment: Investimento
+        subscription: Assinatura

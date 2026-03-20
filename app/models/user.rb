@@ -30,7 +30,8 @@ class User < ApplicationRecord
   has_many :sent_messages, ->(user) { where(user_id: user.id) }, through: :conversations, source: :messages
   has_many :received_messages, ->(user) { where.not(user_id: user.id) }, through: :conversations, source: :messages
 
-  has_many :subscriptions, dependent: :destroy
+  has_many :subscriptions, class_name: "Subscription", dependent: :destroy
+  has_many :push_subscriptions, class_name: "PushSubscription", dependent: :destroy
 
   # @validations ..............................................................
   validates :first_name, :last_name, :email, presence: true
@@ -89,6 +90,7 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "CARD ADVANCE"),
       Category.new(built_in: true, category_name: "CARD INSTALLMENT"),
       Category.new(built_in: true, category_name: "INVESTMENT"),
+      Category.new(built_in: true, category_name: "SUBSCRIPTION"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
       Category.new(built_in: true, category_name: "BORROW RETURN")

@@ -39,7 +39,7 @@ class Views::Entities::Entity < Views::Base
             entity.card_transactions_count,
             search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { entity.card_transactions_count }
@@ -58,7 +58,7 @@ class Views::Entities::Entity < Views::Base
             entity.cash_transactions_count,
             cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { entity.cash_transactions_count }
@@ -75,7 +75,7 @@ class Views::Entities::Entity < Views::Base
         div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
           link_to(edit_entity_path(entity), id: "edit_entity_#{entity.id}",
                                             class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                            data: { turbo_frame: :_top }) { cached_icon(:pencil) }
+                                            data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
 
           link_to(entity_path(entity), id: "delete_entity_#{entity.id}",
                                        class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
@@ -93,7 +93,7 @@ class Views::Entities::Entity < Views::Base
             image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full"
             link_to(entity.entity_name, edit_entity_path(entity), id: "edit_entity_#{entity.id}",
                                                                   class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                                  data: { turbo_frame: :_top })
+                                                                  data: { turbo_frame: "_top" })
           end
         end
       end
@@ -118,7 +118,7 @@ class Views::Entities::Entity < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.card_transactions_total, "R$") }
               link_to(search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end
@@ -142,7 +142,7 @@ class Views::Entities::Entity < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.cash_transactions_total, "R$") }
               link_to(cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end

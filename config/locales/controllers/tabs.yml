@@ -11,6 +11,7 @@ en:
     pix: Pix
     budget: Budget
     investment: Investment
+    subscription: Subscription
     balance: Balance
 
 pt-BR:
@@ -26,4 +27,5 @@ pt-BR:
     pix: Pix
     budget: Orçamento
     investment: Investimento
+    subscription: Assinatura
     balance: Saldo

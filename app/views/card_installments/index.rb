@@ -49,13 +49,13 @@ class Views::CardInstallments::Index < Views::Base
                 link_to card_transaction.user_card.user_card_name,
                         card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
                         class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
-                        data: { turbo_frame: :center_container, turbo_prefetch: false }
+                        data: { turbo_frame: "_top", turbo_prefetch: false }
               end
 
               link_to card_transaction.description, edit_card_transaction_path(card_transaction),
                       id: "edit_card_transaction_#{card_transaction.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
-                      data: { turbo_frame: :center_container }
+                      data: { turbo_frame: "_top", turbo_prefetch: false }
 
               span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -102,13 +102,13 @@ class Views::CardInstallments::Index < Views::Base
             link_to card_transaction.user_card.user_card_name,
                     card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
                     class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
-                    data: { turbo_frame: :center_container, turbo_prefetch: false }
+                    data: { turbo_frame: "_top", turbo_prefetch: false }
           end
 
           link_to card_transaction.description, edit_card_transaction_path(card_transaction),
                   id: "edit_card_transaction_#{card_transaction.id}",
                   class: "flex-5 truncate text-md underline underline-offset-[3px]",
-                  data: { turbo_frame: :center_container }
+                  data: { turbo_frame: "_top", turbo_prefetch: false }
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
             pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -128,7 +128,7 @@ class Views::CardInstallments::Index < Views::Base
             link_to(
               duplicate_card_transaction_path(card_transaction),
               class: "p-1 bg-slate-200 border border-slate-200 text-black",
-              data: { turbo_frame: :center_container }
+              data: { turbo_frame: "_top" }
             ) do
               cached_icon :copy
             end
@@ -192,17 +192,21 @@ class Views::CardInstallments::Index < Views::Base
     )
   end
 
+  def entities_for(card_transaction, sort_key)
+    card_transaction.entity_transactions.includes(:entity).sort_by(&sort_key)
+  end
+
   def entity_popover_items(card_transaction, sort_key)
-    card_transaction.entity_transactions.order(:id).includes(:entity).sort_by(&sort_key).map do |entity_transaction|
+    entities_for(card_transaction, sort_key).map do |entity_transaction|
       entity = entity_transaction.entity
-      href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, format: :turbo_stream) : nil
+      href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }) : nil
 
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
         href:,
-        data: { turbo_frame: "center_container", turbo_prefetch: "false" },
-        info_class: "hidden entity_exchanges_info",
+        data: { turbo_frame: "_top", turbo_prefetch: "false" },
+        info_class: "entity_exchanges_info text-[10px] leading-tight text-zinc-500",
         info_text: entity_exchanges_info(entity_transaction)
       }
     end

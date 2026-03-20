@@ -280,7 +280,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:cash_transaction).permit(
       %i[
         id description comment date month year price paid user_id user_bank_account_id
-        reference_transactable_type reference_transactable_id category_id entity_id
+        reference_transactable_type reference_transactable_id category_id entity_id subscription_id
       ],
       user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],

@@ -60,7 +60,7 @@ class Views::Shared::AppFooter < Views::Base
 
   def action_links
     div(class: "flex gap-2") do
-      FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: :_top, turbo_prefetch: false }) do
+      FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
         plain I18n.t(:donate)
         render_icon(:heart)
       end

@@ -1,0 +1,73 @@
+en:
+  activerecord:
+    models:
+      subscription:
+        one: Subscription
+        other: Subscriptions
+    attributes:
+      subscription:
+        id: ID
+        description: Description
+        description_placeholder: SUBSCRIPTION
+        comment: Comment
+        comment_placeholder: Notes about how this subscription behaves...
+        price: Price
+        status: Status
+        category_id: Category
+        entity_id: Entity
+        user_id: User
+        transactions_count: Transactions
+        created_at: Created at
+        updated_at: Updated at
+        start_month_year: Start Month/Year
+        end_month_year: End Month/Year
+        end_date: End Date
+        interval_months: Interval
+        statuses:
+          active: Active
+          paused: Paused
+          finished: Finished
+        intervals:
+          monthly: Monthly
+          every_2_months: Every 2 months
+          every_3_months: Every 3 months
+          every_6_months: Every 6 months
+          yearly: Yearly
+          every_2_years: Every 2 years
+
+pt-BR:
+  activerecord:
+    models:
+      subscription:
+        one: Assinatura
+        other: Assinaturas
+    attributes:
+      subscription:
+        id: ID
+        description: Descrição
+        description_placeholder: ASSINATURA
+        comment: Comentário
+        comment_placeholder: Observações sobre como essa assinatura funciona...
+        price: Valor
+        status: Status
+        category_id: Categoria
+        entity_id: Entidade
+        user_id: Usuário
+        transactions_count: Transações
+        created_at: Criado em
+        updated_at: Atualizado em
+        start_month_year: Mês/Ano Inicial
+        end_month_year: Mês/Ano Final
+        end_date: Data Final
+        interval_months: Intervalo
+        statuses:
+          active: Ativa
+          paused: Pausada
+          finished: Finalizada
+        intervals:
+          monthly: Mensal
+          every_2_months: A cada 2 meses
+          every_3_months: A cada 3 meses
+          every_6_months: A cada 6 meses
+          yearly: Anual
+          every_2_years: A cada 2 anos

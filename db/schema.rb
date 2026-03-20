@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_16_163500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -75,6 +75,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.bigint "reference_transactable_id"
     t.string "reference_transactable_type"
     t.integer "starting_price", null: false
+    t.bigint "subscription_id"
     t.datetime "updated_at", null: false
     t.bigint "user_card_id", null: false
     t.bigint "user_id", null: false
@@ -84,6 +85,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.index ["price"], name: "idx_card_transactions_price"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_card_transactions_on_reference_transactable"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_card_composite_key", unique: true
+    t.index ["subscription_id"], name: "index_card_transactions_on_subscription_id"
     t.index ["user_card_id"], name: "index_card_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_card_transactions_on_user_id"
   end
@@ -112,6 +114,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.bigint "reference_transactable_id"
     t.string "reference_transactable_type"
     t.integer "starting_price", null: false
+    t.bigint "subscription_id"
     t.datetime "updated_at", null: false
     t.bigint "user_bank_account_id"
     t.bigint "user_card_id"
@@ -120,6 +123,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.index ["investment_type_id"], name: "index_cash_transactions_on_investment_type_id"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
+    t.index ["subscription_id"], name: "index_cash_transactions_on_subscription_id"
     t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_cash_transactions_on_user_card_id"
     t.index ["user_id"], name: "index_cash_transactions_on_user_id"
@@ -215,6 +219,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
     t.integer "year", null: false
     t.index ["cash_transaction_id"], name: "index_exchanges_on_cash_transaction_id"
     t.index ["entity_transaction_id"], name: "index_exchanges_on_entity_transaction_id"
+  end
+
+  create_table "finance_subscriptions", force: :cascade do |t|
+    t.integer "card_transactions_count", default: 0, null: false
+    t.integer "cash_transactions_count", default: 0, null: false
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.string "description", null: false
+    t.integer "price", default: 0, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["status"], name: "index_finance_subscriptions_on_status"
+    t.index ["user_id"], name: "index_finance_subscriptions_on_user_id"
   end
 
   create_table "installments", force: :cascade do |t|
@@ -371,9 +389,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
   add_foreign_key "budget_entities", "entities"
   add_foreign_key "budgets", "users"
   add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
+  add_foreign_key "card_transactions", "finance_subscriptions", column: "subscription_id"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
+  add_foreign_key "cash_transactions", "finance_subscriptions", column: "subscription_id"
   add_foreign_key "cash_transactions", "investment_types"
   add_foreign_key "cash_transactions", "user_bank_accounts"
   add_foreign_key "cash_transactions", "user_cards"
@@ -387,6 +407,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_220000) do
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "cash_transactions"
   add_foreign_key "exchanges", "entity_transactions"
+  add_foreign_key "finance_subscriptions", "users"
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"

@@ -39,7 +39,7 @@ class Views::UserCards::UserCard < Views::Base
             user_card.card_transactions_count,
             card_transactions_path(user_card_id: user_card.id),
             class: "text-indigo-600 hover:underline",
-            data: { turbo_frame: :_top, turbo_prefetch: false }
+            data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
           span { user_card.card_transactions_count }
@@ -62,7 +62,7 @@ class Views::UserCards::UserCard < Views::Base
         div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
           link_to(edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
                                                   class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                                  data: { turbo_frame: :_top }) { cached_icon(:pencil) }
+                                                  data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
 
           link_to(user_card_path(user_card), id: "delete_user_card_#{user_card.id}",
                                              class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
@@ -83,10 +83,10 @@ class Views::UserCards::UserCard < Views::Base
             cached_icon :credit_card
             link_to(brand_and_name, edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
                                                                     class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                                    data: { turbo_frame: :_top })
+                                                                    data: { turbo_frame: "_top" })
           end
 
-          link_to(card_transactions_path(user_card_id: user_card.id), data: { turbo_frame: :_top, turbo_prefetch: false }) { cached_icon(:jump_to) }
+          link_to(card_transactions_path(user_card_id: user_card.id), data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
         end
       end
 

@@ -103,6 +103,9 @@ application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
 import RubyUi__SheetController from "./ruby_ui/sheet_controller"
 application.register("ruby-ui--sheet", RubyUi__SheetController)
 
+import SubscriptionTransactionsController from "./subscription_transactions_controller"
+application.register("subscription-transactions", SubscriptionTransactionsController)
+
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
 

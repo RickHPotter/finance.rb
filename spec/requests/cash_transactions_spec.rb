@@ -8,6 +8,7 @@ RSpec.describe "CashTransactions", type: :request do
   let(:user_bank_account) { create(:user_bank_account, :random, user:, bank:) }
   let(:category) { create(:category, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
+  let(:subscription) { create(:subscription, user:) }
 
   let(:cash_transaction) do
     Params::CashTransactions.new(
@@ -18,7 +19,8 @@ RSpec.describe "CashTransactions", type: :request do
         month: Time.zone.today.month,
         year: Time.zone.today.year,
         user_id: user.id,
-        user_bank_account_id: user_bank_account.id
+        user_bank_account_id: user_bank_account.id,
+        subscription_id: subscription.id
       },
       cash_installments: { count: 1 },
       category_transactions: [ { category_id: category.id } ],
@@ -40,9 +42,11 @@ RSpec.describe "CashTransactions", type: :request do
       created_cash_transaction = CashTransaction.last
 
       expect(created_cash_transaction.description).to eq("Salary payment")
+      expect(created_cash_transaction.subscription).to eq(subscription)
       expect(created_cash_transaction.cash_installments.count).to eq(1)
       expect(created_cash_transaction.categories).to include(category)
       expect(created_cash_transaction.entities).to include(entity)
+      expect(subscription.reload.price).to eq(20_000)
     end
   end
 
@@ -63,6 +67,18 @@ RSpec.describe "CashTransactions", type: :request do
       expect(@existing_cash_transaction.description).to eq("Updated salary")
       expect(@existing_cash_transaction.price).to eq(35_000)
       expect(@existing_cash_transaction.cash_installments.first.price).to eq(35_000)
+      expect(subscription.reload.price).to eq(35_000)
+    end
+
+    it "updates the linked subscription" do
+      other_subscription = create(:subscription, user:)
+      cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { subscription_id: other_subscription.id })
+
+      put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params, headers: turbo_stream_headers
+
+      expect(@existing_cash_transaction.reload.subscription).to eq(other_subscription)
+      expect(subscription.reload.price).to eq(0)
+      expect(other_subscription.reload.price).to eq(20_000)
     end
   end
 
