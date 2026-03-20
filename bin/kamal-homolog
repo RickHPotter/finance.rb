@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -f ".env.homolog" ]]; then
+  echo ".env.homolog not found"
+  exit 1
+fi
+
+set -a
+source .env.homolog
+set +a
+
+exec kamal "$@" -d homolog

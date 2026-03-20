@@ -36,3 +36,16 @@ production:
     <<: *primary_production
     database: app_production_cable
     migrations_paths: db/cable_migrate
+
+homolog:
+  primary: &primary_homolog
+    <<: *default
+    database: <%= ENV["POSTGRES_DATABASE"] %>
+  cache:
+    <<: *primary_homolog
+    database: app_homolog_cache
+    migrations_paths: db/cache_migrate
+  cable:
+    <<: *primary_homolog
+    database: app_homolog_cable
+    migrations_paths: db/cable_migrate

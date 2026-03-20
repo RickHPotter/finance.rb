@@ -15,7 +15,7 @@ class Views::Layouts::Application < Views::Base
       head do
         title { I18n.t("pages.title") }
         meta name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-        meta name: "theme-color", content: "#1a202c"
+        meta name: "theme-color", content: homolog? ? "#78350f" : "#1a202c"
         meta name: "mobile-web-app-capable", content: "yes"
         meta name: "current-user-id", content: rails_view_context.current_user&.id
 
@@ -33,7 +33,7 @@ class Views::Layouts::Application < Views::Base
         javascript_include_tag("application", data: { turbo_track: :reload }, type: :module)
       end
 
-      body class: "min-h-screen bg-gray-900 text-white" do
+      body class: body_class do
         ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-[1420px] mx-auto w-full") do
           turbo_frame_tag :notification do
             render partial "shared/flash"
@@ -98,5 +98,15 @@ class Views::Layouts::Application < Views::Base
 
   def mobile
     rails_view_context.instance_variable_get(:@mobile) || false
+  end
+
+  def homolog?
+    Rails.env.homolog?
+  end
+
+  def body_class
+    return "min-h-screen bg-linear-to-br from-amber-950 via-stone-900 to-rose-950 text-amber-50" if homolog?
+
+    "min-h-screen bg-gray-900 text-white"
   end
 end

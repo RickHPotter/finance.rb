@@ -1,25 +1,61 @@
 #!/bin/sh
 set -eu
 
-SERVICE="financerb"
-CONTAINER_FILTER="${SERVICE}-web"
-CRON_FILE="/etc/cron.d/${SERVICE}"
-CRON_LOG="/var/log/${SERVICE}-cron.log"
+DESTINATION="${KAMAL_DESTINATION:-}"
 
 HOSTS=$(echo "$KAMAL_HOSTS" | tr ',' ' ')
 
-for HOST in $HOSTS; do
-  echo "Installing cron schedule on ${HOST} (${CRON_FILE})"
+if [ "${DESTINATION}" = "homolog" ]; then
+  CRON_FILE="/etc/cron.d/financerb-homolog-refresh"
+  CRON_LOG="/var/log/financerb-homolog-refresh.log"
+  TMP_CRON_FILE=$(mktemp)
 
-  # Use kamal's SSH session instead of direct ssh
-  kamal accessory exec cron -H "$HOST" -- bash -c "cat > ${CRON_FILE} <<'EOF'
+  cat > "${TMP_CRON_FILE}" <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 TZ=America/Sao_Paulo
 
-0 0 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:daily_backup' >> ${CRON_LOG} 2>&1
-0 9 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
-0 17 * * * root /bin/bash -lc 'c=\$(docker ps --filter \"name=${CONTAINER_FILTER}\" --format \"{{.Names}}\" | head -n1); [ -n \"\$c\" ] && docker exec \"\$c\" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
+0 3 * * * root /bin/bash -lc 'docker inspect financerb-db >/dev/null 2>&1 && docker inspect financerb-homolog-db >/dev/null 2>&1 && docker exec financerb-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; pg_dump --username=postgres --dbname=finance --clean --if-exists --no-owner --no-privileges --format=plain" | docker exec -i financerb-homolog-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; psql --username=postgres --dbname=finance_homolog --set=ON_ERROR_STOP=1"' >> ${CRON_LOG} 2>&1
 EOF
-chmod 644 ${CRON_FILE} && touch ${CRON_LOG}"
+
+  for HOST in $HOSTS; do
+    echo "Installing homolog refresh schedule on ${HOST} (${CRON_FILE})"
+
+    scp "${TMP_CRON_FILE}" "root@${HOST}:${CRON_FILE}"
+    ssh "root@${HOST}" "chmod 644 ${CRON_FILE} && touch ${CRON_LOG}"
+  done
+
+  rm -f "${TMP_CRON_FILE}"
+
+  exit 0
+fi
+
+if [ -n "${DESTINATION}" ] && [ "${DESTINATION}" != "production" ]; then
+  echo "Skipping production cron installation for destination ${DESTINATION}"
+  exit 0
+fi
+
+SERVICE="${KAMAL_SERVICE:-financerb}"
+CONTAINER_FILTER="${SERVICE}-web"
+CRON_FILE="/etc/cron.d/${SERVICE}"
+CRON_LOG="/var/log/${SERVICE}-cron.log"
+TMP_CRON_FILE=$(mktemp)
+
+cat > "${TMP_CRON_FILE}" <<EOF
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+TZ=America/Sao_Paulo
+
+0 0 * * * root /bin/bash -lc 'c=\$(docker ps --filter "name=${CONTAINER_FILTER}" --format "{{.Names}}" | head -n1); [ -n "\$c" ] && docker exec "\$c" bin/rails scheduled:daily_backup' >> ${CRON_LOG} 2>&1
+0 9 * * * root /bin/bash -lc 'c=\$(docker ps --filter "name=${CONTAINER_FILTER}" --format "{{.Names}}" | head -n1); [ -n "\$c" ] && docker exec "\$c" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
+0 17 * * * root /bin/bash -lc 'c=\$(docker ps --filter "name=${CONTAINER_FILTER}" --format "{{.Names}}" | head -n1); [ -n "\$c" ] && docker exec "\$c" bin/rails scheduled:due_payments' >> ${CRON_LOG} 2>&1
+EOF
+
+for HOST in $HOSTS; do
+  echo "Installing cron schedule on ${HOST} (${CRON_FILE})"
+
+  scp "${TMP_CRON_FILE}" "root@${HOST}:${CRON_FILE}"
+  ssh "root@${HOST}" "chmod 644 ${CRON_FILE} && touch ${CRON_LOG}"
 done
+
+rm -f "${TMP_CRON_FILE}"
