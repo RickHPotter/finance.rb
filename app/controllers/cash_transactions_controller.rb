@@ -54,14 +54,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def create
-    @cash_transaction = current_user.cash_transactions.new(cash_transaction_params.merge(imported: false))
+    @cash_transaction = current_user.cash_transactions.new(assignable_cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
 
     handle_save
   end
 
   def update
-    @cash_transaction.assign_attributes(cash_transaction_params.merge(imported: false))
+    @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
     @cash_transaction.update_installments if params[:commit] == "Update"
 
@@ -72,12 +72,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @user_bank_account = @cash_transaction.user_bank_account
     @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
     @cash_transaction.destroy
+    mark_source_message_applied
     index
 
     respond_to(&:turbo_stream)
   end
 
   def handle_params
+    assign_message_context
     handle_category_params
     handle_entity_params
 
@@ -161,6 +163,28 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     cash_transaction_params[:reference_transactable_id].present?
   end
 
+  def assign_message_context
+    @cash_transaction.source_message_id = cash_transaction_params[:source_message_id]
+  end
+
+  def assignable_cash_transaction_params
+    cash_transaction_params.except(:source_message_id)
+  end
+
+  def source_message_id
+    @cash_transaction&.source_message_id.presence || cash_transaction_params[:source_message_id].presence || params[:message_id].presence
+  end
+
+  def source_message
+    return if source_message_id.blank?
+
+    @source_message ||= current_user.received_messages.find_by(id: source_message_id)
+  end
+
+  def mark_source_message_applied
+    source_message&.update!(applied_at: Time.current)
+  end
+
   def handle_save
     if params[:commit] == "Update"
       respond_to do |format|
@@ -173,6 +197,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       end
     else
       if @cash_transaction.save
+        mark_source_message_applied
         index
         @index_context[:default_year] = @cash_transaction.cash_installments.first.year
         @index_context[:active_month_years] = @cash_transaction.cash_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }.uniq
@@ -305,7 +330,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:cash_transaction).permit(
       %i[
         id description comment date month year price paid user_id user_bank_account_id
-        reference_transactable_type reference_transactable_id category_id entity_id subscription_id friend_notification_intent
+        reference_transactable_type reference_transactable_id category_id entity_id subscription_id friend_notification_intent source_message_id
       ],
       user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],

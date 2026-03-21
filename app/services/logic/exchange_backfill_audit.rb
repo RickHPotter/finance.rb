@@ -36,7 +36,7 @@ class Logic::ExchangeBackfillAudit # rubocop:disable Metrics/ClassLength
     ).find_by(reference_transactable: source_transaction)
 
     related_messages = messages_for(source_transaction, receiver_reference)
-    latest_active_message = related_messages.rfind { |message| message.superseded_by_id.nil? }
+    latest_active_message = related_messages.find { |message| message.superseded_by_id.nil? }
     latest_headers = parse_headers(latest_active_message)
 
     {

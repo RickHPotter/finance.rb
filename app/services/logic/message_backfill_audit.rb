@@ -29,7 +29,6 @@ class Logic::MessageBackfillAudit
       proposed_conversation_role: message.human_message? ? "human" : "assistant",
       proposed_conversation_key: proposed_conversation_key_for(message),
       current_conversation_kind: message.conversation.kind,
-      current_assistant_owner_id: message.conversation.assistant_owner_id,
       created_at: message.created_at.iso8601
     }
   end

@@ -105,6 +105,39 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
     end
 
+    it "renders v2 destroy notification bodies from headers at display time" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "WATER BILL",
+              date: "2026-03-17",
+              reference_month_year: "MAR <26>",
+              price: -5000,
+              installments_count: 1,
+              installments: [
+                { number: 1, date: "2026-03-20", price: -5000 }
+              ]
+            }
+          },
+          replay: nil
+        }.to_json
+      )
+
+      expect(message.rendered_body).to include("WATER BILL")
+      expect(message.rendered_body).not_to eq("notification:destroy")
+      expect(message.preview_body).to include("WATER BILL")
+    end
+
     it "classifies headerless messages without reference transactable as human chat" do
       message = described_class.create!(
         conversation:,
@@ -115,6 +148,38 @@ RSpec.describe Message, type: :model do
       expect(message.human_message?).to be(true)
       expect(message.backfill_kind).to eq("human")
     end
+
+    it "derives create, correct, and edit button states from applied_at and notification type" do
+      create_message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", receiver_first_name: "Gigi", transaction_type: "CashTransaction", details: {} },
+          replay: { id: reference_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+      update_message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: "Gigi", transaction_type: "CashTransaction", details: {} },
+          replay: { id: reference_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+
+      expect(create_message.action_button_key(local_reference_exists: false)).to eq(:create)
+      expect(update_message.action_button_key(local_reference_exists: true)).to eq(:correct)
+
+      update_message.update!(applied_at: Time.current)
+
+      expect(update_message.action_button_key(local_reference_exists: true)).to eq(:edit)
+    end
   end
 end
 
@@ -124,6 +189,7 @@ end
 # Database name: primary
 #
 #  id                          :bigint           not null, primary key
+#  applied_at                  :datetime         indexed
 #  body                        :text
 #  headers                     :text
 #  read_at                     :datetime
@@ -137,6 +203,7 @@ end
 #
 # Indexes
 #
+#  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_superseded_by_id        (superseded_by_id)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -166,12 +166,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
   end
 
   create_table "conversations", force: :cascade do |t|
-    t.bigint "assistant_owner_id"
     t.datetime "created_at", null: false
     t.string "kind", default: "human", null: false
     t.datetime "updated_at", null: false
-    t.index ["assistant_owner_id"], name: "index_conversations_on_assistant_owner_id"
-    t.index ["kind", "assistant_owner_id"], name: "index_conversations_on_kind_and_assistant_owner_id"
+    t.index ["kind"], name: "index_conversations_on_kind"
   end
 
   create_table "entities", force: :cascade do |t|
@@ -294,6 +292,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
   end
 
   create_table "messages", force: :cascade do |t|
+    t.datetime "applied_at"
     t.text "body"
     t.bigint "conversation_id", null: false
     t.datetime "created_at", null: false
@@ -304,6 +303,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
     t.bigint "superseded_by_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["applied_at"], name: "index_messages_on_applied_at"
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_messages_on_reference_transactable"
     t.index ["superseded_by_id"], name: "index_messages_on_superseded_by_id"
@@ -406,7 +406,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
   add_foreign_key "category_transactions", "categories"
   add_foreign_key "conversation_participants", "conversations"
   add_foreign_key "conversation_participants", "users"
-  add_foreign_key "conversations", "users", column: "assistant_owner_id"
   add_foreign_key "entities", "users"
   add_foreign_key "entities", "users", column: "entity_user_id"
   add_foreign_key "entity_transactions", "entities"

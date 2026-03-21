@@ -13,7 +13,7 @@ class CashTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent, :source_message_id
 
   # @relationships ............................................................
   belongs_to :user
