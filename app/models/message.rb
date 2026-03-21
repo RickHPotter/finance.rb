@@ -30,6 +30,25 @@ class Message < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def transaction_notification_message?
+    headers.present?
+  end
+
+  def transaction_destroy_notification_message?
+    headers.blank? && reference_transactable.present?
+  end
+
+  def human_message?
+    headers.blank? && reference_transactable.blank?
+  end
+
+  def backfill_kind
+    return "transaction_notification" if transaction_notification_message?
+    return "transaction_destroy_notification" if transaction_destroy_notification_message?
+
+    "human"
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 

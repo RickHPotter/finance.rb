@@ -1,4 +1,4 @@
-# JIRAIYA-02 Slice 7: Exchange Notification Full Backfill
+# JIRAIYA-02: EXTRA - Exchange Notification Full Backfill
 
 ## Goal
 

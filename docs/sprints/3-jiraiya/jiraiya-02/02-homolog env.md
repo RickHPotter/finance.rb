@@ -1,4 +1,4 @@
-# 02 - Homolog Env
+# JIRAIYA-02: EXTRA - Homolog Env
 
 ## Goal
 Create a homolog environment that can be deployed and refreshed regularly without causing any change to production application traffic, production database state, or production secrets.

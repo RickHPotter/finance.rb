@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_16_163500) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_21_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -166,8 +166,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_16_163500) do
   end
 
   create_table "conversations", force: :cascade do |t|
+    t.bigint "assistant_owner_id"
     t.datetime "created_at", null: false
+    t.string "kind", default: "human", null: false
     t.datetime "updated_at", null: false
+    t.index ["assistant_owner_id"], name: "index_conversations_on_assistant_owner_id"
+    t.index ["kind", "assistant_owner_id"], name: "index_conversations_on_kind_and_assistant_owner_id"
   end
 
   create_table "entities", force: :cascade do |t|
@@ -402,6 +406,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_16_163500) do
   add_foreign_key "category_transactions", "categories"
   add_foreign_key "conversation_participants", "conversations"
   add_foreign_key "conversation_participants", "users"
+  add_foreign_key "conversations", "users", column: "assistant_owner_id"
   add_foreign_key "entities", "users"
   add_foreign_key "entities", "users", column: "entity_user_id"
   add_foreign_key "entity_transactions", "entities"

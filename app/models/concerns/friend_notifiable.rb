@@ -61,13 +61,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   end
 
   def find_or_create_conversation(user, friend_user)
-    conversation = Conversation.joins(:conversation_participants)
-                               .where(conversation_participants: { user_id: [ user.id, friend_user.id ] })
-                               .group("conversations.id")
-                               .having("COUNT(DISTINCT conversation_participants.user_id) = 2")
-                               .first
-
-    conversation || Conversation.fast_create(user, friend_user)
+    Conversation.find_or_create_assistant_between!(sender: user, receiver: friend_user)
   end
 
   def save_message(message, friend_user, exchanges, action)
