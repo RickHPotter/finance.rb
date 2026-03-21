@@ -27,7 +27,7 @@ class Views::Messages::Message < Views::Base
               class: "max-w-xs md:max-w-lg px-4 py-2 rounded-2xl shadow-sm text-sm #{'ring-1 ring-red-800' if message.headers}",
               data: { chat_target: :messageColour }
             ) do
-              pre(class: "whitespace-pre-wrap") { message.body.html_safe }
+              pre(class: "whitespace-pre-wrap") { message.rendered_body.html_safe }
 
               render_message_actions
 
@@ -56,7 +56,7 @@ class Views::Messages::Message < Views::Base
   def render_transaction_actions
     user = current_user if request.env["warden"].present?
 
-    if message.headers.blank? # action is :destroy
+    if message.transaction_destroy_notification_message?
       return if message.reference_transactable_id.nil?
 
       cash_transaction_to_be_destroyed = user&.cash_transactions&.find_by(id: message.reference_transactable_id)
@@ -72,7 +72,8 @@ class Views::Messages::Message < Views::Base
       return
     end
 
-    params = JSON.parse(message.headers)
+    params = message.replay_payload
+    return if params.blank?
 
     id = params["id"]
     type = params["type"]

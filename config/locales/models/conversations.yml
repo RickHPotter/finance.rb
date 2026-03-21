@@ -7,7 +7,18 @@ en:
     attributes:
       conversation:
         id: ID
-        chat_with: Chat with
+        chat: Chat
+        your_assistant: Your assistant
+        assistant_of: "%{name}'s assistant"
+        all: All
+        unread: Unread
+        human: Human
+        assistant: Assistant
+        human_thread: Human thread
+        my_assistant_thread: My assistant thread
+        friend_assistant_thread: "%{name}'s assistant thread"
+        no_messages_yet: No messages yet
+        empty_message: Empty message
 
 pt-BR:
   activerecord:
@@ -18,4 +29,15 @@ pt-BR:
     attributes:
       conversation:
         id: ID
-        chat_with: Fale com
+        chat: Chat
+        your_assistant: Seu assistente
+        assistant_of: Assistente de %{name}
+        all: Todas
+        unread: Não lidas
+        human: Humana
+        assistant: Assistente
+        human_thread: Conversa humana
+        my_assistant_thread: Conversa com meu assistente
+        friend_assistant_thread: Conversa com assistente de %{name}
+        no_messages_yet: Nenhuma mensagem ainda
+        empty_message: Mensagem vazia

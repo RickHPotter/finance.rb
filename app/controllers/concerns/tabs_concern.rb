@@ -73,7 +73,7 @@ module TabsConcern
       Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card,         0, "_top"),
       Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category,          0, "_top"),
       Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity,            0, "_top"),
-      Item.new(t("tabs.conversation"),      :message,     conversation_path(1),    @active_sub_menu == :conversation,      converstion_notification_type, "_top")
+      Item.new(t("tabs.conversation"),      :message,     conversations_path,      @active_sub_menu == :conversation,      converstion_notification_type, "_top")
     ]
   end
 

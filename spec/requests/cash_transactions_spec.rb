@@ -73,16 +73,17 @@ RSpec.describe "CashTransactions", type: :request do
 
       headers = JSON.parse(Message.last.headers)
 
-      expect(headers).to include(
+      expect(headers).to include("version" => "message_notification_v2")
+      expect(headers.fetch("replay")).to include(
         "version" => "cash_exchange_v2",
         "intent" => "reimbursement",
         "category_ids" => other_user.built_in_category("BORROW RETURN").id,
         "entity_ids" => other_user_entity.id
       )
-      expect(headers.fetch("cash_installments_attributes")).to contain_exactly(
+      expect(headers.fetch("replay").fetch("cash_installments_attributes")).to contain_exactly(
         a_hash_including("price" => 20_000)
       )
-      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+      expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
         a_hash_including(
           "is_payer" => false,
           "price" => 0,
@@ -116,12 +117,13 @@ RSpec.describe "CashTransactions", type: :request do
 
       headers = JSON.parse(Message.last.headers)
 
-      expect(headers).to include(
+      expect(headers).to include("version" => "message_notification_v2")
+      expect(headers.fetch("replay")).to include(
         "version" => "cash_exchange_v2",
         "intent" => "loan",
         "category_ids" => other_user.built_in_category("EXCHANGE").id
       )
-      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+      expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
         a_hash_including(
           "is_payer" => true,
           "price" => 20_000,

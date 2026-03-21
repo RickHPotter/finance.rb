@@ -16,6 +16,10 @@ en:
         you_have_a_new_message: You have a new message
         outdated_message: Outdated message! Click to see the updated version.
         already_deleted: This transaction was already deleted.
+        notification_actions:
+          create: Created transaction
+          update: Updated transaction
+          destroy: Deleted transaction
 
 pt-BR:
   activerecord:
@@ -35,3 +39,7 @@ pt-BR:
         you_have_a_new_message: Vocês tem uma nova mensagem
         outdated_message: Mensagem desatualizada! Clique para ver a versão atualizada.
         already_deleted: Essa transação já foi excluída.
+        notification_actions:
+          create: Transação criada
+          update: Transação atualizada
+          destroy: Transação excluída

@@ -136,8 +136,9 @@ Do this in two phases:
 
 ### Phase 2
 
-- introduce explicit notification message kinds
-- shift notification localization to render time
-- backfill historical data with clearer semantics
+- introduce explicit notification payload versioning
+- shift new notification localization to render time
+- keep historical localized bodies on legacy fallback until a dedicated backfill exists
+- revisit whether old bodies should be regenerated later
 
 This keeps the conversation split independent from the larger localization refactor, while still acknowledging that the two concerns are connected.

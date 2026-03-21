@@ -52,6 +52,34 @@ class Conversation < ApplicationRecord
   end
 
   # @public_instance_methods ..................................................
+  def friend_for(user)
+    participants = users.loaded? ? users.target : users.to_a
+
+    participants.find { |participant| participant.id != user.id }
+  end
+
+  def title_for(user)
+    if human?
+      friend_for(user)&.first_name
+    elsif assistant_owner_id == user.id
+      I18n.t("activerecord.attributes.conversation.your_assistant")
+    else
+      I18n.t("activerecord.attributes.conversation.assistant_of", name: assistant_owner&.first_name)
+    end
+  end
+
+  def unread_count_for(user)
+    return messages.unread.where.not(user_id: user.id).count unless messages.loaded?
+
+    messages.target.count { |message| message.read_at.nil? && message.user_id != user.id }
+  end
+
+  def latest_message
+    return messages.max_by(&:created_at) if messages.loaded?
+
+    messages.order(created_at: :desc).first
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 end

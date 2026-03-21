@@ -15,7 +15,7 @@ class Views::Layouts::Application < Views::Base
       head do
         title { I18n.t("pages.title") }
         meta name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-        meta name: "theme-color", content: homolog? ? "#78350f" : "#1a202c"
+        meta name: "theme-color", content: theme_colour
         meta name: "mobile-web-app-capable", content: "yes"
         meta name: "current-user-id", content: rails_view_context.current_user&.id
 
@@ -104,9 +104,17 @@ class Views::Layouts::Application < Views::Base
     Rails.env.homolog?
   end
 
+  def theme_colour
+    homolog? ? "#78350f" : "#1a202c"
+  end
+
   def body_class
     return "min-h-screen bg-linear-to-br from-amber-950 via-stone-900 to-rose-950 text-amber-50" if homolog?
 
-    "min-h-screen bg-gray-900 text-white"
+    if rails_view_context.current_user.email == "luisfla55@gmail.com"
+      "min-h-screen bg-zinc-950 text-white"
+    else
+      "min-h-screen bg-gray-900 text-white"
+    end
   end
 end

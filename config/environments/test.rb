@@ -16,6 +16,13 @@ Rails.application.configure do
       Bullet.add_safelist(type: :n_plus_one_query,     class_name: "CardInstallment", association:)
       Bullet.add_safelist(type: :unused_eager_loading, class_name: "CardInstallment", association:)
     end
+
+    # Conversation index/show uses the same associations across controller/model/view,
+    # and Bullet flips between N+1 and unused eager-load warnings on the same query.
+    %i[assistant_owner users messages conversation_participants].each do |association|
+      Bullet.add_safelist(type: :n_plus_one_query,     class_name: "Conversation", association:)
+      Bullet.add_safelist(type: :unused_eager_loading, class_name: "Conversation", association:)
+    end
   end
 
   # While tests run files are not watched, reloading is not necessary.

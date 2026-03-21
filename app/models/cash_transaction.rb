@@ -146,7 +146,9 @@ class CashTransaction < ApplicationRecord
 
     return if headers.blank?
 
-    JSON.parse(headers)["intent"]
+    payload = JSON.parse(headers)
+
+    payload["intent"] || payload.dig("replay", "intent")
   rescue JSON::ParserError
     nil
   end

@@ -75,56 +75,45 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     supersede_previous_messages(message.conversation, message) if action != :create
   end
 
-  def create_body(message, friend_user, exchanges, action)
-    new_line = "\n"
-    body = [ "<b>#{model_attribute(message, :hello)}, #{friend_user.first_name}!</b>#{new_line * 2}" ]
-
-    case action
-    when :create
-      body << (model_attribute(message, :ivemadeatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-      body << (new_line + model_attribute(message, :click_down_below))
-    when :update
-      body << (model_attribute(message, :iveupdatedatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-      body << (new_line + model_attribute(message, :click_down_below))
-    when :destroy
-      body << (model_attribute(message, :ivedeletedatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-    end
-
-    message.body = body.join
-  end
-
-  def transaction_details(exchanges, new_line)
-    return [] unless exchanges
-
-    [
-      "<b>#{model_attribute(self, :self).upcase}</b>#{new_line}",
-      "#{model_attribute(self, :description)}: #{description}#{new_line}",
-      "#{model_attribute(self, :date)}: #{I18n.l(date, format: :long)}#{new_line}",
-      "#{model_attribute(self, :reference_month_year)}: #{month_year}#{new_line}",
-      "#{model_attribute(self, :price)}: #{from_cent_based_to_float(exchanges.sum(:price), 'R$')}#{new_line}",
-      "#{model_attribute(self, :installments_count)}: #{exchanges.count}#{new_line * 2}",
-      "<b>#{model_attribute(installments.first, :self).upcase}</b>#{new_line}"
-    ].tap do |details|
-      exchanges.each do |exchange|
-        details << " - #{exchange.number} [#{I18n.l(exchange.date, format: :long)}] #{from_cent_based_to_float(exchange.price, 'R$')}#{new_line}"
-      end
-    end
+  def create_body(message, _friend_user, _exchanges, action)
+    message.body = "notification:#{action}"
   end
 
   def create_headers(message, friend_user, exchanges, action)
-    return if action == :destroy
     return if exchanges.blank?
 
     transaction_type = exchanges.first.entity_transaction.transactable_type
 
-    message.headers = if transaction_type == "CardTransaction"
-                        build_card_transaction_headers(friend_user, exchanges).to_json
-                      else
-                        build_cash_transaction_headers(friend_user, exchanges).to_json
-                      end
+    replay_payload = if action == :destroy
+                       nil
+                     elsif transaction_type == "CardTransaction"
+                       build_card_transaction_headers(friend_user, exchanges)
+                     else
+                       build_cash_transaction_headers(friend_user, exchanges)
+                     end
+
+    message.headers = {
+      version: "message_notification_v2",
+      event: build_notification_event(friend_user, exchanges, action, transaction_type),
+      replay: replay_payload
+    }.to_json
+  end
+
+  def build_notification_event(friend_user, exchanges, action, transaction_type)
+    {
+      action: action.to_s,
+      receiver_first_name: friend_user.first_name,
+      transaction_type:,
+      details: {
+        transaction_label: model_attribute(self, :self),
+        description:,
+        date: date&.iso8601,
+        reference_month_year: month_year,
+        price: exchanges.sum(:price),
+        installments_count: exchanges.count,
+        installments: exchanges.map { |exchange| exchange.slice(:number, :price).merge(date: exchange.date&.iso8601) }
+      }
+    }
   end
 
   def build_card_transaction_headers(friend_user, exchanges)

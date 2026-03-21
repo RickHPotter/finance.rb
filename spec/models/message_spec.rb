@@ -27,12 +27,78 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("transaction_notification")
     end
 
+    it "renders v2 notification bodies from headers at display time" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "WATER BILL",
+              date: "2026-03-17",
+              reference_month_year: "MAR <26>",
+              price: -5000,
+              installments_count: 1,
+              installments: [
+                { number: 1, date: "2026-03-20", price: -5000 }
+              ]
+            }
+          },
+          replay: { id: reference_transaction.id, type: "CashTransaction", intent: "loan" }
+        }.to_json
+      )
+
+      expect(message.transaction_notification_message?).to be(true)
+      expect(message.replay_payload).to include("intent" => "loan")
+      expect(message.rendered_body).to include("WATER BILL")
+      expect(message.preview_body).to include("WATER BILL")
+    end
+
     it "classifies headerless messages with reference transactable as destroy notifications" do
       message = described_class.create!(
         conversation:,
         user: sender,
         reference_transactable: reference_transaction,
         body: "Destroyed"
+      )
+
+      expect(message.transaction_destroy_notification_message?).to be(true)
+      expect(message.backfill_kind).to eq("transaction_destroy_notification")
+    end
+
+    it "classifies v2 destroy notifications even when headers are present" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "WATER BILL",
+              date: "2026-03-17",
+              reference_month_year: "MAR <26>",
+              price: -5000,
+              installments_count: 1,
+              installments: [
+                { number: 1, date: "2026-03-20", price: -5000 }
+              ]
+            }
+          },
+          replay: nil
+        }.to_json
       )
 
       expect(message.transaction_destroy_notification_message?).to be(true)

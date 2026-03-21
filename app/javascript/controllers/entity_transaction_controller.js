@@ -299,6 +299,11 @@ export default class extends Controller {
       proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
       proposedDate.setHour(0)
       proposedDate.setMinute(0)
+
+      const boundType = this.boundTypeTargets.find((element) => element.checked)?.value
+      if (boundType !== "card_bound") {
+        proposedDate.daysForwards(1)
+      }
     }
 
     startingRailsDate.monthsForwards(startingNumber)
