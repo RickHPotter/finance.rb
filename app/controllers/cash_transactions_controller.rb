@@ -234,6 +234,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     to_price = search_cash_transaction_params[:to_price]
     from_installments_count = search_cash_transaction_params[:from_installments_count]
     to_installments_count = search_cash_transaction_params[:to_installments_count]
+    from_installments_number = search_cash_transaction_params[:from_installments_number]
+    to_installments_number = search_cash_transaction_params[:to_installments_number]
     from_date = search_cash_transaction_params[:from_date]
     to_date = search_cash_transaction_params[:to_date]
     paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
@@ -280,6 +282,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       to_price:,
       from_installments_count:,
       to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
       from_date:,
       to_date:,
       user_card: @user_card,
@@ -312,6 +316,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         to_price
         from_installments_count
         to_installments_count
+        from_installments_number
+        to_installments_number
         from_date
         to_date
         paid
@@ -357,6 +363,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       to_price: search_cash_transaction_params[:to_price],
       from_installments_count: search_cash_transaction_params[:from_installments_count],
       to_installments_count: search_cash_transaction_params[:to_installments_count],
+      from_installments_number: search_cash_transaction_params[:from_installments_number],
+      to_installments_number: search_cash_transaction_params[:to_installments_number],
       from_date: search_cash_transaction_params[:from_date],
       to_date: search_cash_transaction_params[:to_date],
       paid: search_cash_transaction_params[:paid],
