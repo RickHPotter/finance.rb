@@ -30,16 +30,21 @@ RSpec.describe Logic::MessageBackfillRunner do
       result = described_class.new(dry_run: false).call
 
       expect(result[:moved_messages_count]).to eq(2)
+      expect(result[:rewritten_messages_count]).to eq(2)
 
       human_message = Message.find_by(body: "hello")
-      notification_message = Message.find_by(body: "Notification")
-      destroy_message = Message.find_by(body: "Destroyed")
+      notification_message = Message.where(reference_transactable: reference_transaction)
+                                    .where("headers LIKE ?", "%message_notification_v2%")
+                                    .find_by(body: "notification:create")
+      destroy_message = Message.where(reference_transactable: reference_transaction).find_by(body: "notification:destroy")
 
       expect(human_message.conversation.kind).to eq("human")
       expect(notification_message.conversation.kind).to eq("assistant")
-      expect(notification_message.conversation.assistant_owner).to eq(receiver)
+      expect(JSON.parse(notification_message.headers)).to include("version" => "message_notification_v2")
+      expect(JSON.parse(notification_message.headers).dig("event", "action")).to eq("create")
       expect(destroy_message.conversation.kind).to eq("assistant")
-      expect(destroy_message.conversation.assistant_owner).to eq(receiver)
+      expect(destroy_message.conversation).to eq(notification_message.conversation)
+      expect(JSON.parse(destroy_message.headers).dig("event", "action")).to eq("destroy")
     end
   end
 end

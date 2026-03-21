@@ -61,7 +61,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   end
 
   def find_or_create_conversation(user, friend_user)
-    Conversation.find_or_create_assistant_between!(sender: user, receiver: friend_user)
+    Conversation.find_or_create_assistant_between!(user, friend_user)
   end
 
   def save_message(message, friend_user, exchanges, action)
@@ -80,6 +80,16 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   end
 
   def create_headers(message, friend_user, exchanges, action)
+    if action == :destroy
+      message.headers = {
+        version: "message_notification_v2",
+        event: build_destroy_notification_event(message, friend_user),
+        replay: nil
+      }.to_json
+
+      return
+    end
+
     return if exchanges.blank?
 
     transaction_type = exchanges.first.entity_transaction.transactable_type
@@ -97,6 +107,26 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
       event: build_notification_event(friend_user, exchanges, action, transaction_type),
       replay: replay_payload
     }.to_json
+  end
+
+  def build_destroy_notification_event(message, friend_user)
+    transaction = message.reference_transactable || self
+    installments = transaction.installments.order(:number, :date)
+
+    {
+      action: "destroy",
+      receiver_first_name: friend_user.first_name,
+      transaction_type: transaction.class.name,
+      details: {
+        transaction_label: model_attribute(transaction.class, :self),
+        description: transaction.description,
+        date: transaction.date&.iso8601,
+        reference_month_year: transaction.respond_to?(:month_year) ? transaction.month_year : nil,
+        price: transaction.respond_to?(:price) ? transaction.price : nil,
+        installments_count: installments.size,
+        installments: installments.map { |installment| installment.slice(:number, :price).merge(date: installment.date&.iso8601) }
+      }
+    }
   end
 
   def build_notification_event(friend_user, exchanges, action, transaction_type)

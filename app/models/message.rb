@@ -78,19 +78,57 @@ class Message < ApplicationRecord
     ].compact.join(": ")
   end
 
+  def notification_payload_v2?
+    parsed_headers["version"] == "message_notification_v2"
+  end
+
+  def applied?
+    applied_at.present?
+  end
+
+  def action_button_key(local_reference_exists:)
+    return :destroy if transaction_destroy_notification_message?
+    return :edit if applied? && local_reference_exists
+    return :correct if notification_action == "update" && local_reference_exists
+    return :create unless local_reference_exists
+
+    :edit
+  end
+
+  def assistant_side_for(user)
+    user_id == user.id ? "mine" : "theirs"
+  end
+
+  def actionable_for?(user)
+    return false if applied?
+
+    action_button_key(local_reference_exists: local_reference_exists_for?(user)).in?(%i[create correct destroy])
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
   private
 
+  def local_reference_exists_for?(user)
+    if transaction_destroy_notification_message?
+      return false if reference_transactable_id.blank?
+
+      user.cash_transactions.exists?(id: reference_transactable_id)
+    else
+      payload = replay_payload || {}
+      type = payload["type"]
+      id = payload["id"]
+      return false if type.blank? || id.blank?
+
+      user.cash_transactions.exists?(reference_transactable_type: type, reference_transactable_id: id)
+    end
+  end
+
   def parsed_headers
     @parsed_headers ||= JSON.parse(headers || "{}")
   rescue JSON::ParserError
     {}
-  end
-
-  def notification_payload_v2?
-    parsed_headers["version"] == "message_notification_v2"
   end
 
   def notification_action
@@ -105,17 +143,18 @@ class Message < ApplicationRecord
     details = notification_event.fetch("details", {})
     installments = Array(details["installments"])
     new_line = "\n"
+    transaction_class = notification_event["transaction_type"].constantize
 
     body = [ "<b>#{model_attribute(self, :hello)}, #{notification_event['receiver_first_name']}!</b>#{new_line * 2}" ]
 
     body << "#{model_attribute(self, notification_action_message_key)}#{new_line * 2}"
     body << "<b>#{details['transaction_label'].to_s.upcase}</b>#{new_line}"
-    body << "#{model_attribute(notification_event['transaction_type'].constantize, :description)}: #{details['description']}#{new_line}"
-    body << "#{model_attribute(notification_event['transaction_type'].constantize, :date)}: #{I18n.l(Date.parse(details['date']), format: :long)}#{new_line}"
-    body << "#{model_attribute(notification_event['transaction_type'].constantize, :reference_month_year)}: #{details['reference_month_year']}#{new_line}"
-    body << "#{model_attribute(notification_event['transaction_type'].constantize, :price)}: #{from_cent_based_to_float(details['price'], 'R$')}#{new_line}"
-    body << "#{model_attribute(notification_event['transaction_type'].constantize, :installments_count)}: #{details['installments_count']}#{new_line * 2}"
-    body << "<b>#{model_attribute(installment_class(notification_event['transaction_type']), :self).upcase}</b>#{new_line}"
+    body << "#{model_attribute(transaction_class, :description)}: #{details['description']}#{new_line}" if details["description"].present?
+    body << "#{model_attribute(transaction_class, :date)}: #{formatted_notification_date(details['date'])}#{new_line}" if details["date"].present?
+    body << "#{model_attribute(transaction_class, :reference_month_year)}: #{details['reference_month_year']}#{new_line}" if details["reference_month_year"].present?
+    body << "#{model_attribute(transaction_class, :price)}: #{from_cent_based_to_float(details['price'], 'R$')}#{new_line}" if details["price"].present?
+    body << "#{model_attribute(transaction_class, :installments_count)}: #{details['installments_count']}#{new_line * 2}" if details["installments_count"].present?
+    body << "<b>#{model_attribute(installment_class(notification_event['transaction_type']), :self).upcase}</b>#{new_line}" if installments.present?
 
     installments.each do |installment|
       installment_date = installment["date"].present? ? I18n.l(Date.parse(installment["date"]), format: :long) : installment["date"]
@@ -131,6 +170,10 @@ class Message < ApplicationRecord
 
   def installment_class(transaction_type)
     transaction_type.to_s.sub("Transaction", "Installment").constantize
+  end
+
+  def formatted_notification_date(date)
+    I18n.l(Date.parse(date), format: :long)
   end
 
   def notification_action_message_key
@@ -181,6 +224,7 @@ end
 # Database name: primary
 #
 #  id                          :bigint           not null, primary key
+#  applied_at                  :datetime         indexed
 #  body                        :text
 #  headers                     :text
 #  read_at                     :datetime
@@ -194,6 +238,7 @@ end
 #
 # Indexes
 #
+#  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_superseded_by_id        (superseded_by_id)

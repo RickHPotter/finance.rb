@@ -16,7 +16,6 @@ class Conversation < ApplicationRecord
   accepts_nested_attributes_for :conversation_participants, allow_destroy: true
 
   # @validations ..............................................................
-  validates :assistant_owner, presence: true, if: :assistant?
 
   # @callbacks ................................................................
   # @scopes ...................................................................
@@ -39,9 +38,8 @@ class Conversation < ApplicationRecord
     for_users([ user1.id, user2.id ]).human.first || create_with_participants!(user1, user2, kind: :human)
   end
 
-  def self.find_or_create_assistant_between!(sender:, receiver:)
-    for_users([ sender.id, receiver.id ]).assistant.find_by(assistant_owner: receiver) ||
-      create_with_participants!(sender, receiver, kind: :assistant, assistant_owner: receiver)
+  def self.find_or_create_assistant_between!(user1, user2)
+    for_users([ user1.id, user2.id ]).assistant.order(:id).first || create_with_participants!(user1, user2, kind: :assistant)
   end
 
   def self.create_with_participants!(user1, user2, **attributes)
@@ -61,10 +59,8 @@ class Conversation < ApplicationRecord
   def title_for(user)
     if human?
       friend_for(user)&.first_name
-    elsif assistant_owner_id == user.id
-      I18n.t("activerecord.attributes.conversation.your_assistant")
     else
-      I18n.t("activerecord.attributes.conversation.assistant_of", name: assistant_owner&.first_name)
+      I18n.t("activerecord.attributes.conversation.assistant_with", name: friend_for(user)&.first_name)
     end
   end
 
@@ -89,18 +85,12 @@ end
 # Table name: conversations
 # Database name: primary
 #
-#  id                 :bigint           not null, primary key
-#  kind               :string           default("human"), not null, indexed => [assistant_owner_id]
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
-#  assistant_owner_id :bigint           indexed, indexed => [kind]
+#  id         :bigint           not null, primary key
+#  kind       :string           default("human"), not null, indexed
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
 #
 # Indexes
 #
-#  index_conversations_on_assistant_owner_id           (assistant_owner_id)
-#  index_conversations_on_kind_and_assistant_owner_id  (kind,assistant_owner_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (assistant_owner_id => users.id)
+#  index_conversations_on_kind  (kind)
 #

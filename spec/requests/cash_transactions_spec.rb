@@ -133,6 +133,34 @@ RSpec.describe "CashTransactions", type: :request do
         )
       )
     end
+
+    it "marks the source message as applied when creating from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      post cash_transactions_path, params: cash_transaction.params.deep_merge(
+        cash_transaction: { source_message_id: source_message.id }
+      ), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
+    end
   end
 
   describe "[ #update ]" do
@@ -165,6 +193,69 @@ RSpec.describe "CashTransactions", type: :request do
       expect(subscription.reload.price).to eq(0)
       expect(other_subscription.reload.price).to eq(20_000)
     end
+
+    it "marks the source message as applied when updating from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: { id: @existing_cash_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+      cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { description: "Adjusted salary" })
+
+      put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params.deep_merge(
+        cash_transaction: { source_message_id: source_message.id }
+      ), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
+    end
+
+    it "keeps the source message id in the edit form opened from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: { id: @existing_cash_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get edit_cash_transaction_path(
+        @existing_cash_transaction,
+        cash_transaction: {
+          reference_transactable_type: "CashTransaction",
+          reference_transactable_id: @existing_cash_transaction.id,
+          source_message_id: source_message.id
+        }
+      )
+
+      expect(response.body).to include(%[value="#{source_message.id}"])
+      expect(response.body).to include(%(name="cash_transaction[source_message_id]"))
+    end
   end
 
   describe "[ #destroy ]" do
@@ -179,6 +270,33 @@ RSpec.describe "CashTransactions", type: :request do
       expect { delete cash_transaction_path(@existing_cash_transaction), headers: turbo_stream_headers }.to change(CashTransaction, :count).by(-1)
 
       expect(CashInstallment.where(id: cash_installment_ids)).to be_empty
+    end
+
+    it "marks the source message as applied when destroying from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:destroy",
+        reference_transactable: @existing_cash_transaction,
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: nil
+        }.to_json
+      )
+
+      delete cash_transaction_path(@existing_cash_transaction, message_id: source_message.id), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
     end
   end
 

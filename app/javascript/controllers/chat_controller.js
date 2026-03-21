@@ -31,8 +31,20 @@ export default class extends Controller {
     const element = this.element
     const currentUserId = document.querySelector("meta[name='current-user-id']").content
     const messageUserId = element.dataset.userId
+    const presenterRole = element.dataset.presenterRole
+    const presenterSide = element.dataset.presenterSide
 
-    if (currentUserId === messageUserId) {
+    if (presenterRole === "assistant") {
+      if (presenterSide === "self") {
+        this.messageAlignmentTarget.classList.add("justify-end")
+        this.messageColourTarget.classList.add("bg-emerald-50", "text-stone-900", "rounded-br-none", "border", "border-emerald-200")
+        if (this.hasMessageActionTarget) { this.messageActionTarget.classList.add("hidden") }
+      } else {
+        this.messageAlignmentTarget.classList.add("justify-start")
+        this.messageColourTarget.classList.add("bg-amber-50", "text-stone-900", "rounded-bl-none", "border", "border-amber-200")
+        if (this.hasMessageActionTarget) { this.messageActionTarget.classList.remove("hidden") }
+      }
+    } else if (currentUserId === messageUserId) {
       this.messageAlignmentTarget.classList.add("justify-end")
       this.messageColourTarget.classList.add("bg-blue-500", "text-white", "rounded-br-none")
       if (this.hasMessageActionTarget) { this.messageActionTarget.classList.add("hidden") }

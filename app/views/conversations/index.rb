@@ -18,7 +18,7 @@ class Views::Conversations::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "mx-1 min-h-[calc(100svh-22rem)] rounded-lg bg-white shadow-md shadow-red-50") do
+      div(class: "mx-1 min-h-[calc(100svh-18rem)] rounded-lg bg-white shadow-md shadow-red-50") do
         div(class: "flex items-center justify-between border-b border-stone-200 px-4 py-3") do
           h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Conversation) }
         end

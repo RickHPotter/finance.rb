@@ -136,7 +136,7 @@ Even with only two users, intent is not reliably inferable from prices and signs
 The first command in this slice should stay read-only:
 
 ```bash
-bin/rails exchange_backfill:audit USER_A=rikki USER_B=gigi OUTPUT=tmp/exchange_backfill_audit.json
+bin/rails exchange_backfill:audit USER_A=1 USER_B=4 OUTPUT=tmp/exchange_backfill_audit.json
 ```
 
 After the audit is reviewed, generate the mapping scaffold:
@@ -148,5 +148,5 @@ bin/rails exchange_backfill:seed_mapping INPUT=tmp/exchange_backfill_audit.json 
 Then apply the reviewed mapping in dry-run mode first:
 
 ```bash
-bin/rails exchange_backfill:apply USER_A=rikki USER_B=gigi MAPPING=tmp/exchange_backfill_mapping.json DRY_RUN=true OUTPUT=tmp/exchange_backfill_apply.json
+bin/rails exchange_backfill:apply USER_A=1 USER_B=4 MAPPING=tmp/exchange_backfill_mapping.json DRY_RUN=true OUTPUT=tmp/exchange_backfill_apply.json
 ```

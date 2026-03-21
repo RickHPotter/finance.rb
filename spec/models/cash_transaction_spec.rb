@@ -170,7 +170,7 @@ RSpec.describe CashTransaction, type: :model do
       rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
       create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
       create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
-      conversation = Conversation.create!.tap do |record|
+      Conversation.create!.tap do |record|
         record.conversation_participants.create!(user: rikki)
         record.conversation_participants.create!(user: gigi)
       end
@@ -217,6 +217,73 @@ RSpec.describe CashTransaction, type: :model do
       )
 
       expect(transaction.effective_friend_notification_intent).to eq("reimbursement")
+    end
+
+    it "builds v2 destroy notification headers for exchange cash transactions" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      gigi_bank_account = create(:user_bank_account, user: gigi, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user: rikki)
+        record.conversation_participants.create!(user: gigi)
+      end
+
+      transaction = described_class.create!(
+        user: rikki,
+        user_bank_account: rikki_bank_account,
+        description: "LOAN",
+        price: 5_000,
+        date: Date.new(2026, 3, 17),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: rikki.built_in_category("EXCHANGE").id }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            is_payer: true,
+            price: -5_000,
+            price_to_be_returned: -5_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+            ]
+          }
+        ]
+      )
+
+      create(
+        :cash_transaction,
+        user: gigi,
+        user_bank_account: gigi_bank_account,
+        reference_transactable: transaction,
+        description: "LOAN",
+        price: -5_000,
+        date: Date.new(2026, 3, 17),
+        month: 3,
+        year: 2026,
+        category_transactions: [ build(:category_transaction, category: gigi.built_in_category("EXCHANGE")) ],
+        cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026) ]
+      )
+
+      transaction.destroy
+
+      headers = JSON.parse(Message.order(:id).last.headers)
+
+      expect(headers).to include("version" => "message_notification_v2")
+      expect(headers.fetch("event")).to include(
+        "action" => "destroy",
+        "receiver_first_name" => "Gigi",
+        "transaction_type" => "CashTransaction"
+      )
+      expect(headers.fetch("replay")).to be_nil
     end
   end
 end

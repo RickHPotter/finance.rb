@@ -1,144 +1,150 @@
 # JIRAIYA-08: Conversation Routing and Message Localization
 
-## Goal
+## Outcome
 
-The current `conversations` route is acting as if it were a single generic chat, but the product meaning has already diverged.
+The conversations/messages refactor is now in place:
 
-With the current two-user setup, we now need three distinct conversation threads:
+- human chat and notification traffic are split
+- notification messages use `message_notification_v2`
+- notification text is rendered from structured payloads instead of relying only on stored `body`
+- historical notification messages have been backfilled
+- assistant conversations are merged to one shared thread per real-user pair
+- assistant threads have no composer
+- assistant messages are assistant-presented in the UI while still exposing the human actor
+- assistant threads default to `Pending`
+- assistant threads support localized `All / Pending` and `Mine / Theirs` bubble filters
 
-1. `Rikki <-> Gigi`
+The resulting conversation model is:
+
+1. `User A <-> User B`
    - human-to-human conversation
-   - should hold the organic chat history
-   - this is also where most old messages currently live
+   - organic chat history only
 
-2. `Rikki <-> Gigi's Assistant`
-   - system-side notifications that affect Rikki
-   - transaction-reference messages sent on behalf of Gigi should live here
+2. `User A <-> User B Assistant`
+   - one shared assistant/system conversation for that pair
+   - transaction notifications and other assistant-side operational messages in both directions
 
-3. `Gigi <-> Rikki's Assistant`
-   - system-side notifications that affect Gigi
-   - transaction-reference messages sent on behalf of Rikki should live here
+## Original Problem
 
-The second goal is to stop localizing notification messages at creation time with the receiver locale in an ad hoc way. That works superficially, but it makes the stored message body feel impure and ties persisted content to transient locale assumptions.
+The original assistant-thread model was too granular.
 
-## Problem Statement
+Between the same two users, the app could expose:
 
-### Conversation meaning is overloaded
+- one human conversation
+- one assistant thread "for me"
+- one assistant thread "for them"
 
-Today, human chat and transaction/system notifications are mixed in the same conversation space.
+That created avoidable cognitive overhead:
 
-That causes a few problems:
+- users had to reason about "my assistant" versus "their assistant"
+- assistant-presented message styling alone did not solve the thread-level confusion
+- the product intent was simpler than the data model
 
-- the route name says `conversations`, but the product behavior is closer to a single catch-all `conversation`
-- user-to-user chat and assistant/system notifications are not cleanly separated
-- future assistant workflows will be harder to reason about if they continue sharing the same thread as human messages
+There was also a UX mismatch:
 
-### Message localization is happening too early
+- assistant threads still behaved too much like chat
+- the composer existed where sending a human message made no sense
+- applied messages could bury the still-actionable ones
 
-Today, notification bodies are written in the language of the receiver at creation time.
+## Final Model
 
-That creates these issues:
-
-- persisted content depends on the receiver locale at the exact time of creation
-- the body becomes hard to reinterpret if locale preferences change later
-- backfills and replay logic become harder because the domain payload and the rendered message are mixed together
-
-## Target Model
-
-### Conversation split
-
-We should model conversations by role, not just by participant count.
-
-Suggested roles:
+### Conversation Roles
 
 - `human`
 - `assistant`
 
-Suggested participant patterns:
+### Participant Rules
 
 - `human`: exactly the two real users
-- `assistant`: one real user plus one assistant identity representing the other side
+- `assistant`: the same two real users, but representing the shared system/assistant thread for that pair
 
-This means notifications should stop being written into the direct human thread once the assistant split is introduced.
+This means there are exactly two conversations per pair:
 
-### Message rendering split
+- one human thread
+- one assistant thread
 
-Persist notification messages as domain events plus payload, and render localized text from those domain values.
+There is no longer any product-level distinction based on `assistant_owner`.
 
-In practical terms:
+### Assistant Thread UX
 
-- `headers` should remain the structured payload for transaction replay
-- notification messages should gain an explicit event type or message kind
-- the stored `body` should stop being the only source of truth for notification meaning
-- localized body text should be derived from message kind + payload + current locale
+Assistant conversations now behave like an inbox:
+
+- no composer in `conversations#show` when `conversation.assistant?`
+- assistant messages are presented as assistant-authored bubbles
+- the human actor is still visible as metadata
+- messages are visually split between `Mine` and `Theirs`
+- `Pending` is the default view
+- `Pending` is based on actionable state, not just raw `applied_at`
+- `All` is available when full history is needed
+
+### Message Rendering
+
+This part is implemented and should be preserved:
+
+- `headers` remain the structured payload for replay
+- notification messages use an explicit v2 payload shape
+- the stored `body` is no longer the only source of truth for notification meaning
+- localized notification text is derived from payload + current locale
 
 ## Backfill Notes
 
-### Conversation backfill
+### Message Classification
 
-Historical messages need to be redistributed into the new assistant conversations.
+The message classification used for the backfill remains:
 
-We already have the real discriminator in the current message UI flow:
-
-- `headers.present?` => system transaction notification (`create` / `update`)
-- `headers.blank? && reference_transactable.present?` => system destroy notification
+- `headers.present?` => transaction notification
+- `headers.blank? && reference_transactable.present?` => destroy notification
 - `headers.blank? && reference_transactable.blank?` => human chat
 
-So a naive rule of "no headers means human conversation" is wrong, but the current UI rule is strong enough to backfill the entire `messages` table safely.
+That rule is enough to separate human versus assistant traffic without guessing from free text.
 
-When backfilling, we should classify every row into one of:
+### Conversation Backfill
 
-- `human`
-- `transaction_notification`
-- `transaction_destroy_notification`
+Historical messages were first redistributed into assistant conversations, then merged out of the older assistant-owner shape into the new shared assistant thread per pair.
 
-That classification can then drive the assistant conversation split without guessing from free text.
+The merge rule was:
 
-### Localization backfill
+- for each real user pair
+- keep the `human` conversation as-is
+- collapse all assistant messages into one shared `assistant` conversation
 
-We should not blindly rewrite all historical message bodies first.
+## Remaining Questions
 
-Safer order:
+1. Should applied assistant messages eventually get their own explicit `Applied` filter, or is `All` enough?
+2. Should obsolete assistant conversations from the old model be deleted immediately or kept temporarily for safety/debugging?
+3. Should assistant filters remain URL-only, or later be remembered per user/session?
 
-1. classify message kinds
-2. split conversations
-3. introduce render-time localization for new notifications
-4. decide whether old bodies should remain frozen or be regenerated
+## Result
 
-## Proposed Development Order
+This slice is complete:
 
-1. Codify message classification in the `Message` model itself.
-2. Add a read-only audit/export over the entire `messages` table.
-3. Add assistant conversation support.
-4. Route new notification messages into assistant conversations.
-5. Keep human chat in the direct user conversation only.
-6. Introduce explicit notification message kinds.
-7. Move notification localization to render time instead of creation time.
-8. Backfill messages into the correct conversation buckets.
-9. Revisit historical localized bodies and decide whether they stay frozen or are regenerated.
+- assistant routing is merged to one thread per user pair
+- assistant-presented message UI is in place
+- assistant-thread composer is removed
+- assistant threads are pending-first by default
+- assistant filters are localized and mobile-safe
 
-## Open Questions
+The product model is now simple:
 
-1. Should assistant identities be explicit persisted records, or implicit conversation roles?
-2. Should the old `body` remain stored for notifications, or become a cached/rendered field?
-3. Should destroy notifications keep `headers` empty, or should they also gain a structured payload in the new model?
-4. Should human and assistant threads share the same UI surface with filters/tabs, or become visibly separate entry points?
+- one place for human chat
+- one place for assistant/system work
 
-## Recommendation
+## Initial Command
 
-Do this in two phases:
+The first command in this slice should stay read-only:
 
-### Phase 1
+```bash
+bin/rails message_backfill:audit OUTPUT=tmp/message_backfill_audit.json
+```
 
-- split conversations
-- route new system notifications into assistant threads
-- keep current localized body generation temporarily
+After the audit is reviewed, apply the redistribution and localization rewrite in dry-run mode first:
 
-### Phase 2
+```bash
+bin/rails message_backfill:apply DRY_RUN=true OUTPUT=tmp/message_backfill_apply.json
+```
 
-- introduce explicit notification payload versioning
-- shift new notification localization to render time
-- keep historical localized bodies on legacy fallback until a dedicated backfill exists
-- revisit whether old bodies should be regenerated later
+Then run the same command without dry-run:
 
-This keeps the conversation split independent from the larger localization refactor, while still acknowledging that the two concerns are connected.
+```bash
+bin/rails message_backfill:apply DRY_RUN=false OUTPUT=tmp/message_backfill_apply.json
+```

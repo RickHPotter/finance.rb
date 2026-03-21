@@ -36,6 +36,8 @@ class Views::CashTransactions::Form < Views::Base
                           value: cash_transaction.reference_transactable_id   || params.dig(:cash_transaction, :reference_transactable_id)
         form.hidden_field :friend_notification_intent,
                           value: cash_transaction.effective_friend_notification_intent || params.dig(:cash_transaction, :friend_notification_intent)
+        form.hidden_field :source_message_id,
+                          value: cash_transaction.source_message_id
 
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }

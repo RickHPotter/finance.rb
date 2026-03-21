@@ -25,7 +25,7 @@ class Views::Subscriptions::Index < Views::Base
   private
 
   def desktop_index
-    div(class: "flex min-h-[calc(100svh-22rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
+    div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
       div(class: "flex justify-between mb-6") do
         link_to(
           action_model(:newa, Subscription),
@@ -68,7 +68,7 @@ class Views::Subscriptions::Index < Views::Base
   end
 
   def mobile_index
-    div(class: "flex min-h-[calc(100svh-22rem)] flex-col rounded-lg bg-white p-4 shadow-md w-full") do
+    div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md w-full") do
       div(class: "min-w-full flex-1") do
         turbo_frame_tag :subscriptions do
           div(class: "min-h-full", data: { controller: "datatable" }) do

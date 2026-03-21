@@ -17,7 +17,9 @@ class Views::Entities::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      mobile ? mobile_index : desktop_index
+      div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white shadow-md") do
+        mobile ? mobile_index : desktop_index
+      end
     end
   end
 
@@ -46,7 +48,7 @@ class Views::Entities::Index < Views::Base
 
     div(class: "min-w-full") do
       turbo_frame_tag :entities do
-        div(class: "min-h-screen", data: { controller: "datatable" }) do
+        div(data: { controller: "datatable" }) do
           text_field_tag(
             :search,
             nil,
@@ -93,7 +95,7 @@ class Views::Entities::Index < Views::Base
     div(class: "w-full") do
       div(class: "min-w-full") do
         turbo_frame_tag :entities do
-          div(class: "min-h-screen", data: { controller: "datatable" }) do
+          div(data: { controller: "datatable" }) do
             div(class: "p-3 mb-6 bg-white rounded-lg shadow-sm grid grid-cols-1 gap-2") do
               link_to(
                 include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),

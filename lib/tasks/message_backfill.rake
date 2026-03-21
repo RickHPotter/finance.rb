@@ -13,7 +13,7 @@ namespace :message_backfill do
     puts "Counts: #{report[:counts]}"
   end
 
-  desc "Backfill messages into human or assistant conversations"
+  desc "Backfill messages into human or assistant conversations and rewrite legacy notifications to v2"
   task apply: :environment do
     output = ENV["OUTPUT"].presence || "tmp/message_backfill_apply.json"
     dry_run = ActiveModel::Type::Boolean.new.cast(ENV.fetch("DRY_RUN", "true"))
@@ -25,5 +25,6 @@ namespace :message_backfill do
     puts "Message backfill apply report written to #{output}"
     puts "Dry run: #{report[:dry_run]}"
     puts "Moved messages: #{report[:moved_messages_count]}"
+    puts "Rewritten messages: #{report[:rewritten_messages_count]}"
   end
 end
