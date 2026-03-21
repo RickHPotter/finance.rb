@@ -267,7 +267,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
               from_installments_count: nil,
               to_installments_count: nil,
               from_installments_number: installment_number,
-              to_installments_countnumber: installment_number,
+              to_installments_number: installment_number,
               user_card: nil,
               skip_budgets: true,
               force_mobile: true
@@ -314,6 +314,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
               to_price: nil,
               from_installments_count: nil,
               to_installments_count: nil,
+              from_installments_number: budget.first_installment_only ? 1 : nil,
+              to_installments_number: budget.first_installment_only ? 1 : nil,
               user_card: nil,
               skip_budgets: true,
               force_mobile: true

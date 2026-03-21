@@ -114,6 +114,8 @@ class CashInstallmentsController < ApplicationController
       to_price: nil,
       from_installments_count: nil,
       to_installments_count: nil,
+      from_installments_number: nil,
+      to_installments_number: nil,
       from_date: nil,
       to_date: nil,
       user_card: @user_card,
@@ -143,6 +145,8 @@ class CashInstallmentsController < ApplicationController
     to_price = context[:to_price]
     from_installments_count = context[:from_installments_count]
     to_installments_count = context[:to_installments_count]
+    from_installments_number = context[:from_installments_number]
+    to_installments_number = context[:to_installments_number]
     from_date = context[:from_date]
     to_date = context[:to_date]
     paid = ActiveModel::Type::Boolean.new.cast(context[:paid])
@@ -168,6 +172,8 @@ class CashInstallmentsController < ApplicationController
       to_price:,
       from_installments_count:,
       to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
       from_date:,
       to_date:,
       paid:,
@@ -195,6 +201,8 @@ class CashInstallmentsController < ApplicationController
       to_price:,
       from_installments_count:,
       to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
       from_date:,
       to_date:,
       user_card: @user_card,
