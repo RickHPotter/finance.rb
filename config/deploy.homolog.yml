@@ -1,0 +1,33 @@
+<% require "dotenv"; Dotenv.load(".env.homolog") %>
+
+proxy:
+  host: homolog.30fev.com
+
+env:
+  clear:
+    RAILS_ENV: homolog
+    APP_HOST: homolog.30fev.com
+    POSTGRES_DATABASE: finance_homolog
+    POSTGRES_USERNAME: postgres
+    POSTGRES_HOST: financerb-homolog-db
+    POSTGRES_PORT: 5432
+  secret:
+    - RAILS_MASTER_KEY
+    - SECRET_KEY_BASE
+    - POSTGRES_PASSWORD
+
+accessories:
+  db_homolog:
+    image: postgres:16
+    service: financerb-homolog-db
+    port: "127.0.0.1:5435:5432"
+    roles:
+      - web
+    env:
+      clear:
+        POSTGRES_DB: finance_homolog
+        POSTGRES_USER: postgres
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data_homolog:/var/lib/postgresql/data

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FORCE="${1:-}"
+
+if [[ "${FORCE}" != "--force" ]]; then
+  echo "Refusing to run without --force"
+  echo "Usage: bin/homolog-refresh --force"
+  exit 1
+fi
+
+if [[ ! -f ".env" ]]; then
+  echo ".env not found"
+  exit 1
+fi
+
+if [[ ! -f ".env.homolog" ]]; then
+  echo ".env.homolog not found"
+  exit 1
+fi
+
+set -a
+source .env
+set +a
+
+PROD_DB_PASSWORD="${POSTGRES_PASSWORD:-}"
+
+set -a
+source .env.homolog
+set +a
+
+HOMOLOG_DB_PASSWORD="${POSTGRES_PASSWORD:-}"
+
+REMOTE_HOST="${REMOTE_HOST:-187.77.32.15}"
+REMOTE_SSH_TARGET="${REMOTE_SSH_TARGET:-root@${REMOTE_HOST}}"
+PROD_DB_CONTAINER="${PROD_DB_CONTAINER:-financerb-db}"
+HOMOLOG_DB_CONTAINER="${HOMOLOG_DB_CONTAINER:-financerb-homolog-db}"
+PROD_DB_NAME="${PROD_DB_NAME:-finance}"
+HOMOLOG_DB_NAME="${HOMOLOG_DB_NAME:-finance_homolog}"
+PROD_DB_USER="${PROD_DB_USER:-postgres}"
+HOMOLOG_DB_USER="${HOMOLOG_DB_USER:-postgres}"
+
+: "${PROD_DB_PASSWORD:?POSTGRES_PASSWORD must be set in .env for the production database}"
+: "${HOMOLOG_DB_PASSWORD:?POSTGRES_PASSWORD must be set in .env.homolog for the homolog database}"
+
+if [[ "${PROD_DB_CONTAINER}" == "${HOMOLOG_DB_CONTAINER}" ]]; then
+  echo "Refusing to run: source and target DB containers are the same"
+  exit 1
+fi
+
+if [[ "${PROD_DB_NAME}" == "${HOMOLOG_DB_NAME}" ]]; then
+  echo "Refusing to run: source and target DB names are the same"
+  exit 1
+fi
+
+read -r -d '' REMOTE_SCRIPT <<'EOF' || true
+set -euo pipefail
+
+docker inspect "$PROD_DB_CONTAINER" >/dev/null
+docker inspect "$HOMOLOG_DB_CONTAINER" >/dev/null
+
+docker exec -e PGPASSWORD="$PROD_POSTGRES_PASSWORD" "$PROD_DB_CONTAINER" \
+  pg_dump \
+    --username="$PROD_DB_USER" \
+    --dbname="$PROD_DB_NAME" \
+    --clean \
+    --if-exists \
+    --no-owner \
+    --no-privileges \
+    --format=plain | \
+docker exec -i -e PGPASSWORD="$HOMOLOG_POSTGRES_PASSWORD" "$HOMOLOG_DB_CONTAINER" \
+  psql \
+    --username="$HOMOLOG_DB_USER" \
+    --dbname="$HOMOLOG_DB_NAME" \
+    --set=ON_ERROR_STOP=1
+EOF
+
+ssh "${REMOTE_SSH_TARGET}" \
+  PROD_DB_CONTAINER="${PROD_DB_CONTAINER}" \
+  HOMOLOG_DB_CONTAINER="${HOMOLOG_DB_CONTAINER}" \
+  PROD_DB_NAME="${PROD_DB_NAME}" \
+  HOMOLOG_DB_NAME="${HOMOLOG_DB_NAME}" \
+  PROD_DB_USER="${PROD_DB_USER}" \
+  HOMOLOG_DB_USER="${HOMOLOG_DB_USER}" \
+  PROD_POSTGRES_PASSWORD="${PROD_DB_PASSWORD}" \
+  HOMOLOG_POSTGRES_PASSWORD="${HOMOLOG_DB_PASSWORD}" \
+  "bash -lc $(printf '%q' "${REMOTE_SCRIPT}")"
+
+echo "Homolog refresh completed"

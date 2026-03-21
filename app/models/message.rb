@@ -22,7 +22,7 @@ class Message < ApplicationRecord
                         target: "messages_#{conversation.id}",
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
-  after_create_commit :send_email, unless: -> { Rails.env.development? }
+  after_create_commit :send_email, if: -> { Rails.env.production? }
 
   # @scopes ...................................................................
   scope :unread, -> { where(read_at: nil) }

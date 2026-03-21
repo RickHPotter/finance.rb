@@ -2,4 +2,7 @@
 
 `export CONTAINER_HOSTNAME=$(hostname)`
 
+destination = ENV["KAMAL_DESTINATION"].to_s
+exit 0 unless destination.empty? || destination == "production"
+
 system %[kamal app exec --primary "bin/rails runner 'DbBackupJob.perform_now rescue nil'"]

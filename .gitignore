@@ -47,6 +47,7 @@ config/credentials.yml.enc
 .yardoc
 .env
 .env.test
+.env.homolog
 .env.development
 .env.production
 

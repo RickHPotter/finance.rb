@@ -1,0 +1,7 @@
+# Run from the repository root on a trusted machine that has SSH access to the VPS.
+# This refreshes the homolog database from production once per day.
+#
+# Example:
+# 15 2 * * * cd /path/to/finance.rb && /bin/bash -lc './bin/homolog-refresh --force' >> /var/log/financerb-homolog-refresh.log 2>&1
+
+15 2 * * * cd /path/to/finance.rb && /bin/bash -lc './bin/homolog-refresh --force' >> /var/log/financerb-homolog-refresh.log 2>&1

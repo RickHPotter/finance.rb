@@ -14,3 +14,7 @@ test:
 production:
   database: cache
   <<: *default
+
+homolog:
+  database: cache
+  <<: *default

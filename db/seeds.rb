@@ -2,9 +2,7 @@
 
 require "faker"
 
-return if Rails.env.development?
-return if Rails.env.test?
-return if Rails.env.production?
+return if 1 == 1
 
 FactoryBot.create(:user, :random, first_name: "John", last_name: "Doe")
 FactoryBot.create(:user, :random, first_name: "Jane", last_name: "Doe")
