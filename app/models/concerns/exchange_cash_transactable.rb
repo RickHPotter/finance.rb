@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce CashTransactions.
-module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
+module ExchangeCashTransactable
   extend ActiveSupport::Concern
 
   included do
@@ -119,7 +119,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def recalculate_old_cash_transaction # rubocop:disable Metrics/MethodLength
+  def recalculate_old_cash_transaction
     old_cash_transaction = cash_transaction
     updated_price = old_cash_transaction.exchanges.sum(:price) - price_in_database
 
@@ -174,7 +174,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   # FIXME: refactor
-  def update_cash_transaction_and_installment(updated_price:) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def update_cash_transaction_and_installment(updated_price:) # rubocop:disable Metrics/AbcSize
     _destroy_cash_transaction and return if updated_price.zero?
 
     cash_transaction.update_columns(price: updated_price, date:, month:, year:)

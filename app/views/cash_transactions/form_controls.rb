@@ -19,6 +19,7 @@ class Views::CashTransactions::FormControls < Views::Base
     div(class: "lg:flex lg:gap-2 w-full mb-3") do
       user_bank_account_field
       category_and_entity_fields
+      exchange_intent_field
       date_field
       price_and_installments_controls
     end
@@ -65,7 +66,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def date_field
-    div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-2/12 mb-3 lg:mb-0") do
       TextField \
         form, :date,
         id: :cash_transaction_date,
@@ -122,12 +123,38 @@ class Views::CashTransactions::FormControls < Views::Base
           type: :number,
           svg: :number,
           min: 1, max: 72,
-          value: [ cash_transaction.cash_installments.size, cash_transaction.cash_installments_count, 1 ].max,
+          value: [ visible_cash_installments_count, 1 ].max,
           class: "font-graduate",
           onclick: "this.select();",
           disabled: cash_transaction.card_payment?,
           data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
       end
     end
+  end
+
+  def exchange_intent_field
+    div(
+      class: "#{exchange_intent_wrapper_class} mb-3 lg:mb-0 hidden",
+      data: { reactive_form_target: :exchangeIntentWrapper }
+    ) do
+      form.select(
+        :friend_notification_intent,
+        [
+          [ model_attribute(cash_transaction, "friend_notification_intents.loan"), "loan" ],
+          [ model_attribute(cash_transaction, "friend_notification_intents.reimbursement"), "reimbursement" ]
+        ],
+        { selected: cash_transaction.effective_friend_notification_intent.presence || "loan" },
+        class: input_class_without_icon,
+        data: { reactive_form_target: :exchangeIntentInput }
+      )
+    end
+  end
+
+  def exchange_intent_wrapper_class
+    "w-full lg:w-2/12"
+  end
+
+  def visible_cash_installments_count
+    cash_transaction.cash_installments.reject(&:marked_for_destruction?).size.presence || cash_transaction.cash_installments_count
   end
 end

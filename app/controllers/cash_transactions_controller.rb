@@ -100,12 +100,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def handle_category_params
     return if cash_transaction_params[:category_id].nil?
-    return if @cash_transaction.category_transactions.pluck(:category_id).include?(cash_transaction_params[:category_id].to_i)
 
-    @cash_transaction.category_transactions.build(category_id: cash_transaction_params[:category_id])
+    new_category_id = cash_transaction_params[:category_id].to_i
+    current_category_ids = @cash_transaction.category_transactions.reject(&:marked_for_destruction?).map(&:category_id).sort
+    return if current_category_ids == [ new_category_id ]
+
+    if replaying_reference_transaction? || (@cash_transaction.persisted? && current_category_ids.one?)
+      @cash_transaction.category_transactions.each(&:mark_for_destruction)
+    end
+
+    @cash_transaction.category_transactions.build(category_id: new_category_id)
   end
 
-  def handle_entity_params # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def handle_entity_params # rubocop:disable Metrics/AbcSize
     if cash_transaction_params[:entity_id].present?
       return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
 
@@ -120,20 +127,38 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
           end
 
           entity_transaction.assign_attributes(entity_transactions_attributes.except(:exchanges_attributes))
-
-          entity_transaction.exchanges.each do |exchange|
-            exchanges_attributes = entity_transactions_attributes[:exchanges_attributes].find do |a|
-              a[:number].to_i == exchange.number
-            end
-
-            exchange.assign_attributes(exchanges_attributes)
-          end
+          synchronize_entity_transaction_exchanges(entity_transaction, entity_transactions_attributes[:exchanges_attributes])
         end
       else
         @cash_transaction.entity_transactions.each(&:mark_for_destruction)
         @cash_transaction.entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes]
       end
     end
+  end
+
+  def synchronize_entity_transaction_exchanges(entity_transaction, exchanges_attributes)
+    exchanges_attributes = Array(exchanges_attributes)
+    existing_exchanges_by_number = entity_transaction.exchanges.index_by(&:number)
+
+    entity_transaction.exchanges.each do |exchange|
+      new_attributes = exchanges_attributes.find { |attrs| attrs[:number].to_i == exchange.number }
+
+      if new_attributes.present?
+        exchange.assign_attributes(new_attributes)
+      else
+        exchange.mark_for_destruction
+      end
+    end
+
+    exchanges_attributes.each do |exchange_attributes|
+      next if existing_exchanges_by_number.key?(exchange_attributes[:number].to_i)
+
+      entity_transaction.exchanges.build(exchange_attributes)
+    end
+  end
+
+  def replaying_reference_transaction?
+    cash_transaction_params[:reference_transactable_id].present?
   end
 
   def handle_save
@@ -280,7 +305,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:cash_transaction).permit(
       %i[
         id description comment date month year price paid user_id user_bank_account_id
-        reference_transactable_type reference_transactable_id category_id entity_id subscription_id
+        reference_transactable_type reference_transactable_id category_id entity_id subscription_id friend_notification_intent
       ],
       user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],

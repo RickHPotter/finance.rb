@@ -20,6 +20,9 @@ export default class extends Controller {
     "addEntity",
     "entityIcons",
 
+    "exchangeIntentWrapper",
+    "exchangeIntentInput",
+
     "updateButton"
   ]
 
@@ -33,6 +36,8 @@ export default class extends Controller {
     if (this.element.querySelector("#entities_nested")) {
       this._updateEntities()
     }
+
+    this.syncExchangeIntentVisibility()
 
     if (this.hasPriceInstallmentInputTargets) {
       this._updateInstallmentsPrices()
@@ -254,6 +259,7 @@ export default class extends Controller {
 
     wrapper.style.display = "none"
     wrapper.querySelector("input[name*='_destroy']").value = "true"
+    this.syncExchangeIntentVisibility()
   }
 
   // Entities
@@ -471,6 +477,7 @@ export default class extends Controller {
     newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
+    this.syncExchangeIntentVisibility()
   }
 
   _insertExchangeCategory() {
@@ -488,6 +495,7 @@ export default class extends Controller {
 
       categoryWrapperDiv.style.display = "block"
       categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "false"
+      this.syncExchangeIntentVisibility()
 
       return
     }
@@ -500,6 +508,7 @@ export default class extends Controller {
     newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
+    this.syncExchangeIntentVisibility()
   }
 
   _removeExchangeCategory() {
@@ -510,6 +519,30 @@ export default class extends Controller {
 
     categoryWrapperDiv.style.display = "none"
     categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "true"
+    this.syncExchangeIntentVisibility()
+  }
+
+  syncExchangeIntentVisibility() {
+    if (!this.hasExchangeIntentWrapperTarget || !this.hasExchangeIntentInputTarget) { return }
+
+    const exchangeCategoryId = this.element.querySelector("#exchange_category_id")?.value
+    const hasExchangeCategory = this.categoryWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".categories_category_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
+
+      return input?.value === exchangeCategoryId && destroyInput?.value !== "true" && wrapper.checkVisibility()
+    })
+
+    this.exchangeIntentWrapperTarget.classList.toggle("hidden", !hasExchangeCategory)
+
+    if (!hasExchangeCategory) {
+      this.exchangeIntentInputTarget.value = "loan"
+      return
+    }
+
+    if (!this.exchangeIntentInputTarget.value) {
+      this.exchangeIntentInputTarget.value = "loan"
+    }
   }
 
   _updateCategories() {

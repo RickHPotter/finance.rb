@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe Logic::CashInstallments do # rubocop:disable Metrics/BlockLength
-  describe ".fetch_cash_installments" do # rubocop:disable Metrics/BlockLength
+RSpec.describe Logic::CashInstallments do
+  describe ".fetch_cash_installments" do
     let(:user) { create(:user) }
     let(:bank) { create(:bank, :random) }
     let(:user_bank_account) { create(:user_bank_account, user: user, bank: bank) }

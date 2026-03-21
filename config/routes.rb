@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-Rails.application.routes.draw do # rubocop:disable Metrics/BlockLength
+Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   root "cash_transactions#index"

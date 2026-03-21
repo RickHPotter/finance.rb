@@ -32,6 +32,10 @@ en:
         entity_id: Entity
         categories: Categories
         entities: Entities
+        friend_notification_intent: Exchange Type
+        friend_notification_intents:
+          loan: Loan
+          reimbursement: Reimbursement
         total_amount: Total Amount
         created_at: Created at
         updated_at: Updated at
@@ -77,6 +81,10 @@ pt-BR:
         entity_id: Entidade
         categories: Categorias
         entities: Entidades
+        friend_notification_intent: Tipo de Troca
+        friend_notification_intents:
+          loan: Empréstimo
+          reimbursement: Reembolso
         total_amount: Valor Total
         created_at: Criado em
         updated_at: Atualizado em

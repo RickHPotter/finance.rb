@@ -137,7 +137,7 @@ module Logic
       }
     end
 
-    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       search_term = search_params.delete(:search_term) || ""
       category_ids = cash_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?

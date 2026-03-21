@@ -48,6 +48,89 @@ RSpec.describe "CashTransactions", type: :request do
       expect(created_cash_transaction.entities).to include(entity)
       expect(subscription.reload.price).to eq(20_000)
     end
+
+    it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
+      other_user = create(:user, :random)
+      create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
+      other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+
+      cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
+      cash_transaction.entity_transactions = [ {
+        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        price: -20_000,
+        price_to_be_returned: -20_000,
+        exchanges_attributes: [
+          { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+        ]
+      } ]
+      cash_transaction.friend_notification_intent = "reimbursement"
+
+      post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "reimbursement",
+        "category_ids" => other_user.built_in_category("BORROW RETURN").id,
+        "entity_ids" => other_user_entity.id
+      )
+      expect(headers.fetch("cash_installments_attributes")).to contain_exactly(
+        a_hash_including("price" => 20_000)
+      )
+      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => false,
+          "price" => 0,
+          "price_to_be_returned" => 0,
+          "entity_id" => other_user_entity.id,
+          "exchanges_count" => 0
+        )
+      )
+    end
+
+    it "defaults pure exchange notifications to loan intent" do
+      other_user = create(:user, :random)
+      create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
+      other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+
+      cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
+      cash_transaction.entity_transactions = [ {
+        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        price: -20_000,
+        price_to_be_returned: -20_000,
+        exchanges_attributes: [
+          { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+        ]
+      } ]
+
+      post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "loan",
+        "category_ids" => other_user.built_in_category("EXCHANGE").id
+      )
+      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => true,
+          "price" => 20_000,
+          "price_to_be_returned" => 20_000,
+          "entity_id" => other_user_entity.id,
+          "exchanges_count" => 1
+        )
+      )
+    end
   end
 
   describe "[ #update ]" do

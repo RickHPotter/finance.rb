@@ -93,7 +93,7 @@ class CashInstallmentsController < ApplicationController
     end
   end
 
-  def build_index_context # rubocop:disable Metrics/MethodLength
+  def build_index_context
     date = Date.new(@cash_installment.year, @cash_installment.month)
     active_month_years = [ date.strftime("%Y%m").to_i ]
     years = [ date.year ]

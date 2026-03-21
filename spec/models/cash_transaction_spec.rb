@@ -37,6 +37,180 @@ RSpec.describe CashTransaction, type: :model do
 
       expect(subject.exchange_return?).to be(true)
     end
+
+    it "builds reimbursement notification headers for cash exchanges when the intent is reimbursement" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      gigi_entity_for_rikki = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user: rikki)
+        record.conversation_participants.create!(user: gigi)
+      end
+
+      described_class.create!(
+        user: rikki,
+        user_bank_account: rikki_bank_account,
+        description: "WATER BILL",
+        price: 5_000,
+        date: Date.new(2026, 3, 17),
+        month: 3,
+        year: 2026,
+        friend_notification_intent: "reimbursement",
+        category_transactions_attributes: [
+          { category_id: rikki.built_in_category("EXCHANGE").id }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            is_payer: true,
+            price: -5_000,
+            price_to_be_returned: -5_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+            ]
+          }
+        ]
+      )
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "reimbursement",
+        "category_ids" => gigi.built_in_category("BORROW RETURN").id,
+        "entity_ids" => gigi_entity_for_rikki.id
+      )
+      expect(headers.fetch("cash_installments_attributes")).to contain_exactly(
+        a_hash_including("price" => 5000, "date" => "2026-03-20T00:00:00.000-03:00")
+      )
+      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => false,
+          "price" => 0,
+          "price_to_be_returned" => 0,
+          "entity_id" => gigi_entity_for_rikki.id,
+          "exchanges_count" => 0
+        )
+      )
+    end
+
+    it "defaults to loan notification headers for pure exchange cash transactions" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      gigi_entity_for_rikki = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user: rikki)
+        record.conversation_participants.create!(user: gigi)
+      end
+
+      described_class.create!(
+        user: rikki,
+        user_bank_account: rikki_bank_account,
+        description: "LOAN",
+        price: 5_000,
+        date: Date.new(2026, 3, 17),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: rikki.built_in_category("EXCHANGE").id }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            is_payer: true,
+            price: -5_000,
+            price_to_be_returned: -5_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+            ]
+          }
+        ]
+      )
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "loan",
+        "category_ids" => gigi.built_in_category("EXCHANGE").id
+      )
+      expect(headers.fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => true,
+          "price" => 5000,
+          "price_to_be_returned" => 5000,
+          "entity_id" => gigi_entity_for_rikki.id,
+          "exchanges_count" => 1
+        )
+      )
+    end
+
+    it "hydrates the effective friend notification intent from the latest active message headers" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user: rikki)
+        record.conversation_participants.create!(user: gigi)
+      end
+
+      transaction = described_class.create!(
+        user: rikki,
+        user_bank_account: rikki_bank_account,
+        description: "WATER BILL",
+        price: 5_000,
+        date: Date.new(2026, 3, 17),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: rikki.built_in_category("EXCHANGE").id }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            is_payer: true,
+            price: -5_000,
+            price_to_be_returned: -5_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+            ]
+          }
+        ]
+      )
+
+      conversation.messages.create!(
+        user: rikki,
+        reference_transactable: transaction,
+        body: "Old",
+        headers: { id: transaction.id, type: "CashTransaction", intent: "loan" }.to_json
+      )
+      conversation.messages.create!(
+        user: rikki,
+        reference_transactable: transaction,
+        body: "New",
+        headers: { id: transaction.id, type: "CashTransaction", intent: "reimbursement" }.to_json
+      )
+
+      expect(transaction.effective_friend_notification_intent).to eq("reimbursement")
+    end
   end
 end
 

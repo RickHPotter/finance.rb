@@ -2,7 +2,7 @@
 
 module Logic
   class CardInstallments
-    def self.find_ref_month_year_by_params(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    def self.find_ref_month_year_by_params(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       month_year   = search_params.delete(:month_year)
       year         = month_year[0..3]
       month        = month_year[4..]

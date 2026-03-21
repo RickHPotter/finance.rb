@@ -16,7 +16,10 @@ module Views
       def view_template
         colour = category_transaction&.category&.hex_colour
 
-        div(class: "nested-form-wrapper", data: { new_record: category_transaction.new_record?, reactive_form_target: "categoryWrapper" }) do
+        div(
+          class: "nested-form-wrapper #{'hidden' if category_transaction.marked_for_destruction?}",
+          data: { new_record: category_transaction.new_record?, reactive_form_target: "categoryWrapper" }
+        ) do
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
               div(

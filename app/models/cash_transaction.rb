@@ -13,7 +13,7 @@ class CashTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent
 
   # @relationships ............................................................
   belongs_to :user
@@ -124,10 +124,32 @@ class CashTransaction < ApplicationRecord
     cash_installments_count
   end
 
+  def effective_friend_notification_intent
+    return friend_notification_intent if friend_notification_intent.present?
+
+    latest_friend_notification_intent
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
   private
+
+  def latest_friend_notification_intent
+    return if new_record?
+
+    headers = Message.where(reference_transactable: self, user:)
+                     .where(superseded_by_id: nil)
+                     .where.not(headers: [ nil, "" ])
+                     .order(created_at: :desc)
+                     .pick(:headers)
+
+    return if headers.blank?
+
+    JSON.parse(headers)["intent"]
+  rescue JSON::ParserError
+    nil
+  end
 
   def build_default_cash_installments
     cash_installments.new(number: 1, price:, date:) if cash_installments.empty?

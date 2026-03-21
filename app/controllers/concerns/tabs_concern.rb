@@ -24,7 +24,7 @@ module TabsConcern
 
   private
 
-  def set_variables # rubocop:disable Metrics/MethodLength
+  def set_variables
     set_sublinks
 
     @main_tab = [

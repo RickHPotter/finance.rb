@@ -3,7 +3,7 @@
 module Params
   class CashTransactions
     attr_accessor :description, :date, :month, :year, :price, :paid, :user_id, :user_card_id, :user_bank_account_id, :subscription_id, :cash_installments,
-                  :category_transactions, :entity_transactions
+                  :category_transactions, :entity_transactions, :friend_notification_intent
 
     def initialize(cash_transaction: {}, cash_installments: {}, category_transactions: {}, entity_transactions: {})
       assign_cash_transaction(cash_transaction)
@@ -26,6 +26,7 @@ module Params
           user_bank_account_id:,
           user_card_id:,
           subscription_id:,
+          friend_notification_intent:,
           cash_installments_attributes:,
           category_transactions_attributes:,
           entity_transactions_attributes:
@@ -89,6 +90,7 @@ module Params
       @user_card_id         = cash_transaction_options[:user_card_id]         || cash_transaction[:user_card_id]
       @user_bank_account_id = cash_transaction_options[:user_bank_account_id] || cash_transaction[:user_bank_account_id]
       @subscription_id      = cash_transaction_options[:subscription_id]      || cash_transaction[:subscription_id]
+      @friend_notification_intent = cash_transaction_options[:friend_notification_intent] || cash_transaction[:friend_notification_intent]
     end
 
     def assign_cash_installments(cash_installments)
