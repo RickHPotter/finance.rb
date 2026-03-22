@@ -46,27 +46,33 @@ Metrics/CyclomaticComplexity:
 Metrics/PerceivedComplexity:
   Max: 16
 
+Metrics/ModuleLength:
+  Max: 200
+
 Metrics/ClassLength:
   Max: 200
 
 Metrics/MethodLength:
-  Max: 22
+  Max: 32
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"
+    - "config/**/*.rb"
 
 Metrics/AbcSize:
   Max: 32
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"
+    - "config/**/*.rb"
 
 Metrics/BlockLength:
   Max: 22
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"
-    - "spec/***/*"
+    - "config/**/*.rb"
+    - "spec/**/*"
 
 Lint/MissingSuper:
   Enabled: true

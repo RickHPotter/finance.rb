@@ -294,15 +294,23 @@ export default class extends Controller {
     if (startingNumber > 0) {
       const prevExchange = visibleExchangesWrappers[startingNumber - 1]
       const dateValue = prevExchange.querySelector(".exchange_date").value
+      const monthValue = parseInt(prevExchange.querySelector(".exchange_month").value)
+      const yearValue = parseInt(prevExchange.querySelector(".exchange_year").value)
+
       proposedDate = new RailsDate(dateValue)
+      proposedDate.monthsForwards(1)
+      startingRailsDate = new RailsDate(yearValue, monthValue, 1)
+      startingRailsDate.monthsForwards(1)
     } else {
       proposedDate = new RailsDate(document.querySelector("#cash_transaction_date").value)
       proposedDate.setHour(0)
       proposedDate.setMinute(0)
-    }
 
-    startingRailsDate.monthsForwards(startingNumber)
-    proposedDate.monthsForwards(startingNumber)
+      const boundType = this.boundTypeTargets.find((element) => element.checked)?.value
+      if (boundType !== "card_bound") {
+        proposedDate.daysForwards(1)
+      }
+    }
 
     visibleExchangesWrappers.slice(startingNumber).forEach((target, index) => {
       if (index > 0) {

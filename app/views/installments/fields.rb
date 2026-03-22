@@ -65,7 +65,7 @@ module Views
               id: :installment_date,
               type: "datetime-local",
               value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
-              class: "installment_date w-full w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+              class: "installment_date w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
               data: { reactive_form_target: :dateInput, action: "input->reactive-form#setPaidIfPastCurrentDay" }
 
             positive = installment.price.to_i.positive?

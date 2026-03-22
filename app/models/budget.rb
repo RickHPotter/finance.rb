@@ -139,12 +139,12 @@ class Budget < ApplicationRecord
 
       errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget"))
     else
-      same_category = current_ref_month_year_budgets.joins(:categories).where(categories: { id: category_ids })
-      same_entity = current_ref_month_year_budgets.joins(:entities).where(entities: { id: entity_ids })
+      same_category_ids = current_ref_month_year_budgets.joins(:categories).where(categories: { id: category_ids }).ids.uniq
+      same_entity_ids   = current_ref_month_year_budgets.joins(:entities).where(entities: { id: entity_ids }).ids.uniq
 
       error_messages = []
-      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category.present? && same_category.pluck(:id) != [ id ]
-      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget") if same_entity.present? && same_entity.pluck(:id) != [ id ]
+      error_messages << I18n.t("activerecord.errors.models.budget.same_category_budget") if same_category_ids.present? && same_category_ids != [ id ]
+      error_messages << I18n.t("activerecord.errors.models.budget.same_entity_budget")   if same_entity_ids.present? && same_entity_ids != [ id ]
 
       errors.add(:base, error_messages.join(" ")) if error_messages.present?
     end

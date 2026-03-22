@@ -57,7 +57,18 @@ export default class extends Controller {
       const month = parseInt(button.dataset.monthYear)
       const count = parseInt(button.dataset.count || "0")
 
-      if (count <= 0 || this.activeMonths.has(month)) return
+      if (count <= 0) {
+        if (!this.activeMonths.has(month)) return
+
+        this.activeMonths.delete(month)
+        delete button.dataset.active
+        button.classList.remove(...active_bg)
+        button.classList.add(...inactive_bg)
+        changed = true
+        return
+      }
+
+      if (this.activeMonths.has(month)) return
 
       this.activeMonths.add(month)
       button.dataset.active = ""

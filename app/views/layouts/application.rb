@@ -15,7 +15,7 @@ class Views::Layouts::Application < Views::Base
       head do
         title { I18n.t("pages.title") }
         meta name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-        meta name: "theme-color", content: homolog? ? "#78350f" : "#1a202c"
+        meta name: "theme-color", content: theme_colour
         meta name: "mobile-web-app-capable", content: "yes"
         meta name: "current-user-id", content: rails_view_context.current_user&.id
 
@@ -39,7 +39,7 @@ class Views::Layouts::Application < Views::Base
             render partial "shared/flash"
           end
 
-          section class: "mt-10 flex min-h-0 flex-1 flex-col w-full" do
+          section class: "mt-8 flex min-h-0 flex-1 flex-col w-full" do
             div class: "flex min-h-0 flex-1 flex-col w-full" do
               div class: "mb-10 flex shrink-0 justify-center" do
                 div id: "tabs", class: "w-screen" do
@@ -104,9 +104,31 @@ class Views::Layouts::Application < Views::Base
     Rails.env.homolog?
   end
 
-  def body_class
-    return "min-h-screen bg-linear-to-br from-amber-950 via-stone-900 to-rose-950 text-amber-50" if homolog?
+  def theme_colour
+    homolog? ? "#78350f" : "#1a202c"
+  end
 
-    "min-h-screen bg-gray-900 text-white"
+  def body_class
+    base_class = [ "min-h-screen", "text-white" ]
+
+    current_user_is_rikki = rails_view_context.current_user.email == "luisfla55@gmail.com"
+
+    if homolog?
+      base_class << "bg-gradient-to-r"
+
+      base_class << if current_user_is_rikki
+                      "from-red-700 via-zinc-950 to-zinc-950"
+                    else
+                      "from-gray-600 via-gray-900 to-gray-900"
+                    end
+    else
+      base_class << if current_user_is_rikki
+                      "bg-zinc-950 text-white"
+                    else
+                      "bg-gray-900 text-white"
+                    end
+    end
+
+    base_class.join(" ")
   end
 end

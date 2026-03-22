@@ -28,6 +28,7 @@ In Phlex `.rb` views, call RubyUI components and local `app/components` componen
 
 In Phlex views, custom helper methods are not available automatically. If a view calls a helper method such as `model_attribute`, its helper module must be explicitly included in that Phlex class, for example `include TranslateHelper`.
 The same applies to component/helper methods such as `cached_icon`: include the owning helper module explicitly, for example `include CacheHelper`, instead of assuming it is available.
+In Phlex views, do not pass the return value of `options_for_select` as an argument to another helper. `options_for_select` writes HTML directly, so either call it inside the `select` block or pass the raw options collection to the `select` helper and skip `options_for_select` entirely.
 
 When using translation helpers such as `action_message(...)`, verify the locale key already exists before using it. If it does not exist, either add the locale entry first or use an existing translation key instead of assuming the helper call is valid.
 

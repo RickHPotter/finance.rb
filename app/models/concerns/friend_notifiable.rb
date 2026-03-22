@@ -18,18 +18,6 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
   protected
 
-  def exchange_category
-    @exchange_category ||= user.categories.find_by(category_name: "EXCHANGE")
-  end
-
-  def not_exchange?
-    category_transactions.pluck(:category_id).exclude?(exchange_category.id)
-  end
-
-  def was_not_exchange?
-    original_categories.blank? || original_categories.exclude?(exchange_category.id)
-  end
-
   def notify_friends(action)
     if (action != :create) && not_exchange?
       return if was_not_exchange?
@@ -69,17 +57,11 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     entity_transaction = entity_transactions.find_by(entity_id: friend.id)
     return if entity_transaction.nil? && action != :destroy
 
-    save_message(message, friend_user, entity_transaction&.exchanges, action)
+    save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action)
   end
 
   def find_or_create_conversation(user, friend_user)
-    conversation = Conversation.joins(:conversation_participants)
-                               .where(conversation_participants: { user_id: [ user.id, friend_user.id ] })
-                               .group("conversations.id")
-                               .having("COUNT(DISTINCT conversation_participants.user_id) = 2")
-                               .first
-
-    conversation || Conversation.fast_create(user, friend_user)
+    Conversation.find_or_create_assistant_between!(user, friend_user)
   end
 
   def save_message(message, friend_user, exchanges, action)
@@ -93,60 +75,79 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     supersede_previous_messages(message.conversation, message) if action != :create
   end
 
-  def create_body(message, friend_user, exchanges, action)
-    new_line = "\n"
-    body = [ "<b>#{model_attribute(message, :hello)}, #{friend_user.first_name}!</b>#{new_line * 2}" ]
-
-    case action
-    when :create
-      body << (model_attribute(message, :ivemadeatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-      body << (new_line + model_attribute(message, :click_down_below))
-    when :update
-      body << (model_attribute(message, :iveupdatedatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-      body << (new_line + model_attribute(message, :click_down_below))
-    when :destroy
-      body << (model_attribute(message, :ivedeletedatransactiononyou) + (new_line * 2))
-      body.concat(transaction_details(exchanges, new_line))
-    end
-
-    message.body = body.join
-  end
-
-  def transaction_details(exchanges, new_line)
-    return [] unless exchanges
-
-    [
-      "<b>#{model_attribute(self, :self).upcase}</b>#{new_line}",
-      "#{model_attribute(self, :description)}: #{description}#{new_line}",
-      "#{model_attribute(self, :date)}: #{I18n.l(date, format: :long)}#{new_line}",
-      "#{model_attribute(self, :reference_month_year)}: #{month_year}#{new_line}",
-      "#{model_attribute(self, :price)}: #{from_cent_based_to_float(exchanges.sum(:price), 'R$')}#{new_line}",
-      "#{model_attribute(self, :installments_count)}: #{exchanges.count}#{new_line * 2}",
-      "<b>#{model_attribute(installments.first, :self).upcase}</b>#{new_line}"
-    ].tap do |details|
-      exchanges.each do |exchange|
-        details << " - #{exchange.number} [#{I18n.l(exchange.date, format: :long)}] #{from_cent_based_to_float(exchange.price, 'R$')}#{new_line}"
-      end
-    end
+  def create_body(message, _friend_user, _exchanges, action)
+    message.body = "notification:#{action}"
   end
 
   def create_headers(message, friend_user, exchanges, action)
-    return if action == :destroy
+    if action == :destroy
+      message.headers = {
+        version: "message_notification_v2",
+        event: build_destroy_notification_event(message, friend_user),
+        replay: nil
+      }.to_json
+
+      return
+    end
+
     return if exchanges.blank?
 
     transaction_type = exchanges.first.entity_transaction.transactable_type
 
-    message.headers = if transaction_type == "CardTransaction"
-                        build_card_transaction_headers(friend_user, exchanges).to_json
-                      else
-                        build_cash_transaction_headers(friend_user, exchanges).to_json
-                      end
+    replay_payload = if action == :destroy
+                       nil
+                     elsif transaction_type == "CardTransaction"
+                       build_card_transaction_headers(friend_user, exchanges)
+                     else
+                       build_cash_transaction_headers(friend_user, exchanges)
+                     end
+
+    message.headers = {
+      version: "message_notification_v2",
+      event: build_notification_event(friend_user, exchanges, action, transaction_type),
+      replay: replay_payload
+    }.to_json
+  end
+
+  def build_destroy_notification_event(message, friend_user)
+    transaction = message.reference_transactable || self
+    installments = transaction.installments.order(:number, :date)
+
+    {
+      action: "destroy",
+      receiver_first_name: friend_user.first_name,
+      transaction_type: transaction.class.name,
+      details: {
+        transaction_label: model_attribute(transaction.class, :self),
+        description: transaction.description,
+        date: transaction.date&.iso8601,
+        reference_month_year: transaction.respond_to?(:month_year) ? transaction.month_year : nil,
+        price: transaction.respond_to?(:price) ? transaction.price : nil,
+        installments_count: installments.size,
+        installments: installments.map { |installment| installment.slice(:number, :price).merge(date: installment.date&.iso8601) }
+      }
+    }
+  end
+
+  def build_notification_event(friend_user, exchanges, action, transaction_type)
+    {
+      action: action.to_s,
+      receiver_first_name: friend_user.first_name,
+      transaction_type:,
+      details: {
+        transaction_label: model_attribute(self, :self),
+        description:,
+        date: date&.iso8601,
+        reference_month_year: month_year,
+        price: exchanges.sum(:price),
+        installments_count: exchanges.count,
+        installments: exchanges.map { |exchange| exchange.slice(:number, :price).merge(date: exchange.date&.iso8601) }
+      }
+    }
   end
 
   def build_card_transaction_headers(friend_user, exchanges)
-    exchanges = exchanges.order(:number, :date).map do |exchange|
+    exchanges = exchanges.map do |exchange|
       { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1 }
     end
 
@@ -155,7 +156,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
     {
       id:,
-      type: model_name.name,
+      type:,
       description:,
       price:,
       date:,
@@ -167,28 +168,40 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     }
   end
 
-  def build_cash_transaction_headers(friend_user, exchanges) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-    installments_attributes = installments.order(:number, :date).map do |installment|
+  def build_cash_transaction_headers(friend_user, exchanges)
+    intent = friend_notification_intent_for(friend_user)
+
+    if intent == "reimbursement"
+      build_cash_reimbursement_headers(friend_user, exchanges, intent)
+    else
+      build_cash_loan_headers(friend_user, exchanges, intent)
+    end
+  end
+
+  def build_cash_loan_headers(friend_user, exchanges, intent)
+    cash_installments_attributes = installments.order(:number, :date).map do |installment|
       installment.slice(:number, :date, :month, :year).merge(price: installment.price * -1)
     end
 
-    exchanges = exchanges.order(:number, :date).map do |exchange|
+    exchanges_attributes = exchanges.map do |exchange|
       exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
     end
 
-    installments_price = installments_attributes.pluck(:price).sum
-    exchanges_price = exchanges.pluck(:price).sum
+    installments_price = cash_installments_attributes.pluck(:price).sum
+    exchanges_price = exchanges_attributes.pluck(:price).sum
 
     {
       id:,
-      type: model_name.name,
+      type:,
+      version: "cash_exchange_v2",
+      intent:,
       description:,
       price: installments_price,
       date:,
       month:,
       year:,
       category_ids: friend_user.categories.find_by(category_name: "EXCHANGE").id,
-      cash_installments_attributes: installments_attributes,
+      cash_installments_attributes:,
       entity_transactions_attributes: [
         {
           is_payer: true,
@@ -196,15 +209,85 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
           price_to_be_returned: exchanges_price,
           entity_id: friend_user.entities.that_are_users.find_by(entity_user: user).id,
           exchanges_count: exchanges.count,
-          exchanges_attributes: exchanges
+          exchanges_attributes:
         }
       ]
     }
+  end
+
+  def build_cash_reimbursement_headers(friend_user, exchanges, intent)
+    counterpart_entity_id = friend_user.entities.that_are_users.find_by(entity_user: user).id
+    cash_installments_attributes = exchanges.map do |exchange|
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
+    end
+
+    installments_price = cash_installments_attributes.pluck(:price).sum
+
+    {
+      id:,
+      type:,
+      version: "cash_exchange_v2",
+      intent:,
+      description:,
+      price: installments_price,
+      date:,
+      month:,
+      year:,
+      category_ids: friend_user.categories.find_by(category_name: "BORROW RETURN").id,
+      entity_ids: counterpart_entity_id,
+      cash_installments_attributes:,
+      entity_transactions_attributes: [
+        {
+          is_payer: false,
+          price: 0,
+          price_to_be_returned: 0,
+          entity_id: counterpart_entity_id,
+          exchanges_count: 0,
+          exchanges_attributes: []
+        }
+      ]
+    }
+  end
+
+  def friend_notification_intent_for(friend_user)
+    explicit_intent = respond_to?(:friend_notification_intent) ? friend_notification_intent.presence : nil
+    return explicit_intent if explicit_intent.in?(%w[loan reimbursement])
+
+    return "reimbursement" if reimbursement_notification?(friend_user)
+
+    "loan"
   end
 
   def supersede_previous_messages(conversation, new_message)
     previous_messages = conversation.messages.where(reference_transactable: self).where(superseded_by_id: nil).where.not(id: new_message.id)
 
     previous_messages.update_all(superseded_by_id: new_message.id)
+  end
+
+  # HELPER VALUE METHODS
+  def exchange_category
+    @exchange_category ||= user.categories.find_by(category_name: "EXCHANGE")
+  end
+
+  def type
+    model_name.name
+  end
+
+  # HELPER BOOLEAN METHODS
+  def not_exchange?
+    category_transactions.pluck(:category_id).exclude?(exchange_category.id)
+  end
+
+  def was_not_exchange?
+    original_categories.blank? || original_categories.exclude?(exchange_category.id)
+  end
+
+  def reimbursement_notification?(friend_user)
+    category_names = categories.pluck(:category_name)
+    return true if (category_names - [ "EXCHANGE" ]).present?
+
+    counterpart_entity_id = user.entities.that_are_users.find_by(entity_user: friend_user)&.id
+
+    entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
   end
 end

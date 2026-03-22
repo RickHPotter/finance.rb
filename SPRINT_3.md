@@ -62,6 +62,7 @@ too visible to ignore.
 
 - Issues:
   - [#28](https://github.com/RickHPotter/finance.rb/issues/28)
+  - #[37](https://github.com/RickHPotter/finance.rb/pull/37)
 
 - Subtasks:
   - Treat `Subscription` as a recurring financial transaction concept, such as
@@ -75,7 +76,7 @@ too visible to ignore.
   - Track enough metadata to explain lifecycle, such as start date, renewal date,
     status, and pause/finish state.
 - Extra:
-  - NA.
+  - [HOMOLOG](https://homolog.30fev.com) deploy.
 
 ### JIRAIYA-03/fe-01: Rethink datatables, filters, and ordering
 
@@ -165,6 +166,7 @@ too visible to ignore.
   - Create a first assistant conversation flow, even if it starts as a guided or
     rule-based helper.
 - Extra:
+  - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating EXCHANGE CashTransactions.
   - Keep the first assistant version narrow: onboarding, reminders, transaction nudges,
     or lightweight guidance are enough.
 

@@ -9,7 +9,7 @@ class Views::Shared::AppFooter < Views::Base
   include TranslateHelper
 
   def view_template
-    ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto bg-gray-900 text-white") do
+    ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto") do
       div(class: "flex justify-between items-center") do
         locale_links
         action_links

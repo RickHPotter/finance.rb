@@ -50,6 +50,7 @@ module Logic
         pending: search_params.delete(:pending),
         installments_price: build_cash_transaction_price_range_conditions(search_params),
         cash_installments_count: build_installments_count_range_conditions(search_params),
+        installments_number: build_installments_number_range_conditions(search_params),
         date: build_date_range_conditions(search_params),
         search_term: search_params.delete(:search_term),
         skip_budgets: search_params.delete(:skip_budgets),
@@ -66,11 +67,13 @@ module Logic
       installments_price = build_cash_transaction_price_range_conditions(params)
       params[:price] = build_price_range_conditions(params)
       params[:cash_installments_count] = build_installments_count_range_conditions(params)
+      installments_number = build_installments_number_range_conditions(params)
 
       associations = build_conditions_for_associations(params)
 
       {
         price: installments_price,
+        number: installments_number,
         cash_transaction: {
           **params.without(:cash_installments_attributes, :category_transactions_attributes, :entity_transactions_attributes).compact_blank,
           **associations.compact_blank
@@ -114,6 +117,18 @@ module Logic
       (from_installments_count..to_installments_count)
     end
 
+    def self.build_installments_number_range_conditions(search_params)
+      from_installments_number = search_params.delete(:from_installments_number).to_i
+      to_installments_number = search_params.delete(:to_installments_number).to_i
+      return nil if from_installments_number.zero? && to_installments_number.zero?
+
+      from_installments_number ||= 1
+      to_installments_number ||= from_installments_number
+      from_installments_number, to_installments_number = to_installments_number, from_installments_number if from_installments_number > to_installments_number
+
+      (from_installments_number..to_installments_number)
+    end
+
     def self.build_date_range_conditions(search_params)
       from_date = search_params.delete(:from_date)
       to_date   = search_params.delete(:to_date)
@@ -137,7 +152,7 @@ module Logic
       }
     end
 
-    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       search_term = search_params.delete(:search_term) || ""
       category_ids = cash_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?

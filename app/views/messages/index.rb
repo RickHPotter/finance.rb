@@ -8,7 +8,7 @@ class Views::Messages::Index < Views::Base
   end
 
   def view_template
-    messages.includes(:superseded_by).each do |message|
+    messages.each do |message|
       render Views::Messages::Message.new(message:)
     end
   end

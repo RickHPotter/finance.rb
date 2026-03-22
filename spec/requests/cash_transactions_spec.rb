@@ -48,6 +48,119 @@ RSpec.describe "CashTransactions", type: :request do
       expect(created_cash_transaction.entities).to include(entity)
       expect(subscription.reload.price).to eq(20_000)
     end
+
+    it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
+      other_user = create(:user, :random)
+      create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
+      other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+
+      cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
+      cash_transaction.entity_transactions = [ {
+        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        price: -20_000,
+        price_to_be_returned: -20_000,
+        exchanges_attributes: [
+          { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+        ]
+      } ]
+      cash_transaction.friend_notification_intent = "reimbursement"
+
+      post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include("version" => "message_notification_v2")
+      expect(headers.fetch("replay")).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "reimbursement",
+        "category_ids" => other_user.built_in_category("BORROW RETURN").id,
+        "entity_ids" => other_user_entity.id
+      )
+      expect(headers.fetch("replay").fetch("cash_installments_attributes")).to contain_exactly(
+        a_hash_including("price" => 20_000)
+      )
+      expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => false,
+          "price" => 0,
+          "price_to_be_returned" => 0,
+          "entity_id" => other_user_entity.id,
+          "exchanges_count" => 0
+        )
+      )
+    end
+
+    it "defaults pure exchange notifications to loan intent" do
+      other_user = create(:user, :random)
+      create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
+      other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
+      Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+
+      cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
+      cash_transaction.entity_transactions = [ {
+        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        price: -20_000,
+        price_to_be_returned: -20_000,
+        exchanges_attributes: [
+          { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+        ]
+      } ]
+
+      post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
+
+      headers = JSON.parse(Message.last.headers)
+
+      expect(headers).to include("version" => "message_notification_v2")
+      expect(headers.fetch("replay")).to include(
+        "version" => "cash_exchange_v2",
+        "intent" => "loan",
+        "category_ids" => other_user.built_in_category("EXCHANGE").id
+      )
+      expect(headers.fetch("replay").fetch("entity_transactions_attributes")).to contain_exactly(
+        a_hash_including(
+          "is_payer" => true,
+          "price" => 20_000,
+          "price_to_be_returned" => 20_000,
+          "entity_id" => other_user_entity.id,
+          "exchanges_count" => 1
+        )
+      )
+    end
+
+    it "marks the source message as applied when creating from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      post cash_transactions_path, params: cash_transaction.params.deep_merge(
+        cash_transaction: { source_message_id: source_message.id }
+      ), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
+    end
   end
 
   describe "[ #update ]" do
@@ -80,6 +193,87 @@ RSpec.describe "CashTransactions", type: :request do
       expect(subscription.reload.price).to eq(0)
       expect(other_subscription.reload.price).to eq(20_000)
     end
+
+    it "marks the source message as applied when updating from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: { id: @existing_cash_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+      cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { description: "Adjusted salary" })
+
+      put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params.deep_merge(
+        cash_transaction: { source_message_id: source_message.id }
+      ), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
+    end
+
+    it "keeps the source message id in the edit form opened from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: {
+            id: @existing_cash_transaction.id,
+            type: "CashTransaction",
+            reference_transactable_type: "CashTransaction",
+            reference_transactable_id: @existing_cash_transaction.id,
+            description: "Salary payment",
+            price: @existing_cash_transaction.price,
+            date: @existing_cash_transaction.date,
+            month: @existing_cash_transaction.month,
+            year: @existing_cash_transaction.year,
+            category_ids: @existing_cash_transaction.categories.ids,
+            entity_ids: @existing_cash_transaction.entities.ids,
+            cash_installments_attributes: @existing_cash_transaction.cash_installments.map do |installment|
+              {
+                number: installment.number,
+                price: installment.price,
+                date: installment.date,
+                month: installment.month,
+                year: installment.year
+              }
+            end,
+            entity_transactions_attributes: []
+          }
+        }.to_json
+      )
+
+      get edit_cash_transaction_path(@existing_cash_transaction, cash_transaction: { source_message_id: source_message.id })
+
+      expect(response.body).to include(%[value="#{source_message.id}"])
+      expect(response.body).to include(%(name="cash_transaction[source_message_id]"))
+      expect(response.body).to include(%(name="cash_transaction[reference_transactable_type]"))
+      expect(response.body).to include(%(name="cash_transaction[reference_transactable_id]"))
+      expect(response.body).to include(%[value="#{@existing_cash_transaction.entities.first.id}"])
+    end
   end
 
   describe "[ #destroy ]" do
@@ -94,6 +288,33 @@ RSpec.describe "CashTransactions", type: :request do
       expect { delete cash_transaction_path(@existing_cash_transaction), headers: turbo_stream_headers }.to change(CashTransaction, :count).by(-1)
 
       expect(CashInstallment.where(id: cash_installment_ids)).to be_empty
+    end
+
+    it "marks the source message as applied when destroying from a message" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:destroy",
+        reference_transactable: @existing_cash_transaction,
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Salary payment" }
+          },
+          replay: nil
+        }.to_json
+      )
+
+      delete cash_transaction_path(@existing_cash_transaction, message_id: source_message.id), headers: turbo_stream_headers
+
+      expect(source_message.reload.applied_at).to be_present
     end
   end
 
