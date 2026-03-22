@@ -75,6 +75,13 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
 
         expect(cash_transactions).to be_empty
       end
+
+      it "does not raise when a new standalone monetary exchange resolves to zero cash transaction price" do
+        exchange = build(:exchange, entity_transaction: build(:entity_transaction, transactable: build(:cash_transaction, user:)), exchange_type: :monetary, price: 0)
+
+        expect { exchange.save! }.not_to raise_error
+        expect(exchange.cash_transaction).to be_nil
+      end
     end
 
     context "( updating exchangable card_transaction )" do

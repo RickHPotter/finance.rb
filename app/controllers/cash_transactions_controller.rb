@@ -83,17 +83,17 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     handle_category_params
     handle_entity_params
 
-    if cash_transaction_params[:cash_installments_attributes].present?
+    if effective_cash_transaction_params[:cash_installments_attributes].present?
       @cash_transaction.edit_phase = true if @cash_transaction.persisted?
 
       @cash_transaction.cash_installments.each(&:mark_for_destruction)
 
-      @cash_transaction.cash_installments_attributes = cash_transaction_params[:cash_installments_attributes]
-      @cash_transaction.description = cash_transaction_params[:description]
-      @cash_transaction.price = cash_transaction_params[:price]
-      @cash_transaction.date = cash_transaction_params[:date]
-      @cash_transaction.month = cash_transaction_params[:month]
-      @cash_transaction.year = cash_transaction_params[:year]
+      @cash_transaction.cash_installments_attributes = effective_cash_transaction_params[:cash_installments_attributes]
+      @cash_transaction.description = effective_cash_transaction_params[:description]
+      @cash_transaction.price = effective_cash_transaction_params[:price]
+      @cash_transaction.date = effective_cash_transaction_params[:date]
+      @cash_transaction.month = effective_cash_transaction_params[:month]
+      @cash_transaction.year = effective_cash_transaction_params[:year]
 
     elsif @cash_transaction.new_record?
       @cash_transaction.build_month_year
@@ -101,9 +101,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_category_params
-    return if cash_transaction_params[:category_id].nil?
+    return if effective_cash_transaction_params[:category_id].nil?
 
-    new_category_id = cash_transaction_params[:category_id].to_i
+    new_category_id = effective_cash_transaction_params[:category_id].to_i
     current_category_ids = @cash_transaction.category_transactions.reject(&:marked_for_destruction?).map(&:category_id).sort
     return if current_category_ids == [ new_category_id ]
 
@@ -115,16 +115,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_entity_params # rubocop:disable Metrics/AbcSize
-    if cash_transaction_params[:entity_id].present?
-      return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(cash_transaction_params[:entity_id].to_i)
+    if effective_cash_transaction_params[:entity_id].present?
+      return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(effective_cash_transaction_params[:entity_id].to_i)
 
-      @cash_transaction.entity_transactions.build(entity_id: cash_transaction_params[:entity_id])
-    elsif cash_transaction_params[:entity_transactions_attributes].present?
+      @cash_transaction.entity_transactions.build(entity_id: effective_cash_transaction_params[:entity_id])
+    elsif effective_cash_transaction_params[:entity_transactions_attributes].present?
       current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
-      new_entities = cash_transaction_params[:entity_transactions_attributes].pluck(:entity_id).map(&:to_i)
+      new_entities = effective_cash_transaction_params[:entity_transactions_attributes].pluck(:entity_id).map(&:to_i)
       if @cash_transaction.entity_transactions.one? && current_entities == new_entities # means it is persisted
         @cash_transaction.entity_transactions.each do |entity_transaction|
-          entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes].find do |a|
+          entity_transactions_attributes = effective_cash_transaction_params[:entity_transactions_attributes].find do |a|
             a[:entity_id].to_i == entity_transaction.entity_id
           end
 
@@ -160,15 +160,15 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def replaying_reference_transaction?
-    cash_transaction_params[:reference_transactable_id].present?
+    effective_cash_transaction_params[:reference_transactable_id].present?
   end
 
   def assign_message_context
-    @cash_transaction.source_message_id = cash_transaction_params[:source_message_id]
+    @cash_transaction.source_message_id = effective_cash_transaction_params[:source_message_id]
   end
 
   def assignable_cash_transaction_params
-    cash_transaction_params.except(:source_message_id)
+    effective_cash_transaction_params.except(:source_message_id)
   end
 
   def source_message_id
@@ -346,6 +346,41 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
+  end
+
+  def effective_cash_transaction_params
+    return @effective_cash_transaction_params if defined?(@effective_cash_transaction_params)
+
+    @effective_cash_transaction_params =
+      if should_hydrate_from_source_message?
+        replay_cash_transaction_params_from_source
+      else
+        cash_transaction_params.to_h.with_indifferent_access
+      end
+  end
+
+  def should_hydrate_from_source_message?
+    source_message.present? && request.get? && cash_transaction_params.keys == [ "source_message_id" ]
+  end
+
+  def replay_cash_transaction_params_from_source
+    payload = source_message&.replay_payload || {}
+
+    {
+      description: payload["description"],
+      price: payload["price"],
+      date: payload["date"],
+      month: payload["month"],
+      year: payload["year"],
+      category_id: Array(payload["category_ids"]).first,
+      entity_id: Array(payload["entity_ids"]).first,
+      friend_notification_intent: payload["intent"],
+      reference_transactable_type: payload["type"],
+      reference_transactable_id: payload["id"],
+      source_message_id: source_message.id,
+      cash_installments_attributes: payload["cash_installments_attributes"],
+      entity_transactions_attributes: payload["entity_transactions_attributes"]
+    }.compact_blank.with_indifferent_access
   end
 
   def month_year_index_context(mobile) # rubocop:disable Metrics/AbcSize

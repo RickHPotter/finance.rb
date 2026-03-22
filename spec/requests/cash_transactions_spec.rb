@@ -240,21 +240,39 @@ RSpec.describe "CashTransactions", type: :request do
             transaction_type: "CashTransaction",
             details: { description: "Salary payment" }
           },
-          replay: { id: @existing_cash_transaction.id, type: "CashTransaction" }
+          replay: {
+            id: @existing_cash_transaction.id,
+            type: "CashTransaction",
+            reference_transactable_type: "CashTransaction",
+            reference_transactable_id: @existing_cash_transaction.id,
+            description: "Salary payment",
+            price: @existing_cash_transaction.price,
+            date: @existing_cash_transaction.date,
+            month: @existing_cash_transaction.month,
+            year: @existing_cash_transaction.year,
+            category_ids: @existing_cash_transaction.categories.ids,
+            entity_ids: @existing_cash_transaction.entities.ids,
+            cash_installments_attributes: @existing_cash_transaction.cash_installments.map do |installment|
+              {
+                number: installment.number,
+                price: installment.price,
+                date: installment.date,
+                month: installment.month,
+                year: installment.year
+              }
+            end,
+            entity_transactions_attributes: []
+          }
         }.to_json
       )
 
-      get edit_cash_transaction_path(
-        @existing_cash_transaction,
-        cash_transaction: {
-          reference_transactable_type: "CashTransaction",
-          reference_transactable_id: @existing_cash_transaction.id,
-          source_message_id: source_message.id
-        }
-      )
+      get edit_cash_transaction_path(@existing_cash_transaction, cash_transaction: { source_message_id: source_message.id })
 
       expect(response.body).to include(%[value="#{source_message.id}"])
       expect(response.body).to include(%(name="cash_transaction[source_message_id]"))
+      expect(response.body).to include(%(name="cash_transaction[reference_transactable_type]"))
+      expect(response.body).to include(%(name="cash_transaction[reference_transactable_id]"))
+      expect(response.body).to include(%[value="#{@existing_cash_transaction.entities.first.id}"])
     end
   end
 

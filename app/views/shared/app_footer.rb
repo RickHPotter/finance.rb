@@ -9,13 +9,7 @@ class Views::Shared::AppFooter < Views::Base
   include TranslateHelper
 
   def view_template
-    if rails_view_context.current_user.email == "luisfla55@gmail.com"
-      "bg-zinc-950 text-white"
-    else
-      "bg-gray-900 text-white"
-    end => background
-
-    ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto #{background}") do
+    ShellContainer(tag: :footer, class: "antialiased pt-2 max-w-auto max-w-[1420px] mx-auto") do
       div(class: "flex justify-between items-center") do
         locale_links
         action_links

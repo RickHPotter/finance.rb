@@ -44,7 +44,7 @@ RSpec.describe CashTransaction, type: :model do
       rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
       create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
       gigi_entity_for_rikki = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
-      conversation = Conversation.create!.tap do |record|
+      conversation = Conversation.create!.tap do |record| # rubocop:disable Lint/UselessAssignment
         record.conversation_participants.create!(user: rikki)
         record.conversation_participants.create!(user: gigi)
       end
@@ -112,7 +112,7 @@ RSpec.describe CashTransaction, type: :model do
       rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
       create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
       gigi_entity_for_rikki = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
-      conversation = Conversation.create!.tap do |record|
+      conversation = Conversation.create!.tap do |record| # rubocop:disable Lint/UselessAssignment
         record.conversation_participants.create!(user: rikki)
         record.conversation_participants.create!(user: gigi)
       end

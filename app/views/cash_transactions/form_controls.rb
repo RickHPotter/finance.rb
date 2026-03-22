@@ -66,7 +66,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def date_field
-    div(class: "w-full lg:w-2/12 mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
       TextField \
         form, :date,
         id: :cash_transaction_date,

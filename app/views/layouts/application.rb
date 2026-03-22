@@ -39,7 +39,7 @@ class Views::Layouts::Application < Views::Base
             render partial "shared/flash"
           end
 
-          section class: "mt-10 flex min-h-0 flex-1 flex-col w-full" do
+          section class: "mt-8 flex min-h-0 flex-1 flex-col w-full" do
             div class: "flex min-h-0 flex-1 flex-col w-full" do
               div class: "mb-10 flex shrink-0 justify-center" do
                 div id: "tabs", class: "w-screen" do
@@ -109,12 +109,26 @@ class Views::Layouts::Application < Views::Base
   end
 
   def body_class
-    return "min-h-screen bg-linear-to-br from-amber-950 via-stone-900 to-rose-950 text-amber-50" if homolog?
+    base_class = [ "min-h-screen", "text-white" ]
 
-    if rails_view_context.current_user.email == "luisfla55@gmail.com"
-      "min-h-screen bg-zinc-950 text-white"
+    current_user_is_rikki = rails_view_context.current_user.email == "luisfla55@gmail.com"
+
+    if homolog?
+      base_class << "bg-gradient-to-r"
+
+      base_class << if current_user_is_rikki
+                      "from-red-700 via-zinc-950 to-zinc-950"
+                    else
+                      "from-gray-600 via-gray-900 to-gray-900"
+                    end
     else
-      "min-h-screen bg-gray-900 text-white"
+      base_class << if current_user_is_rikki
+                      "bg-zinc-950 text-white"
+                    else
+                      "bg-gray-900 text-white"
+                    end
     end
+
+    base_class.join(" ")
   end
 end

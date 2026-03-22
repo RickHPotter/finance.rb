@@ -95,6 +95,14 @@ class Message < ApplicationRecord
     :edit
   end
 
+  def completed_message_key
+    {
+      "create" => :already_created,
+      "update" => :already_updated,
+      "destroy" => :already_destroyed
+    }.fetch(notification_action, :already_updated)
+  end
+
   def assistant_side_for(user)
     user_id == user.id ? "mine" : "theirs"
   end
@@ -160,8 +168,6 @@ class Message < ApplicationRecord
       installment_date = installment["date"].present? ? I18n.l(Date.parse(installment["date"]), format: :long) : installment["date"]
       body << " - #{installment['number']} [#{installment_date}] #{from_cent_based_to_float(installment['price'], 'R$')}#{new_line}"
     end
-
-    body << "#{new_line}#{model_attribute(self, :click_down_below)}" if %w[create update].include?(notification_action)
 
     body.join
   rescue NameError, Date::Error

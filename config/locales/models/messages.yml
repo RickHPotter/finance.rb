@@ -13,9 +13,14 @@ en:
         iveupdatedatransactiononyou: I updated a transaction referencing you.
         ivedeletedatransactiononyou: I deleted a transaction referencing you.
         click_down_below: Click down below to match this transaction on your app.
+        click_down_below_theirs: Click down below to match this transaction on your app.
+        click_down_below_mine: Click down below to see this transaction on your side.
         you_have_a_new_message: You have a new message
         outdated_message: Outdated message! Click to see the updated version.
         already_deleted: This transaction was already deleted.
+        already_created: This transaction was already created.
+        already_updated: This transaction was already updated.
+        already_destroyed: This transaction was already destroyed.
         create: Create
         edit: Edit
         correct: Correct
@@ -41,9 +46,14 @@ pt-BR:
         iveupdatedatransactiononyou: Eu atualizei uma transação referenciando você.
         ivedeletedatransactiononyou: Eu excluí uma transação referenciando você.
         click_down_below: Clique abaixo para vincular essa transação ao seu app.
+        click_down_below_theirs: Clique abaixo para vincular essa transação ao seu app.
+        click_down_below_mine: Clique abaixo para ver essa transação do seu lado.
         you_have_a_new_message: Vocês tem uma nova mensagem
         outdated_message: Mensagem desatualizada! Clique para ver a versão atualizada.
         already_deleted: Essa transação já foi excluída.
+        already_created: Essa transação já foi criada.
+        already_updated: Essa transação já foi atualizada.
+        already_destroyed: Essa transação já foi excluída.
         create: Criar
         edit: Editar
         correct: Corrigir

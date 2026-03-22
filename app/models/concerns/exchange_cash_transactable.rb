@@ -281,9 +281,14 @@ module ExchangeCashTransactable
   end
 
   def _destroy_cash_transaction
-    previous_cash_transaction_id = cash_transaction_id
-    update_columns(cash_transaction_id: nil)
+    previous_cash_transaction = cash_transaction
 
-    CashTransaction.find(previous_cash_transaction_id).destroy
+    if persisted?
+      update_columns(cash_transaction_id: nil)
+    else
+      self.cash_transaction = nil
+    end
+
+    previous_cash_transaction&.destroy if previous_cash_transaction&.persisted?
   end
 end

@@ -175,6 +175,8 @@ RSpec.describe Message, type: :model do
 
       expect(create_message.action_button_key(local_reference_exists: false)).to eq(:create)
       expect(update_message.action_button_key(local_reference_exists: true)).to eq(:correct)
+      expect(create_message.completed_message_key).to eq(:already_created)
+      expect(update_message.completed_message_key).to eq(:already_updated)
 
       update_message.update!(applied_at: Time.current)
 

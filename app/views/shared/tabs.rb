@@ -87,7 +87,7 @@ class Views::Shared::Tabs < Views::Base
 
     base_classes = "
       relative flex list-none overflow-x-auto overscroll-x-contain whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none]
-      justify-center gap-1 rounded-2xl border border-slate-700/70 bg-slate-900/60 px-1.5 py-1
+      justify-center gap-1 rounded-xl border border-slate-700/70 bg-inherit py-1
       ".squish
 
     "#{base_classes} #{dependent ? 'mt-2' : 'shadow-sm'}".squish
