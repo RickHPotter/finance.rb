@@ -160,15 +160,24 @@ too visible to ignore.
   - [#34](https://github.com/RickHPotter/finance.rb/issues/34)
 
 - Subtasks:
-  - Improve the conversations index so it communicates state more clearly.
-  - Refine the conversation screen for better readability and better system-style
-    messages.
-  - Create a first assistant conversation flow, even if it starts as a guided or
-    rule-based helper.
+  - Split human chat and assistant/notification traffic into two clear conversation roles:
+    one human thread and one shared assistant thread per real-user pair.
+  - Turn assistant conversations into an inbox-like flow instead of chat:
+    no composer, `Pending` as the default view, and localized `All / Pending` plus
+    `Mine / Theirs` filters.
+  - Render assistant notifications from structured payloads instead of relying only on
+    stored `body`, so the conversation UI can localize and present system events more
+    coherently.
+  - Refine `conversations#index` and `conversations#show` so assistant messages read as
+    assistant-presented while still exposing the human actor behind the action.
 - Extra:
-  - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating EXCHANGE CashTransactions.
-  - Keep the first assistant version narrow: onboarding, reminders, transaction nudges,
-    or lightweight guidance are enough.
+  - Historical notification messages were backfilled and redistributed into the new
+    conversation model, with `message_notification_v2` becoming the normalized payload
+    shape.
+  - Audit/apply commands were added so this routing and localization rewrite could be
+    reviewed before execution.
+  - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating
+    EXCHANGE CashTransactions.
 
 ## CONCLUSION
 

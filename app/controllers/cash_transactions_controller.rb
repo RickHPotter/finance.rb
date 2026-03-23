@@ -133,7 +133,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         end
       else
         @cash_transaction.entity_transactions.each(&:mark_for_destruction)
-        @cash_transaction.entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes]
+        @cash_transaction.entity_transactions_attributes = effective_cash_transaction_params[:entity_transactions_attributes]
       end
     end
   end

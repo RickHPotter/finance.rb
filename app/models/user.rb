@@ -20,6 +20,7 @@ class User < ApplicationRecord
   has_many :user_bank_accounts, dependent: :destroy
 
   has_many :budgets, dependent: :destroy
+  has_many :contexts, dependent: :destroy
 
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy
@@ -42,6 +43,7 @@ class User < ApplicationRecord
   before_validation :set_default_locale
   before_create :create_built_ins
   before_create :set_confirmed_at
+  after_create :create_main_context
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -70,6 +72,10 @@ class User < ApplicationRecord
   #
   def custom_categories
     categories.where("built_in = false OR category_name IN ('INVESTMENT', 'BORROW RETURN')")
+  end
+
+  def main_context
+    contexts.main.first
   end
 
   # @protected_instance_methods ...............................................
@@ -101,6 +107,10 @@ class User < ApplicationRecord
   # and maybe even before that, switching from Devise to Auth-Zero
   def set_confirmed_at
     self.confirmed_at = Time.zone.today
+  end
+
+  def create_main_context
+    contexts.create!(name: "Main", main: true)
   end
 
   # @private_instance_methods .................................................
