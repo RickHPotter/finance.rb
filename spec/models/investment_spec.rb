@@ -52,11 +52,35 @@ RSpec.describe Investment, type: :model do
       bt_models.each { |model| it { should belong_to(model) } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
     end
   end
 
   # TODO: move this to request spec when the view is ready
   describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      investment = described_class.new(
+        user: subject.user,
+        user_bank_account: subject.user_bank_account,
+        investment_type: subject.investment_type,
+        description: "Context default",
+        price: 100,
+        date: Date.new(2026, 3, 23),
+        month: 3,
+        year: 2026
+      )
+
+      investment.valid?
+
+      expect(investment.context).to eq(subject.user.main_context)
+    end
+
     context "( when new investments are created )" do
       before { cash_transaction.reload }
 

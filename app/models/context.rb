@@ -7,6 +7,7 @@ class Context < ApplicationRecord
   has_many :budgets, dependent: :destroy
   has_many :card_transactions, dependent: :destroy
   has_many :cash_transactions, dependent: :destroy
+  has_many :investments, dependent: :destroy
   has_many :derived_contexts, class_name: "Context", foreign_key: :source_context_id, dependent: :nullify, inverse_of: :source_context
 
   validates :name, presence: true, uniqueness: { scope: :user_id }

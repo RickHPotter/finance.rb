@@ -13,13 +13,16 @@ class Investment < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   belongs_to :user_bank_account
   belongs_to :investment_type
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :price, :date, :description, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   after_save :set_min_date
   after_commit :update_cash_balance, :update_associations_total
 
@@ -86,6 +89,10 @@ class Investment < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
 
   def set_min_date
     self.min_date = [

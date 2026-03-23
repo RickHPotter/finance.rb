@@ -9,6 +9,7 @@ FactoryBot.define do
     year { 2023 }
 
     user { custom_create(:user) }
+    context { user.main_context }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
     investment_type { custom_create(:investment_type) }
@@ -18,6 +19,7 @@ FactoryBot.define do
       date { Date.new(2023, 11, 26) }
 
       user { different_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
       investment_type { different_custom_create(:investment_type) }
     end
@@ -29,6 +31,7 @@ FactoryBot.define do
       year { date.year }
 
       user { random_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
       investment_type { random_custom_create(:investment_type) }
     end
