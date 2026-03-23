@@ -27,10 +27,36 @@ RSpec.describe CardTransaction, type: :model do
       bto_models.each { |model| it { should belong_to(model).optional } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
     end
   end
 
   describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      transaction = described_class.new(
+        user: card_transaction.user,
+        user_card: card_transaction.user_card,
+        description: "Context default",
+        date: Date.new(2026, 3, 23),
+        price: -100,
+        month: 4,
+        year: 2026,
+        card_installments_attributes: [
+          { number: 1, price: -100, date: Date.new(2026, 3, 23), month: 4, year: 2026 }
+        ]
+      )
+
+      transaction.valid?
+
+      expect(transaction.context).to eq(card_transaction.user.main_context)
+    end
+
     it "can be destroyed when persisted" do
       card_transaction.save!
 

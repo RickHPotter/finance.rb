@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -65,6 +65,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000000) do
     t.bigint "advance_cash_transaction_id"
     t.integer "card_installments_count", default: 0, null: false
     t.text "comment"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description", null: false
@@ -81,6 +82,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000000) do
     t.bigint "user_id", null: false
     t.integer "year", null: false
     t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
+    t.index ["context_id"], name: "index_card_transactions_on_context_id"
     t.index ["description"], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["price"], name: "idx_card_transactions_price"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_card_transactions_on_reference_transactable"
@@ -411,6 +413,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_000000) do
   add_foreign_key "budget_entities", "entities"
   add_foreign_key "budgets", "users"
   add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
+  add_foreign_key "card_transactions", "contexts"
   add_foreign_key "card_transactions", "finance_subscriptions", column: "subscription_id"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"

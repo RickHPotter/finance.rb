@@ -18,13 +18,16 @@ class CardTransaction < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   belongs_to :user_card, counter_cache: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :description, :card_installments_count, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
   after_save :update_month_year, :sync_subscription_installment
@@ -146,6 +149,10 @@ class CardTransaction < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #

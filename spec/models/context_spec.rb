@@ -18,6 +18,7 @@ RSpec.describe Context, type: :model do
     context "( associations )" do
       it { should belong_to(:user) }
       it { should belong_to(:source_context).class_name("Context").optional }
+      it { should have_many(:card_transactions).dependent(:destroy) }
       it { should have_many(:cash_transactions).dependent(:destroy) }
       it { should have_many(:derived_contexts).class_name("Context").with_foreign_key(:source_context_id).dependent(:nullify) }
     end

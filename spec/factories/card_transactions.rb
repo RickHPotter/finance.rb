@@ -10,6 +10,7 @@ FactoryBot.define do
     year { (Date.new(date.year, date.month) + 1.month).year }
 
     user { custom_create(:user) }
+    context { user.main_context }
     user_card { custom_create(:user_card, reference: { user: }) }
 
     card_installments { build_list(:card_installment, 1, price:, number: 1) }
@@ -37,6 +38,7 @@ FactoryBot.define do
       year { 2024 }
 
       user { different_custom_create(:user) }
+      context { user.main_context }
       user_card { different_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
@@ -65,6 +67,7 @@ FactoryBot.define do
       price { Faker::Number.number(digits: rand(3..5)) * -1 }
 
       user { random_custom_create(:user) }
+      context { user.main_context }
       user_card { random_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
