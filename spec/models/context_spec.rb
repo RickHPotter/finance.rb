@@ -18,6 +18,7 @@ RSpec.describe Context, type: :model do
     context "( associations )" do
       it { should belong_to(:user) }
       it { should belong_to(:source_context).class_name("Context").optional }
+      it { should have_many(:cash_transactions).dependent(:destroy) }
       it { should have_many(:derived_contexts).class_name("Context").with_foreign_key(:source_context_id).dependent(:nullify) }
     end
   end
@@ -30,7 +31,7 @@ RSpec.describe Context, type: :model do
     end
 
     it "exposes main and derived scopes" do
-      main_context = create(:context, :main, user: create(:user, :random))
+      main_context = create(:user, :random).main_context
       derived_context = create(:context, user: main_context.user, source_context: main_context)
 
       expect(described_class.main).to include(main_context)
@@ -38,3 +39,32 @@ RSpec.describe Context, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: contexts
+# Database name: primary
+#
+#  id                :bigint           not null, primary key
+#  archived_at       :datetime
+#  cloned_at         :datetime
+#  description       :text
+#  main              :boolean          default(FALSE), not null
+#  name              :string           not null, uniquely indexed => [user_id]
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  source_context_id :bigint           indexed
+#  user_id           :bigint           not null, uniquely indexed => [name], indexed, uniquely indexed
+#
+# Indexes
+#
+#  index_contexts_on_source_context_id        (source_context_id)
+#  index_contexts_on_user_and_name            (user_id,name) UNIQUE
+#  index_contexts_on_user_id                  (user_id)
+#  index_contexts_on_user_id_where_main_true  (user_id) UNIQUE WHERE (main = true)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (source_context_id => contexts.id)
+#  fk_rails_...  (user_id => users.id)
+#

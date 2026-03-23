@@ -78,6 +78,12 @@ class User < ApplicationRecord
     contexts.main.first
   end
 
+  def ensure_main_context!
+    return main_context if main_context.present?
+
+    contexts.create!(name: "Main", main: true)
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -110,7 +116,7 @@ class User < ApplicationRecord
   end
 
   def create_main_context
-    contexts.create!(name: "Main", main: true)
+    ensure_main_context!
   end
 
   # @private_instance_methods .................................................

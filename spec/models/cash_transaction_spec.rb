@@ -26,10 +26,36 @@ RSpec.describe CashTransaction, type: :model do
       bto_models.each { |model| it { should belong_to(model).optional } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
     end
   end
 
   describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      transaction = described_class.new(
+        user: subject.user,
+        user_bank_account: subject.user_bank_account,
+        description: "Context default",
+        price: 100,
+        date: Date.new(2026, 3, 23),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: 100, date: Date.new(2026, 3, 23), month: 3, year: 2026 }
+        ]
+      )
+
+      transaction.valid?
+
+      expect(transaction.context).to eq(subject.user.main_context)
+    end
+
     it "recognises exchange return cash transactions by category" do
       exchange_return = subject.user.built_in_category("EXCHANGE RETURN")
       subject.categories << exchange_return
@@ -308,6 +334,7 @@ end
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  context_id                  :bigint           not null, indexed
 #  investment_type_id          :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
@@ -317,6 +344,7 @@ end
 #
 # Indexes
 #
+#  index_cash_transactions_on_context_id               (context_id)
 #  index_cash_transactions_on_investment_type_id       (investment_type_id)
 #  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
 #  index_cash_transactions_on_subscription_id          (subscription_id)
@@ -327,6 +355,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)

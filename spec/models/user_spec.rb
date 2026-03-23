@@ -52,6 +52,14 @@ RSpec.describe User, type: :model do
         expect(subject.full_name).to eq("John Doe")
       end
 
+      it "ensures a main context when missing" do
+        subject.save
+        subject.contexts.main.destroy_all
+
+        expect { subject.ensure_main_context! }.to change(subject.contexts.main, :count).from(0).to(1)
+        expect(subject.main_context.name).to eq("Main")
+      end
+
       it "returns a built-in category by name" do
         subject.save
 
