@@ -21,6 +21,31 @@ RSpec.describe Budget, type: :model do
 
       hm_models = %i[budget_categories categories budget_entities entities]
       hm_models.each { |model| it { should have_many(model) } }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
+    end
+  end
+
+  describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      budget = described_class.new(
+        user: subject.user,
+        description: "Context default",
+        month: 3,
+        year: 2026,
+        value: -100,
+        remaining_value: -100
+      )
+
+      budget.budget_categories.build(category: subject.user.categories.first)
+      budget.valid?
+
+      expect(budget.context).to eq(subject.user.main_context)
     end
   end
 end

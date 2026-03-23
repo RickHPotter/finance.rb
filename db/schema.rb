@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_001000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_002000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -45,6 +45,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_001000) do
   create_table "budgets", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.integer "balance"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.string "description", null: false
     t.boolean "first_installment_only", default: false, null: false
@@ -57,6 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_001000) do
     t.bigint "user_id", null: false
     t.integer "value", null: false
     t.integer "year", null: false
+    t.index ["context_id"], name: "index_budgets_on_context_id"
     t.index ["order_id"], name: "idx_budgets_order_id"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end
@@ -411,6 +413,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_001000) do
   add_foreign_key "budget_categories", "categories"
   add_foreign_key "budget_entities", "budgets"
   add_foreign_key "budget_entities", "entities"
+  add_foreign_key "budgets", "contexts"
   add_foreign_key "budgets", "users"
   add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
   add_foreign_key "card_transactions", "contexts"

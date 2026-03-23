@@ -10,6 +10,7 @@ class Budget < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   has_many :budget_categories, dependent: :destroy
   has_many :categories, through: :budget_categories
   has_many :budget_entities, dependent: :destroy
@@ -19,6 +20,7 @@ class Budget < ApplicationRecord
   accepts_nested_attributes_for :budget_entities, allow_destroy: true, reject_if: :all_blank
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, :first_installment_only, inclusion: { in: [ true, false ] }
@@ -26,6 +28,7 @@ class Budget < ApplicationRecord
   validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_starting_value, :set_inclusive, :set_first_installment_only
   before_save :set_remaining_value
   before_save :set_recalculate_balance
@@ -106,6 +109,10 @@ class Budget < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
 
   def set_recalculate_balance
     return if [ false, true ].include?(recalculate_balance)

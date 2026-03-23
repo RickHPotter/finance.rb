@@ -4,6 +4,7 @@ class Context < ApplicationRecord
   belongs_to :user
   belongs_to :source_context, class_name: "Context", optional: true
 
+  has_many :budgets, dependent: :destroy
   has_many :card_transactions, dependent: :destroy
   has_many :cash_transactions, dependent: :destroy
   has_many :derived_contexts, class_name: "Context", foreign_key: :source_context_id, dependent: :nullify, inverse_of: :source_context
