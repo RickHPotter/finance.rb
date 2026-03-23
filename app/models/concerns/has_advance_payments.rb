@@ -99,6 +99,7 @@ module HasAdvancePayments
       starting_price: price * -1, price: price * -1,
       date:, month: date.month, year: date.year,
       user_id:,
+      context:,
       cash_transaction_type: model_name.name,
       user_card_id:,
       cash_installments_attributes:,

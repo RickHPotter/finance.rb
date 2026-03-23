@@ -5,8 +5,15 @@ require "rails_helper"
 RSpec.describe "Budgets", type: :request do
   let(:user) { create(:user, :random) }
   let(:category) { create(:category, :random, user:) }
+  let(:bank) { create(:bank, :random) }
+  let(:user_bank_account) { create(:user_bank_account, :random, user:, bank:) }
 
   before { sign_in user }
+
+  def switch_to_context!(context)
+    patch switch_context_path(context)
+    expect(response).to redirect_to(root_path)
+  end
 
   describe "[ #index ]" do
     it "renders successfully" do
@@ -76,6 +83,176 @@ RSpec.describe "Budgets", type: :request do
       get month_year_budgets_path, params: { month_year: "202603" }
 
       expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe "[ context isolation ]" do
+    it "keeps create, update, and destroy changes inside the derived context" do
+      main_budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Main isolated budget",
+        month: 3,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Budget Isolation"
+      ).call
+      derived_budget = derived_context.budgets.find_by!(description: main_budget.description)
+
+      switch_to_context!(derived_context)
+
+      expect do
+        post budgets_path, params: {
+          budget: {
+            description: "Derived only budget",
+            value: -20_000,
+            inclusive: false,
+            first_installment_only: false,
+            month_year: "2026-04",
+            active: true,
+            user_id: user.id,
+            budget_categories_attributes: [ { category_id: category.id } ],
+            budget_entities_attributes: []
+          }
+        }, headers: turbo_stream_headers
+      end.to change { derived_context.budgets.reload.count }.by(1)
+                                                            .and change { user.main_context.budgets.reload.count }.by(0)
+
+      patch budget_path(derived_budget), params: {
+        budget: {
+          description: "Derived updated budget",
+          value: derived_budget.value,
+          inclusive: derived_budget.inclusive,
+          first_installment_only: derived_budget.first_installment_only,
+          month: derived_budget.month,
+          year: derived_budget.year,
+          active: derived_budget.active,
+          user_id: user.id,
+          budget_categories_attributes: derived_budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id } },
+          budget_entities_attributes: []
+        }
+      }, headers: turbo_stream_headers
+
+      expect(derived_budget.reload.description).to eq("Derived updated budget")
+      expect(main_budget.reload.description).to eq("Main isolated budget")
+
+      expect do
+        delete budget_path(derived_budget), headers: turbo_stream_headers
+      end.to change { derived_context.budgets.reload.count }.by(-1)
+                                                            .and change { user.main_context.budgets.reload.count }.by(0)
+
+      expect(Budget.exists?(main_budget.id)).to be(true)
+    end
+  end
+
+  describe "[ cross-context access denial ]" do
+    it "does not allow editing, updating, or destroying a main-context budget while in a derived context" do
+      main_budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Main inaccessible budget",
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Budget Access Isolation"
+      ).call
+
+      switch_to_context!(derived_context)
+
+      get edit_budget_path(main_budget)
+      expect(response).to have_http_status(:not_found)
+
+      patch budget_path(main_budget), params: {
+        budget: {
+          description: "Should not update",
+          value: main_budget.value,
+          inclusive: main_budget.inclusive,
+          first_installment_only: main_budget.first_installment_only,
+          month: main_budget.month,
+          year: main_budget.year,
+          active: main_budget.active,
+          user_id: user.id,
+          budget_categories_attributes: main_budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id } },
+          budget_entities_attributes: []
+        }
+      }, headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
+
+      delete budget_path(main_budget), headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "[ form context isolation ]" do
+    it "renders exchange return helpers using only the current context records" do
+      user_card = create(:user_card, :random, user:, card: create(:card, :random, bank:))
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Transport Budget",
+        month: 3,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+
+      main_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Main budget card",
+        date: Date.new(2026, 2, 10),
+        month: 3,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      main_card_transaction.categories = [ category ]
+      main_card_transaction.save!
+
+      main_exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        description: "Main budget exchange return",
+        cash_transaction_type: "Exchange",
+        date: Date.new(2026, 3, 12),
+        month: 3,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      main_exchange_return.categories = [ exchange_return_category ]
+      main_exchange_return.save!
+
+      main_entity_transaction = main_card_transaction.entity_transactions.first
+      main_entity_transaction.update!(price: -1000, price_to_be_returned: -1000, is_payer: true, exchanges_count: 1)
+      create(:exchange, entity_transaction: main_entity_transaction, cash_transaction: main_exchange_return, number: 1, month: 3, year: 2026,
+                        date: Date.new(2026, 3, 12), price: -1000)
+
+      derived_context = Logic::ContextCloneService.new(source_context: user.main_context, name: "Budget Form Isolation").call
+      derived_budget = derived_context.budgets.find_by!(description: budget.description)
+      derived_exchange_return = derived_context.cash_transactions.find_by!(description: "Main budget exchange return")
+
+      switch_to_context!(derived_context)
+
+      get edit_budget_path(derived_budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("cash_transaction%5Bcash_installment_ids%5D%5B%5D=#{derived_exchange_return.cash_installments.first.id}")
+      expect(response.body).not_to include("cash_transaction%5Bcash_installment_ids%5D%5B%5D=#{main_exchange_return.cash_installments.first.id}")
     end
   end
 end

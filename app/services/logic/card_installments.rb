@@ -21,11 +21,11 @@ module Logic
       conditions = build_conditions_from_params(card_transaction_params, search_params)
 
       relation = financial_scope.card_installments
-                     .includes(inclusions)
-                     .left_joins(joins)
-                     .where(conditions)
-                     .where("card_transactions.description ILIKE ?", "%#{search_term}%")
-                     .where("installments.year = ? AND installments.month = ?", year, month)
+                                .includes(inclusions)
+                                .left_joins(joins)
+                                .where(conditions)
+                                .where("card_transactions.description ILIKE ?", "%#{search_term}%")
+                                .where("installments.year = ? AND installments.month = ?", year, month)
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
@@ -126,9 +126,9 @@ module Logic
       conditions[:card_transaction] = conditions[:card_transaction].except("date") if conditions[:card_transaction].present?
 
       relation = financial_scope.card_installments
-                     .left_joins({ card_transaction: %i[categories entities] })
-                     .where(conditions)
-                     .where("card_transactions.description ILIKE ?", "%#{search_term}%")
+                                .left_joins({ card_transaction: %i[categories entities] })
+                                .where(conditions)
+                                .where("card_transactions.description ILIKE ?", "%#{search_term}%")
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?

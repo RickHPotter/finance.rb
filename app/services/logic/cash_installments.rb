@@ -34,16 +34,16 @@ module Logic
 
     def self.fetch_cash_installments(financial_scope, month, year, options)
       relation = cash_installments_relation(financial_scope)
-                     .where(year:, month:)
-                     .includes(cash_transaction: [
-                                 :categories,
-                                 :entities,
-                                 :card_installments,
-                                 { category_transactions: :category },
-                                 { entity_transactions: :entity }
-                               ])
-                     .where(options[:conditions])
-                     .where(options[:search_term_condition])
+                 .where(year:, month:)
+                 .includes(cash_transaction: [
+                             :categories,
+                             :entities,
+                             :card_installments,
+                             { category_transactions: :category },
+                             { entity_transactions: :entity }
+                           ])
+                 .where(options[:conditions])
+                 .where(options[:search_term_condition])
 
       relation = relation.where(id: options[:ids]) if options[:ids].present?
       relation.order(:order_id)

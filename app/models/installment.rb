@@ -34,7 +34,7 @@ end
 #  date                    :datetime         not null, indexed => [date_year, date_month]
 #  date_month              :integer          not null, indexed => [date_year, date]
 #  date_year               :integer          not null, indexed => [date_month, date]
-#  installment_type        :string           not null
+#  installment_type        :string           not null, indexed => [card_transaction_id], indexed => [cash_transaction_id]
 #  month                   :integer          not null
 #  number                  :integer          not null
 #  paid                    :boolean          default(FALSE)
@@ -43,14 +43,16 @@ end
 #  year                    :integer          not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  card_transaction_id     :bigint           indexed
-#  cash_transaction_id     :bigint           indexed
+#  card_transaction_id     :bigint           indexed => [installment_type], indexed
+#  cash_transaction_id     :bigint           indexed => [installment_type], indexed
 #  order_id                :integer          indexed
 #
 # Indexes
 #
 #  idx_installments_order_id                  (order_id)
 #  idx_installments_price                     (price)
+#  idx_installments_type_card_transaction     (installment_type,card_transaction_id)
+#  idx_installments_type_cash_transaction     (installment_type,cash_transaction_id)
 #  idx_installments_year_month_date           (date_year,date_month,date)
 #  index_installments_on_card_transaction_id  (card_transaction_id)
 #  index_installments_on_cash_transaction_id  (cash_transaction_id)

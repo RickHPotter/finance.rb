@@ -45,7 +45,7 @@ class ReferencesController < ApplicationController
   private
 
   def set_reference_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+    set_tabs(active_menu: :data, active_sub_menu: :user_card)
   end
 
   def set_user_card

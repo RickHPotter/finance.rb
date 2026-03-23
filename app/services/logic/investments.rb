@@ -24,11 +24,11 @@ module Logic
       search_term = search_investment_params.delete(:search_term) || ""
 
       financial_scope.investments
-          .includes(:user_bank_account, :investment_type)
-          .where(investment_params)
-          .where("description ILIKE ?", "%#{search_term}%")
-          .where("year = ? AND month = ?", year, month)
-          .order(:date)
+                     .includes(:user_bank_account, :investment_type)
+                     .where(investment_params)
+                     .where("description ILIKE ?", "%#{search_term}%")
+                     .where("year = ? AND month = ?", year, month)
+                     .order(:date)
     end
 
     def self.find_count_based_on_search(financial_scope, investment_params, search_investment_params)
@@ -47,8 +47,8 @@ module Logic
       end
 
       relation = financial_scope.investments
-                     .where(params)
-                     .where("description ILIKE ?", "%#{search_term}%")
+                                .where(params)
+                                .where("description ILIKE ?", "%#{search_term}%")
 
       relation = relation.distinct.select("investments.id, investments.month, investments.year")
 

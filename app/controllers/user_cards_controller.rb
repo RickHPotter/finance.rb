@@ -54,8 +54,8 @@ class UserCardsController < ApplicationController
 
   def reference_date
     date = Date.new(params[:year].to_i, params[:month].to_i)
-    reference = @user_card.references.find_by(year: params[:year].to_i, month: params[:month].to_i)
-    reference ||= @user_card.find_or_create_reference_for(date)
+    reference = @user_card.references.find_by(context: current_context, year: params[:year].to_i, month: params[:month].to_i)
+    reference ||= @user_card.find_or_create_reference_for(date, context: current_context)
 
     render json: { reference_date: reference.reference_date }
   end
@@ -63,7 +63,7 @@ class UserCardsController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+    set_tabs(active_menu: :data, active_sub_menu: :user_card)
   end
 
   def set_user_card

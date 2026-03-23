@@ -103,17 +103,18 @@ module Import
     end
 
     def add_card_payment(user, transaction, params)
-      cash_transaction = user.cash_transactions.joins(:categories).find_by(params)
+      cash_transaction = user.main_context.cash_transactions.joins(:categories).find_by(params)
       cash_transaction.update(date: transaction[:date], imported: true)
       cash_transaction.cash_installments.first.update_columns(date: transaction[:date])
 
       reference_date = transaction[:date]
-      reference = cash_transaction.user_card.references.find_or_create_by(transaction.slice(:month, :year))
+      reference = cash_transaction.user_card.references.find_or_create_by(transaction.slice(:month, :year).merge(context: user.main_context))
 
       if reference
         reference.update(reference_date:)
       else
         params = transaction.slice(:month, :year).merge(
+          context: user.main_context,
           reference_closing_date: reference_date - cash_transaction.user_card.days_until_due_date.days,
           reference_date:
         )
@@ -124,7 +125,7 @@ module Import
 
     def add_card_advance(user, transaction, params)
       params[:price] *= -1
-      card_transactions = user.card_transactions.joins(:categories).where(params)
+      card_transactions = user.main_context.card_transactions.joins(:categories).where(params)
       return if card_transactions.empty?
 
       card_transaction = card_transactions.one? ? card_transactions.first : card_transactions.find_by(transaction.slice(:date))

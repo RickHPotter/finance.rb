@@ -35,6 +35,11 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
+  def switch_to_context!(context)
+    patch switch_context_path(context)
+    expect(response).to redirect_to(root_path)
+  end
+
   describe "[ #create ]" do
     it "creates a cash transaction with installments, categories, and entities" do
       expect { post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers }.to change(CashTransaction, :count).by(1)
@@ -273,6 +278,326 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(%(name="cash_transaction[reference_transactable_type]"))
       expect(response.body).to include(%(name="cash_transaction[reference_transactable_id]"))
       expect(response.body).to include(%[value="#{@existing_cash_transaction.entities.first.id}"])
+    end
+  end
+
+  describe "[ context isolation ]" do
+    it "keeps create, update, and destroy changes inside the derived context" do
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main isolated cash transaction",
+        price: 12_000
+      )
+      main_cash_transaction.categories = [ category ]
+      main_cash_transaction.entities = [ entity ]
+      main_cash_transaction.save!
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Isolation"
+      ).call
+      derived_cash_transaction = derived_context.cash_transactions.find_by!(description: main_cash_transaction.description)
+
+      switch_to_context!(derived_context)
+
+      create_params = Params::CashTransactions.new(
+        cash_transaction: {
+          description: "Derived only cash transaction",
+          price: 15_000,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id
+        },
+        cash_installments: { count: 1 },
+        category_transactions: [ { category_id: category.id } ],
+        entity_transactions: [ {
+          entity_id: entity.id,
+          price: 0,
+          price_to_be_returned: 0,
+          exchanges_attributes: []
+        } ]
+      )
+
+      expect do
+        post cash_transactions_path, params: create_params.params, headers: turbo_stream_headers
+      end.to change { derived_context.cash_transactions.reload.count }.by(1)
+                                                                      .and change { user.main_context.cash_transactions.reload.count }.by(0)
+
+      update_params = Params::CashTransactions.new
+      update_params.use_base(derived_cash_transaction, cash_transaction_options: { description: "Derived updated cash transaction", price: 18_000 })
+      update_params.cash_installments.each { |installment| installment[:price] = 18_000 }
+
+      put cash_transaction_path(derived_cash_transaction), params: update_params.params, headers: turbo_stream_headers
+
+      expect(derived_cash_transaction.reload.description).to eq("Derived updated cash transaction")
+      expect(derived_cash_transaction.price).to eq(18_000)
+      expect(main_cash_transaction.reload.description).to eq("Main isolated cash transaction")
+      expect(main_cash_transaction.price).to eq(12_000)
+
+      expect do
+        delete cash_transaction_path(derived_cash_transaction), headers: turbo_stream_headers
+      end.to change { derived_context.cash_transactions.reload.count }.by(-1)
+                                                                      .and change { user.main_context.cash_transactions.reload.count }.by(0)
+
+      expect(CashTransaction.exists?(main_cash_transaction.id)).to be(true)
+    end
+  end
+
+  describe "[ source message context isolation ]" do
+    it "creates a replayed cash transaction inside the derived context and marks the message as applied" do
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Replay create" }
+          },
+          replay: {
+            id: 9999,
+            type: "CashTransaction",
+            description: "Replay create",
+            price: 15_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            category_ids: category.id,
+            entity_ids: entity.id,
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Time.zone.today,
+                month: Time.zone.today.month,
+                year: Time.zone.today.year,
+                price: 15_000
+              }
+            ],
+            entity_transactions_attributes: []
+          }
+        }.to_json
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Replay Create Isolation"
+      ).call
+
+      switch_to_context!(derived_context)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Replay create",
+            price: 15_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [ { category_id: category.id } ],
+            entity_transactions_attributes: [
+              { entity_id: entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+            ],
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Time.zone.today,
+                month: Time.zone.today.month,
+                year: Time.zone.today.year,
+                price: 15_000
+              }
+            ],
+            source_message_id: source_message.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change { derived_context.cash_transactions.reload.count }.by(1)
+                                                                      .and change { user.main_context.cash_transactions.reload.count }.by(0)
+
+      created_transaction = derived_context.cash_transactions.order(:id).last
+
+      expect(created_transaction.context).to eq(derived_context)
+      expect(created_transaction.description).to eq("Replay create")
+      expect(source_message.reload.applied_at).to be_present
+    end
+
+    it "updates only the derived copy when applying a replay update message" do
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Replay base transaction",
+        price: 12_000
+      )
+      main_cash_transaction.categories = [ category ]
+      main_cash_transaction.entities = [ entity ]
+      main_cash_transaction.save!
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Replay Update Isolation"
+      ).call
+      derived_cash_transaction = derived_context.cash_transactions.find_by!(description: main_cash_transaction.description)
+
+      other_user = create(:user, :random)
+      conversation = Conversation.create!.tap do |record|
+        record.conversation_participants.create!(user:)
+        record.conversation_participants.create!(user: other_user)
+      end
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Replay updated transaction" }
+          },
+          replay: {
+            id: main_cash_transaction.id,
+            type: "CashTransaction",
+            description: "Replay updated transaction",
+            price: 18_000,
+            date: derived_cash_transaction.date,
+            month: derived_cash_transaction.month,
+            year: derived_cash_transaction.year
+          }
+        }.to_json
+      )
+
+      switch_to_context!(derived_context)
+
+      update_params = Params::CashTransactions.new
+      update_params.use_base(
+        derived_cash_transaction,
+        cash_transaction_options: { description: "Replay updated transaction", price: 18_000 }
+      )
+      update_params.cash_installments.each { |installment| installment[:price] = 18_000 }
+
+      put cash_transaction_path(derived_cash_transaction), params: update_params.params.deep_merge(
+        cash_transaction: { source_message_id: source_message.id }
+      ), headers: turbo_stream_headers
+
+      expect(derived_cash_transaction.reload.description).to eq("Replay updated transaction")
+      expect(derived_cash_transaction.price).to eq(18_000)
+      expect(main_cash_transaction.reload.description).to eq("Replay base transaction")
+      expect(main_cash_transaction.price).to eq(12_000)
+      expect(source_message.reload.applied_at).to be_present
+    end
+  end
+
+  describe "[ cross-context access denial ]" do
+    it "does not allow editing, updating, or destroying a main-context cash transaction while in a derived context" do
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main inaccessible cash transaction",
+        price: 12_000
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Access Isolation"
+      ).call
+
+      switch_to_context!(derived_context)
+
+      get edit_cash_transaction_path(main_cash_transaction)
+      expect(response).to have_http_status(:not_found)
+
+      patch cash_transaction_path(main_cash_transaction), params: {
+        cash_transaction: {
+          description: "Should not update",
+          price: main_cash_transaction.price,
+          date: main_cash_transaction.date,
+          month: main_cash_transaction.month,
+          year: main_cash_transaction.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: main_cash_transaction.cash_installments.map do |installment|
+            {
+              id: installment.id,
+              number: installment.number,
+              date: installment.date,
+              month: installment.month,
+              year: installment.year,
+              price: installment.price
+            }
+          end
+        }
+      }, headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
+
+      delete cash_transaction_path(main_cash_transaction), headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "[ form context isolation ]" do
+    it "renders only bound card transactions from the current context on exchange return edit" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      main_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Main Bound Card",
+        date: Date.new(2026, 2, 10),
+        month: 3,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      main_exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card: main_card_transaction.user_card,
+        description: "Shared Exchange Return",
+        cash_transaction_type: "Exchange",
+        date: Date.new(2026, 3, 12),
+        month: 3,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      main_exchange_return.categories = [ exchange_return_category ]
+      main_exchange_return.save!
+      main_entity_transaction = main_card_transaction.entity_transactions.first
+      main_entity_transaction.update!(price: -1000, price_to_be_returned: -1000, is_payer: true, exchanges_count: 1)
+      create(:exchange, entity_transaction: main_entity_transaction, cash_transaction: main_exchange_return, number: 1, month: 3, year: 2026,
+                        date: Date.new(2026, 3, 12), price: -1000)
+
+      derived_context = Logic::ContextCloneService.new(source_context: user.main_context, name: "Cash Form Isolation").call
+      derived_exchange_return = derived_context.cash_transactions.find_by!(description: "Shared Exchange Return")
+      derived_card_transaction = derived_context.card_transactions.find_by!(description: "Main Bound Card")
+      derived_card_transaction.update!(description: "Derived Bound Card")
+
+      switch_to_context!(derived_context)
+
+      get edit_cash_transaction_path(derived_exchange_return)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Derived Bound Card")
+      expect(response.body).not_to include("Main Bound Card")
     end
   end
 

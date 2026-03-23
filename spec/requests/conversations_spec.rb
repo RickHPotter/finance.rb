@@ -194,6 +194,32 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include("Edit me")
     end
 
+    it "keeps pending assistant message resolution scoped to the current context" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      bank = create(:bank, :random)
+      user_bank_account = create(:user_bank_account, user:, bank:)
+      create(:cash_transaction, user:, context: user.main_context, user_bank_account:).tap do |local_reference|
+        local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 999)
+      end
+      derived_context = create(:context, user:, name: "Conversation Isolation", source_context: user.main_context)
+
+      patch switch_context_path(derived_context)
+
+      conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Derived create me" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).to include("Derived create me")
+    end
+
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       conversation.messages.create!(

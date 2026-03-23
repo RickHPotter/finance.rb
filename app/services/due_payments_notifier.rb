@@ -3,7 +3,7 @@
 class DuePaymentsNotifier
   def call
     User.find_each do |user|
-      due_today = user.cash_installments.due_today
+      due_today = user.main_context.cash_installments.due_today
       next if due_today.none?
 
       I18n.locale = user.locale

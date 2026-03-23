@@ -16,7 +16,7 @@ class Views::Balances::Index < Views::Base
         div class: "min-w-full" do
           turbo_frame_tag :balance_chart do
             div(
-              class: "min-h-screen",
+              class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white shadow-md",
               tabindex: "-1"
             ) do
               div(class: "text-center") do

@@ -43,7 +43,7 @@ Rails.application.routes.draw do
   resources :user_bank_accounts, except: :show
   resources :categories, except: :show
   resources :entities, except: :show
-  resources :contexts, only: [] do
+  resources :contexts, only: %i[index show new create] do
     member do
       patch :switch
     end

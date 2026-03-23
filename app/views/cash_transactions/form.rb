@@ -176,11 +176,11 @@ class Views::CashTransactions::Form < Views::Base
 
     related_transaction_ids = card_bound_exchanges.pluck(:entity_transaction_id).uniq
     related_transaction_ids = EntityTransaction.where(id: related_transaction_ids).pluck(:transactable_id).uniq
-    installments = current_user.card_installments
-                               .includes(card_transaction: %i[categories entities entity_transactions])
-                               .where(card_transaction_id: related_transaction_ids)
-                               .where(year: cash_transaction.year, month: cash_transaction.month)
-                               .order(:order_id)
+    installments = current_context.card_installments
+                                  .includes(card_transaction: %i[categories entities entity_transactions])
+                                  .where(card_transaction_id: related_transaction_ids)
+                                  .where(year: cash_transaction.year, month: cash_transaction.month)
+                                  .order(:order_id)
 
     render Views::Transactions::CardBoundTransactionsSheet.new(
       label: I18n.t("activerecord.attributes.exchange.card_bound"),

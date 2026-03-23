@@ -231,6 +231,7 @@ end
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
+#  context_id                  :bigint           not null, indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
@@ -241,6 +242,7 @@ end
 #  idx_card_transactions_description_trgm                  (description) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_context_id                   (context_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
 #  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
@@ -250,6 +252,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)

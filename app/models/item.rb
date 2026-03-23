@@ -3,7 +3,7 @@
 class Item
   attr_accessor :label, :icon, :link, :default, :notification_type, :turbo_frame
 
-  def initialize(label, icon, link, default, notification_type = 0, turbo_frame = :center_container) # rubocop:disable Metrics/ParameterLists
+  def initialize(label, icon, link, default, notification_type = 0, turbo_frame = "_top") # rubocop:disable Metrics/ParameterLists
     @label = label
     @icon = icon
     @link = link

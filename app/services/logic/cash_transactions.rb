@@ -176,9 +176,9 @@ module Logic
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
       relation = financial_scope.cash_installments
-                     .left_joins({ cash_transaction: %i[categories entities] })
-                     .where(conditions)
-                     .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
+                                .left_joins({ cash_transaction: %i[categories entities] })
+                                .where(conditions)
+                                .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?

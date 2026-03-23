@@ -10,6 +10,11 @@ RSpec.describe "CashInstallments", type: :request do
 
   before { sign_in user }
 
+  def switch_to_context!(context)
+    patch switch_context_path(context)
+    expect(response).to redirect_to(root_path)
+  end
+
   describe "[ #pay ]" do
     it "marks the installment as paid and splits the remainder when the paid amount is smaller" do
       cash_transaction = create(
@@ -126,6 +131,176 @@ RSpec.describe "CashInstallments", type: :request do
       expect(second.date.to_date).to eq(Date.new(2026, 5, 2))
       expect(first).not_to be_paid
       expect(second).not_to be_paid
+    end
+  end
+
+  describe "[ context isolation ]" do
+    it "keeps pay changes inside the derived context" do
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main installment isolation",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: 1000,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 1000, paid: false)
+        ]
+      )
+      main_installment = main_cash_transaction.cash_installments.first
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Installment Isolation"
+      ).call
+      derived_installment = derived_context.cash_installments.find_by!(
+        cash_transaction: derived_context.cash_transactions.find_by!(description: main_cash_transaction.description),
+        number: 1
+      )
+
+      switch_to_context!(derived_context)
+
+      patch pay_cash_installment_path(derived_installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 12, 12, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: 600
+        }
+      }, headers: turbo_stream_headers
+
+      expect(derived_installment.reload).to be_paid
+      expect(derived_installment.price).to eq(600)
+      expect(main_installment.reload).not_to be_paid
+      expect(main_installment.price).to eq(1000)
+    end
+
+    it "keeps pay_multiple changes inside the derived context" do
+      first_main = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main bulk installment one",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second_main = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main bulk installment two",
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      ).cash_installments.first
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Installment Bulk Isolation"
+      ).call
+      first_derived = derived_context.cash_transactions.find_by!(description: "Main bulk installment one").cash_installments.first
+      second_derived = derived_context.cash_transactions.find_by!(description: "Main bulk installment two").cash_installments.first
+
+      switch_to_context!(derived_context)
+
+      post pay_multiple_cash_installments_path, params: {
+        ids: [ first_derived.id, second_derived.id ],
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 20, 10, 0, 0).strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      expect(first_derived.reload).to be_paid
+      expect(second_derived.reload).to be_paid
+      expect(first_main.reload).not_to be_paid
+      expect(second_main.reload).not_to be_paid
+    end
+
+    it "keeps transfer_multiple changes inside the derived context" do
+      first_main = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main transfer installment one",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second_main = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main transfer installment two",
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      ).cash_installments.first
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Installment Transfer Isolation"
+      ).call
+      first_derived = derived_context.cash_transactions.find_by!(description: "Main transfer installment one").cash_installments.first
+      second_derived = derived_context.cash_transactions.find_by!(description: "Main transfer installment two").cash_installments.first
+
+      switch_to_context!(derived_context)
+
+      post transfer_multiple_cash_installments_path, params: {
+        ids: [ first_derived.id, second_derived.id ],
+        reference_date: "2026-05",
+        cash_installment: {
+          date: Time.zone.local(2026, 5, 2, 9, 0, 0).strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      expect(first_derived.reload.month).to eq(5)
+      expect(second_derived.reload.month).to eq(5)
+      expect(first_main.reload.month).to eq(3)
+      expect(second_main.reload.month).to eq(3)
+    end
+
+    it "does not allow paying a main-context installment while switched to the derived context" do
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main inaccessible installment",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: 1000,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 1000, paid: false)
+        ]
+      )
+      main_installment = main_cash_transaction.cash_installments.first
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Installment Access Isolation"
+      ).call
+
+      switch_to_context!(derived_context)
+
+      patch pay_cash_installment_path(main_installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 12, 12, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: 600
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

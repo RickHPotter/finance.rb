@@ -55,7 +55,7 @@ class UserBankAccountsController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :user_bank_account)
+    set_tabs(active_menu: :data, active_sub_menu: :user_bank_account)
   end
 
   def set_user_bank_account

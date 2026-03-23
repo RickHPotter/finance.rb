@@ -70,7 +70,7 @@ RSpec.describe "CardTransactions", type: :feature do
     end
 
     scenario "editing an invalid card_transaction" do
-      find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
+      find("#edit_card_transaction_#{card_transaction.id}", match: :first).click
 
       within "turbo-frame#card_transaction_#{card_transaction.id} form" do
         fill_in "card_transaction_description", with: ""
@@ -82,7 +82,7 @@ RSpec.describe "CardTransactions", type: :feature do
     end
 
     scenario "editing a valid card_transaction and getting redirected to card_transactions/index of given user_card" do
-      find("#edit_card_transaction_#{user.card_transactions.first.id}", match: :first).click
+      find("#edit_card_transaction_#{card_transaction.id}", match: :first).click
 
       within "turbo-frame#card_transaction_#{card_transaction.id} form" do
         fill_in "card_transaction_description", with: "Some Other Card Transaction Name"
@@ -93,7 +93,7 @@ RSpec.describe "CardTransactions", type: :feature do
       expect(page).to have_css("#notification-content", text: notification_model(:updateda, CardTransaction))
 
       within "turbo-frame#card_transactions" do
-        expect(page).to have_css("#month_year_selector_title", text: user.user_cards.first.user_card_name)
+        expect(page).to have_css("#month_year_selector_title", text: user_card.user_card_name)
 
         within "turbo-frame#card_installment_#{card_transaction.card_installments.first.id}" do
           expect(page).to have_css("a#edit_card_transaction_#{card_transaction.id}", text: "Some Other Card Transaction Name")

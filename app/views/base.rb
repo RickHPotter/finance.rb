@@ -17,5 +17,9 @@ module Views
     def request
       rails_view_context.request
     end
+
+    def current_context
+      rails_view_context.current_context
+    end
   end
 end

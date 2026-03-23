@@ -1,0 +1,59 @@
+en:
+  contexts:
+    index:
+      title: Contexts
+      subtitle: Scenario branches for your financial timeline.
+      main_label: Main context
+      derived_label: Derived context
+      current: Current
+      no_description: No description yet.
+      create_child: Create derived context
+    new:
+      title: Create Context
+      subtitle: Clone from %{source_name} into a new scenario.
+    form:
+      name: Name
+      description: Description
+      cancel: Cancel
+      create: Create context
+    show:
+      label: Context
+      create_child: Create child context
+      switch: Switch context
+      stats:
+        cash_transactions: Cash transactions
+        card_transactions: Card transactions
+        budgets: Budgets
+        investments: Investments
+        subscriptions: Subscriptions
+        references: References
+
+pt-BR:
+  contexts:
+    index:
+      title: Contextos
+      subtitle: Ramos de cenário para sua linha do tempo financeira.
+      main_label: Contexto principal
+      derived_label: Contexto derivado
+      current: Atual
+      no_description: Sem descrição ainda.
+      create_child: Criar contexto derivado
+    new:
+      title: Criar contexto
+      subtitle: Clonar de %{source_name} para um novo cenário.
+    form:
+      name: Nome
+      description: Descrição
+      cancel: Cancelar
+      create: Criar contexto
+    show:
+      label: Contexto
+      create_child: Criar contexto filho
+      switch: Trocar contexto
+      stats:
+        cash_transactions: Pagamentos em dinheiro
+        card_transactions: Lançamentos de cartão
+        budgets: Orçamentos
+        investments: Investimentos
+        subscriptions: Assinaturas
+        references: Referências

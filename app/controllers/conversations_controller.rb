@@ -43,7 +43,7 @@ class ConversationsController < ApplicationController
   private
 
   def set_conversation_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+    set_tabs(active_menu: :hub, active_sub_menu: :conversation)
   end
 
   def filtered_conversations
@@ -78,7 +78,7 @@ class ConversationsController < ApplicationController
       next true if conversation_message_filter == "all"
       next false if message.superseded_by_id.present?
 
-      message.actionable_for?(current_user)
+      message.actionable_for?(context: current_context)
     end
   end
 

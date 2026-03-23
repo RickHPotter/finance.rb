@@ -62,7 +62,13 @@ module CashTransactable
       previous_cash_transaction.update_columns(price: new_price, comment: new_comment)
       if previous_cash_transaction.cash_installments.any?
         previous_cash_transaction.cash_installments.first.update_columns(price: new_price)
-        Logic::RecalculateBalancesService.new(user:, context: previous_cash_transaction.context, year: previous_cash_transaction.year, month: previous_cash_transaction.month).call
+
+        Logic::RecalculateBalancesService.new(
+          user:,
+          context: previous_cash_transaction.context,
+          year: previous_cash_transaction.year,
+          month: previous_cash_transaction.month
+        ).call
       end
     else
       previous_cash_transaction.destroy

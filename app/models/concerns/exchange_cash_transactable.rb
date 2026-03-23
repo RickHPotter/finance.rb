@@ -64,7 +64,11 @@ module ExchangeCashTransactable
       return
     end
 
-    existing_cash_transaction = transactable.context.cash_transactions.joins(:categories, :entities).find_by(card_bound_cash_transaction_conditions.except(:skip_recalculate_balance))
+    existing_cash_transaction =
+      transactable
+      .context
+      .cash_transactions.joins(:categories, :entities)
+      .find_by(card_bound_cash_transaction_conditions.except(:skip_recalculate_balance))
 
     if existing_cash_transaction
       self.cash_transaction = existing_cash_transaction

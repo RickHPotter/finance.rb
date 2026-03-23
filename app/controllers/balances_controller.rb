@@ -29,6 +29,6 @@ class BalancesController < ApplicationController
   private
 
   def set_balance_tabs
-    set_tabs(active_menu: :cash, active_sub_menu: :balance)
+    set_tabs(active_menu: :hub, active_sub_menu: :balance)
   end
 end

@@ -47,10 +47,10 @@ module Logic
 
     def self.fetch_budgets(financial_scope, month, year, conditions, search_term_condition)
       budgets_relation(financial_scope)
-          .where(conditions.merge(month:, year:))
-          .where(search_term_condition)
-          .includes(:categories, :entities)
-          .order(:order_id)
+        .where(conditions.merge(month:, year:))
+        .where(search_term_condition)
+        .includes(:categories, :entities)
+        .order(:order_id)
     end
 
     def self.build_conditions_from_params(params)
@@ -73,9 +73,9 @@ module Logic
       raw_conditions = build_conditions_from_params(budget_params.is_a?(Hash) ? budget_params.dup : budget_params.to_unsafe_h)
 
       relation = budgets_relation(financial_scope)
-                     .left_joins(:categories, :entities)
-                     .where(raw_conditions[:associations])
-                     .where("budgets.description ILIKE ?", "%#{search_term}%")
+                 .left_joins(:categories, :entities)
+                 .where(raw_conditions[:associations])
+                 .where("budgets.description ILIKE ?", "%#{search_term}%")
 
       relation = relation.distinct.select("budgets.id, budgets.month, budgets.year")
 

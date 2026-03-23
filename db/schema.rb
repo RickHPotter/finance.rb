@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_005000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_133000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -283,6 +283,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_005000) do
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
     t.index ["date_year", "date_month", "date"], name: "idx_installments_year_month_date"
+    t.index ["installment_type", "card_transaction_id"], name: "idx_installments_type_card_transaction"
+    t.index ["installment_type", "cash_transaction_id"], name: "idx_installments_type_cash_transaction"
     t.index ["order_id"], name: "idx_installments_order_id"
     t.index ["price"], name: "idx_installments_price"
   end
@@ -345,8 +347,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_005000) do
     t.datetime "updated_at", null: false
     t.bigint "user_card_id", null: false
     t.integer "year", null: false
+    t.index ["context_id", "user_card_id", "month", "year"], name: "idx_references_context_user_card_month_year", unique: true
+    t.index ["context_id", "user_card_id", "reference_date"], name: "idx_references_context_user_card_reference_date", unique: true
     t.index ["context_id"], name: "index_references_on_context_id"
-    t.index ["user_card_id", "month", "year"], name: "idx_references_user_card_month_year", unique: true
     t.index ["user_card_id"], name: "index_references_on_user_card_id"
   end
 

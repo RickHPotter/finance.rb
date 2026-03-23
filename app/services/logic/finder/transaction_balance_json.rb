@@ -3,7 +3,7 @@
 class Logic::Finder::TransactionBalanceJson
   include TranslateHelper
 
-  def initialize(user:, context: user.main_context, month_year_one:, month_year_two:)
+  def initialize(user:, month_year_one:, month_year_two:, context: user.main_context)
     month_year_two ||= month_year_one
 
     @user = user

@@ -108,19 +108,19 @@ class Views::Shared::AppFooter < Views::Base
   end
 
   def context_button_class(active)
-    classes = [
-      "rounded-full",
-      "border",
-      "px-3",
-      "py-1",
-      "text-xs",
-      "transition-colors"
+    classes = %w[
+      rounded-full
+      border
+      px-3
+      py-1
+      text-xs
+      transition-colors
     ]
 
     if active
-      classes.concat([ "border-red-400", "bg-red-500", "text-white" ])
+      classes.push(%w[border-red-400 bg-red-500 text-white])
     else
-      classes.concat([ "border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600" ])
+      classes.push("border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600")
     end
 
     classes.join(" ")

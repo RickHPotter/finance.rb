@@ -1,8 +1,13 @@
 en:
   tabs:
-    basic: Data Registrations
-    card_transaction: Card Transactions
-    cash_transaction: Cash Transactions
+    basic: Data
+    card_transaction: Card
+    cash_transaction: Cash
+    data: Data
+    card: Card
+    cash: Cash
+    about: Hub
+    hub: Hub
     user_bank_account: Accounts
     user_card: Cards
     category: Categories
@@ -11,14 +16,21 @@ en:
     pix: Pix
     budget: Budget
     investment: Investment
-    subscription: Subscription
+    subscription: Subscriptions
     balance: Balance
+    context: Contexts
+    settings: Settings
 
 pt-BR:
   tabs:
-    basic: Cadastros
-    card_transaction: Lançamentos de Cartão
-    cash_transaction: Pagamentos de Dinheiro
+    basic: Dados
+    card_transaction: Cartão
+    cash_transaction: Caixa
+    data: Dados
+    card: Cartão
+    cash: Caixa
+    about: Central
+    hub: Central
     user_bank_account: Contas
     user_card: Cartões
     category: Categorias
@@ -26,6 +38,8 @@ pt-BR:
     conversation: Conversas
     pix: Pix
     budget: Orçamento
-    investment: Investimento
-    subscription: Assinatura
+    investment: Investimentos
+    subscription: Assinaturas
     balance: Saldo
+    context: Contextos
+    settings: Ajustes
