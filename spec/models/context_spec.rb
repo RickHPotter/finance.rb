@@ -22,6 +22,7 @@ RSpec.describe Context, type: :model do
       it { should have_many(:card_transactions).dependent(:destroy) }
       it { should have_many(:cash_transactions).dependent(:destroy) }
       it { should have_many(:investments).dependent(:destroy) }
+      it { should have_many(:references).dependent(:destroy) }
       it { should have_many(:subscriptions).class_name("Subscription").dependent(:destroy) }
       it { should have_many(:derived_contexts).class_name("Context").with_foreign_key(:source_context_id).dependent(:nullify) }
     end

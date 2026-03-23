@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_004000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_005000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -337,6 +337,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_004000) do
   end
 
   create_table "references", force: :cascade do |t|
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.integer "month", null: false
     t.date "reference_closing_date", null: false
@@ -344,6 +345,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_004000) do
     t.datetime "updated_at", null: false
     t.bigint "user_card_id", null: false
     t.integer "year", null: false
+    t.index ["context_id"], name: "index_references_on_context_id"
     t.index ["user_card_id", "month", "year"], name: "idx_references_user_card_month_year", unique: true
     t.index ["user_card_id"], name: "index_references_on_user_card_id"
   end
@@ -454,6 +456,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_004000) do
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "messages", column: "superseded_by_id"
   add_foreign_key "messages", "users"
+  add_foreign_key "references", "contexts"
   add_foreign_key "references", "user_cards"
   add_foreign_key "subscriptions", "users"
   add_foreign_key "user_bank_accounts", "banks"

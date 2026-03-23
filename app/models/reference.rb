@@ -7,14 +7,17 @@ class Reference < ApplicationRecord
   attr_accessor :skip_reference_closing_date_calculation
 
   # @relationships ............................................................
+  belongs_to :context, optional: false
   belongs_to :user_card
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :month, :year, :reference_date, presence: true
   validates :user_card_id, uniqueness: { scope: %i[month year] }
   validates :reference_date, uniqueness: { scope: :user_card_id }
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_save :set_reference_closing_date
   after_save :set_card_payment_date
 
@@ -32,6 +35,10 @@ class Reference < ApplicationRecord
   # @protected_instance_methods ...............................................
 
   protected
+
+  def assign_default_context
+    self.context ||= user_card&.user&.ensure_main_context!
+  end
 
   def set_reference_closing_date
     return if skip_reference_closing_date_calculation

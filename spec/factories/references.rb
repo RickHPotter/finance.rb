@@ -8,6 +8,7 @@ FactoryBot.define do
     reference_closing_date { Date.new(2026, 3, 5) }
 
     user_card { custom_create(:user_card) }
+    context { user_card.user.main_context }
   end
 end
 

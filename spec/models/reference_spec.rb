@@ -25,6 +25,13 @@ RSpec.describe Reference, type: :model do
 
       it { should belong_to(:user_card) }
 
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
+
       it "validates uniqueness of month and year scoped to user_card_id" do
         create(:user_card, :random) # warm shoulda relation state
         create(:reference, user_card:, month: 3, year: 2026, reference_date: Date.new(2026, 3, 12))
@@ -47,6 +54,19 @@ RSpec.describe Reference, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "defaults context to the user_card user's main context" do
+      reference = described_class.new(
+        user_card:,
+        month: 3,
+        year: 2026,
+        reference_date: Date.new(2026, 3, 12)
+      )
+
+      reference.valid?
+
+      expect(reference.context).to eq(user_card.user.main_context)
+    end
+
     it "sets reference_closing_date from the user_card cycle" do
       subject.save!
 
