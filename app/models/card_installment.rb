@@ -35,7 +35,7 @@ class CardInstallment < Installment
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def card_payment_date
-    reference = user_card.find_or_create_reference_for(date)
+    reference = user_card.find_or_create_reference_for(date, context: card_transaction.context)
     reference.reference_date
   end
 

@@ -2,9 +2,10 @@
 
 module Logic
   class RecalculateBalancesService
-    def initialize(user:, year: nil, month: nil)
+    def initialize(user:, context: nil, year: nil, month: nil)
       @user = user
-      @year = year || user.cash_installments.minimum(:year) || 2000
+      @context = context || user.main_context
+      @year = year || @context.cash_installments.minimum(:year) || 2000
       @month = month || 1
     end
 
@@ -20,8 +21,8 @@ module Logic
     def set_order_and_balance
       @date_threshold = Date.new(@year, @month).in_time_zone(Time.zone.now.time_zone.name)
 
-      @past_budget           = @user.budgets.where("year < ? OR (year = ? AND month < ?)", @year, @year, @month).order(:order_id).last
-      @past_cash_installment = @user.cash_installments
+      @past_budget           = @context.budgets.where("year < ? OR (year = ? AND month < ?)", @year, @year, @month).order(:order_id).last
+      @past_cash_installment = @context.cash_installments
                                     .where("installments.date < ?", @date_threshold)
                                     .where("make_date(installments.year, installments.month, 1) < make_date(?, ?, 1)", @year, @month)
                                     .order(:order_id).last
@@ -32,7 +33,7 @@ module Logic
 
     def set_items
       @cash_installments =
-        @user.cash_installments
+        @context.cash_installments
              .where(
                "installments.date >= :date
                OR (installments.year > :year OR (installments.year = :year AND installments.month >= :month))",
@@ -43,7 +44,7 @@ module Logic
              .select("*", :id, :date, :price, :cash_transaction_id, :year, :month, "cash_transactions.cash_transaction_type")
 
       @budgets =
-        @user.budgets
+        @context.budgets
              .where("year > ? OR (year = ? AND month >= ?)", @year, @year, @month)
              .order(:order_id)
              .select("*", :id, :year, :month, "'Budget' AS cash_transaction_type", "make_date(year, month, 1) AS date", remaining_value: :price)

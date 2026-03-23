@@ -6,7 +6,9 @@ class Context < ApplicationRecord
 
   has_many :budgets, dependent: :destroy
   has_many :card_transactions, dependent: :destroy
+  has_many :card_installments, through: :card_transactions
   has_many :cash_transactions, dependent: :destroy
+  has_many :cash_installments, through: :cash_transactions
   has_many :investments, dependent: :destroy
   has_many :references, dependent: :destroy
   has_many :subscriptions, class_name: "Subscription", dependent: :destroy

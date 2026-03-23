@@ -14,7 +14,7 @@ class BalancesController < ApplicationController
   end
 
   def cash_balance_json
-    result = Logic::Finder::CashBalanceJson.new(user: current_user).call
+    result = Logic::Finder::CashBalanceJson.new(user: current_user, context: current_context).call
     render json: result
   end
 
@@ -22,7 +22,7 @@ class BalancesController < ApplicationController
     month_year_one = params[:month_year_one]&.to_date
     month_year_two = params[:month_year_two]&.to_date
 
-    result = Logic::Finder::TransactionBalanceJson.new(user: current_user, month_year_one:, month_year_two:).call
+    result = Logic::Finder::TransactionBalanceJson.new(user: current_user, context: current_context, month_year_one:, month_year_two:).call
     render json: result
   end
 

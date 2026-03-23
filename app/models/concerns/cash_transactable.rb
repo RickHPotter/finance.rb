@@ -32,7 +32,7 @@ module CashTransactable
   #
   def attach_cash_transaction
     self.previous_cash_transaction_id = cash_transaction_id
-    self.cash_transaction = CashTransaction.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
+    self.cash_transaction = resolved_context.cash_transactions.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
                             CashTransaction.create(new_cash_transaction_params)
   end
 
@@ -62,7 +62,7 @@ module CashTransactable
       previous_cash_transaction.update_columns(price: new_price, comment: new_comment)
       if previous_cash_transaction.cash_installments.any?
         previous_cash_transaction.cash_installments.first.update_columns(price: new_price)
-        Logic::RecalculateBalancesService.new(user:, year: previous_cash_transaction.year, month: previous_cash_transaction.month).call
+        Logic::RecalculateBalancesService.new(user:, context: previous_cash_transaction.context, year: previous_cash_transaction.year, month: previous_cash_transaction.month).call
       end
     else
       previous_cash_transaction.destroy
@@ -119,6 +119,7 @@ module CashTransactable
       year:,
       user_id:,
       cash_transaction_type: model_name.name,
+      context_id: resolved_context_id,
       category_transactions:,
       investment_type_id: (investment_type_id if respond_to? :investment_type_id),
       user_card_id: (user_card_id if respond_to? :user_card_id),
@@ -151,5 +152,19 @@ module CashTransactable
 
     transactable = cash_transaction.public_send(model_name.plural)
     transactable.sum(:price)
+  end
+
+  def resolved_context
+    return context if respond_to?(:context) && context.present?
+    return transactable.context if respond_to?(:transactable) && transactable.respond_to?(:context)
+
+    user.ensure_main_context!
+  end
+
+  def resolved_context_id
+    return context_id if respond_to?(:context_id) && context_id.present?
+    return transactable.context_id if respond_to?(:transactable) && transactable.respond_to?(:context_id)
+
+    resolved_context.id
   end
 end

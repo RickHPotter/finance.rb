@@ -52,8 +52,8 @@ class CardTransaction < ApplicationRecord
     card_transaction
   end
 
-  def self.new_advanced_payment(user, params)
-    card_transaction = user.card_transactions.new(params)
+  def self.new_advanced_payment(user, params, context: user.main_context)
+    card_transaction = context.card_transactions.new(params.merge(user:))
     card_transaction.categories << user.built_in_category("CARD ADVANCE")
     card_transaction.entities << user.entities.find_or_create_by(entity_name: "CARD")
 
@@ -67,7 +67,7 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def card_payment_date
-    reference = user_card.find_or_create_reference_for(date)
+    reference = user_card.find_or_create_reference_for(date, context:)
     reference.reference_date
   end
 
@@ -87,7 +87,7 @@ class CardTransaction < ApplicationRecord
     existing_reference = card_installments.first
     if existing_reference.nil?
       reference_date = user_card.calculate_reference_date(date)
-      existing_reference = user_card.references.find_by(reference_date:)
+      existing_reference = user_card.references.find_by(context:, reference_date:)
     end
 
     if existing_reference
@@ -97,6 +97,7 @@ class CardTransaction < ApplicationRecord
       self.month = reference_date.month
       self.year = reference_date.year
       user_card.references
+               .where(context:)
                .create_with(reference_closing_date: reference_date - user_card.days_until_due_date.days, reference_date:)
                .find_or_create_by(month:, year:)
     end
@@ -191,12 +192,12 @@ class CardTransaction < ApplicationRecord
   end
 
   def update_cash_balance
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
     card_payment_transaction = card_installments.order(:date).first&.cash_transaction
     exchange_cash_transaction = entity_transactions.map(&:exchanges).flatten.min_by(&:date)&.cash_transaction
     min_date = [ card_payment_transaction&.date, exchange_cash_transaction&.date ].compact_blank.min
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total

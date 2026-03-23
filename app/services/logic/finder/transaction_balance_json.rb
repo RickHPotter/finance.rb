@@ -3,10 +3,11 @@
 class Logic::Finder::TransactionBalanceJson
   include TranslateHelper
 
-  def initialize(user:, month_year_one:, month_year_two:)
+  def initialize(user:, context: user.main_context, month_year_one:, month_year_two:)
     month_year_two ||= month_year_one
 
     @user = user
+    @context = context
     @month_year_one = month_year_one.to_datetime.beginning_of_month.beginning_of_day
     @month_year_two = month_year_two.to_datetime.end_of_month.end_of_day
   end
@@ -31,21 +32,21 @@ class Logic::Finder::TransactionBalanceJson
 
   def items
     budgets =
-      @user
+      @context
       .budgets
       .where("MAKE_DATE(year, month, 1) BETWEEN ? AND ?", @month_year_one, @month_year_two)
       .joins(:categories)
       .select("'budget' as type, budgets.id, remaining_value as price, categories.category_name")
 
     card_installments =
-      @user
+      @context
       .card_installments
       .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", @month_year_one, @month_year_two)
       .joins(card_transaction: :categories)
       .select("'card' as type, installments.id, installments.price, categories.category_name as category_name")
 
     cash_installments =
-      @user
+      @context
       .cash_installments
       .where("MAKE_DATE(installments.year, installments.month, 1) BETWEEN ? AND ?", @month_year_one, @month_year_two)
       .joins(:cash_transaction)

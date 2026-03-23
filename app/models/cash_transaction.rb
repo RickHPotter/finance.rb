@@ -200,10 +200,10 @@ class CashTransaction < ApplicationRecord
   def update_cash_balance
     return if skip_recalculate_balance
 
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year: date.year, month: date.month).call and return if destroyed?
 
     self.min_date ||= cash_installments.order(:date).first.date.beginning_of_month
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total

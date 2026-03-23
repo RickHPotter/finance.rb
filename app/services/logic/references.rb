@@ -2,21 +2,21 @@
 
 module Logic
   class References
-    def self.merge(user_card, source_reference_date, target_reference_date)
+    def self.merge(user_card, source_reference_date, target_reference_date, context: user_card.user.main_context)
       source_date = Date.parse(source_reference_date)
       target_date = Date.parse(target_reference_date)
 
       return false if source_date.prev_month != target_date && source_date.next_month != target_date
 
-      source_card_payment = user_card.unpaid_invoices.find_by(year: source_date.year, month: source_date.month)
-      target_card_payment = user_card.unpaid_invoices.find_by(year: target_date.year, month: target_date.month)
+      source_card_payment = user_card.unpaid_invoices(context:).find_by(year: source_date.year, month: source_date.month)
+      target_card_payment = user_card.unpaid_invoices(context:).find_by(year: target_date.year, month: target_date.month)
 
       return false if source_card_payment.nil? || target_card_payment.nil?
 
       source_card_payment.card_installments.update(target_card_payment.slice(:year, :month))
 
-      source_reference = user_card.references.find_by(year: source_date.year, month: source_date.month)
-      target_reference = user_card.references.find_by(year: target_date.year, month: target_date.month)
+      source_reference = user_card.references.find_by(context:, year: source_date.year, month: source_date.month)
+      target_reference = user_card.references.find_by(context:, year: target_date.year, month: target_date.month)
 
       return false if source_reference.nil? || target_reference.nil?
 

@@ -96,7 +96,7 @@ module TabsConcern
   end
 
   def set_cash_transaction_sublinks
-    cash_notification_type = current_user.cash_installments.due_today.any? ? 1 : 0
+    cash_notification_type = current_context.cash_installments.due_today.any? ? 1 : 0
 
     @cash_transaction_tab = [
       Item.new(t("tabs.pix"),          :mobile,      cash_transactions_path, @active_sub_menu == :pix,          cash_notification_type, "_top"),

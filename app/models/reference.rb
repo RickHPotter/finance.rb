@@ -51,7 +51,7 @@ class Reference < ApplicationRecord
   end
 
   def set_card_payment_date
-    card_payment = user_card.unpaid_invoices.find_by(month:, year:)
+    card_payment = user_card.unpaid_invoices(context:).find_by(month:, year:)
     return if card_payment.nil?
 
     min_date = [ card_payment.cash_installments.first.date, reference_date ].compact_blank.min
@@ -61,7 +61,7 @@ class Reference < ApplicationRecord
     card_payment.update_columns(date: new_reference_date)
     card_payment.cash_installments.first.update_columns(date: new_reference_date)
 
-    Logic::RecalculateBalancesService.new(user: user_card.user, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user: user_card.user, context:, year: min_date.year, month: min_date.month).call
   end
 
   # @private_instance_methods .................................................

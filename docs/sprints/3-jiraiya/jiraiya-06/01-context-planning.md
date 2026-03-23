@@ -317,6 +317,11 @@ To keep the clone approach under control:
 - create model, associations, validations
 - ensure every user has one main context
 
+Status:
+
+- done
+- recorded in `02-context-foundation.md`
+
 ### Slice 2: Add `context_id` to financial models
 
 - `cash_transactions`
@@ -331,6 +336,11 @@ Backfill rule:
 - create the main context for every user first
 - assign all existing financial records to that user’s main context
 - only then make `context_id` required
+
+Status:
+
+- done
+- recorded in `03-context-financial-model-backfill.md`
 
 ### Slice 3: Make calculations context-aware
 
@@ -353,6 +363,17 @@ Likely first breakpoints:
 - `BudgetsController` and `InvestmentsController` min/max range queries
 - `NamingConventionsController` transaction scan
 - any finder using `current_user.cash_transactions` or `current_user.card_transactions`
+
+Status:
+
+- done for the core runtime financial surface
+- recorded in `04-context-runtime-scope.md`
+- completed with:
+  - `current_context` in the application layer
+  - session-backed context switching
+  - context-aware cash/card/budget/investment/subscription/reference controllers
+  - context-aware balance and finder services
+  - context propagation in cross-model financial callbacks
 
 ### Slice 4: Build cloning service
 

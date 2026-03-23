@@ -62,8 +62,8 @@ class Budget < ApplicationRecord
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
 
-    cash_installments = user.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
-    card_installments = user.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    cash_installments = context.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    card_installments = context.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
 
     if first_installment_only
       cash_installments = cash_installments.where(number: 1)
@@ -121,9 +121,9 @@ class Budget < ApplicationRecord
   end
 
   def update_cash_balance
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
-    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
   end
 
   def presence_of_categories_or_entities
@@ -133,7 +133,7 @@ class Budget < ApplicationRecord
   end
 
   def uniqueness_of_budget # rubocop:disable Metrics/AbcSize
-    current_ref_month_year_budgets = user.budgets.where(month:, year:)
+    current_ref_month_year_budgets = context.budgets.where(month:, year:)
     return if current_ref_month_year_budgets.empty?
 
     category_ids = budget_categories.map(&:category_id)

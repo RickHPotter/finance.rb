@@ -27,7 +27,7 @@ module Logic
       budget
     end
 
-    def self.find_by_ref_month_year(user, month, year, raw_conditions)
+    def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       return [] if raw_conditions[:skip_budgets]
 
       search_term_condition = "description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
@@ -37,16 +37,16 @@ module Logic
         **raw_conditions[:associations]
       }.compact_blank
 
-      fetch_budgets(user, month, year, conditions, search_term_condition)
+      fetch_budgets(financial_scope, month, year, conditions, search_term_condition)
     end
 
-    def self.find_by_ref_month_year_by_params(user, month, year, params)
+    def self.find_by_ref_month_year_by_params(financial_scope, month, year, params)
       raw_conditions = build_conditions_from_params(params)
-      find_by_ref_month_year(user, month, year, raw_conditions)
+      find_by_ref_month_year(financial_scope, month, year, raw_conditions)
     end
 
-    def self.fetch_budgets(user, month, year, conditions, search_term_condition)
-      user.budgets
+    def self.fetch_budgets(financial_scope, month, year, conditions, search_term_condition)
+      budgets_relation(financial_scope)
           .where(conditions.merge(month:, year:))
           .where(search_term_condition)
           .includes(:categories, :entities)
@@ -68,11 +68,11 @@ module Logic
       }.compact_blank
     end
 
-    def self.find_count_based_on_search(user, budget_params, search_params)
+    def self.find_count_based_on_search(financial_scope, budget_params, search_params)
       search_term = search_params.delete(:search_term) || ""
       raw_conditions = build_conditions_from_params(budget_params.is_a?(Hash) ? budget_params.dup : budget_params.to_unsafe_h)
 
-      relation = user.budgets
+      relation = budgets_relation(financial_scope)
                      .left_joins(:categories, :entities)
                      .where(raw_conditions[:associations])
                      .where("budgets.description ILIKE ?", "%#{search_term}%")
@@ -80,6 +80,10 @@ module Logic
       relation = relation.distinct.select("budgets.id, budgets.month, budgets.year")
 
       relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
+    end
+
+    def self.budgets_relation(financial_scope)
+      financial_scope.budgets
     end
   end
 end

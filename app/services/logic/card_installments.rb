@@ -2,7 +2,7 @@
 
 module Logic
   class CardInstallments
-    def self.find_ref_month_year_by_params(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+    def self.find_ref_month_year_by_params(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       month_year   = search_params.delete(:month_year)
       year         = month_year[0..3]
       month        = month_year[4..]
@@ -16,11 +16,11 @@ module Logic
       inclusions[:card_transaction] << :user_card if card_transaction_params[:user_card_id].blank?
 
       card_installment_ids = card_transaction_params[:card_installment_ids]
-      return user.card_installments.includes(inclusions).where(id: card_installment_ids) if card_installment_ids.present?
+      return financial_scope.card_installments.includes(inclusions).where(id: card_installment_ids) if card_installment_ids.present?
 
       conditions = build_conditions_from_params(card_transaction_params, search_params)
 
-      relation = user.card_installments
+      relation = financial_scope.card_installments
                      .includes(inclusions)
                      .left_joins(joins)
                      .where(conditions)
@@ -112,7 +112,7 @@ module Logic
       (from_installments_number..to_installments_number)
     end
 
-    def self.find_count_based_on_search(user, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+    def self.find_count_based_on_search(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       search_term  = search_params.delete(:search_term) || ""
       category_ids = card_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
@@ -120,12 +120,12 @@ module Logic
       entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
 
       card_installment_ids = card_transaction_params[:card_installment_ids]
-      return user.card_installments.where(id: card_installment_ids) if card_installment_ids.present?
+      return financial_scope.card_installments.where(id: card_installment_ids) if card_installment_ids.present?
 
       conditions = build_conditions_from_params(card_transaction_params, search_params)
       conditions[:card_transaction] = conditions[:card_transaction].except("date") if conditions[:card_transaction].present?
 
-      relation = user.card_installments
+      relation = financial_scope.card_installments
                      .left_joins({ card_transaction: %i[categories entities] })
                      .where(conditions)
                      .where("card_transactions.description ILIKE ?", "%#{search_term}%")

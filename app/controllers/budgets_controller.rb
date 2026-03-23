@@ -21,13 +21,13 @@ class BudgetsController < ApplicationController
     month          = month_year[4..].to_i
     month_year_str = I18n.l(Date.new(year, month, 1), format: "%B %Y")
 
-    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_user, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
+    budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_context, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
 
     render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:)
   end
 
   def new
-    @budget = current_user.budgets.new
+    @budget = current_context.budgets.new(user: current_user)
 
     respond_to do |format|
       format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
@@ -36,7 +36,7 @@ class BudgetsController < ApplicationController
   end
 
   def create
-    @budget = Logic::Budgets.create(budget_params, multiple_budget_params)
+    @budget = Logic::Budgets.create(budget_params.merge(user: current_user, context: current_context), multiple_budget_params)
 
     handle_save
   end
@@ -49,7 +49,7 @@ class BudgetsController < ApplicationController
   end
 
   def update
-    @budget = Logic::Budgets.update(@budget, budget_params)
+    @budget = Logic::Budgets.update(@budget, budget_params.merge(user: current_user, context: current_context))
 
     handle_save
   end
@@ -72,16 +72,16 @@ class BudgetsController < ApplicationController
   end
 
   def load_based_on_save
-    min_date = current_user.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = current_user.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
+    min_date = current_context.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
+    max_date = current_context.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
     @years = (min_date.year..max_date.year)
     @default_year = @budget.year
     @active_month_years = [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ]
   end
 
   def build_index_context # rubocop:disable Metrics/AbcSize
-    min_date = current_user.budgets.active.minimum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
-    max_date = current_user.budgets.active.maximum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
+    min_date = current_context.budgets.active.minimum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
+    max_date = current_context.budgets.active.maximum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
 
     default_active_month_years = [ min_date.strftime("%Y%m").to_i, (min_date + 1.month).strftime("%Y%m").to_i ]
     years = @years || (min_date.year..max_date.year)
@@ -92,7 +92,7 @@ class BudgetsController < ApplicationController
     entity_id = [ budget_params[:entity_id] ].flatten&.compact_blank
     search_term = search_budget_params[:search_term]
 
-    count_by_month_year = Logic::Budgets.find_count_based_on_search(current_user, budget_params, search_budget_params)
+    count_by_month_year = Logic::Budgets.find_count_based_on_search(current_context, budget_params, search_budget_params)
 
     @index_context = {
       current_user:,
@@ -114,7 +114,7 @@ class BudgetsController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_budget
-    @budget = current_user.budgets.find(params[:id])
+    @budget = current_context.budgets.find(params[:id])
   end
 
   def search_budget_params
