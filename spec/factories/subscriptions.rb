@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :subscription do
     user { custom_create(:user) }
+    context { user.main_context }
     status { :active }
     description { "ChatGPT Plus" }
     price { 0 }
