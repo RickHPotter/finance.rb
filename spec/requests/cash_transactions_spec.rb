@@ -166,6 +166,232 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(source_message.reload.applied_at).to be_present
     end
+
+    it "refuses to save a stale actionable form into the newly selected context" do
+      sender = create(:user, :random)
+      receiver = create(:user, :random)
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
+      create(:entity, user: sender, entity_name: "RECEIVER", entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: "SENDER", entity_user: sender)
+      derived_context = Logic::ContextCloneService.new(
+        source_context: receiver.main_context,
+        name: "Optimistic",
+        scenario_key: "scenario-optimistic"
+      ).call
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, receiver, scenario_key: derived_context.scenario_key)
+      source_message = conversation.messages.create!(
+        user: sender,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Shared reimbursement" }
+          },
+          replay: {
+            id: 999,
+            type: "CashTransaction",
+            description: "Shared reimbursement",
+            price: 20_000,
+            date: Date.new(2026, 3, 24).iso8601,
+            month: 3,
+            year: 2026,
+            category_ids: receiver.built_in_category("BORROW RETURN").id,
+            entity_ids: receiver_counterpart.id,
+            cash_installments_attributes: [
+              { number: 1, date: Date.new(2026, 3, 24).iso8601, month: 3, year: 2026, price: 20_000 }
+            ],
+            entity_transactions_attributes: [
+              {
+                entity_id: receiver_counterpart.id,
+                is_payer: false,
+                price: 0,
+                price_to_be_returned: 0,
+                exchanges_count: 0,
+                exchanges_attributes: []
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      sign_out user
+      sign_in receiver
+
+      switch_to_context!(derived_context)
+      get new_cash_transaction_path(cash_transaction: { source_message_id: source_message.id })
+      switch_to_context!(receiver.main_context)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            context_id: derived_context.id,
+            description: "Shared reimbursement",
+            price: 20_000,
+            date: Date.new(2026, 3, 24),
+            month: 3,
+            year: 2026,
+            user_id: receiver.id,
+            user_bank_account_id: receiver_bank_account.id,
+            reference_transactable_type: "CashTransaction",
+            reference_transactable_id: 999,
+            friend_notification_intent: "reimbursement",
+            source_message_id: source_message.id,
+            category_transactions_attributes: [
+              { category_id: receiver.built_in_category("BORROW RETURN").id }
+            ],
+            entity_transactions_attributes: [
+              {
+                entity_id: receiver_counterpart.id,
+                is_payer: false,
+                price: 0,
+                price_to_be_returned: 0,
+                exchanges_count: 0,
+                exchanges_attributes: []
+              }
+            ],
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Date.new(2026, 3, 24),
+                month: 3,
+                year: 2026,
+                price: 20_000
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to redirect_to(cash_transactions_path)
+      expect(flash[:alert]).to eq(I18n.t("contexts.switch.stale_transaction_form"))
+      expect(source_message.reload.applied_at).to be_nil
+    end
+
+    it "keeps reimbursement source linkage so later update and destroy notifications resolve the receiver transaction" do
+      sender = create(:user, :random)
+      receiver = create(:user, :random)
+      sender_bank_account = create(:user_bank_account, :random, user: sender, bank: create(:bank, :random))
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
+      create(:entity, user: sender, entity_name: "RECEIVER", entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: "SENDER", entity_user: sender)
+
+      sender_transaction = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Shared reimbursement",
+        price: -20_000,
+        date: Date.new(2026, 3, 24),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: sender.built_in_category("EXCHANGE").id }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -20_000, date: Date.new(2026, 3, 24), month: 3, year: 2026 }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id,
+            is_payer: true,
+            price: -20_000,
+            price_to_be_returned: -20_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -20_000, date: Date.new(2026, 3, 24), month: 3, year: 2026 }
+            ]
+          }
+        ],
+        friend_notification_intent: "reimbursement"
+      )
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      create_message = conversation.messages.order(:id).last
+
+      sign_out user
+      sign_in receiver
+
+      get new_cash_transaction_path(cash_transaction: { source_message_id: create_message.id })
+
+      document = Nokogiri::HTML.parse(response.body)
+
+      expect(document.at_css('input[name="cash_transaction[reference_transactable_type]"]')["value"]).to eq("CashTransaction")
+      expect(document.at_css('input[name="cash_transaction[reference_transactable_id]"]')["value"]).to eq(sender_transaction.id.to_s)
+      expect(document.at_css('input[name="cash_transaction[friend_notification_intent]"]')["value"]).to eq("reimbursement")
+
+      post cash_transactions_path, params: {
+        cash_transaction: {
+          description: "Shared reimbursement",
+          price: 20_000,
+          date: Date.new(2026, 3, 24),
+          month: 3,
+          year: 2026,
+          user_id: receiver.id,
+          user_bank_account_id: receiver_bank_account.id,
+          reference_transactable_type: "CashTransaction",
+          reference_transactable_id: sender_transaction.id,
+          friend_notification_intent: "reimbursement",
+          source_message_id: create_message.id,
+          category_transactions_attributes: [
+            { category_id: receiver.built_in_category("BORROW RETURN").id }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: receiver_counterpart.id,
+              is_payer: false,
+              price: 0,
+              price_to_be_returned: 0,
+              exchanges_count: 0,
+              exchanges_attributes: []
+            }
+          ],
+          cash_installments_attributes: [
+            {
+              number: 1,
+              date: Date.new(2026, 3, 24),
+              month: 3,
+              year: 2026,
+              price: 20_000
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      receiver_transaction = receiver.main_context.cash_transactions.order(:id).last
+
+      expect(receiver_transaction.reference_transactable).to eq(sender_transaction)
+
+      sender_transaction.update!(description: "Shared reimbursement updated")
+      update_message = conversation.messages.where(body: "notification:update").order(:id).last
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(
+        edit_cash_transaction_path(
+          id: receiver_transaction,
+          cash_transaction: { source_message_id: update_message.id },
+          format: :turbo_stream
+        )
+      )
+      expect(response.body).not_to include(
+        new_cash_transaction_path(cash_transaction: { source_message_id: update_message.id }, format: :turbo_stream)
+      )
+
+      sender_transaction.destroy
+      destroy_message = conversation.messages.where(body: "notification:destroy").order(:id).last
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(
+        cash_transaction_path(id: receiver_transaction, format: :turbo_stream, message_id: destroy_message.id)
+      )
+      expect(receiver_transaction.reload).to be_present
+    end
   end
 
   describe "[ #update ]" do

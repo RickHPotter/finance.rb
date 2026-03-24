@@ -2,8 +2,7 @@
 set -eu
 
 DESTINATION="${KAMAL_DESTINATION:-}"
-
-HOSTS=$(echo "$KAMAL_HOSTS" | tr ',' ' ')
+HOSTS=$(echo "${KAMAL_HOSTS:-}" | tr ',' ' ')
 
 if [ "${DESTINATION}" = "homolog" ]; then
   CRON_FILE="/etc/cron.d/financerb-homolog-refresh"
@@ -15,7 +14,7 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 TZ=America/Sao_Paulo
 
-0 3 * * * root /bin/bash -lc 'docker inspect financerb-db >/dev/null 2>&1 && docker inspect financerb-homolog-db >/dev/null 2>&1 && docker exec financerb-homolog-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; psql --username=postgres --dbname=postgres --set=ON_ERROR_STOP=1 --command=\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\''finance_homolog'\'' AND pid <> pg_backend_pid();\" && dropdb --if-exists --username=postgres finance_homolog && createdb --username=postgres finance_homolog" && docker exec financerb-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; pg_dump --username=postgres --dbname=finance --no-owner --no-privileges --format=plain" | docker exec -i financerb-homolog-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; psql --username=postgres --dbname=finance_homolog --set=ON_ERROR_STOP=1" && c=$(docker ps --filter "label=service=financerb" --filter "label=destination=homolog" --filter "label=role=web" --format "{{.Names}}" | head -n1); [ -n "$c" ] && docker exec "$c" bin/rails db:migrate' >> ${CRON_LOG} 2>&1
+0 3 * * * root /bin/bash -lc 'docker inspect financerb-db >/dev/null 2>&1 && docker inspect financerb-homolog-db >/dev/null 2>&1 && docker exec financerb-homolog-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; psql --username=postgres --dbname=postgres --set=ON_ERROR_STOP=1 --command=\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\''finance_homolog'\'' AND pid <> pg_backend_pid();\" && dropdb --if-exists --username=postgres finance_homolog && createdb --username=postgres finance_homolog" && docker exec financerb-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; pg_dump --username=postgres --dbname=finance --no-owner --no-privileges --format=plain" | docker exec -i financerb-homolog-db bash -lc "export PGPASSWORD=\"\$POSTGRES_PASSWORD\"; psql --username=postgres --dbname=finance_homolog --set=ON_ERROR_STOP=1" && c=\$(docker ps --filter "label=service=financerb" --filter "label=destination=homolog" --filter "label=role=web" --format "{{.Names}}" | head -n1); [ -n "\$c" ] && docker exec "\$c" bin/rails db:migrate' >> ${CRON_LOG} 2>&1
 EOF
 
   for HOST in $HOSTS; do

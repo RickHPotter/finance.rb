@@ -109,6 +109,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.price = 0
     @card_transaction.card_installments.each { |ci| ci.price = 0 }
 
+    set_card_tabs
+
     render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)
   end
 

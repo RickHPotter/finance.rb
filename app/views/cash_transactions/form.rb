@@ -30,6 +30,7 @@ class Views::CashTransactions::Form < Views::Base
                 class: "contents text-black",
                 data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
+        form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
         form.hidden_field :reference_transactable_type,
                           value: cash_transaction.reference_transactable_type || params.dig(:cash_transaction, :reference_transactable_type)
         form.hidden_field :reference_transactable_id,

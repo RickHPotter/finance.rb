@@ -34,7 +34,7 @@ class ContextsController < ApplicationController
     context = current_user.contexts.find(params[:id])
     session[:current_context_id] = context.id
 
-    redirect_back fallback_location: root_path
+    redirect_to switch_redirect_path, **switch_flash_options
   end
 
   private
@@ -50,5 +50,30 @@ class ContextsController < ApplicationController
 
   def set_context_tabs
     set_tabs(active_menu: :hub, active_sub_menu: :context)
+  end
+
+  def switch_redirect_path
+    return conversations_path if redirect_to_conversations_index?
+
+    request.referer || root_path
+  end
+
+  def switch_flash_options
+    return { notice: t("contexts.switch.redirected_to_index") } if redirect_to_conversations_index?
+
+    {}
+  end
+
+  def redirect_to_conversations_index?
+    recognized_referer_route[:controller] == "conversations" && recognized_referer_route[:action] == "show"
+  end
+
+  def recognized_referer_route
+    @recognized_referer_route ||= begin
+      referer_path = URI.parse(request.referer).path
+      Rails.application.routes.recognize_path(referer_path)
+    rescue URI::InvalidURIError, ActionController::RoutingError, NoMethodError
+      {}
+    end
   end
 end

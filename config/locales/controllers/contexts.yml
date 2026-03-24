@@ -1,5 +1,8 @@
 en:
   contexts:
+    switch:
+      redirected_to_index: Context changed. You were redirected to the conversations list because this conversation does not exist in the selected scenario.
+      stale_transaction_form: Context changed. This transaction form belonged to another scenario, so it was reloaded safely.
     index:
       title: Contexts
       subtitle: Scenario branches for your financial timeline.
@@ -30,6 +33,9 @@ en:
 
 pt-BR:
   contexts:
+    switch:
+      redirected_to_index: Contexto alterado. Voce foi redirecionado para a lista de conversas porque esta conversa nao existe no cenario selecionado.
+      stale_transaction_form: Contexto alterado. Este formulario de transacao pertencia a outro cenario e foi recarregado com seguranca.
     index:
       title: Contextos
       subtitle: Ramos de cenário para sua linha do tempo financeira.

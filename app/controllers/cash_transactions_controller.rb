@@ -4,6 +4,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   include TabsConcern
 
   before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
   before_action :set_cash_tabs
 
   def index
@@ -164,7 +165,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def assign_message_context
-    @cash_transaction.source_message_id = effective_cash_transaction_params[:source_message_id]
+    @cash_transaction.assign_attributes(
+      effective_cash_transaction_params.slice(
+        :source_message_id,
+        :reference_transactable_type,
+        :reference_transactable_id,
+        :friend_notification_intent
+      )
+    )
   end
 
   def assignable_cash_transaction_params
@@ -209,6 +217,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
       respond_to(&:turbo_stream)
     end
+  end
+
+  def ensure_submitted_context_matches_current_context!
+    return if submitted_context_id.blank? || submitted_context_id == current_context.id
+
+    respond_to do |format|
+      format.html { redirect_to cash_transactions_path, alert: t("contexts.switch.stale_transaction_form"), status: :see_other }
+      format.turbo_stream { redirect_to cash_transactions_path, alert: t("contexts.switch.stale_transaction_form"), status: :see_other }
+    end
+  end
+
+  def submitted_context_id
+    params.dig(:cash_transaction, :context_id).presence&.to_i
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity

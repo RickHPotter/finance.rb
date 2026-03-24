@@ -109,6 +109,18 @@ RSpec.describe "Contexts", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    it "redirects to conversations index with a notice when switching from conversation show" do
+      other_user = create(:user, :random)
+      scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+
+      patch switch_context_path(scenario_context), headers: { "HTTP_REFERER" => conversation_path(conversation) }
+
+      expect(session[:current_context_id]).to eq(scenario_context.id)
+      expect(response).to redirect_to(conversations_path)
+      expect(flash[:notice]).to eq(I18n.t("contexts.switch.redirected_to_index"))
+    end
+
     it "keeps the selected context active on the next financial month-year page" do
       scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
       bank = create(:bank, :random)

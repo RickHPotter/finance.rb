@@ -20,41 +20,39 @@ class Views::Conversations::Show < Views::Base
   end
 
   def view_template
-    div(class: "w-full") do
-      turbo_frame_tag :center_container do
-        div(class: "mx-1 min-h-[calc(100svh-18rem)] rounded-lg border border-stone-200 bg-white shadow-md shadow-red-50") do
-          div(class: "flex h-[calc(100svh-18rem)] min-h-[36rem] flex-col overflow-hidden rounded-lg", data: { controller: :chat }) do
-            div(class: "border-b px-4 py-4 md:px-5 #{header_container_class} md:flex md:items-center md:justify-between md:gap-6") do
-              div(class: "flex items-center gap-4 md:min-w-0 md:flex-1") do
-                div(class: "relative shrink-0") do
-                  image_tag(asset_path("avatars/#{conversation_avatar_name}"), class: conversation_avatar_class)
-                  div(class: "absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white #{presence_dot_class}")
-                end
-
-                div(class: "min-w-0 flex-1") do
-                  h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg") { conversation.title_for(current_user) }
-                  p(class: "mt-1 text-left text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
-                  render_scenario_badge
-                end
+    turbo_frame_tag :center_container do
+      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50 ring ring-stone-200") do
+        div(class: "flex h-[calc(100svh-16rem)] min-h-[36rem] flex-col overflow-hidden rounded-lg", data: { controller: :chat }) do
+          div(class: "border-b px-4 py-4 md:px-5 #{header_container_class} md:flex md:items-center md:justify-between md:gap-6") do
+            div(class: "flex items-center gap-4 md:min-w-0 md:flex-1") do
+              div(class: "relative shrink-0") do
+                image_tag(asset_path("avatars/#{conversation_avatar_name}"), class: conversation_avatar_class)
+                div(class: "absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white #{presence_dot_class}")
               end
 
-              if conversation.assistant?
-                div(class: "mt-4 md:mt-0 md:shrink-0") do
-                  render_message_filter_badges
-                end
+              div(class: "flex min-w-0 flex-1 flex-col items-start") do
+                h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg") { conversation.title_for(current_user) }
+                p(class: "mt-1 text-left text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
+                render_scenario_badge
               end
             end
 
-            div(class: "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.75),_rgba(241,245,249,0.95))] px-3 py-4 md:px-4",
-                id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
-              turbo_stream_from conversation
-              render Views::Messages::Index.new(messages:)
-            end
-
-            unless conversation.assistant?
-              div(class: "border-t px-3 py-3 md:px-4 #{composer_container_class}") do
-                render Views::Messages::Form.new(conversation:)
+            if conversation.assistant?
+              div(class: "mt-4 md:mt-0 md:shrink-0") do
+                render_message_filter_badges
               end
+            end
+          end
+
+          div(class: "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.75),_rgba(241,245,249,0.95))] px-3 py-4 md:px-4",
+              id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
+            turbo_stream_from conversation
+            render Views::Messages::Index.new(messages:)
+          end
+
+          unless conversation.assistant?
+            div(class: "border-t px-3 py-3 md:px-4 #{composer_container_class}") do
+              render Views::Messages::Form.new(conversation:)
             end
           end
         end
@@ -101,10 +99,10 @@ class Views::Conversations::Show < Views::Base
   end
 
   def render_scenario_badge
-    badge_class = "mt-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 " \
-                  "px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-800"
+    badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
+                  "px-3 py-1 text-[10px] font-semibold uppercase"
 
-    p(class: badge_class) do
+    div(class: badge_class) do
       plain(Context.model_name.human)
       plain(": ")
       plain(current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name)

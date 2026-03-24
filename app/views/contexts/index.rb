@@ -15,11 +15,11 @@ class Views::Contexts::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-18rem)] rounded-lg bg-white shadow-md shadow-red-50") do
+      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50") do
         div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
           div(class: "flex flex-col items-start") do
             h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Context, count: 2) }
-            p(class: "mt-2 text-sm text-stone-500") { I18n.t("contexts.index.subtitle") }
+            render_scenario_badge
           end
         end
 

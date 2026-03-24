@@ -339,6 +339,71 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).to include(ERB::Util.html_escape(I18n.t("activerecord.attributes.conversation.assistant_of", name: other_user.first_name)))
     end
 
+    it "shows outdated assistant message links for my notifications too" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      outdated_message = conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CashTransaction", details: { description: "Old mine" } },
+          replay: { id: 10, type: "CashTransaction" }
+        }.to_json
+      )
+      superseding_message = conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CashTransaction", details: { description: "New mine" } },
+          replay: { id: 10, type: "CashTransaction" }
+        }.to_json
+      )
+      outdated_message.update!(superseded_by: superseding_message)
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:outdated_message))
+      expect(response.body).to include("##{ActionView::RecordIdentifier.dom_id(superseding_message)}")
+    end
+
+    it "renders a larger sender-side show modal path for card transactions too" do
+      card_transaction = create(:card_transaction, user:, context: user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        reference_transactable: card_transaction,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CardTransaction",
+                   details: { description: card_transaction.description } },
+          replay: { id: 1, type: "CardTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(I18n.t("actions.show"))
+      expect(response.body).to include(edit_card_transaction_path(card_transaction))
+      expect(response.body).to include("md:min-w-[44rem]")
+    end
+
+    it "labels sender-side historical show state as destroyed for destroy notifications" do
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: user,
+        body: "notification:destroy",
+        reference_transactable: cash_transaction
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:already_destroyed))
+      expect(response.body).to include(I18n.t("actions.show"))
+    end
+
     it "filters assistant messages by mine and theirs" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       conversation.messages.create!(

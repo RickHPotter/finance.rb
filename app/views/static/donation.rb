@@ -24,7 +24,7 @@ class Views::Static::Donation < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "max-w-4xl mx-auto") do
+      div(class: "m-1 max-w-4xl mx-auto min-h-[calc(100svh-16rem)]") do
         div(class: "text-center mb-12") do
           div(class: "inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4") do
             cached_icon :support
@@ -36,7 +36,7 @@ class Views::Static::Donation < Views::Base
         div(class: "mb-8") do
           div(class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4") do
             options.each do |option|
-              div(class: "relative p-6 rounded-xl cursor-pointer bg-white border-2 border-gray-100 hover:border-blue-200 hover:shadow-sm") do
+              div(class: "relative p-6 rounded-xl cursor-pointer bg-white ring-2 ring-gray-100 hover:ring-blue-200 hover:shadow-sm") do
                 Sheet do
                   SheetTrigger do
                     div(class: "flex items-center mb-3") do
@@ -89,7 +89,7 @@ class Views::Static::Donation < Views::Base
           end
 
           div(
-            class: "bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm mb-4",
+            class: "bg-gray-50 p-4 rounded-xl ring ring-gray-200 shadow-sm mb-4",
             data: { controller: :clipboard, clipboard_success_content_value: I18n.t("donation.copied") }
           ) do
             div(class: "flex items-center gap-3") do

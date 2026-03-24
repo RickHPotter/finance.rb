@@ -39,9 +39,9 @@ class Views::Layouts::Application < Views::Base
             render partial "shared/flash"
           end
 
-          section class: "mt-8 flex min-h-0 flex-1 flex-col w-full" do
+          section class: "mt-6 flex min-h-0 flex-1 flex-col w-full" do
             div class: "flex min-h-0 flex-1 flex-col w-full" do
-              div class: "mb-10 flex shrink-0 justify-center" do
+              div class: "mb-6 flex shrink-0 justify-center" do
                 div id: "tabs", class: "w-screen" do
                   render Views::Shared::Tabs.new(main_tab:, sub_tab:, mobile:)
                 end
