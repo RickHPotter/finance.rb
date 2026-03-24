@@ -17,11 +17,28 @@ class Context < ApplicationRecord
   validates :name, presence: true, uniqueness: { scope: :user_id }
   validates :main, inclusion: { in: [ true, false ] }
 
+  before_validation :assign_scenario_key
+
   scope :main, -> { where(main: true) }
   scope :derived, -> { where(main: false) }
 
+  def derived?
+    !main?
+  end
+
   def archived?
     archived_at.present?
+  end
+
+  private
+
+  def assign_scenario_key
+    if main?
+      self.scenario_key = nil
+      return
+    end
+
+    self.scenario_key ||= SecureRandom.uuid
   end
 end
 
@@ -36,6 +53,7 @@ end
 #  description       :text
 #  main              :boolean          default(FALSE), not null
 #  name              :string           not null, uniquely indexed => [user_id]
+#  scenario_key      :string           indexed
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  source_context_id :bigint           indexed
@@ -43,6 +61,7 @@ end
 #
 # Indexes
 #
+#  index_contexts_on_scenario_key             (scenario_key)
 #  index_contexts_on_source_context_id        (source_context_id)
 #  index_contexts_on_user_and_name            (user_id,name) UNIQUE
 #  index_contexts_on_user_id                  (user_id)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_133000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -169,9 +169,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_133000) do
     t.text "description"
     t.boolean "main", default: false, null: false
     t.string "name", null: false
+    t.string "scenario_key"
     t.bigint "source_context_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["scenario_key"], name: "index_contexts_on_scenario_key"
     t.index ["source_context_id"], name: "index_contexts_on_source_context_id"
     t.index ["user_id", "name"], name: "index_contexts_on_user_and_name", unique: true
     t.index ["user_id"], name: "index_contexts_on_user_id"
@@ -190,8 +192,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_133000) do
   create_table "conversations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "kind", default: "human", null: false
+    t.string "scenario_key"
     t.datetime "updated_at", null: false
     t.index ["kind"], name: "index_conversations_on_kind"
+    t.index ["scenario_key"], name: "index_conversations_on_scenario_key"
   end
 
   create_table "entities", force: :cascade do |t|

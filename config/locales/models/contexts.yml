@@ -1,0 +1,23 @@
+en:
+  activerecord:
+    models:
+      context:
+        one: Context
+        other: Contexts
+    attributes:
+      context:
+        id: ID
+        created_at: Created at
+        updated_at: Updated at
+
+pt-BR:
+  activerecord:
+    models:
+      context:
+        one: Contexto
+        other: Contextos
+    attributes:
+      context:
+        id: ID
+        created_at: Criado em
+        updated_at: Atualizado em

@@ -42,6 +42,17 @@ RSpec.describe Context, type: :model do
       expect(described_class.main).to include(main_context)
       expect(described_class.derived).to include(derived_context)
     end
+
+    it "keeps main contexts without a scenario key" do
+      expect(create(:user, :random).main_context.scenario_key).to be_nil
+    end
+
+    it "assigns a scenario key to derived contexts" do
+      user = create(:user, :random)
+      derived_context = create(:context, user:, source_context: user.main_context)
+
+      expect(derived_context.scenario_key).to be_present
+    end
   end
 end
 
@@ -56,6 +67,7 @@ end
 #  description       :text
 #  main              :boolean          default(FALSE), not null
 #  name              :string           not null, uniquely indexed => [user_id]
+#  scenario_key      :string           indexed
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  source_context_id :bigint           indexed
@@ -63,6 +75,7 @@ end
 #
 # Indexes
 #
+#  index_contexts_on_scenario_key             (scenario_key)
 #  index_contexts_on_source_context_id        (source_context_id)
 #  index_contexts_on_user_and_name            (user_id,name) UNIQUE
 #  index_contexts_on_user_id                  (user_id)

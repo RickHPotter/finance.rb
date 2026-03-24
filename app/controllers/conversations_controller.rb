@@ -15,7 +15,7 @@ class ConversationsController < ApplicationController
   end
 
   def show
-    @conversation = current_user.conversations.preload(:users).find(params[:id])
+    @conversation = scoped_conversations.preload(:users).find(params[:id])
     @active_message_filter = conversation_message_filter
     @active_message_sides = conversation_message_sides
     @messages = filtered_messages(@conversation)
@@ -35,7 +35,7 @@ class ConversationsController < ApplicationController
   end
 
   def create
-    @conversation = Conversation.create!(conversation_params)
+    @conversation = Conversation.create!(conversation_params.merge(scenario_key: current_context.scenario_key))
 
     redirect_to @conversation
   end
@@ -47,7 +47,7 @@ class ConversationsController < ApplicationController
   end
 
   def filtered_conversations
-    scope = current_user.conversations
+    scope = scoped_conversations
 
     case conversation_filter
     when "unread"
@@ -59,6 +59,10 @@ class ConversationsController < ApplicationController
     end
 
     scope
+  end
+
+  def scoped_conversations
+    current_user.conversations.for_scenario(current_context.scenario_key)
   end
 
   def conversation_filter

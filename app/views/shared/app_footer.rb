@@ -54,12 +54,14 @@ class Views::Shared::AppFooter < Views::Base
 
     div(class:) do
       div(class: "flex flex-wrap items-center justify-center gap-2 px-2") do
-        span(class: "text-xs text-gray-500") { I18n.t("contexts.current") }
+        span(class: "text-xs text-gray-500") { Context.model_name.human }
 
         current_user.contexts.order(main: :desc, created_at: :asc).each do |context|
           active = current_context&.id == context.id
           button_to switch_context_path(context),
                     method: :patch,
+                    form: { data: { turbo: false } },
+                    data: { turbo: false, turbo_prefetch: false },
                     class: context_button_class(active) do
             plain context.name
           end

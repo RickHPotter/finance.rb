@@ -2,13 +2,15 @@
 
 class Views::Conversations::Show < Views::Base
   register_value_helper :current_user
-  attr_reader :conversation, :messages, :active_message_filter, :active_message_sides
+  register_value_helper :current_context
 
   include Phlex::Rails::Helpers::TurboStreamFrom
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
+
+  attr_reader :conversation, :messages, :active_message_filter, :active_message_sides
 
   def initialize(conversation:, messages: conversation.messages.order(:created_at), active_message_filter: "all", active_message_sides: %w[mine theirs])
     @conversation = conversation
@@ -32,6 +34,7 @@ class Views::Conversations::Show < Views::Base
                 div(class: "min-w-0 flex-1") do
                   h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg") { conversation.title_for(current_user) }
                   p(class: "mt-1 text-left text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
+                  render_scenario_badge
                 end
               end
 
@@ -95,6 +98,17 @@ class Views::Conversations::Show < Views::Base
 
   def subtitle_text
     conversation.assistant? ? model_attribute(conversation, :assistant) : model_attribute(conversation, :chat)
+  end
+
+  def render_scenario_badge
+    badge_class = "mt-2 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 " \
+                  "px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-800"
+
+    p(class: badge_class) do
+      plain(Context.model_name.human)
+      plain(": ")
+      plain(current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name)
+    end
   end
 
   def render_message_filter_badges

@@ -351,10 +351,11 @@ RSpec.describe "CashTransactions", type: :request do
   describe "[ source message context isolation ]" do
     it "creates a replayed cash transaction inside the derived context and marks the message as applied" do
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Replay Create Isolation"
+      ).call
+      conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -389,11 +390,6 @@ RSpec.describe "CashTransactions", type: :request do
           }
         }.to_json
       )
-
-      derived_context = Logic::ContextCloneService.new(
-        source_context: user.main_context,
-        name: "Replay Create Isolation"
-      ).call
 
       switch_to_context!(derived_context)
 
@@ -453,10 +449,7 @@ RSpec.describe "CashTransactions", type: :request do
       derived_cash_transaction = derived_context.cash_transactions.find_by!(description: main_cash_transaction.description)
 
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:update",
@@ -498,6 +491,182 @@ RSpec.describe "CashTransactions", type: :request do
       expect(main_cash_transaction.reload.description).to eq("Replay base transaction")
       expect(main_cash_transaction.price).to eq(12_000)
       expect(source_message.reload.applied_at).to be_present
+    end
+
+    it "ignores a source message from another scenario when creating in a derived context" do
+      other_user = create(:user, :random)
+      main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      source_message = main_conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "create",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: "Main replay" }
+          },
+          replay: {
+            id: 9999,
+            type: "CashTransaction",
+            description: "Main replay",
+            price: 15_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            category_ids: category.id,
+            entity_ids: entity.id,
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Time.zone.today,
+                month: Time.zone.today.month,
+                year: Time.zone.today.year,
+                price: 15_000
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      derived_context = create(:context, user:, name: "Replay Wrong Scenario", source_context: user.main_context)
+      switch_to_context!(derived_context)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Manual create",
+            price: 10_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [ { category_id: category.id } ],
+            entity_transactions_attributes: [
+              { entity_id: entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+            ],
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Time.zone.today,
+                month: Time.zone.today.month,
+                year: Time.zone.today.year,
+                price: 10_000
+              }
+            ],
+            source_message_id: source_message.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change { derived_context.cash_transactions.reload.count }.by(1)
+
+      created_transaction = derived_context.cash_transactions.order(:id).last
+
+      expect(created_transaction.description).to eq("Manual create")
+      expect(source_message.reload.applied_at).to be_nil
+    end
+
+    it "applies an auto-routed derived scenario message only inside the receiver derived context" do
+      sender = create(:user, first_name: "Rikki", email: "rikki-receiver@example.com")
+      receiver = create(:user, first_name: "Gigi", email: "gigi-receiver@example.com")
+      sender_context = create(:context, user: sender, source_context: sender.main_context, name: "Optimistic")
+      sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
+      receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+      create(:entity, user: sender, entity_name: "GIGI", entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: "RIKKI", entity_user: sender)
+
+      sign_out user
+      sign_in receiver
+
+      expect do
+        create(
+          :cash_transaction,
+          user: sender,
+          context: sender_context,
+          user_bank_account: sender_bank_account,
+          description: "Scenario exchange",
+          price: 7_500,
+          date: Date.new(2026, 3, 24),
+          month: 3,
+          year: 2026,
+          category_transactions_attributes: [
+            { category_id: sender.built_in_category("EXCHANGE").id }
+          ],
+          cash_installments_attributes: [
+            { number: 1, price: 7_500, date: Date.new(2026, 3, 24), month: 3, year: 2026 }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id,
+              is_payer: true,
+              price: -7_500,
+              price_to_be_returned: -7_500,
+              exchanges_count: 1,
+              exchanges_attributes: [
+                { number: 1, price: -7_500, date: Date.new(2026, 3, 28), month: 3, year: 2026 }
+              ]
+            }
+          ]
+        )
+      end.to change { receiver.contexts.count }.by(1)
+
+      receiver_context = receiver.contexts.find_by!(scenario_key: sender_context.scenario_key)
+      message = Conversation.for_users([ sender.id, receiver.id ])
+                            .assistant
+                            .for_scenario(sender_context.scenario_key)
+                            .first
+                            .messages
+                            .order(:id)
+                            .last
+
+      patch switch_context_path(receiver_context)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Scenario exchange",
+            price: 7_500,
+            date: Date.new(2026, 3, 28),
+            month: 3,
+            year: 2026,
+            user_id: receiver.id,
+            user_bank_account_id: receiver_bank_account.id,
+            category_transactions_attributes: [
+              { category_id: receiver.built_in_category("EXCHANGE").id }
+            ],
+            entity_transactions_attributes: [
+              {
+                entity_id: receiver_counterpart.id,
+                is_payer: true,
+                price: -7_500,
+                price_to_be_returned: -7_500,
+                exchanges_count: 1,
+                exchanges_attributes: [
+                  { number: 1, price: -7_500, date: Date.new(2026, 3, 28), month: 3, year: 2026 }
+                ]
+              }
+            ],
+            cash_installments_attributes: [
+              {
+                number: 1,
+                date: Date.new(2026, 3, 28),
+                month: 3,
+                year: 2026,
+                price: 7_500
+              }
+            ],
+            source_message_id: message.id
+          }
+        }, headers: turbo_stream_headers
+      end.to change { receiver_context.cash_transactions.reload.count }.by(1)
+                                                                       .and change { receiver.main_context.cash_transactions.reload.count }.by(0)
+
+      created_transaction = receiver_context.cash_transactions.order(:id).last
+
+      expect(created_transaction.context).to eq(receiver_context)
+      expect(created_transaction.description).to eq("Scenario exchange")
+      expect(message.reload.applied_at).to be_present
     end
   end
 

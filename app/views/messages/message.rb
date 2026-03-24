@@ -2,6 +2,7 @@
 
 class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLength
   register_value_helper :current_user
+  register_value_helper :current_context
   attr_reader :message
 
   include Phlex::Rails::Helpers::AssetPath
@@ -75,12 +76,10 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_transaction_actions
-    user = current_user if request.env["warden"].present?
-
     if message.transaction_destroy_notification_message?
       return if message.reference_transactable_id.nil?
 
-      cash_transaction_to_be_destroyed = user&.cash_transactions&.find_by(id: message.reference_transactable_id)
+      cash_transaction_to_be_destroyed = viewer_cash_transactions.find_by(id: message.reference_transactable_id)
 
       if cash_transaction_to_be_destroyed
         render_destroy_action(cash_transaction_to_be_destroyed)
@@ -99,7 +98,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     id = params["id"]
     type = params["type"]
 
-    reference_transactable = user&.cash_transactions&.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    reference_transactable = viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
     action_button_key = message.action_button_key(local_reference_exists: reference_transactable.present?)
 
     if reference_transactable
@@ -298,16 +297,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     @reference_transactable_for_viewer =
       if message.transaction_destroy_notification_message?
-        viewer&.cash_transactions&.find_by(id: message.reference_transactable_id)
+        viewer_cash_transactions.find_by(id: message.reference_transactable_id)
       elsif type.present? && id.present?
-        viewer&.cash_transactions&.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
+        viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
       end
   end
 
   def fallback_reference_transactable_for_viewer(payload)
     return if viewer.blank?
 
-    relation = viewer.cash_transactions.where(description: payload["description"], price: payload["price"])
+    relation = viewer_cash_transactions.where(description: payload["description"], price: payload["price"])
     relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
 
     category_ids = Array(payload["category_ids"]).compact_blank
@@ -344,5 +343,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     return @viewer if defined?(@viewer)
 
     @viewer = request.env["warden"].present? ? current_user : nil
+  end
+
+  def viewer_cash_transactions
+    return CashTransaction.none if viewer.blank?
+
+    current_context.cash_transactions
   end
 end

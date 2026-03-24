@@ -178,6 +178,16 @@ too visible to ignore.
     reviewed before execution.
   - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating
     EXCHANGE CashTransactions.
+  - Context-aware conversations were completed on top of the assistant-thread refactor:
+    conversations now isolate by scenario when the active context is not `main`.
+  - `scenario_key` was introduced as the shared scenario identity across users and
+    conversations, allowing receiver-side derived contexts to be found or auto-created
+    during derived-context notifications.
+  - Message replay/apply, pending filtering, unread badges, and assistant action
+    rendering were hardened so derived-context message flows do not fall back into
+    `main`.
+  - A dedicated homolog checklist was added to validate two-user scenario routing,
+    receiver auto-cloning, and cross-context non-interference before production rollout.
 
 ## CONCLUSION
 

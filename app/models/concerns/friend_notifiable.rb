@@ -45,12 +45,13 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
     return if reference_transactable&.user == friend_user
 
-    friend_user_reference = friend_user.cash_transactions.find_by(reference_transactable: self)
+    receiver_context = receiver_context_for(friend_user)
+    friend_user_reference = receiver_context.cash_transactions.find_by(reference_transactable: self)
     return if action == :destroy && friend_user_reference.blank?
 
     I18n.locale = friend_user.locale
 
-    conversation = find_or_create_conversation(user, friend_user)
+    conversation = find_or_create_conversation(user, friend_user, scenario_key: receiver_context.scenario_key)
     message = conversation.messages.new(user:, reference_transactable: self)
     message.reference_transactable = friend_user_reference if action == :destroy
 
@@ -60,8 +61,8 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action)
   end
 
-  def find_or_create_conversation(user, friend_user)
-    Conversation.find_or_create_assistant_between!(user, friend_user)
+  def find_or_create_conversation(user, friend_user, scenario_key:)
+    Conversation.find_or_create_assistant_between!(user, friend_user, scenario_key:)
   end
 
   def save_message(message, friend_user, exchanges, action)
@@ -262,6 +263,35 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     previous_messages = conversation.messages.where(reference_transactable: self).where(superseded_by_id: nil).where.not(id: new_message.id)
 
     previous_messages.update_all(superseded_by_id: new_message.id)
+  end
+
+  def notification_context
+    context || user&.main_context
+  end
+
+  def receiver_context_for(friend_user)
+    sender_context = notification_context
+    return friend_user.ensure_main_context! if sender_context.blank? || sender_context.main? || sender_context.scenario_key.blank?
+
+    friend_user.contexts.find_by(scenario_key: sender_context.scenario_key) ||
+      Logic::ContextCloneService.new(
+        source_context: friend_user.ensure_main_context!,
+        name: next_receiver_context_name_for(friend_user, sender_context.name),
+        description: sender_context.description,
+        scenario_key: sender_context.scenario_key
+      ).call
+  end
+
+  def next_receiver_context_name_for(friend_user, base_name)
+    return base_name unless friend_user.contexts.exists?(name: base_name)
+
+    suffix = 2
+    loop do
+      candidate = "#{base_name} #{suffix}"
+      return candidate unless friend_user.contexts.exists?(name: candidate)
+
+      suffix += 1
+    end
   end
 
   # HELPER VALUE METHODS

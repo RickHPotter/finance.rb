@@ -2,11 +2,12 @@
 
 module Logic
   class ContextCloneService
-    def initialize(source_context:, name:, description: nil)
+    def initialize(source_context:, name:, description: nil, scenario_key: nil)
       @source_context = source_context
       @user = source_context.user
       @name = name
       @description = description.presence || source_context.description
+      @scenario_key = scenario_key
 
       @budget_map = {}
       @cash_transaction_map = {}
@@ -44,6 +45,7 @@ module Logic
         name: @name,
         description: @description,
         main: false,
+        scenario_key: @scenario_key,
         source_context: @source_context,
         cloned_at: Time.current
       )

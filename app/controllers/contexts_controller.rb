@@ -6,7 +6,7 @@ class ContextsController < ApplicationController
   before_action :set_context_tabs
 
   def index
-    contexts = current_user.contexts.includes(:source_context).order(:created_at)
+    contexts = current_user.contexts.order(:created_at)
     render Views::Contexts::Index.new(contexts:, current_context:)
   end
 

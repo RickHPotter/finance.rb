@@ -33,7 +33,7 @@ class Views::Layouts::Application < Views::Base
         javascript_include_tag("application", data: { turbo_track: :reload }, type: :module)
       end
 
-      body class: body_class do
+      body(class: body_class, data: { controller: ( "letitsnow" if rails_view_context.current_context.derived?) }) do
         ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-[1420px] mx-auto w-full") do
           turbo_frame_tag :notification do
             render partial "shared/flash"

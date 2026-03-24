@@ -2,7 +2,7 @@
 
 class MessagesController < ApplicationController
   def create
-    @conversation = Conversation.find(params[:conversation_id])
+    @conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
     @message = @conversation.messages.build(message_params)
     @message.user = current_user
     @message.save

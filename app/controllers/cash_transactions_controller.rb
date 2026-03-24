@@ -178,7 +178,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def source_message
     return if source_message_id.blank?
 
-    @source_message ||= current_user.received_messages.find_by(id: source_message_id)
+    @source_message ||= current_user.received_messages
+                                    .joins(:conversation)
+                                    .where(conversations: { scenario_key: current_context.scenario_key })
+                                    .find_by(id: source_message_id)
   end
 
   def mark_source_message_applied

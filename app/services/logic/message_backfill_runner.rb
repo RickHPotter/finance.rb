@@ -70,10 +70,12 @@ class Logic::MessageBackfillRunner
     receiver = participants.find { |user| user.id != message.user_id }
     return if sender.blank? || receiver.blank?
 
+    scenario_key = message.conversation.scenario_key
+
     if message.human_message?
-      Conversation.find_or_create_human_between!(sender, receiver)
+      Conversation.find_or_create_human_between!(sender, receiver, scenario_key:)
     else
-      Conversation.find_or_create_assistant_between!(sender, receiver)
+      Conversation.find_or_create_assistant_between!(sender, receiver, scenario_key:)
     end
   end
 

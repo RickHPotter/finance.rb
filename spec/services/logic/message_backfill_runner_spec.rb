@@ -46,5 +46,18 @@ RSpec.describe Logic::MessageBackfillRunner do
       expect(destroy_message.conversation).to eq(notification_message.conversation)
       expect(JSON.parse(destroy_message.headers).dig("event", "action")).to eq("destroy")
     end
+
+    it "preserves the source conversation scenario when rebuilding target conversations" do
+      scenario_conversation = Conversation.create_with_participants!(sender, receiver, scenario_key: "scenario-1")
+      scenario_conversation.messages.create!(user: sender, body: "hello from scenario")
+
+      result = described_class.new(dry_run: false).call
+
+      moved_message = Message.find_by(body: "hello from scenario")
+
+      expect(result[:moved_messages_count]).to be >= 1
+      expect(moved_message.conversation.kind).to eq("human")
+      expect(moved_message.conversation.scenario_key).to eq("scenario-1")
+    end
   end
 end

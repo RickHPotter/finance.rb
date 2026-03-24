@@ -74,7 +74,16 @@ module TabsConcern
   end
 
   def set_hub_sublinks
-    conversation_notification_type = current_user.received_messages.unread.any? ? 1 : 0
+    conversation_notification_type =
+      if current_user.received_messages
+                     .joins(:conversation)
+                     .where(conversations: { scenario_key: current_context.scenario_key })
+                     .unread
+                     .any?
+        1
+      else
+        0
+      end
 
     @hub_tab = [
       Item.new(t("tabs.balance"),      :chart,    balances_path,        @active_sub_menu == :balance),

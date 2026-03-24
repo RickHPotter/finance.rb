@@ -25,6 +25,7 @@ class Conversation < ApplicationRecord
       .group("conversations.id")
       .having("COUNT(DISTINCT conversation_participants.user_id) = ?", ids.size)
   }
+  scope :for_scenario, ->(scenario_key) { where(scenario_key:) }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
@@ -32,12 +33,13 @@ class Conversation < ApplicationRecord
     create_with_participants!(user1, user2)
   end
 
-  def self.find_or_create_human_between!(user1, user2)
-    for_users([ user1.id, user2.id ]).human.first || create_with_participants!(user1, user2, kind: :human)
+  def self.find_or_create_human_between!(user1, user2, scenario_key: nil)
+    for_users([ user1.id, user2.id ]).human.for_scenario(scenario_key).first || create_with_participants!(user1, user2, kind: :human, scenario_key:)
   end
 
-  def self.find_or_create_assistant_between!(user1, user2)
-    for_users([ user1.id, user2.id ]).assistant.order(:id).first || create_with_participants!(user1, user2, kind: :assistant)
+  def self.find_or_create_assistant_between!(user1, user2, scenario_key: nil)
+    for_users([ user1.id,
+                user2.id ]).assistant.for_scenario(scenario_key).order(:id).first || create_with_participants!(user1, user2, kind: :assistant, scenario_key:)
   end
 
   def self.create_with_participants!(user1, user2, **attributes)
@@ -83,12 +85,14 @@ end
 # Table name: conversations
 # Database name: primary
 #
-#  id         :bigint           not null, primary key
-#  kind       :string           default("human"), not null, indexed
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
+#  id           :bigint           not null, primary key
+#  kind         :string           default("human"), not null, indexed
+#  scenario_key :string           indexed
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
 #
 # Indexes
 #
-#  index_conversations_on_kind  (kind)
+#  index_conversations_on_kind          (kind)
+#  index_conversations_on_scenario_key  (scenario_key)
 #

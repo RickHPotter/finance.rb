@@ -4,6 +4,7 @@ class Views::Conversations::Index < Views::Base
   attr_reader :conversations, :active_filter
 
   register_value_helper :current_user
+  register_value_helper :current_context
 
   include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::ImageTag
@@ -18,9 +19,12 @@ class Views::Conversations::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "mx-1 min-h-[calc(100svh-18rem)] rounded-lg bg-white shadow-md shadow-red-50") do
-        div(class: "flex items-center justify-between border-b border-stone-200 px-4 py-3") do
-          h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Conversation) }
+      div(class: "m-1 min-h-[calc(100svh-18rem)] rounded-lg bg-white shadow-md shadow-red-50") do
+        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+          div(class: "flex flex-col items-start") do
+            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Conversation, 2) }
+            render_scenario_badge
+          end
         end
 
         div(class: "border-b border-stone-100 px-3 py-3 md:px-4") do
@@ -129,5 +133,16 @@ class Views::Conversations::Index < Views::Base
     return model_attribute(Conversation, :no_messages_yet) if message.nil?
 
     message.preview_body.presence || model_attribute(Conversation, :empty_message)
+  end
+
+  def render_scenario_badge
+    badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
+                  "px-3 py-1 text-[10px] font-semibold uppercase"
+
+    div(class: badge_class) do
+      plain(Context.model_name.human)
+      plain(": ")
+      plain(current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name)
+    end
   end
 end

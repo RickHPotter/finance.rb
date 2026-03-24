@@ -4,6 +4,8 @@ class Views::Contexts::Index < Views::Base
   include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::LinkTo
 
+  include TranslateHelper
+
   attr_reader :contexts, :current_context
 
   def initialize(contexts:, current_context:)
@@ -13,15 +15,15 @@ class Views::Contexts::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "mx-1 rounded-lg border border-stone-200 bg-white p-4 shadow-md shadow-red-50 md:p-6") do
-        div(class: "mb-6 flex items-center justify-between border-b border-stone-200 pb-4") do
-          div do
-            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { I18n.t("contexts.index.title") }
+      div(class: "m-1 min-h-[calc(100svh-18rem)] rounded-lg bg-white shadow-md shadow-red-50") do
+        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+          div(class: "flex flex-col items-start") do
+            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Context, count: 2) }
             p(class: "mt-2 text-sm text-stone-500") { I18n.t("contexts.index.subtitle") }
           end
         end
 
-        div(class: "space-y-6") do
+        div(class: "border-b border-stone-100 px-3 py-3 md:px-4 space-y-6") do
           render_tree_node(main_context, root: true)
         end
       end

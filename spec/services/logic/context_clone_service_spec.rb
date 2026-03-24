@@ -4,6 +4,19 @@ require "rails_helper"
 
 RSpec.describe Logic::ContextCloneService do
   describe "#call" do
+    it "accepts an explicit scenario key for the cloned context" do
+      user = create(:user)
+      source_context = create(:context, user:, name: "Scenario")
+
+      cloned_context = described_class.new(
+        source_context:,
+        name: "Scenario clone",
+        scenario_key: "shared-scenario"
+      ).call
+
+      expect(cloned_context.scenario_key).to eq("shared-scenario")
+    end
+
     it "clones a context financial snapshot into a new derived context" do
       user = create(:user)
       source_context = create(:context, user:, name: "What If")
