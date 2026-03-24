@@ -258,9 +258,15 @@ RSpec.describe "CardTransactions", type: :request do
         description: "Main isolated card transaction",
         price: -9_000
       )
-      main_card_transaction.categories = [ exchange_category ]
-      main_card_transaction.entities = [ entity_one ]
-      main_card_transaction.save!
+      main_card_transaction.category_transactions.destroy_all
+      main_card_transaction.entity_transactions.destroy_all
+      main_card_transaction.category_transactions.create!(category: exchange_category)
+      main_card_transaction.entity_transactions.create!(
+        entity: entity_one,
+        is_payer: false,
+        price: 0,
+        price_to_be_returned: 0
+      )
 
       derived_context = Logic::ContextCloneService.new(
         source_context: user.main_context,

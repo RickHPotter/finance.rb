@@ -4,9 +4,13 @@
 class BalancesController < ApplicationController
   include TabsConcern
 
-  before_action :set_balance_tabs, only: :index
+  before_action :set_balance_tabs, only: %i[index legacy]
 
   def index
+    render Views::Balances::Mobile.new
+  end
+
+  def legacy
     respond_to do |format|
       format.html { render Views::Balances::Index.new(mobile: @mobile) }
       format.turbo_stream
@@ -15,6 +19,11 @@ class BalancesController < ApplicationController
 
   def cash_balance_json
     result = Logic::Finder::CashBalanceJson.new(user: current_user, context: current_context).call
+    render json: result
+  end
+
+  def current_balance_json
+    result = Logic::Finder::CurrentBalanceJson.new(user: current_user, context: current_context).call
     render json: result
   end
 

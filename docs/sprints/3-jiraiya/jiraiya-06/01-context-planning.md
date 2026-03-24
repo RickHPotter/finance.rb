@@ -394,13 +394,52 @@ Recommended cloning order:
 This order is not final, but it reflects the idea that cycle/reference state should
 exist before cloned transaction flows are recalculated inside the new context.
 
+Status:
+
+- done
+- completed with:
+  - `Logic::ContextCloneService`
+  - context-scoped reference uniqueness
+  - clone rollback protection
+  - clone fidelity coverage for linked financial graphs
+- recorded in `05-context-cloning-and-hardening.md`
+
 ### Slice 5: Add context switching UX
 
 - select current context
 - clearly indicate when user is outside main context
 - make controllers that operate on financial records require a resolved `current_context`
 
-### Slice 6: Add scenario dashboard
+Status:
+
+- done for the first shipping UX
+- completed with:
+  - footer context switcher
+  - tree-style contexts index/show/new flow
+  - scenario badges on conversations and balances
+  - stale-form protection when context changes after a form is opened
+- recorded in `05-context-cloning-and-hardening.md`
+
+### Slice 6: Harden cross-context isolation
+
+- prove that creates, updates, destroys, and recalculations in one context do not
+  mutate another
+- prove clone failures roll back cleanly
+- audit remaining `user`-scoped financial paths and either migrate them or make
+  their `main_context` rule explicit
+
+Status:
+
+- done
+- completed with:
+  - request isolation coverage across all planned financial models
+  - side-effect coverage for recalculation, budget remaining value, bulk actions,
+    `CARD ADVANCE`, reference merge, and message replay/apply
+  - import/backfill/notifier/naming-convention hardening
+  - benchmark tooling for context runtime comparison
+- recorded in `06-context-isolation-and-operational-hardening.md`
+
+### Slice 7: Add scenario dashboard
 
 - compare selected context against main context
 - surface delta in balance, subscriptions, budgets, and key obligations

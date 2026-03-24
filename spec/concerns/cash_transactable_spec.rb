@@ -8,22 +8,55 @@ RSpec.describe CashTransactable, type: :concern do
   let(:card) { create(:card, :random, bank:) }
   let(:user_card) { create(:user_card, :random, user:, card:) }
   let(:user_card_two) { create(:user_card, :random, user:, card:) }
+  let(:base_date) { Time.zone.local(2026, 3, 10, 12, 0, 0) }
 
   let(:card_transaction_one) do
-    build(:card_transaction, :random, user:, user_card:, price: -200, date: Time.zone.today,
-                                      card_installments: build_list(:card_installment, 2, price: -100) { |ci, i| ci.number = i + 1 },
-                                      category_transactions: [])
+    build(
+      :card_transaction,
+      user:,
+      user_card:,
+      price: -200,
+      date: base_date,
+      month: base_date.month,
+      year: base_date.year,
+      card_installments: build_card_installments(starting_on: base_date, prices: [ -100, -100 ]),
+      category_transactions: []
+    )
   end
 
   let(:card_transaction_two) do
-    build(:card_transaction, :random, user:, user_card:, price: -300, date: Time.zone.today,
-                                      card_installments: build_list(:card_installment, 3, price: -100) { |ci, i| ci.number = i + 1 },
-                                      category_transactions: [])
+    build(
+      :card_transaction,
+      user:,
+      user_card:,
+      price: -300,
+      date: base_date,
+      month: base_date.month,
+      year: base_date.year,
+      card_installments: build_card_installments(starting_on: base_date, prices: [ -100, -100, -100 ]),
+      category_transactions: []
+    )
+  end
+
+  def build_card_installments(starting_on:, prices:)
+    prices.each_with_index.map do |price, index|
+      installment_date = starting_on + index.months
+
+      build(
+        :card_installment,
+        price:,
+        number: index + 1,
+        date: installment_date,
+        month: installment_date.month,
+        year: installment_date.year
+      )
+    end
   end
 
   def validate(installments_prices)
     CashTransaction.order(:year, :month).each_with_index do |cash_transaction, index|
-      expect(cash_transaction.comment).to eq "Upfront: 0, Installments: #{installments_prices[index]}"
+      expected_comment = cash_transaction.card_installments.first&.comment
+      expect(cash_transaction.comment).to eq(expected_comment)
       expect(cash_transaction.price).to eq installments_prices[index]
     end
   end

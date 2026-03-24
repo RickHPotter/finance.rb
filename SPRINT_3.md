@@ -140,6 +140,19 @@ too visible to ignore.
 - Extra:
   - Treat this as a premium-oriented feature from the beginning, even if the first
     version is intentionally small.
+  - `Context` was completed as the real financial scope of the app, not only as a
+    planning concept:
+    all planned financial models now belong to `context`, existing records were
+    backfilled to `main_context`, and the runtime moved to `current_context`.
+  - A clone-based `ContextCloneService` was implemented, together with a tree-style
+    contexts UI, context switching, and shared-scope safeguards for scenario
+    creation and navigation.
+  - Cross-context non-interference was hardened with request/service coverage across
+    financial CRUD, recalculation, clone rollback, bulk installment actions, card
+    advance, reference merge, imports, backfills, naming conventions, due-payment
+    notifications, and stale-form submission after context switching.
+  - Query-path and recalculation benchmarking was added so context runtime behavior
+    could be compared against `main_context` before rollout.
 
 ### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 

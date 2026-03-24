@@ -51,6 +51,8 @@ Rails.application.routes.draw do
 
   resources :balances, only: :index do
     collection do
+      get :legacy
+      get :current_balance_json
       get :cash_balance_json
       get :transaction_balance_json
     end

@@ -10,6 +10,9 @@ application.register("autosave", AutosaveController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import BalancesMobileController from "./balances_mobile_controller"
+application.register("balances-mobile", BalancesMobileController)
+
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 

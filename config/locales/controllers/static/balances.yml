@@ -5,7 +5,21 @@ en:
     all: All
     from_now: From Now On
     until_now: Until Now
-    around_now: Around Now (-/+ 3 months)
+    around_now: Around Now
+    mobile:
+      trend: Trend
+      trend_subtitle: Balance across months
+      extremes: Extremes
+      extremes_subtitle: Highest and lowest values for each month in the selected range
+      breakdown: Breakdown
+      breakdown_subtitle: Selected month categories
+      current: Current
+      delta: Delta
+      high: High
+      low: Low
+      six_months: 6 months
+      three_months: 3 months
+      one_year: 1 year
     custom: Custom
     types:
       default: Default
@@ -31,7 +45,21 @@ pt-BR:
     all: Todos
     from_now: A partir de Agora
     until_now: Até Agora
-    around_now: Aproximadamente Agora (-/+ 3 meses)
+    around_now: Aproximadamente Agora
+    mobile:
+      trend: Tendência
+      trend_subtitle: Saldo ao longo dos meses
+      extremes: Extremos
+      extremes_subtitle: Maior e menor valor de cada mês no filtro selecionado
+      breakdown: Distribuição
+      breakdown_subtitle: Categorias do mês selecionado
+      current: Atual
+      delta: Variação
+      high: Maior
+      low: Menor
+      six_months: 6 meses
+      three_months: 3 meses
+      one_year: 1 ano
     custom: Personalizado
     types:
       default: Padrão
