@@ -112,6 +112,7 @@ module HasMonthYear
   def set_month_year
     return if instance_of?(CardInstallment)
     return if respond_to?(:imported) && imported?
+
     build_month_year and return if instance_of?(CardTransaction)
 
     self.month ||= date.month

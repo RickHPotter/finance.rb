@@ -13,6 +13,11 @@ RSpec.describe "Subscriptions", type: :request do
 
   before { sign_in user }
 
+  def switch_to_context!(context)
+    patch switch_context_path(context)
+    expect(response).to redirect_to(root_path)
+  end
+
   describe "[ #index ]" do
     it "renders successfully" do
       get subscriptions_path
@@ -192,6 +197,212 @@ RSpec.describe "Subscriptions", type: :request do
       expect do
         delete subscription_path(subscription), headers: turbo_stream_headers
       end.not_to change(Subscription, :count)
+    end
+  end
+
+  describe "[ context isolation ]" do
+    it "keeps create, update, and destroy changes inside the derived context" do
+      main_subscription = create(
+        :subscription,
+        user:,
+        context: user.main_context,
+        description: "Main isolated subscription",
+        comment: "Main comment"
+      )
+      main_subscription.categories << category
+      main_subscription.entities << entity
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Subscription Isolation"
+      ).call
+      derived_subscription = derived_context.subscriptions.find_by!(description: main_subscription.description)
+
+      switch_to_context!(derived_context)
+
+      expect do
+        post subscriptions_path, params: {
+          subscription: {
+            description: "Derived only subscription",
+            comment: "Derived plan",
+            status: :active,
+            user_id: user.id,
+            category_id: category.id,
+            entity_id: entity.id,
+            cash_transactions_attributes: {
+              "0" => { date: Date.new(2026, 4, 14), price: -4900, user_bank_account_id: user_bank_account.id }
+            },
+            card_transactions_attributes: {
+              "0" => { date: Date.new(2026, 4, 15), price: -5500, user_card_id: user_card.id }
+            }
+          }
+        }, headers: turbo_stream_headers
+      end.to change { derived_context.subscriptions.reload.count }.by(1)
+                                                                  .and change { user.main_context.subscriptions.reload.count }.by(0)
+
+      patch subscription_path(derived_subscription), params: {
+        subscription: {
+          description: "Derived updated subscription",
+          comment: derived_subscription.comment,
+          status: derived_subscription.status,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {},
+          card_transactions_attributes: {}
+        }
+      }, headers: turbo_stream_headers
+
+      expect(derived_subscription.reload.description).to eq("Derived updated subscription")
+      expect(main_subscription.reload.description).to eq("Main isolated subscription")
+
+      expect do
+        delete subscription_path(derived_subscription), headers: turbo_stream_headers
+      end.to change { derived_context.subscriptions.reload.count }.by(-1)
+                                                                  .and change { user.main_context.subscriptions.reload.count }.by(0)
+
+      expect(Subscription.exists?(main_subscription.id)).to be(true)
+    end
+  end
+
+  describe "[ subscription cascade context isolation ]" do
+    it "keeps complex child transaction cascades inside the derived context" do
+      main_subscription = create(
+        :subscription,
+        user:,
+        context: user.main_context,
+        description: "Main cascade subscription",
+        comment: "Main comment"
+      )
+      main_subscription.categories << category
+      main_subscription.entities << entity
+
+      main_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: main_subscription,
+        description: main_subscription.description,
+        comment: main_subscription.comment,
+        date: Date.new(2026, 3, 10),
+        price: -4_900
+      )
+      main_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription: main_subscription,
+        description: main_subscription.description,
+        comment: main_subscription.comment,
+        date: Date.new(2026, 3, 15),
+        price: -5_500
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Subscription Cascade Isolation"
+      ).call
+      derived_subscription = derived_context.subscriptions.find_by!(description: main_subscription.description)
+      derived_cash_transaction = derived_subscription.cash_transactions.first
+      derived_card_transaction = derived_subscription.card_transactions.first
+
+      switch_to_context!(derived_context)
+
+      patch subscription_path(derived_subscription), params: {
+        subscription: {
+          description: "Derived cascade subscription",
+          comment: "Derived comment",
+          status: :paused,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => {
+              id: derived_cash_transaction.id,
+              date: Date.new(2026, 4, 10),
+              price: -6_100,
+              user_bank_account_id: user_bank_account.id
+            },
+            "1" => {
+              date: Date.new(2026, 4, 12),
+              price: -1_700,
+              user_bank_account_id: user_bank_account.id
+            }
+          },
+          card_transactions_attributes: {
+            "0" => { id: derived_card_transaction.id, _destroy: "1" },
+            "1" => {
+              date: Date.new(2026, 4, 18),
+              price: -7_300,
+              user_card_id: user_card.id
+            }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      derived_subscription.reload
+      main_subscription.reload
+
+      expect(derived_subscription.description).to eq("Derived cascade subscription")
+      expect(derived_subscription.comment).to eq("Derived comment")
+      expect(derived_subscription).to be_paused
+      expect(derived_subscription.cash_transactions.reload.count).to eq(2)
+      expect(derived_subscription.card_transactions.reload.count).to eq(1)
+      expect(derived_subscription.cash_transactions.pluck(:description).uniq).to eq([ "Derived cascade subscription" ])
+      expect(derived_subscription.card_transactions.pluck(:description).uniq).to eq([ "Derived cascade subscription" ])
+      expect(derived_subscription.cash_transactions.order(:date).pluck(:price)).to eq([ -6_100, -1_700 ])
+      expect(derived_subscription.card_transactions.first.price).to eq(-7_300)
+      expect(CardTransaction.exists?(derived_card_transaction.id)).to be(false)
+
+      expect(main_subscription.description).to eq("Main cascade subscription")
+      expect(main_subscription.comment).to eq("Main comment")
+      expect(main_subscription).to be_active
+      expect(main_subscription.cash_transactions.reload.count).to eq(1)
+      expect(main_subscription.card_transactions.reload.count).to eq(1)
+      expect(main_cash_transaction.reload.price).to eq(-4_900)
+      expect(main_card_transaction.reload.price).to eq(-5_500)
+      expect(main_subscription.cash_transactions.first.description).to eq("Main cascade subscription")
+      expect(main_subscription.card_transactions.first.description).to eq("Main cascade subscription")
+    end
+  end
+
+  describe "[ cross-context access denial ]" do
+    it "does not allow editing, updating, or destroying a main-context subscription while in a derived context" do
+      main_subscription = create(
+        :subscription,
+        user:,
+        context: user.main_context,
+        description: "Main inaccessible subscription"
+      )
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Subscription Access Isolation"
+      ).call
+
+      switch_to_context!(derived_context)
+
+      get edit_subscription_path(main_subscription)
+      expect(response).to have_http_status(:not_found)
+
+      patch subscription_path(main_subscription), params: {
+        subscription: {
+          description: "Should not update",
+          comment: main_subscription.comment,
+          status: main_subscription.status,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {},
+          card_transactions_attributes: {}
+        }
+      }, headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
+
+      delete subscription_path(main_subscription), headers: turbo_stream_headers
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

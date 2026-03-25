@@ -29,7 +29,7 @@ class CashInstallmentsController < ApplicationController
       Logic::Manipulation::CashInstallment.new(@cash_installment).split_installment(new_date, cash_installment_price - price)
     end
 
-    Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
     handle_save
   end
@@ -46,7 +46,7 @@ class CashInstallmentsController < ApplicationController
       update_installment(cash_installment, date)
     end
 
-    Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
     @cash_installment = cash_installments.first
 
@@ -73,7 +73,7 @@ class CashInstallmentsController < ApplicationController
 
     cash_installments.update_all(date:, year:, month:)
 
-    Logic::RecalculateBalancesService.new(user: current_user, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
     @cash_installment = cash_installments.first
 
@@ -99,7 +99,7 @@ class CashInstallmentsController < ApplicationController
     years = [ date.year ]
     default_year = years.first
 
-    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_context, {}, {})
 
     @index_context = {
       current_user:,
@@ -127,7 +127,7 @@ class CashInstallmentsController < ApplicationController
     return false if params[:index_context_json].blank?
 
     context = JSON.parse(params[:index_context_json]).with_indifferent_access
-    cash_installments = current_user.cash_installments
+    cash_installments = current_context.cash_installments
     today_zn = Time.zone.today.beginning_of_month
 
     min_year = cash_installments.minimum("installments.year") || today_zn.year
@@ -182,7 +182,7 @@ class CashInstallmentsController < ApplicationController
       force_mobile:
     }
 
-    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_user, cash_transaction_filters, search_filters)
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_context, cash_transaction_filters, search_filters)
 
     @mobile = force_mobile
     @index_context = {
@@ -215,7 +215,7 @@ class CashInstallmentsController < ApplicationController
   end
 
   def selected_cash_installments
-    current_user.cash_installments.includes(:cash_transaction).where(id: selected_ids, paid: false).order(:order_id)
+    current_context.cash_installments.includes(:cash_transaction).where(id: selected_ids, paid: false).order(:order_id)
   end
 
   def selected_ids
@@ -240,7 +240,7 @@ class CashInstallmentsController < ApplicationController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_cash_installment
-    @cash_installment = current_user.cash_installments.find(params[:id])
+    @cash_installment = current_context.cash_installments.find(params[:id])
   end
 
   # Only allow a list of trusted parameters through.

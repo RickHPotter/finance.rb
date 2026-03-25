@@ -30,6 +30,7 @@ class Views::CashTransactions::Form < Views::Base
                 class: "contents text-black",
                 data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
+        form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
         form.hidden_field :reference_transactable_type,
                           value: cash_transaction.reference_transactable_type || params.dig(:cash_transaction, :reference_transactable_type)
         form.hidden_field :reference_transactable_id,
@@ -176,11 +177,11 @@ class Views::CashTransactions::Form < Views::Base
 
     related_transaction_ids = card_bound_exchanges.pluck(:entity_transaction_id).uniq
     related_transaction_ids = EntityTransaction.where(id: related_transaction_ids).pluck(:transactable_id).uniq
-    installments = current_user.card_installments
-                               .includes(card_transaction: %i[categories entities entity_transactions])
-                               .where(card_transaction_id: related_transaction_ids)
-                               .where(year: cash_transaction.year, month: cash_transaction.month)
-                               .order(:order_id)
+    installments = current_context.card_installments
+                                  .includes(card_transaction: %i[categories entities entity_transactions])
+                                  .where(card_transaction_id: related_transaction_ids)
+                                  .where(year: cash_transaction.year, month: cash_transaction.month)
+                                  .order(:order_id)
 
     render Views::Transactions::CardBoundTransactionsSheet.new(
       label: I18n.t("activerecord.attributes.exchange.card_bound"),

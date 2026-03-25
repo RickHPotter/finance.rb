@@ -16,6 +16,6 @@ class StaticController < ApplicationController
   private
 
   def set_static_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+    set_tabs(active_menu: :hub, active_sub_menu: :settings)
   end
 end

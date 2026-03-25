@@ -27,10 +27,25 @@ RSpec.describe Subscription, type: :model do
       it { should have_many(:entity_transactions).dependent(:destroy) }
       it { should accept_nested_attributes_for(:cash_transactions) }
       it { should accept_nested_attributes_for(:card_transactions) }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
     end
   end
 
   describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      subscription = described_class.new(user: subject.user, description: "Context default")
+
+      subscription.valid?
+
+      expect(subscription.context).to eq(subject.user.main_context)
+    end
+
     context "( defaults )" do
       it "defaults to active status on create" do
         subscription = described_class.create!(user: create(:user, :random), description: "Gym membership")
@@ -100,6 +115,7 @@ RSpec.describe Subscription, type: :model do
 
         expect(cash_transaction.description).to eq("Gym")
         expect(cash_transaction.comment).to eq("Monthly")
+        expect(cash_transaction.context).to eq(subscription.context)
         expect(cash_transaction.categories.map(&:category_name)).to include(category.category_name, "SUBSCRIPTION")
         expect(cash_transaction.entities).to include(entity)
         expect(cash_transaction.cash_installments.size).to eq(1)
@@ -123,6 +139,7 @@ RSpec.describe Subscription, type: :model do
 
         card_transaction = subscription.card_transactions.first
 
+        expect(card_transaction.context).to eq(subscription.context)
         expect(card_transaction.month).to eq(4)
         expect(card_transaction.year).to eq(2026)
       end
@@ -183,14 +200,17 @@ end
 #  status                  :string           default("active"), not null, indexed
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
+#  context_id              :bigint           not null, indexed
 #  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_finance_subscriptions_on_status   (status)
-#  index_finance_subscriptions_on_user_id  (user_id)
+#  index_finance_subscriptions_on_context_id  (context_id)
+#  index_finance_subscriptions_on_status      (status)
+#  index_finance_subscriptions_on_user_id     (user_id)
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (user_id => users.id)
 #

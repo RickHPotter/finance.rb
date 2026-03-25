@@ -18,8 +18,10 @@ en:
         people: People
         dogs: Dogs
         cats: Cats
+        countries: Countries
         person_icons_credits: People icons created by
         dog_icons_credits: Dogs icons created by
+        country_icons_credits: Country icons created by
 
 pt-BR:
   activerecord:
@@ -41,5 +43,7 @@ pt-BR:
         people: Pessoas
         dogs: Cachorros
         cats: Gatos
+        countries: Países
         person_icons_credits: Ícones de pessoas criados por
         dog_icons_credits: Ícones de cachorros criados por
+        country_icons_credits: Ícones de países criados por

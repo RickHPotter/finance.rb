@@ -141,7 +141,7 @@ class Views::CardInstallments::Index < Views::Base
                 size: :xs,
                 id: "delete_card_transaction_#{card_transaction.id}",
                 class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
-                data: { turbo_method: :delete }
+                data: { turbo_method: :delete, turbo_frame: "_top", turbo_prefetch: "false" }
               }
             )
           end

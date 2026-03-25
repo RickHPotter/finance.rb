@@ -17,6 +17,7 @@ class CashTransaction < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   belongs_to :user_card, optional: true
   belongs_to :user_bank_account, counter_cache: true, optional: true
   belongs_to :investment_type, optional: true
@@ -27,9 +28,11 @@ class CashTransaction < ApplicationRecord
   has_many :exchanges
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_paid, on: :create
   after_initialize :build_default_cash_installments
   after_save :sync_subscription_installment, :set_min_date
@@ -135,6 +138,10 @@ class CashTransaction < ApplicationRecord
 
   private
 
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
+
   def latest_friend_notification_intent
     return if new_record?
 
@@ -193,10 +200,10 @@ class CashTransaction < ApplicationRecord
   def update_cash_balance
     return if skip_recalculate_balance
 
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year: date.year, month: date.month).call and return if destroyed?
 
     self.min_date ||= cash_installments.order(:date).first.date.beginning_of_month
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total
@@ -226,6 +233,7 @@ end
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  context_id                  :bigint           not null, indexed
 #  investment_type_id          :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
@@ -235,6 +243,7 @@ end
 #
 # Indexes
 #
+#  index_cash_transactions_on_context_id               (context_id)
 #  index_cash_transactions_on_investment_type_id       (investment_type_id)
 #  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
 #  index_cash_transactions_on_subscription_id          (subscription_id)
@@ -245,6 +254,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)

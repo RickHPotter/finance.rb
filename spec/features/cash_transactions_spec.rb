@@ -51,7 +51,7 @@ RSpec.describe "CashTransactions", type: :feature do
 
       expect(page).to have_css("#notification-content", text: notification_model(:createda, CashTransaction))
 
-      cash_transaction = user.cash_transactions.last
+      cash_transaction = user.main_context.cash_transactions.last
       within "turbo-frame#cash_transactions turbo-frame#cash_installment_#{cash_transaction.cash_installments.first.id}" do
         expect(page).to have_css("a#edit_cash_transaction_#{cash_transaction.id}", text: cash_transaction.description)
       end
@@ -65,7 +65,7 @@ RSpec.describe "CashTransactions", type: :feature do
     end
 
     scenario "editing an invalid cash_transaction" do
-      find("#edit_cash_transaction_#{user.cash_transactions.first.id}", match: :first).click
+      find("#edit_cash_transaction_#{cash_transaction.id}", match: :first).click
       fill_in "cash_transaction_description", with: ""
       find("form button[type=submit]", match: :first).click
 
@@ -73,7 +73,7 @@ RSpec.describe "CashTransactions", type: :feature do
     end
 
     scenario "editing a valid cash_transaction and getting redirected to cash_transactions/index" do
-      find("#edit_cash_transaction_#{user.cash_transactions.first.id}", match: :first).click
+      find("#edit_cash_transaction_#{cash_transaction.id}", match: :first).click
       fill_in "cash_transaction_description", with: "Some Other Cash Transaction Name"
       find("form button[type=submit]", match: :first).click
 

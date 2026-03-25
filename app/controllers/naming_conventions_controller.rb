@@ -28,7 +28,7 @@ class NamingConventionsController < ApplicationController
   private
 
   def set_naming_convention_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :conversation)
+    set_tabs(active_menu: :hub, active_sub_menu: :settings)
   end
 
   def flash_payload
@@ -46,7 +46,7 @@ class NamingConventionsController < ApplicationController
   end
 
   def naming_scope
-    current_user.cash_transactions.includes(
+    current_context.cash_transactions.includes(
       :user,
       :categories,
       :investments,

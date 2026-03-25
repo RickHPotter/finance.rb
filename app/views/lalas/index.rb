@@ -3,8 +3,8 @@
 class Views::Lalas::Index < Views::Base
   def view_template
     div(class: "w-full") do
-      div(class: "flex justify-center mb-10") do
-        div(class: "w-screen") do
+      div class: "mb-6 flex shrink-0 justify-center" do
+        div(id: "tabs", class: "w-screen") do
           turbo_frame_tag :tabs do
             render partial "shared/tabs"
           end

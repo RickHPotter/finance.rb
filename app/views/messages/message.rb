@@ -2,6 +2,7 @@
 
 class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLength
   register_value_helper :current_user
+  register_value_helper :current_context
   attr_reader :message
 
   include Phlex::Rails::Helpers::AssetPath
@@ -59,33 +60,25 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   private
 
   def render_message_actions
-    return if my_assistant_notification?
-
     if message.superseded_by_id
-      link_to(
-        model_attribute(message, :outdated_message),
-        "##{dom_id(message.superseded_by)}",
-        class: "mt-3 flex flex-col items-center text-center text-black bg-gray-400 hover:bg-gray-600 p-3 rounded-xs font-medium shadow"
-      )
-    elsif message.applied?
-      nil
+      render_outdated_state
     else
+      return if my_assistant_notification? || message.applied?
+
       render_transaction_actions
     end
   end
 
   def render_transaction_actions
-    user = current_user if request.env["warden"].present?
-
     if message.transaction_destroy_notification_message?
       return if message.reference_transactable_id.nil?
 
-      cash_transaction_to_be_destroyed = user&.cash_transactions&.find_by(id: message.reference_transactable_id)
+      cash_transaction_to_be_destroyed = viewer_cash_transactions.find_by(id: message.reference_transactable_id)
 
       if cash_transaction_to_be_destroyed
         render_destroy_action(cash_transaction_to_be_destroyed)
       else
-        span(class: "mt-3 flex flex-col items-center text-center text-black bg-gray-400 p-3 rounded-xs font-medium shadow select-none") do
+        span(class: status_badge_class) do
           model_attribute(message, :already_deleted)
         end
       end
@@ -99,7 +92,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     id = params["id"]
     type = params["type"]
 
-    reference_transactable = user&.cash_transactions&.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    reference_transactable = viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
     action_button_key = message.action_button_key(local_reference_exists: reference_transactable.present?)
 
     if reference_transactable
@@ -107,7 +100,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     elsif type&.constantize&.find_by(id:)
       render_create_action(action_button_key)
     else
-      span(class: "mt-3 flex flex-col items-center text-center text-black bg-gray-400 p-3 rounded-xs font-medium shadow select-none") do
+      span(class: status_badge_class) do
         model_attribute(message, :already_deleted)
       end
     end
@@ -120,14 +113,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     instruction_key = my_assistant_notification? ? :click_down_below_mine : :click_down_below_theirs
 
-    p(class: "mt-3 text-[11px] font-medium opacity-75") { model_attribute(message, instruction_key) }
+    p(class: "mt-3 text-[11px] font-medium text-sky-700 underline decoration-sky-500 underline-offset-2") do
+      model_attribute(message, instruction_key)
+    end
   end
 
   def render_completed_state
     return unless message.applied?
     return if message.superseded_by_id.present?
 
-    p(class: "mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-800") do
+    p(class: status_badge_class) do
       model_attribute(message, message.completed_message_key)
     end
 
@@ -140,6 +135,12 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def render_my_assistant_show_action
     return unless my_assistant_notification?
     return unless showable_my_transaction.present?
+
+    if showable_transaction_destroyed?
+      p(class: status_badge_class) do
+        model_attribute(message, :already_destroyed)
+      end
+    end
 
     Button(
       type: :button,
@@ -157,32 +158,67 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     transaction = showable_my_transaction
 
-    ModalShell(id: my_transaction_modal_id, title: transaction.description) do
-      div(class: "space-y-4 text-sm text-black min-w-[18rem] md:min-w-[32rem]") do
+    ModalShell(
+      id: my_transaction_modal_id,
+      title: transaction.description,
+      options: {
+        wrapper_class: "px-3 py-6",
+        content_class: "w-[calc(100vw-1.5rem)] max-w-5xl max-h-[calc(100svh-3rem)] overflow-hidden"
+      }
+    ) do
+      div(class: "space-y-4 text-sm text-black min-w-[18rem] md:min-w-[44rem] lg:min-w-[56rem]") do
         div(class: "border-b border-stone-200 pb-3") do
-          p(class: "font-semibold text-base leading-tight") { transaction.description }
-          p(class: "mt-2 text-stone-500 leading-relaxed") { transaction.comment } if transaction.comment.present?
-        end
+          div(class: "flex items-start justify-between gap-3") do
+            div(class: "space-y-2") do
+              if showable_transaction_destroyed?
+                p(class: status_badge_class) do
+                  model_attribute(message, :already_destroyed)
+                end
+              end
 
-        div(class: "grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_18rem] gap-4") do
-          div(class: "space-y-3") do
-            transaction_detail_row(model_attribute(CashTransaction, :date), I18n.l(transaction.date, format: :long))
-            transaction_detail_row(model_attribute(CashTransaction, :categories), transaction.categories.order(:category_name).pluck(:category_name).join(", "))
-            transaction_detail_row(model_attribute(CashTransaction, :entities), transaction.entities.order(:entity_name).pluck(:entity_name).join(", "))
-            transaction_detail_row(model_attribute(CashTransaction, :price), from_cent_based_to_float(transaction.price, "R$"))
-          end
-
-          div(class: "max-h-64 overflow-y-auto rounded-xl border border-stone-200 bg-stone-50 p-3") do
-            p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
-              model_attribute(CashInstallment, :self)
+              p(class: "text-stone-500 leading-relaxed") { transaction.comment } if transaction.comment.present?
             end
 
-            div(class: "space-y-2") do
-              transaction.cash_installments.order(:number).each do |installment|
-                div(class: "rounded-lg bg-white border border-stone-200 px-3 py-2") do
-                  p(class: "text-xs font-semibold text-stone-500") { "##{installment.number}" }
-                  p(class: "text-sm") { I18n.l(installment.date.to_date, format: :long) }
-                  p(class: "text-sm font-semibold text-end") { from_cent_based_to_float(installment.price, "R$") }
+            if showable_transaction_link.present?
+              Link(
+                href: showable_transaction_link,
+                size: :sm,
+                class: "shrink-0 min-w-40 justify-center text-black bg-white hover:bg-stone-50 border border-black/20 px-4 py-2 font-medium shadow-sm",
+                data: { turbo_frame: "_top", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
+              ) do
+                span(class: "truncate block max-w-full leading-tight") { I18n.t("actions.edit") }
+              end
+            end
+          end
+        end
+
+        div(class: "grid grid-cols-1 gap-2 md:h-[21rem] md:grid-cols-2 md:items-stretch") do
+          div(class: "flex h-full flex-col overflow-hidden rounded-xl border border-stone-200 bg-stone-50 p-2") do
+            p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
+              "#{I18n.t('gerund.show')} #{transaction.model_name.human}"
+            end
+
+            div(class: "flex-1 overflow-y-auto space-y-1 pr-1") do
+              render_showable_transaction_details(transaction)
+            end
+          end
+
+          div(class: "flex max-h-72 flex-col overflow-hidden rounded-xl border border-stone-200 bg-stone-50 p-2 md:h-full md:max-h-none") do
+            p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
+              showable_installment_label(transaction)
+            end
+
+            div(class: "flex-1 overflow-y-auto space-y-1 pr-1") do
+              showable_installments(transaction).order(:number).each do |installment|
+                div(class: "rounded-md bg-stone-100 shadow-xs border border-stone-200 px-3 py-1") do
+                  div(class: "flex items-start justify-between gap-2") do
+                    div(class: "min-w-0") do
+                      p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500") { "##{installment.number}" }
+                      p(class: "mt-1 text-sm leading-relaxed") { I18n.l(installment.date.to_date, format: :long) }
+                    end
+
+                    p(class: "shrink-0 text-sm font-semibold text-end") { from_cent_based_to_float(installment.price, "R$") }
+                  end
                 end
               end
             end
@@ -229,6 +265,18 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :destroy) }
     end
+  end
+
+  def render_outdated_state
+    link_to(
+      model_attribute(message, :outdated_message),
+      "##{dom_id(message.superseded_by)}",
+      class: "#{status_badge_class} text-sky-700 underline decoration-sky-500 underline-offset-2 hover:bg-rose-400/40 hover:text-sky-800"
+    )
+  end
+
+  def status_badge_class
+    "mt-3 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-[10px] font-semibold uppercase"
   end
 
   def action_button_class(action_button_key)
@@ -298,16 +346,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     @reference_transactable_for_viewer =
       if message.transaction_destroy_notification_message?
-        viewer&.cash_transactions&.find_by(id: message.reference_transactable_id)
+        viewer_cash_transactions.find_by(id: message.reference_transactable_id)
       elsif type.present? && id.present?
-        viewer&.cash_transactions&.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
+        viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
       end
   end
 
   def fallback_reference_transactable_for_viewer(payload)
     return if viewer.blank?
 
-    relation = viewer.cash_transactions.where(description: payload["description"], price: payload["price"])
+    relation = viewer_cash_transactions.where(description: payload["description"], price: payload["price"])
     relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
 
     category_ids = Array(payload["category_ids"]).compact_blank
@@ -324,18 +372,76 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def showable_my_transaction
     return @showable_my_transaction if defined?(@showable_my_transaction)
 
-    @showable_my_transaction = message.reference_transactable if message.reference_transactable.is_a?(CashTransaction)
+    return unless message.reference_transactable.is_a?(CashTransaction) || message.reference_transactable.is_a?(CardTransaction)
+
+    @showable_my_transaction = message.reference_transactable
   end
 
   def my_transaction_modal_id
     "messageTransactionModal_#{message.id}"
   end
 
+  def showable_transaction_destroyed?
+    message.transaction_destroy_notification_message?
+  end
+
+  def showable_transaction_link
+    transaction = showable_my_transaction
+    return if transaction.blank? || transaction.destroyed?
+    return if showable_transaction_destroyed?
+
+    case transaction
+    when CashTransaction
+      edit_cash_transaction_path(transaction)
+    when CardTransaction
+      edit_card_transaction_path(transaction)
+    end
+  end
+
+  def render_showable_transaction_details(transaction)
+    case transaction
+    when CashTransaction
+      transaction_detail_row(model_attribute(CashTransaction, :date), I18n.l(transaction.date, format: :long))
+      transaction_detail_row(model_attribute(CashTransaction, :user_bank_account_id), transaction.user_bank_account&.user_bank_account_name)
+      transaction_detail_row(model_attribute(CashTransaction, :categories), transaction.categories.order(:category_name).pluck(:category_name).join(", "))
+      transaction_detail_row(model_attribute(CashTransaction, :entities), transaction.entities.order(:entity_name).pluck(:entity_name).join(", "))
+      transaction_detail_row(model_attribute(CashTransaction, :price), from_cent_based_to_float(transaction.price, "R$"))
+    when CardTransaction
+      transaction_detail_row(model_attribute(CardTransaction, :date), I18n.l(transaction.date, format: :long))
+      transaction_detail_row(model_attribute(CardTransaction, :user_card_id), transaction.user_card&.user_card_name)
+      transaction_detail_row(model_attribute(CardTransaction, :categories), transaction.categories.order(:category_name).pluck(:category_name).join(", "))
+      transaction_detail_row(model_attribute(CardTransaction, :entities), transaction.entities.order(:entity_name).pluck(:entity_name).join(", "))
+      transaction_detail_row(model_attribute(CardTransaction, :price), from_cent_based_to_float(transaction.price, "R$"))
+    end
+  end
+
+  def showable_installments(transaction)
+    case transaction
+    when CashTransaction
+      transaction.cash_installments
+    when CardTransaction
+      transaction.card_installments
+    else
+      Installment.none
+    end
+  end
+
+  def showable_installment_label(transaction)
+    case transaction
+    when CashTransaction
+      model_attribute(CashInstallment, :self)
+    when CardTransaction
+      model_attribute(CardInstallment, :self)
+    else
+      model_attribute(Installment, :self)
+    end
+  end
+
   def transaction_detail_row(label, value)
     return if value.blank?
 
-    div(class: "rounded-xl border border-stone-200 bg-stone-50 px-3 py-2") do
-      p(class: "text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
+    div(class: "rounded-md bg-stone-100 shadow-xs border border-stone-200 px-3 py-1") do
+      p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
       p(class: "mt-1 text-sm leading-relaxed") { value }
     end
   end
@@ -344,5 +450,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     return @viewer if defined?(@viewer)
 
     @viewer = request.env["warden"].present? ? current_user : nil
+  end
+
+  def viewer_cash_transactions
+    return CashTransaction.none if viewer.blank?
+
+    current_context.cash_transactions
   end
 end

@@ -15,6 +15,8 @@ class Views::Shared::AppFooter < Views::Base
         action_links
       end
 
+      context_switcher(class: "flex justify-center mb-2")
+
       button(data: { controller: "push", action: "push#subscribe" }, class: "pt-16 mb-2 text-xs flex mx-auto") { "🔔" }
 
       docs_link(class: "flex md:hidden justify-center mb-2")
@@ -41,6 +43,31 @@ class Views::Shared::AppFooter < Views::Base
 
   def current_user
     rails_view_context.current_user
+  end
+
+  def current_context
+    rails_view_context.current_context
+  end
+
+  def context_switcher(class:)
+    return unless current_user
+
+    div(class:) do
+      div(class: "flex flex-wrap items-center justify-center gap-2 px-2") do
+        span(class: "text-xs text-gray-500") { Context.model_name.human }
+
+        current_user.contexts.active.order(main: :desc, created_at: :asc).each do |context|
+          active = current_context&.id == context.id
+          button_to switch_context_path(context),
+                    method: :patch,
+                    form: { data: { turbo: false } },
+                    data: { turbo: false, turbo_prefetch: false },
+                    class: context_button_class(active) do
+            plain context.name
+          end
+        end
+      end
+    end
   end
 
   def locale_links
@@ -80,5 +107,24 @@ class Views::Shared::AppFooter < Views::Base
         I18n.t("pages.docs")
       end
     end
+  end
+
+  def context_button_class(active)
+    classes = %w[
+      rounded-full
+      border
+      px-3
+      py-1
+      text-xs
+      transition-colors
+    ]
+
+    if active
+      classes.push(%w[border-red-400 bg-red-500 text-white])
+    else
+      classes.push("border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600")
+    end
+
+    classes.join(" ")
   end
 end

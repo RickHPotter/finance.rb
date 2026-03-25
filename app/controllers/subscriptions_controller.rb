@@ -19,7 +19,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def new
-    @subscription = current_user.subscriptions.new
+    @subscription = current_context.subscriptions.new(user: current_user)
 
     respond_to do |format|
       format.html { render Views::Subscriptions::New.new(current_user:, subscription: @subscription) }
@@ -28,7 +28,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def create
-    @subscription = current_user.subscriptions.new(subscription_params.except(:category_id, :entity_id))
+    @subscription = current_context.subscriptions.new(subscription_params.except(:category_id, :entity_id).merge(user: current_user))
     assign_associations
     handle_save(:new)
   end
@@ -69,7 +69,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def set_subscription
-    @subscription = current_user.subscriptions.find(params[:id])
+    @subscription = current_context.subscriptions.find(params[:id])
   end
 
   def load_subscriptions
@@ -89,7 +89,7 @@ class SubscriptionsController < ApplicationController
   def subscriptions_scope
     build_index_context if @index_context.blank?
 
-    scope = current_user.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = current_context.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
     scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
     scope = scope.where(entities: { id: @index_context[:entity_id] }) if @index_context[:entity_id].present?

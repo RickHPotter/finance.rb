@@ -53,6 +53,7 @@ RSpec.describe Logic::ExchangeBackfillAudit do
       create(
         :cash_transaction,
         user: gigi,
+        context: gigi.main_context,
         user_bank_account: gigi_bank_account,
         reference_transactable: source_transaction,
         description: "WATER BILL",
@@ -112,6 +113,43 @@ RSpec.describe Logic::ExchangeBackfillAudit do
       )
     end
 
+    let!(:derived_context) { create(:context, user: rikki, name: "Audit Derived", source_context: rikki.main_context) }
+    let!(:derived_source_transaction) do
+      create(
+        :cash_transaction,
+        user: rikki,
+        context: derived_context,
+        user_bank_account: rikki_bank_account,
+        description: "WATER BILL - DERIVED",
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026,
+        price: 7_500
+      ).tap do |transaction|
+        transaction.categories << rikki.categories.find_by(category_name: "EXCHANGE")
+      end
+    end
+    let!(:derived_source_entity_transaction) do
+      create(
+        :entity_transaction,
+        transactable: derived_source_transaction,
+        entity: rikki_entity_for_gigi,
+        is_payer: true,
+        price: -7_500,
+        price_to_be_returned: -7_500
+      )
+    end
+    let!(:derived_source_exchange) do
+      create(
+        :exchange,
+        entity_transaction: derived_source_entity_transaction,
+        price: -7_500,
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026
+      )
+    end
+
     it "reports only sender-side root exchange transactions between the two users" do
       report = service.call
 
@@ -119,6 +157,7 @@ RSpec.describe Logic::ExchangeBackfillAudit do
       expect(report[:cases].first[:source_transaction][:id]).to eq(source_transaction.id)
       expect(report[:cases].first[:receiver_reference_transaction][:id]).to eq(receiver_reference_transaction.id)
       expect(report[:cases].first[:latest_active_message][:id]).to eq(message.id)
+      expect(report[:cases].map { |kase| kase.dig(:source_transaction, :id) }).not_to include(derived_source_transaction.id)
     end
 
     it "computes a structural snapshot diff against the receiver-side transaction" do

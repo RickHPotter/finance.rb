@@ -41,6 +41,46 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).to include(conversation_path(assistant_conversation))
       expect(response.body).not_to include(conversation_path(human_conversation))
     end
+
+    it "shows only conversations for the current scenario" do
+      main_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      derived_context = create(:context, user:, name: "Conversation Scenario", source_context: user.main_context)
+      derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
+
+      patch switch_context_path(derived_context)
+      get conversations_path
+
+      expect(response.body).to include(conversation_path(derived_conversation))
+      expect(response.body).not_to include(conversation_path(main_conversation))
+    end
+
+    it "keeps unread filtering isolated between main and derived scenarios" do
+      main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      derived_context = create(:context, user:, name: "Unread Scenario", source_context: user.main_context)
+      derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+
+      main_conversation.messages.create!(user: other_user, body: "notification:create", headers: {
+        version: "message_notification_v2",
+        event: { action: "create", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Main unread" } },
+        replay: { id: 1, type: "CashTransaction" }
+      }.to_json)
+      derived_conversation.messages.create!(user: other_user, body: "notification:create", headers: {
+        version: "message_notification_v2",
+        event: { action: "create", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Derived unread" } },
+        replay: { id: 2, type: "CashTransaction" }
+      }.to_json)
+
+      get conversations_path(filter: "unread")
+
+      expect(response.body).to include(conversation_path(main_conversation))
+      expect(response.body).not_to include(conversation_path(derived_conversation))
+
+      patch switch_context_path(derived_context)
+      get conversations_path(filter: "unread")
+
+      expect(response.body).to include(conversation_path(derived_conversation))
+      expect(response.body).not_to include(conversation_path(main_conversation))
+    end
   end
 
   describe "[ #create ]" do
@@ -55,6 +95,21 @@ RSpec.describe "Conversations", type: :request do
       conversation = Conversation.last
 
       expect(response).to redirect_to(conversation_path(conversation))
+    end
+
+    it "creates conversations inside the current scenario" do
+      derived_context = create(:context, user:, name: "Conversation Create", source_context: user.main_context)
+
+      patch switch_context_path(derived_context)
+
+      post conversations_path, params: {
+        conversation_participants_attributes: [
+          { user_id: user.id },
+          { user_id: other_user.id }
+        ]
+      }
+
+      expect(Conversation.last.scenario_key).to eq(derived_context.scenario_key)
     end
   end
 
@@ -194,6 +249,67 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include("Edit me")
     end
 
+    it "keeps pending assistant message resolution scoped to the current context" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      bank = create(:bank, :random)
+      user_bank_account = create(:user_bank_account, user:, bank:)
+      create(:cash_transaction, user:, context: user.main_context, user_bank_account:).tap do |local_reference|
+        local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 999)
+      end
+      derived_context = create(:context, user:, name: "Conversation Isolation", source_context: user.main_context)
+
+      patch switch_context_path(derived_context)
+
+      conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Derived create me" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).to include("Derived create me")
+    end
+
+    it "shows create instead of edit when the matching local reference only exists in another scenario" do
+      local_reference = create(:cash_transaction, user:, context: user.main_context,
+                                                  user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random))).tap do |local_reference|
+        local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 999)
+      end
+      sender_transaction = create(
+        :cash_transaction,
+        user: other_user,
+        context: other_user.main_context,
+        user_bank_account: create(:user_bank_account, user: other_user, bank: create(:bank, :random))
+      )
+
+      derived_context = create(:context, user:, name: "Conversation Action Isolation", source_context: user.main_context)
+      derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+
+      derived_conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Scenario local" } },
+          replay: { id: sender_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
+
+      patch switch_context_path(derived_context)
+      get conversation_path(derived_conversation, message_filter: "all")
+
+      expect(response.body).to include(new_cash_transaction_path(cash_transaction: { source_message_id: derived_conversation.messages.last.id },
+                                                                 format: :turbo_stream))
+      expect(response.body).not_to include(
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: derived_conversation.messages.last.id }, format: :turbo_stream)
+      )
+    end
+
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       conversation.messages.create!(
@@ -221,6 +337,71 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).to include('data-presenter-side="other"')
       expect(response.body).to include(Conversation.human_attribute_name(:your_assistant))
       expect(response.body).to include(ERB::Util.html_escape(I18n.t("activerecord.attributes.conversation.assistant_of", name: other_user.first_name)))
+    end
+
+    it "shows outdated assistant message links for my notifications too" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      outdated_message = conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CashTransaction", details: { description: "Old mine" } },
+          replay: { id: 10, type: "CashTransaction" }
+        }.to_json
+      )
+      superseding_message = conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CashTransaction", details: { description: "New mine" } },
+          replay: { id: 10, type: "CashTransaction" }
+        }.to_json
+      )
+      outdated_message.update!(superseded_by: superseding_message)
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:outdated_message))
+      expect(response.body).to include("##{ActionView::RecordIdentifier.dom_id(superseding_message)}")
+    end
+
+    it "renders a larger sender-side show modal path for card transactions too" do
+      card_transaction = create(:card_transaction, user:, context: user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: user,
+        body: "notification:update",
+        reference_transactable: card_transaction,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: other_user.first_name, transaction_type: "CardTransaction",
+                   details: { description: card_transaction.description } },
+          replay: { id: 1, type: "CardTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(I18n.t("actions.show"))
+      expect(response.body).to include(edit_card_transaction_path(card_transaction))
+      expect(response.body).to include("md:min-w-[44rem]")
+    end
+
+    it "labels sender-side historical show state as destroyed for destroy notifications" do
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: user,
+        body: "notification:destroy",
+        reference_transactable: cash_transaction
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:already_destroyed))
+      expect(response.body).to include(I18n.t("actions.show"))
     end
 
     it "filters assistant messages by mine and theirs" do
@@ -259,6 +440,16 @@ RSpec.describe "Conversations", type: :request do
       outsider_conversation = Conversation.find_or_create_human_between!(other_user, create(:user, :random))
 
       get conversation_path(outsider_conversation)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "does not allow access to conversations from another scenario" do
+      main_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      derived_context = create(:context, user:, name: "Conversation Access", source_context: user.main_context)
+
+      patch switch_context_path(derived_context)
+      get conversation_path(main_conversation)
 
       expect(response).to have_http_status(:not_found)
     end

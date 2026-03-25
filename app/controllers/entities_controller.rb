@@ -55,7 +55,7 @@ class EntitiesController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :entity)
+    set_tabs(active_menu: :data, active_sub_menu: :entity)
   end
 
   def set_entity

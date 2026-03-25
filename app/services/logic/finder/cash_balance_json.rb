@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Logic::Finder::CashBalanceJson
-  def initialize(user:)
+  def initialize(user:, context: user.main_context)
     @user = user
+    @context = context
   end
 
   def call # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -53,8 +54,8 @@ class Logic::Finder::CashBalanceJson
   end
 
   def items
-    cash_installments = @user.cash_installments
-    budgets = @user.budgets
+    cash_installments = @context.cash_installments
+    budgets = @context.budgets
 
     (cash_installments + budgets).sort_by(&:order_id)
   end

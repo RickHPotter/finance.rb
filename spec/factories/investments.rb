@@ -9,6 +9,7 @@ FactoryBot.define do
     year { 2023 }
 
     user { custom_create(:user) }
+    context { user.main_context }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
     investment_type { custom_create(:investment_type) }
@@ -18,6 +19,7 @@ FactoryBot.define do
       date { Date.new(2023, 11, 26) }
 
       user { different_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
       investment_type { different_custom_create(:investment_type) }
     end
@@ -29,6 +31,7 @@ FactoryBot.define do
       year { date.year }
 
       user { random_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
       investment_type { random_custom_create(:investment_type) }
     end
@@ -49,6 +52,7 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
+#  context_id           :bigint           not null, indexed
 #  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
@@ -56,6 +60,7 @@ end
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_context_id            (context_id)
 #  index_investments_on_investment_type_id    (investment_type_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
@@ -63,6 +68,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)

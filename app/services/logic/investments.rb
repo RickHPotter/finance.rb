@@ -17,21 +17,21 @@ module Logic
       investment
     end
 
-    def self.find_ref_month_year_by_params(user, investment_params, search_investment_params)
+    def self.find_ref_month_year_by_params(financial_scope, investment_params, search_investment_params)
       month_year = search_investment_params.delete(:month_year)
       year = month_year[0..3]
       month = month_year[4..]
       search_term = search_investment_params.delete(:search_term) || ""
 
-      user.investments
-          .includes(:user_bank_account, :investment_type)
-          .where(investment_params)
-          .where("description ILIKE ?", "%#{search_term}%")
-          .where("year = ? AND month = ?", year, month)
-          .order(:date)
+      financial_scope.investments
+                     .includes(:user_bank_account, :investment_type)
+                     .where(investment_params)
+                     .where("description ILIKE ?", "%#{search_term}%")
+                     .where("year = ? AND month = ?", year, month)
+                     .order(:date)
     end
 
-    def self.find_count_based_on_search(user, investment_params, search_investment_params)
+    def self.find_count_based_on_search(financial_scope, investment_params, search_investment_params)
       search_term = search_investment_params.delete(:search_term) || ""
 
       if investment_params.is_a?(Hash)
@@ -46,9 +46,9 @@ module Logic
         value.present?
       end
 
-      relation = user.investments
-                     .where(params)
-                     .where("description ILIKE ?", "%#{search_term}%")
+      relation = financial_scope.investments
+                                .where(params)
+                                .where("description ILIKE ?", "%#{search_term}%")
 
       relation = relation.distinct.select("investments.id, investments.month, investments.year")
 

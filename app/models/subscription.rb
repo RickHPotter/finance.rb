@@ -13,17 +13,20 @@ class Subscription < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   has_many :cash_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
   has_many :card_transactions, dependent: :restrict_with_exception, inverse_of: :subscription
   accepts_nested_attributes_for :cash_transactions, allow_destroy: true, reject_if: :all_blank
   accepts_nested_attributes_for :card_transactions, allow_destroy: true, reject_if: :all_blank
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :description, :status, presence: true
   validates :price, numericality: true
   validate :validate_linked_transactions
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_defaults, on: :create
   before_validation :prepare_linked_transactions
 
@@ -61,6 +64,10 @@ class Subscription < ApplicationRecord
 
   private
 
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
+
   def cash_transactions_scope
     persisted? ? CashTransaction.where(subscription_id: id) : cash_transactions
   end
@@ -83,6 +90,7 @@ class Subscription < ApplicationRecord
   def sync_transactions(transactions, subscription_category)
     transactions.each do |transaction|
       transaction.user = user
+      transaction.context = context if transaction.respond_to?(:context=)
       transaction.subscription = self
       transaction.description = description
       transaction.comment = comment
@@ -167,14 +175,17 @@ end
 #  status                  :string           default("active"), not null, indexed
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
+#  context_id              :bigint           not null, indexed
 #  user_id                 :bigint           not null, indexed
 #
 # Indexes
 #
-#  index_finance_subscriptions_on_status   (status)
-#  index_finance_subscriptions_on_user_id  (user_id)
+#  index_finance_subscriptions_on_context_id  (context_id)
+#  index_finance_subscriptions_on_status      (status)
+#  index_finance_subscriptions_on_user_id     (user_id)
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (user_id => users.id)
 #

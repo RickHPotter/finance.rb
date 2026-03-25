@@ -20,9 +20,11 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
     ModalShell(
       id: "subscriptionAddTransactionModal",
       title: action_message(:newa),
-      close_button_data: { action: "subscription-transactions#closeModal" },
-      wrapper_data: { action: "click->subscription-transactions#closeOnBackdrop" },
-      content_data: { action: "click->subscription-transactions#ignoreBackdrop" }
+      options: {
+        close_button_data: { action: "subscription-transactions#closeModal" },
+        wrapper_data: { action: "click->subscription-transactions#closeOnBackdrop" },
+        content_data: { action: "click->subscription-transactions#ignoreBackdrop" }
+      }
     ) do
       div(class: "grid grid-cols-1 gap-3 md:grid-cols-2", data: { controller: "price-mask", subscription_transactions_target: "modal" }) do
         div(class: "md:col-span-2 flex gap-4") do

@@ -10,6 +10,9 @@ application.register("autosave", AutosaveController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import BalancesMobileController from "./balances_mobile_controller"
+application.register("balances-mobile", BalancesMobileController)
+
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 
@@ -51,6 +54,9 @@ application.register("icon-picker", IconPickerController)
 
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
+
+import LetitsnowController from "./letitsnow_controller"
+application.register("letitsnow", LetitsnowController)
 
 import MobileScrollNavController from "./mobile_scroll_nav_controller"
 application.register("mobile-scroll-nav", MobileScrollNavController)
@@ -103,11 +109,11 @@ application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
 import RubyUi__SheetController from "./ruby_ui/sheet_controller"
 application.register("ruby-ui--sheet", RubyUi__SheetController)
 
-import SubscriptionTransactionsController from "./subscription_transactions_controller"
-application.register("subscription-transactions", SubscriptionTransactionsController)
-
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
+
+import SubscriptionTransactionsController from "./subscription_transactions_controller"
+application.register("subscription-transactions", SubscriptionTransactionsController)
 
 import TabController from "./tab_controller"
 application.register("tab", TabController)

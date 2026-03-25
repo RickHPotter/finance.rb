@@ -63,7 +63,7 @@ class Logic::ExchangeBackfillRunner
         next
       end
 
-      receiver_reference = counterpart_user.cash_transactions.includes(
+      receiver_reference = counterpart_user.main_context.cash_transactions.includes(
         :categories,
         :cash_installments,
         entity_transactions: %i[entity exchanges]
@@ -108,7 +108,7 @@ class Logic::ExchangeBackfillRunner
       :categories,
       :cash_installments,
       entity_transactions: %i[entity exchanges]
-    ).find_by(id: source_id, user: users, reference_transactable: nil)
+    ).find_by(id: source_id, context: users.map(&:main_context), reference_transactable: nil)
   end
 
   def counterpart_user_for(transaction)

@@ -59,7 +59,7 @@ class CategoriesController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :category)
+    set_tabs(active_menu: :data, active_sub_menu: :category)
   end
 
   def set_category

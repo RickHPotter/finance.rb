@@ -10,7 +10,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @user_card = current_user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
-    build_index_context(@user_card.card_installments)
+    build_index_context(card_installments_for_selected_user_card)
 
     set_card_tabs
 
@@ -21,7 +21,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def search
-    build_index_context(current_user.card_installments)
+    build_index_context(current_context.card_installments)
 
     respond_to do |format|
       format.html { render Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile) }
@@ -34,7 +34,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
 
-    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_user, card_transaction_params, search_card_transaction_params)
+    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_context, card_transaction_params, search_card_transaction_params)
 
     render Views::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
   end
@@ -42,7 +42,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def show; end
 
   def new
-    @card_transaction = current_user.card_transactions.new(
+    @card_transaction = current_context.card_transactions.new(
+      user: current_user,
       user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id,
       date: Time.zone.now
     )
@@ -56,7 +57,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @card_transaction = current_user.card_transactions.find(params[:id])
+    @card_transaction = current_context.card_transactions.find(params[:id])
 
     respond_to do |format|
       format.html { render Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction) }
@@ -65,7 +66,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def create
-    @card_transaction = current_user.card_transactions.new(card_transaction_params.merge(imported: false))
+    @card_transaction = current_context.card_transactions.new(card_transaction_params.merge(user: current_user, imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
     first_installment = @card_transaction.card_installments.first
@@ -108,6 +109,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.price = 0
     @card_transaction.card_installments.each { |ci| ci.price = 0 }
 
+    set_card_tabs
+
     render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)
   end
 
@@ -141,12 +144,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def pay_in_advance
     description = model_attribute(CardTransaction, :card_advance_description)
 
-    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params.merge(description:))
+    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params.merge(description:), context: current_context)
     @card_transaction.card_installments.first.assign_attributes(@card_transaction.slice(:year, :month))
     @card_transaction.save
 
     @user_card = current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
-    build_index_context(@user_card.card_installments)
+    build_index_context(card_installments_for_selected_user_card)
     @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
 
     respond_to(&:turbo_stream)
@@ -159,7 +162,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     if @user_card && max_date > today
 
-      reference = @user_card.references.where(reference_closing_date: [ Date.tomorrow.. ]).order(:reference_closing_date).first
+      reference = current_context.references.where(user_card: @user_card, reference_closing_date: [ Date.tomorrow.. ]).order(:reference_closing_date).first
 
       if reference
         month_year_reference = Date.new(reference.year, reference.month)
@@ -203,7 +206,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
     count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
-      current_user,
+      current_context,
       card_transaction_params.merge(user_card_id: @user_card&.id || []),
       search_card_transaction_params
     )
@@ -248,7 +251,13 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   # Use callbacks to share common setup or constraints between actions.
   def set_card_transaction
-    @card_transaction = current_user.card_transactions.find(params[:id])
+    @card_transaction = current_context.card_transactions.find(params[:id])
+  end
+
+  def card_installments_for_selected_user_card
+    return current_context.card_installments unless @user_card
+
+    current_context.card_installments.joins(:card_transaction).where(card_transactions: { user_card_id: @user_card.id })
   end
 
   def search_card_transaction_params

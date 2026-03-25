@@ -69,6 +69,11 @@ class Views::Entities::Form < Views::Base
         span { model_attribute(entity, :dog_icons_credits) }
         a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs icons") { "Maxim Kulikov - Flaticon" }
       end
+
+      div do
+        span { model_attribute(entity, :country_icons_credits) }
+        a(class: "underline", href: "https://www.flaticon.com/authors/freepik", title: "coutries icons") { "Freepik - Flaticon" }
+      end
     end
   end
 end

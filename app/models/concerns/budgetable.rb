@@ -19,7 +19,7 @@ module Budgetable
     conditions = month_years.map { "(budgets.month = ? AND budgets.year = ?)" }.join(" OR ")
     values = month_years.flat_map { |h| [ h[:month], h[:year] ] }
 
-    user.budgets.where(conditions, *values)
+    context.budgets.where(conditions, *values)
   end
 
   # @public_class_methods .....................................................

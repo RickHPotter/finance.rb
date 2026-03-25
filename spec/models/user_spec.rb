@@ -23,7 +23,7 @@ RSpec.describe User, type: :model do
     context "( associations )" do
       hm_models = %i[card_transactions card_installments advance_cash_transactions
                      cash_transactions cash_installments
-                     user_cards user_bank_accounts budgets categories entities
+                     user_cards user_bank_accounts budgets contexts categories entities
                      investments conversation_participants conversations subscriptions push_subscriptions
                      sent_messages received_messages]
 
@@ -38,11 +38,26 @@ RSpec.describe User, type: :model do
         built_in_categories = [ "CARD PAYMENT", "CARD ADVANCE", "CARD INSTALLMENT", "INVESTMENT", "SUBSCRIPTION", "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ]
         expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
       end
+
+      it "creates a main context on create" do
+        subject.save
+
+        expect(subject.contexts.main.count).to eq(1)
+        expect(subject.main_context.name).to eq("Main")
+      end
     end
 
     context "( public methods )" do
       it "returns full_name" do
         expect(subject.full_name).to eq("John Doe")
+      end
+
+      it "ensures a main context when missing" do
+        subject.save
+        subject.contexts.main.destroy_all
+
+        expect { subject.ensure_main_context! }.to change(subject.contexts.main, :count).from(0).to(1)
+        expect(subject.main_context.name).to eq("Main")
       end
 
       it "returns a built-in category by name" do

@@ -26,10 +26,36 @@ RSpec.describe CashTransaction, type: :model do
       bto_models.each { |model| it { should belong_to(model).optional } }
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
+
+      it "belongs to context" do
+        association = described_class.reflect_on_association(:context)
+
+        expect(association.macro).to eq(:belongs_to)
+        expect(association.options[:optional]).to be(false)
+      end
     end
   end
 
   describe "[ business logic ]" do
+    it "defaults context to the user's main context" do
+      transaction = described_class.new(
+        user: subject.user,
+        user_bank_account: subject.user_bank_account,
+        description: "Context default",
+        price: 100,
+        date: Date.new(2026, 3, 23),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: 100, date: Date.new(2026, 3, 23), month: 3, year: 2026 }
+        ]
+      )
+
+      transaction.valid?
+
+      expect(transaction.context).to eq(subject.user.main_context)
+    end
+
     it "recognises exchange return cash transactions by category" do
       exchange_return = subject.user.built_in_category("EXCHANGE RETURN")
       subject.categories << exchange_return
@@ -285,6 +311,117 @@ RSpec.describe CashTransaction, type: :model do
       )
       expect(headers.fetch("replay")).to be_nil
     end
+
+    it "routes derived-context notifications into a matching receiver scenario and auto-creates it when missing" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki-derived@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi-derived@example.com")
+      optimistic = create(:context, user: rikki, source_context: rikki.main_context, name: "Optimistic")
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      gigi_counterpart = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+
+      expect do
+        described_class.create!(
+          user: rikki,
+          context: optimistic,
+          user_bank_account: rikki_bank_account,
+          description: "SCENARIO LOAN",
+          price: 5_000,
+          date: Date.new(2026, 3, 17),
+          month: 3,
+          year: 2026,
+          category_transactions_attributes: [
+            { category_id: rikki.built_in_category("EXCHANGE").id }
+          ],
+          cash_installments_attributes: [
+            { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+              is_payer: true,
+              price: -5_000,
+              price_to_be_returned: -5_000,
+              exchanges_count: 1,
+              exchanges_attributes: [
+                { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+              ]
+            }
+          ]
+        )
+      end.to change { gigi.contexts.count }.by(1)
+
+      receiver_context = gigi.contexts.find_by(scenario_key: optimistic.scenario_key)
+      derived_conversation = Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(optimistic.scenario_key).first
+
+      expect(receiver_context).to be_present
+      expect(receiver_context.source_context).to eq(gigi.main_context)
+      expect(receiver_context.name).to eq("Optimistic")
+      expect(derived_conversation).to be_present
+      expect(derived_conversation.messages.last.body).to eq("notification:create")
+      expect(Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(nil)).to be_empty
+
+      headers = JSON.parse(derived_conversation.messages.last.headers)
+      expect(headers.fetch("replay")).to include(
+        "category_ids" => gigi.built_in_category("EXCHANGE").id,
+        "entity_transactions_attributes" => [
+          a_hash_including("entity_id" => gigi_counterpart.id)
+        ]
+      )
+    end
+
+    it "reuses the receiver derived context when the scenario already exists" do
+      rikki = create(:user, first_name: "Rikki", email: "rikki-reuse@example.com")
+      gigi = create(:user, first_name: "Gigi", email: "gigi-reuse@example.com")
+      optimistic = create(:context, user: rikki, source_context: rikki.main_context, name: "Optimistic")
+      existing_receiver_context = create(
+        :context,
+        user: gigi,
+        source_context: gigi.main_context,
+        name: "Optimistic",
+        scenario_key: optimistic.scenario_key
+      )
+      rikki_bank_account = create(:user_bank_account, user: rikki, bank: create(:bank, :random))
+      create(:entity, user: rikki, entity_name: "GIGI", entity_user: gigi)
+      create(:entity, user: gigi, entity_name: "RIKKI", entity_user: rikki)
+
+      expect do
+        described_class.create!(
+          user: rikki,
+          context: optimistic,
+          user_bank_account: rikki_bank_account,
+          description: "SCENARIO LOAN",
+          price: 5_000,
+          date: Date.new(2026, 3, 17),
+          month: 3,
+          year: 2026,
+          category_transactions_attributes: [
+            { category_id: rikki.built_in_category("EXCHANGE").id }
+          ],
+          cash_installments_attributes: [
+            { number: 1, price: 5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026 }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+              is_payer: true,
+              price: -5_000,
+              price_to_be_returned: -5_000,
+              exchanges_count: 1,
+              exchanges_attributes: [
+                { number: 1, price: -5_000, date: Date.new(2026, 3, 20), month: 3, year: 2026 }
+              ]
+            }
+          ]
+        )
+      end.not_to(change { gigi.contexts.count })
+
+      conversation = Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(optimistic.scenario_key).first
+
+      expect(gigi.contexts.find_by(scenario_key: optimistic.scenario_key)).to eq(existing_receiver_context)
+      expect(conversation).to be_present
+      expect(conversation.messages.last.body).to eq("notification:create")
+    end
   end
 end
 
@@ -308,6 +445,7 @@ end
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  context_id                  :bigint           not null, indexed
 #  investment_type_id          :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
@@ -317,6 +455,7 @@ end
 #
 # Indexes
 #
+#  index_cash_transactions_on_context_id               (context_id)
 #  index_cash_transactions_on_investment_type_id       (investment_type_id)
 #  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
 #  index_cash_transactions_on_subscription_id          (subscription_id)
@@ -327,6 +466,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)

@@ -10,6 +10,7 @@ FactoryBot.define do
     year { (Date.new(date.year, date.month) + 1.month).year }
 
     user { custom_create(:user) }
+    context { user.main_context }
     user_card { custom_create(:user_card, reference: { user: }) }
 
     card_installments { build_list(:card_installment, 1, price:, number: 1) }
@@ -37,6 +38,7 @@ FactoryBot.define do
       year { 2024 }
 
       user { different_custom_create(:user) }
+      context { user.main_context }
       user_card { different_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
@@ -65,6 +67,7 @@ FactoryBot.define do
       price { Faker::Number.number(digits: rand(3..5)) * -1 }
 
       user { random_custom_create(:user) }
+      context { user.main_context }
       user_card { random_custom_create(:user_card, reference: { user: }) }
 
       card_installments do
@@ -108,6 +111,7 @@ end
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
+#  context_id                  :bigint           not null, indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
@@ -118,6 +122,7 @@ end
 #  idx_card_transactions_description_trgm                  (description) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_context_id                   (context_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
 #  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
@@ -127,6 +132,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)

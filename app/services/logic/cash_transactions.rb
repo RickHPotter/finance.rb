@@ -21,7 +21,7 @@ module Logic
       cash_transaction
     end
 
-    def self.find_by_ref_month_year(user, cash_transaction_params, search_params)
+    def self.find_by_ref_month_year(financial_scope, cash_transaction_params, search_params)
       month_year = search_params.delete(:month_year)
       month = month_year[4..]
       year = month_year[0..3]
@@ -29,8 +29,8 @@ module Logic
       raw_conditions = build_conditions_from_params(cash_transaction_params, search_params)
 
       [
-        Logic::CashInstallments.find_by_ref_month_year(user, month, year, raw_conditions),
-        Logic::Budgets.find_by_ref_month_year(user, month, year, raw_conditions)
+        Logic::CashInstallments.find_by_ref_month_year(financial_scope, month, year, raw_conditions),
+        Logic::Budgets.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       ]
     end
 
@@ -152,7 +152,7 @@ module Logic
       }
     end
 
-    def self.find_count_based_on_search(user, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+    def self.find_count_based_on_search(financial_scope, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
       search_term = search_params.delete(:search_term) || ""
       category_ids = cash_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
@@ -160,7 +160,7 @@ module Logic
       entity_ids   = [ entity_ids ].flatten.compact_blank if entity_ids.present?
 
       cash_installment_ids = cash_transaction_params[:cash_installment_ids]
-      return user.cash_installments.where(id: cash_installment_ids) if cash_installment_ids.present?
+      return financial_scope.cash_installments.where(id: cash_installment_ids) if cash_installment_ids.present?
 
       conditions = build_conditions_from_cash_transaction_params(cash_transaction_params)
       conditions[:cash_transaction] = conditions[:cash_transaction].except("date") if conditions[:cash_transaction].present?
@@ -175,10 +175,10 @@ module Logic
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      relation = user.cash_installments
-                     .left_joins({ cash_transaction: %i[categories entities] })
-                     .where(conditions)
-                     .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
+      relation = financial_scope.cash_installments
+                                .left_joins({ cash_transaction: %i[categories entities] })
+                                .where(conditions)
+                                .where("cash_transactions.description ILIKE ?", "%#{search_term}%")
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?

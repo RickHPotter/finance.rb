@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -45,6 +45,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   create_table "budgets", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.integer "balance"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.string "description", null: false
     t.boolean "first_installment_only", default: false, null: false
@@ -57,6 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.bigint "user_id", null: false
     t.integer "value", null: false
     t.integer "year", null: false
+    t.index ["context_id"], name: "index_budgets_on_context_id"
     t.index ["order_id"], name: "idx_budgets_order_id"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end
@@ -65,6 +67,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.bigint "advance_cash_transaction_id"
     t.integer "card_installments_count", default: 0, null: false
     t.text "comment"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description", null: false
@@ -81,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.bigint "user_id", null: false
     t.integer "year", null: false
     t.index ["advance_cash_transaction_id"], name: "index_card_transactions_on_advance_cash_transaction_id"
+    t.index ["context_id"], name: "index_card_transactions_on_context_id"
     t.index ["description"], name: "idx_card_transactions_description_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["price"], name: "idx_card_transactions_price"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_card_transactions_on_reference_transactable"
@@ -103,6 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.integer "cash_installments_count", default: 0, null: false
     t.string "cash_transaction_type"
     t.text "comment"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description", null: false
@@ -120,6 +125,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.bigint "user_card_id"
     t.bigint "user_id", null: false
     t.integer "year", null: false
+    t.index ["context_id"], name: "index_cash_transactions_on_context_id"
     t.index ["investment_type_id"], name: "index_cash_transactions_on_investment_type_id"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
@@ -156,6 +162,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.index ["transactable_type", "transactable_id"], name: "index_category_transactions_on_transactable"
   end
 
+  create_table "contexts", force: :cascade do |t|
+    t.datetime "archived_at"
+    t.datetime "cloned_at"
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.boolean "main", default: false, null: false
+    t.string "name", null: false
+    t.string "scenario_key"
+    t.bigint "source_context_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["scenario_key"], name: "index_contexts_on_scenario_key"
+    t.index ["source_context_id"], name: "index_contexts_on_source_context_id"
+    t.index ["user_id", "name"], name: "index_contexts_on_user_and_name", unique: true
+    t.index ["user_id"], name: "index_contexts_on_user_id"
+    t.index ["user_id"], name: "index_contexts_on_user_id_where_main_true", unique: true, where: "(main = true)"
+  end
+
   create_table "conversation_participants", force: :cascade do |t|
     t.bigint "conversation_id", null: false
     t.datetime "created_at", null: false
@@ -168,8 +192,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   create_table "conversations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "kind", default: "human", null: false
+    t.string "scenario_key"
     t.datetime "updated_at", null: false
     t.index ["kind"], name: "index_conversations_on_kind"
+    t.index ["scenario_key"], name: "index_conversations_on_scenario_key"
   end
 
   create_table "entities", force: :cascade do |t|
@@ -227,12 +253,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false
     t.text "comment"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.string "description", null: false
     t.integer "price", default: 0, null: false
     t.string "status", default: "active", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["context_id"], name: "index_finance_subscriptions_on_context_id"
     t.index ["status"], name: "index_finance_subscriptions_on_status"
     t.index ["user_id"], name: "index_finance_subscriptions_on_user_id"
   end
@@ -259,6 +287,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.index ["card_transaction_id"], name: "index_installments_on_card_transaction_id"
     t.index ["cash_transaction_id"], name: "index_installments_on_cash_transaction_id"
     t.index ["date_year", "date_month", "date"], name: "idx_installments_year_month_date"
+    t.index ["installment_type", "card_transaction_id"], name: "idx_installments_type_card_transaction"
+    t.index ["installment_type", "cash_transaction_id"], name: "idx_installments_type_cash_transaction"
     t.index ["order_id"], name: "idx_installments_order_id"
     t.index ["price"], name: "idx_installments_price"
   end
@@ -275,6 +305,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
 
   create_table "investments", force: :cascade do |t|
     t.bigint "cash_transaction_id"
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description"
@@ -286,6 +317,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.bigint "user_id", null: false
     t.integer "year", null: false
     t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
+    t.index ["context_id"], name: "index_investments_on_context_id"
     t.index ["investment_type_id"], name: "index_investments_on_investment_type_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
@@ -311,6 +343,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   end
 
   create_table "references", force: :cascade do |t|
+    t.bigint "context_id", null: false
     t.datetime "created_at", null: false
     t.integer "month", null: false
     t.date "reference_closing_date", null: false
@@ -318,7 +351,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
     t.datetime "updated_at", null: false
     t.bigint "user_card_id", null: false
     t.integer "year", null: false
-    t.index ["user_card_id", "month", "year"], name: "idx_references_user_card_month_year", unique: true
+    t.index ["context_id", "user_card_id", "month", "year"], name: "idx_references_context_user_card_month_year", unique: true
+    t.index ["context_id", "user_card_id", "reference_date"], name: "idx_references_context_user_card_reference_date", unique: true
+    t.index ["context_id"], name: "index_references_on_context_id"
     t.index ["user_card_id"], name: "index_references_on_user_card_id"
   end
 
@@ -391,12 +426,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   add_foreign_key "budget_categories", "categories"
   add_foreign_key "budget_entities", "budgets"
   add_foreign_key "budget_entities", "entities"
+  add_foreign_key "budgets", "contexts"
   add_foreign_key "budgets", "users"
   add_foreign_key "card_transactions", "cash_transactions", column: "advance_cash_transaction_id"
+  add_foreign_key "card_transactions", "contexts"
   add_foreign_key "card_transactions", "finance_subscriptions", column: "subscription_id"
   add_foreign_key "card_transactions", "user_cards"
   add_foreign_key "card_transactions", "users"
   add_foreign_key "cards", "banks"
+  add_foreign_key "cash_transactions", "contexts"
   add_foreign_key "cash_transactions", "finance_subscriptions", column: "subscription_id"
   add_foreign_key "cash_transactions", "investment_types"
   add_foreign_key "cash_transactions", "user_bank_accounts"
@@ -404,6 +442,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   add_foreign_key "cash_transactions", "users"
   add_foreign_key "categories", "users"
   add_foreign_key "category_transactions", "categories"
+  add_foreign_key "contexts", "contexts", column: "source_context_id"
+  add_foreign_key "contexts", "users"
   add_foreign_key "conversation_participants", "conversations"
   add_foreign_key "conversation_participants", "users"
   add_foreign_key "entities", "users"
@@ -411,16 +451,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_21_183000) do
   add_foreign_key "entity_transactions", "entities"
   add_foreign_key "exchanges", "cash_transactions"
   add_foreign_key "exchanges", "entity_transactions"
+  add_foreign_key "finance_subscriptions", "contexts"
   add_foreign_key "finance_subscriptions", "users"
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"
+  add_foreign_key "investments", "contexts"
   add_foreign_key "investments", "investment_types"
   add_foreign_key "investments", "user_bank_accounts"
   add_foreign_key "investments", "users"
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "messages", column: "superseded_by_id"
   add_foreign_key "messages", "users"
+  add_foreign_key "references", "contexts"
   add_foreign_key "references", "user_cards"
   add_foreign_key "subscriptions", "users"
   add_foreign_key "user_bank_accounts", "banks"

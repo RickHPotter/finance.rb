@@ -379,16 +379,20 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def exchange_return_cash_installment_ids
     return [ 0 ] unless budget.persisted?
 
-    relevant_card_trx_ids = current_user.card_transactions.joins(:category_transactions).where(category_transactions: { category_id: budget.categories.ids }).ids
+    relevant_card_trx_ids =
+      current_context.card_transactions
+                     .joins(:category_transactions)
+                     .where(category_transactions: { category_id: budget.categories.ids })
+                     .ids
 
     return [ 0 ] if relevant_card_trx_ids.empty?
 
     exchange_return_cash_installments =
-      current_user.cash_installments
-                  .where(year: budget.year, month: budget.month)
-                  .joins(cash_transaction: { exchanges: :entity_transaction })
-                  .where(entity_transactions: { transactable_type: "CardTransaction", transactable_id: relevant_card_trx_ids })
-                  .ids
+      current_context.cash_installments
+                     .where(year: budget.year, month: budget.month)
+                     .joins(cash_transaction: { exchanges: :entity_transaction })
+                     .where(entity_transactions: { transactable_type: "CardTransaction", transactable_id: relevant_card_trx_ids })
+                     .ids
 
     return [ 0 ] if exchange_return_cash_installments.empty?
 

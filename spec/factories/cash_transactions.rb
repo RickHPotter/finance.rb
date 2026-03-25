@@ -10,6 +10,7 @@ FactoryBot.define do
     price { 29.72 }
 
     user { custom_create(:user) }
+    context { user.main_context }
     user_bank_account { custom_create(:user_bank_account, reference: { user: }) }
 
     cash_installments { build_list(:cash_installment, 1, price:, number: 1) }
@@ -23,6 +24,7 @@ FactoryBot.define do
       price { 650 }
 
       user { different_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { different_custom_create(:user_bank_account, reference: { user: }) }
 
       cash_installments do
@@ -39,6 +41,7 @@ FactoryBot.define do
       price { Faker::Number.number(digits: rand(3..5)) }
 
       user { random_custom_create(:user) }
+      context { user.main_context }
       user_bank_account { random_custom_create(:user_bank_account, reference: { user: }) }
 
       cash_installments do
@@ -70,6 +73,7 @@ end
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  context_id                  :bigint           not null, indexed
 #  investment_type_id          :bigint           indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
@@ -79,6 +83,7 @@ end
 #
 # Indexes
 #
+#  index_cash_transactions_on_context_id               (context_id)
 #  index_cash_transactions_on_investment_type_id       (investment_type_id)
 #  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
 #  index_cash_transactions_on_subscription_id          (subscription_id)
@@ -89,6 +94,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)

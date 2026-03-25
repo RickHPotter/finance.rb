@@ -8,7 +8,7 @@ class ReferencesController < ApplicationController
   before_action :set_reference_tabs
 
   def index
-    @references = @user_card.references
+    @references = current_context.references.where(user_card: @user_card)
     render json: @references
   end
 
@@ -33,9 +33,9 @@ class ReferencesController < ApplicationController
   def perform_merge
     source_reference_date = "#{merge_reference_params[:source_reference_date]}-01"
     target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
-    @reference = @user_card.find_or_create_reference_for(source_reference_date.to_date)
+    @reference = @user_card.find_or_create_reference_for(source_reference_date.to_date, context: current_context)
 
-    if Logic::References.merge(@user_card, source_reference_date, target_reference_date)
+    if Logic::References.merge(@user_card, source_reference_date, target_reference_date, context: current_context)
       redirect_to edit_user_card_path(@user_card)
     else
       render Views::References::Merge.new(reference: @reference, user_card: @user_card), status: :unprocessable_content
@@ -45,7 +45,7 @@ class ReferencesController < ApplicationController
   private
 
   def set_reference_tabs
-    set_tabs(active_menu: :basic, active_sub_menu: :user_card)
+    set_tabs(active_menu: :data, active_sub_menu: :user_card)
   end
 
   def set_user_card
@@ -53,7 +53,7 @@ class ReferencesController < ApplicationController
   end
 
   def set_reference
-    @reference = @user_card.references.find(params[:id])
+    @reference = current_context.references.where(user_card: @user_card).find(params[:id])
   end
 
   def reference_params

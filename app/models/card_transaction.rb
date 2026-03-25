@@ -18,13 +18,16 @@ class CardTransaction < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   belongs_to :user_card, counter_cache: true
   belongs_to :reference_transactable, polymorphic: true, optional: true
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :description, :card_installments_count, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
   after_save :update_month_year, :sync_subscription_installment
@@ -49,8 +52,8 @@ class CardTransaction < ApplicationRecord
     card_transaction
   end
 
-  def self.new_advanced_payment(user, params)
-    card_transaction = user.card_transactions.new(params)
+  def self.new_advanced_payment(user, params, context: user.main_context)
+    card_transaction = context.card_transactions.new(params.merge(user:))
     card_transaction.categories << user.built_in_category("CARD ADVANCE")
     card_transaction.entities << user.entities.find_or_create_by(entity_name: "CARD")
 
@@ -64,7 +67,7 @@ class CardTransaction < ApplicationRecord
   # @return [Date].
   #
   def card_payment_date
-    reference = user_card.find_or_create_reference_for(date)
+    reference = user_card.find_or_create_reference_for(date, context:)
     reference.reference_date
   end
 
@@ -84,7 +87,7 @@ class CardTransaction < ApplicationRecord
     existing_reference = card_installments.first
     if existing_reference.nil?
       reference_date = user_card.calculate_reference_date(date)
-      existing_reference = user_card.references.find_by(reference_date:)
+      existing_reference = user_card.references.find_by(context:, reference_date:)
     end
 
     if existing_reference
@@ -94,6 +97,7 @@ class CardTransaction < ApplicationRecord
       self.month = reference_date.month
       self.year = reference_date.year
       user_card.references
+               .where(context:)
                .create_with(reference_closing_date: reference_date - user_card.days_until_due_date.days, reference_date:)
                .find_or_create_by(month:, year:)
     end
@@ -147,6 +151,10 @@ class CardTransaction < ApplicationRecord
 
   private
 
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
+
   # Sets `paid` based on current `date` in case it was not previously set, on create.
   #
   # @note This is a method that is called before_validation.
@@ -184,12 +192,12 @@ class CardTransaction < ApplicationRecord
   end
 
   def update_cash_balance
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
     card_payment_transaction = card_installments.order(:date).first&.cash_transaction
     exchange_cash_transaction = entity_transactions.map(&:exchanges).flatten.min_by(&:date)&.cash_transaction
     min_date = [ card_payment_transaction&.date, exchange_cash_transaction&.date ].compact_blank.min
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total
@@ -223,6 +231,7 @@ end
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  advance_cash_transaction_id :bigint           indexed
+#  context_id                  :bigint           not null, indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
 #  user_card_id                :bigint           not null, indexed
@@ -233,6 +242,7 @@ end
 #  idx_card_transactions_description_trgm                  (description) USING gin
 #  idx_card_transactions_price                             (price)
 #  index_card_transactions_on_advance_cash_transaction_id  (advance_cash_transaction_id)
+#  index_card_transactions_on_context_id                   (context_id)
 #  index_card_transactions_on_reference_transactable       (reference_transactable_type,reference_transactable_id)
 #  index_card_transactions_on_subscription_id              (subscription_id)
 #  index_card_transactions_on_user_card_id                 (user_card_id)
@@ -242,6 +252,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (advance_cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (subscription_id => finance_subscriptions.id)
 #  fk_rails_...  (user_card_id => user_cards.id)
 #  fk_rails_...  (user_id => users.id)

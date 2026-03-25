@@ -38,28 +38,30 @@ class UserCard < ApplicationRecord
     saved_change_to_due_date_day? || saved_change_to_days_until_due_date?
   end
 
-  def unpaid_invoices
-    card_installments_invoices.where(paid: false).distinct
+  def unpaid_invoices(context: user.main_context)
+    relation = card_installments_invoices.where(context:)
+    relation.where(paid: false).distinct
   end
 
-  def unpaid_exchange_installments
-    user.cash_installments
-        .joins(cash_transaction: :categories)
-        .where(
-          paid: false,
-          cash_transaction: {
-            user_card_id: id,
-            categories: { built_in: true, category_name: "EXCHANGE RETURN" }
-          }
-        )
+  def unpaid_exchange_installments(context: user.main_context)
+    context.cash_installments
+           .joins(cash_transaction: :categories)
+           .where(
+             paid: false,
+             cash_transaction: {
+               user_card_id: id,
+               categories: { built_in: true, category_name: "EXCHANGE RETURN" }
+             }
+           )
   end
 
-  def find_or_create_reference_for(date)
+  def find_or_create_reference_for(date, context: user.main_context)
     reference_date = calculate_reference_date(date)
-    reference = references.find_by(month: reference_date.month, year: reference_date.year)
+    reference = references.find_by(context:, month: reference_date.month, year: reference_date.year)
     return reference if reference.present?
 
     references.create(
+      context:,
       month: reference_date.month,
       year: reference_date.year,
       reference_closing_date: reference_date - days_until_due_date.days,
@@ -101,15 +103,17 @@ class UserCard < ApplicationRecord
   def update_references_and_payments
     return if current_due_date.nil?
 
-    update_unpaid_card_payments
-    update_unpaid_exchange_installments
+    user.contexts.find_each do |context|
+      update_unpaid_card_payments(context)
+      update_unpaid_exchange_installments(context)
 
-    Logic::RecalculateBalancesService.new(user:).call
+      Logic::RecalculateBalancesService.new(user:, context:).call
+    end
   end
 
-  def update_unpaid_card_payments
-    unpaid_invoices.find_each do |card_payment|
-      new_reference_date = calculate_new_reference_date_for(card_payment.month, card_payment.year)
+  def update_unpaid_card_payments(context)
+    unpaid_invoices(context:).find_each do |card_payment|
+      new_reference_date = calculate_new_reference_date_for(card_payment.month, card_payment.year, context)
 
       ApplicationRecord.transaction do
         card_payment.update!(date: new_reference_date.end_of_day)
@@ -118,9 +122,9 @@ class UserCard < ApplicationRecord
     end
   end
 
-  def update_unpaid_exchange_installments
-    unpaid_exchange_installments.find_each do |cash_installment|
-      new_reference_date = calculate_new_reference_date_for(cash_installment.month, cash_installment.year)
+  def update_unpaid_exchange_installments(context)
+    unpaid_exchange_installments(context:).find_each do |cash_installment|
+      new_reference_date = calculate_new_reference_date_for(cash_installment.month, cash_installment.year, context)
       cash_transaction = cash_installment.cash_transaction
       exchanges = cash_transaction.exchanges.card_bound
 
@@ -134,13 +138,13 @@ class UserCard < ApplicationRecord
     end
   end
 
-  def calculate_new_reference_date_for(month, year)
-    references.find_by(month:, year:)&.destroy
+  def calculate_new_reference_date_for(month, year, context)
+    references.find_by(context:, month:, year:)&.destroy
 
     this_month_due_date = current_due_date.change(month:, year:)
     date_within_previous_cycle = this_month_due_date - days_until_due_date.days - 1.day
 
-    find_or_create_reference_for(date_within_previous_cycle).reference_date
+    find_or_create_reference_for(date_within_previous_cycle, context:).reference_date
   end
 end
 

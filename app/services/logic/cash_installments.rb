@@ -2,7 +2,7 @@
 
 module Logic
   class CashInstallments
-    def self.find_by_ref_month_year(user, month, year, raw_conditions)
+    def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
 
       case [ raw_conditions[:paid], raw_conditions[:pending] ]
@@ -22,32 +22,35 @@ module Logic
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      fetch_cash_installments(user, month, year, { conditions:, search_term_condition:, ids: raw_conditions[:cash_installment_ids] })
+      fetch_cash_installments(financial_scope, month, year, { conditions:, search_term_condition:, ids: raw_conditions[:cash_installment_ids] })
     end
 
-    def self.find_by_query(user, entity_id, query)
-      user
-        .cash_installments
+    def self.find_by_query(financial_scope, entity_id, query)
+      cash_installments_relation(financial_scope)
         .includes(cash_transaction: %i[category_transactions entity_transactions])
         .where(cash_transaction: { entity_transactions: { entity_id: } })
         .where("cash_transaction.description ILIKE ?", "%#{query}%")
     end
 
-    def self.fetch_cash_installments(user, month, year, options)
-      relation = user.cash_installments
-                     .where(year:, month:)
-                     .includes(cash_transaction: [
-                                 :categories,
-                                 :entities,
-                                 :card_installments,
-                                 { category_transactions: :category },
-                                 { entity_transactions: :entity }
-                               ])
-                     .where(options[:conditions])
-                     .where(options[:search_term_condition])
+    def self.fetch_cash_installments(financial_scope, month, year, options)
+      relation = cash_installments_relation(financial_scope)
+                 .where(year:, month:)
+                 .includes(cash_transaction: [
+                             :categories,
+                             :entities,
+                             :card_installments,
+                             { category_transactions: :category },
+                             { entity_transactions: :entity }
+                           ])
+                 .where(options[:conditions])
+                 .where(options[:search_term_condition])
 
       relation = relation.where(id: options[:ids]) if options[:ids].present?
       relation.order(:order_id)
+    end
+
+    def self.cash_installments_relation(financial_scope)
+      financial_scope.cash_installments
     end
   end
 end

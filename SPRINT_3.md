@@ -140,6 +140,19 @@ too visible to ignore.
 - Extra:
   - Treat this as a premium-oriented feature from the beginning, even if the first
     version is intentionally small.
+  - `Context` was completed as the real financial scope of the app, not only as a
+    planning concept:
+    all planned financial models now belong to `context`, existing records were
+    backfilled to `main_context`, and the runtime moved to `current_context`.
+  - A clone-based `ContextCloneService` was implemented, together with a tree-style
+    contexts UI, context switching, and shared-scope safeguards for scenario
+    creation and navigation.
+  - Cross-context non-interference was hardened with request/service coverage across
+    financial CRUD, recalculation, clone rollback, bulk installment actions, card
+    advance, reference merge, imports, backfills, naming conventions, due-payment
+    notifications, and stale-form submission after context switching.
+  - Query-path and recalculation benchmarking was added so context runtime behavior
+    could be compared against `main_context` before rollout.
 
 ### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 
@@ -160,15 +173,34 @@ too visible to ignore.
   - [#34](https://github.com/RickHPotter/finance.rb/issues/34)
 
 - Subtasks:
-  - Improve the conversations index so it communicates state more clearly.
-  - Refine the conversation screen for better readability and better system-style
-    messages.
-  - Create a first assistant conversation flow, even if it starts as a guided or
-    rule-based helper.
+  - Split human chat and assistant/notification traffic into two clear conversation roles:
+    one human thread and one shared assistant thread per real-user pair.
+  - Turn assistant conversations into an inbox-like flow instead of chat:
+    no composer, `Pending` as the default view, and localized `All / Pending` plus
+    `Mine / Theirs` filters.
+  - Render assistant notifications from structured payloads instead of relying only on
+    stored `body`, so the conversation UI can localize and present system events more
+    coherently.
+  - Refine `conversations#index` and `conversations#show` so assistant messages read as
+    assistant-presented while still exposing the human actor behind the action.
 - Extra:
-  - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating EXCHANGE CashTransactions.
-  - Keep the first assistant version narrow: onboarding, reminders, transaction nudges,
-    or lightweight guidance are enough.
+  - Historical notification messages were backfilled and redistributed into the new
+    conversation model, with `message_notification_v2` becoming the normalized payload
+    shape.
+  - Audit/apply commands were added so this routing and localization rewrite could be
+    reviewed before execution.
+  - Exchange Types Added. Loan and Reimbursement, to avoid confusion when creating
+    EXCHANGE CashTransactions.
+  - Context-aware conversations were completed on top of the assistant-thread refactor:
+    conversations now isolate by scenario when the active context is not `main`.
+  - `scenario_key` was introduced as the shared scenario identity across users and
+    conversations, allowing receiver-side derived contexts to be found or auto-created
+    during derived-context notifications.
+  - Message replay/apply, pending filtering, unread badges, and assistant action
+    rendering were hardened so derived-context message flows do not fall back into
+    `main`.
+  - A dedicated homolog checklist was added to validate two-user scenario routing,
+    receiver auto-cloning, and cross-context non-interference before production rollout.
 
 ## CONCLUSION
 

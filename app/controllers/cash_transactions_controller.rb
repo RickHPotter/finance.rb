@@ -4,10 +4,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   include TabsConcern
 
   before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
   before_action :set_cash_tabs
 
   def index
-    build_index_context(current_user.cash_installments)
+    build_index_context(current_context.cash_installments)
 
     respond_to do |format|
       format.html { render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
@@ -19,7 +20,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     mobile = search_cash_transaction_params[:force_mobile] || @mobile
     month_year = search_cash_transaction_params[:month_year]
 
-    cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_user, cash_transaction_params, search_cash_transaction_params)
+    cash_installments, budgets = Logic::CashTransactions.find_by_ref_month_year(current_context, cash_transaction_params, search_cash_transaction_params)
 
     render Views::CashTransactions::MonthYear.new(
       mobile:,
@@ -34,7 +35,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def new
     user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
-    @cash_transaction = current_user.cash_transactions.new(user_bank_account_id:, date: Time.zone.now)
+    @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
     handle_params
 
     respond_to do |format|
@@ -44,7 +45,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @cash_transaction = current_user.cash_transactions.find(params[:id])
+    @cash_transaction = current_context.cash_transactions.find(params[:id])
     handle_params
 
     respond_to do |format|
@@ -54,7 +55,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def create
-    @cash_transaction = current_user.cash_transactions.new(assignable_cash_transaction_params.merge(imported: false))
+    @cash_transaction = current_context.cash_transactions.new(assignable_cash_transaction_params.merge(user: current_user, imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
 
     handle_save
@@ -133,7 +134,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         end
       else
         @cash_transaction.entity_transactions.each(&:mark_for_destruction)
-        @cash_transaction.entity_transactions_attributes = cash_transaction_params[:entity_transactions_attributes]
+        @cash_transaction.entity_transactions_attributes = effective_cash_transaction_params[:entity_transactions_attributes]
       end
     end
   end
@@ -164,7 +165,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def assign_message_context
-    @cash_transaction.source_message_id = effective_cash_transaction_params[:source_message_id]
+    @cash_transaction.assign_attributes(
+      effective_cash_transaction_params.slice(
+        :source_message_id,
+        :reference_transactable_type,
+        :reference_transactable_id,
+        :friend_notification_intent
+      )
+    )
   end
 
   def assignable_cash_transaction_params
@@ -178,7 +186,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def source_message
     return if source_message_id.blank?
 
-    @source_message ||= current_user.received_messages.find_by(id: source_message_id)
+    @source_message ||= current_user.received_messages
+                                    .joins(:conversation)
+                                    .where(conversations: { scenario_key: current_context.scenario_key })
+                                    .find_by(id: source_message_id)
   end
 
   def mark_source_message_applied
@@ -206,6 +217,19 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
       respond_to(&:turbo_stream)
     end
+  end
+
+  def ensure_submitted_context_matches_current_context!
+    return if submitted_context_id.blank? || submitted_context_id == current_context.id
+
+    respond_to do |format|
+      format.html { redirect_to cash_transactions_path, alert: t("contexts.switch.stale_transaction_form"), status: :see_other }
+      format.turbo_stream { redirect_to cash_transactions_path, alert: t("contexts.switch.stale_transaction_form"), status: :see_other }
+    end
+  end
+
+  def submitted_context_id
+    params.dig(:cash_transaction, :context_id).presence&.to_i
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
@@ -261,9 +285,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || Time.zone.today.year
 
     if action_name.in? %w[create update]
-      Logic::CashTransactions.find_count_based_on_search(current_user, {}, {})
+      Logic::CashTransactions.find_count_based_on_search(current_context, {}, {})
     else
-      Logic::CashTransactions.find_count_based_on_search(current_user, cash_transaction_params, search_cash_transaction_params)
+      Logic::CashTransactions.find_count_based_on_search(current_context, cash_transaction_params, search_cash_transaction_params)
     end => count_by_month_year
 
     @index_context = {
@@ -303,7 +327,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   # Use callbacks to share common setup or constraints between actions.
   def set_cash_transaction
-    @cash_transaction = current_user.cash_transactions.find(params[:id])
+    @cash_transaction = current_context.cash_transactions.find(params[:id])
   end
 
   def search_cash_transaction_params

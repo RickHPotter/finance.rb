@@ -10,6 +10,7 @@ class Budget < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   has_many :budget_categories, dependent: :destroy
   has_many :categories, through: :budget_categories
   has_many :budget_entities, dependent: :destroy
@@ -19,6 +20,7 @@ class Budget < ApplicationRecord
   accepts_nested_attributes_for :budget_entities, allow_destroy: true, reject_if: :all_blank
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :month, :year, presence: true
   validates :value, :starting_value, presence: true, numericality: { lesser_than_or_equal_to: 0 }
   validates :inclusive, :first_installment_only, inclusion: { in: [ true, false ] }
@@ -26,6 +28,7 @@ class Budget < ApplicationRecord
   validate :uniqueness_of_budget, if: -> { errors.empty? }
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   before_validation :set_starting_value, :set_inclusive, :set_first_installment_only
   before_save :set_remaining_value
   before_save :set_recalculate_balance
@@ -59,8 +62,8 @@ class Budget < ApplicationRecord
     category_ids = budget_categories.map(&:category_id)
     entity_ids = budget_entities.map(&:entity_id)
 
-    cash_installments = user.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
-    card_installments = user.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    cash_installments = context.cash_installments.includes(cash_transaction: { entity_transactions: :exchanges }).where(month:, year:)
+    card_installments = context.card_installments.includes(card_transaction: { entity_transactions: :exchanges }).where(month:, year:)
 
     if first_installment_only
       cash_installments = cash_installments.where(number: 1)
@@ -107,6 +110,10 @@ class Budget < ApplicationRecord
 
   private
 
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
+
   def set_recalculate_balance
     return if [ false, true ].include?(recalculate_balance)
 
@@ -114,9 +121,9 @@ class Budget < ApplicationRecord
   end
 
   def update_cash_balance
-    Logic::RecalculateBalancesService.new(user:, year:, month:).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
-    Logic::RecalculateBalancesService.new(user:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
   end
 
   def presence_of_categories_or_entities
@@ -126,7 +133,7 @@ class Budget < ApplicationRecord
   end
 
   def uniqueness_of_budget # rubocop:disable Metrics/AbcSize
-    current_ref_month_year_budgets = user.budgets.where(month:, year:)
+    current_ref_month_year_budgets = context.budgets.where(month:, year:)
     return if current_ref_month_year_budgets.empty?
 
     category_ids = budget_categories.map(&:category_id)
@@ -169,15 +176,18 @@ end
 #  year                   :integer          not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
+#  context_id             :bigint           not null, indexed
 #  order_id               :integer          indexed
 #  user_id                :bigint           not null, indexed
 #
 # Indexes
 #
-#  idx_budgets_order_id      (order_id)
-#  index_budgets_on_user_id  (user_id)
+#  idx_budgets_order_id         (order_id)
+#  index_budgets_on_context_id  (context_id)
+#  index_budgets_on_user_id     (user_id)
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (user_id => users.id)
 #

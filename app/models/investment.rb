@@ -13,13 +13,16 @@ class Investment < ApplicationRecord
 
   # @relationships ............................................................
   belongs_to :user
+  belongs_to :context, optional: false
   belongs_to :user_bank_account
   belongs_to :investment_type
 
   # @validations ..............................................................
+  validates :context, presence: true
   validates :price, :date, :description, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_default_context
   after_save :set_min_date
   after_commit :update_cash_balance, :update_associations_total
 
@@ -87,6 +90,10 @@ class Investment < ApplicationRecord
 
   private
 
+  def assign_default_context
+    self.context ||= user&.ensure_main_context!
+  end
+
   def set_min_date
     self.min_date = [
       *changes[:date],
@@ -97,10 +104,10 @@ class Investment < ApplicationRecord
   end
 
   def update_cash_balance
-    Logic::RecalculateBalancesService.new(user:, year: date.year, month: date.month).call and return if destroyed?
+    Logic::RecalculateBalancesService.new(user:, context:, year: date.year, month: date.month).call and return if destroyed?
 
     self.min_date ||= date
-    Logic::RecalculateBalancesService.new(user:, year: min_date.year, month: min_date.month).call
+    Logic::RecalculateBalancesService.new(user:, context:, year: min_date.year, month: min_date.month).call
   end
 
   def update_associations_total
@@ -124,6 +131,7 @@ end
 #  created_at           :datetime         not null
 #  updated_at           :datetime         not null
 #  cash_transaction_id  :bigint           indexed
+#  context_id           :bigint           not null, indexed
 #  investment_type_id   :bigint           not null, indexed
 #  user_bank_account_id :bigint           not null, indexed
 #  user_id              :bigint           not null, indexed
@@ -131,6 +139,7 @@ end
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
+#  index_investments_on_context_id            (context_id)
 #  index_investments_on_investment_type_id    (investment_type_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
@@ -138,6 +147,7 @@ end
 # Foreign Keys
 #
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)

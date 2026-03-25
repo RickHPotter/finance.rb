@@ -1,0 +1,81 @@
+en:
+  contexts:
+    switch:
+      redirected_to_index: Context changed. You were redirected to the conversations list because this conversation does not exist in the selected scenario.
+      stale_transaction_form: Context changed. This transaction form belonged to another scenario, so it was reloaded safely.
+    index:
+      title: Contexts
+      subtitle: Scenario branches for your financial timeline.
+      main_label: Main context
+      derived_label: Derived context
+      archived: Archived
+      current: Current
+      no_description: No description yet.
+      create_child: Create derived context
+    archive:
+      success: Context archived.
+      main_forbidden: Main context cannot be archived.
+    unarchive:
+      success: Context restored.
+    new:
+      title: Create Context
+      subtitle: Clone from %{source_name} into a new scenario.
+    form:
+      name: Name
+      description: Description
+      cancel: Cancel
+      create: Create context
+    show:
+      label: Context
+      archive: Archive context
+      unarchive: Restore context
+      create_child: Create child context
+      switch: Switch context
+      stats:
+        cash_transactions: Cash transactions
+        card_transactions: Card transactions
+        budgets: Budgets
+        investments: Investments
+        subscriptions: Subscriptions
+        references: References
+
+pt-BR:
+  contexts:
+    switch:
+      redirected_to_index: Contexto alterado. Voce foi redirecionado para a lista de conversas porque esta conversa nao existe no cenario selecionado.
+      stale_transaction_form: Contexto alterado. Este formulario de transacao pertencia a outro cenario e foi recarregado com seguranca.
+    index:
+      title: Contextos
+      subtitle: Ramos de cenário para sua linha do tempo financeira.
+      main_label: Contexto principal
+      derived_label: Contexto derivado
+      archived: Arquivado
+      current: Atual
+      no_description: Sem descrição ainda.
+      create_child: Criar contexto derivado
+    archive:
+      success: Contexto arquivado.
+      main_forbidden: O contexto principal nao pode ser arquivado.
+    unarchive:
+      success: Contexto restaurado.
+    new:
+      title: Criar contexto
+      subtitle: Clonar de %{source_name} para um novo cenário.
+    form:
+      name: Nome
+      description: Descrição
+      cancel: Cancelar
+      create: Criar contexto
+    show:
+      label: Contexto
+      archive: Arquivar contexto
+      unarchive: Restaurar contexto
+      create_child: Criar contexto filho
+      switch: Trocar contexto
+      stats:
+        cash_transactions: Pagamentos em dinheiro
+        card_transactions: Lançamentos de cartão
+        budgets: Orçamentos
+        investments: Investimentos
+        subscriptions: Assinaturas
+        references: Referências

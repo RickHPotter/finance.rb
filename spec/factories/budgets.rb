@@ -9,6 +9,7 @@ FactoryBot.define do
     remaining_value { -10_000 }
     inclusive { false }
     user { custom_create(:user) }
+    context { user.main_context }
 
     budget_categories { build_list(:budget_category, 1, :random) }
   end
@@ -32,15 +33,18 @@ end
 #  year                   :integer          not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
+#  context_id             :bigint           not null, indexed
 #  order_id               :integer          indexed
 #  user_id                :bigint           not null, indexed
 #
 # Indexes
 #
-#  idx_budgets_order_id      (order_id)
-#  index_budgets_on_user_id  (user_id)
+#  idx_budgets_order_id         (order_id)
+#  index_budgets_on_context_id  (context_id)
+#  index_budgets_on_user_id     (user_id)
 #
 # Foreign Keys
 #
+#  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (user_id => users.id)
 #

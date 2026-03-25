@@ -60,7 +60,7 @@ module Import
     end
 
     def fix_paid
-      card_payments = @user.cash_transactions.joins(:categories).where(categories: { category_name: "CARD PAYMENT" })
+      card_payments = @user.main_context.cash_transactions.joins(:categories).where(categories: { category_name: "CARD PAYMENT" })
 
       card_payments.each do |card_payment|
         paid = card_payment.cash_installments.first.paid
@@ -88,15 +88,16 @@ module Import
 
     def fix_missing_references
       @user.user_cards.find_each do |user_card|
-        month_years = user_card.card_installments_invoices.pluck(:month, :year).uniq
+        month_years = user_card.card_installments_invoices.where(context: @user.main_context).pluck(:month, :year).uniq
 
         month_years.each do |month, year|
-          next if user_card.references.exists?(month:, year:)
+          next if user_card.references.exists?(context: @user.main_context, month:, year:)
 
-          card_payment = user_card.card_installments_invoices.find_by(month:, year:)
+          card_payment = user_card.card_installments_invoices.find_by(context: @user.main_context, month:, year:)
           next if card_payment.nil?
 
           user_card.references.create(
+            context: @user.main_context,
             month:,
             year:,
             reference_closing_date: card_payment.date - user_card.days_until_due_date.days,
@@ -111,8 +112,8 @@ module Import
       end_of_an_era = Date.new(3000, 12, 31)
 
       @user.user_cards.find_each do |user_card|
-        user_card.card_installments_invoices.where(date: beginning_of_month..end_of_an_era).find_each do |card_payment|
-          reference = user_card.references.find_by(month: card_payment.month, year: card_payment.year)
+        user_card.card_installments_invoices.where(context: @user.main_context, date: beginning_of_month..end_of_an_era).find_each do |card_payment|
+          reference = user_card.references.find_by(context: @user.main_context, month: card_payment.month, year: card_payment.year)
           reference_date = card_payment.date.change(day: user_card.due_date_day)
           reference.update(reference_date:)
 
@@ -135,7 +136,7 @@ module Import
     end
 
     def correct_investment_dates
-      @user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
+      @user.main_context.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
         date = Date.new(transaction.year, transaction.month, 1)
         transaction.update(date:)
         transaction.cash_installments.update(date:)
@@ -151,12 +152,13 @@ module Import
         month = date.month
         year = date.year
 
-        @user.budgets.create(month:, year:, value: -10_000, inclusive: false, description: "[ TRANSPORTE ]", categories: [ transport_category ])
+        @user.main_context.budgets.create(month:, year:, value: -10_000, inclusive: false, description: "[ TRANSPORTE ]", categories: [ transport_category ],
+                                          user: @user)
       end
     end
 
     def recalculate_balance
-      Logic::RecalculateBalancesService.new(user: @user, year: 2021, month: 1).call
+      Logic::RecalculateBalancesService.new(user: @user, context: @user.main_context, year: 2021, month: 1).call
     end
   end
 end

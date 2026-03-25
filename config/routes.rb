@@ -43,9 +43,22 @@ Rails.application.routes.draw do
   resources :user_bank_accounts, except: :show
   resources :categories, except: :show
   resources :entities, except: :show
+  resources :contexts, only: %i[index show new create] do
+    collection do
+      get :dismiss
+    end
+
+    member do
+      patch :archive
+      patch :unarchive
+      patch :switch
+    end
+  end
 
   resources :balances, only: :index do
     collection do
+      get :legacy
+      get :current_balance_json
       get :cash_balance_json
       get :transaction_balance_json
     end

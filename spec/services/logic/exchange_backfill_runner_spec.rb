@@ -52,6 +52,7 @@ RSpec.describe Logic::ExchangeBackfillRunner do
       create(
         :cash_transaction,
         user: gigi,
+        context: gigi.main_context,
         user_bank_account: gigi_bank_account,
         reference_transactable: source_transaction,
         description: "WATER BILL - HALF",
@@ -120,6 +121,43 @@ RSpec.describe Logic::ExchangeBackfillRunner do
       )
     end
 
+    let!(:derived_context) { create(:context, user: rikki, name: "Runner Derived", source_context: rikki.main_context) }
+    let!(:derived_source_transaction) do
+      create(
+        :cash_transaction,
+        user: rikki,
+        context: derived_context,
+        user_bank_account: rikki_bank_account,
+        description: "WATER BILL - DERIVED",
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026,
+        price: 9_999
+      ).tap do |transaction|
+        transaction.categories << rikki.categories.find_by(category_name: "EXCHANGE")
+      end
+    end
+    let!(:derived_source_entity_transaction) do
+      create(
+        :entity_transaction,
+        transactable: derived_source_transaction,
+        entity: rikki_entity_for_gigi,
+        is_payer: true,
+        price: -9_999,
+        price_to_be_returned: -9_999
+      )
+    end
+    let!(:derived_source_exchange) do
+      create(
+        :exchange,
+        entity_transaction: derived_source_entity_transaction,
+        price: -9_999,
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026
+      )
+    end
+
     it "rewrites headers from the current receiver-side transaction when reimbursement is selected" do
       result = described_class.new(
         user_a: rikki,
@@ -143,6 +181,23 @@ RSpec.describe Logic::ExchangeBackfillRunner do
         a_hash_including(
           "price" => 2500,
           "date" => "2026-03-20T00:00:00.000-03:00"
+        )
+      )
+    end
+
+    it "ignores derived-context source transactions when applying mappings" do
+      result = described_class.new(
+        user_a: rikki,
+        user_b: gigi,
+        mapping: { derived_source_transaction.id.to_s => "reimbursement" },
+        dry_run: false
+      ).call
+
+      expect(result[:updated_messages_count]).to eq(0)
+      expect(result[:skipped]).to include(
+        a_hash_including(
+          source_transaction_id: derived_source_transaction.id,
+          reason: "source_transaction_not_found"
         )
       )
     end

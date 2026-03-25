@@ -22,14 +22,14 @@ class Logic::ExchangeBackfillAudit # rubocop:disable Metrics/ClassLength
       :categories,
       :cash_installments,
       entity_transactions: %i[entity exchanges]
-    ).where(user: users, reference_transactable: nil).order(:created_at).select do |transaction|
+    ).where(context: users.map(&:main_context), reference_transactable: nil).order(:created_at).select do |transaction|
       transaction.categories.pluck(:category_name).include?("EXCHANGE") && counterpart_user_for(transaction).present?
     end
   end
 
   def serialize_case(source_transaction)
     counterpart_user = counterpart_user_for(source_transaction)
-    receiver_reference = counterpart_user.cash_transactions.includes(
+    receiver_reference = counterpart_user.main_context.cash_transactions.includes(
       :categories,
       :cash_installments,
       entity_transactions: %i[entity exchanges]

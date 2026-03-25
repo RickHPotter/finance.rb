@@ -63,7 +63,7 @@ class LalasController < ApplicationController
     @main_items.map! { |item| item.slice(:label, :icon, :link, :default).values }
 
     @main_tab = @main_items.map do |label, icon, link, default|
-      Item.new(label, icon, link, default, 0, "_top")
+      Item.new(label, icon, link, default, 0)
     end
 
     @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile

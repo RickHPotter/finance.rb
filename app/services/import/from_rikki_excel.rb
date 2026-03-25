@@ -60,35 +60,36 @@ module Import
     end
 
     def fix_user_card_dates
-      UserCard.find_by(user_card_name: "C6").update(active: false, card: Card.find_by(card_name: "C6"))
-      UserCard.find_by(user_card_name: "PP").update(active: false, card: Card.find_by(card_name: "PICPAY"))
-      UserCard.find_by(user_card_name: "AME").update(active: false, card: Card.find_by(card_name: "AME"))
-      UserCard.find_by(user_card_name: "AZUL").update(due_date_day: 8, days_until_due_date: 6, active: false, card: Card.find_by(card_name: "ITAU"))
-      UserCard.find_by(user_card_name: "WILL").update(due_date_day: 10, days_until_due_date: 6, card: Card.find_by(card_name: "WILL"))
-      UserCard.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6, card: Card.find_by(card_name: "ITAU"))
-      UserCard.find_by(user_card_name: "MELIUZ").update(due_date_day: 1, days_until_due_date: 7, card: Card.find_by(card_name: "MELIUZ"))
-      UserCard.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7, card: Card.find_by(card_name: "NUBANK"))
+      @user.user_cards.find_by(user_card_name: "C6").update(active: false, card: Card.find_by(card_name: "C6"))
+      @user.user_cards.find_by(user_card_name: "PP").update(active: false, card: Card.find_by(card_name: "PICPAY"))
+      @user.user_cards.find_by(user_card_name: "AME").update(active: false, card: Card.find_by(card_name: "AME"))
+      @user.user_cards.find_by(user_card_name: "AZUL").update(due_date_day: 8, days_until_due_date: 6, active: false, card: Card.find_by(card_name: "ITAU"))
+      @user.user_cards.find_by(user_card_name: "WILL").update(due_date_day: 10, days_until_due_date: 6, card: Card.find_by(card_name: "WILL"))
+      @user.user_cards.find_by(user_card_name: "CLICK").update(due_date_day: 1, days_until_due_date: 6, card: Card.find_by(card_name: "ITAU"))
+      @user.user_cards.find_by(user_card_name: "MELIUZ").update(due_date_day: 1, days_until_due_date: 7, card: Card.find_by(card_name: "MELIUZ"))
+      @user.user_cards.find_by(user_card_name: "NBNK").update(due_date_day: 13, days_until_due_date: 7, card: Card.find_by(card_name: "NUBANK"))
     end
 
     def fix_user_bank_account_banks
-      UserBankAccount.find_by(user_bank_account_name: "NBNK").update(bank: Bank.find_by(bank_code: 260))
-      UserBankAccount.find_by(user_bank_account_name: "99PAY").update(bank: Bank.find_by(bank_code: 301))
-      UserBankAccount.find_by(user_bank_account_name: "PP").update(bank: Bank.find_by(bank_code: 380))
-      UserBankAccount.find_by(user_bank_account_name: "MP").update(bank: Bank.find_by(bank_code: 323))
-      UserBankAccount.find_by(user_bank_account_name: "ITI").update(bank: Bank.find_by(bank_code: 341))
+      @user.user_bank_accounts.find_by(user_bank_account_name: "NBNK").update(bank: Bank.find_by(bank_code: 260))
+      @user.user_bank_accounts.find_by(user_bank_account_name: "99PAY").update(bank: Bank.find_by(bank_code: 301))
+      @user.user_bank_accounts.find_by(user_bank_account_name: "PP").update(bank: Bank.find_by(bank_code: 380))
+      @user.user_bank_accounts.find_by(user_bank_account_name: "MP").update(bank: Bank.find_by(bank_code: 323))
+      @user.user_bank_accounts.find_by(user_bank_account_name: "ITI").update(bank: Bank.find_by(bank_code: 341))
     end
 
     def fix_missing_references
       @user.user_cards.find_each do |user_card|
-        month_years = user_card.card_installments_invoices.pluck(:month, :year).uniq
+        month_years = user_card.card_installments_invoices.where(context: @user.main_context).pluck(:month, :year).uniq
 
         month_years.each do |month, year|
-          next if user_card.references.exists?(month:, year:)
+          next if user_card.references.exists?(context: @user.main_context, month:, year:)
 
-          card_payment = user_card.card_installments_invoices.find_by(month:, year:)
+          card_payment = user_card.card_installments_invoices.find_by(context: @user.main_context, month:, year:)
           next if card_payment.nil?
 
           user_card.references.create(
+            context: @user.main_context,
             month:,
             year:,
             reference_closing_date: card_payment.date - user_card.days_until_due_date.days,
@@ -103,8 +104,8 @@ module Import
       end_of_an_era = Date.new(3000, 12, 31)
 
       @user.user_cards.find_each do |user_card|
-        user_card.card_installments_invoices.where(date: beginning_of_month..end_of_an_era).find_each do |card_payment|
-          reference = user_card.references.find_by(month: card_payment.month, year: card_payment.year)
+        user_card.card_installments_invoices.where(context: @user.main_context, date: beginning_of_month..end_of_an_era).find_each do |card_payment|
+          reference = user_card.references.find_by(context: @user.main_context, month: card_payment.month, year: card_payment.year)
           reference_date = card_payment.date.change(day: user_card.due_date_day)
           reference.update(reference_date:)
 
@@ -127,7 +128,7 @@ module Import
     end
 
     def correct_investment_dates
-      @user.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
+      @user.main_context.cash_transactions.where(cash_transaction_type: "Investment").find_each do |transaction|
         date = Date.new(transaction.year, transaction.month, 1)
         transaction.update(date:)
         transaction.cash_installments.update(date:)
@@ -139,14 +140,14 @@ module Import
       transport_category = @user.categories.find_by(category_name: "TRANSPORT")
       needs_category = @user.categories.find_by(category_name: "NEEDS")
 
-      budgets = @user.budgets
+      budgets = @user.main_context.budgets
       [ 6, 7 ].each do |month|
-        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ], user: @user)
+        budgets.create(month:, year: 2025, value: -20_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ], user: @user)
       end
 
-      budgets.create(month: 8, year: 2025, value: -30_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-      budgets.create(month: 8, year: 2025, value: -140_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
+      budgets.create(month: 8, year: 2025, value: -30_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ], user: @user)
+      budgets.create(month: 8, year: 2025, value: -140_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ], user: @user)
 
       start_date = Date.new(2025, 9, 1)
       (0..9).each do |index|
@@ -154,14 +155,14 @@ module Import
         month = date.month
         year = date.year
 
-        budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ])
-        budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ])
-        budgets.create(month:, year:, value: -15_000, inclusive: false, description: "[ NEEDS ]", categories: [ needs_category ]) if (index % 3).zero?
+        budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ FOOD ]", categories: [ food_category ], user: @user)
+        budgets.create(month:, year:, value: -25_000, inclusive: false, description: "[ TRANSPORT ]", categories: [ transport_category ], user: @user)
+        budgets.create(month:, year:, value: -15_000, inclusive: false, description: "[ NEEDS ]", categories: [ needs_category ], user: @user) if (index % 3).zero?
       end
     end
 
     def recalculate_balance
-      Logic::RecalculateBalancesService.new(user: @user, year: 2021, month: 1).call
+      Logic::RecalculateBalancesService.new(user: @user, context: @user.main_context, year: 2021, month: 1).call
     end
   end
 end

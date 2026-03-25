@@ -35,6 +35,7 @@ REMOTE_HOST="${REMOTE_HOST:-187.77.32.15}"
 REMOTE_SSH_TARGET="${REMOTE_SSH_TARGET:-root@${REMOTE_HOST}}"
 PROD_DB_CONTAINER="${PROD_DB_CONTAINER:-financerb-db}"
 HOMOLOG_DB_CONTAINER="${HOMOLOG_DB_CONTAINER:-financerb-homolog-db}"
+HOMOLOG_APP_SERVICE="${HOMOLOG_APP_SERVICE:-financerb}"
 PROD_DB_NAME="${PROD_DB_NAME:-finance}"
 HOMOLOG_DB_NAME="${HOMOLOG_DB_NAME:-finance_homolog}"
 PROD_DB_USER="${PROD_DB_USER:-postgres}"
@@ -59,12 +60,28 @@ set -euo pipefail
 docker inspect "$PROD_DB_CONTAINER" >/dev/null
 docker inspect "$HOMOLOG_DB_CONTAINER" >/dev/null
 
+docker exec -e PGPASSWORD="$HOMOLOG_POSTGRES_PASSWORD" "$HOMOLOG_DB_CONTAINER" \
+  psql \
+    --username="$HOMOLOG_DB_USER" \
+    --dbname=postgres \
+    --set=ON_ERROR_STOP=1 \
+    --command="SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$HOMOLOG_DB_NAME' AND pid <> pg_backend_pid();"
+
+docker exec -e PGPASSWORD="$HOMOLOG_POSTGRES_PASSWORD" "$HOMOLOG_DB_CONTAINER" \
+  dropdb \
+    --if-exists \
+    --username="$HOMOLOG_DB_USER" \
+    "$HOMOLOG_DB_NAME"
+
+docker exec -e PGPASSWORD="$HOMOLOG_POSTGRES_PASSWORD" "$HOMOLOG_DB_CONTAINER" \
+  createdb \
+    --username="$HOMOLOG_DB_USER" \
+    "$HOMOLOG_DB_NAME"
+
 docker exec -e PGPASSWORD="$PROD_POSTGRES_PASSWORD" "$PROD_DB_CONTAINER" \
   pg_dump \
     --username="$PROD_DB_USER" \
     --dbname="$PROD_DB_NAME" \
-    --clean \
-    --if-exists \
     --no-owner \
     --no-privileges \
     --format=plain | \
@@ -73,11 +90,24 @@ docker exec -i -e PGPASSWORD="$HOMOLOG_POSTGRES_PASSWORD" "$HOMOLOG_DB_CONTAINER
     --username="$HOMOLOG_DB_USER" \
     --dbname="$HOMOLOG_DB_NAME" \
     --set=ON_ERROR_STOP=1
+
+HOMOLOG_WEB_CONTAINER=$(docker ps \
+  --filter "label=service=$HOMOLOG_APP_SERVICE" \
+  --filter "label=destination=homolog" \
+  --filter "label=role=web" \
+  --format "{{.Names}}" | head -n 1)
+
+if [ -n "$HOMOLOG_WEB_CONTAINER" ]; then
+  docker exec "$HOMOLOG_WEB_CONTAINER" bin/rails db:migrate
+else
+  echo "WARNING: no running homolog web container found; skipping bin/rails db:migrate" >&2
+fi
 EOF
 
 ssh "${REMOTE_SSH_TARGET}" \
   PROD_DB_CONTAINER="${PROD_DB_CONTAINER}" \
   HOMOLOG_DB_CONTAINER="${HOMOLOG_DB_CONTAINER}" \
+  HOMOLOG_APP_SERVICE="${HOMOLOG_APP_SERVICE}" \
   PROD_DB_NAME="${PROD_DB_NAME}" \
   HOMOLOG_DB_NAME="${HOMOLOG_DB_NAME}" \
   PROD_DB_USER="${PROD_DB_USER}" \

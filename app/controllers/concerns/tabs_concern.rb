@@ -15,7 +15,7 @@ module TabsConcern
     @mobile = true
   end
 
-  def set_tabs(active_menu: :cash, active_sub_menu: :cash)
+  def set_tabs(active_menu: :cash, active_sub_menu: :pix)
     @active_menu = active_menu
     @active_sub_menu = active_sub_menu
 
@@ -25,85 +25,110 @@ module TabsConcern
   private
 
   def set_variables
-    set_sublinks
+    set_data_sublinks
+    set_card_sublinks
+    set_cash_sublinks
+    set_hub_sublinks
+    set_main_sublinks
 
-    @main_tab = [
-      Item.new(
-        t("tabs.basic"),
-        :exchange,
-        (@basic_tab.find(&:default) || @basic_tab.first).link,
-        @active_menu == :basic,
-        @basic_tab.map(&:notification_type).max,
-        "_top"
-      ),
-      Item.new(
-        t("tabs.card_transaction"),
-        :wallet,
-        (@card_transaction_tab.find(&:default) || @card_transaction_tab.first).link,
-        @active_menu == :card,
-        @card_transaction_tab.map(&:notification_type).max,
-        "_top"
-      ),
-      Item.new(
-        t("tabs.cash_transaction"),
-        :cash,
-        (@cash_transaction_tab.find(&:default) || @cash_transaction_tab.first).link,
-        @active_menu == :cash,
-        @cash_transaction_tab.map(&:notification_type).max,
-        "_top"
-      )
-    ]
-
-    @main_tab.each { |tab| tab.label = tab.label.split.first } if @mobile
-
-    @sub_tab = [ @basic_tab, @card_transaction_tab, @cash_transaction_tab ]
+    set_main_tab
+    set_sub_tab
   end
 
-  def set_sublinks
-    set_basic_sublinks
-    set_card_transaction_sublinks
-    set_cash_transaction_sublinks
-  end
-
-  def set_basic_sublinks
-    converstion_notification_type = current_user.received_messages.unread.any? ? 1 : 0
-
-    @basic_tab = [
-      Item.new(t("tabs.user_bank_account"), :bank,        user_bank_accounts_path, @active_sub_menu == :user_bank_account, 0, "_top"),
-      Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card,         0, "_top"),
-      Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category,          0, "_top"),
-      Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity,            0, "_top"),
-      Item.new(t("tabs.conversation"),      :message,     conversations_path,      @active_sub_menu == :conversation,      converstion_notification_type, "_top")
+  def set_data_sublinks
+    @data_tab = [
+      Item.new(t("tabs.user_bank_account"), :bank,        user_bank_accounts_path, @active_sub_menu == :user_bank_account),
+      Item.new(t("tabs.user_card"),         :credit_card, user_cards_path,         @active_sub_menu == :user_card),
+      Item.new(t("tabs.category"),          :category,    categories_path,         @active_sub_menu == :category),
+      Item.new(t("tabs.entity"),            :user_circle, entities_path,           @active_sub_menu == :entity)
     ]
   end
 
-  def set_card_transaction_sublinks
+  def set_card_sublinks
     user_cards = current_user.user_cards.active.order(:id).pluck(:id, :user_card_name)
 
-    @card_transaction_tab = user_cards.map do |user_card_id, user_card_name|
+    @card_tab = user_cards.map do |user_card_id, user_card_name|
       default = @active_sub_menu.to_sym == user_card_name.to_sym
-      Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default, 0, "_top")
+      Item.new(user_card_name, :credit_card, card_transactions_path(user_card_id:), default)
     end
 
-    if @card_transaction_tab.present?
-      @card_transaction_tab << Item.new(
-        action_message(:search), :magnifying_glass, search_card_transactions_path, @active_sub_menu.to_sym == :search, 0, "_top"
+    if @card_tab.present?
+      @card_tab << Item.new(
+        action_message(:search), :magnifying_glass, search_card_transactions_path, @active_sub_menu.to_sym == :search
       )
       return
     end
 
-    @card_transaction_tab << Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false, 0, "_top")
+    @card_tab << Item.new(action_model(:new, UserCard), "credit_card", new_user_card_path, false)
   end
 
-  def set_cash_transaction_sublinks
-    cash_notification_type = current_user.cash_installments.due_today.any? ? 1 : 0
+  def set_cash_sublinks
+    cash_notification_type = current_context.cash_installments.due_today.any? ? 1 : 0
 
-    @cash_transaction_tab = [
-      Item.new(t("tabs.pix"),          :mobile,      cash_transactions_path, @active_sub_menu == :pix,          cash_notification_type, "_top"),
-      Item.new(t("tabs.budget"),       :piggy_bank,  budgets_path,           @active_sub_menu == :budget,       0, "_top"),
-      Item.new(t("tabs.investment"),   :trending_up, investments_path,       @active_sub_menu == :investment,   0, "_top"),
-      Item.new(t("tabs.subscription"), :refresh,     subscriptions_path,     @active_sub_menu == :subscription, 0, "_top"),
-      Item.new(t("tabs.balance"),      :chart,       balances_path,          @active_sub_menu == :balance,      0, "_top")
+    @cash_tab = [
+      Item.new(t("tabs.pix"),          :mobile,      cash_transactions_path, @active_sub_menu == :pix, cash_notification_type),
+      Item.new(t("tabs.budget"),       :piggy_bank,  budgets_path,           @active_sub_menu == :budget),
+      Item.new(t("tabs.investment"),   :trending_up, investments_path,       @active_sub_menu == :investment),
+      Item.new(t("tabs.subscription"), :refresh,     subscriptions_path,     @active_sub_menu == :subscription)
     ]
+  end
+
+  def set_hub_sublinks
+    conversation_notification_type =
+      if current_user.received_messages
+                     .joins(:conversation)
+                     .where(conversations: { scenario_key: current_context.scenario_key })
+                     .unread
+                     .any?
+        1
+      else
+        0
+      end
+
+    @hub_tab = [
+      Item.new(t("tabs.balance"),      :chart,    balances_path,        @active_sub_menu == :balance),
+      Item.new(t("tabs.conversation"), :message,  conversations_path,   @active_sub_menu == :conversation, conversation_notification_type),
+      Item.new(t("tabs.context"),      :exchange, contexts_path,        @active_sub_menu == :context),
+      Item.new(t("tabs.settings"),     :cog,      donation_static_path, @active_sub_menu == :settings)
+    ]
+  end
+
+  def set_main_sublinks
+    @bank_link = (@data_tab.find(&:default) || @data_tab.first).link
+    @card_link = (@card_tab.find(&:default) || @card_tab.first).link
+    @cash_link = (@cash_tab.find(&:default) || @cash_tab.first).link
+    @hub_link  = (@hub_tab.find(&:default) || @hub_tab.first).link
+  end
+
+  def set_main_tab
+    @main_tab = [
+      Item.new(t("tabs.data"),
+               :bank,
+               @bank_link,
+               @active_menu == :data,
+               @data_tab.map(&:notification_type).max),
+
+      Item.new(t("tabs.card"),
+               :wallet,
+               @card_link,
+               @active_menu == :card,
+               @card_tab.map(&:notification_type).max),
+
+      Item.new(t("tabs.cash"),
+               :cash,
+               @cash_link,
+               @active_menu == :cash,
+               @cash_tab.map(&:notification_type).max),
+
+      Item.new(t("tabs.hub"),
+               :light_bulb,
+               @hub_link,
+               @active_menu == :hub,
+               @hub_tab.map(&:notification_type).max)
+    ]
+  end
+
+  def set_sub_tab
+    @sub_tab = [ @data_tab, @card_tab, @cash_tab, @hub_tab ]
   end
 end

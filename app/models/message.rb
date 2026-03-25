@@ -107,10 +107,10 @@ class Message < ApplicationRecord
     user_id == user.id ? "mine" : "theirs"
   end
 
-  def actionable_for?(user)
+  def actionable_for?(context: user.ensure_main_context!)
     return false if applied?
 
-    action_button_key(local_reference_exists: local_reference_exists_for?(user)).in?(%i[create correct destroy])
+    action_button_key(local_reference_exists: local_reference_exists_for?(context:)).in?(%i[create correct destroy])
   end
 
   # @protected_instance_methods ...............................................
@@ -118,18 +118,20 @@ class Message < ApplicationRecord
 
   private
 
-  def local_reference_exists_for?(user)
+  def local_reference_exists_for?(context:)
+    cash_transactions = context.cash_transactions
+
     if transaction_destroy_notification_message?
       return false if reference_transactable_id.blank?
 
-      user.cash_transactions.exists?(id: reference_transactable_id)
+      cash_transactions.exists?(id: reference_transactable_id)
     else
       payload = replay_payload || {}
       type = payload["type"]
       id = payload["id"]
       return false if type.blank? || id.blank?
 
-      user.cash_transactions.exists?(reference_transactable_type: type, reference_transactable_id: id)
+      cash_transactions.exists?(reference_transactable_type: type, reference_transactable_id: id)
     end
   end
 
