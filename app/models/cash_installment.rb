@@ -6,15 +6,19 @@ class CashInstallment < Installment
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :skip_shared_paid_state_sync
+
   # @relationships ............................................................
   belongs_to :cash_transaction, counter_cache: true
 
   # @validations ..............................................................
   validates :cash_installments_count, presence: true
+  validate :ensure_shared_paid_state_can_sync, if: :will_sync_shared_paid_state?
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
   after_save :check_paid_situation
+  after_commit :sync_shared_paid_state!, on: :update, if: :did_sync_shared_paid_state?
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
@@ -80,6 +84,37 @@ class CashInstallment < Installment
 
   def should_be_paid?
     cash_transaction.cash_installments.where(paid: false).empty?
+  end
+
+  def shared_paid_state_transaction?
+    cash_transaction.respond_to?(:shared_return_flow?) && cash_transaction.shared_return_flow?
+  end
+
+  def will_sync_shared_paid_state?
+    return false if skip_shared_paid_state_sync
+    return false unless persisted?
+
+    will_save_change_to_paid? && shared_paid_state_transaction?
+  end
+
+  def did_sync_shared_paid_state?
+    return false if skip_shared_paid_state_sync
+
+    saved_change_to_paid? && shared_paid_state_transaction?
+  end
+
+  def ensure_shared_paid_state_can_sync
+    return if shared_paid_state_sync_service.syncable?
+
+    errors.add(:base, :counterpart_paid_state_sync_missing)
+  end
+
+  def sync_shared_paid_state!
+    shared_paid_state_sync_service.call
+  end
+
+  def shared_paid_state_sync_service
+    @shared_paid_state_sync_service ||= Logic::SharedPaidStateSyncService.new(installment: self)
   end
 end
 

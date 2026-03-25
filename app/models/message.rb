@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Message < ApplicationRecord
+class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @extends ..................................................................
   # @includes .................................................................
   include TranslateHelper
@@ -31,6 +31,7 @@ class Message < ApplicationRecord
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def transaction_notification_message?
+    return false if paid_state_sync_message?
     return %w[create update].include?(notification_action) if notification_payload_v2?
 
     headers.present?
@@ -64,12 +65,14 @@ class Message < ApplicationRecord
   end
 
   def rendered_body
+    return render_paid_state_sync_body if paid_state_sync_message?
     return body unless notification_payload_v2?
 
     render_notification_body
   end
 
   def preview_body
+    return render_paid_state_sync_preview if paid_state_sync_message?
     return body.to_s.tr("\n", " ").presence || "" unless notification_payload_v2?
 
     [
@@ -80,6 +83,10 @@ class Message < ApplicationRecord
 
   def notification_payload_v2?
     parsed_headers["version"] == "message_notification_v2"
+  end
+
+  def paid_state_sync_message?
+    parsed_headers["version"] == "message_paid_state_v1"
   end
 
   def applied?
@@ -215,6 +222,31 @@ class Message < ApplicationRecord
     body.join
   rescue NameError, Date::Error
     body
+  end
+
+  def render_paid_state_sync_body # rubocop:disable Metrics/AbcSize
+    details = notification_event.fetch("details", {})
+    new_line = "\n"
+    state_key = notification_action == "paid" ? :ivepaidayoursharedtransaction : :iveunpaidayoursharedtransaction
+    state_label_key = notification_action == "paid" ? :paid : :not_paid
+
+    body = [ "<b>#{model_attribute(self, :hello)}, #{notification_event['receiver_first_name']}!</b>#{new_line * 2}" ]
+    body << "#{model_attribute(self, state_key)}#{new_line * 2}"
+    body << "<b>#{details['transaction_label'].to_s.upcase}</b>#{new_line}"
+    body << "#{model_attribute(CashTransaction, :description)}: #{details['description']}#{new_line}" if details["description"].present?
+    body << "#{model_attribute(CashInstallment, :cash_installment)} ##{details['installment_number']}#{new_line}" if details["installment_number"].present?
+    body << "#{model_attribute(CashInstallment, state_label_key)}#{new_line}"
+    body << "#{model_attribute(CashInstallment, :date)}: #{formatted_notification_date(details['date'])}#{new_line}" if details["date"].present?
+    body.join
+  rescue Date::Error
+    body
+  end
+
+  def render_paid_state_sync_preview
+    [
+      I18n.t("activerecord.attributes.message.notification_actions.#{notification_action}"),
+      notification_event.dig("details", "description")
+    ].compact.join(": ")
   end
 
   def installment_class(transaction_type)

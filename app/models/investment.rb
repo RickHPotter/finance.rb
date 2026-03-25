@@ -115,6 +115,10 @@ class Investment < ApplicationRecord
 
     Logic::RecalculateCountAndTotalService.new(cash_transaction:).call
   end
+
+  def protect_paid_cash_transaction_projection?
+    false
+  end
 end
 
 # == Schema Information

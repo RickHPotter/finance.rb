@@ -16,7 +16,7 @@ class CardTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :duplicate
+  attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation
 
   # @relationships ............................................................
   belongs_to :user

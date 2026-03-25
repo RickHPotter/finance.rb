@@ -147,6 +147,24 @@ There must be no fallback from derived context to `main`.
 
 If fallback exists, silent corruption becomes possible again.
 
+## Paid-State Synchronization Rule
+
+Assistant messages are not only for create/update/destroy replay.
+
+For shared exchange-return / borrow-return flows between two users:
+
+- a paid-state change on one side must generate an assistant message
+- the counterpart local record on the other side must be updated to the same `paid` / `not paid` state
+- the same rule applies in both directions between the two users
+
+This turns the assistant thread into part of the operational source of truth for shared repayment state.
+
+Constraints:
+
+- synchronization must stay inside the active `scenario_key`
+- derived-context paid-state changes must not leak into `main`
+- if the counterpart mirrored record cannot be resolved safely, the sync must fail clearly instead of mutating only one side
+
 ## Migration Strategy
 
 ### Slice 1

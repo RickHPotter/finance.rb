@@ -32,6 +32,7 @@ Secondary flows in scope:
 - bulk payment flows
 - destroy flows
 - replay/apply flows from messages
+- paid / not-paid synchronization flows from messages
 - subscription-linked mutation flows when they touch paid history
 
 Out of scope for the first pass:
@@ -87,6 +88,29 @@ Reason:
 - the historical paid portion remains frozen
 - the future unpaid portion can still be treated as a plan, as long as it stays entirely after the paid boundary
 
+#### Catch-up entry warning case
+
+There is one realistic delayed-entry workflow that should not be treated as a dead end:
+
+- the user comes back after several days away from the app
+- some transactions in that time range were already paid in real life
+- other transactions in the same time range were never registered
+
+Example paths:
+
+- mark existing transactions as paid first, then create the missing transactions
+- create the missing transactions first, then mark the existing ones as paid
+- enter everything strictly in historical order
+
+In the first two paths, a normal historical lock can be hit even though the user is not trying to falsify history.
+The user is just catching up.
+
+For V1 planning, this should be treated as a narrow warning/confirmation candidate:
+
+- the app may warn that the operation crosses an already-settled boundary
+- the user may explicitly confirm the catch-up ordering correction
+- this bypass must stay limited to delayed-entry ordering conflicts, not broad financial rewrites
+
 ### 3. Whole-transaction edits after payment exists
 
 For `CashTransaction` / `CardTransaction` with any paid installment:
@@ -102,6 +126,30 @@ Reason:
 - metadata text can change without rewriting accounting history
 - structural associations and totals can silently change projections and related flows
 - parent-level category/entity allocation is too coarse to safely represent "from installment 3 onward" changes in V1
+
+#### Narrow historical cycle correction
+
+Some historical edits are operationally useful without changing the financial meaning of the record.
+
+Examples:
+
+- for a paid `CardTransaction`, the user is fixing the historical `date` but keeping the same `ref_month_year`
+- the timestamp may become operationally absurd, such as `2000 BC`, and the app should still not care if the billing cycle is unchanged
+- for a paid `CashTransaction`, the user is fixing a late-entry mistake around the month boundary, such as March versus April
+- the user is fixing a typo in description/comment on a paid transaction
+
+For V1 planning, these should be treated as a separate narrow correction class:
+
+- for `CardTransaction`, historical date correction may be allowed as long as `ref_month_year` stays unchanged
+- for `CashTransaction`, changing the effective month boundary may be allowed only through explicit warning + confirmation
+- for `CashTransaction`, marking a normal paid cash installment back to `not paid` may be allowed only through explicit warning + confirmation when the installment is still in the current month
+- description/comment typo correction remains normally allowed
+- moving a paid card record into another `ref_month_year` remains blocked by default
+- changing the effective cash month/year remains blocked by default unless the user explicitly confirms the catch-up correction path
+- marking an older paid cash installment back to `not paid` remains blocked by default
+
+This is not a broad override.
+It is a constrained historical metadata correction path.
 
 ### 4. Destroy rules
 
@@ -182,6 +230,35 @@ Examples:
 - exchange count changes must not orphan returns
 - reimbursement/borrow-return structure must not diverge from the active source shape without explicit regeneration
 
+#### Cross-user paid-state rule
+
+For exchange-return / borrow-return pairs shared between two users:
+
+- the message layer is also part of the source of truth
+- when user A marks the shared return flow as `paid`, user B's corresponding local return flow must also become `paid`
+- when user A marks the shared return flow as `not paid`, user B's corresponding local return flow must also become `not paid`
+- the same must work in the opposite direction from user B back to user A
+- every such synchronization must emit a new assistant message explaining the remote paid-state change
+
+This is not treated as a normal local-only installment toggle.
+
+It is a synchronized cross-user state change on a shared obligation flow.
+
+Implications:
+
+- paid-state messages become part of the operational source of truth between the two users
+- cross-user paid-state sync must preserve context/scenario isolation
+- the paid toggle must resolve the corresponding local mirrored record before mutating it
+- if the counterpart record cannot be resolved safely, the change must fail clearly instead of diverging silently
+
+Current implementation status:
+
+- implemented for direct pay / not-paid flows
+- implemented for nested parent cash-transaction update flows
+- implemented for derived contexts through matching `scenario_key`
+- pure paid-state toggles are allowed on shared return flows even after paid history exists
+- the carve-out applies only to `paid` state itself; structural/date/price/allocation rewrites remain blocked
+
 ### 6. Category assignment
 
 Short-term rule:
@@ -214,12 +291,21 @@ Warn-only is acceptable only when:
 Likely V1 warn-only candidates:
 
 - none by default for installment structure itself if the entire edited unpaid portion remains after the latest paid installment date
+- paid `CardTransaction` date correction where `ref_month_year` stays unchanged
+- cash month-boundary correction with explicit warning when the user needs to move a paid entry between adjacent effective periods
+- delayed-entry catch-up ordering conflicts where the user is not changing the financial meaning, only reconciling the sequence of entry
 
 Likely V1 non-candidates:
 
 - changing total price after any installment is paid
 - deleting a transaction with paid history
 - moving an unpaid installment onto or before the latest paid installment date
+
+For the narrow warning/confirmation candidates above, the UI should require:
+
+- a clear warning that historical data is being touched
+- explicit confirmation by the user
+- traceable intent in the request path
 
 ## Context Interaction
 
@@ -249,6 +335,12 @@ Blocked replay/apply cases are narrower:
 - updating a local transaction in a way that rewrites already-paid installments
 - destroying a local transaction with protected paid history
 - restructuring an existing local paid flow in a way the safety rules forbid
+
+Paid-state synchronization is a special case:
+
+- a paid/not-paid message may update the counterpart local paid state when it is the mirrored shared return flow
+- but it must not bypass the same structural-history protections
+- the synchronization should change state, not silently rewrite protected pricing, dating, or installment structure
 
 ## Implementation Slices
 

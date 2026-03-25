@@ -5,6 +5,18 @@ require "rails_helper"
 RSpec.describe CashTransaction, type: :model do
   let(:subject) { build(:cash_transaction, :random) }
 
+  def create_cash_transaction_with_history(user:, user_bank_account:, installments_attributes:, **attrs)
+    transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, **attrs)
+    transaction.cash_installments.destroy_all
+
+    installments_attributes.each do |installment_attrs|
+      transaction.cash_installments.create!(installment_attrs)
+    end
+
+    transaction.update_column(:cash_installments_count, transaction.cash_installments.count)
+    transaction.reload
+  end
+
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
@@ -64,6 +76,52 @@ RSpec.describe CashTransaction, type: :model do
       expect(subject.exchange_return?).to be(true)
     end
 
+    it "does not treat a local borrow return as a shared return flow without linkage or notification history" do
+      borrow_return = subject.user.built_in_category("BORROW RETURN")
+      counterpart_user = create(:user, :random)
+      subject.entities << create(:entity, user: subject.user, entity_name: counterpart_user.first_name.upcase, entity_user: counterpart_user)
+      subject.categories << borrow_return
+      subject.save
+
+      expect(subject.borrow_return?).to be(true)
+      expect(subject.shared_return_flow?).to be(false)
+    end
+
+    it "blocks unpaying a local borrow return installment with paid history" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      counterpart_user = create(:user, :random)
+      counterpart_entity = create(:entity, user:, entity_name: counterpart_user.first_name.upcase, entity_user: counterpart_user)
+      borrow_return = user.built_in_category("BORROW RETURN")
+
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        description: "Local borrow return",
+        price: -1000,
+        date: Date.new(2025, 2, 10),
+        month: 2,
+        year: 2025,
+        category_transactions_attributes: [
+          { category_id: borrow_return.id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: counterpart_entity.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -500, date: Date.new(2025, 1, 10), month: 1, year: 2025, paid: true },
+          { number: 2, price: -500, date: Date.new(2025, 2, 10), month: 2, year: 2025, paid: true }
+        ]
+      )
+
+      transaction.cash_installments.last.paid = false
+
+      expect(transaction).not_to be_valid
+      expect(transaction.errors.details[:base]).to include(error: :paid_history_locked)
+    end
+
     it "detects the latest paid installment boundary and future-only edit allowance" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
@@ -119,6 +177,191 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 10) ])).to be(true)
       expect(transaction.can_change_allocation?).to be(true)
       expect(transaction.can_destroy_with_history?).to be(true)
+    end
+
+    it "blocks category allocation changes once paid history exists" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      category = create(:category, user:, category_name: "FOOD")
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Locked allocation",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: category.id }
+        ],
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      transaction.categories = [ replacement_category ]
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.allocation_locked_after_payment"))
+    end
+
+    it "allows unpaid future installment edits after the latest paid boundary" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Future edits",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      second_installment = transaction.cash_installments.find_by!(number: 2)
+      third_installment = transaction.cash_installments.find_by!(number: 3)
+
+      transaction.cash_installments_attributes = [
+        { id: second_installment.id, number: 2, price: second_installment.price, date: Date.new(2026, 4, 15), month: 4, year: 2026, paid: false },
+        { id: third_installment.id, number: 3, price: third_installment.price, date: Date.new(2026, 5, 15), month: 5, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "blocks unpaid installment edits that cross the paid boundary" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Unsafe future edit",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      second_installment = transaction.cash_installments.find_by!(number: 2)
+
+      transaction.cash_installments_attributes = [
+        { id: second_installment.id, number: 2, price: second_installment.price, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
+    end
+
+    it "blocks parent price changes once paid history exists" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Locked parent fields",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      transaction.price = 3500
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
+    end
+
+    it "allows a confirmed month-boundary correction for a paid installment" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Month boundary correction",
+        price: 3000,
+        date: Date.new(2026, 3, 31),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 31), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      first_installment = transaction.cash_installments.find_by!(number: 1)
+      transaction.historical_correction_confirmation = true
+      transaction.cash_installments_attributes = [
+        { id: first_installment.id, number: 1, price: first_installment.price, date: Date.new(2026, 4, 1), month: 4, year: 2026, paid: true }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "allows a confirmed current-month unpay for a paid installment" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      today = Time.zone.today
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Current month unpay",
+        price: 2000,
+        date: today,
+        month: today.month,
+        year: today.year,
+        installments_attributes: [
+          { number: 1, price: 2000, date: today, month: today.month, year: today.year, paid: true }
+        ]
+      )
+
+      first_installment = transaction.cash_installments.find_by!(number: 1)
+      transaction.historical_correction_confirmation = true
+      transaction.cash_installments_attributes = [
+        { id: first_installment.id, number: 1, price: first_installment.price, date: first_installment.date, month: first_installment.month,
+          year: first_installment.year, paid: false }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "blocks destruction when paid history exists" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Locked destroy",
+        price: 2000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false }
+        ]
+      )
+
+      expect(transaction.destroy).to be(false)
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.destroy_locked_after_payment"))
     end
 
     it "builds reimbursement notification headers for cash exchanges when the intent is reimbursement" do

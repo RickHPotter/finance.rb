@@ -81,6 +81,24 @@ RSpec.describe Investment, type: :model do
       expect(investment.context).to eq(subject.user.main_context)
     end
 
+    it "allows recording a later investment entry even when the aggregated investment cash transaction is already paid" do
+      cash_transaction.cash_installments.first.update!(paid: true)
+      cash_transaction.update_column(:paid, true)
+
+      later_entry = build(
+        :investment,
+        :random,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        investment_type: subject.investment_type,
+        date: subject.date + 15.days
+      )
+
+      expect { later_entry.save! }.to change(Investment, :count).by(1)
+      expect(later_entry.cash_transaction).to eq(cash_transaction.reload)
+    end
+
     context "( when new investments are created )" do
       before { cash_transaction.reload }
 

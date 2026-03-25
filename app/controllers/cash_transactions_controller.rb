@@ -62,6 +62,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def update
+    @shared_paid_state_notifications = pending_shared_paid_state_notifications
+    @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
     @cash_transaction.update_installments if params[:commit] == "Update"
@@ -72,11 +74,18 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def destroy
     @user_bank_account = @cash_transaction.user_bank_account
     @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
-    @cash_transaction.destroy
-    mark_source_message_applied
-    index
+    destroyed = @cash_transaction.destroy
 
-    respond_to(&:turbo_stream)
+    if destroyed
+      mark_source_message_applied
+      index
+    end
+
+    respond_to do |format|
+      format.turbo_stream do
+        render :destroy, status: destroyed ? :ok : :unprocessable_content
+      end
+    end
   end
 
   def handle_params
@@ -197,25 +206,17 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_save
-    if params[:commit] == "Update"
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.update(
-            @cash_transaction,
-            Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction)
-          )
-        end
-      end
-    else
-      if @cash_transaction.save
-        mark_source_message_applied
-        index
-        @index_context[:default_year] = @cash_transaction.cash_installments.first.year
-        @index_context[:active_month_years] = @cash_transaction.cash_installments.map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }.uniq
-        @index_context[:user_bank_account_id] = []
-      end
+    return render_update_form if params[:commit] == "Update"
 
-      respond_to(&:turbo_stream)
+    saved = @cash_transaction.save
+    normalize_failed_cash_transaction_save!
+
+    handle_successful_save if saved
+
+    respond_to do |format|
+      format.turbo_stream do
+        render action_name, status: saved ? :ok : :unprocessable_content
+      end
     end
   end
 
@@ -230,6 +231,113 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def submitted_context_id
     params.dig(:cash_transaction, :context_id).presence&.to_i
+  end
+
+  def normalize_failed_cash_transaction_save!
+    return if @cash_transaction.errors.empty?
+
+    @cash_transaction.errors.add(:base, :invalid)
+  end
+
+  def pending_shared_paid_state_notifications
+    return [] unless @cash_transaction.shared_return_flow?
+
+    submitted_cash_installment_attributes.filter_map do |installment_attributes|
+      installment_attributes = installment_attributes.with_indifferent_access
+      installment_id = installment_attributes[:id].presence&.to_i
+      next if installment_id.blank?
+
+      installment = @cash_transaction.cash_installments.find { |record| record.id == installment_id }
+      next if installment.blank?
+
+      submitted_paid = ActiveModel::Type::Boolean.new.cast(installment_attributes[:paid])
+      next if installment.paid == submitted_paid
+
+      {
+        installment_id: installment.id,
+        installment_number: installment.number,
+        paid: submitted_paid
+      }
+    end
+  end
+
+  def submitted_cash_installment_attributes
+    attributes = effective_cash_transaction_params[:cash_installments_attributes]
+
+    case attributes
+    when ActionController::Parameters
+      attributes.to_h.values
+    when Hash
+      attributes.values
+    else
+      Array(attributes)
+    end
+  end
+
+  def sync_shared_paid_state_messages_from_form!
+    return if @shared_paid_state_notifications.blank?
+
+    counterpart_user = @cash_transaction.reference_transactable&.user || @cash_transaction.entities.that_are_users.first&.entity_user
+    return if counterpart_user.blank?
+
+    conversation = Conversation.find_or_create_assistant_between!(current_user, counterpart_user, scenario_key: @cash_transaction.context.scenario_key)
+
+    @shared_paid_state_notifications.each do |notification|
+      create_shared_paid_state_message(conversation:, counterpart_user:, notification:)
+    end
+  end
+
+  def render_update_form
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(
+          @cash_transaction,
+          Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction)
+        ), status: :ok
+      end
+    end
+  end
+
+  def handle_successful_save
+    sync_shared_paid_state_messages_from_form!
+    mark_source_message_applied
+    index
+    @index_context[:default_year] = @cash_transaction.cash_installments.first.year
+    @index_context[:active_month_years] = active_month_years_for(@cash_transaction)
+    @index_context[:user_bank_account_id] = []
+  end
+
+  def active_month_years_for(cash_transaction)
+    cash_transaction.cash_installments.map { |installment| Date.new(installment.year, installment.month).strftime("%Y%m").to_i }.uniq
+  end
+
+  def create_shared_paid_state_message(conversation:, counterpart_user:, notification:)
+    installment = @cash_transaction.cash_installments.find_by(id: notification[:installment_id])
+    return if installment.blank?
+
+    headers = build_shared_paid_state_headers(counterpart_user:, installment:, notification:).to_json
+    return if Message.exists?(conversation:, body: "notification:paid_state", headers:)
+
+    conversation.messages.create!(user: current_user, reference_transactable: @cash_transaction, body: "notification:paid_state", headers:)
+  end
+
+  def build_shared_paid_state_headers(counterpart_user:, installment:, notification:)
+    {
+      version: "message_paid_state_v1",
+      event: {
+        action: notification[:paid] ? "paid" : "unpaid",
+        receiver_first_name: counterpart_user.first_name,
+        transaction_type: "CashTransaction",
+        details: {
+          transaction_label: CashTransaction.model_name.human,
+          description: @cash_transaction.description,
+          installment_number: notification[:installment_number],
+          installments_count: @cash_transaction.cash_installments_count,
+          date: installment.date&.iso8601,
+          paid: notification[:paid]
+        }
+      }
+    }
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
@@ -360,7 +468,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.require(:cash_transaction).permit(
       %i[
         id description comment date month year price paid user_id user_bank_account_id
-        reference_transactable_type reference_transactable_id category_id entity_id subscription_id friend_notification_intent source_message_id
+        reference_transactable_type reference_transactable_id category_id entity_id subscription_id
+        friend_notification_intent source_message_id historical_correction_confirmation
       ],
       user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],

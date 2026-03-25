@@ -50,6 +50,10 @@ module TranslateHelper
     I18n.t("notification.#{notification}", model: model.model_name.human)
   end
 
+  def notification_model_or_history_lock(record, notification, model)
+    history_lock_payload_for(record) || notification_model(notification, model)
+  end
+
   # Takes a model instance or class and an attribute name, and returns a human-readable attribute name based on the model and attribute.
   #
   # @example Get human-readable attribute name:
@@ -136,5 +140,68 @@ module TranslateHelper
   # @return [String]
   def locale_link(locale, options = {}, &)
     button_to(update_locale_path(locale:), method: :patch, **options, &)
+  end
+
+  private
+
+  def history_lock_payload_for(record)
+    each_record_with_errors(record).lazy.map { |candidate| specific_history_error_payload(candidate) }.find(&:present?)
+  end
+
+  def each_record_with_errors(record, seen = [])
+    return [] if record.blank?
+    return [] if seen.include?(record.object_id)
+
+    seen << record.object_id
+
+    [ record, *nested_records_with_errors(record).flat_map { |candidate| each_record_with_errors(candidate, seen) } ]
+  end
+
+  def specific_history_error_payload(record)
+    history_error_keys = Array(record.errors.details[:base]).filter_map { |detail| detail[:error] }
+    history_error_key = %i[
+      same_cycle_history_correction_confirmation_required
+      same_month_paid_state_correction_confirmation_required
+      month_boundary_history_correction_confirmation_required
+      destroy_locked_after_payment
+      paid_history_locked
+      allocation_locked_after_payment
+      counterpart_paid_state_sync_missing
+    ]
+                        .find { |key| history_error_keys.include?(key) }
+    return if history_error_key.blank?
+
+    message = record.errors.full_messages_for(:base).find do |candidate|
+      candidate == I18n.t("activerecord.errors.models.#{record.model_name.singular}.attributes.base.#{history_error_key}")
+    end
+    return if message.blank?
+
+    {
+      message:,
+      workaround_label: I18n.t("notification.workaround"),
+      workaround: history_workaround_for(record, history_error_key)
+    }
+  end
+
+  def nested_records_with_errors(record)
+    nested_collection_names.filter_map do |association_name|
+      next unless record.respond_to?(association_name)
+
+      record.public_send(association_name).reject(&:marked_for_destruction?)
+    end.flatten
+  end
+
+  def nested_collection_names
+    %i[cash_transactions card_transactions cash_installments card_installments entity_transactions exchanges]
+  end
+
+  def history_workaround_for(record, history_error_key)
+    scoped_key = "notification.history_workarounds.#{history_error_key}.#{record.model_name.singular}"
+    return I18n.t(scoped_key) if I18n.exists?(scoped_key)
+
+    default_key = "notification.history_workarounds.#{history_error_key}.default"
+    return I18n.t(default_key) if I18n.exists?(default_key)
+
+    I18n.t("notification.history_workarounds.#{history_error_key}")
   end
 end

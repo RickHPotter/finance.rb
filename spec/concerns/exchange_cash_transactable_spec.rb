@@ -43,11 +43,20 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
 
   def validate(card_transaction, price, count)
     exchanges = card_transaction.entity_transactions.first.exchanges
-    cash_transactions = card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+    shared_cash_transaction = shared_projection_cash_transaction(card_transaction)
 
     expect(exchanges.sum(:price)).to eq(price)
-    expect(cash_transactions.sum(&:price)).to eq(price)
-    expect(cash_transactions.count).to eq(count)
+    expect(shared_cash_transaction.price).to eq(price)
+    expect(shared_cash_transaction.cash_installments.count).to eq(count)
+    expect(shared_cash_transaction.cash_installments.sum(:price)).to eq(price)
+  end
+
+  def shared_projection_cash_transaction(card_transaction)
+    cash_transactions = card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+
+    expect(cash_transactions.map(&:id).uniq.count).to eq(1)
+
+    cash_transactions.first
   end
 
   describe "[ concern behaviour ]" do
@@ -98,7 +107,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         expect(exchangable_card_transaction.entity_transactions.first.exchanges.sum(:price)).to eq(300)
       end
 
-      it "attaches one more EXCHANGE RETURN CashTransaction when exchanges increases by one" do
+      it "attaches one more mirrored EXCHANGE RETURN installment when exchanges increases by one" do
         new_exchange = exchangable_card_transaction.entity_transactions.first.exchanges.last.dup
         new_exchange.number += 1
         new_exchange.date = new_exchange.date + 1.month
@@ -117,7 +126,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         validate(exchangable_card_transaction, 180, 3)
       end
 
-      it "detaches one of the EXCHANGE RETURN CashTransaction when exchanges decreases by one" do
+      it "detaches one mirrored EXCHANGE RETURN installment when exchanges decreases by one" do
         exchangable_card_transaction.entity_transactions.first.exchanges.first.price = 180
         exchangable_card_transaction.entity_transactions.first.exchanges.second.mark_for_destruction
         exchangable_card_transaction.save

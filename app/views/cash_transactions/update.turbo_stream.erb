@@ -4,7 +4,7 @@
 
   <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashTransaction) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model_or_history_lock(@cash_transaction, :not_updateda, CashTransaction) }) %>
 
   <%= turbo_stream.replace(:center_container, Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction)) %>
 <% end %>

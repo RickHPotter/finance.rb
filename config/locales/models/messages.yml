@@ -12,6 +12,8 @@ en:
         ivemadeatransactiononyou: I made a transaction referencing you.
         iveupdatedatransactiononyou: I updated a transaction referencing you.
         ivedeletedatransactiononyou: I deleted a transaction referencing you.
+        ivepaidayoursharedtransaction: I marked your shared transaction as paid.
+        iveunpaidayoursharedtransaction: I marked your shared transaction as not paid.
         click_down_below: Click down below to match this transaction on your app.
         click_down_below_theirs: Click down below to match this transaction on your app.
         click_down_below_mine: Click down below to see this transaction on your side.
@@ -30,6 +32,8 @@ en:
           create: Created transaction
           update: Updated transaction
           destroy: Deleted transaction
+          paid: Marked paid
+          unpaid: Marked not paid
 
 pt-BR:
   activerecord:
@@ -45,6 +49,8 @@ pt-BR:
         ivemadeatransactiononyou: Eu fiz uma transação referenciando você.
         iveupdatedatransactiononyou: Eu atualizei uma transação referenciando você.
         ivedeletedatransactiononyou: Eu excluí uma transação referenciando você.
+        ivepaidayoursharedtransaction: Eu marquei sua transação compartilhada como paga.
+        iveunpaidayoursharedtransaction: Eu marquei sua transação compartilhada como pendente.
         click_down_below: Clique abaixo para vincular essa transação ao seu app.
         click_down_below_theirs: Clique abaixo para vincular essa transação ao seu app.
         click_down_below_mine: Clique abaixo para ver essa transação do seu lado.
@@ -63,3 +69,5 @@ pt-BR:
           create: Transação criada
           update: Transação atualizada
           destroy: Transação excluída
+          paid: Marcada como paga
+          unpaid: Marcada como pendente

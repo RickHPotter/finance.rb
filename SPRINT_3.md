@@ -103,6 +103,8 @@ too visible to ignore.
   - Extend `PayMultiple` to support partial payment where the rules are clear enough.
   - Make lend-return and exchange-related cash flows stay in sync when installment
     structure changes.
+  - Make shared exchange-return paid / not-paid state synchronize across the two users
+    through assistant messages instead of remaining local-only.
   - Revisit category assignment so reporting can move from loose category stacking to
     clearer allocation.
 - Extra:
@@ -113,6 +115,33 @@ too visible to ignore.
     `docs/sprints/3-jiraiya/jiraiya-04/02-blocked-mutation-workarounds.md`.
   - Implementation order recorded in
     `docs/sprints/3-jiraiya/jiraiya-04/03-implementation-slices.md`.
+  - Current implementation status:
+    - Slice 1 complete: shared financial safety predicates.
+    - Slice 2 complete: domain-level write guards for paid-history rewrites, destroy
+      protection, subscription-linked writes, card advances, and exchange-mirror flows.
+    - Slice 3 complete: request-level failure behavior with explicit historical-lock
+      messages and workaround guidance.
+    - Slice 4 complete: exchange-return persistence is normalized to one shared return
+      `CashTransaction` with mirrored installments, and shared paid / not-paid state now
+      synchronizes bidirectionally through assistant messages, including derived-context
+      routing and clear hard failure when the counterpart cannot be resolved.
+    - Slice 5 complete: workaround UX now explains the narrow future confirmation
+      paths instead of only generic historical-lock guidance.
+    - Slice 6 complete: explicit confirmation is now implemented for:
+      - paid `CardTransaction` date correction while keeping the same `ref_month_year`
+      - paid `CashTransaction` month-boundary correction between adjacent periods during
+        delayed-entry cleanup
+      - paid `CashTransaction` current-month unpay correction with explicit confirmation
+    - Post-slice stabilization complete:
+      - maintained suite runner fixed for `.env.test`-based execution
+      - indirect projection cleanup fixed for `Investment`, `CARD ADVANCE`, and
+        `CashTransactable` aggregate switches
+      - unpaid `CardTransaction` moves into paid invoice cycles are now blocked
+      - shared paid-state sync resolution now accepts direct reverse linkage
+      - `UserCard` payment-schedule maintenance now updates unpaid exchange-return
+        projections correctly across contexts
+      - maintained test layers are green:
+        `spec/models`, `spec/concerns`, `spec/requests`
 
 ### JIRAIYA-05/fe-02: Consolidate data entry UX
 
@@ -205,6 +234,9 @@ too visible to ignore.
   - Message replay/apply, pending filtering, unread badges, and assistant action
     rendering were hardened so derived-context message flows do not fall back into
     `main`.
+  - Shared exchange-return paid-state changes are also expected to use the assistant
+    thread as a bidirectional source of truth between the two users, synchronizing the
+    counterpart local record inside the same scenario.
   - A dedicated homolog checklist was added to validate two-user scenario routing,
     receiver auto-cloning, and cross-context non-interference before production rollout.
 

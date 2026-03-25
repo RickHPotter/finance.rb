@@ -77,7 +77,8 @@ class Views::CardTransactions::Form < Views::Base
           transaction: card_transaction,
           destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction) : nil,
           destroy_id: card_transaction.persisted? ? "delete_card_transaction_#{card_transaction.id}" : nil,
-          duplicate_href: card_transaction.persisted? ? duplicate_card_transaction_path(card_transaction) : nil
+          duplicate_href: card_transaction.persisted? ? duplicate_card_transaction_path(card_transaction) : nil,
+          confirmation_submit: historical_correction_confirmation_submit_for(card_transaction, :card_transaction)
         )
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
@@ -99,5 +100,17 @@ class Views::CardTransactions::Form < Views::Base
 
   def exchange_category
     current_user.built_in_category("EXCHANGE")
+  end
+
+  def historical_correction_confirmation_submit_for(transaction, param_key)
+    return unless transaction.historical_correction_confirmation_prompt?
+
+    {
+      field_id: "#{param_key}_historical_correction_confirmation",
+      name: "#{param_key}[historical_correction_confirmation]",
+      current_value: true,
+      value: true,
+      label: I18n.t("actions.confirm_historical_change")
+    }
   end
 end

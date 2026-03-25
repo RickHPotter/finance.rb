@@ -61,7 +61,7 @@ class Views::Layouts::Application < Views::Base
 
                   div class: "hidden relative", data: { controller: "price-sum" } do
                     div(
-                      class: "absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-50"
+                      class: "absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-40"
                     ) do
                       span id: "totalPriceSum"
                     end

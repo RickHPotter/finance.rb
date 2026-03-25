@@ -14,7 +14,7 @@ module HasFinancialSafetyRules
   end
 
   def latest_paid_installment_date
-    installments.where(paid: true).maximum(:date)&.to_date
+    installments.where(paid: true).pick(Arel.sql("MAX(DATE(date))"))
   end
 
   def can_edit_unpaid_future_installments?(proposed_dates)

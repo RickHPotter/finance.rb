@@ -69,6 +69,128 @@ RSpec.describe "CardTransactions", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  def create_card_transaction_with_paid_history(description: "Locked card transaction") # rubocop:disable Metrics/AbcSize
+    transaction = create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      user_card: user_card_one,
+      description:,
+      price: -3_000,
+      date: Date.new(2026, 3, 10),
+      month: 4,
+      year: 2026
+    )
+    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+    transaction.card_installments.delete_all
+    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+    installments = [
+      { number: 1, price: -1_000, date: Time.zone.local(2026, 3, 10, 12), month: 3, year: 2026, paid: true },
+      { number: 2, price: -1_000, date: Time.zone.local(2026, 4, 10, 12), month: 4, year: 2026, paid: false },
+      { number: 3, price: -1_000, date: Time.zone.local(2026, 5, 10, 12), month: 5, year: 2026, paid: false }
+    ]
+    installments.each { |attrs| transaction.card_installments.create!(attrs.merge(paid: false)) }
+    transaction.card_installments.order(:number).zip(installments).each do |installment, attrs|
+      installment.update_columns(price: attrs[:price], date: attrs[:date], month: attrs[:month], year: attrs[:year], paid: attrs[:paid])
+    end
+    transaction.update_column(:card_installments_count, 3)
+    transaction.category_transactions.destroy_all
+    transaction.category_transactions.create!(category: create(:category, user:, category_name: "FOOD"))
+    transaction.reload
+  end
+
+  def create_card_advance_transaction(price: 200, date: Time.zone.today)
+    post pay_in_advance_card_transactions_path, params: {
+      card_transaction: {
+        user_card_id: user_card_one.id,
+        date:,
+        month: date.month,
+        year: date.year,
+        price:
+      }
+    }, headers: turbo_stream_headers
+
+    CardTransaction.last
+  end
+
+  def create_card_transaction_with_locked_exchange_projection(description: "Locked exchange projection")
+    transaction = create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      user_card: user_card_one,
+      description:,
+      price: -2_200,
+      date: Date.new(2026, 3, 10),
+      month: 4,
+      year: 2026
+    )
+    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+    transaction.card_installments.delete_all
+    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+    exchange = attach_locked_exchange_projection(transaction)
+    exchange.cash_transaction.cash_installments.first.update!(paid: true)
+    transaction.reload
+  end
+
+  def create_card_transaction_with_paid_invoice_target
+    paid_cycle_transaction = create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      user_card: user_card_one,
+      description: "Paid cycle anchor",
+      price: -1_000,
+      date: Date.new(2026, 2, 10),
+      month: 3,
+      year: 2026
+    )
+    paid_invoice = paid_cycle_transaction.card_installments.first.cash_transaction
+    paid_invoice.cash_installments.first.update!(paid: true)
+    paid_invoice.update_column(:paid, true)
+
+    movable_transaction = create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      user_card: user_card_one,
+      description: "Move me later",
+      price: -2_000,
+      date: Date.new(2026, 4, 10),
+      month: 5,
+      year: 2026
+    )
+
+    [ movable_transaction.reload, paid_invoice.reload ]
+  end
+
+  def attach_locked_exchange_projection(transaction)
+    transaction.category_transactions.destroy_all
+    transaction.entity_transactions.destroy_all
+    transaction.category_transactions.create!(category: exchange_category)
+
+    entity_transaction = transaction.entity_transactions.create!(
+      entity: entity_one,
+      is_payer: true,
+      price: -2_200,
+      price_to_be_returned: -2_200,
+      exchanges_count: 1
+    )
+
+    create(
+      :exchange,
+      entity_transaction:,
+      exchange_type: :monetary,
+      number: 1,
+      price: -2_200,
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026
+    )
+  end
+
   describe "[ #create ]" do
     it "creates one new record with one installment and non-paying entities" do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [] } ]
@@ -208,6 +330,139 @@ RSpec.describe "CardTransactions", type: :request do
       expect(subscription.reload.price).to eq(0)
       expect(other_subscription.reload.price).to eq(-20_000)
     end
+
+    it "returns unprocessable_entity when a paid-history rewrite is blocked" do
+      locked_transaction = create_card_transaction_with_paid_history
+      second_installment = locked_transaction.card_installments.find_by!(number: 2)
+
+      put card_transaction_path(locked_transaction), params: {
+        card_transaction: {
+          description: locked_transaction.description,
+          price: locked_transaction.price,
+          date: locked_transaction.date,
+          month: locked_transaction.month,
+          year: locked_transaction.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          category_transactions_attributes: locked_transaction.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          entity_transactions_attributes: [],
+          card_installments_attributes: [
+            {
+              id: second_installment.id,
+              number: second_installment.number,
+              date: Date.new(2026, 3, 10),
+              month: 3,
+              year: 2026,
+              price: second_installment.price
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
+      expect(response.body).to include('data-notification-sticky-value="true"')
+      expect(locked_transaction.reload.card_installments.find_by!(number: 2).date.to_date).to eq(Date.new(2026, 4, 10))
+    end
+
+    it "shows a confirmation path and then allows a same-cycle paid date correction" do
+      locked_transaction = create_card_transaction_with_paid_history(description: "Cycle correction request")
+      first_installment = locked_transaction.card_installments.find_by!(number: 1)
+
+      base_params = {
+        card_transaction: {
+          description: locked_transaction.description,
+          price: locked_transaction.price,
+          date: locked_transaction.date,
+          month: locked_transaction.month,
+          year: locked_transaction.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          category_transactions_attributes: locked_transaction.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          entity_transactions_attributes: [],
+          card_installments_attributes: [
+            {
+              id: first_installment.id,
+              number: first_installment.number,
+              date: Date.new(2026, 3, 25),
+              month: first_installment.month,
+              year: first_installment.year,
+              price: first_installment.price
+            }
+          ]
+        }
+      }
+
+      put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.same_cycle_history_correction_confirmation_required"))
+      expect(response.body).to include(I18n.t("actions.confirm_historical_change"))
+      expect(response.body).to include('value="2026-03-25T00:00"')
+
+      base_params[:card_transaction][:historical_correction_confirmation] = true
+
+      put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(locked_transaction.reload.card_installments.find_by!(number: 1).date.to_date).to eq(Date.new(2026, 3, 25))
+    end
+
+    it "returns unprocessable_content when updating a card advance with a locked linked cash transaction" do
+      advanced_card_transaction = create_card_advance_transaction
+      advance_cash_transaction = advanced_card_transaction.advance_cash_transaction
+      params = Params::CardTransactions.new
+      params.use_base(advanced_card_transaction, card_transaction_options: { price: 350 })
+      params.card_installments.each { |installment| installment[:price] = 350 }
+
+      put card_transaction_path(advanced_card_transaction), params: params.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
+      expect(advanced_card_transaction.reload.price).to eq(200)
+      expect(advance_cash_transaction.reload.price).to eq(-200)
+    end
+
+    it "returns unprocessable_content when updating an exchange with a locked mirrored return" do
+      locked_transaction = create_card_transaction_with_locked_exchange_projection
+      exchange = locked_transaction.entity_transactions.first.exchanges.first
+      params = Params::CardTransactions.new
+      params.use_base(locked_transaction)
+      params.entity_transactions.first[:exchanges_attributes].first[:price] = -2_500
+
+      put card_transaction_path(locked_transaction), params: params.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.exchange.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.default"))
+      expect(exchange.reload.price).to eq(-2_200)
+      expect(exchange.cash_transaction.reload.price).to eq(-2_200)
+    end
+
+    it "returns unprocessable_content when moving an unpaid card transaction into a paid invoice cycle" do
+      movable_transaction, paid_invoice = create_card_transaction_with_paid_invoice_target
+      original_cash_transaction = movable_transaction.card_installments.first.cash_transaction
+      original_month = movable_transaction.card_installments.first.month
+      original_year = movable_transaction.card_installments.first.year
+      params = Params::CardTransactions.new
+      params.use_base(movable_transaction)
+      params.card_installments.first[:date] = Date.new(2026, 2, 10)
+      params.card_installments.first[:month] = 3
+      params.card_installments.first[:year] = 2026
+
+      put card_transaction_path(movable_transaction), params: params.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
+      expect(paid_invoice.reload.price).to eq(-1_000)
+      expect(paid_invoice.cash_installments.first.reload.price).to eq(-1_000)
+      expect(movable_transaction.reload.card_installments.first.cash_transaction).to eq(original_cash_transaction)
+      expect(movable_transaction.card_installments.first.month).to eq(original_month)
+      expect(movable_transaction.card_installments.first.year).to eq(original_year)
+    end
   end
 
   describe "[ #destroy ]" do
@@ -234,6 +489,53 @@ RSpec.describe "CardTransactions", type: :request do
         expect(card_transaction_to_be_deleted.entity_transactions).to_not be_present
       end
     end
+
+    it "returns unprocessable_entity when destroying a transaction with paid history" do
+      locked_transaction = create_card_transaction_with_paid_history(description: "Locked destroy card")
+
+      expect do
+        delete card_transaction_path(locked_transaction, card_installment_id: locked_transaction.card_installments.first.id), headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.destroy_locked_after_payment"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.destroy_locked_after_payment"))
+      expect(locked_transaction.reload).to be_present
+    end
+
+    it "returns unprocessable_content when destroying a card advance with a locked linked cash transaction" do
+      advanced_card_transaction = create_card_advance_transaction
+      advance_cash_transaction = advanced_card_transaction.advance_cash_transaction
+
+      expect do
+        delete card_transaction_path(advanced_card_transaction, card_installment_id: advanced_card_transaction.card_installments.first.id),
+               headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.destroy_locked_after_payment"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.destroy_locked_after_payment"))
+      expect(advanced_card_transaction.reload).to be_present
+      expect(advance_cash_transaction.reload).to be_present
+    end
+
+    it "returns unprocessable_content when destroying a card transaction with a locked exchange projection" do
+      locked_transaction = create_card_transaction_with_locked_exchange_projection
+      exchange_cash_transaction = locked_transaction.entity_transactions.first.exchanges.first.cash_transaction
+
+      expect do
+        delete card_transaction_path(
+          locked_transaction,
+          card_installment_id: locked_transaction.card_installments.first.id
+        ), headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.exchange.attributes.base.destroy_locked_after_payment"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.destroy_locked_after_payment"))
+      expect(locked_transaction.reload).to be_present
+      expect(exchange_cash_transaction.reload).to be_present
+    end
   end
 
   describe "[ #duplicate ]" do
@@ -256,7 +558,10 @@ RSpec.describe "CardTransactions", type: :request do
         context: user.main_context,
         user_card: user_card_one,
         description: "Main isolated card transaction",
-        price: -9_000
+        price: -9_000,
+        date: Date.new(2026, 4, 10),
+        month: 5,
+        year: 2026
       )
       main_card_transaction.category_transactions.destroy_all
       main_card_transaction.entity_transactions.destroy_all
@@ -280,9 +585,9 @@ RSpec.describe "CardTransactions", type: :request do
         card_transaction: {
           description: "Derived only card transaction",
           price: -11_000,
-          date: Time.zone.today,
-          month: Time.zone.today.month,
-          year: Time.zone.today.year,
+          date: Date.new(2026, 4, 12),
+          month: 5,
+          year: 2026,
           user_id: user.id,
           user_card_id: user_card_one.id
         },

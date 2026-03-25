@@ -8,7 +8,7 @@ RSpec.describe CashTransactable, type: :concern do
   let(:card) { create(:card, :random, bank:) }
   let(:user_card) { create(:user_card, :random, user:, card:) }
   let(:user_card_two) { create(:user_card, :random, user:, card:) }
-  let(:base_date) { Time.zone.local(2026, 3, 10, 12, 0, 0) }
+  let(:base_date) { Time.zone.today.beginning_of_month + 1.month + 9.days + 12.hours }
 
   let(:card_transaction_one) do
     build(

@@ -84,6 +84,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def update
+    @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
     @card_transaction.assign_attributes(card_transaction_params.merge(imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
 
@@ -94,14 +95,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     card_installment = CardInstallment.find_by(id: params[:card_installment_id]) || @card_transaction.card_installments.first
 
     @user_card = @card_transaction.user_card
-    @card_transaction.update_columns(date: @card_transaction.card_installments.order(:date).first.date)
-    @card_transaction.destroy
-    index
+    earliest_installment = @card_transaction.card_installments.order(:date).first
+    @card_transaction.update_columns(date: earliest_installment.date) if earliest_installment.present?
+    destroyed = @card_transaction.destroy
 
-    @index_context[:default_year] = card_installment.year
-    @index_context[:active_month_years] = [ Date.new(card_installment.year, card_installment.month).strftime("%Y%m").to_i ]
+    if destroyed
+      index
+      @index_context[:default_year] = card_installment.year
+      @index_context[:active_month_years] = [ Date.new(card_installment.year, card_installment.month).strftime("%Y%m").to_i ]
+    end
 
-    respond_to(&:turbo_stream)
+    respond_to do |format|
+      format.turbo_stream do
+        render :destroy, status: destroyed ? :ok : :unprocessable_content
+      end
+    end
   end
 
   def duplicate
@@ -123,11 +131,14 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
           render turbo_stream: [
             turbo_stream.update(@card_transaction, Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction)),
             turbo_stream.update(:tabs, partial: "shared/tabs")
-          ]
+          ], status: :ok
         end
       end
     else
-      if @card_transaction.save
+      saved = @card_transaction.save
+      @card_transaction.errors.add(:base, :invalid) if !saved && @card_transaction.errors.empty?
+
+      if saved
         index
         @index_context[:user_card] = @card_transaction.user_card
         @index_context[:default_year] = @card_transaction.year
@@ -137,7 +148,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
       end
 
-      respond_to(&:turbo_stream)
+      respond_to do |format|
+        format.turbo_stream do
+          render action_name, status: saved ? :ok : :unprocessable_content
+        end
+      end
     end
   end
 
@@ -284,7 +299,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     return {} if params[:card_transaction].blank?
 
     params.require(:card_transaction).permit(
-      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id],
+      %i[id description comment date month year price paid user_id user_card_id category_id entity_id duplicate subscription_id historical_correction_confirmation],
       card_installment_ids: [], category_id: [], entity_id: [],
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],

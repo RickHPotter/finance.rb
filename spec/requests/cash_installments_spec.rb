@@ -15,6 +15,64 @@ RSpec.describe "CashInstallments", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  def create_shared_return_pair(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) { |entity_record| entity_record.entity_user = receiver }
+    receiver_counterpart = receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) { |entity_record| entity_record.entity_user = sender }
+    sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
+    receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+
+    sender_transaction = create(
+      :cash_transaction,
+      user: sender,
+      context: sender_context,
+      user_bank_account: sender_bank_account,
+      description: "Shared return",
+      date: installment_date,
+      month: 3,
+      year: 2026,
+      price: -1_000,
+      category_transactions_attributes: [
+        { category_id: sender.built_in_category("EXCHANGE RETURN").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id, is_payer: false, price: 0, price_to_be_returned: 0 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false }
+      ]
+    )
+    sender_transaction.cash_installments.destroy_all
+    sender_transaction.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false)
+    sender_transaction.update_column(:cash_installments_count, 1)
+
+    receiver_transaction = create(
+      :cash_transaction,
+      user: receiver,
+      context: receiver_context,
+      user_bank_account: receiver_bank_account,
+      reference_transactable: sender_transaction,
+      description: "Shared return",
+      date: installment_date,
+      month: 3,
+      year: 2026,
+      price: -1_000,
+      category_transactions_attributes: [
+        { category_id: receiver.built_in_category("BORROW RETURN").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false }
+      ]
+    )
+    receiver_transaction.cash_installments.destroy_all
+    receiver_transaction.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false)
+    receiver_transaction.update_column(:cash_installments_count, 1)
+
+    [ sender_transaction, receiver_transaction ]
+  end
+
   describe "[ #pay ]" do
     it "marks the installment as paid and splits the remainder when the paid amount is smaller" do
       cash_transaction = create(
@@ -56,6 +114,93 @@ RSpec.describe "CashInstallments", type: :request do
       expect(cash_installment.date.to_date).to eq(Date.new(2026, 3, 12))
       expect(remainder.price).to eq(400)
       expect(remainder.date.to_date).to eq(Date.new(2026, 3, 11))
+    end
+
+    it "synchronizes paid state to the counterpart shared return and informs via assistant message" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+
+      patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
+        cash_installment: {
+          date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+          price: -1_000
+        }
+      }, headers: turbo_stream_headers
+
+      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      message = conversation.messages.order(:id).last
+
+      expect(response).to have_http_status(:ok)
+      expect(sender_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.reload).to be_paid
+      expect(message.body).to eq("notification:paid_state")
+      expect(JSON.parse(message.headers)).to include(
+        "version" => "message_paid_state_v1",
+        "event" => include("action" => "paid")
+      )
+    end
+
+    it "synchronizes paid state inside the matching derived scenario only" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_derived = Logic::ContextCloneService.new(source_context: sender.main_context, name: "Sender Shared Paid State", scenario_key: "shared-paid-state").call
+      receiver_derived = Logic::ContextCloneService.new(source_context: receiver.main_context, name: "Receiver Shared Paid State",
+                                                        scenario_key: "shared-paid-state").call
+
+      sender_transaction, receiver_transaction = create_shared_return_pair(
+        sender:,
+        receiver:,
+        sender_context: sender_derived,
+        receiver_context: receiver_derived
+      )
+
+      main_sender_transaction, main_receiver_transaction = create_shared_return_pair(sender:, receiver:)
+
+      switch_to_context!(sender_derived)
+
+      patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
+        cash_installment: {
+          date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+          price: -1_000
+        }
+      }, headers: turbo_stream_headers
+
+      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.for_scenario(sender_derived.scenario_key).order(:id).last
+      message = conversation.messages.order(:id).last
+
+      expect(response).to have_http_status(:ok)
+      expect(sender_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.reload).to be_paid
+      expect(main_sender_transaction.cash_installments.first.reload).not_to be_paid
+      expect(main_receiver_transaction.cash_installments.first.reload).not_to be_paid
+      expect(conversation).to be_present
+      expect(message.body).to eq("notification:paid_state")
+      expect(message.conversation.scenario_key).to eq(sender_derived.scenario_key)
+      expect(JSON.parse(message.headers)).to include(
+        "version" => "message_paid_state_v1",
+        "event" => include("action" => "paid")
+      )
+    end
+
+    it "fails clearly when the counterpart shared return cannot be resolved" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+      sender.entities.that_are_users.find_by!(entity_user: receiver).update_column(:entity_user_id, nil)
+
+      patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
+        cash_installment: {
+          date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+          price: -1_000
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(sender_transaction.cash_installments.first.reload).not_to be_paid
+      expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
+      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_installment.attributes.base.counterpart_paid_state_sync_missing"))
+      expect(Message.where(body: "notification:paid_state")).to be_empty
     end
   end
 

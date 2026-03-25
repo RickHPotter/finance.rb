@@ -15,6 +15,19 @@ Some cases should have:
 - an explicit override path later
 - or no bypass at all in V1
 
+## Current Runtime State
+
+The V1 warning flow is already implemented for the maintained request surfaces.
+
+When a blocked historical mutation is attempted, the UI now shows:
+
+- the specific lock reason
+- the recommended workaround for that lock
+
+This is warning/workaround support only.
+
+There is still no generic unsafe override path.
+
 ## Classification
 
 Each blocked case should map to one of:
@@ -77,6 +90,12 @@ Reason:
 - compensating entries are sometimes acceptable
 - but true date correction may still be needed in real accounting cleanup
 
+Narrow V1 candidate:
+
+- for paid `CardTransaction`, date correction may be allowed through warning + confirmation as long as `ref_month_year` stays unchanged
+- for paid `CashTransaction`, changing the effective month/year should require explicit warning + confirmation when the user is correcting delayed entry around the month boundary
+- for paid `CashTransaction`, marking the current-month paid record back to `not paid` may be allowed through warning + confirmation when the installment still belongs to the current month
+
 ### 3. Paid installment deletion
 
 Blocked mutation:
@@ -132,6 +151,27 @@ V1 workaround:
 - keep all edited unpaid installments strictly after the latest paid installment date
 - if the real-world correction requires historical rewrite:
   - defer to explicit unsafe correction flow later
+
+Classification:
+
+- `override-later`
+
+### 5a. Catch-up entry ordering collision
+
+Blocked mutation:
+
+- the user is catching up several days of activity
+- existing transactions were already marked paid first
+- creating or positioning missing transactions in that time range now collides with a historical boundary rule
+
+Why blocked:
+
+- the app sees a historical sequencing conflict, even though the user may only be reconstructing late-entered reality
+
+V1 workaround:
+
+- if practical, enter the missing transactions before marking the surrounding ones as paid
+- otherwise, allow a narrow warning + confirmation flow for delayed-entry reconciliation
 
 Classification:
 
@@ -259,6 +299,54 @@ Why blocked:
 
 - it breaks the financial trace of a linked obligation flow
 
+### 12. Counterpart paid-state sync cannot be resolved safely
+
+Blocked mutation:
+
+- user A marks a shared exchange-return / borrow-return flow as `paid` or `not paid`
+- but the app cannot resolve the mirrored local record for user B safely
+
+Why blocked:
+
+- the paid-state toggle is expected to stay synchronized between the two users
+- if the counterpart record is ambiguous or missing, applying the toggle on only one side would create silent divergence
+
+V1 workaround:
+
+- leave the original state unchanged
+- emit a clear failure message
+- repair the shared linkage first, then retry the paid-state action
+
+Classification:
+
+- `hard-block`
+
+Current implementation status:
+
+- implemented
+- the request layer now returns a clear failure instead of mutating only one side
+
+### 11. Historical cycle or month-boundary correction
+
+Blocked mutation:
+
+- changing the historical date of an already-paid `CardTransaction` while keeping the same billing cycle
+- changing the effective month/year of an already-paid `CashTransaction` during delayed-entry cleanup around the end/start of adjacent months
+
+Why blocked:
+
+- the current V1 runtime treats paid history conservatively and does not yet distinguish cycle-preserving corrections from broader historical rewrites
+
+V1 workaround:
+
+- for cards, allow the correction only if `ref_month_year` remains unchanged and the user confirms it
+- for cash, allow the correction only through explicit warning + confirmation when the user is fixing a real delayed-entry month-boundary mistake
+- otherwise, leave the record as-is or use a compensating path
+
+Classification:
+
+- `override-later`
+
 V1 workaround:
 
 - keep the structure
@@ -274,6 +362,9 @@ These are the main blocked cases most likely to deserve explicit unsafe correcti
 
 - paid installment date correction
 - unpaid installment crossing the latest paid boundary
+- delayed-entry catch-up ordering collision
+- historical card-cycle-preserving date correction
+- historical cash month-boundary correction
 - historical allocation correction
 - historical exchange repair
 

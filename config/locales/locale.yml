@@ -23,6 +23,26 @@ en:
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
+    workaround: "Suggested fix"
+    history_workarounds:
+      allocation_locked_after_payment: "Keep the paid portion unchanged. If the future allocation changed, create a new future-only transaction for the new categories or entities."
+      paid_history_locked:
+        default: "Keep the paid portion unchanged. Edit only unpaid future installments after the latest paid date, or create a compensating entry for the historical mismatch."
+        cash_transaction: "Keep the paid portion unchanged. If this is a current-month unpay or a delayed-entry month-boundary correction, use the confirmation path shown by the app; otherwise edit only future unpaid installments or create a compensating entry."
+        cash_installment: "Keep the paid portion unchanged. If this is a current-month unpay or a delayed-entry month-boundary correction, use the confirmation path shown by the app; otherwise edit only future unpaid installments or create a compensating entry."
+        card_transaction: "Keep the paid billing history unchanged. If this is only a historical date correction inside the same ref month/year, use the confirmation path shown by the app; otherwise keep the cycle intact and create a compensating entry."
+        card_installment: "Keep the paid billing history unchanged. If this is only a historical date correction inside the same ref month/year, use the confirmation path shown by the app; otherwise keep the cycle intact and create a compensating entry."
+      destroy_locked_after_payment: "Do not delete settled history. Keep the existing record and create a compensating or reversing entry instead."
+      counterpart_paid_state_sync_missing: "Open or create the matching shared return for the other user first, then try the paid-state change again."
+      same_cycle_history_correction_confirmation_required:
+        card_transaction: "Review the correction and use the confirmation button below if you want to keep the paid transaction inside the same ref month/year."
+        card_installment: "Review the correction and use the confirmation button below if you want to keep the paid installment inside the same ref month/year."
+      same_month_paid_state_correction_confirmation_required:
+        cash_transaction: "Review the current-month unpay action and use the confirmation button below if this paid cash transaction really needs to become not paid."
+        cash_installment: "Review the current-month unpay action and use the confirmation button below if this paid cash installment really needs to become not paid."
+      month_boundary_history_correction_confirmation_required:
+        cash_transaction: "Review the delayed-entry correction and use the confirmation button below if this paid transaction really needs to move between adjacent month periods."
+        cash_installment: "Review the delayed-entry correction and use the confirmation button below if this paid installment really needs to move between adjacent month periods."
   gerund:
     index: "Listing"
     show: "Details of"
@@ -45,6 +65,7 @@ en:
     update: "Update"
     destroy: "Destroy"
     merge: "Merge"
+    confirm_historical_change: "Confirm Historical Change"
     all: "All"
     alla: "All"
     submit: "Submit"
@@ -107,6 +128,26 @@ pt-BR:
     user_card_needed: Por favor, adicione um cartão antes de criar uma %{model}.
     alert: "Atenção!"
     notice: "Aviso"
+    workaround: "Como resolver"
+    history_workarounds:
+      allocation_locked_after_payment: "Mantenha a parte já paga intacta. Se a alocação futura mudou, crie uma nova transação apenas para o trecho futuro com as novas categorias ou entidades."
+      paid_history_locked:
+        default: "Mantenha a parte já paga intacta. Edite somente parcelas futuras e pendentes após a última data paga, ou crie uma movimentação compensatória para corrigir o histórico."
+        cash_transaction: "Mantenha a parte já paga intacta. Se isto for uma reversão no mês atual ou uma correção de lançamento tardio na virada do mês, use o fluxo de confirmação mostrado pelo app; caso contrário, edite apenas parcelas futuras pendentes ou crie uma movimentação compensatória."
+        cash_installment: "Mantenha a parte já paga intacta. Se isto for uma reversão no mês atual ou uma correção de lançamento tardio na virada do mês, use o fluxo de confirmação mostrado pelo app; caso contrário, edite apenas parcelas futuras pendentes ou crie uma movimentação compensatória."
+        card_transaction: "Mantenha o histórico já faturado intacto. Se isto for apenas uma correção de data dentro do mesmo ref mês/ano, use o fluxo de confirmação mostrado pelo app; caso contrário, mantenha o ciclo e crie uma movimentação compensatória."
+        card_installment: "Mantenha o histórico já faturado intacto. Se isto for apenas uma correção de data dentro do mesmo ref mês/ano, use o fluxo de confirmação mostrado pelo app; caso contrário, mantenha o ciclo e crie uma movimentação compensatória."
+      destroy_locked_after_payment: "Não apague histórico já liquidado. Mantenha o registro existente e crie uma movimentação compensatória ou de estorno."
+      counterpart_paid_state_sync_missing: "Abra ou crie primeiro a devolução compartilhada correspondente do outro usuário e tente mudar o estado pago novamente."
+      same_cycle_history_correction_confirmation_required:
+        card_transaction: "Revise a correção e use o botão de confirmação abaixo se quiser manter a transação paga dentro do mesmo ref mês/ano."
+        card_installment: "Revise a correção e use o botão de confirmação abaixo se quiser manter a parcela paga dentro do mesmo ref mês/ano."
+      same_month_paid_state_correction_confirmation_required:
+        cash_transaction: "Revise a reversão no mês atual e use o botão de confirmação abaixo se esta movimentação paga realmente precisar voltar a não paga."
+        cash_installment: "Revise a reversão no mês atual e use o botão de confirmação abaixo se esta parcela paga realmente precisar voltar a não paga."
+      month_boundary_history_correction_confirmation_required:
+        cash_transaction: "Revise a correção de lançamento tardio e use o botão de confirmação abaixo se esta movimentação paga realmente precisar mudar entre períodos mensais adjacentes."
+        cash_installment: "Revise a correção de lançamento tardio e use o botão de confirmação abaixo se esta parcela paga realmente precisar mudar entre períodos mensais adjacentes."
   gerund:
     index: "Listando"
     show: "Detalhes de"
@@ -129,6 +170,7 @@ pt-BR:
     update: "Atualizar"
     destroy: "Deletar"
     merge: "Mesclar"
+    confirm_historical_change: "Confirmar Correção Histórica"
     all: "Todos os"
     alla: "Todas as"
     submit: "Salvar"

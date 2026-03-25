@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CashInstallmentsController < ApplicationController
+class CashInstallmentsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TranslateHelper
 
   before_action :set_cash_installment, only: %i[pay]
@@ -18,6 +18,7 @@ class CashInstallmentsController < ApplicationController
     min_date = [ cash_installment_date, date ].min
 
     @cash_installment = update_installment(@cash_installment, date, price)
+    return handle_failed_save(@cash_installment) if @cash_installment.errors.any?
 
     if cash_installment_price != price
       if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
@@ -44,6 +45,7 @@ class CashInstallmentsController < ApplicationController
 
     cash_installments.each do |cash_installment|
       update_installment(cash_installment, date)
+      return handle_failed_save(cash_installment) if cash_installment.errors.any?
     end
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
@@ -234,6 +236,19 @@ class CashInstallmentsController < ApplicationController
         render turbo_stream: [
           turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashInstallment) })
         ]
+      end
+    end
+  end
+
+  def handle_failed_save(cash_installment)
+    @cash_installment = cash_installment
+    build_index_context_from_selection || build_index_context
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @cash_installment.errors.full_messages.to_sentence })
+        ], status: :unprocessable_content
       end
     end
   end

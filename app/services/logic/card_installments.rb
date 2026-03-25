@@ -42,6 +42,7 @@ module Logic
 
     def self.build_conditions_from_params(card_transaction_params, search_params)
       card_transaction_params.delete(:duplicate)
+      card_transaction_params.delete(:historical_correction_confirmation)
       search_params.delete(:controller)
       search_params.delete(:action)
 

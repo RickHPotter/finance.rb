@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
 # Shared write-layer guards for transactions backed by installments.
-module HasFinancialSafetyGuards
+module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
+
+  CONFIRMATION_HISTORY_ERROR_KEYS = %i[
+    same_cycle_history_correction_confirmation_required
+    same_month_paid_state_correction_confirmation_required
+    month_boundary_history_correction_confirmation_required
+  ].freeze
 
   included do
     # @validations ............................................................
@@ -12,16 +18,26 @@ module HasFinancialSafetyGuards
     before_destroy :prevent_destroy_when_paid_history_is_locked, prepend: true
   end
 
+  def historical_correction_confirmation_prompt?
+    Array(errors.details[:base]).any? { |detail| CONFIRMATION_HISTORY_ERROR_KEYS.include?(detail[:error]) }
+  end
+
+  def historical_correction_confirmation_error_key
+    Array(errors.details[:base]).map { |detail| detail[:error] }.find { |key| CONFIRMATION_HISTORY_ERROR_KEYS.include?(key) }
+  end
+
   # @private_instance_methods .................................................
 
   private
 
   def prevent_unsafe_paid_history_rewrites
     return unless persisted?
-    return unless paid_history?
+    return unless paid_history? || paid_projection_target_rewrite_attempted?
 
     add_allocation_history_error if allocation_changed_after_payment?
-    add_installment_history_error if unsafe_installment_rewrite_attempted?
+
+    history_error_key = current_installment_history_error_key
+    errors.add(:base, history_error_key) if history_error_key.present?
   end
 
   def prevent_destroy_when_paid_history_is_locked
@@ -31,11 +47,55 @@ module HasFinancialSafetyGuards
     throw(:abort)
   end
 
+  def current_installment_history_error_key
+    return if shared_paid_state_toggle_only?
+    return if confirmed_historical_correction?
+    return confirmation_history_error_key if historical_correction_confirmation_required?
+
+    installment_history_error_key if unsafe_installment_rewrite_attempted?
+  end
+
   def unsafe_installment_rewrite_attempted?
-    return false unless parent_financial_fields_changed? || installment_structure_changed?
+    return false if shared_paid_state_toggle_only?
+    return true if paid_projection_target_rewrite_attempted?
+    return true if parent_financial_fields_changed_for_lock?
+    return false unless installment_structure_changed?
     return true if paid_installment_rewrite_attempted?
 
     !can_edit_unpaid_future_installments?(editable_installment_dates)
+  end
+
+  def paid_projection_target_rewrite_attempted?
+    return card_paid_invoice_cycle_rewrite_attempted? if is_a?(CardTransaction)
+
+    installments.any? do |installment|
+      next false unless installment.changed?
+      next false unless installment.respond_to?(:target_cash_transaction_for_rewrite, true)
+
+      target_cash_transaction = installment.send(:target_cash_transaction_for_rewrite)
+      next false if target_cash_transaction.blank? || target_cash_transaction.id == installment.cash_transaction_id
+
+      target_cash_transaction.paid_history?
+    end
+  end
+
+  def card_paid_invoice_cycle_rewrite_attempted?
+    installments.any? do |installment|
+      next false unless installment.persisted? && installment.changed?
+      next false if installment.date.blank?
+
+      target_reference = user_card.find_or_create_reference_for(installment.date, context:)
+      target_cash_transaction = context.cash_transactions.find_by(
+        cash_transaction_type: "CardInstallment",
+        user_card_id: user_card_id,
+        month: target_reference.month,
+        year: target_reference.year
+      )
+
+      next false if target_cash_transaction.blank? || target_cash_transaction.id == installment.cash_transaction_id
+
+      target_cash_transaction.paid_history?
+    end
   end
 
   def allocation_changed_after_payment?
@@ -55,9 +115,33 @@ module HasFinancialSafetyGuards
   def paid_installment_rewrite_attempted?
     installments.any? do |installment|
       next false unless installment.persisted? && installment.paid?
+      next false if shared_paid_toggle_only_for?(installment)
 
       installment.marked_for_destruction? || installment.changed?
     end
+  end
+
+  def shared_paid_state_toggle_only?
+    return false unless shared_paid_state_flow?
+    return false if parent_financial_fields_changed?
+    return false if allocation_changed_after_payment?
+    return false if installments.any?(&:marked_for_destruction?)
+    return false if installments.any?(&:new_record?)
+
+    changed_installments = installments.select(&:changed?)
+    return false if changed_installments.empty?
+
+    changed_installments.all? { |installment| shared_paid_toggle_only_for?(installment) }
+  end
+
+  def shared_paid_toggle_only_for?(installment)
+    installment.changes.except("updated_at").keys == [ "paid" ]
+  end
+
+  def shared_paid_state_flow?
+    return false unless respond_to?(:shared_return_flow?)
+
+    shared_return_flow?
   end
 
   def editable_installment_dates
@@ -71,6 +155,12 @@ module HasFinancialSafetyGuards
 
   def parent_financial_fields_changed?
     will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year? || will_save_change_to_price?
+  end
+
+  def parent_financial_fields_changed_for_lock?
+    return false if historical_correction_candidate?
+
+    parent_financial_fields_changed?
   end
 
   def original_category_ids
@@ -95,6 +185,108 @@ module HasFinancialSafetyGuards
 
   def add_installment_history_error
     errors.add(:base, installment_history_error_key)
+  end
+
+  def historical_correction_confirmation_required?
+    historical_correction_candidate? && !historical_correction_confirmation_requested?
+  end
+
+  def confirmed_historical_correction?
+    historical_correction_candidate? && historical_correction_confirmation_requested?
+  end
+
+  def historical_correction_candidate?
+    return false if allocation_changed_after_payment?
+    return false if installments.any?(&:marked_for_destruction?)
+    return false if installments.any?(&:new_record?)
+    return false if will_save_change_to_price?
+    return false if changed_installments.empty?
+
+    if is_a?(CardTransaction)
+      same_cycle_historical_correction_candidate?
+    elsif is_a?(CashTransaction)
+      same_month_paid_state_correction_candidate? || month_boundary_historical_correction_candidate?
+    else
+      false
+    end
+  end
+
+  def changed_installments
+    installments.select(&:changed?)
+  end
+
+  def same_month_paid_state_correction_candidate?
+    return false unless changed_installments.all?(&:persisted?)
+
+    changed_installments.all? do |installment|
+      keys = installment.changes.except("updated_at").keys
+      next false unless keys == [ "paid" ]
+      next false unless installment_previously_paid?(installment)
+
+      installment_month = installment.attribute_in_database("month") || installment.month
+      installment_year = installment.attribute_in_database("year") || installment.year
+      unpaid_now = !ActiveModel::Type::Boolean.new.cast(installment.paid)
+
+      installment_month.to_i == Time.zone.today.month &&
+        installment_year.to_i == Time.zone.today.year &&
+        unpaid_now
+    end
+  end
+
+  def same_cycle_historical_correction_candidate?
+    return false unless changed_installments.all?(&:persisted?)
+
+    changed_installments.all? do |installment|
+      keys = installment.changes.except("updated_at").keys
+      next false unless keys.all? { |key| %w[date month year].include?(key) }
+      next false unless installment_previously_paid?(installment)
+
+      month_unchanged = !installment.will_save_change_to_month?
+      year_unchanged = !installment.will_save_change_to_year?
+
+      month_unchanged && year_unchanged
+    end
+  end
+
+  def month_boundary_historical_correction_candidate?
+    return false unless changed_installments.all?(&:persisted?)
+
+    changed_installments.all? do |installment|
+      keys = installment.changes.except("updated_at").keys
+      next false unless keys.all? { |key| %w[date month year].include?(key) }
+      next false unless installment_previously_paid?(installment)
+
+      period_distance_in_months(installment) <= 1
+    end
+  end
+
+  def installment_previously_paid?(installment)
+    return installment.paid? unless installment.respond_to?(:saved_change_to_paid?)
+
+    installment.attribute_in_database("paid").nil? ? installment.paid? : ActiveModel::Type::Boolean.new.cast(installment.attribute_in_database("paid"))
+  end
+
+  def period_distance_in_months(installment)
+    old_year = installment.attribute_in_database("year") || installment.year
+    old_month = installment.attribute_in_database("month") || installment.month
+    new_year = installment.year
+    new_month = installment.month
+
+    ((new_year.to_i * 12) + new_month.to_i) - ((old_year.to_i * 12) + old_month.to_i)
+  end
+
+  def historical_correction_confirmation_requested?
+    ActiveModel::Type::Boolean.new.cast(historical_correction_confirmation)
+  end
+
+  def confirmation_history_error_key
+    if is_a?(CardTransaction)
+      :same_cycle_history_correction_confirmation_required
+    elsif is_a?(CashTransaction) && same_month_paid_state_correction_candidate?
+      :same_month_paid_state_correction_confirmation_required
+    elsif is_a?(CashTransaction)
+      :month_boundary_history_correction_confirmation_required
+    end
   end
 
   def allocation_history_error_key

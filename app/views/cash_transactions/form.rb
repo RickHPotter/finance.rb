@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::Form < Views::Base
+class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::HiddenFieldTag
@@ -66,7 +66,8 @@ class Views::CashTransactions::Form < Views::Base
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
           destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction) : nil,
-          destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil
+          destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil,
+          confirmation_submit: historical_correction_confirmation_submit_for(cash_transaction, :cash_transaction)
         ) do
           if cash_transaction.exchange_return?
             transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
@@ -109,6 +110,18 @@ class Views::CashTransactions::Form < Views::Base
 
   def exchange_category
     current_user.built_in_category("EXCHANGE")
+  end
+
+  def historical_correction_confirmation_submit_for(transaction, param_key)
+    return unless transaction.historical_correction_confirmation_prompt?
+
+    {
+      field_id: "#{param_key}_historical_correction_confirmation",
+      name: "#{param_key}[historical_correction_confirmation]",
+      current_value: true,
+      value: true,
+      label: I18n.t("actions.confirm_historical_change")
+    }
   end
 
   def card_transactions_sheet

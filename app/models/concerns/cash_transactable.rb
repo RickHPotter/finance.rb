@@ -12,8 +12,10 @@ module CashTransactable
     belongs_to :cash_transaction, optional: true
 
     # @callbacks ..............................................................
+    before_save :prevent_paid_cash_transaction_rewrite
     before_save :attach_cash_transaction
     after_save :fix_cash_transaction, :update_cash_transaction
+    before_destroy :prevent_paid_cash_transaction_destroy, prepend: true
     after_destroy :update_or_destroy_cash_transaction
   end
 
@@ -21,6 +23,20 @@ module CashTransactable
   # @protected_instance_methods ...............................................
 
   protected
+
+  def prevent_paid_cash_transaction_rewrite
+    return unless rewrite_locked_paid_cash_transaction?
+
+    errors.add(:base, :paid_history_locked)
+    throw(:abort)
+  end
+
+  def prevent_paid_cash_transaction_destroy
+    return unless current_cash_transaction_paid_history?
+
+    errors.add(:base, :destroy_locked_after_payment)
+    throw(:abort)
+  end
 
   # Assigns a `previous_cash_transaction_id` and attachs `cash_transaction` to `self`, based on certain attributes, and links it to `self`.
   #
@@ -71,7 +87,7 @@ module CashTransactable
         ).call
       end
     else
-      previous_cash_transaction.destroy
+      destroy_projection_cash_transaction(previous_cash_transaction)
     end
   end
 
@@ -108,7 +124,7 @@ module CashTransactable
 
     transactable = cash_transaction.public_send(model_name.plural)
     if transactable.none?
-      cash_transaction.destroy
+      destroy_projection_cash_transaction(cash_transaction)
     else
       update_cash_transaction
     end
@@ -172,5 +188,53 @@ module CashTransactable
     return transactable.context_id if respond_to?(:transactable) && transactable.respond_to?(:context_id)
 
     resolved_context.id
+  end
+
+  def rewrite_locked_paid_cash_transaction?
+    return false unless protect_paid_cash_transaction_projection?
+    return false unless new_record? || changed?
+    return false if same_cash_transaction_projection_target?
+
+    current_cash_transaction_paid_history? || target_cash_transaction_paid_history?
+  end
+
+  def same_cash_transaction_projection_target?
+    target_cash_transaction = target_cash_transaction_for_rewrite
+    return false if target_cash_transaction.blank? || cash_transaction_id.blank?
+
+    target_cash_transaction.id == cash_transaction_id
+  end
+
+  def current_cash_transaction_paid_history?
+    return false unless protect_paid_cash_transaction_projection?
+
+    cash_transaction&.paid_history?
+  end
+
+  def target_cash_transaction_paid_history?
+    return false unless protect_paid_cash_transaction_projection?
+
+    target_cash_transaction_for_rewrite&.paid_history?
+  end
+
+  def target_cash_transaction_for_rewrite
+    resolved_context.cash_transactions
+                    .joins(:category_transactions)
+                    .find_by(cash_transaction_params.without(:description))
+  end
+
+  def protect_paid_cash_transaction_projection?
+    true
+  end
+
+  def destroy_projection_cash_transaction(record)
+    return unless record
+    return if record.destroyed?
+
+    destroyed = record.destroy
+    return if destroyed || protect_paid_cash_transaction_projection?
+
+    Installment.where(cash_transaction_id: record.id).delete_all
+    CashTransaction.where(id: record.id).delete_all
   end
 end

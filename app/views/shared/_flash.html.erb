@@ -1,6 +1,15 @@
 <% if notice || alert %>
+  <% alert_payload = alert.is_a?(Hash) ? alert : nil %>
+  <% alert_message = alert_payload ? alert_payload[:message] : alert %>
+  <% sticky_notification = local_assigns.fetch(:sticky, alert_payload.present?) %>
   <div class="relative max-w-5xl mx-auto px-4">
-    <div data-controller="notification" class="transition transform duration-1500 fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:pt-16 sm:items-start sm:justify-end z-50" data-transition-enter-from="opacity-0 translate-x-6" data-transition-enter-to="opacity-100 translate-x-0" data-transition-leave-from="opacity-100 translate-x-0" data-transition-leave-to="opacity-0 translate-x-6">
+    <div data-controller="notification"
+         data-notification-sticky-value="<%= sticky_notification %>"
+         class="transition transform duration-1500 fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:pt-16 sm:items-start sm:justify-end z-50"
+         data-transition-enter-from="opacity-0 translate-x-6"
+         data-transition-enter-to="opacity-100 translate-x-0"
+         data-transition-leave-from="opacity-100 translate-x-0"
+         data-transition-leave-to="opacity-0 translate-x-6">
       <div class="max-w-sm w-full bg-white pointer-events-auto rounded-lg shadow-xs overflow-hidden p-4">
         <div class="flex items-start">
           <% if notice %>
@@ -11,7 +20,14 @@
 
           <div class="ml-3 w-0 flex-1 pt-0.5">
             <%= content_tag :p, notice ? t("notification.notice") : t("notification.alert"), class: "text-sm font-medium text-gray-900" %>
-            <%= content_tag :p, notice || alert, id: "notification-content", class: "mt-1 text-sm text-gray-500" %>
+            <%= content_tag :p, notice || alert_message, id: "notification-content", class: "mt-1 text-sm text-gray-500" %>
+
+            <% if alert_payload&.dig(:workaround).present? %>
+              <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <p class="font-semibold"><%= alert_payload[:workaround_label] %></p>
+                <p class="mt-1"><%= alert_payload[:workaround] %></p>
+              </div>
+            <% end %>
           </div>
 
           <div class="ml-4 flex-shrink-0 flex">

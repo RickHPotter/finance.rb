@@ -138,6 +138,37 @@ RSpec.describe Message, type: :model do
       expect(message.preview_body).to include("WATER BILL")
     end
 
+    it "renders paid-state synchronization messages from headers at display time" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:paid_state",
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "SHARED RETURN",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-20",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      expect(message.paid_state_sync_message?).to be(true)
+      expect(message.transaction_notification_message?).to be(false)
+      expect(message.rendered_body).to include("SHARED RETURN")
+      expect(message.preview_body).to include("SHARED RETURN")
+      expect(message.preview_body).to include(I18n.t("activerecord.attributes.message.notification_actions.paid"))
+    end
+
     it "classifies headerless messages without reference transactable as human chat" do
       message = described_class.create!(
         conversation:,

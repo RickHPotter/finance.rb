@@ -18,6 +18,55 @@ RSpec.describe "Subscriptions", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  def create_subscription_cash_transaction_with_paid_history(subscription:, description: subscription.description)
+    transaction = create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account: user_bank_account,
+      subscription:,
+      description:,
+      comment: subscription.comment,
+      date: Date.new(2026, 3, 14),
+      price: -4_900
+    )
+    transaction.cash_installments.destroy_all
+    transaction.cash_installments.create!(number: 1, price: -2_450, date: Date.new(2026, 3, 14), month: 3, year: 2026, paid: true)
+    transaction.cash_installments.create!(number: 2, price: -2_450, date: Date.new(2026, 4, 14), month: 4, year: 2026, paid: false)
+    transaction.update_column(:cash_installments_count, 2)
+    transaction.reload
+  end
+
+  def create_subscription_card_transaction_with_paid_history(subscription:, description: subscription.description) # rubocop:disable Metrics/AbcSize
+    transaction = create(
+      :card_transaction,
+      user:,
+      context: user.main_context,
+      user_card:,
+      subscription:,
+      description:,
+      comment: subscription.comment,
+      date: Date.new(2026, 4, 15),
+      price: -5_500,
+      month: 5,
+      year: 2026
+    )
+    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+    transaction.card_installments.delete_all
+    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+    installments = [
+      { number: 1, price: -2_750, date: Date.new(2026, 3, 15), month: 3, year: 2026, paid: true },
+      { number: 2, price: -2_750, date: Date.new(2026, 4, 15), month: 4, year: 2026, paid: false }
+    ]
+    installments.each { |attrs| transaction.card_installments.create!(attrs.merge(paid: false)) }
+    transaction.card_installments.order(:number).zip(installments).each do |installment, attrs|
+      installment.update_columns(price: attrs[:price], date: attrs[:date], month: attrs[:month], year: attrs[:year], paid: attrs[:paid])
+    end
+    transaction.update_column(:card_installments_count, 2)
+    transaction.reload
+  end
+
   describe "[ #index ]" do
     it "renders successfully" do
       get subscriptions_path
@@ -118,6 +167,49 @@ RSpec.describe "Subscriptions", type: :request do
       expect(card_transaction.card_installments.first.month).to eq(3)
       expect(card_transaction.card_installments.first.year).to eq(2026)
     end
+
+    it "creates a past-dated subscription without crashing the turbo index render" do
+      post subscriptions_path, params: {
+        subscription: {
+          description: "Past gym plan",
+          comment: "Backfilled",
+          status: :active,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => { date: Date.new(2025, 12, 14), price: -4900, user_bank_account_id: user_bank_account.id }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("notification.created", model: Subscription.model_name.human))
+      expect(Subscription.order(:id).last.description).to eq("Past gym plan")
+    end
+
+    it "returns not_found when create is incorrectly asked to reuse an existing linked transaction" do
+      locked_transaction = create_subscription_cash_transaction_with_paid_history(
+        subscription: create(:subscription, user:, description: "Existing sub", comment: "Existing comment"),
+        description: "Locked linked subscription transaction"
+      )
+
+      post subscriptions_path, params: {
+        subscription: {
+          description: "Locked Past Sub",
+          comment: "Backfilled",
+          status: :active,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => { id: locked_transaction.id, date: Date.new(2025, 12, 14), price: -4900, user_bank_account_id: user_bank_account.id }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "[ #update ]" do
@@ -143,7 +235,9 @@ RSpec.describe "Subscriptions", type: :request do
         subscription:,
         description: subscription.description,
         comment: subscription.comment,
-        date: Date.new(2026, 3, 15),
+        date: Date.new(2026, 4, 15),
+        month: 5,
+        year: 2026,
         price: -5500
       )
 
@@ -160,7 +254,7 @@ RSpec.describe "Subscriptions", type: :request do
           },
           card_transactions_attributes: {
             "0" => { id: card_transaction.id, _destroy: "1" },
-            "1" => { date: Date.new(2026, 3, 20), price: -6100, user_card_id: user_card.id }
+            "1" => { date: Date.new(2026, 4, 20), price: -6100, user_card_id: user_card.id }
           }
         }
       }, headers: turbo_stream_headers
@@ -174,10 +268,67 @@ RSpec.describe "Subscriptions", type: :request do
       expect(subscription.cash_transactions.first.price).to eq(-5900)
       expect(subscription.cash_transactions.first.cash_installments.first.price).to eq(-5900)
       expect(subscription.card_transactions.reload.count).to eq(1)
-      expect(subscription.card_transactions.first.date.to_date).to eq(Date.new(2026, 3, 20))
+      expect(subscription.card_transactions.first.date.to_date).to eq(Date.new(2026, 4, 20))
       expect(subscription.card_transactions.first.card_installments.first.price).to eq(-6100)
       expect(CardTransaction.exists?(card_transaction.id)).to be_falsey
       expect(subscription.price).to eq(-12_000)
+    end
+
+    it "returns unprocessable_content when a linked paid-history transaction would be rewritten" do
+      subscription = create(:subscription, user:, description: "Netflix", comment: "Family plan")
+      subscription.categories << category
+      subscription.entities << entity
+      locked_transaction = create_subscription_cash_transaction_with_paid_history(subscription:)
+
+      patch subscription_path(subscription), params: {
+        subscription: {
+          description: "Netflix Premium",
+          comment: "Updated plan",
+          status: :paused,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => { id: locked_transaction.id, date: locked_transaction.date, price: -5_900, user_bank_account_id: user_bank_account.id }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.cash_transaction"))
+      expect(response.body).to include('data-notification-sticky-value="true"')
+      expect(subscription.reload.description).to eq("Netflix")
+      expect(locked_transaction.reload.price).to eq(-4_900)
+      expect(locked_transaction.cash_installments.first.price).to eq(-2_450)
+    end
+
+    it "returns unprocessable_content when a linked paid-history card transaction would be rewritten" do
+      subscription = create(:subscription, user:, description: "Netflix", comment: "Family plan")
+      subscription.categories << category
+      subscription.entities << entity
+      locked_transaction = create_subscription_card_transaction_with_paid_history(subscription:)
+
+      patch subscription_path(subscription), params: {
+        subscription: {
+          description: "Netflix Premium",
+          comment: "Updated plan",
+          status: :paused,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          card_transactions_attributes: {
+            "0" => { id: locked_transaction.id, date: locked_transaction.date, price: -6_100, user_card_id: user_card.id }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
+      expect(subscription.reload.description).to eq("Netflix")
+      expect(locked_transaction.reload.price).to eq(-5_500)
+      expect(locked_transaction.card_installments.first.price).to eq(-2_750)
     end
   end
 
@@ -296,7 +447,9 @@ RSpec.describe "Subscriptions", type: :request do
         subscription: main_subscription,
         description: main_subscription.description,
         comment: main_subscription.comment,
-        date: Date.new(2026, 3, 15),
+        date: Date.new(2026, 4, 15),
+        month: 5,
+        year: 2026,
         price: -5_500
       )
 

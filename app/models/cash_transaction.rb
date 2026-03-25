@@ -15,7 +15,7 @@ class CashTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent, :source_message_id
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent, :source_message_id, :historical_correction_confirmation
 
   # @relationships ............................................................
   belongs_to :user
@@ -112,7 +112,16 @@ class CashTransaction < ApplicationRecord
     return true if persisted? && categories.pluck(:category_name).include?("BORROW RETURN")
     return true if destroyed? && original_categories.include?(user.categories.where(category_name: "BORROW RETURN").first.id)
 
-    reference_transactable&.user_id != user.id
+    reference_transactable.present? && reference_transactable.user_id != user.id
+  end
+
+  def shared_return_flow?
+    return false unless exchange_return? || borrow_return?
+
+    return true if reference_transactable.is_a?(CashTransaction) && reference_transactable.user_id != user.id
+    return true if counterpart_shared_return_transaction_exists?
+
+    entities.that_are_users.exists? && shared_return_notification_history?
   end
 
   def can_be_destroyed?
@@ -160,6 +169,28 @@ class CashTransaction < ApplicationRecord
     payload["intent"] || payload.dig("replay", "intent")
   rescue JSON::ParserError
     nil
+  end
+
+  def shared_return_notification_history?
+    Message.where(reference_transactable: self, user:)
+           .where(body: %w[notification:create notification:update notification:destroy notification:paid_state])
+           .exists?
+  end
+
+  def counterpart_shared_return_transaction_exists?
+    return true if CashTransaction.where(reference_transactable: self).where.not(user_id: user_id).exists?
+
+    counterpart_user = entities.that_are_users.first&.entity_user
+    return false if counterpart_user.blank?
+
+    counterpart_context = if context.main? || context.scenario_key.blank?
+                            counterpart_user.ensure_main_context!
+                          else
+                            counterpart_user.contexts.find_by(scenario_key: context.scenario_key)
+                          end
+    return false if counterpart_context.blank?
+
+    counterpart_context.cash_transactions.exists?(reference_transactable: self)
   end
 
   def build_default_cash_installments

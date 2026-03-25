@@ -82,6 +82,7 @@ RSpec.describe Exchange, type: :model do
                         month: 3, year: 2026)
       drifting_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 2, price: -2000,
                                             date: Date.new(2026, 4, 20), month: 4, year: 2026)
+      exchange_return.reload.cash_installments.order(:number).last.update_columns(price: -1000)
 
       expect(drifting_exchange.projection_locked?).to be(false)
       expect(drifting_exchange.mirrored_cash_installments_match?).to be(false)

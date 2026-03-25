@@ -73,6 +73,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def load_subscriptions
+    build_index_context
     @subscriptions = subscriptions_scope
   end
 
@@ -116,6 +117,8 @@ class SubscriptionsController < ApplicationController
         format.turbo_stream
       end
     else
+      normalize_failed_subscription_save!
+
       respond_to do |format|
         format.html do
           if view_name == :new
@@ -131,6 +134,12 @@ class SubscriptionsController < ApplicationController
         end
       end
     end
+  end
+
+  def normalize_failed_subscription_save!
+    return if @subscription.errors.any?
+
+    @subscription.errors.add(:base, :invalid)
   end
 
   def subscription_params

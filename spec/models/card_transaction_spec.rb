@@ -6,6 +6,31 @@ RSpec.describe CardTransaction, type: :model do
   let(:user_card) { create(:user_card, :random) }
   let(:card_transaction) { build(:card_transaction, :random, user_card:) }
 
+  def create_card_transaction_with_history(user:, user_card:, installments_attributes:, **attrs)
+    transaction = create(:card_transaction, user:, context: user.main_context, user_card:, **attrs)
+    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+    transaction.card_installments.delete_all
+    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+
+    installments_attributes.each do |installment_attrs|
+      transaction.card_installments.create!(installment_attrs.merge(paid: false))
+    end
+
+    transaction.card_installments.order(:number).zip(installments_attributes).each do |installment, installment_attrs|
+      installment.update_columns(
+        price: installment_attrs[:price],
+        date: installment_attrs[:date],
+        month: installment_attrs[:month],
+        year: installment_attrs[:year],
+        paid: installment_attrs[:paid]
+      )
+    end
+
+    transaction.update_column(:card_installments_count, transaction.card_installments.count)
+    transaction.reload
+  end
+
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
@@ -66,17 +91,15 @@ RSpec.describe CardTransaction, type: :model do
     it "derives paid-history safety predicates from its installments" do
       user = create(:user)
       user_card = create(:user_card, user:)
-      transaction = create(
-        :card_transaction,
+      transaction = create_card_transaction_with_history(
         user:,
-        context: user.main_context,
         user_card:,
         description: "Safety boundary",
         date: Date.new(2026, 3, 10),
         price: -3000,
         month: 4,
         year: 2026,
-        card_installments_attributes: [
+        installments_attributes: [
           { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
           { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
           { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
@@ -90,6 +113,164 @@ RSpec.describe CardTransaction, type: :model do
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 3, 10) ])).to be(false)
       expect(transaction.can_change_allocation?).to be(false)
       expect(transaction.can_destroy_with_history?).to be(false)
+    end
+
+    it "blocks category allocation changes once paid history exists" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      category = create(:category, user:, category_name: "FOOD")
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Locked allocation",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: category.id }
+        ],
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      transaction.categories = [ replacement_category ]
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.allocation_locked_after_payment"))
+    end
+
+    it "allows unpaid future installment edits after the latest paid boundary" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Future edits",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      second_installment = transaction.card_installments.find_by!(number: 2)
+      third_installment = transaction.card_installments.find_by!(number: 3)
+
+      transaction.card_installments_attributes = [
+        { id: second_installment.id, number: 2, price: second_installment.price, date: Date.new(2026, 4, 15), month: 4, year: 2026, paid: false },
+        { id: third_installment.id, number: 3, price: third_installment.price, date: Date.new(2026, 5, 15), month: 5, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "blocks unpaid installment edits that cross the paid boundary" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Unsafe future edit",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      second_installment = transaction.card_installments.find_by!(number: 2)
+
+      transaction.card_installments_attributes = [
+        { id: second_installment.id, number: 2, price: second_installment.price, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: false }
+      ]
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+    end
+
+    it "blocks parent price changes once paid history exists" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Locked parent fields",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      transaction.price = -3500
+
+      expect(transaction).to be_invalid
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
+    end
+
+    it "allows a confirmed paid date correction when the ref month year stays unchanged" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Same cycle correction",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      first_installment = transaction.card_installments.find_by!(number: 1)
+      transaction.historical_correction_confirmation = true
+      transaction.card_installments_attributes = [
+        { id: first_installment.id, number: 1, price: first_installment.price, date: Date.new(2026, 3, 25), month: 3, year: 2026, paid: true }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
+    it "blocks destruction when paid history exists" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Locked destroy",
+        date: Date.new(2026, 3, 10),
+        price: -2000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false }
+        ]
+      )
+
+      expect(transaction.destroy).to be(false)
+      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.destroy_locked_after_payment"))
     end
   end
 end

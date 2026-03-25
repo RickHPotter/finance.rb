@@ -14,8 +14,10 @@ module HasAdvancePayments
     belongs_to :advance_cash_transaction, class_name: "CashTransaction", optional: true, dependent: :destroy
 
     # @callbacks ..............................................................
+    before_update :prevent_locked_advance_cash_transaction_rewrite, prepend: true
     before_create :create_advance_cash_transaction, if: -> { card_advance_category? }
     before_update :update_advance_cash_transaction
+    before_destroy :prevent_locked_advance_cash_transaction_destruction, prepend: true
     before_destroy :prepare_advance_cash_transaction_destruction
     after_commit :destroy_advance_cash_transaction, on: %i[update destroy]
   end
@@ -33,6 +35,21 @@ module HasAdvancePayments
   # @protected_instance_methods ...............................................
 
   protected
+
+  def prevent_locked_advance_cash_transaction_rewrite
+    return unless advance_cash_transaction.present? && advance_cash_transaction.paid_history?
+    return if (changes.keys - %w[created_at updated_at]).empty?
+
+    errors.add(:base, :paid_history_locked)
+    throw(:abort)
+  end
+
+  def prevent_locked_advance_cash_transaction_destruction
+    return unless advance_cash_transaction.present? && advance_cash_transaction.paid_history?
+
+    errors.add(:base, :destroy_locked_after_payment)
+    throw(:abort)
+  end
 
   # Creates a new `advance_cash_transaction` if it has a `CARD ADVANCE` category.
   #
@@ -73,7 +90,15 @@ module HasAdvancePayments
   def destroy_advance_cash_transaction
     return unless destroy_advance_cash_transaction_id
 
-    CashTransaction.find_by(id: destroy_advance_cash_transaction_id)&.destroy
+    cash_transaction = CashTransaction.find_by(id: destroy_advance_cash_transaction_id)
+    if cash_transaction.present?
+      destroyed = cash_transaction.destroy
+
+      unless destroyed
+        Installment.where(cash_transaction_id: cash_transaction.id).delete_all
+        CashTransaction.where(id: cash_transaction.id).delete_all
+      end
+    end
     self.destroy_advance_cash_transaction_id = nil
   end
 
