@@ -64,6 +64,63 @@ RSpec.describe CashTransaction, type: :model do
       expect(subject.exchange_return?).to be(true)
     end
 
+    it "detects the latest paid installment boundary and future-only edit allowance" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        description: "Safety boundary",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      expect(transaction).to be_paid_history
+      expect(transaction).to be_partially_paid
+      expect(transaction.latest_paid_installment_date).to eq(Date.new(2026, 3, 10))
+      expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 20), Date.new(2026, 5, 20) ])).to be(true)
+      expect(transaction.can_change_installment_structure?(proposed_dates: [ Date.new(2026, 4, 20) ])).to be(true)
+      expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 3, 10) ])).to be(false)
+      expect(transaction.can_change_allocation?).to be(false)
+      expect(transaction.can_destroy_with_history?).to be(false)
+    end
+
+    it "allows installment-structure and allocation predicates while no paid history exists" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        description: "Future only",
+        price: 2000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 2, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      expect(transaction.paid_history?).to be(false)
+      expect(transaction.partially_paid?).to be(false)
+      expect(transaction.latest_paid_installment_date).to be_nil
+      expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 10) ])).to be(true)
+      expect(transaction.can_change_allocation?).to be(true)
+      expect(transaction.can_destroy_with_history?).to be(true)
+    end
+
     it "builds reimbursement notification headers for cash exchanges when the intent is reimbursement" do
       rikki = create(:user, first_name: "Rikki", email: "rikki@example.com")
       gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")

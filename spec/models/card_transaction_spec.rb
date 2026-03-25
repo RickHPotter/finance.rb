@@ -62,6 +62,35 @@ RSpec.describe CardTransaction, type: :model do
 
       expect(card_transaction.can_be_destroyed?).to be(true)
     end
+
+    it "derives paid-history safety predicates from its installments" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Safety boundary",
+        date: Date.new(2026, 3, 10),
+        price: -3000,
+        month: 4,
+        year: 2026,
+        card_installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      expect(transaction).to be_paid_history
+      expect(transaction).to be_partially_paid
+      expect(transaction.latest_paid_installment_date).to eq(Date.new(2026, 3, 10))
+      expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 10), Date.new(2026, 5, 10) ])).to be(true)
+      expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 3, 10) ])).to be(false)
+      expect(transaction.can_change_allocation?).to be(false)
+      expect(transaction.can_destroy_with_history?).to be(false)
+    end
   end
 end
 

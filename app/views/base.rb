@@ -19,10 +19,14 @@ module Views
     end
 
     def current_context
+      return nil unless request&.env&.[]("warden").present?
+
       rails_view_context.current_context
     end
 
     def render_scenario_badge
+      return if current_context.blank?
+
       badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
                     "px-3 py-1 text-[10px] font-semibold uppercase"
 

@@ -6,6 +6,8 @@ class CashTransaction < ApplicationRecord
   include HasMonthYear
   include HasStartingPrice
   include HasCashInstallments
+  include HasFinancialSafetyRules
+  include HasFinancialSafetyGuards
   include CategoryTransactable
   include EntityTransactable
   include HasSubscription

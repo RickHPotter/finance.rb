@@ -23,8 +23,27 @@ class Exchange < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def projection_locked?
+    cash_transaction&.paid_history? || false
+  end
+
+  def mirrored_cash_installments_match?
+    return true if non_monetary? || cash_transaction.blank?
+
+    exchange_rows = sibling_exchanges_for_cash_transaction.map { |record| [ record.number, record.date.to_date, record.price ] }.sort
+    installment_rows = cash_transaction.cash_installments.map { |record| [ record.number, record.date.to_date, record.price ] }.sort
+
+    exchange_rows == installment_rows
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
+
+  private
+
+  def sibling_exchanges_for_cash_transaction
+    Exchange.where(cash_transaction_id:)
+  end
 end
 
 # == Schema Information

@@ -1,0 +1,57 @@
+# frozen_string_literal: true
+
+# Shared read-only safety predicates for transaction models backed by installments.
+module HasFinancialSafetyRules
+  extend ActiveSupport::Concern
+
+  # @public_instance_methods ..................................................
+  def paid_history?
+    installments.where(paid: true).exists?
+  end
+
+  def partially_paid?
+    paid_history? && installments.where(paid: false).exists?
+  end
+
+  def latest_paid_installment_date
+    installments.where(paid: true).maximum(:date)&.to_date
+  end
+
+  def can_edit_unpaid_future_installments?(proposed_dates)
+    latest_paid_date = latest_paid_installment_date
+    return true if latest_paid_date.blank?
+
+    normalize_proposed_dates(proposed_dates).all? { |date| date > latest_paid_date }
+  end
+
+  def can_change_installment_structure?(proposed_dates:)
+    can_edit_unpaid_future_installments?(proposed_dates)
+  end
+
+  def can_change_allocation?
+    !paid_history?
+  end
+
+  def can_destroy_with_history?
+    !paid_history?
+  end
+
+  # @private_instance_methods .................................................
+
+  private
+
+  def normalize_proposed_dates(proposed_dates)
+    Array(proposed_dates).filter_map do |value|
+      value = value.date if value.respond_to?(:date) && !value.is_a?(Date) && !value.is_a?(Time) && !value.is_a?(DateTime)
+
+      case value
+      when Date
+        value
+      when Time, DateTime, ActiveSupport::TimeWithZone
+        value.to_date
+      when String
+        Time.zone.parse(value)&.to_date
+      end
+    end
+  end
+end

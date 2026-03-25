@@ -22,6 +22,71 @@ RSpec.describe Exchange, type: :model do
       it { should define_enum_for(:exchange_type).with_values(non_monetary: 0, monetary: 1) }
     end
   end
+
+  describe "[ business logic ]" do
+    it "treats paid mirrored return history as a locked projection" do
+      user = create(:user)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card: create(:user_card, user:))
+      entity_transaction = create(:entity_transaction, transactable: card_transaction, entity: create(:entity, user:), is_payer: true, price: -1000,
+                                                       price_to_be_returned: -1000)
+      exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        description: "Exchange return",
+        price: -1000,
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 20), month: 3, year: 2026, paid: true }
+        ]
+      )
+      exchange = build(
+        :exchange,
+        entity_transaction:,
+        cash_transaction: exchange_return,
+        exchange_type: :monetary,
+        number: 1,
+        price: -1000,
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026
+      )
+
+      expect(exchange.projection_locked?).to be(true)
+    end
+
+    it "detects drift when the mirrored return installments no longer match the exchanges" do
+      user = create(:user)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card: create(:user_card, user:))
+      entity_transaction = create(:entity_transaction, transactable: card_transaction, entity: create(:entity, user:), is_payer: true, price: -3000,
+                                                       price_to_be_returned: -3000)
+      exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        description: "Exchange return",
+        price: -3000,
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 20), month: 3, year: 2026, paid: false },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 20), month: 4, year: 2026, paid: false }
+        ]
+      )
+      create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 1, price: -1000, date: Date.new(2026, 3, 20),
+                        month: 3, year: 2026)
+      drifting_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 2, price: -2000,
+                                            date: Date.new(2026, 4, 20), month: 4, year: 2026)
+
+      expect(drifting_exchange.projection_locked?).to be(false)
+      expect(drifting_exchange.mirrored_cash_installments_match?).to be(false)
+    end
+  end
 end
 
 # == Schema Information

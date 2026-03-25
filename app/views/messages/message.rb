@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLength
-  register_value_helper :current_user
-  register_value_helper :current_context
   attr_reader :message
 
   include Phlex::Rails::Helpers::AssetPath
@@ -70,6 +68,8 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_transaction_actions
+    return unless current_context.present?
+
     if message.transaction_destroy_notification_message?
       return if message.reference_transactable_id.nil?
 
@@ -336,6 +336,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def reference_transactable_for_viewer
     return @reference_transactable_for_viewer if defined?(@reference_transactable_for_viewer)
+    return @reference_transactable_for_viewer = nil if current_context.blank?
 
     payload = message.replay_payload || {}
     type = payload["type"]
@@ -429,7 +430,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def viewer
     return @viewer if defined?(@viewer)
 
-    @viewer = request.env["warden"].present? ? current_user : nil
+    @viewer = request.env["warden"].present? ? rails_view_context.current_user : nil
   end
 
   def viewer_cash_transactions
