@@ -27,6 +27,8 @@ class Views::Contexts::Index < Views::Base
           render_tree_node(main_context, root: true)
         end
       end
+
+      turbo_frame_tag :context_overlay
     end
   end
 
@@ -68,8 +70,15 @@ class Views::Contexts::Index < Views::Base
 
     link_to(
       context_path(context),
-      class: "block rounded-3xl border border-stone-200 bg-stone-50 p-4 transition hover:border-sky-300 hover:bg-sky-50",
-      data: { turbo_frame: :center_container, turbo_prefetch: false }
+      class: [
+        "block rounded-3xl border p-4 transition",
+        if context.archived?
+          "border-stone-300 bg-stone-100 opacity-80"
+        else
+          "border-stone-200 bg-stone-50 hover:border-sky-300 hover:bg-sky-50"
+        end
+      ].join(" "),
+      data: { turbo_frame: :context_overlay, turbo_prefetch: false }
     ) do
       render_context_card_content(context, root:)
     end
@@ -89,17 +98,23 @@ class Views::Contexts::Index < Views::Base
         span(class: "inline-flex rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
           I18n.t("contexts.index.current")
         end
+      elsif context.archived?
+        span(class: "inline-flex rounded-full bg-stone-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+          I18n.t("contexts.index.archived")
+        end
       end
     end
   end
 
   def render_create_child_button(context)
+    return if context.archived?
+
     div(class: "pl-2") do
       link_to(
         new_context_path(source_context_id: context.id),
         class: "inline-flex size-9 items-center justify-center rounded-full border border-dashed border-sky-400 bg-white text-sky-600 transition hover:bg-sky-50",
         title: I18n.t("contexts.index.create_child"),
-        data: { turbo_frame: :center_container, turbo_prefetch: false }
+        data: { turbo_frame: :context_overlay, turbo_prefetch: false }
       ) do
         "+"
       end

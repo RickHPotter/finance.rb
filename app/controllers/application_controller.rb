@@ -58,7 +58,7 @@ class ApplicationController < ActionController::Base
     return unless current_user
 
     @current_context ||= begin
-      context = current_user.contexts.find_by(id: session[:current_context_id]) || current_user.ensure_main_context!
+      context = current_user.contexts.active.find_by(id: session[:current_context_id]) || current_user.ensure_main_context!
       session[:current_context_id] = context.id
       context
     end

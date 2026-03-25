@@ -30,6 +30,37 @@ class ContextsController < ApplicationController
     redirect_to context_path(context)
   end
 
+  def dismiss
+    render inline: helpers.turbo_frame_tag(:context_overlay), layout: false
+  end
+
+  def archive
+    context = current_user.contexts.find(params[:id])
+
+    if context.main?
+      redirect_to contexts_path, alert: t("contexts.archive.main_forbidden")
+      return
+    end
+
+    context.update!(archived_at: Time.current)
+    session[:current_context_id] = current_user.main_context.id if current_context == context
+
+    redirect_to contexts_path, notice: t("contexts.archive.success")
+  end
+
+  def unarchive
+    context = current_user.contexts.find(params[:id])
+
+    if context.main?
+      redirect_to contexts_path, alert: t("contexts.archive.main_forbidden")
+      return
+    end
+
+    context.update!(archived_at: nil)
+
+    redirect_to contexts_path, notice: t("contexts.unarchive.success")
+  end
+
   def switch
     context = current_user.contexts.find(params[:id])
     session[:current_context_id] = context.id

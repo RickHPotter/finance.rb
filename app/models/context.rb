@@ -21,6 +21,8 @@ class Context < ApplicationRecord
 
   scope :main, -> { where(main: true) }
   scope :derived, -> { where(main: false) }
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
 
   def derived?
     !main?

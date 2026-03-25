@@ -12,7 +12,7 @@ class Views::Contexts::New < Views::Base
   end
 
   def view_template
-    turbo_frame_tag :center_container do
+    turbo_frame_tag :context_overlay do
       div(class: "fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4") do
         div(class: "w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl") do
           div(class: "mb-5 flex items-start justify-between gap-4") do
@@ -22,9 +22,9 @@ class Views::Contexts::New < Views::Base
             end
 
             link_to(
-              contexts_path,
+              dismiss_contexts_path,
               class: "inline-flex size-9 items-center justify-center rounded-full border border-stone-200 text-stone-500 transition hover:bg-stone-100",
-              data: { turbo_frame: :center_container, turbo_prefetch: false }
+              data: { turbo_frame: :context_overlay, turbo_prefetch: false }
             ) { "x" }
           end
 
@@ -43,9 +43,9 @@ class Views::Contexts::New < Views::Base
 
             div(class: "flex justify-end gap-3 pt-2") do
               link_to(
-                contexts_path,
+                dismiss_contexts_path,
                 class: "inline-flex items-center rounded-2xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100",
-                data: { turbo_frame: :center_container, turbo_prefetch: false }
+                data: { turbo_frame: :context_overlay, turbo_prefetch: false }
               ) { I18n.t("contexts.form.cancel") }
 
               form.submit I18n.t("contexts.form.create"),

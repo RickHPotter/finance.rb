@@ -44,7 +44,13 @@ Rails.application.routes.draw do
   resources :categories, except: :show
   resources :entities, except: :show
   resources :contexts, only: %i[index show new create] do
+    collection do
+      get :dismiss
+    end
+
     member do
+      patch :archive
+      patch :unarchive
       patch :switch
     end
   end

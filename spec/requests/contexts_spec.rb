@@ -13,6 +13,7 @@ RSpec.describe "Contexts", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Contexts")
+      expect(response.body).to include('id="context_overlay"')
     end
 
     it "renders nested contexts and create-child entrypoints for each node" do
@@ -40,6 +41,7 @@ RSpec.describe "Contexts", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Create Context")
       expect(response.body).to include(user.main_context.name)
+      expect(response.body).to include('id="context_overlay"')
     end
   end
 
@@ -86,6 +88,7 @@ RSpec.describe "Contexts", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Scenario A")
+      expect(response.body).to include('id="context_overlay"')
     end
 
     it "renders switch and create-child actions for derived contexts" do
@@ -166,6 +169,68 @@ RSpec.describe "Contexts", type: :request do
       patch switch_context_path(foreign_context)
 
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "[ #archive ]" do
+    it "archives a derived context and resets the session to main when it was active" do
+      scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
+
+      patch switch_context_path(scenario_context)
+      patch archive_context_path(scenario_context)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(scenario_context.reload.archived_at).to be_present
+      expect(session[:current_context_id]).to eq(user.main_context.id)
+      expect(flash[:notice]).to eq(I18n.t("contexts.archive.success"))
+    end
+
+    it "does not archive the main context" do
+      patch archive_context_path(user.main_context)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(user.main_context.reload.archived_at).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("contexts.archive.main_forbidden"))
+    end
+
+    it "keeps archived contexts visible on index and removes them from the footer switcher" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+
+      get contexts_path
+
+      expect(response.body).to include("Scenario A")
+      expect(response.body).to include(I18n.t("contexts.index.archived"))
+      expect(response.body).not_to include(switch_context_path(archived_context))
+    end
+  end
+
+  describe "[ #unarchive ]" do
+    it "restores an archived derived context" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+
+      patch unarchive_context_path(archived_context)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(archived_context.reload.archived_at).to be_nil
+      expect(flash[:notice]).to eq(I18n.t("contexts.unarchive.success"))
+    end
+
+    it "shows the restore action for archived derived contexts" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+
+      get context_path(archived_context)
+
+      expect(response.body).to include(unarchive_context_path(archived_context))
+      expect(response.body).to include(I18n.t("contexts.show.unarchive"))
+    end
+  end
+
+  describe "[ #dismiss ]" do
+    it "renders an empty overlay frame" do
+      get dismiss_contexts_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.strip).to eq('<turbo-frame id="context_overlay"></turbo-frame>')
     end
   end
 end

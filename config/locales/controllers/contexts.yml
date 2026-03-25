@@ -8,9 +8,15 @@ en:
       subtitle: Scenario branches for your financial timeline.
       main_label: Main context
       derived_label: Derived context
+      archived: Archived
       current: Current
       no_description: No description yet.
       create_child: Create derived context
+    archive:
+      success: Context archived.
+      main_forbidden: Main context cannot be archived.
+    unarchive:
+      success: Context restored.
     new:
       title: Create Context
       subtitle: Clone from %{source_name} into a new scenario.
@@ -21,6 +27,8 @@ en:
       create: Create context
     show:
       label: Context
+      archive: Archive context
+      unarchive: Restore context
       create_child: Create child context
       switch: Switch context
       stats:
@@ -41,9 +49,15 @@ pt-BR:
       subtitle: Ramos de cenário para sua linha do tempo financeira.
       main_label: Contexto principal
       derived_label: Contexto derivado
+      archived: Arquivado
       current: Atual
       no_description: Sem descrição ainda.
       create_child: Criar contexto derivado
+    archive:
+      success: Contexto arquivado.
+      main_forbidden: O contexto principal nao pode ser arquivado.
+    unarchive:
+      success: Contexto restaurado.
     new:
       title: Criar contexto
       subtitle: Clonar de %{source_name} para um novo cenário.
@@ -54,6 +68,8 @@ pt-BR:
       create: Criar contexto
     show:
       label: Contexto
+      archive: Arquivar contexto
+      unarchive: Restaurar contexto
       create_child: Criar contexto filho
       switch: Trocar contexto
       stats:
