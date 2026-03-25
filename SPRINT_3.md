@@ -107,6 +107,12 @@ too visible to ignore.
     clearer allocation.
 - Extra:
   - Keep this part narrow and rule-driven; it is easy for these changes to become too broad.
+  - Planning baseline recorded in
+    `docs/sprints/3-jiraiya/jiraiya-04/01-financial-safety-rules.md`.
+  - Workaround map recorded in
+    `docs/sprints/3-jiraiya/jiraiya-04/02-blocked-mutation-workarounds.md`.
+  - Implementation order recorded in
+    `docs/sprints/3-jiraiya/jiraiya-04/03-implementation-slices.md`.
 
 ### JIRAIYA-05/fe-02: Consolidate data entry UX
 
