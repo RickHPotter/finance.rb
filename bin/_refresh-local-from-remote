@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FORCE="${1:-}"
+SOURCE_KIND="${2:-}"
+
+if [[ "${FORCE}" != "--force" ]]; then
+  echo "Refusing to run without --force"
+  echo "Usage: bin/dev-refresh-from-<source> --force"
+  exit 1
+fi
+
+if [[ "${SOURCE_KIND}" != "prod" && "${SOURCE_KIND}" != "homolog" ]]; then
+  echo "Unknown source kind: ${SOURCE_KIND}"
+  exit 1
+fi
+
+LOCAL_ENV_FILE=".env"
+if [[ -f ".env.development" ]]; then
+  LOCAL_ENV_FILE=".env.development"
+fi
+
+if [[ ! -f "${LOCAL_ENV_FILE}" ]]; then
+  echo "${LOCAL_ENV_FILE} not found"
+  exit 1
+fi
+
+set -a
+source "${LOCAL_ENV_FILE}"
+set +a
+
+LOCAL_DB_HOST="${POSTGRES_HOST:-127.0.0.1}"
+LOCAL_DB_PORT="${POSTGRES_PORT:-5432}"
+LOCAL_DB_USER="${POSTGRES_USERNAME:-postgres}"
+LOCAL_DB_PASSWORD="${POSTGRES_PASSWORD:-}"
+LOCAL_DB_BASE="${POSTGRES_DATABASE:-finance}"
+LOCAL_DEV_DB_NAME="${LOCAL_DB_BASE}_development"
+
+: "${LOCAL_DB_PASSWORD:?POSTGRES_PASSWORD must be set in ${LOCAL_ENV_FILE} for the local development database}"
+
+REMOTE_HOST="${REMOTE_HOST:-187.77.32.15}"
+REMOTE_SSH_TARGET="${REMOTE_SSH_TARGET:-root@${REMOTE_HOST}}"
+
+if [[ "${SOURCE_KIND}" == "prod" ]]; then
+  REMOTE_DB_CONTAINER="${PROD_DB_CONTAINER:-financerb-db}"
+  REMOTE_DB_NAME="${PROD_DB_NAME:-finance}"
+  REMOTE_DB_USER="${PROD_DB_USER:-postgres}"
+  REMOTE_DB_PASSWORD="${LOCAL_DB_PASSWORD}"
+else
+  if [[ ! -f ".env.homolog" ]]; then
+    echo ".env.homolog not found"
+    exit 1
+  fi
+
+  set -a
+  source .env.homolog
+  set +a
+
+  REMOTE_DB_CONTAINER="${HOMOLOG_DB_CONTAINER:-financerb-homolog-db}"
+  REMOTE_DB_NAME="${HOMOLOG_DB_NAME:-finance_homolog}"
+  REMOTE_DB_USER="${HOMOLOG_DB_USER:-postgres}"
+  REMOTE_DB_PASSWORD="${POSTGRES_PASSWORD:-}"
+fi
+
+: "${REMOTE_DB_PASSWORD:?POSTGRES_PASSWORD must be set for the remote ${SOURCE_KIND} database}"
+
+if [[ "${REMOTE_DB_NAME}" == "${LOCAL_DEV_DB_NAME}" ]]; then
+  echo "Refusing to run: source and target DB names are the same"
+  exit 1
+fi
+
+export PGPASSWORD="${LOCAL_DB_PASSWORD}"
+
+psql \
+  --host="${LOCAL_DB_HOST}" \
+  --port="${LOCAL_DB_PORT}" \
+  --username="${LOCAL_DB_USER}" \
+  --dbname=postgres \
+  --set=ON_ERROR_STOP=1 \
+  --command="SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${LOCAL_DEV_DB_NAME}' AND pid <> pg_backend_pid();"
+
+dropdb \
+  --if-exists \
+  --host="${LOCAL_DB_HOST}" \
+  --port="${LOCAL_DB_PORT}" \
+  --username="${LOCAL_DB_USER}" \
+  "${LOCAL_DEV_DB_NAME}"
+
+createdb \
+  --host="${LOCAL_DB_HOST}" \
+  --port="${LOCAL_DB_PORT}" \
+  --username="${LOCAL_DB_USER}" \
+  "${LOCAL_DEV_DB_NAME}"
+
+ssh "${REMOTE_SSH_TARGET}" \
+  REMOTE_DB_CONTAINER="${REMOTE_DB_CONTAINER}" \
+  REMOTE_DB_NAME="${REMOTE_DB_NAME}" \
+  REMOTE_DB_USER="${REMOTE_DB_USER}" \
+  REMOTE_POSTGRES_PASSWORD="${REMOTE_DB_PASSWORD}" \
+  "bash -lc $(printf '%q' "set -euo pipefail; docker inspect \"\$REMOTE_DB_CONTAINER\" >/dev/null; docker exec -e PGPASSWORD=\"\$REMOTE_POSTGRES_PASSWORD\" \"\$REMOTE_DB_CONTAINER\" pg_dump --username=\"\$REMOTE_DB_USER\" --dbname=\"\$REMOTE_DB_NAME\" --no-owner --no-privileges --format=plain")" | \
+psql \
+  --host="${LOCAL_DB_HOST}" \
+  --port="${LOCAL_DB_PORT}" \
+  --username="${LOCAL_DB_USER}" \
+  --dbname="${LOCAL_DEV_DB_NAME}" \
+  --set=ON_ERROR_STOP=1
+
+POSTGRES_HOST="${LOCAL_DB_HOST}" \
+POSTGRES_PORT="${LOCAL_DB_PORT}" \
+POSTGRES_USERNAME="${LOCAL_DB_USER}" \
+POSTGRES_PASSWORD="${LOCAL_DB_PASSWORD}" \
+POSTGRES_DATABASE="${LOCAL_DB_BASE}" \
+bin/rails db:migrate
+
+echo "Development refresh from ${SOURCE_KIND} completed"
