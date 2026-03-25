@@ -182,6 +182,63 @@ RSpec.describe Message, type: :model do
 
       expect(update_message.action_button_key(local_reference_exists: true)).to eq(:edit)
     end
+
+    it "resolves a local reference through an applied predecessor in the same message chain" do
+      receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+      local_reference = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        description: "Original borrow return",
+        price: -20_000,
+        date: Time.zone.parse("2026-03-24")
+      )
+
+      predecessor = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        applied_at: Time.current,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: "Gigi", transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: reference_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Original borrow return",
+            price: -20_000,
+            date: "2026-03-24T00:00:00-03:00"
+          }
+        }.to_json
+      )
+
+      latest_update = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: "Gigi", transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: reference_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Updated borrow return",
+            price: -25_000,
+            date: "2026-03-25T00:00:00-03:00"
+          }
+        }.to_json
+      )
+      predecessor.update!(superseded_by: latest_update)
+
+      expect(latest_update.local_reference_for(context: receiver.main_context)).to eq(local_reference)
+      expect(latest_update.actionable_for?(context: receiver.main_context)).to be(true)
+      expect(latest_update.action_button_key(local_reference_exists: latest_update.local_reference_for(context: receiver.main_context).present?)).to eq(:correct)
+    end
   end
 end
 

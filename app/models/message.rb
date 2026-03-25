@@ -110,7 +110,25 @@ class Message < ApplicationRecord
   def actionable_for?(context: user.ensure_main_context!)
     return false if applied?
 
-    action_button_key(local_reference_exists: local_reference_exists_for?(context:)).in?(%i[create correct destroy])
+    action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy])
+  end
+
+  def local_reference_for(context:)
+    cash_transactions = context.cash_transactions
+
+    if transaction_destroy_notification_message?
+      return if reference_transactable_id.blank?
+
+      return cash_transactions.find_by(id: reference_transactable_id)
+    end
+
+    payload = replay_payload || {}
+    type = payload["type"]
+    id = payload["id"]
+    return if type.blank? || id.blank?
+
+    cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) ||
+      fallback_local_reference_for(cash_transactions)
   end
 
   # @protected_instance_methods ...............................................
@@ -119,20 +137,43 @@ class Message < ApplicationRecord
   private
 
   def local_reference_exists_for?(context:)
-    cash_transactions = context.cash_transactions
+    local_reference_for(context:).present?
+  end
 
-    if transaction_destroy_notification_message?
-      return false if reference_transactable_id.blank?
-
-      cash_transactions.exists?(id: reference_transactable_id)
-    else
-      payload = replay_payload || {}
-      type = payload["type"]
-      id = payload["id"]
-      return false if type.blank? || id.blank?
-
-      cash_transactions.exists?(reference_transactable_type: type, reference_transactable_id: id)
+  def fallback_local_reference_for(cash_transactions)
+    related_reference_messages.each do |candidate|
+      reference = find_fallback_local_reference(cash_transactions, candidate.replay_payload || {})
+      return reference if reference.present?
     end
+
+    nil
+  end
+
+  def related_reference_messages
+    @related_reference_messages ||= if reference_transactable_type.blank? || reference_transactable_id.blank?
+                                      [ self ]
+                                    else
+                                      [ self ] + conversation.messages
+                                                             .where(reference_transactable_type:, reference_transactable_id:)
+                                                             .where.not(id:)
+                                                             .order(applied_at: :desc, created_at: :desc)
+                                                             .to_a
+                                    end
+  end
+
+  def find_fallback_local_reference(cash_transactions, payload)
+    relation = cash_transactions.where(description: payload["description"], price: payload["price"])
+    relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
+
+    category_ids = Array(payload["category_ids"]).compact_blank
+    entity_ids = Array(payload["entity_ids"]).compact_blank
+
+    relation = relation.joins(:categories).where(categories: { id: category_ids }) if category_ids.present?
+    relation = relation.joins(:entities).where(entities: { id: entity_ids }) if entity_ids.present?
+
+    relation.order(created_at: :desc).first
+  rescue ArgumentError
+    relation.order(created_at: :desc).first
   end
 
   def parsed_headers

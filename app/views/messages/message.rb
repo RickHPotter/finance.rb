@@ -89,15 +89,12 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     params = message.replay_payload
     return if params.blank?
 
-    id = params["id"]
-    type = params["type"]
-
-    reference_transactable = viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    reference_transactable = message.local_reference_for(context: current_context)
     action_button_key = message.action_button_key(local_reference_exists: reference_transactable.present?)
 
     if reference_transactable
       render_edit_action(reference_transactable, action_button_key)
-    elsif type&.constantize&.find_by(id:)
+    elsif params["type"]&.constantize&.find_by(id: params["id"])
       render_create_action(action_button_key)
     else
       span(class: status_badge_class) do
@@ -348,25 +345,8 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       if message.transaction_destroy_notification_message?
         viewer_cash_transactions.find_by(id: message.reference_transactable_id)
       elsif type.present? && id.present?
-        viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
+        message.local_reference_for(context: current_context)
       end
-  end
-
-  def fallback_reference_transactable_for_viewer(payload)
-    return if viewer.blank?
-
-    relation = viewer_cash_transactions.where(description: payload["description"], price: payload["price"])
-    relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
-
-    category_ids = Array(payload["category_ids"]).compact_blank
-    entity_ids = Array(payload["entity_ids"]).compact_blank
-
-    relation = relation.joins(:categories).where(categories: { id: category_ids }) if category_ids.present?
-    relation = relation.joins(:entities).where(entities: { id: entity_ids }) if entity_ids.present?
-
-    relation.order(created_at: :desc).first
-  rescue ArgumentError
-    relation.order(created_at: :desc).first
   end
 
   def showable_my_transaction

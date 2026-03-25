@@ -310,6 +310,72 @@ RSpec.describe "Conversations", type: :request do
       )
     end
 
+    it "shows correct instead of create when the latest update can be resolved through an applied predecessor message" do
+      conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      sender_transaction = create(
+        :cash_transaction,
+        user: other_user,
+        context: other_user.main_context,
+        user_bank_account: create(:user_bank_account, user: other_user, bank: create(:bank, :random))
+      )
+      local_reference = create(
+        :cash_transaction,
+        user: user,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        description: "Original borrow return",
+        price: -20_000,
+        date: Time.zone.parse("2026-03-24")
+      )
+
+      predecessor = conversation.messages.create!(
+        user: other_user,
+        reference_transactable: sender_transaction,
+        applied_at: Time.current,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Original borrow return" } },
+          replay: {
+            id: sender_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Original borrow return",
+            price: -20_000,
+            date: "2026-03-24T00:00:00-03:00"
+          }
+        }.to_json
+      )
+      latest_update = conversation.messages.create!(
+        user: other_user,
+        reference_transactable: sender_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Updated borrow return" } },
+          replay: {
+            id: sender_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Updated borrow return",
+            price: -25_000,
+            date: "2026-03-25T00:00:00-03:00"
+          }
+        }.to_json
+      )
+      predecessor.update!(superseded_by: latest_update)
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+      )
+      expect(response.body).not_to include(
+        new_cash_transaction_path(cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+      )
+      expect(response.body).to include(Message.human_attribute_name(:correct))
+    end
+
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       conversation.messages.create!(
