@@ -80,12 +80,43 @@ RSpec.describe Exchange, type: :model do
       )
       create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 1, price: -1000, date: Date.new(2026, 3, 20),
                         month: 3, year: 2026)
-      drifting_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 2, price: -2000,
+      drifting_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 2, price: -1000,
                                             date: Date.new(2026, 4, 20), month: 4, year: 2026)
-      exchange_return.reload.cash_installments.order(:number).last.update_columns(price: -1000)
+      drifting_exchange.update_columns(price: -2000)
 
       expect(drifting_exchange.projection_locked?).to be(false)
       expect(drifting_exchange.mirrored_cash_installments_match?).to be(false)
+    end
+
+    it "reads paid state from the mirrored installment, not only from the parent cash transaction" do
+      user = create(:user)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card: create(:user_card, user:))
+      entity_transaction = create(:entity_transaction, transactable: card_transaction, entity: create(:entity, user:), is_payer: true, price: -3000,
+                                                       price_to_be_returned: -3000)
+      exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        description: "Exchange return",
+        price: -3000,
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        cash_installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 20), month: 3, year: 2026, paid: false },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 20), month: 4, year: 2026, paid: false }
+        ]
+      )
+      paid_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 1, price: -1000,
+                                        date: Date.new(2026, 3, 20), month: 3, year: 2026)
+      unpaid_exchange = create(:exchange, entity_transaction:, cash_transaction: exchange_return, exchange_type: :monetary, number: 2, price: -1000,
+                                          date: Date.new(2026, 4, 20), month: 4, year: 2026)
+      exchange_return.cash_installments.find_by!(number: 1).update_columns(paid: true)
+      exchange_return.update_column(:paid, false)
+
+      expect(paid_exchange.mirrored_paid?).to be(true)
+      expect(unpaid_exchange.mirrored_paid?).to be(false)
     end
   end
 end

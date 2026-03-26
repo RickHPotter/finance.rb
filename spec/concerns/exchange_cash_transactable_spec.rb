@@ -42,7 +42,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   end
 
   def validate(card_transaction, price, count)
-    exchanges = card_transaction.entity_transactions.first.exchanges
+    exchanges = card_transaction.entity_transactions.first.exchanges.reload
     shared_cash_transaction = shared_projection_cash_transaction(card_transaction)
 
     expect(exchanges.sum(:price)).to eq(price)
@@ -52,7 +52,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   end
 
   def shared_projection_cash_transaction(card_transaction)
-    cash_transactions = card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+    cash_transactions = card_transaction.entity_transactions.first.exchanges.reload.filter_map(&:cash_transaction).map(&:reload)
 
     expect(cash_transactions.map(&:id).uniq.count).to eq(1)
 
@@ -147,7 +147,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         exchangable_card_transaction.entity_transactions.first.exchanges.each(&:non_monetary!)
         exchangable_card_transaction.save
 
-        cash_transactions = exchangable_card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+        cash_transactions = exchangable_card_transaction.entity_transactions.first.exchanges.reload.map(&:cash_transaction).compact
 
         expect(cash_transactions).to be_empty
         expect(CashTransaction.where(id: cash_transaction_ids_to_be_deleted)).to be_empty

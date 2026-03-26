@@ -168,6 +168,10 @@ For V1:
 - Shared return paid toggles now have a narrow safety-rule carve-out:
   - pure paid-state toggles are allowed
   - structural/date/price/allocation rewrites remain blocked
+- Pending paid-state notifications are now explicitly acknowledgeable in the assistant thread:
+  - they remain pending until the receiver clicks `Ok`
+  - acknowledging them removes them from the pending assistant view immediately
+- Mirrored unpaid `EXCHANGE RETURN` structural edits now emit the normal actionable counterpart `update` message after reverse-syncing back into the canonical exchange source.
 - Focused exchange concern/model/request coverage is green for the normalized structure and paid-state synchronization.
 
 ## Slice 5. Workaround-Supporting UX
@@ -267,6 +271,16 @@ It was a hardening pass to make the rule set, supporting factories, and indirect
     - bound `Exchange`
   - these maintenance updates are applied atomically without the exchange callback writing stale dates back
   - datetime normalization uses `end_of_day` so persisted dates remain stable under timezone conversion
+- assistant-thread paid-state handling:
+  - `notification:paid_state` no longer shows destroy-state badges
+  - it now has an explicit `Ok` acknowledgment action
+  - it remains in the pending assistant filter until acknowledged
+  - acknowledging it removes it from the pending assistant view immediately through Turbo
+- mirrored exchange-return counterpart notifications:
+  - structural unpaid edits on mirrored `EXCHANGE RETURN` installments now create the normal actionable counterpart `notification:update`
+  - pure paid-state changes remain on the dedicated `notification:paid_state` path
+- exchange projection rebuild maintenance:
+  - mirrored projection installment rebuild now replaces derived installments cleanly instead of stacking duplicate rows under repeated sync passes
 
 ### Validation result
 
@@ -275,7 +289,7 @@ It was a hardening pass to make the rule set, supporting factories, and indirect
   - `spec/concerns`
   - `spec/requests`
 - result:
-  - `513 examples, 0 failures`
+  - `526 examples, 0 failures`
 
 ## Slice 7. Partial `PayMultiple`
 

@@ -61,6 +61,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     if message.superseded_by_id
       render_outdated_state
     else
+      return if message.paid_state_sync_message? && my_assistant_notification?
       return if my_assistant_notification? || message.applied?
 
       render_transaction_actions
@@ -69,6 +70,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_transaction_actions
     return unless current_context.present?
+
+    if message.paid_state_sync_message?
+      render_acknowledge_action
+      return
+    end
 
     if message.transaction_destroy_notification_message?
       return if message.reference_transactable_id.nil?
@@ -247,6 +253,28 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     end
   end
 
+  def render_acknowledge_action
+    Link(
+      href: apply_conversation_message_path(
+        message.conversation,
+        message,
+        format: :turbo_stream,
+        message_filter: active_message_filter,
+        message_side: active_message_sides
+      ),
+      size: :xs,
+      class: action_button_class(:ok),
+      data: {
+        turbo_method: :patch,
+        turbo_frame: "_top",
+        turbo_prefetch: "false",
+        chat_target: :messageAction
+      }
+    ) do
+      span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :ok) }
+    end
+  end
+
   def render_destroy_action(reference_transactable)
     Link(
       href: cash_transaction_path(id: reference_transactable, format: :turbo_stream, message_id: message.id),
@@ -363,7 +391,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def showable_transaction_destroyed?
-    message.transaction_destroy_notification_message?
+    message.transaction_destroy_notification_message? && !message.paid_state_sync_message?
   end
 
   def showable_transaction_link
@@ -431,6 +459,15 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     return @viewer if defined?(@viewer)
 
     @viewer = request.env["warden"].present? ? rails_view_context.current_user : nil
+  end
+
+  def active_message_filter
+    request.params[:message_filter].presence_in(%w[pending all]) || "pending"
+  end
+
+  def active_message_sides
+    requested_sides = Array(request.params[:message_side]).presence || %w[mine theirs]
+    requested_sides & %w[mine theirs]
   end
 
   def viewer_cash_transactions

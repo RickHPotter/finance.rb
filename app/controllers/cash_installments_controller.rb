@@ -73,7 +73,10 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
 
     min_date          = [ *cash_installments.pluck(:date), date ].min
 
-    cash_installments.update_all(date:, year:, month:)
+    cash_installments.each do |cash_installment|
+      cash_installment.update(date:, year:, month:)
+      return handle_failed_save(cash_installment) if cash_installment.errors.any?
+    end
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 

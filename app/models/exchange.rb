@@ -27,6 +27,14 @@ class Exchange < ApplicationRecord
     cash_transaction&.paid_history? || false
   end
 
+  def mirrored_cash_installment
+    cash_transaction&.cash_installments&.find_by(number:)
+  end
+
+  def mirrored_paid?
+    mirrored_cash_installment&.paid? || false
+  end
+
   def mirrored_cash_installments_match?
     return true if non_monetary? || cash_transaction.blank?
 

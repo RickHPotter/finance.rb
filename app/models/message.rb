@@ -94,6 +94,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def action_button_key(local_reference_exists:)
+    return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
     return :edit if applied? && local_reference_exists
     return :correct if notification_action == "update" && local_reference_exists
@@ -103,6 +104,8 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def completed_message_key
+    return :already_acknowledged if paid_state_sync_message?
+
     {
       "create" => :already_created,
       "update" => :already_updated,
@@ -117,7 +120,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def actionable_for?(context: user.ensure_main_context!)
     return false if applied?
 
-    action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy])
+    action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
   end
 
   def local_reference_for(context:)

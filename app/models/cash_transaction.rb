@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CashTransaction < ApplicationRecord
+class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @extends ..................................................................
   # @includes .................................................................
   include HasMonthYear
@@ -32,6 +32,7 @@ class CashTransaction < ApplicationRecord
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
+  validate :prevent_direct_exchange_projection_structure_edit, on: :update
 
   # @callbacks ................................................................
   before_validation :assign_default_context
@@ -119,9 +120,24 @@ class CashTransaction < ApplicationRecord
     return false unless exchange_return? || borrow_return?
 
     return true if reference_transactable.is_a?(CashTransaction) && reference_transactable.user_id != user.id
-    return true if counterpart_shared_return_transaction_exists?
+    return true if counterpart_shared_return_transaction.present?
 
-    entities.that_are_users.exists? && shared_return_notification_history?
+    counterpart_shared_return_user.present? && shared_return_notification_history?
+  end
+
+  def counterpart_shared_return_transaction
+    return @counterpart_shared_return_transaction if defined?(@counterpart_shared_return_transaction) && @counterpart_shared_return_transaction.present?
+
+    @counterpart_shared_return_transaction =
+      direct_counterpart_shared_return_transaction || structurally_matched_counterpart_shared_return_transaction
+  end
+
+  def counterpart_shared_return_user
+    entity_transactions.joins(:entity)
+                       .where.not(entities: { entity_user_id: nil })
+                       .where.not(entities: { entity_user_id: user_id })
+                       .pick("entities.entity_user_id")
+                       .then { |counterpart_user_id| User.find_by(id: counterpart_user_id) }
   end
 
   def can_be_destroyed?
@@ -138,6 +154,70 @@ class CashTransaction < ApplicationRecord
     cash_installments_count
   end
 
+  def sync_exchange_entity_transaction_statuses!
+    exchanges.includes(:entity_transaction).map(&:entity_transaction).uniq.each do |entity_transaction|
+      all_non_monetary_and_paid = entity_transaction.exchanges.includes(:cash_transaction).all? do |exchange|
+        exchange.non_monetary? || exchange.mirrored_paid?
+      end
+
+      entity_transaction.update_columns(status: all_non_monetary_and_paid ? EntityTransaction.statuses[:finished] : EntityTransaction.statuses[:pending])
+    end
+  end
+
+  def sync_exchange_projection_back_to_source! # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    return unless exchange_return?
+
+    payer_entity_transaction = exchanges.includes(:entity_transaction).first&.entity_transaction
+    return if payer_entity_transaction.blank?
+
+    desired_rows = cash_installments.order(:number, :date).map do |installment|
+      {
+        number: installment.number,
+        date: installment.date,
+        month: installment.month,
+        year: installment.year,
+        price: installment.price,
+        starting_price: installment.price
+      }
+    end
+
+    existing_exchanges = payer_entity_transaction.exchanges.monetary.order(:number, :date).to_a
+    existing_by_number = existing_exchanges.index_by(&:number)
+    exchanges_count = desired_rows.count
+    bound_type = existing_exchanges.first&.bound_type || (user_card_id.present? ? "card_bound" : "standalone")
+    total_price = desired_rows.sum { |row| row[:price] }
+    now = Time.current
+
+    desired_rows.each do |row|
+      exchange = existing_by_number.delete(row[:number])
+
+      if exchange.present?
+        exchange.update_columns(row.merge(exchanges_count:, updated_at: now))
+      else
+        Exchange.insert({
+                          entity_transaction_id: payer_entity_transaction.id,
+                          cash_transaction_id: id,
+                          bound_type:,
+                          exchange_type: Exchange.exchange_types.fetch(:monetary),
+                          number: row[:number],
+                          date: row[:date],
+                          month: row[:month],
+                          year: row[:year],
+                          price: row[:price],
+                          starting_price: row[:starting_price],
+                          exchanges_count:,
+                          created_at: now,
+                          updated_at: now
+                        })
+      end
+    end
+
+    Exchange.where(id: existing_by_number.values.map(&:id)).delete_all if existing_by_number.present?
+
+    payer_entity_transaction.update_columns(price: total_price, price_to_be_returned: total_price, exchanges_count:)
+    payer_entity_transaction.exchanges.update_all(exchanges_count:) if exchanges_count.positive?
+  end
+
   def effective_friend_notification_intent
     return friend_notification_intent if friend_notification_intent.present?
 
@@ -148,6 +228,37 @@ class CashTransaction < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def prevent_direct_exchange_projection_structure_edit
+    return unless exchange_return?
+    return unless persisted?
+
+    return if respond_to?(:shared_paid_state_toggle_only?, true) && shared_paid_state_toggle_only?
+    return if editable_unpaid_exchange_projection_change?
+    return unless direct_exchange_projection_structure_edit_attempted?
+
+    errors.add(:base, :exchange_projection_locked)
+  end
+
+  def direct_exchange_projection_structure_edit_attempted?
+    return true if will_save_change_to_price? || will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year?
+
+    cash_installments.any? do |installment|
+      installment.marked_for_destruction? ||
+        installment.new_record? ||
+        installment.changes.except("updated_at", "paid").present?
+    end
+  end
+
+  def editable_unpaid_exchange_projection_change?
+    touched_installments = cash_installments.select do |installment|
+      installment.marked_for_destruction? ||
+        installment.new_record? ||
+        installment.changes.except("updated_at", "paid", "cash_installments_count").present?
+    end
+
+    touched_installments.present? && touched_installments.all? { |installment| installment.new_record? || !installment.paid? }
+  end
 
   def assign_default_context
     self.context ||= user&.ensure_main_context!
@@ -177,20 +288,37 @@ class CashTransaction < ApplicationRecord
            .exists?
   end
 
-  def counterpart_shared_return_transaction_exists?
-    return true if CashTransaction.where(reference_transactable: self).where.not(user_id: user_id).exists?
+  def direct_counterpart_shared_return_transaction
+    CashTransaction.where(reference_transactable: self).where.not(user_id: user_id).first
+  end
 
-    counterpart_user = entities.that_are_users.first&.entity_user
-    return false if counterpart_user.blank?
+  def structurally_matched_counterpart_shared_return_transaction
+    counterpart_user = counterpart_shared_return_user
+    return if counterpart_user.blank?
 
     counterpart_context = if context.main? || context.scenario_key.blank?
                             counterpart_user.ensure_main_context!
                           else
                             counterpart_user.contexts.find_by(scenario_key: context.scenario_key)
                           end
-    return false if counterpart_context.blank?
+    return if counterpart_context.blank?
 
-    counterpart_context.cash_transactions.exists?(reference_transactable: self)
+    counterpart_context.cash_transactions
+                       .includes(:categories, :cash_installments, entity_transactions: :entity)
+                       .select do |transaction|
+      next false if transaction.id == id
+      next false unless transaction.exchange_return? || transaction.borrow_return?
+      next false unless transaction.entity_transactions.joins(:entity).where(entities: { entity_user_id: user_id }).exists?
+
+      transaction.send(:shared_return_structure_signature) == shared_return_structure_signature
+    end
+                     .first
+  end
+
+  def shared_return_structure_signature
+    cash_installments.order(:number, :date).map do |installment|
+      [ installment.number, installment.month, installment.year, installment.price.abs ]
+    end
   end
 
   def build_default_cash_installments

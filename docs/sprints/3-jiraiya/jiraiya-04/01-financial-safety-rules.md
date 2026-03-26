@@ -258,6 +258,10 @@ Current implementation status:
 - implemented for derived contexts through matching `scenario_key`
 - pure paid-state toggles are allowed on shared return flows even after paid history exists
 - the carve-out applies only to `paid` state itself; structural/date/price/allocation rewrites remain blocked
+- `notification:paid_state` is operationally treated as a pending assistant task until the receiver explicitly acknowledges it
+- acknowledging `notification:paid_state` is not a financial apply/replay operation; it is a message acknowledgment step
+- structural edits on mirrored unpaid `EXCHANGE RETURN` installments must emit a normal actionable assistant update to the counterpart user
+- pure paid / not-paid changes on the shared return flow must stay on the `notification:paid_state` path and must not create a second structural action message
 
 ### 6. Category assignment
 

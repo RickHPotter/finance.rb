@@ -163,6 +163,7 @@ module TranslateHelper
       same_cycle_history_correction_confirmation_required
       same_month_paid_state_correction_confirmation_required
       month_boundary_history_correction_confirmation_required
+      exchange_projection_locked
       destroy_locked_after_payment
       paid_history_locked
       allocation_locked_after_payment

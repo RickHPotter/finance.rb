@@ -87,6 +87,60 @@ RSpec.describe CashTransaction, type: :model do
       expect(subject.shared_return_flow?).to be(false)
     end
 
+    it "treats a manually matched shared return pair as a shared return flow" do
+      transaction_user = create(:user, :random)
+      transaction = create(
+        :cash_transaction,
+        user: transaction_user,
+        context: transaction_user.main_context,
+        user_bank_account: create(:user_bank_account, user: transaction_user, bank: create(:bank, :random)),
+        description: "Shared return",
+        price: -1000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [],
+        entity_transactions_attributes: [],
+        cash_installments_attributes: []
+      )
+      transaction.category_transactions.destroy_all
+      transaction.entity_transactions.destroy_all
+      transaction.cash_installments.destroy_all
+      transaction.cash_installments.create!(number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false)
+      transaction.update_column(:cash_installments_count, 1)
+
+      counterpart_user = create(:user, :random)
+      counterpart_entity = create(:entity, user: transaction_user, entity_name: counterpart_user.first_name.upcase, entity_user: counterpart_user)
+      receiver_counterpart = create(:entity, user: counterpart_user, entity_name: transaction_user.first_name.upcase, entity_user: transaction_user)
+      exchange_return = transaction_user.built_in_category("EXCHANGE RETURN")
+      borrow_return = counterpart_user.built_in_category("BORROW RETURN")
+
+      transaction.categories << exchange_return
+      transaction.entity_transactions.create!(entity: counterpart_entity, is_payer: false, price: 0, price_to_be_returned: 0)
+
+      candidate = create(
+        :cash_transaction,
+        user: counterpart_user,
+        context: counterpart_user.main_context,
+        user_bank_account: create(:user_bank_account, user: counterpart_user, bank: create(:bank, :random)),
+        description: "Shared return",
+        price: -1000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [ { category_id: borrow_return.id } ],
+        entity_transactions_attributes: [ { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false } ]
+      )
+      candidate.cash_installments.destroy_all
+      candidate.cash_installments.create!(number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false)
+      candidate.update_column(:cash_installments_count, 1)
+
+      expect(transaction.shared_return_flow?).to be(true)
+      expect(transaction.counterpart_shared_return_transaction).to be_present
+      expect(transaction.counterpart_shared_return_transaction.user).to eq(counterpart_user)
+    end
+
     it "blocks unpaying a local borrow return installment with paid history" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))

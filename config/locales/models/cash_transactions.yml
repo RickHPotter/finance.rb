@@ -10,6 +10,7 @@ en:
           attributes:
             base:
               allocation_locked_after_payment: "Categories and entities cannot be changed after paid history exists."
+              exchange_projection_locked: "This exchange return mirrors exchanges and its structure must be edited from the exchange side."
               paid_history_locked: "Paid history is locked. Edit only future unpaid installments after the latest paid date."
               same_month_paid_state_correction_confirmation_required: "This paid transaction is in the current month and requires explicit confirmation before being marked as not paid."
               month_boundary_history_correction_confirmation_required: "This paid transaction crosses a month boundary and requires explicit confirmation."
@@ -69,6 +70,7 @@ pt-BR:
           attributes:
             base:
               allocation_locked_after_payment: "Categorias e entidades não podem ser alteradas depois que já existe histórico pago."
+              exchange_projection_locked: "Esta devolução de troca espelha as trocas e sua estrutura deve ser alterada pelo lado das trocas."
               paid_history_locked: "O histórico pago está travado. Edite apenas parcelas futuras e pendentes após a última data paga."
               same_month_paid_state_correction_confirmation_required: "Esta movimentação paga está no mês atual e exige confirmação explícita antes de ser marcada como não paga."
               month_boundary_history_correction_confirmation_required: "Esta movimentação paga cruza a virada do mês e exige confirmação explícita."

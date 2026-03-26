@@ -8,6 +8,10 @@ RSpec.describe "CashInstallments", type: :request do
   let(:user_bank_account) { create(:user_bank_account, :random, user:, bank:) }
   let(:installment_date) { Time.zone.local(2026, 3, 10, 12, 0, 0) }
 
+  around do |example|
+    perform_enqueued_jobs { example.run }
+  end
+
   before { sign_in user }
 
   def switch_to_context!(context)
@@ -15,7 +19,7 @@ RSpec.describe "CashInstallments", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
-  def create_shared_return_pair(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def create_shared_return_pair(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context, link_reference: true) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) { |entity_record| entity_record.entity_user = receiver }
     receiver_counterpart = receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) { |entity_record| entity_record.entity_user = sender }
     sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
@@ -50,7 +54,7 @@ RSpec.describe "CashInstallments", type: :request do
       user: receiver,
       context: receiver_context,
       user_bank_account: receiver_bank_account,
-      reference_transactable: sender_transaction,
+      reference_transactable: (sender_transaction if link_reference),
       description: "Shared return",
       date: installment_date,
       month: 3,
@@ -71,6 +75,232 @@ RSpec.describe "CashInstallments", type: :request do
     receiver_transaction.update_column(:cash_installments_count, 1)
 
     [ sender_transaction, receiver_transaction ]
+  end
+
+  def create_card_origin_shared_return_bundle(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    sender_entity_for_receiver =
+      sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+        entity_record.entity_user = receiver
+      end
+    receiver_entity_for_sender =
+      receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+        entity_record.entity_user = sender
+      end
+
+    sender_card = create(:card, :random, bank: create(:bank, :random))
+    sender_user_card = create(:user_card, :random, user: sender, card: sender_card)
+    receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+
+    origin_card_transaction = create(
+      :card_transaction,
+      user: sender,
+      context: sender_context,
+      user_card: sender_user_card,
+      description: "Card mirror source",
+      date: Date.new(2026, 3, 15),
+      month: 4,
+      year: 2026,
+      price: -2_000
+    )
+    origin_card_transaction.category_transactions.destroy_all
+    origin_card_transaction.category_transactions.create!(category: sender.built_in_category("EXCHANGE"))
+    payer_entity_transaction = origin_card_transaction.entity_transactions.first
+    payer_entity_transaction.update!(
+      entity_id: sender_entity_for_receiver.id,
+      is_payer: true,
+      price: -2_000,
+      price_to_be_returned: -2_000,
+      exchanges_count: 2
+    )
+
+    first_exchange = create(
+      :exchange,
+      entity_transaction: payer_entity_transaction,
+      bound_type: :card_bound,
+      exchange_type: :monetary,
+      number: 1,
+      price: -1_000,
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026
+    )
+    create(
+      :exchange,
+      entity_transaction: payer_entity_transaction,
+      bound_type: :card_bound,
+      exchange_type: :monetary,
+      number: 2,
+      price: -1_000,
+      date: Date.new(2026, 4, 20),
+      month: 4,
+      year: 2026
+    )
+
+    sender_shared_return = first_exchange.cash_transaction.reload
+    sender_shared_return.cash_installments.destroy_all
+    sender_shared_return.cash_installments.create!(number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false)
+    sender_shared_return.cash_installments.create!(number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false)
+    sender_shared_return.update_column(:cash_installments_count, 2)
+    receiver_shared_return = create(
+      :cash_transaction,
+      user: receiver,
+      context: receiver_context,
+      user_bank_account: receiver_bank_account,
+      reference_transactable: sender_shared_return,
+      description: sender_shared_return.description,
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026,
+      price: -2_000,
+      category_transactions_attributes: [
+        { category_id: receiver.built_in_category("BORROW RETURN").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: receiver_entity_for_sender.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false },
+        { number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false }
+      ]
+    )
+    receiver_shared_return.cash_installments.destroy_all
+    receiver_shared_return.cash_installments.create!(number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false)
+    receiver_shared_return.cash_installments.create!(number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false)
+    receiver_shared_return.update_column(:cash_installments_count, 2)
+
+    [ origin_card_transaction.reload, sender_shared_return.reload, receiver_shared_return.reload ]
+  end
+
+  def create_reimbursement_shared_return_bundle(sender:, receiver:, sender_context: sender.main_context, receiver_context: receiver.main_context) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    sender_entity_for_receiver =
+      sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+        entity_record.entity_user = receiver
+      end
+    receiver_entity_for_sender =
+      receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+        entity_record.entity_user = sender
+      end
+
+    sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
+    receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+
+    origin_cash_transaction = create(
+      :cash_transaction,
+      user: sender,
+      context: sender_context,
+      user_bank_account: sender_bank_account,
+      description: "Reimbursement source",
+      date: Date.new(2026, 3, 18),
+      month: 3,
+      year: 2026,
+      price: -2_000,
+      category_transactions_attributes: [
+        { category_id: sender.built_in_category("EXCHANGE").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: sender_entity_for_receiver.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: Date.new(2026, 3, 18), month: 3, year: 2026, price: -2_000, paid: false }
+      ]
+    )
+
+    sender_shared_return = create(
+      :cash_transaction,
+      user: sender,
+      context: sender_context,
+      user_bank_account: sender_bank_account,
+      reference_transactable: origin_cash_transaction,
+      description: "Reimbursement return",
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026,
+      price: -2_000,
+      category_transactions_attributes: [
+        { category_id: sender.built_in_category("EXCHANGE RETURN").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: sender_entity_for_receiver.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false },
+        { number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false }
+      ]
+    )
+    sender_shared_return.cash_installments.destroy_all
+    sender_shared_return.cash_installments.create!(number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false)
+    sender_shared_return.cash_installments.create!(number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false)
+    sender_shared_return.update_column(:cash_installments_count, 2)
+
+    payer_entity_transaction = origin_cash_transaction.entity_transactions.first
+    create(
+      :exchange,
+      entity_transaction: payer_entity_transaction,
+      cash_transaction: sender_shared_return,
+      bound_type: :standalone,
+      exchange_type: :monetary,
+      number: 1,
+      price: -1_000,
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026
+    )
+    create(
+      :exchange,
+      entity_transaction: payer_entity_transaction,
+      cash_transaction: sender_shared_return,
+      bound_type: :standalone,
+      exchange_type: :monetary,
+      number: 2,
+      price: -1_000,
+      date: Date.new(2026, 4, 20),
+      month: 4,
+      year: 2026
+    )
+
+    receiver_shared_return = create(
+      :cash_transaction,
+      user: receiver,
+      context: receiver_context,
+      user_bank_account: receiver_bank_account,
+      reference_transactable: sender_shared_return,
+      description: sender_shared_return.description,
+      date: Date.new(2026, 3, 20),
+      month: 3,
+      year: 2026,
+      price: -2_000,
+      category_transactions_attributes: [
+        { category_id: receiver.built_in_category("BORROW RETURN").id }
+      ],
+      entity_transactions_attributes: [
+        { entity_id: receiver_entity_for_sender.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+      ],
+      cash_installments_attributes: [
+        { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false },
+        { number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false }
+      ]
+    )
+    receiver_shared_return.cash_installments.destroy_all
+    receiver_shared_return.cash_installments.create!(number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -1_000, paid: false)
+    receiver_shared_return.cash_installments.create!(number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -1_000, paid: false)
+    receiver_shared_return.update_column(:cash_installments_count, 2)
+
+    [ origin_cash_transaction.reload, sender_shared_return.reload, receiver_shared_return.reload ]
+  end
+
+  def create_reimbursement_shared_return_with_source_reference(sender:, receiver:, sender_context: sender.main_context,
+                                                               receiver_context: receiver.main_context)
+    origin_cash_transaction, sender_shared_return, receiver_shared_return =
+      create_reimbursement_shared_return_bundle(sender:, receiver:, sender_context:, receiver_context:)
+
+    sender_shared_return.update!(
+      reference_transactable: nil
+    )
+    receiver_shared_return.update!(
+      reference_transactable: origin_cash_transaction
+    )
+
+    [ origin_cash_transaction.reload, sender_shared_return.reload, receiver_shared_return.reload ]
   end
 
   describe "[ #pay ]" do
@@ -116,14 +346,58 @@ RSpec.describe "CashInstallments", type: :request do
       expect(remainder.date.to_date).to eq(Date.new(2026, 3, 11))
     end
 
+    it "mirrors the split back to exchanges for exchange return installments" do
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -3_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -3_000, price_to_be_returned: -3_000, is_payer: true, exchanges_count: 3)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 4, 10), month: 4, year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000, date: Date.new(2026, 5, 10), month: 5,
+                        year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 3, price: -1_000, date: Date.new(2026, 6, 10), month: 6,
+                        year: 2026)
+
+      installment = first_exchange.cash_transaction.reload.cash_installments.find_by!(number: 1)
+
+      patch pay_cash_installment_path(installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 26, 17, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: -500
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(entity_transaction.reload.exchanges.order(:number).pluck(:number, :date, :month, :year, :price)).to eq(
+        [
+          [ 1, Time.zone.local(2026, 3, 26, 17, 0, 0), 3, 2026, -500 ],
+          [ 2, Time.zone.local(2026, 4, 10, 0, 0, 0), 4, 2026, -500 ],
+          [ 3, Time.zone.local(2026, 5, 10, 0, 0, 0), 5, 2026, -1_000 ],
+          [ 4, Time.zone.local(2026, 6, 10, 0, 0, 0), 6, 2026, -1_000 ]
+        ]
+      )
+    end
+
     it "synchronizes paid state to the counterpart shared return and informs via assistant message" do
       sender = user
       receiver = create(:user, :random)
       sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+      paid_at = Time.zone.local(2026, 3, 12, 12, 0, 0)
 
       patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
         cash_installment: {
-          date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+          date: paid_at.strftime("%Y-%m-%dT%H:%M"),
           price: -1_000
         }
       }, headers: turbo_stream_headers
@@ -134,6 +408,35 @@ RSpec.describe "CashInstallments", type: :request do
       expect(response).to have_http_status(:ok)
       expect(sender_transaction.cash_installments.first.reload).to be_paid
       expect(receiver_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.date).to eq(paid_at)
+      expect(receiver_transaction.cash_installments.first.month).to eq(3)
+      expect(receiver_transaction.cash_installments.first.year).to eq(2026)
+      expect(message.body).to eq("notification:paid_state")
+      expect(JSON.parse(message.headers)).to include(
+        "version" => "message_paid_state_v1",
+        "event" => include("action" => "paid")
+      )
+    end
+
+    it "synchronizes paid state and message creation for a manually created counterpart pair without explicit linkage" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:, link_reference: false)
+      paid_at = Time.zone.local(2026, 3, 12, 12, 0, 0)
+
+      patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
+        cash_installment: {
+          date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+          price: -1_000
+        }
+      }, headers: turbo_stream_headers
+
+      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      message = conversation.messages.order(:id).last
+
+      expect(response).to have_http_status(:ok)
+      expect(receiver_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.date).to eq(paid_at)
       expect(message.body).to eq("notification:paid_state")
       expect(JSON.parse(message.headers)).to include(
         "version" => "message_paid_state_v1",
@@ -154,6 +457,7 @@ RSpec.describe "CashInstallments", type: :request do
         sender_context: sender_derived,
         receiver_context: receiver_derived
       )
+      paid_at = Time.zone.local(2026, 3, 12, 12, 0, 0)
 
       main_sender_transaction, main_receiver_transaction = create_shared_return_pair(sender:, receiver:)
 
@@ -161,7 +465,7 @@ RSpec.describe "CashInstallments", type: :request do
 
       patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
         cash_installment: {
-          date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+          date: paid_at.strftime("%Y-%m-%dT%H:%M"),
           price: -1_000
         }
       }, headers: turbo_stream_headers
@@ -172,6 +476,7 @@ RSpec.describe "CashInstallments", type: :request do
       expect(response).to have_http_status(:ok)
       expect(sender_transaction.cash_installments.first.reload).to be_paid
       expect(receiver_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.date).to eq(paid_at)
       expect(main_sender_transaction.cash_installments.first.reload).not_to be_paid
       expect(main_receiver_transaction.cash_installments.first.reload).not_to be_paid
       expect(conversation).to be_present
@@ -187,7 +492,24 @@ RSpec.describe "CashInstallments", type: :request do
       sender = user
       receiver = create(:user, :random)
       sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
-      sender.entities.that_are_users.find_by!(entity_user: receiver).update_column(:entity_user_id, nil)
+      receiver_transaction.update_column(:reference_transactable_id, nil)
+      receiver_transaction.update_column(:reference_transactable_type, nil)
+      receiver_transaction.cash_installments.first.update_columns(price: -2_000)
+      Conversation.find_or_create_assistant_between!(sender, receiver).messages.create!(
+        user: sender,
+        reference_transactable: sender_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: sender_transaction.description }
+          },
+          replay: { id: sender_transaction.id, type: "CashTransaction" }
+        }.to_json
+      )
 
       patch pay_cash_installment_path(sender_transaction.cash_installments.first), params: {
         cash_installment: {
@@ -201,6 +523,192 @@ RSpec.describe "CashInstallments", type: :request do
       expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
       expect(response.body).to include(I18n.t("activerecord.errors.models.cash_installment.attributes.base.counterpart_paid_state_sync_missing"))
       expect(Message.where(body: "notification:paid_state")).to be_empty
+    end
+
+    it "reflects paid state on the mirrored exchange row and keeps entity status coherent" do
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 2)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 3, 20), month: 3, year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000, date: Date.new(2026, 4, 20), month: 4,
+                        year: 2026)
+
+      exchange_return = first_exchange.cash_transaction.reload
+      installment = exchange_return.cash_installments.find_by!(number: 1)
+
+      paid_at = Time.zone.parse("2026-03-26 17:00")
+
+      patch pay_cash_installment_path(installment), params: {
+        cash_installment: {
+          date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+          price: installment.price
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(first_exchange.reload.mirrored_paid?).to be(true)
+      expect(first_exchange.date).to eq(paid_at)
+      expect(first_exchange.month).to eq(3)
+      expect(first_exchange.year).to eq(2026)
+      expect(entity_transaction.reload.status).to eq("pending")
+    end
+
+    context "with mirror exchange flows between entity users" do
+      it "synchronizes paid state from a card-origin shared return to the counterpart borrow return" do
+        sender = user
+        receiver = create(:user, :random)
+        _origin_card_transaction, sender_shared_return, receiver_shared_return =
+          create_card_origin_shared_return_bundle(sender:, receiver:)
+        paid_at = Time.zone.local(2026, 3, 25, 11, 30, 0)
+
+        patch pay_cash_installment_path(sender_shared_return.cash_installments.find_by!(number: 1)), params: {
+          cash_installment: {
+            date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+            price: -1_000
+          }
+        }, headers: turbo_stream_headers
+
+        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        message = assistant_conversation.messages.order(:id).last
+
+        expect(response).to have_http_status(:ok)
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 2).reload).not_to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 1).date).to eq(paid_at)
+        expect(message.body).to eq("notification:paid_state")
+        expect(message.applied_at).to be_nil
+        expect(JSON.parse(message.headers)).to include(
+          "version" => "message_paid_state_v1",
+          "event" => include("action" => "paid")
+        )
+      end
+
+      it "synchronizes multiple paid installments from the counterpart borrow return back to the card-origin shared return" do
+        sender = user
+        receiver = create(:user, :random)
+        _origin_card_transaction, sender_shared_return, receiver_shared_return =
+          create_card_origin_shared_return_bundle(sender:, receiver:)
+        paid_at = Time.zone.local(2026, 4, 25, 10, 15, 0)
+
+        sign_out sender
+        sign_in receiver
+
+        receiver_shared_return.cash_installments.order(:number).each do |installment|
+          patch pay_cash_installment_path(installment), params: {
+            cash_installment: {
+              date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+              price: installment.price
+            }
+          }, headers: turbo_stream_headers
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
+
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(sender_shared_return.cash_installments.find_by!(number: 2).reload).to be_paid
+        expect(paid_state_messages.count).to eq(2)
+        expect(paid_state_messages.pluck(:applied_at)).to all(be_nil)
+      end
+
+      it "keeps the reimbursement source transaction untouched while syncing the shared return pair" do
+        sender = user
+        receiver = create(:user, :random)
+        origin_cash_transaction, sender_shared_return, receiver_shared_return =
+          create_reimbursement_shared_return_bundle(sender:, receiver:)
+        paid_at = Time.zone.local(2026, 3, 27, 9, 45, 0)
+
+        patch pay_cash_installment_path(sender_shared_return.cash_installments.find_by!(number: 1)), params: {
+          cash_installment: {
+            date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+            price: -1_000
+          }
+        }, headers: turbo_stream_headers
+
+        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        message = assistant_conversation.messages.order(:id).last
+
+        expect(response).to have_http_status(:ok)
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(origin_cash_transaction.cash_installments.find_by!(number: 1).reload).not_to be_paid
+        expect(message.body).to eq("notification:paid_state")
+        expect(message.applied_at).to be_nil
+      end
+
+      it "synchronizes a borrow return installment to the counterpart exchange return and not to the source reimbursement transaction" do
+        sender = create(:user, :random)
+        receiver = user
+        origin_cash_transaction, sender_shared_return, receiver_shared_return =
+          create_reimbursement_shared_return_bundle(sender:, receiver:)
+        paid_at = Time.zone.local(2026, 3, 28, 14, 10, 0)
+
+        patch pay_cash_installment_path(receiver_shared_return.cash_installments.find_by!(number: 1)), params: {
+          cash_installment: {
+            date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+            price: -1_000
+          }
+        }, headers: turbo_stream_headers
+
+        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        message = assistant_conversation.messages.order(:id).last
+
+        expect(response).to have_http_status(:ok)
+        expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(origin_cash_transaction.cash_installments.find_by!(number: 1).reload).not_to be_paid
+        expect(origin_cash_transaction.reload).not_to be_paid
+        expect(sender_shared_return.reload).not_to be_paid
+        expect(message.body).to eq("notification:paid_state")
+        expect(message.applied_at).to be_nil
+      end
+
+      it "keeps the reimbursement source transaction untouched when the counterpart user pays multiple installments" do
+        sender = user
+        receiver = create(:user, :random)
+        origin_cash_transaction, sender_shared_return, receiver_shared_return =
+          create_reimbursement_shared_return_bundle(sender:, receiver:)
+        paid_at = Time.zone.local(2026, 4, 27, 9, 45, 0)
+
+        sign_out sender
+        sign_in receiver
+
+        receiver_shared_return.cash_installments.order(:number).each do |installment|
+          patch pay_cash_installment_path(installment), params: {
+            cash_installment: {
+              date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+              price: installment.price
+            }
+          }, headers: turbo_stream_headers
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
+
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(sender_shared_return.cash_installments.find_by!(number: 2).reload).to be_paid
+        expect(origin_cash_transaction.cash_installments.find_by!(number: 1).reload).not_to be_paid
+        expect(paid_state_messages.count).to eq(2)
+        expect(paid_state_messages.pluck(:applied_at)).to all(be_nil)
+      end
     end
   end
 
@@ -236,6 +744,104 @@ RSpec.describe "CashInstallments", type: :request do
       expect(second.reload).to be_paid
       expect(first.date.to_date).to eq(Date.new(2026, 3, 20))
       expect(second.date.to_date).to eq(Date.new(2026, 3, 20))
+    end
+
+    it "mirrors paid dates back to exchanges for exchange return installments" do
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Bulk mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 2)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 4, 10), month: 4, year: 2026)
+      second_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000,
+                                          date: Date.new(2026, 5, 10), month: 5, year: 2026)
+      installments = first_exchange.cash_transaction.reload.cash_installments.order(:number)
+      paid_at = Time.zone.local(2026, 3, 20, 10, 0, 0)
+
+      post pay_multiple_cash_installments_path, params: {
+        ids: installments.pluck(:id),
+        cash_installment: {
+          date: paid_at.strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(first_exchange.reload.date).to eq(paid_at)
+      expect(second_exchange.reload.date).to eq(paid_at)
+      expect(first_exchange.reload.mirrored_paid?).to be(true)
+      expect(second_exchange.reload.mirrored_paid?).to be(true)
+    end
+
+    it "creates one paid-state message per mirrored shared return transaction even when headers match" do
+      sender = create(:user, :random)
+      receiver = user
+      _origin_card_transaction, sender_shared_return_one, receiver_shared_return_one =
+        create_card_origin_shared_return_bundle(sender:, receiver:)
+      _origin_cash_transaction, sender_shared_return_two, receiver_shared_return_two =
+        create_reimbursement_shared_return_bundle(sender:, receiver:)
+      paid_at = Time.zone.local(2026, 3, 27, 12, 0, 0)
+
+      receiver_shared_return_one.update!(description: receiver_shared_return_two.description)
+      sender_shared_return_one.update!(description: sender_shared_return_two.description)
+
+      post pay_multiple_cash_installments_path, params: {
+        ids: [
+          receiver_shared_return_one.cash_installments.find_by!(number: 1).id,
+          receiver_shared_return_two.cash_installments.find_by!(number: 1).id
+        ],
+        cash_installment: {
+          date: paid_at.strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
+
+      expect(response).to have_http_status(:ok)
+      expect(receiver_shared_return_one.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(receiver_shared_return_two.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(sender_shared_return_one.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(sender_shared_return_two.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(paid_state_messages.count).to eq(2)
+      expect(paid_state_messages.pluck(:reference_transactable_id)).to match_array(
+        [ receiver_shared_return_one.id, receiver_shared_return_two.id ]
+      )
+    end
+
+    it "pays the counterpart exchange return and not the reimbursement source when the borrow return references the source transaction" do
+      sender = create(:user, :random)
+      receiver = user
+      origin_cash_transaction, sender_shared_return, receiver_shared_return =
+        create_reimbursement_shared_return_with_source_reference(sender:, receiver:)
+      paid_at = Time.zone.local(2026, 3, 28, 15, 30, 0)
+
+      post pay_multiple_cash_installments_path, params: {
+        ids: [ receiver_shared_return.cash_installments.find_by!(number: 1).id ],
+        cash_installment: {
+          date: paid_at.strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      message = assistant_conversation.messages.where(body: "notification:paid_state").order(:id).last
+
+      expect(response).to have_http_status(:ok)
+      expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+      expect(origin_cash_transaction.cash_installments.find_by!(number: 1).reload).not_to be_paid
+      expect(origin_cash_transaction.reload).not_to be_paid
+      expect(message.reference_transactable).to eq(receiver_shared_return)
     end
   end
 
@@ -276,6 +882,46 @@ RSpec.describe "CashInstallments", type: :request do
       expect(second.date.to_date).to eq(Date.new(2026, 5, 2))
       expect(first).not_to be_paid
       expect(second).not_to be_paid
+    end
+
+    it "mirrors transferred installments back to exchanges for exchange return installments" do
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Transfer mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 2)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 4, 10), month: 4, year: 2026)
+      second_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000,
+                                          date: Date.new(2026, 5, 10), month: 5, year: 2026)
+      installments = first_exchange.cash_transaction.reload.cash_installments.order(:number)
+      transferred_at = Time.zone.local(2026, 5, 2, 9, 0, 0)
+
+      post transfer_multiple_cash_installments_path, params: {
+        ids: installments.pluck(:id),
+        reference_date: "2026-05",
+        cash_installment: {
+          date: transferred_at.strftime("%Y-%m-%dT%H:%M")
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(first_exchange.reload.date).to eq(transferred_at)
+      expect(first_exchange.month).to eq(5)
+      expect(second_exchange.reload.date).to eq(transferred_at)
+      expect(second_exchange.month).to eq(5)
+      expect(first_exchange.reload.mirrored_paid?).to be(false)
+      expect(second_exchange.reload.mirrored_paid?).to be(false)
     end
   end
 

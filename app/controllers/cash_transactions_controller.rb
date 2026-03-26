@@ -63,6 +63,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def update
     @shared_paid_state_notifications = pending_shared_paid_state_notifications
+    @exchange_projection_notification_required = exchange_projection_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
@@ -299,6 +300,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_successful_save
+    if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
+      @cash_transaction.sync_exchange_projection_back_to_source!
+      notify_exchange_projection_counterpart_update! if @exchange_projection_notification_required
+    end
+
     sync_shared_paid_state_messages_from_form!
     mark_source_message_applied
     index
@@ -338,6 +344,55 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         }
       }
     }
+  end
+
+  def exchange_projection_notification_required?
+    return false unless @cash_transaction.exchange_return?
+    return false if submitted_cash_installment_attributes.blank?
+
+    submitted_cash_installment_attributes.any? do |installment_attributes|
+      installment_attributes = installment_attributes.with_indifferent_access
+
+      installment_attributes[:_destroy].to_s == "true" ||
+        installment_attributes[:id].blank? ||
+        exchange_projection_installment_fields_changed?(installment_attributes)
+    end
+  end
+
+  def exchange_projection_installment_fields_changed?(installment_attributes)
+    installment = @cash_transaction.cash_installments.find { |record| record.id == installment_attributes[:id].to_i }
+    return false if installment.blank?
+
+    {
+      number: installment.number,
+      date: installment.date&.iso8601,
+      month: installment.month,
+      year: installment.year,
+      price: installment.price
+    }.any? do |key, previous_value|
+      submitted_value = installment_attributes[key]
+      next false if submitted_value.blank?
+
+      normalized_submitted_value =
+        case key
+        when :number, :month, :year, :price
+          submitted_value.to_i
+        when :date
+          Time.zone.parse(submitted_value)&.iso8601
+        end
+
+      normalized_submitted_value != previous_value
+    rescue ArgumentError
+      true
+    end
+  end
+
+  def notify_exchange_projection_counterpart_update!
+    source_transactable = @cash_transaction.exchanges.includes(entity_transaction: :transactable).first&.entity_transaction&.transactable
+    return if source_transactable.blank?
+    return unless source_transactable.respond_to?(:notify_friends, true)
+
+    source_transactable.send(:notify_friends, :update)
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity

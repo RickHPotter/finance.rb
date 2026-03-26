@@ -26,13 +26,21 @@ module Logic
 
       counterpart_updated = false
 
-      if counterpart_installment.paid != installment.paid
-        counterpart_installment.skip_shared_paid_state_sync = true
-        counterpart_installment.update!(paid: installment.paid)
-        counterpart_updated = true
+      counterpart_attributes = counterpart_installment_attributes
+      recalculation_start = counterpart_recalculation_start(counterpart_attributes)
+
+      CashInstallment.transaction do
+        if counterpart_sync_required?(counterpart_attributes)
+          counterpart_installment.skip_shared_paid_state_sync = true
+          counterpart_installment.update!(counterpart_attributes)
+          sync_counterpart_transaction_state!
+          recalculate_counterpart_balances!(recalculation_start)
+          counterpart_updated = true
+        end
+
+        notify_counterpart_paid_state_change! if counterpart_updated || force_notify? || local_paid_state_changed?
       end
 
-      notify_counterpart_paid_state_change! if counterpart_updated || force_notify? || local_paid_state_changed?
       true
     end
 
@@ -52,12 +60,20 @@ module Logic
       reference = transaction.reference_transactable
       return unless reference.is_a?(CashTransaction)
       return if reference.user_id == transaction.user_id
+      return unless reference.exchange_return? || reference.borrow_return?
 
       reference
     end
 
     def mirrored_counterpart_transaction(transaction)
-      counterpart_user = transaction.entities.that_are_users.first&.entity_user
+      return transaction.counterpart_shared_return_transaction if transaction.respond_to?(:counterpart_shared_return_transaction)
+
+      counterpart_user =
+        if transaction.respond_to?(:counterpart_shared_return_user)
+          transaction.counterpart_shared_return_user
+        else
+          transaction.entities.that_are_users.first&.entity_user
+        end
       return if counterpart_user.blank?
 
       counterpart_context = if transaction.context.main? || transaction.context.scenario_key.blank?
@@ -80,7 +96,7 @@ module Logic
       )
       headers = paid_state_headers(receiver).to_json
 
-      return if Message.exists?(conversation:, body: "notification:paid_state", headers:)
+      return if Message.exists?(conversation:, body: "notification:paid_state", headers:, reference_transactable: installment.cash_transaction)
 
       conversation.messages.create!(
         user: sender,
@@ -107,6 +123,53 @@ module Logic
           }
         }
       }
+    end
+
+    def counterpart_installment_attributes
+      {
+        paid: installment.paid,
+        date: installment.date,
+        month: installment.month,
+        year: installment.year
+      }
+    end
+
+    def counterpart_sync_required?(attributes)
+      attributes.any? do |key, value|
+        counterpart_installment.public_send(key) != value
+      end
+    end
+
+    def counterpart_recalculation_start(attributes)
+      original_date = counterpart_installment.date
+      incoming_date = attributes[:date]
+      earliest_date = [ original_date, incoming_date ].compact.min
+
+      {
+        year: earliest_date&.year || attributes[:year] || counterpart_installment.year,
+        month: earliest_date&.month || attributes[:month] || counterpart_installment.month
+      }
+    end
+
+    def sync_counterpart_transaction_state!
+      transaction = counterpart_installment.cash_transaction
+
+      transaction.update_columns(paid: transaction.cash_installments.where(paid: false).none?)
+      return unless transaction.exchange_return?
+
+      counterpart_installment.send(:sync_mirrored_exchange_settlement!)
+      transaction.sync_exchange_entity_transaction_statuses!
+    end
+
+    def recalculate_counterpart_balances!(recalculation_start)
+      transaction = counterpart_installment.cash_transaction
+
+      Logic::RecalculateBalancesService.new(
+        user: transaction.user,
+        context: transaction.context,
+        year: recalculation_start[:year],
+        month: recalculation_start[:month]
+      ).call
     end
   end
 end

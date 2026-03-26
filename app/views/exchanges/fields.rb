@@ -44,7 +44,7 @@ module Views
                 exchange.number
               end
 
-              div(class: "w-3 h-3 rounded-full #{exchange.cash_transaction&.paid ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
+              div(class: "w-3 h-3 rounded-full #{exchange.mirrored_paid? ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
 
               span(
                 class: "exchange_month_year text-gray-900",
@@ -103,7 +103,7 @@ module Views
       end
 
       def locked?
-        exchange.cash_transaction&.paid? || false
+        exchange.mirrored_paid?
       end
     end
   end

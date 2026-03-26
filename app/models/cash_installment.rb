@@ -18,7 +18,7 @@ class CashInstallment < Installment
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
   after_save :check_paid_situation
-  after_commit :sync_shared_paid_state!, on: :update, if: :did_sync_shared_paid_state?
+  after_commit :enqueue_shared_paid_state_sync!, on: :update, if: :did_sync_shared_paid_state?
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
@@ -76,6 +76,8 @@ class CashInstallment < Installment
   #
   def check_paid_situation
     cash_transaction.update_columns(paid: should_be_paid?)
+    sync_mirrored_exchange_settlement! if cash_transaction.exchange_return?
+    cash_transaction.sync_exchange_entity_transaction_statuses! if cash_transaction.exchange_return?
 
     return unless cash_transaction.card_payment?
 
@@ -84,6 +86,21 @@ class CashInstallment < Installment
 
   def should_be_paid?
     cash_transaction.cash_installments.where(paid: false).empty?
+  end
+
+  def sync_mirrored_exchange_settlement!
+    exchange = cash_transaction.exchanges.find_by(number:)
+    return if exchange.blank?
+
+    attributes = {
+      date:,
+      month:,
+      year:
+    }
+
+    return if attributes.all? { |key, value| exchange.public_send(key) == value }
+
+    exchange.update_columns(attributes)
   end
 
   def shared_paid_state_transaction?
@@ -109,8 +126,8 @@ class CashInstallment < Installment
     errors.add(:base, :counterpart_paid_state_sync_missing)
   end
 
-  def sync_shared_paid_state!
-    shared_paid_state_sync_service.call
+  def enqueue_shared_paid_state_sync!
+    SyncSharedPaidStateJob.perform_later(cash_installment_id: id, force_notify: true)
   end
 
   def shared_paid_state_sync_service

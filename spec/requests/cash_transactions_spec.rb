@@ -868,6 +868,90 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:ok)
       expect(locked_transaction.reload.cash_installments.find_by!(number: 1)).not_to be_paid
     end
+
+    it "allows direct structural edits on unpaid mirrored exchange return installments and mirrors them back to exchanges" do
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 2)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 3, 20), month: 3, year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000, date: Date.new(2026, 4, 20), month: 4,
+                        year: 2026)
+
+      exchange_return = first_exchange.cash_transaction&.reload
+      expect(exchange_return).to be_present
+      first_installment = exchange_return.cash_installments.find_by!(number: 1)
+      second_installment = exchange_return.cash_installments.find_by!(number: 2)
+
+      put cash_transaction_path(exchange_return), params: {
+        cash_transaction: {
+          description: exchange_return.description,
+          price: exchange_return.price,
+          date: exchange_return.date,
+          month: exchange_return.month,
+          year: exchange_return.year,
+          user_id: user.id,
+          user_bank_account_id: exchange_return.user_bank_account_id,
+          category_transactions_attributes: exchange_return.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          entity_transactions_attributes: exchange_return.entity_transactions.to_h do |record|
+            [ record.id.to_s,
+              { id: record.id, entity_id: record.entity_id, is_payer: record.is_payer, price: record.price, price_to_be_returned: record.price_to_be_returned,
+                exchanges_attributes: {} } ]
+          end,
+          cash_installments_attributes: {
+            "0" => {
+              id: first_installment.id,
+              number: first_installment.number,
+              date: first_installment.date,
+              month: first_installment.month,
+              year: first_installment.year,
+              price: first_installment.price,
+              paid: first_installment.paid
+            },
+            "1" => {
+              id: second_installment.id,
+              number: second_installment.number,
+              date: second_installment.date,
+              month: second_installment.month,
+              year: second_installment.year,
+              price: second_installment.price,
+              paid: second_installment.paid
+            },
+            "2" => {
+              number: 3,
+              date: Date.new(2026, 5, 20),
+              month: 5,
+              year: 2026,
+              price: -1_000,
+              paid: false
+            }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(exchange_return.reload.cash_installments.count).to eq(3)
+      expect(entity_transaction.reload.exchanges.count).to eq(3)
+      expect(entity_transaction.reload.exchanges.order(:number).pluck(:number, :month, :year, :price)).to eq(
+        [
+          [ 1, 3, 2026, -1_000 ],
+          [ 2, 4, 2026, -1_000 ],
+          [ 3, 5, 2026, -1_000 ]
+        ]
+      )
+    end
   end
 
   describe "[ context isolation ]" do
@@ -1309,6 +1393,10 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ shared paid state sync ]" do
+    around do |example|
+      perform_enqueued_jobs { example.run }
+    end
+
     it "synchronizes a shared return back to not paid and informs through the assistant thread" do
       sender = create(:user, first_name: "Rikki", email: "rikki-paid-sync@example.com")
       receiver = create(:user, first_name: "Gigi", email: "gigi-paid-sync@example.com")
@@ -1413,6 +1501,105 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:ok)
       expect(Message.where(body: "notification:paid_state")).to be_empty
       expect(receiver_transaction.reload.cash_installments.first).to be_paid
+    end
+  end
+
+  describe "[ exchange return counterpart notifications ]" do
+    it "creates an actionable update message when unpaid mirrored installments change structurally" do
+      receiver = create(:user, :random)
+      receiver_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
+      create(:entity, user: receiver, entity_name: user.first_name.upcase, entity_user: user)
+      card = create(:card, :random, bank: bank)
+      user_card = create(:user_card, :random, user:, card:)
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Mirror source",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -3_000
+      )
+      card_transaction.category_transactions.destroy_all
+      card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(entity_id: receiver_entity.id, price: -3_000, price_to_be_returned: -3_000, is_payer: true, exchanges_count: 3)
+      first_exchange = create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 1, price: -1_000,
+                                         date: Date.new(2026, 4, 10), month: 4, year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 2, price: -1_000, date: Date.new(2026, 5, 10), month: 5,
+                        year: 2026)
+      create(:exchange, entity_transaction:, bound_type: :card_bound, exchange_type: :monetary, number: 3, price: -1_000, date: Date.new(2026, 6, 10), month: 6,
+                        year: 2026)
+      exchange_return = first_exchange.cash_transaction.reload
+
+      expect do
+        patch cash_transaction_path(exchange_return), params: {
+          cash_transaction: {
+            description: exchange_return.description,
+            comment: exchange_return.comment,
+            price: -3_000,
+            date: exchange_return.date,
+            month: exchange_return.month,
+            year: exchange_return.year,
+            user_id: user.id,
+            user_bank_account_id: exchange_return.user_bank_account_id,
+            category_transactions_attributes: exchange_return.category_transactions.map { |record| { id: record.id, category_id: record.category_id } },
+            entity_transactions_attributes: exchange_return.entity_transactions.map do |record|
+              { id: record.id, entity_id: record.entity_id, is_payer: record.is_payer, price: record.price, price_to_be_returned: record.price_to_be_returned,
+                exchanges_attributes: [] }
+            end,
+            cash_installments_attributes: [
+              {
+                id: exchange_return.cash_installments.find_by!(number: 1).id,
+                number: 1,
+                date: exchange_return.cash_installments.find_by!(number: 1).date,
+                month: 4,
+                year: 2026,
+                price: -1_000,
+                paid: false
+              },
+              {
+                id: exchange_return.cash_installments.find_by!(number: 2).id,
+                number: 2,
+                date: exchange_return.cash_installments.find_by!(number: 2).date,
+                month: 5,
+                year: 2026,
+                price: -1_000,
+                paid: false
+              },
+              {
+                id: exchange_return.cash_installments.find_by!(number: 3).id,
+                number: 3,
+                date: exchange_return.cash_installments.find_by!(number: 3).date,
+                month: 6,
+                year: 2026,
+                price: -500,
+                paid: false
+              },
+              {
+                number: 4,
+                date: Time.zone.local(2026, 7, 10, 0, 0, 0),
+                month: 7,
+                year: 2026,
+                price: -500,
+                paid: false
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      message = Message.where(body: "notification:update").order(:id).last
+
+      expect(response).to have_http_status(:ok)
+      expect(message.user).to eq(user)
+      expect(message.conversation.users).to match_array([ user, receiver ])
+      expect(JSON.parse(message.headers)).to include(
+        "version" => "message_notification_v2",
+        "event" => include("action" => "update")
+      )
     end
   end
 

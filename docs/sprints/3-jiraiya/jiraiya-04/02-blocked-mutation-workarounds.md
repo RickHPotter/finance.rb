@@ -244,6 +244,13 @@ Classification:
 
 - `workaround`
 
+Current runtime refinement:
+
+- if the mirrored `EXCHANGE RETURN` installments are still unpaid, structural edits are allowed
+- the mirrored change must sync back to the canonical `Exchange` side
+- and the counterpart user must receive a normal actionable assistant `update` message for the shared structure change
+- if the change is only paid / not-paid state, this does not use the structural action-message path; it stays on the paid-state sync notification path
+
 ### 9. Exchange count/shape change after linked paid history exists
 
 Blocked mutation:

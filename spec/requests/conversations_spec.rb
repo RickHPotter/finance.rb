@@ -249,6 +249,40 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include("Edit me")
     end
 
+    it "keeps paid-state notifications in pending until acknowledged" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "Shared return",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).to include("Shared return")
+      expect(response.body).to include(Message.human_attribute_name(:ok))
+
+      patch apply_conversation_message_path(conversation, message), headers: turbo_stream_headers
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).not_to include("Shared return")
+    end
+
     it "keeps pending assistant message resolution scoped to the current context" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       bank = create(:bank, :random)
@@ -468,6 +502,69 @@ RSpec.describe "Conversations", type: :request do
 
       expect(response.body).to include(Message.human_attribute_name(:already_destroyed))
       expect(response.body).to include(I18n.t("actions.show"))
+    end
+
+    it "renders paid-state messages with an ok action and without the destroyed badge" do
+      cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        reference_transactable: cash_transaction,
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "SHARED RETURN",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:ok))
+      expect(response.body).not_to include(Message.human_attribute_name(:already_destroyed))
+    end
+
+    it "allows acknowledging a paid-state message" do
+      cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        reference_transactable: cash_transaction,
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "SHARED RETURN",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      patch apply_conversation_message_path(conversation, message), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(message.reload.applied_at).to be_present
+      expect(response.body).to include(Message.human_attribute_name(:already_acknowledged))
     end
 
     it "filters assistant messages by mine and theirs" do

@@ -330,7 +330,7 @@ export default class extends Controller {
     return new RailsDate(this.element.querySelector(".installment_date").value)
   }
 
-  _updateWrappers(startingRailsDate) {
+  _updateWrappers(startingRailsDate, { preserveLocked = false } = {}) {
     const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.style.display !== "none")
     const firstVisibleInstallment = visibleInstallmentsWrappers[0]
 
@@ -345,20 +345,30 @@ export default class extends Controller {
       startingRailsDate.setMonth(railsDate.month)
     }
 
+    let proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
+
     visibleInstallmentsWrappers.forEach((target, index) => {
-      const proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
-      proposedDate.monthsForwards(index)
+      const locked = preserveLocked && target.dataset.locked === "true"
 
       target.querySelector(".installment_number").value = index + 1
       target.querySelector(".installment_number_display").textContent = index + 1
 
-      target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
-      target.querySelector(".installment_month").value = startingRailsDate.month
-      target.querySelector(".installment_year").value = startingRailsDate.year
+      if (locked) {
+        proposedDate = new RailsDate(target.querySelector(".installment_date").value)
+        startingRailsDate = new RailsDate(
+          parseInt(target.querySelector(".installment_year").value, 10),
+          parseInt(target.querySelector(".installment_month").value, 10),
+          1
+        )
+      } else {
+        target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
+        target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
+        target.querySelector(".installment_month").value = startingRailsDate.month
+        target.querySelector(".installment_year").value = startingRailsDate.year
 
-      if (target.querySelector("[data-action='click->reactive-form#togglePaid']")) {
-        this.setPaidIfPastCurrentDay({ target: target.querySelector(".installment_date") })
+        if (target.querySelector("[data-action='click->reactive-form#togglePaid']")) {
+          this.setPaidIfPastCurrentDay({ target: target.querySelector(".installment_date") })
+        }
       }
 
       startingRailsDate.monthsForwards(1)
@@ -458,7 +468,7 @@ export default class extends Controller {
     }
 
     const railsDueDate = this._getDueDate()
-    this._updateWrappers(railsDueDate)
+    this._updateWrappers(railsDueDate, { preserveLocked: true })
   }
 
   // Categories

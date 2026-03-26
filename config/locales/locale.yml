@@ -26,6 +26,7 @@ en:
     workaround: "Suggested fix"
     history_workarounds:
       allocation_locked_after_payment: "Keep the paid portion unchanged. If the future allocation changed, create a new future-only transaction for the new categories or entities."
+      exchange_projection_locked: "Edit the exchange side instead of editing the mirrored return installments directly."
       paid_history_locked:
         default: "Keep the paid portion unchanged. Edit only unpaid future installments after the latest paid date, or create a compensating entry for the historical mismatch."
         cash_transaction: "Keep the paid portion unchanged. If this is a current-month unpay or a delayed-entry month-boundary correction, use the confirmation path shown by the app; otherwise edit only future unpaid installments or create a compensating entry."
@@ -131,6 +132,7 @@ pt-BR:
     workaround: "Como resolver"
     history_workarounds:
       allocation_locked_after_payment: "Mantenha a parte já paga intacta. Se a alocação futura mudou, crie uma nova transação apenas para o trecho futuro com as novas categorias ou entidades."
+      exchange_projection_locked: "Edite o lado das trocas em vez de editar diretamente as parcelas espelhadas da devolução."
       paid_history_locked:
         default: "Mantenha a parte já paga intacta. Edite somente parcelas futuras e pendentes após a última data paga, ou crie uma movimentação compensatória para corrigir o histórico."
         cash_transaction: "Mantenha a parte já paga intacta. Se isto for uma reversão no mês atual ou uma correção de lançamento tardio na virada do mês, use o fluxo de confirmação mostrado pelo app; caso contrário, edite apenas parcelas futuras pendentes ou crie uma movimentação compensatória."

@@ -108,7 +108,11 @@ Rails.application.routes.draw do
   resources :subscriptions, except: :show
 
   resources :conversations, only: %i[index show create] do
-    resources :messages, only: :create
+    resources :messages, only: :create do
+      member do
+        patch :apply
+      end
+    end
   end
 
   resources :push_subscriptions, only: :create

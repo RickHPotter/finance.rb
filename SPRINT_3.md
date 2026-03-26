@@ -138,6 +138,9 @@ too visible to ignore.
         `CashTransactable` aggregate switches
       - unpaid `CardTransaction` moves into paid invoice cycles are now blocked
       - shared paid-state sync resolution now accepts direct reverse linkage
+      - shared paid-state notifications now stay pending until explicitly acknowledged
+      - mirrored unpaid `EXCHANGE RETURN` structural edits now notify the counterpart
+        through a normal actionable assistant update
       - `UserCard` payment-schedule maintenance now updates unpaid exchange-return
         projections correctly across contexts
       - maintained test layers are green:

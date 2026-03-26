@@ -36,7 +36,7 @@ module ExchangeCashTransactable
 
   def prevent_locked_projection_rewrite
     return unless cash_transaction&.paid_history?
-    return if (changes.keys - %w[created_at updated_at]).empty?
+    return unless projection_sync_relevant_change?
 
     errors.add(:base, :paid_history_locked)
     throw(:abort)
@@ -93,7 +93,7 @@ module ExchangeCashTransactable
   def update_cash_transaction
     create_cash_transaction and return if cash_transaction.nil?
 
-    return if (changes.keys - %w[created_at updated_at]).empty?
+    return unless projection_sync_relevant_change?
 
     assign_projection_cash_transaction_to_siblings!
     sync_projection_cash_transaction!(cash_transaction:)
@@ -193,7 +193,7 @@ module ExchangeCashTransactable
     end
 
     Exchange.where(cash_transaction_id: previous_cash_transaction.id).update_all(cash_transaction_id: nil) if previous_cash_transaction&.persisted?
-    previous_cash_transaction&.destroy if previous_cash_transaction&.persisted?
+    delete_projection_cash_transaction(previous_cash_transaction)
   end
 
   def remember_projection_cash_transaction_id
@@ -204,7 +204,7 @@ module ExchangeCashTransactable
     return if destroyed_projection_cash_transaction_id.blank?
     return if Exchange.where(cash_transaction_id: destroyed_projection_cash_transaction_id).exists?
 
-    CashTransaction.find_by(id: destroyed_projection_cash_transaction_id)&.destroy
+    delete_projection_cash_transaction(CashTransaction.find_by(id: destroyed_projection_cash_transaction_id))
   end
 
   def sync_projection_cash_transaction!(cash_transaction:, exchanges: projection_exchanges)
@@ -230,7 +230,7 @@ module ExchangeCashTransactable
   def rebuild_projection_installments!(cash_transaction:, exchanges:)
     raise "Cannot rebuild paid projection installments" if cash_transaction.cash_installments.where(paid: true).exists?
 
-    cash_transaction.cash_installments.destroy_all
+    cash_transaction.cash_installments.delete_all
     installments_count = exchanges.count
 
     exchanges.sort_by { |exchange| [ exchange.number, exchange.date ] }.each_with_index do |exchange, index|
@@ -252,10 +252,29 @@ module ExchangeCashTransactable
     end
   end
 
-  def projection_exchanges(excluding: nil)
-    [ *entity_transaction.exchanges.to_a, self ].uniq.reject(&:marked_for_destruction?).select(&:monetary?).reject do |exchange|
-      excluding.present? && exchange == excluding
+  def projection_exchanges(excluding: nil) # rubocop:disable Metrics/AbcSize
+    persisted_siblings = entity_transaction.exchanges.where.not(id: [ excluding&.id, id ].compact).to_a
+    in_memory_exchanges = entity_transaction.exchanges.to_a
+    candidate_exchanges = (persisted_siblings + in_memory_exchanges).uniq { |exchange| exchange.id || exchange.object_id }
+    candidate_exchanges.reject! do |exchange|
+      (exchange.id.present? && exchange.id == id) || exchange.equal?(self)
     end
+    candidate_exchanges << self unless excluding.present? && excluding == self
+
+    candidate_exchanges.reject do |exchange|
+      (excluding.present? && ((excluding.id.present? && exchange.id == excluding.id) || exchange.equal?(excluding))) || exchange.marked_for_destruction?
+    end.select(&:monetary?)
+  end
+
+  def delete_projection_cash_transaction(cash_transaction)
+    return unless cash_transaction&.persisted?
+
+    cash_transaction.cash_installments.delete_all
+    cash_transaction.delete
+  end
+
+  def projection_sync_relevant_change?
+    (changes.keys - %w[created_at updated_at exchanges_count]).present?
   end
 
   def shared_projection_cash_transaction

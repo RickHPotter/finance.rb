@@ -61,6 +61,16 @@ document.addEventListener("keyup", (e) => {
     return
   }
 
+  // SELECT ALL
+  if (key === "s") {
+    const selectAllControl = findVisibleSelectAllControl()
+    if (!selectAllControl) { return }
+
+    e.preventDefault()
+    selectAllControl.click()
+    return
+  }
+
   // PERFORM SCROLL
   if (key !== "j" && key !== "k") return
 
@@ -101,6 +111,26 @@ document.addEventListener("keydown", (e) => {
     })
   }
 })
+
+function findVisibleSelectAllControl() {
+  const textMatches = ["select all", "selecionar todos"]
+  const valueMatches = ["all", "todos os", "todas as"]
+
+  const candidates = Array.from(document.querySelectorAll("button, [role='button'], input[type='checkbox'], input[type='button'], input[type='submit']"))
+
+  return candidates.find((element) => {
+    if (!element.checkVisibility || !element.checkVisibility()) { return false }
+    if (element.disabled) { return false }
+
+    const name = (element.getAttribute("name") || "").toLowerCase()
+    const text = (element.textContent || "").trim().toLowerCase()
+    const value = (element.getAttribute("value") || "").trim().toLowerCase()
+
+    return name.endsWith("_toggle_all") ||
+      textMatches.includes(text) ||
+      valueMatches.includes(value)
+  })
+}
 
 const registerServiceWorker = async () => {
   if (navigator.serviceWorker) {
