@@ -6,6 +6,7 @@ proxy:
 env:
   clear:
     RAILS_ENV: homolog
+    SOLID_QUEUE_IN_PUMA: true
     APP_HOST: homolog.30fev.com
     POSTGRES_DATABASE: finance_homolog
     POSTGRES_USERNAME: postgres

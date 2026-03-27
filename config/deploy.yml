@@ -33,6 +33,7 @@ builder:
 env:
   clear:
     RAILS_ENV: production
+    SOLID_QUEUE_IN_PUMA: true
     POSTGRES_DATABASE: finance
     POSTGRES_USERNAME: postgres
     POSTGRES_HOST: financerb-db

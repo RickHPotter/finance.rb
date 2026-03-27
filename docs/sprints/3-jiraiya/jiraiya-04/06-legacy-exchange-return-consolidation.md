@@ -52,6 +52,14 @@ The apply step:
 - renumbers/rebuilds the survivor installments in chronological order
 - deletes the legacy sibling exchange-return cash transactions
 
+## Status
+
+Implemented and exercised after projection sync.
+
+This step assumes `05-legacy-exchange-return-normalization.md` has already run,
+so the linked standalone `Exchange` rows have already been repaired from the legacy
+mirrored installment truth before the family is merged.
+
 ## Tooling
 
 Read-only audit:

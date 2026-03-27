@@ -143,6 +143,15 @@ too visible to ignore.
         through a normal actionable assistant update
       - `UserCard` payment-schedule maintenance now updates unpaid exchange-return
         projections correctly across contexts
+      - shared-return paid-state sync was further hardened after the first manual pass:
+        - counterpart lookup now supports structurally matched legacy/normalized pairs
+        - duplicate counterpart families are disambiguated by stable creation order
+        - paid-state assistant message deduplication no longer collapses different
+          mirrored transactions into one notification
+        - mirror sync now runs through Solid Queue with retry on deadlocks from bulk-pay
+      - historical standalone `EXCHANGE RETURN` data now has a two-step repair path:
+        - first sync standalone `Exchange` rows from legacy mirrored installments
+        - then consolidate old one-installment families into one normalized shared return
       - maintained test layers are green:
         `spec/models`, `spec/concerns`, `spec/requests`
 

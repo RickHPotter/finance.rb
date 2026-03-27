@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce CashTransactions.
-module ExchangeCashTransactable
+module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
 
   included do
@@ -80,7 +80,7 @@ module ExchangeCashTransactable
   def create_cash_transaction
     self.cash_transaction = shared_projection_cash_transaction || CashTransaction.create(projection_cash_transaction_params)
     assign_projection_cash_transaction_to_siblings!
-    sync_projection_cash_transaction!(cash_transaction:)
+    sync_projection_cash_transaction!(cash_transaction:, exchanges: synchronized_projection_exchanges(cash_transaction:))
   end
 
   # @note This is a method that is called before_update.
@@ -96,7 +96,7 @@ module ExchangeCashTransactable
     return unless projection_sync_relevant_change?
 
     assign_projection_cash_transaction_to_siblings!
-    sync_projection_cash_transaction!(cash_transaction:)
+    sync_projection_cash_transaction!(cash_transaction:, exchanges: synchronized_projection_exchanges(cash_transaction:))
   end
 
   # Sets `cash_transaction_id` to nil if `exchange_type` has changed to `non_monetary`.
@@ -109,7 +109,7 @@ module ExchangeCashTransactable
   def destroy_cash_transaction
     return if cash_transaction.nil?
 
-    remaining_exchanges = projection_exchanges(excluding: self)
+    remaining_exchanges = synchronized_projection_exchanges(cash_transaction:, excluding: self)
 
     if remaining_exchanges.empty?
       _destroy_cash_transaction
@@ -126,7 +126,7 @@ module ExchangeCashTransactable
   # @return [void].
   #
   def update_or_destroy_cash_transaction
-    sibling_exchanges = projection_exchanges(excluding: self)
+    sibling_exchanges = synchronized_projection_exchanges(cash_transaction:, excluding: self)
 
     if sibling_exchanges.empty?
       _destroy_cash_transaction
@@ -231,9 +231,12 @@ module ExchangeCashTransactable
     raise "Cannot rebuild paid projection installments" if cash_transaction.cash_installments.where(paid: true).exists?
 
     cash_transaction.cash_installments.delete_all
-    installments_count = exchanges.count
+    return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:) if card_bound?
 
-    exchanges.sort_by { |exchange| [ exchange.number, exchange.date ] }.each_with_index do |exchange, index|
+    installments_count = exchanges.count
+    exchanges.sort_by do |exchange|
+      [ exchange.date, exchange.number, exchange.persisted? ? 0 : 1, exchange.id || Float::INFINITY ]
+    end.each_with_index do |exchange, index| # rubocop:disable Style/MultilineBlockChain
       cash_transaction.cash_installments.create!(
         number: index + 1,
         date: exchange.date,
@@ -244,6 +247,21 @@ module ExchangeCashTransactable
         cash_installments_count: installments_count
       )
     end
+  end
+
+  def rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:)
+    projection_price = exchanges.sum(&:price)
+    projection_date = exchanges.min_by(&:date).date
+
+    cash_transaction.cash_installments.create!(
+      number: 1,
+      date: projection_date,
+      month: projection_date.month,
+      year: projection_date.year,
+      price: projection_price,
+      starting_price: projection_price,
+      cash_installments_count: 1
+    )
   end
 
   def assign_projection_cash_transaction_to_siblings!
@@ -266,6 +284,21 @@ module ExchangeCashTransactable
     end.select(&:monetary?)
   end
 
+  def synchronized_projection_exchanges(cash_transaction:, excluding: nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    return projection_exchanges(excluding:) if standalone?
+
+    in_memory_exchanges = entity_transaction.exchanges.to_a
+    persisted_projection_exchanges = cash_transaction.present? ? Exchange.where(cash_transaction_id: cash_transaction.id).where.not(id: excluding&.id).to_a : []
+    candidate_exchanges = (in_memory_exchanges + persisted_projection_exchanges).uniq { |exchange| exchange.id || exchange.object_id }
+    if !(excluding.present? && excluding == self) && candidate_exchanges.none? { |exchange| exchange.equal?(self) || (exchange.id.present? && exchange.id == id) }
+      candidate_exchanges << self
+    end
+
+    candidate_exchanges.reject do |exchange|
+      (excluding.present? && ((excluding.id.present? && exchange.id == excluding.id) || exchange.equal?(excluding))) || exchange.marked_for_destruction?
+    end.select(&:monetary?)
+  end
+
   def delete_projection_cash_transaction(cash_transaction)
     return unless cash_transaction&.persisted?
 
@@ -281,7 +314,8 @@ module ExchangeCashTransactable
     projection_exchanges.filter_map(&:cash_transaction).find(&:present?) ||
       entity_transaction.exchanges.where.not(id: id).where.not(cash_transaction_id: nil).pick(:cash_transaction_id).then do |cash_transaction_id|
         CashTransaction.find_by(id: cash_transaction_id)
-      end
+      end ||
+      existing_card_bound_projection_cash_transaction
   end
 
   def projection_cash_transaction_params
@@ -293,5 +327,20 @@ module ExchangeCashTransactable
 
     numeric_month_year = RefMonthYear.new(month, year).numeric_month_year
     "[ #{numeric_month_year} ] #{entity_transaction.entity.entity_name} - #{transactable.user_card.user_card_name}"
+  end
+
+  def existing_card_bound_projection_cash_transaction
+    return if standalone?
+
+    transactable.context.cash_transactions
+                .where(
+                  user_id: user.id,
+                  user_card_id: transactable.user_card_id,
+                  context_id: transactable.context_id,
+                  cash_transaction_type: model_name.name,
+                  description: projection_description
+                )
+                .order(:id)
+                .first
   end
 end

@@ -290,6 +290,38 @@ It was a hardening pass to make the rule set, supporting factories, and indirect
   - `spec/requests`
 - result:
   - `526 examples, 0 failures`
+- follow-up shared-return hardening also landed after the main stabilization pass:
+  - counterpart resolution now accepts:
+    - direct reverse linkage
+    - structurally matched shared-return pairs
+    - duplicate-family resolution by stable creation order when signatures collide
+  - bulk shared paid-state notification deduplication now keys by the mirrored transaction too,
+    so distinct mirrored transactions do not collapse into one assistant message
+  - mirror paid-state synchronization now runs through `SyncSharedPaidStateJob`
+    using Solid Queue, with deadlock retries for concurrent bulk-pay cases
+  - the maintained request coverage for shared-return flows was expanded to cover:
+    - card-origin shared returns
+    - reimbursement-origin shared returns
+    - counterpart-missing failure behavior
+    - source reimbursement transaction isolation from the shared return pair
+
+## Retroactive Repair Passes
+
+The normalized rules above were not enough on their own for historical data.
+
+Two explicit backfill steps were added for legacy standalone `EXCHANGE RETURN` rows:
+
+1. projection sync:
+   - legacy mirrored `cash_installments` are the source of truth
+   - linked standalone monetary `Exchange` rows are rewritten to match them
+   - documented in `05-legacy-exchange-return-normalization.md`
+2. consolidation:
+   - old one-installment standalone exchange-return cash transactions are merged into
+     one shared return transaction with many installments
+   - documented in `06-legacy-exchange-return-consolidation.md`
+
+These two steps are part of the practical rollout of Slice 4, even though they were
+implemented after the normalized write model itself.
 
 ## Slice 7. Partial `PayMultiple`
 
@@ -334,12 +366,14 @@ These rules must remain true throughout implementation:
 
 ## Current Position
 
-`JIRAIYA-04` is currently through Slice 6.
+`JIRAIYA-04` is currently through Slice 6, with Slice 4 rollout/backfill follow-up completed.
 
 Remaining follow-up work should stay narrow:
 
 - delayed-entry catch-up ordering reconciliation beyond the explicit month-boundary case
 - any additional override candidate only after real usage proves the workaround is insufficient
+- any future optimization of shared-return bulk pay should be performance-driven,
+  not a new rules change
 
 The next implementation step is no longer “whether to finish Slice 4”.
 

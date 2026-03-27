@@ -296,29 +296,58 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     counterpart_user = counterpart_shared_return_user
     return if counterpart_user.blank?
 
-    counterpart_context = if context.main? || context.scenario_key.blank?
-                            counterpart_user.ensure_main_context!
-                          else
-                            counterpart_user.contexts.find_by(scenario_key: context.scenario_key)
-                          end
+    counterpart_context = counterpart_shared_return_context(counterpart_user)
     return if counterpart_context.blank?
 
-    counterpart_context.cash_transactions
-                       .includes(:categories, :cash_installments, entity_transactions: :entity)
-                       .select do |transaction|
-      next false if transaction.id == id
-      next false unless transaction.exchange_return? || transaction.borrow_return?
-      next false unless transaction.entity_transactions.joins(:entity).where(entities: { entity_user_id: user_id }).exists?
-
+    candidates = counterpart_shared_return_candidates(counterpart_context).to_a
+    matching_candidates = candidates.select do |transaction|
       transaction.send(:shared_return_structure_signature) == shared_return_structure_signature
     end
-                     .first
+
+    ranked_shared_return_match(counterpart_user, matching_candidates.presence || candidates)
   end
 
   def shared_return_structure_signature
-    cash_installments.order(:number, :date).map do |installment|
-      [ installment.number, installment.month, installment.year, installment.price.abs ]
+    cash_installments.order(:number).map do |installment|
+      [ installment.number, installment.price.abs ]
     end
+  end
+
+  def counterpart_shared_return_context(counterpart_user)
+    if context.main? || context.scenario_key.blank?
+      counterpart_user.ensure_main_context!
+    else
+      counterpart_user.contexts.find_by(scenario_key: context.scenario_key)
+    end
+  end
+
+  def counterpart_shared_return_candidates(counterpart_context)
+    shared_return_group_scope(counterpart_context.cash_transactions, entity_user_id: user_id).where.not(id:)
+  end
+
+  def local_shared_return_group(counterpart_user)
+    shared_return_group_scope(context.cash_transactions, entity_user_id: counterpart_user.id)
+  end
+
+  def shared_return_group_scope(scope, entity_user_id:)
+    scope.joins(entity_transactions: :entity)
+         .joins(:categories)
+         .where(entities: { entity_user_id: })
+         .where(categories: { category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ] })
+         .where(cash_installments_count:)
+         .where("ABS(cash_transactions.price) = ?", price.abs)
+         .distinct
+         .includes(:cash_installments)
+  end
+
+  def ranked_shared_return_match(counterpart_user, candidates)
+    return if candidates.blank?
+    return candidates.first if candidates.one?
+
+    local_rank = local_shared_return_group(counterpart_user).to_a.sort_by { |transaction| [ transaction.created_at, transaction.id ] }.map(&:id).index(id)
+    return candidates.min_by { |transaction| [ transaction.created_at, transaction.id ] } if local_rank.nil?
+
+    candidates.sort_by { |transaction| [ transaction.created_at, transaction.id ] }[local_rank] || candidates.first
   end
 
   def build_default_cash_installments

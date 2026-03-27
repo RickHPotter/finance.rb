@@ -259,6 +259,54 @@ RSpec.describe "CardTransactions", type: :request do
       check_paying_entities(card_transaction_two)
       check_card_installments([ *card_transaction_one.card_installments, *card_transaction_two.card_installments ])
     end
+
+    it "reuses the existing card-bound EXCHANGE RETURN cash transaction for the same card, entity, and month" do
+      card_transaction.card_installments = { count: 1 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
+      card_transaction.entity_transactions = [
+        {
+          entity_id: entity_one.id,
+          price: -2200,
+          price_to_be_returned: -2200,
+          exchanges_attributes: [ { price: -2200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        }
+      ]
+
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+      first_card_transaction = CardTransaction.last
+      first_exchange_return_id = first_card_transaction.entity_transactions.first.exchanges.first.cash_transaction_id
+
+      sign_in user
+
+      second_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_899,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_899,
+          price_to_be_returned: -2_899,
+          exchanges_attributes: [ { price: -2_899, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year } ]
+        } ]
+      )
+
+      expect { post card_transactions_path, params: second_params.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
+
+      second_card_transaction = CardTransaction.last
+      second_exchange_return_id = second_card_transaction.entity_transactions.first.exchanges.first.cash_transaction_id
+      shared_exchange_return = CashTransaction.find(first_exchange_return_id)
+
+      expect(second_exchange_return_id).to eq(first_exchange_return_id)
+      expect(shared_exchange_return.cash_installments.order(:number).pluck(:price)).to eq([ -5099 ])
+      expect(shared_exchange_return.exchanges.card_bound.order(:number, :date).pluck(:price)).to eq([ -2200, -2899 ])
+    end
   end
 
   describe "[ #update ]" do

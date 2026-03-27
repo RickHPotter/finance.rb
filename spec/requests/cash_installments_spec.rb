@@ -491,9 +491,8 @@ RSpec.describe "CashInstallments", type: :request do
     it "fails clearly when the counterpart shared return cannot be resolved" do
       sender = user
       receiver = create(:user, :random)
-      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
-      receiver_transaction.update_column(:reference_transactable_id, nil)
-      receiver_transaction.update_column(:reference_transactable_type, nil)
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:, link_reference: false)
+      receiver_transaction.update_columns(price: -2_000, starting_price: -2_000)
       receiver_transaction.cash_installments.first.update_columns(price: -2_000)
       Conversation.find_or_create_assistant_between!(sender, receiver).messages.create!(
         user: sender,

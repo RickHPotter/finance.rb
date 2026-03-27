@@ -71,6 +71,17 @@ It does **not**:
 - merge multiple exchange-return cash transactions together
 - touch card-bound exchange returns
 
+## Status
+
+Implemented and exercised on real data.
+
+Important rule clarification that this step now follows:
+
+- for retroactive legacy standalone data, the mirrored `EXCHANGE RETURN`
+  `cash_installments` are the source of truth
+- this step is intentionally not exchange-led
+- it exists only to repair projection drift before consolidation
+
 ## Tooling
 
 Read-only audit:

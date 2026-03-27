@@ -16,6 +16,30 @@ think are working while still drifting in subtle ways:
 
 This file should be used to drive request/spec setup and assertions.
 
+## Current Status
+
+This blueprint has now been partially implemented in request coverage.
+
+What is covered:
+
+- card-origin shared return paid-state sync
+- reimbursement-origin shared return paid-state sync
+- reverse-direction sync from the counterpart `BORROW RETURN` side
+- assistant `notification:paid_state` creation
+- scenario-aware assistant routing
+- counterpart-missing failure behavior
+- reimbursement isolation:
+  - the source reimbursement `EXCHANGE` transaction must stay untouched
+  - only the shared return pair should mirror paid state
+
+What the manual pass exposed and the specs now guard against:
+
+- misrouting paid state into the source reimbursement transaction instead of the
+  counterpart shared return
+- duplicate-family counterpart ambiguity when multiple shared returns have the same
+  installment signature
+- bulk pay message deduplication collapsing distinct mirrored transactions into one
+
 ## Shared Vocabulary
 
 Use named records in specs instead of hardcoded ids.
