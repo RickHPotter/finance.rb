@@ -46,6 +46,7 @@ module HasAdvancePayments
 
   def prevent_locked_advance_cash_transaction_destruction
     return unless advance_cash_transaction.present? && advance_cash_transaction.paid_history?
+    return if respond_to?(:confirmed_destroy_with_history?, true) && confirmed_destroy_with_history?
 
     errors.add(:base, :destroy_locked_after_payment)
     throw(:abort)

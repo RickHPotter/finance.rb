@@ -16,11 +16,14 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     date  = Time.zone.parse(cash_installment_params[:date]) if cash_installment_params[:date].present?
 
     min_date = [ cash_installment_date, date ].min
+    structure_change = cash_installment_price != price
+    should_send_update_notification = structure_change && @cash_installment.send(:shared_paid_state_transaction?)
+    @cash_installment.skip_shared_paid_state_sync = true if should_send_update_notification
 
     @cash_installment = update_installment(@cash_installment, date, price)
     return handle_failed_save(@cash_installment) if @cash_installment.errors.any?
 
-    if cash_installment_price != price
+    if structure_change
       if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
         cash_installment_date
       else
@@ -29,6 +32,8 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
 
       Logic::Manipulation::CashInstallment.new(@cash_installment).split_installment(new_date, cash_installment_price - price)
     end
+
+    Logic::SharedPaidStateSyncService.new(installment: @cash_installment, force_notify: true).call if should_send_update_notification
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 

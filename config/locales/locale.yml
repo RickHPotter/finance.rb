@@ -26,7 +26,6 @@ en:
     workaround: "Suggested fix"
     history_workarounds:
       allocation_locked_after_payment: "Keep the paid portion unchanged. If the future allocation changed, create a new future-only transaction for the new categories or entities."
-      exchange_projection_locked: "Edit the exchange side instead of editing the mirrored return installments directly."
       paid_history_locked:
         default: "Keep the paid portion unchanged. Edit only unpaid future installments after the latest paid date, or create a compensating entry for the historical mismatch."
         cash_transaction: "Keep the paid portion unchanged. If this is a current-month unpay or a delayed-entry month-boundary correction, use the confirmation path shown by the app; otherwise edit only future unpaid installments or create a compensating entry."
@@ -38,6 +37,14 @@ en:
       same_cycle_history_correction_confirmation_required:
         card_transaction: "Review the correction and use the confirmation button below if you want to keep the paid transaction inside the same ref month/year."
         card_installment: "Review the correction and use the confirmation button below if you want to keep the paid installment inside the same ref month/year."
+      exchange_return_price_correction_confirmation_required:
+        cash_transaction: "Review the paid exchange return price correction and use the confirmation button below if you want to keep the mirrored exchanges and counterpart return aligned with this new amount."
+        cash_installment: "Review the paid exchange return installment price correction and use the confirmation button below if you want to keep the mirrored exchanges and counterpart return aligned with this new amount."
+      paid_amount_correction_confirmation_required:
+        cash_transaction: "Review the paid amount correction and use the confirmation button below if this transaction total and its paid history really need this new value."
+        cash_installment: "Review the paid installment amount correction and use the confirmation button below if this paid cash history really needs this new value."
+        card_transaction: "Review the paid amount correction and use the confirmation button below if this billed history really needs this new value."
+        card_installment: "Review the paid installment amount correction and use the confirmation button below if this paid card history really needs this new value."
       same_month_paid_state_correction_confirmation_required:
         cash_transaction: "Review the current-month unpay action and use the confirmation button below if this paid cash transaction really needs to become not paid."
         cash_installment: "Review the current-month unpay action and use the confirmation button below if this paid cash installment really needs to become not paid."
@@ -132,7 +139,6 @@ pt-BR:
     workaround: "Como resolver"
     history_workarounds:
       allocation_locked_after_payment: "Mantenha a parte já paga intacta. Se a alocação futura mudou, crie uma nova transação apenas para o trecho futuro com as novas categorias ou entidades."
-      exchange_projection_locked: "Edite o lado das trocas em vez de editar diretamente as parcelas espelhadas da devolução."
       paid_history_locked:
         default: "Mantenha a parte já paga intacta. Edite somente parcelas futuras e pendentes após a última data paga, ou crie uma movimentação compensatória para corrigir o histórico."
         cash_transaction: "Mantenha a parte já paga intacta. Se isto for uma reversão no mês atual ou uma correção de lançamento tardio na virada do mês, use o fluxo de confirmação mostrado pelo app; caso contrário, edite apenas parcelas futuras pendentes ou crie uma movimentação compensatória."
@@ -144,6 +150,14 @@ pt-BR:
       same_cycle_history_correction_confirmation_required:
         card_transaction: "Revise a correção e use o botão de confirmação abaixo se quiser manter a transação paga dentro do mesmo ref mês/ano."
         card_installment: "Revise a correção e use o botão de confirmação abaixo se quiser manter a parcela paga dentro do mesmo ref mês/ano."
+      exchange_return_price_correction_confirmation_required:
+        cash_transaction: "Revise a correção de preço da devolução de troca já paga e use o botão de confirmação abaixo se quiser manter as trocas espelhadas e a devolução da contraparte alinhadas com esse novo valor."
+        cash_installment: "Revise a correção de preço da parcela paga da devolução de troca e use o botão de confirmação abaixo se quiser manter as trocas espelhadas e a devolução da contraparte alinhadas com esse novo valor."
+      paid_amount_correction_confirmation_required:
+        cash_transaction: "Revise a correção de valor e use o botão de confirmação abaixo se esta transação e seu histórico já pago realmente precisarem desse novo valor."
+        cash_installment: "Revise a correção de valor da parcela paga e use o botão de confirmação abaixo se este histórico em dinheiro realmente precisar desse novo valor."
+        card_transaction: "Revise a correção de valor e use o botão de confirmação abaixo se este histórico já faturado realmente precisar desse novo valor."
+        card_installment: "Revise a correção de valor da parcela paga e use o botão de confirmação abaixo se este histórico de cartão realmente precisar desse novo valor."
       same_month_paid_state_correction_confirmation_required:
         cash_transaction: "Revise a reversão no mês atual e use o botão de confirmação abaixo se esta movimentação paga realmente precisar voltar a não paga."
         cash_installment: "Revise a reversão no mês atual e use o botão de confirmação abaixo se esta parcela paga realmente precisar voltar a não paga."

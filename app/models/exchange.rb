@@ -28,15 +28,20 @@ class Exchange < ApplicationRecord
   end
 
   def mirrored_cash_installment
+    return cash_transaction.cash_installments&.order(:number, :date)&.first if cash_transaction && card_bound?
+
     cash_transaction&.cash_installments&.find_by(number:)
   end
 
   def mirrored_paid?
+    return cash_transaction&.paid? || false if card_bound?
+
     mirrored_cash_installment&.paid? || false
   end
 
   def mirrored_cash_installments_match?
     return true if non_monetary? || cash_transaction.blank?
+    return true if card_bound?
 
     exchange_rows = sibling_exchanges_for_cash_transaction.map { |record| [ record.number, record.date.to_date, record.price ] }.sort
     installment_rows = cash_transaction.cash_installments.map { |record| [ record.number, record.date.to_date, record.price ] }.sort

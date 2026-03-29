@@ -89,6 +89,8 @@ class CashInstallment < Installment
   end
 
   def sync_mirrored_exchange_settlement!
+    return if cash_transaction.exchanges.card_bound.exists?
+
     exchange = cash_transaction.exchanges.find_by(number:)
     return if exchange.blank?
 
@@ -110,12 +112,14 @@ class CashInstallment < Installment
   def will_sync_shared_paid_state?
     return false if skip_shared_paid_state_sync
     return false unless persisted?
+    return false if skip_shared_paid_state_sync_for_structural_correction?
 
     will_save_change_to_paid? && shared_paid_state_transaction?
   end
 
   def did_sync_shared_paid_state?
     return false if skip_shared_paid_state_sync
+    return false if skip_shared_paid_state_sync_for_structural_correction?
 
     saved_change_to_paid? && shared_paid_state_transaction?
   end
@@ -132,6 +136,11 @@ class CashInstallment < Installment
 
   def shared_paid_state_sync_service
     @shared_paid_state_sync_service ||= Logic::SharedPaidStateSyncService.new(installment: self)
+  end
+
+  def skip_shared_paid_state_sync_for_structural_correction?
+    cash_transaction.respond_to?(:editable_shared_return_structure_change_after_payment?, true) &&
+      cash_transaction.send(:editable_shared_return_structure_change_after_payment?)
   end
 end
 

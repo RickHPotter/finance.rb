@@ -32,7 +32,6 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
-  validate :prevent_direct_exchange_projection_structure_edit, on: :update
 
   # @callbacks ................................................................
   before_validation :assign_default_context
@@ -229,37 +228,6 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   private
 
-  def prevent_direct_exchange_projection_structure_edit
-    return unless exchange_return?
-    return unless persisted?
-
-    return if respond_to?(:shared_paid_state_toggle_only?, true) && shared_paid_state_toggle_only?
-    return if editable_unpaid_exchange_projection_change?
-    return unless direct_exchange_projection_structure_edit_attempted?
-
-    errors.add(:base, :exchange_projection_locked)
-  end
-
-  def direct_exchange_projection_structure_edit_attempted?
-    return true if will_save_change_to_price? || will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year?
-
-    cash_installments.any? do |installment|
-      installment.marked_for_destruction? ||
-        installment.new_record? ||
-        installment.changes.except("updated_at", "paid").present?
-    end
-  end
-
-  def editable_unpaid_exchange_projection_change?
-    touched_installments = cash_installments.select do |installment|
-      installment.marked_for_destruction? ||
-        installment.new_record? ||
-        installment.changes.except("updated_at", "paid", "cash_installments_count").present?
-    end
-
-    touched_installments.present? && touched_installments.all? { |installment| installment.new_record? || !installment.paid? }
-  end
-
   def assign_default_context
     self.context ||= user&.ensure_main_context!
   end
@@ -289,7 +257,10 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def direct_counterpart_shared_return_transaction
-    CashTransaction.where(reference_transactable: self).where.not(user_id: user_id).first
+    candidates = CashTransaction.where(reference_transactable: self).where.not(user_id: user_id).to_a
+    return if candidates.blank?
+
+    ranked_shared_return_match(counterpart_shared_return_user, candidates)
   end
 
   def structurally_matched_counterpart_shared_return_transaction
@@ -304,7 +275,9 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
       transaction.send(:shared_return_structure_signature) == shared_return_structure_signature
     end
 
-    ranked_shared_return_match(counterpart_user, matching_candidates.presence || candidates)
+    return if matching_candidates.blank?
+
+    ranked_shared_return_match(counterpart_user, matching_candidates)
   end
 
   def shared_return_structure_signature
@@ -335,7 +308,6 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
          .where(entities: { entity_user_id: })
          .where(categories: { category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ] })
          .where(cash_installments_count:)
-         .where("ABS(cash_transactions.price) = ?", price.abs)
          .distinct
          .includes(:cash_installments)
   end
@@ -344,10 +316,24 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return if candidates.blank?
     return candidates.first if candidates.one?
 
-    local_rank = local_shared_return_group(counterpart_user).to_a.sort_by { |transaction| [ transaction.created_at, transaction.id ] }.map(&:id).index(id)
-    return candidates.min_by { |transaction| [ transaction.created_at, transaction.id ] } if local_rank.nil?
+    nearest_candidates = candidates.group_by { |transaction| counterpart_created_at_distance(transaction) }
+                                   .min_by { |distance, _group| distance }
+                                   &.last || []
+    return nearest_candidates.first if nearest_candidates.one?
 
-    candidates.sort_by { |transaction| [ transaction.created_at, transaction.id ] }[local_rank] || candidates.first
+    local_rank =
+      if counterpart_user.present?
+        local_shared_return_group(counterpart_user).to_a.sort_by { |transaction| [ transaction.created_at, transaction.id ] }.map(&:id).index(id)
+      end
+    return nearest_candidates.min_by { |transaction| [ transaction.created_at, transaction.id ] } if local_rank.nil?
+
+    nearest_candidates.sort_by { |transaction| [ transaction.created_at, transaction.id ] }[local_rank] || nearest_candidates.first
+  end
+
+  def counterpart_created_at_distance(transaction)
+    return Float::INFINITY if created_at.blank? || transaction.created_at.blank?
+
+    (transaction.created_at - created_at).abs
   end
 
   def build_default_cash_installments

@@ -149,7 +149,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
   def build_card_transaction_headers(friend_user, exchanges)
     exchanges = exchanges.map do |exchange|
-      { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1 }
+      { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1, paid: exchange.mirrored_paid? }
     end
 
     price = exchanges.pluck(:price).sum
@@ -181,7 +181,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
   def build_cash_loan_headers(friend_user, exchanges, intent)
     cash_installments_attributes = installments.order(:number, :date).map do |installment|
-      installment.slice(:number, :date, :month, :year).merge(price: installment.price * -1)
+      installment.slice(:number, :date, :month, :year, :paid).merge(price: installment.price * -1)
     end
 
     exchanges_attributes = exchanges.map do |exchange|
@@ -218,8 +218,9 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)
     counterpart_entity_id = friend_user.entities.that_are_users.find_by(entity_user: user).id
+    paid_by_number = installments.order(:number, :date).index_by(&:number)
     cash_installments_attributes = exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: paid_by_number[exchange.number]&.paid || false)
     end
 
     installments_price = cash_installments_attributes.pluck(:price).sum

@@ -270,6 +270,123 @@ RSpec.describe Message, type: :model do
       expect(latest_update.actionable_for?(context: receiver.main_context)).to be(true)
       expect(latest_update.action_button_key(local_reference_exists: latest_update.local_reference_for(context: receiver.main_context).present?)).to eq(:correct)
     end
+
+    it "resolves a card-origin shared return update to the local exchange return projection" do
+      sender_entity_for_receiver =
+        sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+          entity_record.entity_user = receiver
+        end
+      receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+        entity_record.entity_user = sender
+      end
+
+      sender_user_card = create(:user_card, :random, user: sender, card: create(:card, :random, bank: create(:bank, :random)))
+      origin_card_transaction = create(
+        :card_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_card: sender_user_card,
+        description: "Card-origin shared return",
+        date: Date.new(2026, 3, 15),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      origin_card_transaction.category_transactions.destroy_all
+      origin_card_transaction.category_transactions.create!(category: sender.built_in_category("EXCHANGE"))
+      payer_entity_transaction = origin_card_transaction.entity_transactions.first
+      payer_entity_transaction.update!(
+        entity_id: sender_entity_for_receiver.id,
+        is_payer: true,
+        price: -2_000,
+        price_to_be_returned: -2_000,
+        exchanges_count: 2
+      )
+
+      first_exchange = create(
+        :exchange,
+        entity_transaction: payer_entity_transaction,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -1_000,
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026
+      )
+      create(
+        :exchange,
+        entity_transaction: payer_entity_transaction,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 2,
+        price: -1_000,
+        date: Date.new(2026, 4, 20),
+        month: 4,
+        year: 2026
+      )
+
+      local_exchange_return = first_exchange.cash_transaction.reload
+      update_message = described_class.create!(
+        conversation:,
+        user: receiver,
+        reference_transactable: origin_card_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: sender.first_name, transaction_type: "CardTransaction", details: {} },
+          replay: {
+            id: origin_card_transaction.id,
+            type: "CardTransaction",
+            description: local_exchange_return.description,
+            price: -2_000,
+            date: "2026-03-20T00:00:00-03:00",
+            month: 3,
+            year: 2026,
+            cash_installments_attributes: [
+              { number: 1, price: -1_000, paid: true, date: "2026-03-20T00:00:00-03:00", month: 3, year: 2026 },
+              { number: 2, price: -1_000, paid: false, date: "2026-04-20T00:00:00-03:00", month: 4, year: 2026 }
+            ]
+          }
+        }.to_json
+      )
+
+      expect(update_message.local_reference_for(context: sender.main_context)).to eq(local_exchange_return)
+      expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: sender.main_context).present?)).to eq(:correct)
+    end
+
+    it "resolves a cash-origin shared return update directly by local cash transaction id" do
+      local_exchange_return = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: create(:user_bank_account, user: sender, bank: create(:bank, :random)),
+        description: "Sender shared return",
+        price: 12_000,
+        date: Time.zone.parse("2026-03-30 16:58:00 -03:00")
+      )
+
+      update_message = described_class.create!(
+        conversation:,
+        user: receiver,
+        reference_transactable: local_exchange_return,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: sender.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: local_exchange_return.id,
+            type: "CashTransaction",
+            description: local_exchange_return.description,
+            price: local_exchange_return.price,
+            date: local_exchange_return.date.iso8601
+          }
+        }.to_json
+      )
+
+      expect(update_message.local_reference_for(context: sender.main_context)).to eq(local_exchange_return)
+      expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: sender.main_context).present?)).to eq(:correct)
+    end
   end
 end
 

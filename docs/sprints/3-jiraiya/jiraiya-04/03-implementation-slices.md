@@ -32,7 +32,6 @@ Examples of expected predicate names:
 - `can_edit_unpaid_future_installments?`
 - `can_change_allocation?`
 - `can_destroy_with_history?`
-- `exchange_projection_locked?`
 
 ### Primary files
 
@@ -143,7 +142,7 @@ For V1:
 
 - `Exchange` is canonical
 - return-side `CashInstallment` mirrors `Exchange`
-- direct structural edits on mirrored installments remain blocked
+- direct mirrored edits must reverse-sync into `Exchange`, not create drift
 - cross-user paid / not-paid toggles on the shared return flow must synchronize through assistant messages instead of remaining local-only
 
 ### Test target
@@ -225,14 +224,51 @@ If an override is introduced, it should be:
 
 ### Status
 
-- Implemented narrowly for the two approved correction paths.
+- Implemented narrowly for the currently approved correction paths.
 - Paid `CardTransaction` history can now be corrected with explicit confirmation when the change keeps the same `ref_month_year`.
 - Paid `CashTransaction` history can now be corrected with explicit confirmation when the change is a delayed-entry month-boundary move between adjacent periods.
 - Paid `CashTransaction` can now be marked back to `not paid` with explicit confirmation when the paid installment is still in the current month.
+- Paid `EXCHANGE RETURN` price correction now also uses explicit confirmation when the change qualifies as a narrow historical repair.
+- Paid amount rewrites now use the same confirmation-gated path when the domain can preserve invariants.
+- Destroy with paid history now follows the same guarded shape:
+  - `CashTransaction` destroy is confirmation-gated
+  - `CardTransaction` destroy is confirmation-gated only when the affected billing cycles remain financially covered after removal
+  - card destroy remains blocked when removal would leave settled `CARD PAYMENT` / `CARD ADVANCE` amounts above the remaining cycle debt
 - The confirmation is form-bound:
-  - first submit returns a specific confirmation-required failure
-  - the rerendered form exposes an explicit confirmation submit
+  - update flows:
+    - first submit returns a specific confirmation-required failure
+    - the rerendered form exposes an explicit confirmation submit
+  - destroy flows:
+    - first attempt fails with the specific lock reason
+    - the notification exposes the explicit confirmation action when the destroy is confirmable
   - no broad unsafe bypass was added
+
+### V2 Direction
+
+Continue expanding the domain-approved historical-wall set, but keep the interaction
+shape unified.
+
+That means:
+
+- every eligible warn-only path should reuse the same `confirm_historical_change`
+  submit pattern
+- the domain layer still decides whether the change is:
+  - allowed
+  - blocked
+  - confirmation-required
+- controllers and forms should not invent separate override mechanics per rule
+
+The product goal for V2 is not “more overrides”.
+It is “one predictable guarded-correction pattern for all allowed historical fixes”.
+
+The practical direction from here is:
+
+- stop treating confirmation as a tiny exception list
+- treat confirmation as the default interaction shape for every historical wall that survives invariant checks
+- keep hard blocks only for mutations that would still break accounting, mirror, or counterpart consistency even after confirmation
+- use the same two-step confirmation shape for destroy:
+  - first attempt fails explicitly
+  - second confirmed attempt is the only allowed bypass
 
 ## Post-Slice Stabilization
 

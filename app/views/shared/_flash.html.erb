@@ -28,6 +28,16 @@
                 <p class="mt-1"><%= alert_payload[:workaround] %></p>
               </div>
             <% end %>
+
+            <% if alert_payload&.dig(:action).present? %>
+              <div class="mt-3">
+                <%= button_to alert_payload[:action][:label],
+                              alert_payload[:action][:href],
+                              method: alert_payload[:action][:method],
+                              form: { data: { turbo_stream: true } },
+                              class: "inline-flex items-center rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200" %>
+              </div>
+            <% end %>
           </div>
 
           <div class="ml-4 flex-shrink-0 flex">

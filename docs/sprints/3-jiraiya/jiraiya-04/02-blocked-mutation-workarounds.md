@@ -28,12 +28,22 @@ This is warning/workaround support only.
 
 There is still no generic unsafe override path.
 
+The intended direction now is broader than the original V1 wording:
+
+- every historical wall should try to reuse the same confirmation pattern
+- but only when the mutation can still preserve financial, structural, and cross-user invariants
+- the surface may differ by interaction type:
+  - update flows confirm inside the rerendered form
+  - destroy flows confirm through a notification action
+- both still use the same two-step guarded confirmation model
+
 ## Classification
 
 Each blocked case should map to one of:
 
 - `workaround`: the user can solve it through a normal supported path
-- `override-later`: likely valid, but requires explicit unsafe correction flow
+- `confirmation-required`: the mutation may proceed only after explicit warning + confirmation
+- `override-later`: likely valid, but still needs a future explicit correction flow
 - `hard-block`: should remain blocked in V1
 
 ## Workaround Matrix
@@ -60,11 +70,13 @@ V1 workaround:
 
 Classification:
 
-- `workaround`
+- `confirmation-required` when the domain can preserve invariants
+- `workaround` otherwise
 
-Future override:
+Current direction:
 
-- allow explicit historical correction with confirmation + reason
+- prefer explicit historical correction with confirmation when the domain can preserve invariants
+- otherwise keep the mutation blocked and point to compensating entries
 
 ### 2. Paid installment date change
 
@@ -187,15 +199,28 @@ Why blocked:
 
 - it removes historical accounting structure
 
-V1 workaround:
+Current runtime:
 
-- do not destroy
-- neutralize through compensating entries
-- archive/hide at the UI level later if visual cleanup is needed
+- `CashTransaction`
+  - first destroy attempt fails with the historical-lock warning
+  - the warning may expose `Confirm historical change`
+  - only the second explicit confirmed destroy may proceed
+- `CardTransaction`
+  - destroy is confirmation-required only when the affected billing cycles remain financially covered after removal
+  - the coverage check must include already-settled `CARD PAYMENT` and `CARD ADVANCE` amounts in those cycles
+  - if the remaining cycle debt would fall below the remaining settled amount, destroy stays blocked
+
+Fallback workaround:
+
+- if the destroy is still blocked after invariant checks:
+  - do not destroy
+  - neutralize through compensating entries
+  - archive/hide at the UI level later if visual cleanup is needed
 
 Classification:
 
-- `hard-block`
+- `confirmation-required` when the invariants survive the destroy
+- `hard-block` otherwise
 
 ### 7. Changing category/entity allocation on a partially-paid transaction
 
@@ -230,26 +255,21 @@ Blocked mutation:
 
 - directly changing the count, dates, or prices of exchange-return `CashInstallment` rows when they mirror `Exchange`
 
-Why blocked:
+Historical baseline:
 
-- in V1, `Exchange` is the canonical side
-- direct installment editing would create bidirectional drift
+- this began as a blocked one-way model while the normalized exchange-return shape was being introduced
 
-V1 workaround:
-
-- edit the `Exchange` rows instead
-- let the mirrored return-side installments rebuild/sync from that source
-
-Classification:
-
-- `workaround`
-
-Current runtime refinement:
+Current runtime:
 
 - if the mirrored `EXCHANGE RETURN` installments are still unpaid, structural edits are allowed
 - the mirrored change must sync back to the canonical `Exchange` side
 - and the counterpart user must receive a normal actionable assistant `update` message for the shared structure change
 - if the change is only paid / not-paid state, this does not use the structural action-message path; it stays on the paid-state sync notification path
+
+Classification:
+
+- `workaround`
+- if paid history is involved but the mutation is still coherent, prefer confirmation over a dead end
 
 ### 9. Exchange count/shape change after linked paid history exists
 
@@ -381,6 +401,29 @@ If an override is introduced later, it should require:
 - visible unsafe wording
 - required reason
 - audit trail
+
+## V2 Direction
+
+The next iteration should not invent a different workaround UI for each eligible
+historical mutation.
+
+Instead:
+
+- if a blocked mutation is promoted into an allowed historical correction path
+- and that path is still considered explicit and safe enough to permit
+
+then it should reuse the same confirmation shape already introduced in V1:
+
+- first submit fails with the specific confirmation-required error
+- the rerendered form explains the historical risk
+- the form exposes the same `confirm_historical_change` action
+- the second submit carries explicit confirmation and re-enters the same domain guard
+
+This keeps the write model strict while making the exception paths predictable.
+The user is still allowed to damage base history deliberately, but the app now makes
+that choice explicit and harder to do accidentally.
+
+This confirmation shape should now be treated as the preferred interaction for all domain-approved historical corrections, not only the original narrow examples.
 
 ## UX Expectation
 

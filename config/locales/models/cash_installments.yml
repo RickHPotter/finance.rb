@@ -10,6 +10,8 @@ en:
           attributes:
             base:
               counterpart_paid_state_sync_missing: "This shared paid-state change could not be synchronized to the other user."
+              exchange_return_price_correction_confirmation_required: "This paid exchange return installment price correction requires explicit confirmation."
+              paid_amount_correction_confirmation_required: "This paid cash installment amount correction requires explicit confirmation."
               same_month_paid_state_correction_confirmation_required: "This paid cash installment is in the current month and requires explicit confirmation before being marked as not paid."
               month_boundary_history_correction_confirmation_required: "This paid cash installment crosses a month boundary and requires explicit confirmation."
     attributes:
@@ -51,6 +53,8 @@ pt-BR:
           attributes:
             base:
               counterpart_paid_state_sync_missing: "Essa mudança de estado pago não pôde ser sincronizada com o outro usuário."
+              exchange_return_price_correction_confirmation_required: "Esta correção de preço em uma parcela paga da devolução de troca exige confirmação explícita."
+              paid_amount_correction_confirmation_required: "Esta correção de valor em uma parcela paga exige confirmação explícita."
               same_month_paid_state_correction_confirmation_required: "Esta parcela paga está no mês atual e exige confirmação explícita antes de ser marcada como não paga."
               month_boundary_history_correction_confirmation_required: "Esta parcela paga cruza a virada do mês e exige confirmação explícita."
     attributes:

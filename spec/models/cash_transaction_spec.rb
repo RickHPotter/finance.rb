@@ -141,6 +141,77 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.counterpart_shared_return_transaction.user).to eq(counterpart_user)
     end
 
+    it "prefers the structurally matched counterpart created closest to the local shared return when an older same-shape family exists" do
+      transaction_user = create(:user)
+      transaction = create(
+        :cash_transaction,
+        user: transaction_user,
+        context: transaction_user.main_context,
+        user_bank_account: create(:user_bank_account, user: transaction_user, bank: create(:bank, :random)),
+        description: "Shared return",
+        price: -1000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [],
+        entity_transactions_attributes: [],
+        cash_installments_attributes: []
+      )
+      transaction.category_transactions.destroy_all
+      transaction.entity_transactions.destroy_all
+      transaction.cash_installments.destroy_all
+      transaction.cash_installments.create!(number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false)
+      transaction.update_columns(cash_installments_count: 1, created_at: Time.zone.local(2026, 3, 10, 12, 0, 0))
+
+      counterpart_user = create(:user, :random)
+      counterpart_entity = create(:entity, user: transaction_user, entity_name: counterpart_user.first_name.upcase, entity_user: counterpart_user)
+      receiver_counterpart = create(:entity, user: counterpart_user, entity_name: transaction_user.first_name.upcase, entity_user: transaction_user)
+      exchange_return = transaction_user.built_in_category("EXCHANGE RETURN")
+      borrow_return = counterpart_user.built_in_category("BORROW RETURN")
+
+      transaction.categories << exchange_return
+      transaction.entity_transactions.create!(entity: counterpart_entity, is_payer: false, price: 0, price_to_be_returned: 0)
+
+      stale_candidate = create(
+        :cash_transaction,
+        user: counterpart_user,
+        context: counterpart_user.main_context,
+        user_bank_account: create(:user_bank_account, user: counterpart_user, bank: create(:bank, :random)),
+        description: "Shared return",
+        price: -1000,
+        date: Date.new(2025, 11, 10),
+        month: 11,
+        year: 2025,
+        category_transactions_attributes: [ { category_id: borrow_return.id } ],
+        entity_transactions_attributes: [ { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2025, 11, 10), month: 11, year: 2025, price: -1000, paid: true } ]
+      )
+      stale_candidate.cash_installments.destroy_all
+      stale_candidate.cash_installments.create!(number: 1, date: Date.new(2025, 11, 10), month: 11, year: 2025, price: -1000, paid: true)
+      stale_candidate.update_columns(cash_installments_count: 1, created_at: Time.zone.local(2025, 11, 10, 12, 0, 0))
+
+      expected_candidate = create(
+        :cash_transaction,
+        user: counterpart_user,
+        context: counterpart_user.main_context,
+        user_bank_account: create(:user_bank_account, user: counterpart_user, bank: create(:bank, :random)),
+        description: "Shared return",
+        price: -1000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [ { category_id: borrow_return.id } ],
+        entity_transactions_attributes: [ { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false } ]
+      )
+      expected_candidate.cash_installments.destroy_all
+      expected_candidate.cash_installments.create!(number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false)
+      expected_candidate.update_columns(cash_installments_count: 1, created_at: Time.zone.local(2026, 3, 10, 12, 5, 0))
+
+      expect(transaction.counterpart_shared_return_transaction).to eq(expected_candidate)
+      expect(transaction.counterpart_shared_return_transaction).not_to eq(stale_candidate)
+    end
+
     it "blocks unpaying a local borrow return installment with paid history" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
@@ -397,6 +468,70 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction).to be_valid
     end
 
+    it "allows a confirmed paid exchange return installment price correction" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      exchange_return = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Paid exchange return correction",
+        price: -2000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        cash_transaction_type: "Exchange",
+        installments_attributes: [
+          { number: 1, price: -1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false }
+        ]
+      )
+      exchange_return.categories = [ user.built_in_category("EXCHANGE RETURN") ]
+      exchange_return.save!
+
+      first_installment = exchange_return.cash_installments.find_by!(number: 1)
+      exchange_return.historical_correction_confirmation = true
+      exchange_return.price = -2500
+      exchange_return.cash_installments_attributes = [
+        { id: first_installment.id, number: 1, price: -1500, date: first_installment.date, month: first_installment.month, year: first_installment.year, paid: true }
+      ]
+
+      expect(exchange_return).to be_valid
+    end
+
+    it "allows a confirmed paid amount correction on a normal cash transaction" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Paid amount correction",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+
+      first_installment = transaction.cash_installments.find_by!(number: 1)
+      second_installment = transaction.cash_installments.find_by!(number: 2)
+      third_installment = transaction.cash_installments.find_by!(number: 3)
+
+      transaction.historical_correction_confirmation = true
+      transaction.price = 3500
+      transaction.cash_installments_attributes = [
+        { id: first_installment.id, number: 1, price: 1500, date: first_installment.date, month: first_installment.month, year: first_installment.year, paid: true },
+        { id: second_installment.id, number: 2, price: 1000, date: second_installment.date, month: second_installment.month, year: second_installment.year,
+          paid: false },
+        { id: third_installment.id, number: 3, price: 1000, date: third_installment.date, month: third_installment.month, year: third_installment.year, paid: false }
+      ]
+
+      expect(transaction).to be_valid
+    end
+
     it "blocks destruction when paid history exists" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
@@ -416,6 +551,30 @@ RSpec.describe CashTransaction, type: :model do
 
       expect(transaction.destroy).to be(false)
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.destroy_locked_after_payment"))
+    end
+
+    it "allows confirmed destruction when paid history exists" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Confirmed destroy",
+        price: 2000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false }
+        ]
+      )
+
+      transaction.historical_correction_confirmation = true
+
+      transaction.destroy
+
+      expect(transaction).to be_destroyed
     end
 
     it "builds reimbursement notification headers for cash exchanges when the intent is reimbursement" do

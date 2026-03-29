@@ -132,6 +132,21 @@ too visible to ignore.
       - paid `CashTransaction` month-boundary correction between adjacent periods during
         delayed-entry cleanup
       - paid `CashTransaction` current-month unpay correction with explicit confirmation
+      - paid `EXCHANGE RETURN` price correction with explicit confirmation
+      - paid amount rewrites when the domain can preserve accounting, mirror, and
+        counterpart invariants
+      - destroy with paid history through the same two-step confirmation shape where
+        the remaining invariants still hold
+        - `CashTransaction`: confirmation-gated destroy
+        - `CardTransaction`: confirmation-gated destroy only when the affected billing
+          cycles remain covered after removing the transaction, including already-paid
+          `CARD PAYMENT` and `CARD ADVANCE` settlement recorded in those cycles
+    - V2 direction:
+      - every historical wall that remains financially coherent after invariant checks
+        should use the same `confirm_historical_change` warning/confirmation pattern
+      - confirmation should become the default interaction shape for domain-approved
+        historical corrections, not only a tiny exception list
+      - the goal is consistent guarded correction, not a generic unsafe bypass
     - Post-slice stabilization complete:
       - maintained suite runner fixed for `.env.test`-based execution
       - indirect projection cleanup fixed for `Investment`, `CARD ADVANCE`, and
@@ -140,7 +155,8 @@ too visible to ignore.
       - shared paid-state sync resolution now accepts direct reverse linkage
       - shared paid-state notifications now stay pending until explicitly acknowledged
       - mirrored unpaid `EXCHANGE RETURN` structural edits now notify the counterpart
-        through a normal actionable assistant update
+        through a normal actionable assistant update and reverse-sync back into the
+        canonical `Exchange` side
       - `UserCard` payment-schedule maintenance now updates unpaid exchange-return
         projections correctly across contexts
       - shared-return paid-state sync was further hardened after the first manual pass:

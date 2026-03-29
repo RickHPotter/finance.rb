@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Logic
-  class SharedPaidStateSyncService
+  class SharedPaidStateSyncService # rubocop:disable Metrics/ClassLength
     attr_reader :installment
 
     def initialize(installment:, force_notify: false)
@@ -23,6 +23,7 @@ module Logic
 
     def call
       return false unless syncable?
+      return create_counterpart_structure_update_message if counterpart_structure_update_required?
 
       counterpart_updated = false
 
@@ -106,6 +107,29 @@ module Logic
       )
     end
 
+    def create_counterpart_structure_update_message # rubocop:disable Naming/PredicateMethod
+      sender = installment.cash_transaction.user
+      receiver = counterpart_installment.cash_transaction.user
+      reference_transactable = structure_update_reference_transactable
+      conversation = Conversation.find_or_create_assistant_between!(
+        sender,
+        receiver,
+        scenario_key: installment.cash_transaction.context.scenario_key
+      )
+      headers = counterpart_update_headers(receiver, reference_transactable).to_json
+
+      return true if Message.exists?(conversation:, body: "notification:update", headers:, reference_transactable:)
+
+      conversation.messages.create!(
+        user: sender,
+        reference_transactable:,
+        body: "notification:update",
+        headers:
+      )
+
+      true
+    end
+
     def paid_state_headers(receiver)
       {
         version: "message_paid_state_v1",
@@ -123,6 +147,88 @@ module Logic
           }
         }
       }
+    end
+
+    def counterpart_update_headers(receiver, reference_transactable)
+      update_context = counterpart_update_context(reference_transactable)
+
+      {
+        version: "message_notification_v2",
+        event: counterpart_update_event(receiver, update_context),
+        replay: counterpart_update_replay(update_context)
+      }
+    end
+
+    def counterpart_update_context(reference_transactable)
+      desired_installments = desired_counterpart_installments
+
+      {
+        desired_installments:,
+        counterpart_transaction: counterpart_installment.cash_transaction,
+        total_price: desired_installments.sum { |installment_attributes| installment_attributes[:price] },
+        first_installment: desired_installments.first,
+        reference_transactable:
+      }
+    end
+
+    def counterpart_update_event(receiver, update_context)
+      {
+        action: "update",
+        receiver_first_name: receiver.first_name,
+        transaction_type: update_context[:reference_transactable].class.name,
+        details: {
+          transaction_label: update_context[:reference_transactable].class.model_name.human,
+          description: update_context[:counterpart_transaction].description,
+          date: update_context[:first_installment][:date]&.iso8601,
+          reference_month_year: RefMonthYear.new(update_context[:first_installment][:month], update_context[:first_installment][:year]).numeric_month_year,
+          price: update_context[:total_price],
+          installments_count: update_context[:desired_installments].count,
+          installments: update_context[:desired_installments].map do |installment_attributes|
+            installment_attributes.slice(:number, :price).merge(date: installment_attributes[:date]&.iso8601)
+          end
+        }
+      }
+    end
+
+    def counterpart_update_replay(update_context) # rubocop:disable Metrics/AbcSize
+      {
+        id: update_context[:reference_transactable].id,
+        type: update_context[:reference_transactable].class.name,
+        intent: installment.cash_transaction.try(:effective_friend_notification_intent),
+        description: update_context[:counterpart_transaction].description,
+        price: update_context[:total_price],
+        date: update_context[:first_installment][:date]&.iso8601,
+        month: update_context[:first_installment][:month],
+        year: update_context[:first_installment][:year],
+        category_ids: update_context[:counterpart_transaction].categories.ids,
+        entity_ids: update_context[:counterpart_transaction].entities.ids,
+        cash_installments_attributes: update_context[:desired_installments].map do |installment_attributes|
+          installment_attributes.merge(date: installment_attributes[:date]&.iso8601)
+        end,
+        entity_transactions_attributes: counterpart_entity_transactions_attributes(update_context[:counterpart_transaction])
+      }.compact_blank
+    end
+
+    def structure_update_reference_transactable
+      transaction = installment.cash_transaction
+
+      transaction.exchanges.includes(entity_transaction: :transactable).first&.entity_transaction&.transactable ||
+        transaction.reference_transactable ||
+        transaction
+    end
+
+    def counterpart_entity_transactions_attributes(counterpart_transaction)
+      counterpart_transaction.entity_transactions.map do |entity_transaction|
+        {
+          id: entity_transaction.id,
+          entity_id: entity_transaction.entity_id,
+          is_payer: entity_transaction.is_payer,
+          price: entity_transaction.price,
+          price_to_be_returned: entity_transaction.price_to_be_returned,
+          exchanges_count: entity_transaction.exchanges_count,
+          exchanges_attributes: []
+        }
+      end
     end
 
     def counterpart_installment_attributes
@@ -170,6 +276,25 @@ module Logic
         year: recalculation_start[:year],
         month: recalculation_start[:month]
       ).call
+    end
+
+    def counterpart_structure_update_required?
+      installment.cash_transaction.cash_installments_count != counterpart_installment.cash_transaction.cash_installments_count
+    end
+
+    def desired_counterpart_installments
+      sign = counterpart_installment.cash_transaction.price.negative? ? -1 : 1
+
+      installment.cash_transaction.cash_installments.order(:number, :date).map do |cash_installment|
+        {
+          number: cash_installment.number,
+          date: cash_installment.date,
+          month: cash_installment.month,
+          year: cash_installment.year,
+          price: cash_installment.price.abs * sign,
+          paid: cash_installment.paid
+        }
+      end
     end
   end
 end

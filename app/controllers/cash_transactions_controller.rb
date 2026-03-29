@@ -73,6 +73,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def destroy
+    @cash_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
     @user_bank_account = @cash_transaction.user_bank_account
     @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
     destroyed = @cash_transaction.destroy
@@ -97,15 +98,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     if effective_cash_transaction_params[:cash_installments_attributes].present?
       @cash_transaction.edit_phase = true if @cash_transaction.persisted?
 
-      @cash_transaction.cash_installments.each(&:mark_for_destruction)
-
-      @cash_transaction.cash_installments_attributes = effective_cash_transaction_params[:cash_installments_attributes]
-      @cash_transaction.description = effective_cash_transaction_params[:description]
-      @cash_transaction.price = effective_cash_transaction_params[:price]
-      @cash_transaction.date = effective_cash_transaction_params[:date]
-      @cash_transaction.month = effective_cash_transaction_params[:month]
-      @cash_transaction.year = effective_cash_transaction_params[:year]
-
+      assign_cash_installments_from_effective_params
+      assign_cash_transaction_fields_from_effective_params
     elsif @cash_transaction.new_record?
       @cash_transaction.build_month_year
     end
@@ -174,19 +168,129 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     effective_cash_transaction_params[:reference_transactable_id].present?
   end
 
+  def assign_cash_installments_from_effective_params
+    attributes = effective_cash_transaction_params[:cash_installments_attributes]
+
+    if @cash_transaction.persisted?
+      synchronize_cash_installments(attributes)
+    else
+      @cash_transaction.association(:cash_installments).target = []
+      @cash_transaction.cash_installments_attributes = attributes
+    end
+  end
+
+  def assign_cash_transaction_fields_from_effective_params
+    @cash_transaction.description = effective_cash_transaction_params[:description]
+    @cash_transaction.price = effective_cash_transaction_params[:price]
+    @cash_transaction.date = effective_cash_transaction_params[:date]
+    @cash_transaction.month = effective_cash_transaction_params[:month]
+    @cash_transaction.year = effective_cash_transaction_params[:year]
+  end
+
+  def synchronize_cash_installments(attributes)
+    attributes = Array(attributes).map(&:with_indifferent_access)
+    existing_installments = @cash_transaction.cash_installments.to_a
+
+    existing_installments.each do |installment|
+      new_attributes = matching_cash_installment_attributes(attributes, installment)
+
+      if new_attributes.present?
+        installment.assign_attributes(new_attributes)
+      else
+        installment.mark_for_destruction
+      end
+    end
+
+    attributes.each do |installment_attributes|
+      next if matching_existing_cash_installment(existing_installments, installment_attributes).present?
+
+      @cash_transaction.cash_installments.build(installment_attributes)
+    end
+  end
+
+  def matching_cash_installment_attributes(attributes, installment)
+    attributes.find do |attrs|
+      installment_matches_attributes?(installment, attrs)
+    end
+  end
+
+  def matching_existing_cash_installment(existing_installments, installment_attributes)
+    existing_installments.find do |installment|
+      installment_matches_attributes?(installment, installment_attributes)
+    end
+  end
+
+  def installment_matches_attributes?(installment, attributes)
+    (attributes[:id].present? && attributes[:id].to_i == installment.id) || attributes[:number].to_i == installment.number
+  end
+
   def assign_message_context
     @cash_transaction.assign_attributes(
       effective_cash_transaction_params.slice(
         :source_message_id,
-        :reference_transactable_type,
-        :reference_transactable_id,
         :friend_notification_intent
+      )
+    )
+
+    counterpart_reference = normalized_shared_return_reference_transactable
+    if counterpart_reference.present?
+      @cash_transaction.assign_attributes(
+        reference_transactable_type: counterpart_reference.class.name,
+        reference_transactable_id: counterpart_reference.id
+      )
+
+      return
+    end
+
+    return if @cash_transaction.persisted? && @cash_transaction.reference_transactable.present?
+
+    @cash_transaction.assign_attributes(
+      effective_cash_transaction_params.slice(
+        :reference_transactable_type,
+        :reference_transactable_id
       )
     )
   end
 
   def assignable_cash_transaction_params
-    effective_cash_transaction_params.except(:source_message_id)
+    params = effective_cash_transaction_params.except(:source_message_id)
+    counterpart_reference = normalized_shared_return_reference_transactable
+    if counterpart_reference.present?
+      return params.merge(reference_transactable_type: counterpart_reference.class.name,
+                          reference_transactable_id: counterpart_reference.id)
+    end
+    return params unless preserve_existing_reference_transactable?
+
+    params.except(:reference_transactable_type, :reference_transactable_id)
+  end
+
+  def preserve_existing_reference_transactable?
+    @cash_transaction&.persisted? &&
+      @cash_transaction.reference_transactable.present? &&
+      source_message.present?
+  end
+
+  def normalized_shared_return_reference_transactable
+    return unless @cash_transaction&.persisted?
+    return if source_message.blank?
+    return unless @cash_transaction.respond_to?(:borrow_return?) && @cash_transaction.respond_to?(:exchange_return?)
+    return unless @cash_transaction.borrow_return? || @cash_transaction.exchange_return?
+
+    direct_shared_return_reference_from_source_message ||
+      (@cash_transaction.counterpart_shared_return_transaction if @cash_transaction.respond_to?(:counterpart_shared_return_transaction))
+  end
+
+  def direct_shared_return_reference_from_source_message
+    reference_transaction = source_message.reference_transactable
+    return unless reference_transaction.is_a?(CardTransaction)
+
+    reference_transaction.entity_transactions
+                         .includes(exchanges: :cash_transaction)
+                         .flat_map(&:exchanges)
+                         .select(&:monetary?)
+                         .map(&:cash_transaction)
+                         .compact
+                         .find(&:exchange_return?)
   end
 
   def source_message_id
@@ -207,6 +311,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_save
+    assign_message_context
+
     return render_update_form if params[:commit] == "Update"
 
     saved = @cash_transaction.save
@@ -566,9 +672,22 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       reference_transactable_type: payload["type"],
       reference_transactable_id: payload["id"],
       source_message_id: source_message.id,
-      cash_installments_attributes: payload["cash_installments_attributes"],
+      cash_installments_attributes: replay_cash_installments_attributes_from_source(payload),
       entity_transactions_attributes: payload["entity_transactions_attributes"]
     }.compact_blank.with_indifferent_access
+  end
+
+  def replay_cash_installments_attributes_from_source(payload)
+    attributes = Array(payload["cash_installments_attributes"]).map(&:with_indifferent_access)
+    return attributes unless @cash_transaction&.persisted?
+
+    existing_installments_by_number = @cash_transaction.cash_installments.index_by(&:number)
+
+    attributes.map do |attrs|
+      existing_installment = existing_installments_by_number[attrs[:number].to_i]
+
+      attrs.merge(id: existing_installment&.id).compact
+    end
   end
 
   def month_year_index_context(mobile) # rubocop:disable Metrics/AbcSize

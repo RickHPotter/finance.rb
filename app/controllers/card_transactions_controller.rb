@@ -92,6 +92,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def destroy
+    @card_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
     card_installment = CardInstallment.find_by(id: params[:card_installment_id]) || @card_transaction.card_installments.first
 
     @user_card = @card_transaction.user_card

@@ -137,6 +137,12 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
     id = payload["id"]
     return if type.blank? || id.blank?
 
+    direct_cash_transaction_reference = cash_transactions.find_by(id:) if type == "CashTransaction"
+    return direct_cash_transaction_reference if direct_cash_transaction_reference.present?
+
+    shared_return_reference = shared_return_local_reference_for(context:, payload:)
+    return shared_return_reference if shared_return_reference.present?
+
     cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) ||
       fallback_local_reference_for(cash_transactions)
   end
@@ -148,6 +154,22 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def local_reference_exists_for?(context:)
     local_reference_for(context:).present?
+  end
+
+  def shared_return_local_reference_for(context:, payload:)
+    return unless payload["type"] == "CardTransaction"
+    return if Array(payload["cash_installments_attributes"]).blank?
+
+    card_transaction = context.card_transactions.find_by(id: payload["id"])
+    return if card_transaction.blank?
+
+    card_transaction.entity_transactions
+                    .includes(exchanges: :cash_transaction)
+                    .flat_map(&:exchanges)
+                    .select(&:monetary?)
+                    .map(&:cash_transaction)
+                    .compact
+                    .find(&:exchange_return?)
   end
 
   def fallback_local_reference_for(cash_transactions)

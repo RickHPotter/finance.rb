@@ -33,6 +33,8 @@ module CashTransactable
 
   def prevent_paid_cash_transaction_destroy
     return unless current_cash_transaction_paid_history?
+    return if transactable.respond_to?(:confirmed_destroy_with_history?, true) &&
+              transactable.send(:confirmed_destroy_with_history?)
 
     errors.add(:base, :destroy_locked_after_payment)
     throw(:abort)
@@ -47,6 +49,8 @@ module CashTransactable
   # @return [void].
   #
   def attach_cash_transaction
+    return if rewrite_locked_paid_cash_transaction?
+
     self.previous_cash_transaction_id = cash_transaction_id
     self.cash_transaction = resolved_context.cash_transactions.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
                             CashTransaction.create(new_cash_transaction_params)

@@ -14,7 +14,17 @@ The main questions are:
 - what can be unlocked only with an explicit warning flow?
 - what multi-record flows must stay structurally synchronized?
 
-This should remain narrow and rule-driven.
+This should remain rule-driven.
+
+The next iteration should no longer treat confirmation as a tiny exception list.
+The intended direction is:
+
+- every historical wall is first evaluated by the domain
+- if the mutation is still financially coherent, the app should prefer explicit warning + confirmation over a dead end
+- if the mutation would break structural, accounting, or cross-user invariants, it must remain blocked
+
+This is still not a generic unsafe bypass.
+It is a broader guarded-correction model.
 
 ## Scope
 
@@ -105,11 +115,11 @@ Example paths:
 In the first two paths, a normal historical lock can be hit even though the user is not trying to falsify history.
 The user is just catching up.
 
-For V1 planning, this should be treated as a narrow warning/confirmation candidate:
+For V1 planning, this started as a narrow warning/confirmation candidate:
 
 - the app may warn that the operation crosses an already-settled boundary
 - the user may explicitly confirm the catch-up ordering correction
-- this bypass must stay limited to delayed-entry ordering conflicts, not broad financial rewrites
+- this path should reuse the same confirmation shape as other domain-approved historical corrections
 
 ### 3. Whole-transaction edits after payment exists
 
@@ -138,7 +148,7 @@ Examples:
 - for a paid `CashTransaction`, the user is fixing a late-entry mistake around the month boundary, such as March versus April
 - the user is fixing a typo in description/comment on a paid transaction
 
-For V1 planning, these should be treated as a separate narrow correction class:
+For V1 planning, these started as a separate narrow correction class:
 
 - for `CardTransaction`, historical date correction may be allowed as long as `ref_month_year` stays unchanged
 - for `CashTransaction`, changing the effective month boundary may be allowed only through explicit warning + confirmation
@@ -149,14 +159,17 @@ For V1 planning, these should be treated as a separate narrow correction class:
 - marking an older paid cash installment back to `not paid` remains blocked by default
 
 This is not a broad override.
-It is a constrained historical metadata correction path.
+It is the first version of a constrained historical correction path that should be extended consistently across other historical walls when the domain can preserve invariants.
 
 ### 4. Destroy rules
 
 For any transaction with paid history:
 
-- destroy transaction: blocked
-- destroy linked exchange or return flow: blocked
+- `CashTransaction` destroy should fail on the first attempt and require explicit confirmation before proceeding
+- `CardTransaction` destroy should only become confirmable when every affected billing cycle remains financially covered after removal
+- the card-side coverage check must include already-settled `CARD PAYMENT` and `CARD ADVANCE` amounts in those cycles
+- if removing the card transaction would leave settled cycle amount above the remaining cycle debt, destroy remains blocked
+- linked exchange or return flows should follow the same invariant-first rule instead of a silent bypass
 
 For transactions with no paid history:
 
@@ -195,14 +208,15 @@ That means:
 - exchange dates must match mirrored installment dates
 - exchange prices must match mirrored installment prices
 
-For V1, `Exchange` is the canonical source of truth.
+`Exchange` is the canonical business source of truth.
 
 Therefore:
 
 - structural edits on exchanges must update the mirrored cash installments
-- direct structural edits on mirrored exchange-return cash installments must be blocked unless routed through the exchange side
+- direct structural edits on mirrored exchange-return cash installments must never leave `Exchange` out of sync
+- if mirrored installments are edited directly, the change must reverse-sync back into `Exchange`
 
-This keeps the synchronization model one-directional in V1 and avoids bidirectional drift.
+This keeps the synchronization model canonical without forcing the UI into a one-direction-only path.
 
 This replaces the current fan-out model where:
 
@@ -297,19 +311,30 @@ Likely V1 warn-only candidates:
 - none by default for installment structure itself if the entire edited unpaid portion remains after the latest paid installment date
 - paid `CardTransaction` date correction where `ref_month_year` stays unchanged
 - cash month-boundary correction with explicit warning when the user needs to move a paid entry between adjacent effective periods
+- paid `CashTransaction` current-month unpay correction when the paid installment still belongs to the current month
+- paid `EXCHANGE RETURN` price correction with explicit warning when the change is a narrow repair of the shared return amount
 - delayed-entry catch-up ordering conflicts where the user is not changing the financial meaning, only reconciling the sequence of entry
 
 Likely V1 non-candidates:
 
-- changing total price after any installment is paid
-- deleting a transaction with paid history
 - moving an unpaid installment onto or before the latest paid installment date
+- any historical mutation that would still break accounting, mirror, or counterpart invariants even after confirmation
 
-For the narrow warning/confirmation candidates above, the UI should require:
+For warn-only historical correction candidates, the UI should require:
 
 - a clear warning that historical data is being touched
 - explicit confirmation by the user
 - traceable intent in the request path
+
+V2 direction:
+
+- all warn-only historical correction paths should converge on the same request/form pattern
+- use the same `confirm_historical_change` confirmation gate instead of growing one-off overrides
+- the domain still decides whether a wall is:
+  - allowed
+  - blocked
+  - confirmation-required
+- keep the domain decision narrow per rule, but keep the UX contract uniform
 
 ## Context Interaction
 
@@ -380,13 +405,16 @@ Goal:
 
 ### Slice 3. Warning Flow
 
-Add an explicit confirmation path for the small warn-only subset.
+Add an explicit confirmation path for every historical wall that remains financially coherent after invariant checks.
 
 Requirements:
 
 - visible warning text
 - no silent acceptance
 - controller path still delegates final decision to the domain rule
+- destroy confirmation should use the same two-step shape:
+  - first attempt fails with the specific lock reason
+  - second explicit confirmation is the only allowed bypass
 
 ### Slice 4. Partial Payment Rules
 

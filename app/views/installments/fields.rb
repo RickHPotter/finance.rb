@@ -14,7 +14,7 @@ module Views
       end
 
       def view_template
-        readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
+        readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
 
         div(
           class: "nested-form-wrapper bg-white border rounded-xl p-1 shadow-sm space-y-1 transition hover:shadow-md

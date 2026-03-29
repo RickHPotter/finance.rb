@@ -16,6 +16,16 @@ module Components
     def view_template(&)
       modal_id = "linkWithConfirmDialog_#{id}"
       trigger_id = link_params[:id] || "linkWithConfirmTrigger_#{id}"
+      destructive_method = link_params.dig(:data, :turbo_method)
+      confirm_data = { controller: :confirm, confirm_link_id_value: trigger_id }
+
+      if destructive_method.present?
+        confirm_data[:confirm_href_value] = link_params[:href]
+        confirm_data[:confirm_method_value] = destructive_method
+        confirm_data[:confirm_turbo_frame_value] = link_params.dig(:data, :turbo_frame) if link_params.dig(:data, :turbo_frame).present?
+        confirm_data[:confirm_turbo_stream_value] = link_params.dig(:data, :turbo_stream) if link_params.dig(:data, :turbo_stream).present?
+        confirm_data[:confirm_turbo_action_value] = link_params.dig(:data, :turbo_action) if link_params.dig(:data, :turbo_action).present?
+      end
 
       link_params[:id] = trigger_id
       link_params[:data] ||= {}
@@ -26,7 +36,7 @@ module Components
         id: modal_id,
         class: "hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)]",
         tabindex: "-1",
-        data: { controller: :confirm, confirm_link_id_value: trigger_id }
+        data: confirm_data
       ) do
         div(class: "bg-white p-6 rounded-lg shadow-lg") do
           div(class: "flex") do
@@ -59,11 +69,28 @@ module Components
         end
       end
 
-      Link(**link_params) do
-        if icon
-          cached_icon icon
-        else
-          text
+      if destructive_method.present?
+        Button(
+          type: :button,
+          variant: link_params[:variant] || :link,
+          size: link_params[:size] || :md,
+          id: trigger_id,
+          class: link_params[:class],
+          data: link_params[:data]
+        ) do
+          if icon
+            cached_icon icon
+          else
+            text
+          end
+        end
+      else
+        Link(**link_params) do
+          if icon
+            cached_icon icon
+          else
+            text
+          end
         end
       end
     end

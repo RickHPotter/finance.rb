@@ -160,10 +160,11 @@ module TranslateHelper
   def specific_history_error_payload(record)
     history_error_keys = Array(record.errors.details[:base]).filter_map { |detail| detail[:error] }
     history_error_key = %i[
+      exchange_return_price_correction_confirmation_required
+      paid_amount_correction_confirmation_required
       same_cycle_history_correction_confirmation_required
       same_month_paid_state_correction_confirmation_required
       month_boundary_history_correction_confirmation_required
-      exchange_projection_locked
       destroy_locked_after_payment
       paid_history_locked
       allocation_locked_after_payment
@@ -177,11 +178,16 @@ module TranslateHelper
     end
     return if message.blank?
 
-    {
+    payload = {
       message:,
       workaround_label: I18n.t("notification.workaround"),
       workaround: history_workaround_for(record, history_error_key)
     }
+
+    action = history_lock_action_for(record, history_error_key)
+    payload[:action] = action if action.present?
+
+    payload
   end
 
   def nested_records_with_errors(record)
@@ -204,5 +210,29 @@ module TranslateHelper
     return I18n.t(default_key) if I18n.exists?(default_key)
 
     I18n.t("notification.history_workarounds.#{history_error_key}")
+  end
+
+  def history_lock_action_for(record, history_error_key)
+    return unless history_error_key == :destroy_locked_after_payment
+    return unless record.respond_to?(:destroy_confirmation_candidate?, true) && record.send(:destroy_confirmation_candidate?)
+
+    {
+      label: I18n.t("actions.confirm_historical_change"),
+      href: destroy_confirmation_href_for(record),
+      method: :delete
+    }
+  end
+
+  def destroy_confirmation_href_for(record)
+    case record
+    when CashTransaction
+      cash_transaction_path(record, historical_correction_confirmation: true)
+    when CardTransaction
+      card_transaction_path(
+        record,
+        card_installment_id: params[:card_installment_id].presence,
+        historical_correction_confirmation: true
+      )
+    end
   end
 end

@@ -68,9 +68,6 @@ group :development do
   gem "ruby_ui", require: false
   gem "web-console"
 
-  # APM // cant work this out of the box without redis, id like to avoid that in prod for now
-  gem "rails_performance"
-
   # NEOVIM IDE
   gem "neovim"
   gem "solargraph"
@@ -82,4 +79,8 @@ group :test do
   gem "selenium-webdriver"
   gem "shoulda-matchers"
   gem "simplecov", require: false
+end
+
+group :production do
+  gem "appsignal"
 end
