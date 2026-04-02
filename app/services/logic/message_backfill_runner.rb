@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Logic::MessageBackfillRunner
+class Logic::MessageBackfillRunner # rubocop:disable Metrics/ClassLength
   attr_reader :dry_run
 
   def initialize(dry_run: true)
@@ -10,11 +10,11 @@ class Logic::MessageBackfillRunner
   def call
     {
       dry_run:,
+      moves:,
+      rewrites:,
       processed_messages_count: messages.size,
       moved_messages_count: moves.size,
-      rewritten_messages_count: rewrites.size,
-      moves:,
-      rewrites:
+      rewritten_messages_count: rewrites.size
     }
   end
 
@@ -49,17 +49,22 @@ class Logic::MessageBackfillRunner
       payload = build_v2_payload_for(message)
       next if payload.blank?
 
+      action = payload.dig(:event, :action)
+      rewritten_reference = rewritten_reference_transactable_for(message, action:)
+      reference_rewritten = rewritten_reference_changed?(message, rewritten_reference)
       update_attributes = {
-        body: "notification:#{payload.dig(:event, :action)}",
-        headers: payload.to_json
+        body: "notification:#{action}",
+        headers: payload.to_json,
+        reference_transactable: rewritten_reference
       }
 
       message.update!(update_attributes) unless dry_run
 
       {
         message_id: message.id,
-        action: payload.dig(:event, :action),
-        version: payload[:version]
+        action:,
+        version: payload[:version],
+        reference_rewritten:
       }
     end
   end
@@ -97,7 +102,7 @@ class Logic::MessageBackfillRunner
         action:,
         receiver_first_name: receiver.first_name,
         transaction_type:,
-        details: notification_details_for(message, replay_payload, transaction_type, receiver)
+        details: notification_details_for(message, replay_payload, transaction_type, receiver, action:)
       },
       replay: action == "destroy" ? nil : replay_payload
     }
@@ -113,25 +118,19 @@ class Logic::MessageBackfillRunner
       next false if candidate.user_id != message.user_id
       next false if candidate.created_at >= message.created_at
 
-      same_reference_target?(candidate, message) && candidate.transaction_notification_message?
+      same_notification_chain?(candidate, message) && candidate.transaction_notification_message?
     end
 
     previous_notification_exists ? "update" : "create"
   end
 
-  def same_reference_target?(candidate, message)
-    candidate_payload = candidate.replay_payload || {}
-    message_payload = message.replay_payload || {}
-
-    candidate_type = candidate_payload["type"] || candidate.reference_transactable_type
-    message_type = message_payload["type"] || message.reference_transactable_type
-    candidate_id = candidate_payload["id"] || candidate.reference_transactable_id
-    message_id = message_payload["id"] || message.reference_transactable_id
-
-    candidate_type == message_type && candidate_id == message_id
+  def same_notification_chain?(candidate, message)
+    canonical_notification_reference_key(candidate) == canonical_notification_reference_key(message)
   end
 
-  def notification_details_for(message, replay_payload, transaction_type, receiver)
+  def notification_details_for(message, replay_payload, transaction_type, receiver, action:)
+    return destroy_notification_details_for(message.reference_transactable, transaction_type) if action == "destroy"
+
     transaction_class = transaction_type.constantize
     installments = installments_for(message, replay_payload, receiver)
 
@@ -141,6 +140,24 @@ class Logic::MessageBackfillRunner
       date: notification_date_for(message, replay_payload),
       reference_month_year: notification_month_year_for(message, replay_payload),
       price: replay_payload&.fetch("price", nil) || installments.sum { |installment| installment[:price].to_i },
+      installments_count: installments.size,
+      installments:
+    }
+  end
+
+  def destroy_notification_details_for(transaction, transaction_type)
+    transaction_class = transaction_type.constantize
+    installments_relation = transaction.present? ? transaction.installments.order(:number, :date) : []
+    installments = normalize_installments(installments_relation.map { |installment| installment.slice(:number, :date, :price) })
+    transaction_date = transaction&.date
+    transaction_date = transaction_date.to_date.iso8601 if transaction_date.present?
+
+    {
+      transaction_label: transaction_class.human_attribute_name(:self),
+      description: transaction&.description,
+      date: transaction_date,
+      reference_month_year: transaction&.month_year,
+      price: transaction&.price,
       installments_count: installments.size,
       installments:
     }
@@ -191,5 +208,53 @@ class Logic::MessageBackfillRunner
   def extract_installment_date(installment)
     value = installment[:date] || installment["date"]
     value.respond_to?(:iso8601) ? value.iso8601 : value
+  end
+
+  def rewritten_reference_transactable_for(message, action:)
+    return message.reference_transactable unless action == "destroy"
+
+    destroy_reference = message.reference_transactable
+    return destroy_reference unless destroy_reference.is_a?(CashTransaction)
+
+    parent_reference = destroy_reference.reference_transactable
+    return destroy_reference unless parent_reference.is_a?(CashTransaction)
+    return destroy_reference unless parent_reference.persisted? && !parent_reference.destroyed?
+
+    parent_reference
+  end
+
+  def rewritten_reference_changed?(message, rewritten_reference)
+    current_reference = message.reference_transactable
+    return false if current_reference.blank? && rewritten_reference.blank?
+    return true if current_reference.blank? || rewritten_reference.blank?
+
+    current_reference.class.name != rewritten_reference.class.name || current_reference.id != rewritten_reference.id
+  end
+
+  def canonical_notification_reference_key(message)
+    payload = message.replay_payload || {}
+    reference = notification_reference_transactable_for(message, payload)
+    return [ nil, nil ] if reference.blank?
+
+    root_reference = reference_root_for(reference)
+    [ root_reference.class.name, root_reference.id ]
+  end
+
+  def notification_reference_transactable_for(message, payload)
+    return message.reference_transactable if message.reference_transactable.present?
+
+    type = payload["type"]
+    id = payload["id"]
+    return if type.blank? || id.blank?
+
+    type.constantize.find_by(id:)
+  rescue NameError
+    nil
+  end
+
+  def reference_root_for(reference)
+    return reference.reference_root_transaction if reference.is_a?(CashTransaction)
+
+    reference
   end
 end

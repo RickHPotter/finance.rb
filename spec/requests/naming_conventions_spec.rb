@@ -8,6 +8,12 @@ RSpec.describe "NamingConventions", type: :request do
   before { sign_in user }
 
   describe "[ #preview ]" do
+    it "renders successfully on get" do
+      get preview_naming_convention_path
+
+      expect(response).to have_http_status(:success)
+    end
+
     it "renders successfully" do
       post preview_naming_convention_path
 

@@ -29,14 +29,10 @@ class Logic::ExchangeBackfillAudit # rubocop:disable Metrics/ClassLength
 
   def serialize_case(source_transaction)
     counterpart_user = counterpart_user_for(source_transaction)
-    receiver_reference = counterpart_user.main_context.cash_transactions.includes(
-      :categories,
-      :cash_installments,
-      entity_transactions: %i[entity exchanges]
-    ).find_by(reference_transactable: source_transaction)
+    receiver_reference = receiver_reference_for(source_transaction, counterpart_user)
 
-    related_messages = messages_for(source_transaction, receiver_reference)
-    latest_active_message = related_messages.find { |message| message.superseded_by_id.nil? }
+    related_messages = messages_for(source_transaction, receiver_reference).to_a
+    latest_active_message = related_messages.rfind { |message| message.superseded_by_id.nil? }
     latest_headers = parse_headers(latest_active_message)
 
     {
@@ -61,7 +57,31 @@ class Logic::ExchangeBackfillAudit # rubocop:disable Metrics/ClassLength
   end
 
   def messages_for(source_transaction, receiver_reference)
-    Message.includes(:user).where(reference_transactable: [ source_transaction, receiver_reference ].compact).order(:created_at)
+    family_references = CashTransaction.reference_family_for(source_transaction)
+    family_references |= CashTransaction.reference_family_for(receiver_reference) if receiver_reference.present?
+
+    Message.includes(:user).merge(reference_scope_for(family_references)).order(:created_at)
+  end
+
+  def receiver_reference_for(source_transaction, counterpart_user)
+    counterpart_user.main_context.cash_transactions.includes(
+      :categories,
+      :cash_installments,
+      entity_transactions: %i[entity exchanges]
+    ).then do |cash_transactions|
+      source_transaction.first_reference_descendant(scope: cash_transactions)
+    end
+  end
+
+  def reference_scope_for(references)
+    grouped_references = references.compact.uniq { |reference| [ reference.class.name, reference.id ] }.group_by(&:class)
+
+    grouped_references.values.map do |group|
+      Message.where(
+        reference_transactable_type: group.first.class.name,
+        reference_transactable_id: group.map(&:id)
+      )
+    end.reduce(Message.none, &:or)
   end
 
   def compare_snapshot_to_transaction(headers, transaction)

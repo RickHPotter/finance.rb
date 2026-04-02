@@ -344,7 +344,7 @@ RSpec.describe "Conversations", type: :request do
       )
     end
 
-    it "shows correct instead of create when the latest update can be resolved through an applied predecessor message" do
+    it "keeps showing create when the latest update only matches a prior applied predecessor structurally" do
       conversation = Conversation.find_or_create_assistant_between!(other_user, user)
       sender_transaction = create(
         :cash_transaction,
@@ -402,12 +402,12 @@ RSpec.describe "Conversations", type: :request do
       get conversation_path(conversation, message_filter: "all")
 
       expect(response.body).to include(
-        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
-      )
-      expect(response.body).not_to include(
         new_cash_transaction_path(cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
       )
-      expect(response.body).to include(Message.human_attribute_name(:correct))
+      expect(response.body).not_to include(
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+      )
+      expect(response.body).to include(Message.human_attribute_name(:create))
     end
 
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do

@@ -112,6 +112,38 @@ RSpec.describe Logic::ExchangeBackfillAudit do
         }.to_json
       )
     end
+    let!(:descendant_message) do
+      conversation.messages.create!(
+        user: rikki,
+        reference_transactable: receiver_reference_transaction,
+        body: "Audit descendant",
+        headers: {
+          id: source_transaction.id,
+          type: "CashTransaction",
+          description: "WATER BILL",
+          price: -5_000,
+          date: "2026-03-17",
+          month: 3,
+          year: 2026,
+          category_ids: gigi.categories.find_by(category_name: "EXCHANGE").id,
+          entity_ids: gigi_entity_for_rikki.id,
+          cash_installments_attributes: [
+            { number: 1, price: -5_000, date: "2026-03-17", month: 3, year: 2026 }
+          ],
+          entity_transactions_attributes: [
+            {
+              price: -5_000,
+              price_to_be_returned: -5_000,
+              entity_id: gigi_entity_for_rikki.id,
+              exchanges_count: 1,
+              exchanges_attributes: [
+                { number: 1, price: -5_000, date: "2026-03-17", month: 3, year: 2026 }
+              ]
+            }
+          ]
+        }.to_json
+      )
+    end
 
     let!(:derived_context) { create(:context, user: rikki, name: "Audit Derived", source_context: rikki.main_context) }
     let!(:derived_source_transaction) do
@@ -156,7 +188,8 @@ RSpec.describe Logic::ExchangeBackfillAudit do
       expect(report[:cases].size).to eq(1)
       expect(report[:cases].first[:source_transaction][:id]).to eq(source_transaction.id)
       expect(report[:cases].first[:receiver_reference_transaction][:id]).to eq(receiver_reference_transaction.id)
-      expect(report[:cases].first[:latest_active_message][:id]).to eq(message.id)
+      expect(report[:cases].first[:latest_active_message][:id]).to eq(descendant_message.id)
+      expect(report[:cases].first[:message_history].map { |entry| entry[:id] }).to include(message.id, descendant_message.id)
       expect(report[:cases].map { |kase| kase.dig(:source_transaction, :id) }).not_to include(derived_source_transaction.id)
     end
 

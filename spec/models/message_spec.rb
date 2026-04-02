@@ -214,7 +214,7 @@ RSpec.describe Message, type: :model do
       expect(update_message.action_button_key(local_reference_exists: true)).to eq(:edit)
     end
 
-    it "resolves a local reference through an applied predecessor in the same message chain" do
+    it "does not resolve a structural fallback through an applied predecessor once canonical chains are required" do
       receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
       local_reference = create(
         :cash_transaction,
@@ -266,9 +266,10 @@ RSpec.describe Message, type: :model do
       )
       predecessor.update!(superseded_by: latest_update)
 
-      expect(latest_update.local_reference_for(context: receiver.main_context)).to eq(local_reference)
+      expect(local_reference).to be_present
+      expect(latest_update.local_reference_for(context: receiver.main_context)).to be_nil
       expect(latest_update.actionable_for?(context: receiver.main_context)).to be(true)
-      expect(latest_update.action_button_key(local_reference_exists: latest_update.local_reference_for(context: receiver.main_context).present?)).to eq(:correct)
+      expect(latest_update.action_button_key(local_reference_exists: latest_update.local_reference_for(context: receiver.main_context).present?)).to eq(:create)
     end
 
     it "resolves a card-origin shared return update to the local exchange return projection" do
@@ -355,6 +356,159 @@ RSpec.describe Message, type: :model do
       expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: sender.main_context).present?)).to eq(:correct)
     end
 
+    it "resolves a receiver-side reimbursement update through the canonical parent chain" do
+      sender_entity_for_receiver =
+        sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+          entity_record.entity_user = receiver
+        end
+      receiver_entity_for_sender =
+        receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+          entity_record.entity_user = sender
+        end
+      sender_bank_account = create(:user_bank_account, :random, user: sender, bank: create(:bank, :random))
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
+
+      source_transaction = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Source reimbursement",
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
+        entity_transactions_attributes: [ { entity_id: sender_entity_for_receiver.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 18), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+      sender_shared_return = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        reference_transactable: source_transaction,
+        description: "Sender reimbursement return",
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE RETURN").id } ],
+        entity_transactions_attributes: [ { entity_id: sender_entity_for_receiver.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+      receiver_borrow_return = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_shared_return,
+        description: "Receiver borrow return",
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: receiver.built_in_category("BORROW RETURN").id } ],
+        entity_transactions_attributes: [ { entity_id: receiver_entity_for_sender.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+
+      update_message = described_class.create!(
+        conversation: conversation,
+        user: sender,
+        reference_transactable: source_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: receiver.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: source_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: receiver_borrow_return.description,
+            price: receiver_borrow_return.price,
+            date: receiver_borrow_return.date.iso8601
+          }
+        }.to_json
+      )
+
+      expect(update_message.local_reference_for(context: receiver.main_context)).to eq(receiver_borrow_return)
+      expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: receiver.main_context).present?)).to eq(:correct)
+    end
+
+    it "resolves a receiver-side reimbursement destroy through the canonical parent chain" do
+      sender_entity_for_receiver =
+        sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+          entity_record.entity_user = receiver
+        end
+      receiver_entity_for_sender =
+        receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+          entity_record.entity_user = sender
+        end
+      sender_bank_account = create(:user_bank_account, :random, user: sender, bank: create(:bank, :random))
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
+
+      source_transaction = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Destroyable reimbursement source",
+        date: Date.new(2026, 3, 18),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
+        entity_transactions_attributes: [ { entity_id: sender_entity_for_receiver.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 18), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+      sender_shared_return = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        reference_transactable: source_transaction,
+        description: "Destroyable sender return",
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE RETURN").id } ],
+        entity_transactions_attributes: [ { entity_id: sender_entity_for_receiver.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+      receiver_borrow_return = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_shared_return,
+        description: "Destroyable receiver return",
+        date: Date.new(2026, 3, 20),
+        month: 3,
+        year: 2026,
+        price: -2_000,
+        category_transactions_attributes: [ { category_id: receiver.built_in_category("BORROW RETURN").id } ],
+        entity_transactions_attributes: [ { entity_id: receiver_entity_for_sender.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -2_000, paid: false } ]
+      )
+
+      destroy_message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: source_transaction,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "destroy", receiver_first_name: receiver.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: nil
+        }.to_json
+      )
+
+      expect(destroy_message.local_reference_for(context: receiver.main_context)).to eq(receiver_borrow_return)
+      expect(destroy_message.action_button_key(local_reference_exists: destroy_message.local_reference_for(context: receiver.main_context).present?)).to eq(:destroy)
+    end
+
     it "resolves a cash-origin shared return update directly by local cash transaction id" do
       local_exchange_return = create(
         :cash_transaction,
@@ -386,6 +540,41 @@ RSpec.describe Message, type: :model do
 
       expect(update_message.local_reference_for(context: sender.main_context)).to eq(local_exchange_return)
       expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: sender.main_context).present?)).to eq(:correct)
+    end
+
+    it "does not resolve an unrelated structural fallback without a canonical chain" do
+      receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+      create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        description: "Potential false positive",
+        price: -25_000,
+        date: Time.zone.parse("2026-03-25")
+      )
+
+      update_message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: receiver.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: {
+            id: reference_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Potential false positive",
+            price: -25_000,
+            date: "2026-03-25T00:00:00-03:00"
+          }
+        }.to_json
+      )
+
+      expect(update_message.local_reference_for(context: receiver.main_context)).to be_nil
+      expect(update_message.action_button_key(local_reference_exists: update_message.local_reference_for(context: receiver.main_context).present?)).to eq(:create)
     end
   end
 end

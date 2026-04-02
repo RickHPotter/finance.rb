@@ -19,6 +19,8 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   protected
 
   def notify_friends(action)
+    return if applying_actionable_message?
+
     if (action != :create) && not_exchange?
       return if was_not_exchange?
 
@@ -46,28 +48,28 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     return if reference_transactable&.user == friend_user
 
     receiver_context = receiver_context_for(friend_user)
-    friend_user_reference = receiver_context.cash_transactions.find_by(reference_transactable: self)
+    friend_user_reference = CashTransaction.first_reference_descendant_for(self, scope: receiver_context.cash_transactions)
     return if action == :destroy && friend_user_reference.blank?
 
     I18n.locale = friend_user.locale
 
     conversation = find_or_create_conversation(user, friend_user, scenario_key: receiver_context.scenario_key)
-    message = conversation.messages.new(user:, reference_transactable: self)
-    message.reference_transactable = friend_user_reference if action == :destroy
+    destroy_message_reference = destroy_message_reference_transactable(friend_user_reference)
+    message = conversation.messages.new(user:, reference_transactable: action == :destroy ? destroy_message_reference : self)
 
     entity_transaction = entity_transactions.find_by(entity_id: friend.id)
     return if entity_transaction.nil? && action != :destroy
 
-    save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action)
+    save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action, destroy_reference: friend_user_reference)
   end
 
   def find_or_create_conversation(user, friend_user, scenario_key:)
     Conversation.find_or_create_assistant_between!(user, friend_user, scenario_key:)
   end
 
-  def save_message(message, friend_user, exchanges, action)
+  def save_message(message, friend_user, exchanges, action, destroy_reference: nil)
     create_body(message, friend_user, exchanges, action)
-    create_headers(message, friend_user, exchanges, action)
+    create_headers(message, friend_user, exchanges, action, destroy_reference:)
 
     return false if message.headers.present? && Message.exists?(conversation: message.conversation, headers: message.headers)
 
@@ -80,11 +82,11 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     message.body = "notification:#{action}"
   end
 
-  def create_headers(message, friend_user, exchanges, action)
+  def create_headers(message, friend_user, exchanges, action, destroy_reference: nil)
     if action == :destroy
       message.headers = {
         version: "message_notification_v2",
-        event: build_destroy_notification_event(message, friend_user),
+        event: build_destroy_notification_event(message, friend_user, destroy_reference),
         replay: nil
       }.to_json
 
@@ -110,8 +112,8 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     }.to_json
   end
 
-  def build_destroy_notification_event(message, friend_user)
-    transaction = message.reference_transactable || self
+  def build_destroy_notification_event(message, friend_user, destroy_reference = nil)
+    transaction = destroy_reference || message.reference_transactable || self
     installments = transaction.installments.order(:number, :date)
 
     {
@@ -261,13 +263,49 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
   end
 
   def supersede_previous_messages(conversation, new_message)
-    previous_messages = conversation.messages.where(reference_transactable: self).where(superseded_by_id: nil).where.not(id: new_message.id)
+    previous_messages = conversation.messages
+                                    .merge(reference_scope_for(notification_message_reference_family))
+                                    .where(superseded_by_id: nil)
+                                    .where.not(id: new_message.id)
 
     previous_messages.update_all(superseded_by_id: new_message.id)
   end
 
+  def notification_message_reference_family
+    family_root =
+      if respond_to?(:reference_root_transaction)
+        reference_root_transaction.presence || self
+      else
+        self
+      end
+
+    return [ family_root ].compact unless family_root.is_a?(CashTransaction) || family_root.is_a?(CardTransaction)
+
+    CashTransaction.reference_family_for(family_root)
+  end
+
+  def reference_scope_for(references)
+    grouped_references = references.compact.uniq { |reference| [ reference.class.name, reference.id ] }.group_by(&:class)
+
+    grouped_references.values.map do |group|
+      Message.where(
+        reference_transactable_type: group.first.class.name,
+        reference_transactable_id: group.map(&:id)
+      )
+    end.reduce(Message.none, &:or)
+  end
+
   def notification_context
     context || user&.main_context
+  end
+
+  def destroy_message_reference_transactable(friend_user_reference)
+    return self if friend_user_reference.blank?
+
+    parent_reference = friend_user_reference.try(:reference_transactable)
+    return parent_reference if parent_reference.is_a?(CashTransaction) && parent_reference.persisted? && !parent_reference.destroyed?
+
+    friend_user_reference
   end
 
   def receiver_context_for(friend_user)
@@ -320,5 +358,9 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     counterpart_entity_id = user.entities.that_are_users.find_by(entity_user: friend_user)&.id
 
     entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
+  end
+
+  def applying_actionable_message?
+    respond_to?(:source_message_id) && source_message_id.present?
   end
 end

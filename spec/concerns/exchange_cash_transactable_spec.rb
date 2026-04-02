@@ -107,6 +107,18 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         expect(exchangable_card_transaction.entity_transactions.first.exchanges.sum(:price)).to eq(300)
       end
 
+      it "fills the standalone mirrored EXCHANGE RETURN reference with the source transactable" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+
+        expect(shared_cash_transaction.reference_transactable).to eq(exchangable_card_transaction)
+      end
+
+      it "keeps the standalone mirrored EXCHANGE RETURN description equal to the source description" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+
+        expect(shared_cash_transaction.description).to eq(exchangable_card_transaction.description)
+      end
+
       it "attaches one more mirrored EXCHANGE RETURN installment when exchanges increases by one" do
         new_exchange = exchangable_card_transaction.entity_transactions.first.exchanges.last.dup
         new_exchange.number += 1
@@ -132,6 +144,15 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         exchangable_card_transaction.save
 
         validate(exchangable_card_transaction, 180, 1)
+      end
+
+      it "restores a missing standalone mirrored EXCHANGE RETURN reference on sync" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+        shared_cash_transaction.update_columns(reference_transactable_type: nil, reference_transactable_id: nil)
+        exchange = exchangable_card_transaction.entity_transactions.first.exchanges.first
+        exchange.update!(price: 91, starting_price: 91)
+
+        expect(shared_cash_transaction.reload.reference_transactable).to eq(exchangable_card_transaction)
       end
 
       it "detaches and removes Exchanges when categories.exclude?(exchange_category) || !entity_transaction.is_payer" do

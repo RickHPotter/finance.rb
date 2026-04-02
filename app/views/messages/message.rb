@@ -77,9 +77,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     end
 
     if message.transaction_destroy_notification_message?
-      return if message.reference_transactable_id.nil?
-
-      cash_transaction_to_be_destroyed = viewer_cash_transactions.find_by(id: message.reference_transactable_id)
+      cash_transaction_to_be_destroyed = message.local_reference_for(context: current_context)
 
       if cash_transaction_to_be_destroyed
         render_destroy_action(cash_transaction_to_be_destroyed)
@@ -370,12 +368,9 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     type = payload["type"]
     id = payload["id"]
 
-    @reference_transactable_for_viewer =
-      if message.transaction_destroy_notification_message?
-        viewer_cash_transactions.find_by(id: message.reference_transactable_id)
-      elsif type.present? && id.present?
-        message.local_reference_for(context: current_context)
-      end
+    return unless message.transaction_destroy_notification_message? || (type.present? && id.present?)
+
+    @reference_transactable_for_viewer = message.local_reference_for(context: current_context)
   end
 
   def showable_my_transaction

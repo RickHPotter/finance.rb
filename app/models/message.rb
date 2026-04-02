@@ -126,11 +126,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def local_reference_for(context:)
     cash_transactions = context.cash_transactions
 
-    if transaction_destroy_notification_message?
-      return if reference_transactable_id.blank?
-
-      return cash_transactions.find_by(id: reference_transactable_id)
-    end
+    return destroy_local_reference_for(cash_transactions) if transaction_destroy_notification_message?
 
     payload = replay_payload || {}
     type = payload["type"]
@@ -140,11 +136,10 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
     direct_cash_transaction_reference = cash_transactions.find_by(id:) if type == "CashTransaction"
     return direct_cash_transaction_reference if direct_cash_transaction_reference.present?
 
-    shared_return_reference = shared_return_local_reference_for(context:, payload:)
-    return shared_return_reference if shared_return_reference.present?
+    exact_reference_local = cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    return exact_reference_local if exact_reference_local.present?
 
-    cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) ||
-      fallback_local_reference_for(cash_transactions)
+    chain_local_reference_for(cash_transactions:, type:, id:)
   end
 
   # @protected_instance_methods ...............................................
@@ -156,13 +151,74 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
     local_reference_for(context:).present?
   end
 
-  def shared_return_local_reference_for(context:, payload:)
-    return unless payload["type"] == "CardTransaction"
-    return if Array(payload["cash_installments_attributes"]).blank?
+  def chain_local_reference_for(cash_transactions:, type:, id:)
+    reference = payload_reference_transaction(type:, id:)
+    return if reference.blank?
 
-    card_transaction = context.card_transactions.find_by(id: payload["id"])
-    return if card_transaction.blank?
+    return cash_transactions.find_by(id: reference.id) if reference.instance_of?(CashTransaction) && cash_transactions.where(id: reference.id).exists?
 
+    if reference.instance_of?(CardTransaction)
+      projected_reference = projected_shared_return_from_card(reference)
+      return cash_transactions.find_by(id: projected_reference.id) if projected_reference.present? && cash_transactions.where(id: projected_reference.id).exists?
+
+      return CashTransaction.first_reference_descendant_for(projected_reference, scope: cash_transactions) if projected_reference.present?
+    end
+
+    CashTransaction.first_reference_descendant_for(reference, scope: cash_transactions)
+  end
+
+  def destroy_local_reference_for(cash_transactions)
+    reference = reference_transactable
+    return if reference.blank?
+
+    if reference.instance_of?(CashTransaction)
+      direct_reference = cash_transactions.find_by(id: reference.id)
+      return direct_reference if direct_reference.present?
+    end
+
+    chain_reference_from(reference, cash_transactions:)
+  end
+
+  def chain_reference_from(reference, cash_transactions:)
+    if reference.instance_of?(CardTransaction)
+      projected_reference = projected_shared_return_from_card(reference)
+      return cash_transactions.find_by(id: projected_reference.id) if projected_reference.present? && cash_transactions.where(id: projected_reference.id).exists?
+
+      return CashTransaction.first_reference_descendant_for(projected_reference, scope: cash_transactions) if projected_reference.present?
+    end
+
+    CashTransaction.first_reference_descendant_for(reference, scope: cash_transactions) if reference.instance_of?(CashTransaction)
+  end
+
+  def payload_reference_transaction(type:, id:)
+    return reference_transactable if payload_reference_transaction_match?(reference_transactable, type:, id:)
+
+    case type
+    when "CashTransaction"
+      CashTransaction.find_by(id:)
+    when "CardTransaction"
+      CardTransaction.find_by(id:)
+    end
+  end
+
+  def payload_reference_transaction_match?(transaction, type:, id:)
+    transaction.present? &&
+      payload_reference_transaction_class_match?(transaction, type:) &&
+      transaction.id == id.to_i
+  end
+
+  def payload_reference_transaction_class_match?(transaction, type:)
+    case type
+    when "CashTransaction"
+      transaction.instance_of?(CashTransaction)
+    when "CardTransaction"
+      transaction.instance_of?(CardTransaction)
+    else
+      false
+    end
+  end
+
+  def projected_shared_return_from_card(card_transaction)
     card_transaction.entity_transactions
                     .includes(exchanges: :cash_transaction)
                     .flat_map(&:exchanges)
@@ -170,42 +226,6 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
                     .map(&:cash_transaction)
                     .compact
                     .find(&:exchange_return?)
-  end
-
-  def fallback_local_reference_for(cash_transactions)
-    related_reference_messages.each do |candidate|
-      reference = find_fallback_local_reference(cash_transactions, candidate.replay_payload || {})
-      return reference if reference.present?
-    end
-
-    nil
-  end
-
-  def related_reference_messages
-    @related_reference_messages ||= if reference_transactable_type.blank? || reference_transactable_id.blank?
-                                      [ self ]
-                                    else
-                                      [ self ] + conversation.messages
-                                                             .where(reference_transactable_type:, reference_transactable_id:)
-                                                             .where.not(id:)
-                                                             .order(applied_at: :desc, created_at: :desc)
-                                                             .to_a
-                                    end
-  end
-
-  def find_fallback_local_reference(cash_transactions, payload)
-    relation = cash_transactions.where(description: payload["description"], price: payload["price"])
-    relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
-
-    category_ids = Array(payload["category_ids"]).compact_blank
-    entity_ids = Array(payload["entity_ids"]).compact_blank
-
-    relation = relation.joins(:categories).where(categories: { id: category_ids }) if category_ids.present?
-    relation = relation.joins(:entities).where(entities: { id: entity_ids }) if entity_ids.present?
-
-    relation.order(created_at: :desc).first
-  rescue ArgumentError
-    relation.order(created_at: :desc).first
   end
 
   def parsed_headers

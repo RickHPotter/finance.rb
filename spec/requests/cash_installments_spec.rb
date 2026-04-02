@@ -288,21 +288,6 @@ RSpec.describe "CashInstallments", type: :request do
     [ origin_cash_transaction.reload, sender_shared_return.reload, receiver_shared_return.reload ]
   end
 
-  def create_reimbursement_shared_return_with_source_reference(sender:, receiver:, sender_context: sender.main_context,
-                                                               receiver_context: receiver.main_context)
-    origin_cash_transaction, sender_shared_return, receiver_shared_return =
-      create_reimbursement_shared_return_bundle(sender:, receiver:, sender_context:, receiver_context:)
-
-    sender_shared_return.update!(
-      reference_transactable: nil
-    )
-    receiver_shared_return.update!(
-      reference_transactable: origin_cash_transaction
-    )
-
-    [ origin_cash_transaction.reload, sender_shared_return.reload, receiver_shared_return.reload ]
-  end
-
   describe "[ #pay ]" do
     it "marks the installment as paid and splits the remainder when the paid amount is smaller" do
       cash_transaction = create(
@@ -423,7 +408,7 @@ RSpec.describe "CashInstallments", type: :request do
       )
     end
 
-    it "synchronizes paid state and message creation for a manually created counterpart pair without explicit linkage" do
+    it "does not synchronize paid state for a manually created counterpart pair without explicit linkage" do
       sender = user
       receiver = create(:user, :random)
       sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:, link_reference: false)
@@ -436,17 +421,11 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
-      message = conversation.messages.order(:id).last
-
       expect(response).to have_http_status(:ok)
-      expect(receiver_transaction.cash_installments.first.reload).to be_paid
-      expect(receiver_transaction.cash_installments.first.date).to eq(paid_at)
-      expect(message.body).to eq("notification:paid_state")
-      expect(JSON.parse(message.headers)).to include(
-        "version" => "message_paid_state_v1",
-        "event" => include("action" => "paid")
-      )
+      expect(sender_transaction.cash_installments.first.reload).to be_paid
+      expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
+      expect(receiver_transaction.cash_installments.first.date).to eq(installment_date)
+      expect(Conversation.for_users([ sender.id, receiver.id ]).assistant).to be_empty
     end
 
     it "synchronizes paid state inside the matching derived scenario only" do
@@ -493,7 +472,7 @@ RSpec.describe "CashInstallments", type: :request do
       )
     end
 
-    it "fails clearly when the counterpart shared return cannot be resolved" do
+    it "keeps the payment local when the counterpart shared return cannot be resolved" do
       sender = user
       receiver = create(:user, :random)
       sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:, link_reference: false)
@@ -522,10 +501,9 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(sender_transaction.cash_installments.first.reload).not_to be_paid
+      expect(response).to have_http_status(:ok)
+      expect(sender_transaction.cash_installments.first.reload).to be_paid
       expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
-      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_installment.attributes.base.counterpart_paid_state_sync_missing"))
       expect(Message.where(body: "notification:paid_state")).to be_empty
     end
 
@@ -667,7 +645,7 @@ RSpec.describe "CashInstallments", type: :request do
         )
       end
 
-      it "does not sync paid state into an older same-shape borrow return when the intended counterpart was created later" do
+      it "keeps paid state local when only older same-shape borrow returns exist without a chain" do
         sender = user
         receiver = create(:user, :random)
         sender_shared_return, receiver_shared_return = create_shared_return_pair(sender:, receiver:, link_reference: false)
@@ -707,7 +685,8 @@ RSpec.describe "CashInstallments", type: :request do
         }, headers: turbo_stream_headers
 
         expect(response).to have_http_status(:ok)
-        expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 1).reload).not_to be_paid
         expect(stale_old_return.cash_installments.find_by!(number: 1).reload).to be_paid
         expect(stale_old_return.cash_installments.find_by!(number: 1).date.to_date).to eq(Date.new(2025, 11, 10))
       end
@@ -941,11 +920,11 @@ RSpec.describe "CashInstallments", type: :request do
       )
     end
 
-    it "pays the counterpart exchange return and not the reimbursement source when the borrow return references the source transaction" do
+    it "pays the counterpart exchange return and not the reimbursement source for the canonical reimbursement chain" do
       sender = create(:user, :random)
       receiver = user
       origin_cash_transaction, sender_shared_return, receiver_shared_return =
-        create_reimbursement_shared_return_with_source_reference(sender:, receiver:)
+        create_reimbursement_shared_return_bundle(sender:, receiver:)
       paid_at = Time.zone.local(2026, 3, 28, 15, 30, 0)
 
       post pay_multiple_cash_installments_path, params: {

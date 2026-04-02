@@ -54,14 +54,7 @@ module Linter
     def normalized_description_for(cash_transaction)
       return cash_transaction.description unless cash_transaction.exchanges.first&.standalone?
 
-      exchange = cash_transaction.exchanges.first
-      count = exchange&.entity_transaction&.exchanges_count.to_i
-      return if count.zero?
-
-      base_description = exchange.transactable&.description || cash_transaction.description.to_s.sub(%r{\s+\d+/\d+\z}, "")
-      return base_description if count == 1
-
-      "#{base_description} #{exchange.number}/#{count}"
+      cash_transaction.exchanges.first&.transactable&.description || cash_transaction.description.to_s.sub(%r{\s+\d+/\d+\z}, "")
     end
   end
 end

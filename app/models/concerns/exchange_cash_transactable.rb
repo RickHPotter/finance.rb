@@ -232,6 +232,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       cash_installments_count: cash_transaction.cash_installments.count,
       paid: cash_transaction.cash_installments.where(paid: false).none?
     )
+    sync_projection_reference_transactable!(cash_transaction:)
   end
 
   def rebuild_projection_installments!(cash_transaction:, exchanges:)
@@ -371,6 +372,28 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def projection_cash_transaction_params
     standalone? ? cash_transaction_params : card_bound_cash_transaction_params
+  end
+
+  def sync_projection_reference_transactable!(cash_transaction:)
+    desired_reference = projection_reference_transactable
+    return if desired_reference.blank?
+
+    current_reference = cash_transaction.reference_transactable
+    return if current_reference.present? &&
+              current_reference.instance_of?(desired_reference.class) &&
+              current_reference.id == desired_reference.id
+
+    cash_transaction.update_columns(
+      reference_transactable_type: desired_reference.class.name,
+      reference_transactable_id: desired_reference.id
+    )
+  end
+
+  def projection_reference_transactable
+    return unless standalone?
+    return unless transactable.respond_to?(:persisted?) && transactable.persisted?
+
+    transactable
   end
 
   def projection_description

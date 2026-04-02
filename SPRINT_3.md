@@ -147,8 +147,8 @@ too visible to ignore.
       - confirmation should become the default interaction shape for domain-approved
         historical corrections, not only a tiny exception list
       - the goal is consistent guarded correction, not a generic unsafe bypass
-    - Post-slice stabilization complete:
-      - maintained suite runner fixed for `.env.test`-based execution
+	    - Post-slice stabilization complete:
+	      - maintained suite runner fixed for `.env.test`-based execution
       - indirect projection cleanup fixed for `Investment`, `CARD ADVANCE`, and
         `CashTransactable` aggregate switches
       - unpaid `CardTransaction` moves into paid invoice cycles are now blocked
@@ -165,11 +165,23 @@ too visible to ignore.
         - paid-state assistant message deduplication no longer collapses different
           mirrored transactions into one notification
         - mirror sync now runs through Solid Queue with retry on deadlocks from bulk-pay
-      - historical standalone `EXCHANGE RETURN` data now has a two-step repair path:
-        - first sync standalone `Exchange` rows from legacy mirrored installments
-        - then consolidate old one-installment families into one normalized shared return
-      - maintained test layers are green:
-        `spec/models`, `spec/concerns`, `spec/requests`
+	      - historical standalone `EXCHANGE RETURN` data now has a two-step repair path:
+	        - first sync standalone `Exchange` rows from legacy mirrored installments
+	        - then consolidate old one-installment families into one normalized shared return
+	      - next normalization track defined:
+	        - `reference_transactable` should move to an immediate-parent chain contract
+	          across sender and receiver exchange flows
+	        - admin exchange audit should become the operator surface for reviewing current
+	          vs canonical reference edges before runtime write-path migration
+	      - first canonical edge rewrite slice complete:
+	        - trio-audit-backed `ExchangeChainReferenceAudit` now separates supported
+	          vs unsupported edge rewrites
+	        - `ExchangeChainReferenceRunner` can dry-run/apply concrete
+	          `reference_transactable` rewrites for unambiguous families
+	        - ambiguous rows such as `multiple_middle_candidates` remain intentionally
+	          skipped until the chain role can be resolved without guessing
+	      - maintained test layers are green:
+	        `spec/models`, `spec/concerns`, `spec/requests`
 
 ### JIRAIYA-05/fe-02: Consolidate data entry UX
 

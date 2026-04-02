@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_01_120224) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_03_165007) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -128,7 +128,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_01_120224) do
     t.index ["context_id"], name: "index_cash_transactions_on_context_id"
     t.index ["investment_type_id"], name: "index_cash_transactions_on_investment_type_id"
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_cash_transactions_on_reference_transactable"
-    t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_reference_transactable_on_cash_composite_key", unique: true
     t.index ["subscription_id"], name: "index_cash_transactions_on_subscription_id"
     t.index ["user_bank_account_id"], name: "index_cash_transactions_on_user_bank_account_id"
     t.index ["user_card_id"], name: "index_cash_transactions_on_user_card_id"

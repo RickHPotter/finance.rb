@@ -58,6 +58,9 @@ module Logic
     end
 
     def direct_counterpart_transaction(transaction)
+      chain_counterpart = transaction.counterpart_shared_return_transaction if transaction.respond_to?(:counterpart_shared_return_transaction)
+      return chain_counterpart if chain_counterpart.present? && chain_counterpart.user_id != transaction.user_id
+
       reference = transaction.reference_transactable
       return unless reference.is_a?(CashTransaction)
       return if reference.user_id == transaction.user_id

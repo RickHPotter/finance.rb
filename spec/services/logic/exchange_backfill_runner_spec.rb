@@ -120,6 +120,22 @@ RSpec.describe Logic::ExchangeBackfillRunner do
         }.to_json
       )
     end
+    let!(:descendant_message) do
+      conversation.messages.create!(
+        user: rikki,
+        reference_transactable: receiver_reference_transaction,
+        body: "Audit descendant",
+        headers: {
+          id: source_transaction.id,
+          type: "CashTransaction",
+          description: "WATER BILL",
+          price: -5_000,
+          date: "2026-03-17",
+          month: 3,
+          year: 2026
+        }.to_json
+      )
+    end
 
     let!(:derived_context) { create(:context, user: rikki, name: "Runner Derived", source_context: rikki.main_context) }
     let!(:derived_source_transaction) do
@@ -167,9 +183,12 @@ RSpec.describe Logic::ExchangeBackfillRunner do
       ).call
 
       message.reload
+      descendant_message.reload
       headers = JSON.parse(message.headers)
+      descendant_headers = JSON.parse(descendant_message.headers)
 
       expect(result[:updated_messages_count]).to eq(1)
+      expect(result[:updates].first[:message_ids]).to match_array([ message.id, descendant_message.id ])
       expect(headers).to include(
         "id" => source_transaction.id,
         "type" => "CashTransaction",
@@ -177,6 +196,7 @@ RSpec.describe Logic::ExchangeBackfillRunner do
         "price" => 2500,
         "category_ids" => gigi.categories.find_by(category_name: "BORROW RETURN").id
       )
+      expect(descendant_headers.fetch("description")).to eq("WATER BILL - HALF")
       expect(headers.fetch("cash_installments_attributes")).to contain_exactly(
         a_hash_including(
           "price" => 2500,

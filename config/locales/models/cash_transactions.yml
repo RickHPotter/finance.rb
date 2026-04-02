@@ -16,6 +16,7 @@ en:
               same_month_paid_state_correction_confirmation_required: "This paid transaction is in the current month and requires explicit confirmation before being marked as not paid."
               month_boundary_history_correction_confirmation_required: "This paid transaction crosses a month boundary and requires explicit confirmation."
               destroy_locked_after_payment: "Transactions with paid history cannot be deleted."
+              destroy_linked_shared_return: "Shared-return borrow transactions cannot be deleted while they are linked to their counterpart."
     attributes:
       cash_transaction:
         self: Cash Transaction
@@ -77,6 +78,7 @@ pt-BR:
               same_month_paid_state_correction_confirmation_required: "Esta movimentação paga está no mês atual e exige confirmação explícita antes de ser marcada como não paga."
               month_boundary_history_correction_confirmation_required: "Esta movimentação paga cruza a virada do mês e exige confirmação explícita."
               destroy_locked_after_payment: "Movimentações com histórico pago não podem ser apagadas."
+              destroy_linked_shared_return: "Transações de devolução vinculadas a um compartilhamento não podem ser apagadas enquanto estiverem ligadas à contraparte."
     attributes:
       cash_transaction:
         self: Movimentação

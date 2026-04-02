@@ -68,14 +68,14 @@ end
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)
 #  price                       :integer          not null
-#  reference_transactable_type :string           indexed => [reference_transactable_id], uniquely indexed => [reference_transactable_id]
+#  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  starting_price              :integer          not null
 #  year                        :integer          not null
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  context_id                  :bigint           not null, indexed
 #  investment_type_id          :bigint           indexed
-#  reference_transactable_id   :bigint           indexed => [reference_transactable_type], uniquely indexed => [reference_transactable_type]
+#  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  subscription_id             :bigint           indexed
 #  user_bank_account_id        :bigint           indexed
 #  user_card_id                :bigint           indexed
@@ -83,14 +83,13 @@ end
 #
 # Indexes
 #
-#  index_cash_transactions_on_context_id               (context_id)
-#  index_cash_transactions_on_investment_type_id       (investment_type_id)
-#  index_cash_transactions_on_reference_transactable   (reference_transactable_type,reference_transactable_id)
-#  index_cash_transactions_on_subscription_id          (subscription_id)
-#  index_cash_transactions_on_user_bank_account_id     (user_bank_account_id)
-#  index_cash_transactions_on_user_card_id             (user_card_id)
-#  index_cash_transactions_on_user_id                  (user_id)
-#  index_reference_transactable_on_cash_composite_key  (reference_transactable_type,reference_transactable_id) UNIQUE
+#  index_cash_transactions_on_context_id              (context_id)
+#  index_cash_transactions_on_investment_type_id      (investment_type_id)
+#  index_cash_transactions_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
+#  index_cash_transactions_on_subscription_id         (subscription_id)
+#  index_cash_transactions_on_user_bank_account_id    (user_bank_account_id)
+#  index_cash_transactions_on_user_card_id            (user_card_id)
+#  index_cash_transactions_on_user_id                 (user_id)
 #
 # Foreign Keys
 #

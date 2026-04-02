@@ -25,11 +25,15 @@ class Logic::ExchangeBackfillRunner
   private
 
   def updates
-    @updates ||= run_cases[:updates]
+    @updates ||= run_result[:updates]
   end
 
   def skipped
-    @skipped ||= run_cases[:skipped]
+    @skipped ||= run_result[:skipped]
+  end
+
+  def run_result
+    @run_result ||= run_cases
   end
 
   def run_cases # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -67,7 +71,9 @@ class Logic::ExchangeBackfillRunner
         :categories,
         :cash_installments,
         entity_transactions: %i[entity exchanges]
-      ).find_by(reference_transactable: source_transaction)
+      ).then do |cash_transactions|
+        source_transaction.first_reference_descendant(scope: cash_transactions)
+      end
 
       target_headers = build_target_headers(intent:, source_transaction:, counterpart_user:, receiver_reference:)
 
@@ -80,7 +86,7 @@ class Logic::ExchangeBackfillRunner
         next
       end
 
-      messages = Message.where(reference_transactable: source_transaction).where.not(headers: [ nil, "" ])
+      messages = message_scope_for(source_transaction).where.not(headers: [ nil, "" ])
 
       if messages.empty?
         result[:skipped] << {
@@ -129,6 +135,18 @@ class Logic::ExchangeBackfillRunner
 
       source_transaction.send(:build_cash_transaction_headers, counterpart_user, exchanges)
     end
+  end
+
+  def message_scope_for(source_transaction)
+    references = CashTransaction.reference_family_for(source_transaction)
+    grouped_references = references.group_by(&:class)
+
+    grouped_references.values.map do |group|
+      Message.where(
+        reference_transactable_type: group.first.class.name,
+        reference_transactable_id: group.map(&:id)
+      )
+    end.reduce(Message.none, &:or)
   end
 
   def build_headers_from_receiver_reference(source_transaction:, receiver_reference:) # rubocop:disable Metrics/AbcSize

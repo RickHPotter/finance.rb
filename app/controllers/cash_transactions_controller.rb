@@ -64,6 +64,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def update
     @shared_paid_state_notifications = pending_shared_paid_state_notifications
     @exchange_projection_notification_required = exchange_projection_notification_required?
+    @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
@@ -125,11 +126,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
       @cash_transaction.entity_transactions.build(entity_id: effective_cash_transaction_params[:entity_id])
     elsif effective_cash_transaction_params[:entity_transactions_attributes].present?
+      submitted_entity_transactions_attributes = normalized_nested_attributes(effective_cash_transaction_params[:entity_transactions_attributes])
       current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
-      new_entities = effective_cash_transaction_params[:entity_transactions_attributes].pluck(:entity_id).map(&:to_i)
+      new_entities = submitted_entity_transactions_attributes.pluck(:entity_id).map(&:to_i)
       if @cash_transaction.entity_transactions.one? && current_entities == new_entities # means it is persisted
         @cash_transaction.entity_transactions.each do |entity_transaction|
-          entity_transactions_attributes = effective_cash_transaction_params[:entity_transactions_attributes].find do |a|
+          entity_transactions_attributes = submitted_entity_transactions_attributes.find do |a|
             a[:entity_id].to_i == entity_transaction.entity_id
           end
 
@@ -138,13 +140,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         end
       else
         @cash_transaction.entity_transactions.each(&:mark_for_destruction)
-        @cash_transaction.entity_transactions_attributes = effective_cash_transaction_params[:entity_transactions_attributes]
+        @cash_transaction.entity_transactions_attributes = submitted_entity_transactions_attributes
       end
     end
   end
 
   def synchronize_entity_transaction_exchanges(entity_transaction, exchanges_attributes)
-    exchanges_attributes = Array(exchanges_attributes)
+    exchanges_attributes = normalized_nested_attributes(exchanges_attributes)
     existing_exchanges_by_number = entity_transaction.exchanges.index_by(&:number)
 
     entity_transaction.exchanges.each do |exchange|
@@ -169,7 +171,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def assign_cash_installments_from_effective_params
-    attributes = effective_cash_transaction_params[:cash_installments_attributes]
+    attributes = normalized_nested_attributes(effective_cash_transaction_params[:cash_installments_attributes])
 
     if @cash_transaction.persisted?
       synchronize_cash_installments(attributes)
@@ -232,7 +234,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       )
     )
 
-    counterpart_reference = normalized_shared_return_reference_transactable
+    counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       @cash_transaction.assign_attributes(
         reference_transactable_type: counterpart_reference.class.name,
@@ -254,7 +256,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def assignable_cash_transaction_params
     params = effective_cash_transaction_params.except(:source_message_id)
-    counterpart_reference = normalized_shared_return_reference_transactable
+    counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       return params.merge(reference_transactable_type: counterpart_reference.class.name,
                           reference_transactable_id: counterpart_reference.id)
@@ -270,19 +272,22 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       source_message.present?
   end
 
-  def normalized_shared_return_reference_transactable
-    return unless @cash_transaction&.persisted?
+  def canonical_message_reference_transactable
     return if source_message.blank?
+    return sender_shared_return_reference_from_source_message if target_requires_sender_shared_return_reference?
+    return existing_exchange_return_parent_reference if existing_exchange_return_parent_reference.present?
+    return unless @cash_transaction&.persisted?
     return unless @cash_transaction.respond_to?(:borrow_return?) && @cash_transaction.respond_to?(:exchange_return?)
     return unless @cash_transaction.borrow_return? || @cash_transaction.exchange_return?
 
-    direct_shared_return_reference_from_source_message ||
+    sender_shared_return_reference_from_source_message ||
       (@cash_transaction.counterpart_shared_return_transaction if @cash_transaction.respond_to?(:counterpart_shared_return_transaction))
   end
 
-  def direct_shared_return_reference_from_source_message
+  def sender_shared_return_reference_from_source_message
     reference_transaction = source_message.reference_transactable
-    return unless reference_transaction.is_a?(CardTransaction)
+    return reference_transaction if reference_transaction.is_a?(CashTransaction) && reference_transaction.exchange_return?
+    return unless reference_transaction.is_a?(CardTransaction) || reference_transaction.is_a?(CashTransaction)
 
     reference_transaction.entity_transactions
                          .includes(exchanges: :cash_transaction)
@@ -291,6 +296,46 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                          .map(&:cash_transaction)
                          .compact
                          .find(&:exchange_return?)
+  end
+
+  def existing_exchange_return_parent_reference
+    return unless @cash_transaction&.persisted?
+    return unless @cash_transaction.respond_to?(:exchange_return?) && @cash_transaction.exchange_return?
+    return if @cash_transaction.reference_transactable.blank?
+    return if @cash_transaction.reference_transactable == @cash_transaction
+
+    @cash_transaction.reference_transactable
+  end
+
+  def target_requires_sender_shared_return_reference?
+    category_names = effective_category_names
+    return true if category_names.include?("BORROW RETURN")
+
+    category_names.include?("EXCHANGE") && effective_message_intent == "loan"
+  end
+
+  def effective_category_names
+    category_ids = effective_category_ids
+    return @cash_transaction.categories.pluck(:category_name) if category_ids.blank? && @cash_transaction&.persisted?
+
+    current_user.categories.where(id: category_ids).pluck(:category_name)
+  end
+
+  def effective_category_ids
+    ids = Array(effective_cash_transaction_params[:category_id])
+    ids += normalized_nested_attributes(effective_cash_transaction_params[:category_transactions_attributes]).filter_map do |attrs|
+      next if ActiveModel::Type::Boolean.new.cast(attrs[:_destroy])
+
+      attrs[:category_id]
+    end
+
+    ids.compact_blank.map(&:to_i).uniq
+  end
+
+  def effective_message_intent
+    effective_cash_transaction_params[:friend_notification_intent].presence ||
+      source_message.replay_payload&.fetch("intent", nil).presence ||
+      source_message.reference_transactable.try(:effective_friend_notification_intent)
   end
 
   def source_message_id
@@ -369,16 +414,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def submitted_cash_installment_attributes
-    attributes = effective_cash_transaction_params[:cash_installments_attributes]
-
-    case attributes
-    when ActionController::Parameters
-      attributes.to_h.values
-    when Hash
-      attributes.values
-    else
-      Array(attributes)
-    end
+    normalized_nested_attributes(effective_cash_transaction_params[:cash_installments_attributes])
   end
 
   def sync_shared_paid_state_messages_from_form!
@@ -408,8 +444,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def handle_successful_save
     if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
       @cash_transaction.sync_exchange_projection_back_to_source!
-      notify_exchange_projection_counterpart_update! if @exchange_projection_notification_required
+      notify_exchange_projection_counterpart_update! if @exchange_projection_notification_required && source_message.blank?
     end
+
+    notify_shared_return_counterpart_update! if @shared_return_counterpart_notification_required && source_message.blank?
 
     sync_shared_paid_state_messages_from_form!
     mark_source_message_applied
@@ -454,6 +492,18 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def exchange_projection_notification_required?
     return false unless @cash_transaction.exchange_return?
+
+    exchange_projection_notification_required_for_submitted_installments?
+  end
+
+  def shared_return_counterpart_notification_required?
+    return false unless @cash_transaction.borrow_return?
+    return false unless @cash_transaction.shared_return_flow?
+
+    exchange_projection_notification_required_for_submitted_installments?
+  end
+
+  def exchange_projection_notification_required_for_submitted_installments?
     return false if submitted_cash_installment_attributes.blank?
 
     submitted_cash_installment_attributes.any? do |installment_attributes|
@@ -499,6 +549,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return unless source_transactable.respond_to?(:notify_friends, true)
 
     source_transactable.send(:notify_friends, :update)
+  end
+
+  def notify_shared_return_counterpart_update!
+    Logic::SharedReturnStructureUpdateMessageService.new(transaction: @cash_transaction).call
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
@@ -714,5 +768,32 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       skip_budgets: search_cash_transaction_params[:skip_budgets],
       force_mobile: mobile
     }
+  end
+
+  def normalized_nested_attributes(attributes)
+    return [] if attributes.blank?
+
+    raw_attributes =
+      if attributes.respond_to?(:to_unsafe_h)
+        attributes.to_unsafe_h
+      else
+        attributes
+      end
+
+    collection =
+      case raw_attributes
+      when Hash
+        indexed_nested_attributes_hash?(raw_attributes) ? raw_attributes.values : [ raw_attributes ]
+      else
+        Array(raw_attributes)
+      end
+
+    collection.map do |entry|
+      entry.respond_to?(:with_indifferent_access) ? entry.with_indifferent_access : entry
+    end
+  end
+
+  def indexed_nested_attributes_hash?(attributes)
+    attributes.keys.all? { |key| key.to_s.match?(/\A\d+\z/) }
   end
 end

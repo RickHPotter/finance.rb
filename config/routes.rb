@@ -106,6 +106,7 @@ Rails.application.routes.draw do
   end
 
   resources :subscriptions, except: :show
+  resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do
     resources :messages, only: :create do
@@ -118,12 +119,18 @@ Rails.application.routes.draw do
   resources :push_subscriptions, only: :create
 
   resource :naming_convention, only: [] do
+    get :preview
     post :preview
     patch :update
   end
 
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
+
+    resource :settings, only: [] do
+      get :exchange_audit
+      patch :apply_exchange_audit
+    end
   end
 
   namespace :lalas do

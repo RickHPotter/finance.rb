@@ -24,11 +24,11 @@ class Logic::CardBoundExchangeIntegrityRunner
   private
 
   def updates
-    @updates ||= run[:updates]
+    @updates ||= run_result[:updates]
   end
 
   def skipped
-    @skipped ||= run[:skipped]
+    @skipped ||= run_result[:skipped]
   end
 
   def families
@@ -63,6 +63,10 @@ class Logic::CardBoundExchangeIntegrityRunner
 
       scope.to_a
     end
+  end
+
+  def run_result
+    @run_result ||= run
   end
 
   def run
