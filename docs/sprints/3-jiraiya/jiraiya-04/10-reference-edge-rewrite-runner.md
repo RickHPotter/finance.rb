@@ -60,18 +60,17 @@ stale instead of partially applied.
 
 ## Expected Use
 
-Use the tasks in `lib/tasks/exchange_chain_reference.rake`:
+The public rake entry points for this rollout utility were removed after the
+production cleanup was completed.
 
-- `bin/rails exchange_chain_reference:audit`
-- `bin/rails exchange_chain_reference:apply DRY_RUN=true`
-- `bin/rails exchange_chain_reference:apply IDS=... DRY_RUN=false`
+The intended operator flow is now:
 
-The intended operator flow is:
+1. review the admin Exchange Audit UI
+2. select any required middle/receiver overrides there
+3. apply only the supported, reviewed rows from the screen
 
-1. review the admin audit UI
-2. run the audit task for machine-readable output
-3. dry-run the apply step
-4. apply only the supported, reviewed rows
+The underlying services still exist because the Exchange Audit screen depends on
+them, but they are no longer exposed as standalone maintenance commands.
 
 ## Follow-up Work
 

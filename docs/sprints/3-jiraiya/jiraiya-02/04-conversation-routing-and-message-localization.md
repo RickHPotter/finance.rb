@@ -129,22 +129,10 @@ The product model is now simple:
 - one place for human chat
 - one place for assistant/system work
 
-## Initial Command
+## Historical Note
 
-The first command in this slice should stay read-only:
+The rollout-specific `message_backfill` utilities described in this slice were
+removed after the production cleanup was completed.
 
-```bash
-bin/rails message_backfill:audit OUTPUT=tmp/message_backfill_audit.json
-```
-
-After the audit is reviewed, apply the redistribution and localization rewrite in dry-run mode first:
-
-```bash
-bin/rails message_backfill:apply DRY_RUN=true OUTPUT=tmp/message_backfill_apply.json
-```
-
-Then run the same command without dry-run:
-
-```bash
-bin/rails message_backfill:apply DRY_RUN=false OUTPUT=tmp/message_backfill_apply.json
-```
+This document remains only as historical context for the conversation refactor
+and the one-time migration strategy that accompanied it.

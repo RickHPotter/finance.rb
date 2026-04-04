@@ -46,7 +46,7 @@ RSpec.describe "Settings", type: :request do
       expect(response.body).to include(I18n.t("settings.exchange_audit.title"))
     end
 
-    it "round-trips middle candidate selections through the audit route" do
+    it "round-trips middle option selections through the audit route" do
       user.update!(admin: true)
       transaction_payload = lambda do |id:, description:, date:, context_id:, month_year:,
                                        category_names:, entity_names:, entity_user_ids: [],
@@ -158,7 +158,7 @@ RSpec.describe "Settings", type: :request do
       expect(response.body).to include("#{I18n.t('settings.exchange_audit.entities')}: GABRIEL")
     end
 
-    it "round-trips receiver-side candidate selections through the audit route" do
+    it "round-trips receiver-side option selections through the audit route" do
       user.update!(admin: true)
       transaction_payload = lambda do |id:, description:, date:, context_id:, month_year:,
                                        category_names:, entity_names:, entity_user_ids: [],
@@ -262,7 +262,7 @@ RSpec.describe "Settings", type: :request do
       expect(response.body).to include(I18n.t("settings.exchange_audit.apply_button"))
     end
 
-    it "auto-selects the friend-entity middle candidate when there is a unique receiver match" do
+    it "auto-selects the friend-entity middle option when there is a unique receiver match" do
       user.update!(admin: true)
       transaction_payload = lambda do |id:, description:, date:, context_id:, month_year:,
                                        category_names:, entity_names:, entity_user_ids: [],

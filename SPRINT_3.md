@@ -180,6 +180,22 @@ too visible to ignore.
 	          `reference_transactable` rewrites for unambiguous families
 	        - ambiguous rows such as `multiple_middle_candidates` remain intentionally
 	          skipped until the chain role can be resolved without guessing
+	      - rollout cleanup complete:
+	        - canonical shared-return/reference-chain runtime is live
+	        - Exchange Audit reached zero pending after data repair plus the remaining
+	          manual operator selections
+	        - linked `BORROW RETURN` rows are now destroy-locked
+	        - settings now open the naming service directly on the dry-run/apply screen
+	        - stale one-off cleanup migration and old naming modal entry flow were removed
+	      - final pre-`PayMultiple` state:
+	        - no remaining exchange/reference normalization slice is still open
+	        - shared-return structural updates now notify the counterpart without echo loops
+	        - linked `BORROW RETURN` rows cannot be destroyed while they remain part of a
+	          canonical shared-return chain
+	        - `PayMultiple` still means bulk full-payment only; partial payment was not
+	          implemented in Sprint 3
+	        - the broader category/entity allocation redesign was not implemented;
+	          the shipped rule remains the V1 hard block once paid history exists
 	      - maintained test layers are green:
 	        `spec/models`, `spec/concerns`, `spec/requests`
 

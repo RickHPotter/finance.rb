@@ -507,3 +507,26 @@ After core safety is stable:
 - optimizing every bulk workflow before rules are stable
 
 The first job is correctness.
+
+## Final State Note
+
+The shipped Sprint 3 result reached the safety/normalization target before any
+partial-`PayMultiple` expansion.
+
+Implemented:
+
+- domain-level historical safety guards
+- explicit confirmation for the approved warn-only cases
+- normalized shared exchange / return persistence
+- assistant-driven shared paid-state synchronization
+- canonical `reference_transactable` parent-chain runtime plus Exchange Audit
+  rollout/repair flow
+
+Deferred:
+
+- partial `PayMultiple`
+- broader category/entity allocation redesign beyond the current hard block once
+  paid history exists
+
+So the remaining open work after Sprint 3 is product expansion, not unfinished
+core safety migration.

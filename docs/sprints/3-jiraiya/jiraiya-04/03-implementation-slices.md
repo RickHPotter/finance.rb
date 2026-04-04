@@ -380,6 +380,13 @@ Avoid:
 - service specs for allocation logic
 - request specs for bulk payment behavior
 
+### Status
+
+- Not implemented in Sprint 3.
+- The shipped `pay_multiple` flow still bulk-pays full installments only.
+- Partial payment remains a future product/rules decision, not an incomplete
+  hidden rollout.
+
 ## Cross-Slice Invariants
 
 These rules must remain true throughout implementation:
@@ -402,21 +409,25 @@ These rules must remain true throughout implementation:
 
 ## Current Position
 
-`JIRAIYA-04` is currently through Slice 6, with Slice 4 rollout/backfill follow-up completed.
+`JIRAIYA-04` is functionally complete through the shipped safety/normalization
+scope.
 
-Remaining follow-up work should stay narrow:
+Completed in the final shipped state:
 
-- delayed-entry catch-up ordering reconciliation beyond the explicit month-boundary case
-- any additional override candidate only after real usage proves the workaround is insufficient
-- any future optimization of shared-return bulk pay should be performance-driven,
-  not a new rules change
+- Slice 1 through Slice 6 of the safety/runtime rollout
+- exchange-return normalization and shared paid-state synchronization
+- canonical `reference_transactable` parent-chain migration
+- Exchange Audit operator flow, including manual middle/receiver selection for the
+  remaining ambiguous cases during rollout
+- post-rollout cleanup of the one-off repair tooling
 
-The next implementation step is no longer “whether to finish Slice 4”.
+Intentionally not completed:
 
-It is:
+- Slice 7 partial `PayMultiple`
+- broader category/entity allocation redesign beyond the V1 hard safety blocks
 
-1. move to Slice 5 and improve workaround-supporting UX where the new safety walls still feel abrupt
-2. then move to Slice 5 workaround-supporting UX
+That means there is no missing “pre-`PayMultiple`” exchange/reference slice left in
+the repo today.
 
 ## Why This Order
 
@@ -434,3 +445,5 @@ It is:
 - exchange-return persistence is normalized
 - workaround paths are documented and minimally supported
 - the focused safety spec matrix is in place
+
+The current repo state satisfies those criteria.

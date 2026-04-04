@@ -201,7 +201,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
           meta_chip(I18n.t("settings.exchange_audit.reference_statuses.#{transaction[:reference_status]}"),
                     reference_status_chip_class(transaction[:reference_status]))
         end
-        p(class: "mt-1 text-[11px] text-slate-500") { I18n.t("settings.exchange_audit.candidates_count", count:) } if count.to_i > 1
+        p(class: "mt-1 text-[11px] text-slate-500") { I18n.t("settings.exchange_audit.options_count", count:) } if count.to_i > 1
       end
     end
   end
