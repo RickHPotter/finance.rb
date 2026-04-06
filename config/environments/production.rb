@@ -67,7 +67,10 @@ Rails.application.configure do
     password: Rails.application.credentials.dig(:smtp, :password),
     address: "smtp.gmail.com",
     port: 587,
-    authentication: :plain
+    authentication: :plain,
+    enable_starttls_auto: true,
+    open_timeout: ENV.fetch("SMTP_OPEN_TIMEOUT", 30).to_i,
+    read_timeout: ENV.fetch("SMTP_READ_TIMEOUT", 120).to_i
   }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
