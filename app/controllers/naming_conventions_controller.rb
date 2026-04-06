@@ -49,9 +49,9 @@ class NamingConventionsController < ApplicationController
     current_context.cash_transactions.includes(
       :user,
       :categories,
-      :investments,
       :card_installments,
-      exchanges: { entity_transaction: :transactable }
+      { investments: %i[investment_type user_bank_account] },
+      { exchanges: { entity_transaction: %i[entity transactable] } }
     )
   end
 end

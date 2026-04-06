@@ -386,6 +386,8 @@ Avoid:
 - The shipped `pay_multiple` flow still bulk-pays full installments only.
 - Partial payment remains a future product/rules decision, not an incomplete
   hidden rollout.
+- If it is picked up later, it should move under `JIRAIYA-05` as data-entry UX work,
+  not remain attached to the closed JIRAIYA-04 normalization rollout.
 
 ## Cross-Slice Invariants
 

@@ -2,6 +2,13 @@
 
 module Logic
   class ExchangeTrioAudit # rubocop:disable Metrics/ClassLength
+    attr_reader :connected_user_id, :current_user
+
+    def initialize(current_user: nil, connected_user_id: nil)
+      @current_user = current_user
+      @connected_user_id = connected_user_id.presence&.to_i
+    end
+
     def call
       candidate_messages.filter_map do |message|
         build_row(message)
@@ -11,12 +18,28 @@ module Logic
     private
 
     def candidate_messages
-      Message.includes(:user, :reference_transactable, conversation: :users)
-             .joins(:conversation)
-             .merge(Conversation.assistant)
-             .where(superseded_by_id: nil)
-             .where(body: %w[notification:create notification:update])
-             .order(created_at: :desc)
+      scope = Message.includes(:user, :reference_transactable, conversation: :users)
+                     .joins(:conversation)
+                     .merge(Conversation.assistant)
+                     .where(superseded_by_id: nil)
+                     .where(body: %w[notification:create notification:update])
+                     .order(created_at: :desc)
+
+      scope = scope.where(conversation_id: visible_conversation_scope.select(:id)) if current_user.present?
+
+      messages = scope.to_a
+      preload_reference_transactable_categories(messages)
+      messages
+    end
+
+    def visible_conversation_scope
+      return @visible_conversation_scope if defined?(@visible_conversation_scope)
+
+      scope = Conversation.assistant.joins(:conversation_participants)
+                          .where(conversation_participants: { user_id: current_user.id })
+      scope = scope.for_users([ current_user.id, connected_user_id ]) if connected_user_id.present?
+
+      @visible_conversation_scope = scope.distinct
     end
 
     def build_row(message)
@@ -138,11 +161,11 @@ module Logic
       when CashTransaction
         return reference_transactable if exchange_source_transaction?(reference_transactable)
 
-        direct_reference = source_transaction_for(reference_transactable.reference_transactable, visited)
+        direct_reference = load_reference_transactable_for(reference_transactable)
+        direct_reference = source_transaction_for(direct_reference, visited)
         return direct_reference if direct_reference.present?
 
-        projection_source =
-          reference_transactable.exchanges.includes(entity_transaction: :transactable).first&.entity_transaction&.transactable
+        projection_source = projection_source_transaction_for(reference_transactable)
 
         return source_transaction_for(projection_source, visited)
       end
@@ -151,7 +174,7 @@ module Logic
     end
 
     def exchange_source_transaction?(transaction)
-      transaction.categories.pluck(:category_name).include?("EXCHANGE")
+      category_names_for(transaction).include?("EXCHANGE")
     end
 
     def linked_to_receiver?(transaction, receiver)
@@ -160,8 +183,23 @@ module Logic
 
     def exchange_intent_for(message, source_transaction, receiver_context: nil)
       message.replay_payload&.fetch("intent", nil).presence ||
-        source_transaction.try(:effective_friend_notification_intent) ||
-        inferred_exchange_intent_for(source_transaction, receiver_context:)
+        inferred_exchange_intent_for(source_transaction, receiver_context:) ||
+        historical_exchange_intent_for(source_transaction)
+    end
+
+    def historical_exchange_intent_for(source_transaction)
+      headers = Message.where(reference_transactable: source_transaction)
+                       .where(body: %w[notification:create notification:update])
+                       .where(superseded_by_id: nil)
+                       .where.not(headers: [ nil, "" ])
+                       .order(created_at: :desc)
+                       .pick(:headers)
+      return if headers.blank?
+
+      payload = JSON.parse(headers)
+      payload["intent"] || payload.dig("replay", "intent")
+    rescue JSON::ParserError
+      nil
     end
 
     def inferred_exchange_intent_for(source_transaction, receiver_context:)
@@ -169,7 +207,7 @@ module Logic
       return if source_transaction.is_a?(CardTransaction)
 
       receiver_descendants = receiver_family_descendants_for(source_transaction, receiver_context:)
-      descendant_categories = receiver_descendants.flat_map { |transaction| transaction.categories.pluck(:category_name) }.uniq
+      descendant_categories = receiver_descendants.flat_map { |transaction| category_names_for(transaction) }.uniq
 
       return "reimbursement" if descendant_categories.include?("BORROW RETURN") && !descendant_categories.include?("EXCHANGE")
       return "loan" if descendant_categories.include?("EXCHANGE")
@@ -222,7 +260,7 @@ module Logic
       descendants = receiver_family_descendants_for(source_transaction, receiver_context:)
 
       matching_descendants = descendants.select do |candidate|
-        expected_categories.intersect?(candidate.categories.pluck(:category_name))
+        expected_categories.intersect?(category_names_for(candidate))
       end
 
       matching_descendants.min_by { |candidate| [ candidate.created_at || Time.at(0), candidate.id || 0 ] }
@@ -305,7 +343,7 @@ module Logic
     def installment_signature(transaction)
       return [] unless transaction.respond_to?(:cash_installments)
 
-      transaction.cash_installments.order(:number, :date).map do |installment|
+      transaction.cash_installments.to_a.sort_by { |installment| [ installment.number, installment.date ] }.map do |installment|
         [ installment.number, installment.price.abs ]
       end
     end
@@ -323,14 +361,44 @@ module Logic
     def shared_return_candidates_for(transaction)
       return [] if transaction.blank?
 
-      transaction.entity_transactions
-                 .flat_map(&:exchanges)
-                 .select(&:monetary?)
-                 .map(&:cash_transaction)
-                 .compact
-                 .select(&:exchange_return?)
-                 .uniq(&:id)
-                 .sort_by { |candidate| [ candidate.created_at || Time.at(0), candidate.id || 0 ] }
+      CashTransaction.includes(:categories, :cash_installments, :entities, :reference_transactable)
+                     .joins(exchanges: :entity_transaction)
+                     .where(entity_transactions: { transactable_type: transaction.class.name, transactable_id: transaction.id })
+                     .where(exchanges: { exchange_type: Exchange.exchange_types.fetch(:monetary) })
+                     .distinct
+                     .select(&:exchange_return?)
+                     .sort_by { |candidate| [ candidate.created_at || Time.at(0), candidate.id || 0 ] }
+    end
+
+    def load_reference_transactable_for(transaction)
+      load_polymorphic_reference(transaction.reference_transactable_type, transaction.reference_transactable_id)
+    end
+
+    def projection_source_transaction_for(transaction)
+      reference_type, reference_id = Exchange.joins(:entity_transaction)
+                                             .where(cash_transaction_id: transaction.id)
+                                             .pick("entity_transactions.transactable_type", "entity_transactions.transactable_id")
+
+      load_polymorphic_reference(reference_type, reference_id)
+    end
+
+    def load_polymorphic_reference(reference_type, reference_id)
+      return if reference_type.blank? || reference_id.blank?
+
+      case reference_type
+      when "CashTransaction"
+        CashTransaction.includes(:reference_transactable, :categories).find_by(id: reference_id)
+      when "CardTransaction"
+        CardTransaction.includes(:reference_transactable, :categories).find_by(id: reference_id)
+      end
+    end
+
+    def preload_reference_transactable_categories(messages)
+      references_by_class = messages.filter_map(&:reference_transactable).group_by(&:class)
+
+      references_by_class.each_value do |references|
+        ActiveRecord::Associations::Preloader.new(records: references, associations: :categories).call
+      end
     end
 
     def receiver_end_transactions_for(source_transaction:, receiver_reference:, intent:)
@@ -425,9 +493,9 @@ module Logic
         price: transaction.price,
         date: transaction.date,
         month_year: transaction.try(:month_year),
-        category_names: transaction.categories.pluck(:category_name),
-        entity_names: transaction.entities.order(:entity_name).pluck(:entity_name),
-        entity_user_ids: transaction.entities.where.not(entity_user_id: nil).pluck(:entity_user_id).uniq,
+        category_names: category_names_for(transaction),
+        entity_names: transaction.entities.to_a.sort_by(&:entity_name).map(&:entity_name),
+        entity_user_ids: transaction.entities.to_a.filter_map(&:entity_user_id).uniq,
         installment_signature: installment_signature(transaction),
         reference_transactable_type: transaction.reference_transactable_type,
         reference_transactable_id: transaction.reference_transactable_id,
@@ -446,6 +514,10 @@ module Logic
         description: reference.try(:description),
         user_id: reference.try(:user_id)
       }.compact
+    end
+
+    def category_names_for(transaction)
+      transaction.categories.to_a.map(&:category_name)
     end
 
     def reference_status_for(current_reference:, expected_reference:)

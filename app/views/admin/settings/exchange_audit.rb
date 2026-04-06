@@ -3,14 +3,16 @@
 class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metrics/ClassLength
   include TranslateHelper
 
-  attr_reader :apply_result, :middle_overrides, :receiver_overrides, :reference_audit, :rows
+  attr_reader :apply_result, :connections, :middle_overrides, :receiver_overrides, :reference_audit, :rows, :selected_connected_user_id
 
-  def initialize(rows:, middle_overrides: {}, receiver_overrides: {}, reference_audit: nil, apply_result: nil)
-    @apply_result = apply_result
+  def initialize(rows:, middle_overrides: {}, receiver_overrides: {}, **options)
+    @apply_result = options.fetch(:apply_result, nil)
+    @connections = options.fetch(:connections, [])
     @middle_overrides = middle_overrides
     @receiver_overrides = receiver_overrides
-    @reference_audit = reference_audit || { candidates: [] }
+    @reference_audit = options.fetch(:reference_audit, nil) || { candidates: [] }
     @rows = rows
+    @selected_connected_user_id = options.fetch(:selected_connected_user_id, nil)
   end
 
   def view_template
@@ -22,6 +24,9 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
           h2(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_audit.title") }
           p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_audit.description") }
         end
+
+        render_connection_scope
+        render_connection_summary if selected_connection.present?
 
         div(class: "flex flex-wrap gap-2") do
           filter_button(name: "pending", count: pending_rows.count)
@@ -40,6 +45,63 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   private
+
+  def render_connection_scope
+    return if connections.blank?
+
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
+      h3(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { I18n.t("settings.exchange_audit.connection_scope.title") }
+      p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_audit.connection_scope.description") }
+
+      div(class: "mt-3 flex flex-wrap gap-2") do
+        connections.each do |connection|
+          form(action: exchange_audit_admin_settings_path, method: "get") do
+            input(type: "hidden", name: "connected_user_id", value: connection[:connected_user_id])
+            preserved_middle_overrides(except_source_transaction_id: nil)
+            preserved_receiver_overrides(except_source_transaction_id: nil)
+
+            button(
+              type: :submit,
+              class: connection_button_class(connection)
+            ) { connection_button_label(connection) }
+          end
+        end
+      end
+    end
+  end
+
+  def render_connection_summary
+    connection = selected_connection
+
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
+      div(class: "flex flex-wrap items-start justify-between gap-3") do
+        div(class: "space-y-1") do
+          h3(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_audit.connection_summary.title", name: connection.dig(:user, :first_name)) }
+          p(class: "text-sm text-slate-600") { connection.dig(:user, :email) }
+        end
+
+        meta_chip(I18n.t("settings.exchange_audit.filters.#{connection[:status]}"), status_chip_class(connection))
+      end
+
+      div(class: "mt-4 grid gap-3 md:grid-cols-4") do
+        summary_stat(I18n.t("settings.exchange_audit.connection_summary.total_rows"), connection[:row_count])
+        summary_stat(I18n.t("settings.exchange_audit.connection_summary.pending_rows"), connection[:pending_count])
+        summary_stat(I18n.t("settings.exchange_audit.connection_summary.done_rows"), connection[:done_count])
+        summary_stat(I18n.t("settings.exchange_audit.connection_summary.latest_activity"), formatted_time(connection[:latest_message_at]))
+      end
+
+      div(class: "mt-4 grid gap-3 md:grid-cols-2") do
+        mapping_card(
+          title: I18n.t("settings.exchange_audit.connection_summary.your_entities"),
+          values: connection[:your_entity_names]
+        )
+        mapping_card(
+          title: I18n.t("settings.exchange_audit.connection_summary.their_entities"),
+          values: connection[:their_entity_names]
+        )
+      end
+    end
+  end
 
   def render_rows(collection)
     if collection.empty?
@@ -212,6 +274,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
       p(class: "mt-1 text-xs text-indigo-900") { I18n.t("settings.exchange_audit.middle_selection.description") }
 
       form(action: exchange_audit_admin_settings_path, method: "get", class: "mt-3 space-y-3") do
+        preserved_connected_user_scope
         preserved_middle_overrides(except_source_transaction_id: row.dig(:source, :id))
         preserved_receiver_overrides(except_source_transaction_id: row.dig(:source, :id))
 
@@ -243,6 +306,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
         form(action: apply_exchange_audit_admin_settings_path, method: "post") do
           input(type: "hidden", name: "_method", value: "patch")
           input(type: "hidden", name: "source_transaction_id", value: row.dig(:source, :id))
+          preserved_connected_user_scope
           preserved_middle_overrides(except_source_transaction_id: nil)
           preserved_receiver_overrides(except_source_transaction_id: nil)
           button(
@@ -264,6 +328,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
       p(class: "mt-1 text-xs text-sky-900") { I18n.t("settings.exchange_audit.receiver_selection.description") }
 
       form(action: exchange_audit_admin_settings_path, method: "get", class: "mt-3 space-y-3") do
+        preserved_connected_user_scope
         preserved_middle_overrides(except_source_transaction_id: nil)
         preserved_receiver_overrides(except_source_transaction_id: row.dig(:source, :id))
 
@@ -310,6 +375,19 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
   def status_chip_class(row)
     row[:status] == "pending" ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"
+  end
+
+  def connection_button_class(connection)
+    selected = connection[:connected_user_id] == selected_connection&.dig(:connected_user_id)
+    base = "rounded-full px-3 py-2 text-sm font-semibold transition-colors"
+
+    return "#{base} bg-indigo-600 text-white hover:bg-indigo-700" if selected
+
+    "#{base} bg-slate-200 text-slate-700 hover:bg-slate-300"
+  end
+
+  def connection_button_label(connection)
+    "#{connection.dig(:user, :first_name)} (#{connection[:pending_count]}/#{connection[:row_count]})"
   end
 
   def boolean_label(value)
@@ -405,6 +483,30 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
       next if except_source_transaction_id.present? && source_id.to_i == except_source_transaction_id.to_i
 
       input(type: "hidden", name: "receiver_overrides[#{source_id}]", value: receiver_id)
+    end
+  end
+
+  def preserved_connected_user_scope
+    return if selected_connected_user_id.blank?
+
+    input(type: "hidden", name: "connected_user_id", value: selected_connected_user_id)
+  end
+
+  def selected_connection
+    @selected_connection ||= connections.find { |connection| connection[:connected_user_id] == selected_connected_user_id } || connections.first
+  end
+
+  def summary_stat(label, value)
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { label }
+      p(class: "mt-1 text-sm font-semibold text-slate-900") { value.to_s }
+    end
+  end
+
+  def mapping_card(title:, values:)
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { title }
+      p(class: "mt-1 text-sm text-slate-900") { format_list(values) }
     end
   end
 end

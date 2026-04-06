@@ -213,8 +213,14 @@ too visible to ignore.
     input.
   - Extend `BulkyBar` so it also communicates useful aggregate information about the
     current selection.
+  - If partial `PayMultiple` is still pursued later, treat it as part of this
+    data-entry workflow slice instead of the core JIRAIYA-04 safety rollout.
 - Extra:
   - Keep new UI work aligned with the current stack: Phlex, Tailwind, Turbo, and Stimulus.
+  - Scope clarification after JIRAIYA-04 rollout:
+    - partial `PayMultiple` was intentionally not implemented in Sprint 3
+    - if it comes back, it should be treated as a UX/product expansion here, not as
+      an unfinished financial-safety migration
 
 ### JIRAIYA-06/app-02: Create `Context` as scenario planning
 

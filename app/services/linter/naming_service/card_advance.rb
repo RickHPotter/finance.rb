@@ -38,7 +38,7 @@ module Linter
       cash_transaction_ids = cash_transactions.select(&:card_advance?).map(&:id)
       return CardTransaction.none if cash_transaction_ids.empty?
 
-      CardTransaction.where(advance_cash_transaction_id: cash_transaction_ids)
+      CardTransaction.includes(:user_card).where(advance_cash_transaction_id: cash_transaction_ids)
     end
 
     def annotate(result)

@@ -528,5 +528,11 @@ Deferred:
 - broader category/entity allocation redesign beyond the current hard block once
   paid history exists
 
+Classification of the deferred items:
+
+- partial `PayMultiple` should be treated as later data-entry UX/product work
+  under `JIRAIYA-05`, not as unfinished JIRAIYA-04 safety migration
+- the broader allocation redesign is not planned at the moment
+
 So the remaining open work after Sprint 3 is product expansion, not unfinished
 core safety migration.
