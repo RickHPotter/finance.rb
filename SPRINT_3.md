@@ -204,23 +204,63 @@ too visible to ignore.
 - Issues:
   - [#31](https://github.com/RickHPotter/finance.rb/issues/31)
 
-- Subtasks:
-  - Finish the migration away from `HotwireCombobox` and make `RubyUI::Combobox` the
-    default solution.
-  - Improve duplicate flow into a faster chained workflow for repeated entry.
-  - Improve keyboard-first date and datetime input.
-  - Improve mobile/PWA date selection so users are not forced into awkward manual
-    input.
-  - Extend `BulkyBar` so it also communicates useful aggregate information about the
-    current selection.
-  - If partial `PayMultiple` is still pursued later, treat it as part of this
-    data-entry workflow slice instead of the core JIRAIYA-04 safety rollout.
 - Extra:
   - Keep new UI work aligned with the current stack: Phlex, Tailwind, Turbo, and Stimulus.
   - Scope clarification after JIRAIYA-04 rollout:
     - partial `PayMultiple` was intentionally not implemented in Sprint 3
     - if it comes back, it should be treated as a UX/product expansion here, not as
       an unfinished financial-safety migration
+  - Planning baseline:
+    - [docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md](docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md)
+    - [docs/sprints/3-jiraiya/jiraiya-05/02-implementation-slices.md](docs/sprints/3-jiraiya/jiraiya-05/02-implementation-slices.md)
+  - Final pre-implementation state:
+    - there is no unfinished pre-`PayMultiple` JIRAIYA-04 blocker left in the repo
+    - the remaining work is product/UX planning, not exchange/runtime cleanup
+
+- Subtasks:
+  - Finish the migration away from `HotwireCombobox` and make `RubyUI::Combobox` the
+    default solution.
+    - do it incrementally: easy non-JS-driven forms first, then the
+      `reactive_form_controller`-heavy transaction forms
+    - make `RubyUI::Combobox` match the minimum missing behavior needed for the
+      existing Stimulus integration to work during migration
+    - remove the `hotwire_combobox` gem completely by the end of the slice
+    - validate by manual pass; add request specs only when they are actually needed
+      and do not add feature specs
+  - Improve chain creation / duplication into a faster repeated-entry workflow.
+    - add explicit duplication for cash transactions and investments
+    - keep budgets and subscriptions out of this slice
+    - support clean `new` chains and `duplicate` chains
+    - make each newly created duplicate become the next sample in the chain
+    - keep clean `new` chains clean on every round except the required card
+      selection
+    - show explicit `Chain Creating` / `Chain Duplicating` form state
+    - add localized `Create more` / `Duplicate more` controls plus an explicit
+      finish-chain action
+    - when the chain finishes, land back on index with the created records in view,
+      defaulting to a filtered family landing
+  - Improve keyboard-first date and datetime input.
+    - do not start with a custom calendar/clock
+    - prioritize typed desktop entry, faster keyboard navigation, and explicit
+      24-hour normalization first
+    - preserve the existing date when the user edits only the time portion
+    - defer shortcut-token ideas until the base keyboard flow is proven insufficient
+    - keep mobile/PWA conservative until that desktop contract proves itself
+  - Improve mobile/PWA date selection so users are not forced into awkward manual
+    input.
+  - Extend `BulkActionBar` so it communicates useful aggregate information about the
+    current selection.
+    - include aggregated selected price in the bar itself
+    - allow page-wide selection across all currently rendered rows, not only single
+      month-year group selection
+    - support shift-click range selection even across month-year containers
+    - disable pay/transfer dynamically when the current selection contains
+      ineligible rows
+    - keep invalid actions visible but disabled, with a short explanation
+    - add `Add to Subscription` as a bulk action with existing-subscription modal
+      selection/confirmation and direct `subscription_id` update
+  - If partial `PayMultiple` is still pursued later, treat it as a gated late slice
+    here instead of part of the closed JIRAIYA-04 rollout.
 
 ### JIRAIYA-06/app-02: Create `Context` as scenario planning
 
