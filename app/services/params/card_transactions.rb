@@ -58,7 +58,9 @@ module Params
 
       entity_transactions.map do |entity_transaction|
         exchanges = entity_transaction[:exchanges_attributes]
-        exchanges_attributes = exchanges.map.with_index { |exchange, i| exchange.merge(number: i + 1) }
+        exchanges_attributes = exchanges.map.with_index do |exchange, i|
+          exchange.merge(number: i + 1, bound_type: exchange[:bound_type] || :card_bound)
+        end
         is_payer = exchanges_attributes.present?
         status = exchanges_attributes.present? ? :pending : :finished
 
@@ -113,7 +115,10 @@ module Params
       @entity_transactions = entity_transactions.map do |entity_transaction|
         exchanges = entity_transaction.exchanges.map(&:attributes).map(&:symbolize_keys)
         exchanges = [ { number: 1, price: entity_transaction.price, date:, month:, year: } ] if exchanges.blank? && is_payer_option
-        exchanges = exchanges.each { |exchange| exchange[:exchange_type] = exchange_type_option } if exchange_type_option
+        exchanges = exchanges.each do |exchange|
+          exchange[:exchange_type] = exchange_type_option if exchange_type_option
+          exchange[:bound_type] ||= :card_bound
+        end
 
         {
           id: entity_transaction.id,

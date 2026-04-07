@@ -131,22 +131,10 @@ Even with only two users, intent is not reliably inferable from prices and signs
 8. Implement the new payload contract for future notifications.
 9. Verify every migrated case in the UI.
 
-## Initial Command
+## Historical Note
 
-The first command in this slice should stay read-only:
+The rollout-specific `exchange_backfill` utilities described in this slice were
+removed after the production cleanup was completed.
 
-```bash
-bin/rails exchange_backfill:audit USER_A=1 USER_B=4 OUTPUT=tmp/exchange_backfill_audit.json
-```
-
-After the audit is reviewed, generate the mapping scaffold:
-
-```bash
-bin/rails exchange_backfill:seed_mapping INPUT=tmp/exchange_backfill_audit.json OUTPUT=tmp/exchange_backfill_mapping.json
-```
-
-Then apply the reviewed mapping in dry-run mode first:
-
-```bash
-bin/rails exchange_backfill:apply USER_A=1 USER_B=4 MAPPING=tmp/exchange_backfill_mapping.json DRY_RUN=true OUTPUT=tmp/exchange_backfill_apply.json
-```
+This document remains only as historical context for the original migration
+strategy.

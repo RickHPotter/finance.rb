@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLength
-  register_value_helper :current_user
-  register_value_helper :current_context
   attr_reader :message
 
   include Phlex::Rails::Helpers::AssetPath
@@ -63,6 +61,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     if message.superseded_by_id
       render_outdated_state
     else
+      return if message.paid_state_sync_message? && my_assistant_notification?
       return if my_assistant_notification? || message.applied?
 
       render_transaction_actions
@@ -70,10 +69,15 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_transaction_actions
-    if message.transaction_destroy_notification_message?
-      return if message.reference_transactable_id.nil?
+    return unless current_context.present?
 
-      cash_transaction_to_be_destroyed = viewer_cash_transactions.find_by(id: message.reference_transactable_id)
+    if message.paid_state_sync_message?
+      render_acknowledge_action
+      return
+    end
+
+    if message.transaction_destroy_notification_message?
+      cash_transaction_to_be_destroyed = message.local_reference_for(context: current_context)
 
       if cash_transaction_to_be_destroyed
         render_destroy_action(cash_transaction_to_be_destroyed)
@@ -89,15 +93,12 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     params = message.replay_payload
     return if params.blank?
 
-    id = params["id"]
-    type = params["type"]
-
-    reference_transactable = viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    reference_transactable = message.local_reference_for(context: current_context)
     action_button_key = message.action_button_key(local_reference_exists: reference_transactable.present?)
 
     if reference_transactable
       render_edit_action(reference_transactable, action_button_key)
-    elsif type&.constantize&.find_by(id:)
+    elsif params["type"]&.constantize&.find_by(id: params["id"])
       render_create_action(action_button_key)
     else
       span(class: status_badge_class) do
@@ -250,6 +251,28 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     end
   end
 
+  def render_acknowledge_action
+    Link(
+      href: apply_conversation_message_path(
+        message.conversation,
+        message,
+        format: :turbo_stream,
+        message_filter: active_message_filter,
+        message_side: active_message_sides
+      ),
+      size: :xs,
+      class: action_button_class(:ok),
+      data: {
+        turbo_method: :patch,
+        turbo_frame: "_top",
+        turbo_prefetch: "false",
+        chat_target: :messageAction
+      }
+    ) do
+      span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :ok) }
+    end
+  end
+
   def render_destroy_action(reference_transactable)
     Link(
       href: cash_transaction_path(id: reference_transactable, format: :turbo_stream, message_id: message.id),
@@ -339,34 +362,15 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def reference_transactable_for_viewer
     return @reference_transactable_for_viewer if defined?(@reference_transactable_for_viewer)
+    return @reference_transactable_for_viewer = nil if current_context.blank?
 
     payload = message.replay_payload || {}
     type = payload["type"]
     id = payload["id"]
 
-    @reference_transactable_for_viewer =
-      if message.transaction_destroy_notification_message?
-        viewer_cash_transactions.find_by(id: message.reference_transactable_id)
-      elsif type.present? && id.present?
-        viewer_cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id) || fallback_reference_transactable_for_viewer(payload)
-      end
-  end
+    return unless message.transaction_destroy_notification_message? || (type.present? && id.present?)
 
-  def fallback_reference_transactable_for_viewer(payload)
-    return if viewer.blank?
-
-    relation = viewer_cash_transactions.where(description: payload["description"], price: payload["price"])
-    relation = relation.where(date: Time.zone.parse(payload["date"])) if payload["date"].present?
-
-    category_ids = Array(payload["category_ids"]).compact_blank
-    entity_ids = Array(payload["entity_ids"]).compact_blank
-
-    relation = relation.joins(:categories).where(categories: { id: category_ids }) if category_ids.present?
-    relation = relation.joins(:entities).where(entities: { id: entity_ids }) if entity_ids.present?
-
-    relation.order(created_at: :desc).first
-  rescue ArgumentError
-    relation.order(created_at: :desc).first
+    @reference_transactable_for_viewer = message.local_reference_for(context: current_context)
   end
 
   def showable_my_transaction
@@ -382,7 +386,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def showable_transaction_destroyed?
-    message.transaction_destroy_notification_message?
+    message.transaction_destroy_notification_message? && !message.paid_state_sync_message?
   end
 
   def showable_transaction_link
@@ -449,7 +453,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def viewer
     return @viewer if defined?(@viewer)
 
-    @viewer = request.env["warden"].present? ? current_user : nil
+    @viewer = request.env["warden"].present? ? rails_view_context.current_user : nil
+  end
+
+  def active_message_filter
+    request.params[:message_filter].presence_in(%w[pending all]) || "pending"
+  end
+
+  def active_message_sides
+    requested_sides = Array(request.params[:message_side]).presence || %w[mine theirs]
+    requested_sides & %w[mine theirs]
   end
 
   def viewer_cash_transactions

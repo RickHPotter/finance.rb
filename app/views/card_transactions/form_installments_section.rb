@@ -30,6 +30,12 @@ class Views::CardTransactions::FormInstallmentsSection < Views::Base
   private
 
   def ordered_card_installments
-    card_transaction.new_record? ? card_transaction.card_installments : card_transaction.card_installments.order(:number)
+    if card_transaction.new_record?
+      card_transaction.card_installments
+    elsif card_transaction.edit_phase || card_transaction.errors.any?
+      card_transaction.card_installments.sort_by(&:number)
+    else
+      card_transaction.card_installments.order(:number)
+    end
   end
 end

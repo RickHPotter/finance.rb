@@ -33,7 +33,7 @@ class Views::Layouts::Application < Views::Base
         javascript_include_tag("application", data: { turbo_track: :reload }, type: :module)
       end
 
-      body(class: body_class, data: { controller: ( "letitsnow" if rails_view_context.current_context.derived?) }) do
+      body(class: body_class, data: { controller: ( "letitsnow" if rails_view_context&.current_context&.derived?) }) do
         ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-[1420px] mx-auto w-full") do
           turbo_frame_tag :notification do
             render partial "shared/flash"
@@ -61,7 +61,7 @@ class Views::Layouts::Application < Views::Base
 
                   div class: "hidden relative", data: { controller: "price-sum" } do
                     div(
-                      class: "absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-50"
+                      class: "absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-40"
                     ) do
                       span id: "totalPriceSum"
                     end
@@ -111,7 +111,7 @@ class Views::Layouts::Application < Views::Base
   def body_class
     base_class = [ "min-h-screen", "text-white" ]
 
-    current_user_is_rikki = rails_view_context.current_user.email == "luisfla55@gmail.com"
+    current_user_is_rikki = rails_view_context&.current_user&.email == "luisfla55@gmail.com"
 
     if homolog?
       base_class << "bg-gradient-to-r"

@@ -4,6 +4,16 @@ en:
       card_transaction:
         one: Card Transaction
         other: Card Transactions
+    errors:
+      models:
+        card_transaction:
+          attributes:
+            base:
+              allocation_locked_after_payment: "Categories and entities cannot be changed after paid history exists."
+              paid_history_locked: "Paid history is locked. Edit only future unpaid installments after the latest paid date."
+              paid_amount_correction_confirmation_required: "This paid amount correction requires explicit confirmation."
+              same_cycle_history_correction_confirmation_required: "This paid card transaction keeps the same ref month/year and requires explicit confirmation."
+              destroy_locked_after_payment: "Transactions with paid history cannot be deleted."
     attributes:
       card_transaction:
         self: Card Transaction
@@ -53,6 +63,16 @@ pt-BR:
       card_transaction:
         one: Transação
         other: Transações
+    errors:
+      models:
+        card_transaction:
+          attributes:
+            base:
+              allocation_locked_after_payment: "Categorias e entidades não podem ser alteradas depois que já existe histórico pago."
+              paid_history_locked: "O histórico pago está travado. Edite apenas parcelas futuras e pendentes após a última data paga."
+              paid_amount_correction_confirmation_required: "Esta correção de valor em histórico já pago exige confirmação explícita."
+              same_cycle_history_correction_confirmation_required: "Esta transação de cartão paga mantém o mesmo ref mês/ano e exige confirmação explícita."
+              destroy_locked_after_payment: "Transações com histórico pago não podem ser apagadas."
     attributes:
       card_transaction:
         self: Transação

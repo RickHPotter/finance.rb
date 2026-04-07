@@ -32,7 +32,7 @@ class Views::CashTransactions::FormInstallmentsSection < Views::Base
   def ordered_cash_installments
     if cash_transaction.new_record?
       cash_transaction.cash_installments
-    elsif cash_transaction.edit_phase
+    elsif cash_transaction.edit_phase || cash_transaction.errors.any?
       cash_transaction.cash_installments.sort_by(&:number)
     else
       cash_transaction.cash_installments.order(:number)

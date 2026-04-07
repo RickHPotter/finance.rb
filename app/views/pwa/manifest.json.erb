@@ -1,6 +1,10 @@
+<%
+  settings = Rails.application.config_for(:settings) || {}
+  site = settings[:site] || settings["site"] || {}
+%>
 {
-  "name": "<%= Rails.application.config_for(:settings).dig(:site, :name) %>",
-  "short_name": "<%= Rails.application.config_for(:settings).dig(:site, :short_name) %>",
+  "name": "<%= site[:name] || site["name"] || "30/Fev" %>",
+  "short_name": "<%= site[:short_name] || site["short_name"] || "30/Fev" %>",
   "icons": [
     {
       "src": "/pwa_logos/512.png",
@@ -18,8 +22,8 @@
   "id": "finance-rb",
   "display": "standalone",
   "scope": "/",
-  "description": "<%= Rails.application.config_for(:settings).dig(:site, :description) %>",
-  "categories": "<%= Rails.application.config_for(:settings).dig(:site, :keywords) %>",
+  "description": "<%= site[:description] || site["description"] || "A simple way to manage your finances" %>",
+  "categories": "<%= site[:keywords] || site["keywords"] || "Finance, Budget, Money" %>",
   "theme_color": "#1a202c",
   "background_color": "#1a202c",
   "shortcuts": [

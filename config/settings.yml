@@ -18,3 +18,10 @@ production:
     short_name: 30/Fev
     description: A simple way to manage your finances
     keywords: Finance, Budget, Money
+
+homolog:
+  site:
+    name: 30/Fev
+    short_name: 30/Fev
+    description: A simple way to manage your finances
+    keywords: Finance, Budget, Money

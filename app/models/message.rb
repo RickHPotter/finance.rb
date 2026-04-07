@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Message < ApplicationRecord
+class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @extends ..................................................................
   # @includes .................................................................
   include TranslateHelper
@@ -31,6 +31,7 @@ class Message < ApplicationRecord
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def transaction_notification_message?
+    return false if paid_state_sync_message?
     return %w[create update].include?(notification_action) if notification_payload_v2?
 
     headers.present?
@@ -64,12 +65,14 @@ class Message < ApplicationRecord
   end
 
   def rendered_body
+    return render_paid_state_sync_body if paid_state_sync_message?
     return body unless notification_payload_v2?
 
     render_notification_body
   end
 
   def preview_body
+    return render_paid_state_sync_preview if paid_state_sync_message?
     return body.to_s.tr("\n", " ").presence || "" unless notification_payload_v2?
 
     [
@@ -82,11 +85,16 @@ class Message < ApplicationRecord
     parsed_headers["version"] == "message_notification_v2"
   end
 
+  def paid_state_sync_message?
+    parsed_headers["version"] == "message_paid_state_v1"
+  end
+
   def applied?
     applied_at.present?
   end
 
   def action_button_key(local_reference_exists:)
+    return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
     return :edit if applied? && local_reference_exists
     return :correct if notification_action == "update" && local_reference_exists
@@ -96,6 +104,8 @@ class Message < ApplicationRecord
   end
 
   def completed_message_key
+    return :already_acknowledged if paid_state_sync_message?
+
     {
       "create" => :already_created,
       "update" => :already_updated,
@@ -110,7 +120,26 @@ class Message < ApplicationRecord
   def actionable_for?(context: user.ensure_main_context!)
     return false if applied?
 
-    action_button_key(local_reference_exists: local_reference_exists_for?(context:)).in?(%i[create correct destroy])
+    action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
+  end
+
+  def local_reference_for(context:)
+    cash_transactions = context.cash_transactions
+
+    return destroy_local_reference_for(cash_transactions) if transaction_destroy_notification_message?
+
+    payload = replay_payload || {}
+    type = payload["type"]
+    id = payload["id"]
+    return if type.blank? || id.blank?
+
+    direct_cash_transaction_reference = cash_transactions.find_by(id:) if type == "CashTransaction"
+    return direct_cash_transaction_reference if direct_cash_transaction_reference.present?
+
+    exact_reference_local = cash_transactions.find_by(reference_transactable_type: type, reference_transactable_id: id)
+    return exact_reference_local if exact_reference_local.present?
+
+    chain_local_reference_for(cash_transactions:, type:, id:)
   end
 
   # @protected_instance_methods ...............................................
@@ -119,20 +148,84 @@ class Message < ApplicationRecord
   private
 
   def local_reference_exists_for?(context:)
-    cash_transactions = context.cash_transactions
+    local_reference_for(context:).present?
+  end
 
-    if transaction_destroy_notification_message?
-      return false if reference_transactable_id.blank?
+  def chain_local_reference_for(cash_transactions:, type:, id:)
+    reference = payload_reference_transaction(type:, id:)
+    return if reference.blank?
 
-      cash_transactions.exists?(id: reference_transactable_id)
-    else
-      payload = replay_payload || {}
-      type = payload["type"]
-      id = payload["id"]
-      return false if type.blank? || id.blank?
+    return cash_transactions.find_by(id: reference.id) if reference.instance_of?(CashTransaction) && cash_transactions.where(id: reference.id).exists?
 
-      cash_transactions.exists?(reference_transactable_type: type, reference_transactable_id: id)
+    if reference.instance_of?(CardTransaction)
+      projected_reference = projected_shared_return_from_card(reference)
+      return cash_transactions.find_by(id: projected_reference.id) if projected_reference.present? && cash_transactions.where(id: projected_reference.id).exists?
+
+      return CashTransaction.first_reference_descendant_for(projected_reference, scope: cash_transactions) if projected_reference.present?
     end
+
+    CashTransaction.first_reference_descendant_for(reference, scope: cash_transactions)
+  end
+
+  def destroy_local_reference_for(cash_transactions)
+    reference = reference_transactable
+    return if reference.blank?
+
+    if reference.instance_of?(CashTransaction)
+      direct_reference = cash_transactions.find_by(id: reference.id)
+      return direct_reference if direct_reference.present?
+    end
+
+    chain_reference_from(reference, cash_transactions:)
+  end
+
+  def chain_reference_from(reference, cash_transactions:)
+    if reference.instance_of?(CardTransaction)
+      projected_reference = projected_shared_return_from_card(reference)
+      return cash_transactions.find_by(id: projected_reference.id) if projected_reference.present? && cash_transactions.where(id: projected_reference.id).exists?
+
+      return CashTransaction.first_reference_descendant_for(projected_reference, scope: cash_transactions) if projected_reference.present?
+    end
+
+    CashTransaction.first_reference_descendant_for(reference, scope: cash_transactions) if reference.instance_of?(CashTransaction)
+  end
+
+  def payload_reference_transaction(type:, id:)
+    return reference_transactable if payload_reference_transaction_match?(reference_transactable, type:, id:)
+
+    case type
+    when "CashTransaction"
+      CashTransaction.find_by(id:)
+    when "CardTransaction"
+      CardTransaction.find_by(id:)
+    end
+  end
+
+  def payload_reference_transaction_match?(transaction, type:, id:)
+    transaction.present? &&
+      payload_reference_transaction_class_match?(transaction, type:) &&
+      transaction.id == id.to_i
+  end
+
+  def payload_reference_transaction_class_match?(transaction, type:)
+    case type
+    when "CashTransaction"
+      transaction.instance_of?(CashTransaction)
+    when "CardTransaction"
+      transaction.instance_of?(CardTransaction)
+    else
+      false
+    end
+  end
+
+  def projected_shared_return_from_card(card_transaction)
+    card_transaction.entity_transactions
+                    .includes(exchanges: :cash_transaction)
+                    .flat_map(&:exchanges)
+                    .select(&:monetary?)
+                    .map(&:cash_transaction)
+                    .compact
+                    .find(&:exchange_return?)
   end
 
   def parsed_headers
@@ -174,6 +267,31 @@ class Message < ApplicationRecord
     body.join
   rescue NameError, Date::Error
     body
+  end
+
+  def render_paid_state_sync_body # rubocop:disable Metrics/AbcSize
+    details = notification_event.fetch("details", {})
+    new_line = "\n"
+    state_key = notification_action == "paid" ? :ivepaidayoursharedtransaction : :iveunpaidayoursharedtransaction
+    state_label_key = notification_action == "paid" ? :paid : :not_paid
+
+    body = [ "<b>#{model_attribute(self, :hello)}, #{notification_event['receiver_first_name']}!</b>#{new_line * 2}" ]
+    body << "#{model_attribute(self, state_key)}#{new_line * 2}"
+    body << "<b>#{details['transaction_label'].to_s.upcase}</b>#{new_line}"
+    body << "#{model_attribute(CashTransaction, :description)}: #{details['description']}#{new_line}" if details["description"].present?
+    body << "#{model_attribute(CashInstallment, :cash_installment)} ##{details['installment_number']}#{new_line}" if details["installment_number"].present?
+    body << "#{model_attribute(CashInstallment, state_label_key)}#{new_line}"
+    body << "#{model_attribute(CashInstallment, :date)}: #{formatted_notification_date(details['date'])}#{new_line}" if details["date"].present?
+    body.join
+  rescue Date::Error
+    body
+  end
+
+  def render_paid_state_sync_preview
+    [
+      I18n.t("activerecord.attributes.message.notification_actions.#{notification_action}"),
+      notification_event.dig("details", "description")
+    ].compact.join(": ")
   end
 
   def installment_class(transaction_type)

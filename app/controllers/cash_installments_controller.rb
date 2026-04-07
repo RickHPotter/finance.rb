@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CashInstallmentsController < ApplicationController
+class CashInstallmentsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TranslateHelper
 
   before_action :set_cash_installment, only: %i[pay]
@@ -16,10 +16,14 @@ class CashInstallmentsController < ApplicationController
     date  = Time.zone.parse(cash_installment_params[:date]) if cash_installment_params[:date].present?
 
     min_date = [ cash_installment_date, date ].min
+    structure_change = cash_installment_price != price
+    should_send_update_notification = structure_change && @cash_installment.send(:shared_paid_state_transaction?)
+    @cash_installment.skip_shared_paid_state_sync = true if should_send_update_notification
 
     @cash_installment = update_installment(@cash_installment, date, price)
+    return handle_failed_save(@cash_installment) if @cash_installment.errors.any?
 
-    if cash_installment_price != price
+    if structure_change
       if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
         cash_installment_date
       else
@@ -28,6 +32,8 @@ class CashInstallmentsController < ApplicationController
 
       Logic::Manipulation::CashInstallment.new(@cash_installment).split_installment(new_date, cash_installment_price - price)
     end
+
+    Logic::SharedPaidStateSyncService.new(installment: @cash_installment, force_notify: true).call if should_send_update_notification
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
@@ -44,6 +50,7 @@ class CashInstallmentsController < ApplicationController
 
     cash_installments.each do |cash_installment|
       update_installment(cash_installment, date)
+      return handle_failed_save(cash_installment) if cash_installment.errors.any?
     end
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
@@ -71,7 +78,10 @@ class CashInstallmentsController < ApplicationController
 
     min_date          = [ *cash_installments.pluck(:date), date ].min
 
-    cash_installments.update_all(date:, year:, month:)
+    cash_installments.each do |cash_installment|
+      cash_installment.update(date:, year:, month:)
+      return handle_failed_save(cash_installment) if cash_installment.errors.any?
+    end
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
@@ -234,6 +244,19 @@ class CashInstallmentsController < ApplicationController
         render turbo_stream: [
           turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashInstallment) })
         ]
+      end
+    end
+  end
+
+  def handle_failed_save(cash_installment)
+    @cash_installment = cash_installment
+    build_index_context_from_selection || build_index_context
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @cash_installment.errors.full_messages.to_sentence })
+        ], status: :unprocessable_content
       end
     end
   end

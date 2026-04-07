@@ -4,6 +4,13 @@ en:
       exchange:
         one: Exchange
         other: Exchanges
+    errors:
+      models:
+        exchange:
+          attributes:
+            base:
+              paid_history_locked: "Paid history is locked. Edit only future unpaid installments after the latest paid date."
+              destroy_locked_after_payment: "Exchanges with mirrored paid history cannot be deleted."
     attributes:
       exchange:
         id: ID
@@ -28,6 +35,13 @@ pt-BR:
       exchange:
         one: Troca
         other: Trocas
+    errors:
+      models:
+        exchange:
+          attributes:
+            base:
+              paid_history_locked: "O histórico pago está travado. Edite apenas parcelas futuras e pendentes após a última data paga."
+              destroy_locked_after_payment: "Trocas com histórico pago espelhado não podem ser apagadas."
     attributes:
       exchange:
         id: ID

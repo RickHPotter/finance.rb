@@ -39,6 +39,10 @@ module HasExchanges
   #
   def update_exchange_count
     exchanges_count = exchanges.count
-    exchanges.each { |i| i.update(exchanges_count:) }
+    exchanges.each do |exchange|
+      next if exchange.exchanges_count == exchanges_count
+
+      exchange.update_columns(exchanges_count:)
+    end
   end
 end

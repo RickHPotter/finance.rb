@@ -1,0 +1,33 @@
+en:
+  backup_mailer:
+    send_backup:
+      subject: "Database Backup - %{timestamp}"
+      attached_body: |
+        Attached is the latest database backup.
+
+        Raw backup file on server: %{backup_file_path}
+        Email attachment: %{attachment_file_path} (%{attachment_size})
+      skipped_attachment_body: |
+        The database backup was created, but the attachment was skipped.
+
+        Raw backup file on server: %{backup_file_path}
+        Reason: %{reason}
+      skip_reasons:
+        attachment_too_large: "Compressed backup exceeded the email attachment limit."
+
+pt-BR:
+  backup_mailer:
+    send_backup:
+      subject: "Backup do Banco de Dados - %{timestamp}"
+      attached_body: |
+        O backup mais recente do banco de dados segue em anexo.
+
+        Arquivo bruto no servidor: %{backup_file_path}
+        Anexo enviado por email: %{attachment_file_path} (%{attachment_size})
+      skipped_attachment_body: |
+        O backup do banco de dados foi criado, mas o anexo foi omitido.
+
+        Arquivo bruto no servidor: %{backup_file_path}
+        Motivo: %{reason}
+      skip_reasons:
+        attachment_too_large: "O backup compactado excedeu o limite de anexo do email."

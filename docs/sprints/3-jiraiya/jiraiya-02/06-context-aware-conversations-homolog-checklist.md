@@ -26,6 +26,7 @@ The feature should satisfy all of the following:
 4. Receiver-side apply/create/update flows mutate only the matching derived context.
 5. Unread and `Pending` surfaces are scenario-scoped.
 6. No assistant action in a derived scenario should silently act on `main`.
+7. Paid / not-paid changes on shared exchange-return flows stay synchronized between the two users inside the same scenario.
 
 ## Test Matrix
 
@@ -158,6 +159,28 @@ Failure notes:
 - If footer state is stale after switching, navigation/global rerender is still inconsistent.
 - If the badge shows the wrong scenario, `current_context` rendering is wrong.
 
+### H. Paid-State Synchronization
+
+1. Create a shared exchange-return / borrow-return flow between `User 1` and `User 2`.
+2. As `User 1`, mark the shared return flow `paid`.
+3. Log in as `User 2` in the same scenario.
+4. Inspect the mirrored local return flow and assistant conversation.
+5. Now mark the same flow `not paid` from `User 2`.
+6. Log back in as `User 1` in the same scenario.
+
+Expected:
+
+- the counterpart local record is updated to the same paid state
+- an assistant message records the cross-user paid-state change
+- the same behavior works in both directions
+- no other scenario or `main_context` is mutated by mistake
+
+Failure notes:
+
+- If only one side changes, the paid-state sync is broken.
+- If the message is missing, the assistant thread is not acting as the source of truth for the shared state change.
+- If `main_context` changes during a derived-scenario toggle, this is a release blocker.
+
 ## Performance Watch
 
 Current behavior is synchronous:
@@ -189,6 +212,7 @@ Treat any of the following as blockers:
 3. Receiver derived context is not created or the wrong one is chosen.
 4. A second assistant thread is created for the same pair and same scenario.
 5. Unread or `Pending` mixes messages across scenarios.
+6. Paid / not-paid synchronization changes only one side of a shared return flow.
 
 ## Suggested Commands
 

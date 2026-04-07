@@ -145,18 +145,43 @@ class Subscription < ApplicationRecord
   end
 
   def validate_linked_transactions
+    validate_cash_transactions_presence
+    validate_card_transactions_presence
+    validate_cash_transactions_safety
+    validate_card_transactions_safety
+  end
+
+  def validate_cash_transactions_presence
     cash_transactions.reject(&:marked_for_destruction?).each do |transaction|
       next if transaction.user_bank_account_id.present?
 
       transaction.errors.add(:user_bank_account_id, :blank)
       errors.add(:base, :invalid)
     end
+  end
 
+  def validate_card_transactions_presence
     card_transactions.reject(&:marked_for_destruction?).each do |transaction|
       next if transaction.user_card_id.present?
 
       transaction.errors.add(:user_card_id, :blank)
       errors.add(:base, :invalid)
+    end
+  end
+
+  def validate_cash_transactions_safety
+    cash_transactions.reject(&:marked_for_destruction?).each do |transaction|
+      next if transaction.errors.any?
+
+      errors.add(:base, :invalid) unless transaction.valid?
+    end
+  end
+
+  def validate_card_transactions_safety
+    card_transactions.reject(&:marked_for_destruction?).each do |transaction|
+      next if transaction.errors.any?
+
+      errors.add(:base, :invalid) unless transaction.valid?
     end
   end
 end

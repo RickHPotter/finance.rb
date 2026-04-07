@@ -15,6 +15,7 @@ module Logic
         update_subsequent_installments(new_cash_installment)
 
         @cash_transaction.cash_installments.update_all(cash_installments_count: @cash_transaction.cash_installments.count)
+        @cash_transaction.sync_exchange_projection_back_to_source! if @cash_transaction.exchange_return?
       end
 
       private

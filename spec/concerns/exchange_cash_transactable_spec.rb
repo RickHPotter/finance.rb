@@ -42,12 +42,21 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   end
 
   def validate(card_transaction, price, count)
-    exchanges = card_transaction.entity_transactions.first.exchanges
-    cash_transactions = card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+    exchanges = card_transaction.entity_transactions.first.exchanges.reload
+    shared_cash_transaction = shared_projection_cash_transaction(card_transaction)
 
     expect(exchanges.sum(:price)).to eq(price)
-    expect(cash_transactions.sum(&:price)).to eq(price)
-    expect(cash_transactions.count).to eq(count)
+    expect(shared_cash_transaction.price).to eq(price)
+    expect(shared_cash_transaction.cash_installments.count).to eq(count)
+    expect(shared_cash_transaction.cash_installments.sum(:price)).to eq(price)
+  end
+
+  def shared_projection_cash_transaction(card_transaction)
+    cash_transactions = card_transaction.entity_transactions.first.exchanges.reload.filter_map(&:cash_transaction).map(&:reload)
+
+    expect(cash_transactions.map(&:id).uniq.count).to eq(1)
+
+    cash_transactions.first
   end
 
   describe "[ concern behaviour ]" do
@@ -98,7 +107,19 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         expect(exchangable_card_transaction.entity_transactions.first.exchanges.sum(:price)).to eq(300)
       end
 
-      it "attaches one more EXCHANGE RETURN CashTransaction when exchanges increases by one" do
+      it "fills the standalone mirrored EXCHANGE RETURN reference with the source transactable" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+
+        expect(shared_cash_transaction.reference_transactable).to eq(exchangable_card_transaction)
+      end
+
+      it "keeps the standalone mirrored EXCHANGE RETURN description equal to the source description" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+
+        expect(shared_cash_transaction.description).to eq(exchangable_card_transaction.description)
+      end
+
+      it "attaches one more mirrored EXCHANGE RETURN installment when exchanges increases by one" do
         new_exchange = exchangable_card_transaction.entity_transactions.first.exchanges.last.dup
         new_exchange.number += 1
         new_exchange.date = new_exchange.date + 1.month
@@ -117,12 +138,21 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         validate(exchangable_card_transaction, 180, 3)
       end
 
-      it "detaches one of the EXCHANGE RETURN CashTransaction when exchanges decreases by one" do
+      it "detaches one mirrored EXCHANGE RETURN installment when exchanges decreases by one" do
         exchangable_card_transaction.entity_transactions.first.exchanges.first.price = 180
         exchangable_card_transaction.entity_transactions.first.exchanges.second.mark_for_destruction
         exchangable_card_transaction.save
 
         validate(exchangable_card_transaction, 180, 1)
+      end
+
+      it "restores a missing standalone mirrored EXCHANGE RETURN reference on sync" do
+        shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
+        shared_cash_transaction.update_columns(reference_transactable_type: nil, reference_transactable_id: nil)
+        exchange = exchangable_card_transaction.entity_transactions.first.exchanges.first
+        exchange.update!(price: 91, starting_price: 91)
+
+        expect(shared_cash_transaction.reload.reference_transactable).to eq(exchangable_card_transaction)
       end
 
       it "detaches and removes Exchanges when categories.exclude?(exchange_category) || !entity_transaction.is_payer" do
@@ -138,7 +168,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         exchangable_card_transaction.entity_transactions.first.exchanges.each(&:non_monetary!)
         exchangable_card_transaction.save
 
-        cash_transactions = exchangable_card_transaction.entity_transactions.first.exchanges.map(&:cash_transaction).compact
+        cash_transactions = exchangable_card_transaction.entity_transactions.first.exchanges.reload.map(&:cash_transaction).compact
 
         expect(cash_transactions).to be_empty
         expect(CashTransaction.where(id: cash_transaction_ids_to_be_deleted)).to be_empty

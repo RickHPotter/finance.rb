@@ -4,7 +4,7 @@
 
   <%= turbo_stream.replace(:center_container, Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updated, Subscription) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model_or_history_lock(@subscription, :not_updated, Subscription) }) %>
 
   <%= turbo_stream.replace(:center_container, Views::Subscriptions::Edit.new(current_user:, subscription: @subscription)) %>
 <% end %>

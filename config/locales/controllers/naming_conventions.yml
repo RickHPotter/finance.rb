@@ -1,7 +1,7 @@
 en:
   naming_conventions:
     title: "Update Naming Convention"
-    description: "Preview description changes for Investment, Exchange Return, Card Payment, and Card Advance before applying them."
+    description: "Preview description changes for Investment, Lend Return, Card Payment, and Card Advance before applying them."
     preview: "Update Naming Convention"
     refresh_preview: "Refresh Preview"
     preview_again: "Preview Again"
@@ -19,7 +19,7 @@ en:
       other: "%{count} records updated."
     conventions:
       investment: "Investment"
-      exchange_return: "Exchange Return"
+      exchange_return: Lend Return
       card_payment: "Card Payment"
       card_advance: "Card Advance"
     group:
@@ -31,7 +31,7 @@ en:
 pt-BR:
   naming_conventions:
     title: "Atualizar Convenção de Nomenclatura"
-    description: "Visualize as mudanças de descrição para Investimento, Retorno de Troca, Pagamento de Cartão e Adiantamento de Cartão antes de aplicá-las."
+    description: "Visualize as mudanças de descrição para Investimento, Acerto Empréstimo, Pagamento de Cartão e Adiantamento de Cartão antes de aplicá-las."
     preview: "Atualizar Convenção de Nomenclatura"
     refresh_preview: "Atualizar Prévia"
     preview_again: "Visualizar Novamente"
@@ -49,7 +49,7 @@ pt-BR:
       other: "%{count} registros atualizados."
     conventions:
       investment: "Investimento"
-      exchange_return: "Retorno de Troca"
+      exchange_return: Acerto Empréstimo
       card_payment: "Pagamento de Cartão"
       card_advance: "Adiantamento de Cartão"
     group:

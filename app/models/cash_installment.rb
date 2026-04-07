@@ -6,15 +6,19 @@ class CashInstallment < Installment
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :skip_shared_paid_state_sync
+
   # @relationships ............................................................
   belongs_to :cash_transaction, counter_cache: true
 
   # @validations ..............................................................
   validates :cash_installments_count, presence: true
+  validate :ensure_shared_paid_state_can_sync, if: :will_sync_shared_paid_state?
 
   # @callbacks ................................................................
   before_validation :set_installment_type, :set_paid, on: :create
   after_save :check_paid_situation
+  after_commit :enqueue_shared_paid_state_sync!, on: :update, if: :did_sync_shared_paid_state?
 
   # @scopes ...................................................................
   default_scope { where(installment_type: :CashInstallment) }
@@ -72,6 +76,8 @@ class CashInstallment < Installment
   #
   def check_paid_situation
     cash_transaction.update_columns(paid: should_be_paid?)
+    sync_mirrored_exchange_settlement! if cash_transaction.exchange_return?
+    cash_transaction.sync_exchange_entity_transaction_statuses! if cash_transaction.exchange_return?
 
     return unless cash_transaction.card_payment?
 
@@ -80,6 +86,61 @@ class CashInstallment < Installment
 
   def should_be_paid?
     cash_transaction.cash_installments.where(paid: false).empty?
+  end
+
+  def sync_mirrored_exchange_settlement!
+    return if cash_transaction.exchanges.card_bound.exists?
+
+    exchange = cash_transaction.exchanges.find_by(number:)
+    return if exchange.blank?
+
+    attributes = {
+      date:,
+      month:,
+      year:
+    }
+
+    return if attributes.all? { |key, value| exchange.public_send(key) == value }
+
+    exchange.update_columns(attributes)
+  end
+
+  def shared_paid_state_transaction?
+    cash_transaction.respond_to?(:shared_return_flow?) && cash_transaction.shared_return_flow?
+  end
+
+  def will_sync_shared_paid_state?
+    return false if skip_shared_paid_state_sync
+    return false unless persisted?
+    return false if skip_shared_paid_state_sync_for_structural_correction?
+
+    will_save_change_to_paid? && shared_paid_state_transaction?
+  end
+
+  def did_sync_shared_paid_state?
+    return false if skip_shared_paid_state_sync
+    return false if skip_shared_paid_state_sync_for_structural_correction?
+
+    saved_change_to_paid? && shared_paid_state_transaction?
+  end
+
+  def ensure_shared_paid_state_can_sync
+    return if shared_paid_state_sync_service.syncable?
+
+    errors.add(:base, :counterpart_paid_state_sync_missing)
+  end
+
+  def enqueue_shared_paid_state_sync!
+    SyncSharedPaidStateJob.perform_later(cash_installment_id: id, force_notify: true)
+  end
+
+  def shared_paid_state_sync_service
+    @shared_paid_state_sync_service ||= Logic::SharedPaidStateSyncService.new(installment: self)
+  end
+
+  def skip_shared_paid_state_sync_for_structural_correction?
+    cash_transaction.respond_to?(:editable_shared_return_structure_change_after_payment?, true) &&
+      cash_transaction.send(:editable_shared_return_structure_change_after_payment?)
   end
 end
 

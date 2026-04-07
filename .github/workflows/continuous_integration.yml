@@ -42,6 +42,11 @@ jobs:
     env:
       RAILS_ENV: test
       DATABASE_URL: "postgres://rails:password@localhost:5432/rails_test"
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_USERNAME: rails
+      POSTGRES_PASSWORD: password
+      POSTGRES_DATABASE: rails
       CAPYBARA_DRIVER: selenium_chrome_headless
     steps:
       - name: Checkout Repository
@@ -55,7 +60,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up database schema
-        run: bin/rails db:schema:load
+        run: bin/rails db:prepare
 
       - name: Precompile assets
         run: bin/rails assets:precompile

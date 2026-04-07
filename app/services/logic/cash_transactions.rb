@@ -35,6 +35,7 @@ module Logic
     end
 
     def self.build_conditions_from_params(cash_transaction_params, search_params)
+      cash_transaction_params.delete(:historical_correction_confirmation)
       search_params.delete(:controller)
       search_params.delete(:action)
 
@@ -59,6 +60,7 @@ module Logic
     end
 
     def self.build_conditions_from_cash_transaction_params(params)
+      params.delete(:historical_correction_confirmation)
       params.delete(:controller)
       params.delete(:action)
 

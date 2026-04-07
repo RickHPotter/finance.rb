@@ -249,6 +249,40 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include("Edit me")
     end
 
+    it "keeps paid-state notifications in pending until acknowledged" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "Shared return",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).to include("Shared return")
+      expect(response.body).to include(Message.human_attribute_name(:ok))
+
+      patch apply_conversation_message_path(conversation, message), headers: turbo_stream_headers
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).not_to include("Shared return")
+    end
+
     it "keeps pending assistant message resolution scoped to the current context" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       bank = create(:bank, :random)
@@ -308,6 +342,72 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include(
         edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: derived_conversation.messages.last.id }, format: :turbo_stream)
       )
+    end
+
+    it "keeps showing create when the latest update only matches a prior applied predecessor structurally" do
+      conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      sender_transaction = create(
+        :cash_transaction,
+        user: other_user,
+        context: other_user.main_context,
+        user_bank_account: create(:user_bank_account, user: other_user, bank: create(:bank, :random))
+      )
+      local_reference = create(
+        :cash_transaction,
+        user: user,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        description: "Original borrow return",
+        price: -20_000,
+        date: Time.zone.parse("2026-03-24")
+      )
+
+      predecessor = conversation.messages.create!(
+        user: other_user,
+        reference_transactable: sender_transaction,
+        applied_at: Time.current,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Original borrow return" } },
+          replay: {
+            id: sender_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Original borrow return",
+            price: -20_000,
+            date: "2026-03-24T00:00:00-03:00"
+          }
+        }.to_json
+      )
+      latest_update = conversation.messages.create!(
+        user: other_user,
+        reference_transactable: sender_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Updated borrow return" } },
+          replay: {
+            id: sender_transaction.id,
+            type: "CashTransaction",
+            intent: "reimbursement",
+            description: "Updated borrow return",
+            price: -25_000,
+            date: "2026-03-25T00:00:00-03:00"
+          }
+        }.to_json
+      )
+      predecessor.update!(superseded_by: latest_update)
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(
+        new_cash_transaction_path(cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+      )
+      expect(response.body).not_to include(
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+      )
+      expect(response.body).to include(Message.human_attribute_name(:create))
     end
 
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do
@@ -402,6 +502,69 @@ RSpec.describe "Conversations", type: :request do
 
       expect(response.body).to include(Message.human_attribute_name(:already_destroyed))
       expect(response.body).to include(I18n.t("actions.show"))
+    end
+
+    it "renders paid-state messages with an ok action and without the destroyed badge" do
+      cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        reference_transactable: cash_transaction,
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "SHARED RETURN",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      expect(response.body).to include(Message.human_attribute_name(:ok))
+      expect(response.body).not_to include(Message.human_attribute_name(:already_destroyed))
+    end
+
+    it "allows acknowledging a paid-state message" do
+      cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:paid_state",
+        reference_transactable: cash_transaction,
+        headers: {
+          version: "message_paid_state_v1",
+          event: {
+            action: "paid",
+            receiver_first_name: user.first_name,
+            transaction_type: "CashTransaction",
+            details: {
+              transaction_label: "Cash transaction",
+              description: "SHARED RETURN",
+              installment_number: 1,
+              installments_count: 1,
+              date: "2026-03-26",
+              paid: true
+            }
+          }
+        }.to_json
+      )
+
+      patch apply_conversation_message_path(conversation, message), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(message.reload.applied_at).to be_present
+      expect(response.body).to include(Message.human_attribute_name(:already_acknowledged))
     end
 
     it "filters assistant messages by mine and theirs" do

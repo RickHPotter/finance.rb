@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :card_transaction do
-    date { Date.new 2023, 12, 16 }
+    date { Time.zone.today + 1.month }
     description { "LA PLAZA PARATY" }
     comment { nil }
     price { -14_000 }
@@ -61,7 +61,7 @@ FactoryBot.define do
     end
 
     trait :random do
-      date { Faker::Date.between(from: 3.months.ago, to: Time.zone.today) }
+      date { Faker::Date.between(from: Time.zone.today, to: 3.months.from_now.to_date) }
       description { Faker::Lorem.sentence }
       comment { [ Faker::Lorem.sentence, nil, nil, nil, nil ].sample }
       price { Faker::Number.number(digits: rand(3..5)) * -1 }

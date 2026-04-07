@@ -4,6 +4,15 @@ en:
       card_installment:
         one: Card Installment
         other: Card Installments
+    errors:
+      models:
+        card_installment:
+          attributes:
+            base:
+              paid_history_locked: "This transaction is tied to a paid card invoice and cannot be changed."
+              paid_amount_correction_confirmation_required: "This paid card installment amount correction requires explicit confirmation."
+              same_cycle_history_correction_confirmation_required: "This paid card installment keeps the same ref month/year and requires explicit confirmation."
+              destroy_locked_after_payment: "This transaction is tied to a paid card invoice and cannot be deleted."
     attributes:
       card_installment:
         self: Card Installment
@@ -31,6 +40,15 @@ pt-BR:
       card_installment:
         one: Parcela
         other: Parcelas
+    errors:
+      models:
+        card_installment:
+          attributes:
+            base:
+              paid_history_locked: "Essa transação está vinculada a uma fatura de cartão já paga e não pode ser alterada."
+              paid_amount_correction_confirmation_required: "Esta correção de valor em uma parcela de cartão já paga exige confirmação explícita."
+              same_cycle_history_correction_confirmation_required: "Esta parcela de cartão paga mantém o mesmo ref mês/ano e exige confirmação explícita."
+              destroy_locked_after_payment: "Essa transação está vinculada a uma fatura de cartão já paga e não pode ser excluída."
     attributes:
       card_installment:
         self: Parcela

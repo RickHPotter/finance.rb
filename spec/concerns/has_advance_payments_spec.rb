@@ -10,7 +10,7 @@ RSpec.describe HasAdvancePayments, type: :concern do
   let(:card_advance_category) { user.built_in_category("CARD ADVANCE") }
   let(:other_category) { create(:category, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
-  let(:cycle_date) { Time.zone.today.beginning_of_month + 5.days }
+  let(:cycle_date) { Time.zone.today.beginning_of_month + 1.month + 5.days }
 
   let!(:regular_card_transaction) do
     create(:card_transaction,

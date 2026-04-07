@@ -11,6 +11,10 @@ development:
   primary: &primary_development
     <<: *default
     database: <%= ENV["POSTGRES_DATABASE"] %>_development
+  queue:
+    <<: *primary_development
+    database: app_development_queue
+    migrations_paths: db/queue_migrate
   cache:
     <<: *primary_development
     database: app_development_cache
@@ -21,13 +25,22 @@ development:
     migrations_paths: db/cable_migrate
 
 test:
-  <<: *default
-  database: <%= ENV["POSTGRES_DATABASE"] %>_test
+  primary: &primary_test
+    <<: *default
+    database: <%= ENV["POSTGRES_DATABASE"] %>_test
+  queue:
+    <<: *primary_test
+    database: app_test_queue
+    migrations_paths: db/queue_migrate
 
 production:
   primary: &primary_production
     <<: *default
     database: <%= ENV["POSTGRES_DATABASE"] %>
+  queue:
+    <<: *primary_production
+    database: app_production_queue
+    migrations_paths: db/queue_migrate
   cache:
     <<: *primary_production
     database: app_production_cache
@@ -41,6 +54,10 @@ homolog:
   primary: &primary_homolog
     <<: *default
     database: <%= ENV["POSTGRES_DATABASE"] %>
+  queue:
+    <<: *primary_homolog
+    database: app_homolog_queue
+    migrations_paths: db/queue_migrate
   cache:
     <<: *primary_homolog
     database: app_homolog_cache

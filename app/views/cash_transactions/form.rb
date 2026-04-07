@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::Form < Views::Base
+class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::HiddenFieldTag
@@ -32,9 +32,9 @@ class Views::CashTransactions::Form < Views::Base
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
         form.hidden_field :reference_transactable_type,
-                          value: cash_transaction.reference_transactable_type || params.dig(:cash_transaction, :reference_transactable_type)
+                          value: reference_transactable_type_value
         form.hidden_field :reference_transactable_id,
-                          value: cash_transaction.reference_transactable_id   || params.dig(:cash_transaction, :reference_transactable_id)
+                          value: reference_transactable_id_value
         form.hidden_field :friend_notification_intent,
                           value: cash_transaction.effective_friend_notification_intent || params.dig(:cash_transaction, :friend_notification_intent)
         form.hidden_field :source_message_id,
@@ -66,7 +66,8 @@ class Views::CashTransactions::Form < Views::Base
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
           destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction) : nil,
-          destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil
+          destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil,
+          confirmation_submit: historical_correction_confirmation_submit_for(cash_transaction, :cash_transaction)
         ) do
           if cash_transaction.exchange_return?
             transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)
@@ -109,6 +110,56 @@ class Views::CashTransactions::Form < Views::Base
 
   def exchange_category
     current_user.built_in_category("EXCHANGE")
+  end
+
+  def historical_correction_confirmation_submit_for(transaction, param_key)
+    return unless transaction.historical_correction_confirmation_prompt?
+
+    {
+      field_id: "#{param_key}_historical_correction_confirmation",
+      name: "#{param_key}[historical_correction_confirmation]",
+      current_value: true,
+      value: true,
+      label: I18n.t("actions.confirm_historical_change")
+    }
+  end
+
+  def actionable_shared_return_reference
+    return unless cash_transaction.persisted?
+    return if cash_transaction.source_message_id.blank?
+    return unless cash_transaction.respond_to?(:borrow_return?) && cash_transaction.respond_to?(:exchange_return?)
+    return unless cash_transaction.borrow_return? || cash_transaction.exchange_return?
+
+    direct_actionable_shared_return_reference || cash_transaction.counterpart_shared_return_transaction
+  end
+
+  def direct_actionable_shared_return_reference
+    source_message = current_user.received_messages
+                                 .joins(:conversation)
+                                 .where(conversations: { scenario_key: current_context.scenario_key })
+                                 .find_by(id: cash_transaction.source_message_id)
+    reference_transaction = source_message&.reference_transactable
+    return unless reference_transaction.is_a?(CardTransaction)
+
+    reference_transaction.entity_transactions
+                         .includes(exchanges: :cash_transaction)
+                         .flat_map(&:exchanges)
+                         .select(&:monetary?)
+                         .map(&:cash_transaction)
+                         .compact
+                         .find(&:exchange_return?)
+  end
+
+  def reference_transactable_type_value
+    actionable_shared_return_reference&.class&.name ||
+      cash_transaction.reference_transactable_type ||
+      params.dig(:cash_transaction, :reference_transactable_type)
+  end
+
+  def reference_transactable_id_value
+    actionable_shared_return_reference&.id ||
+      cash_transaction.reference_transactable_id ||
+      params.dig(:cash_transaction, :reference_transactable_id)
   end
 
   def card_transactions_sheet

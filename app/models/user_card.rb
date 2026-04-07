@@ -131,9 +131,13 @@ class UserCard < ApplicationRecord
       next if exchanges.empty?
 
       ApplicationRecord.transaction do
-        cash_installment.update!(date: new_reference_date)
-        cash_transaction.update!(date: new_reference_date)
-        exchanges.each { |exchange| exchange.update!(date: new_reference_date) }
+        adjusted_reference_date = new_reference_date.end_of_day
+
+        cash_installment.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
+        cash_transaction.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
+        exchanges.each do |exchange|
+          exchange.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
+        end
       end
     end
   end

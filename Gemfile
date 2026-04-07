@@ -14,6 +14,7 @@ gem "propshaft"
 gem "puma"
 gem "solid_cable"
 gem "solid_cache"
+gem "solid_queue"
 gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
@@ -67,9 +68,6 @@ group :development do
   gem "ruby_ui", require: false
   gem "web-console"
 
-  # APM // cant work this out of the box without redis, id like to avoid that in prod for now
-  gem "rails_performance"
-
   # NEOVIM IDE
   gem "neovim"
   gem "solargraph"
@@ -81,4 +79,8 @@ group :test do
   gem "selenium-webdriver"
   gem "shoulda-matchers"
   gem "simplecov", require: false
+end
+
+group :production do
+  gem "appsignal"
 end

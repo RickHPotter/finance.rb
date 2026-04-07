@@ -109,6 +109,8 @@ RSpec.describe "UserCards", type: :request do
         price: -1000
       )
       main_exchange_return = main_exchange.cash_transaction
+      main_exchange_return.cash_installments.first.update!(paid: false)
+      main_exchange_return.update_column(:paid, false)
 
       derived_context = Logic::ContextCloneService.new(
         source_context: user.main_context,
@@ -118,6 +120,8 @@ RSpec.describe "UserCards", type: :request do
       derived_invoice = user_card.unpaid_invoices(context: derived_context).find_by!(month: 3, year: 2026)
       derived_exchange_return = derived_context.cash_transactions.find_by!(description: main_exchange_return.description)
       derived_exchange = derived_exchange_return.exchanges.first
+      derived_exchange_return.cash_installments.first.update!(paid: false)
+      derived_exchange_return.update_column(:paid, false)
 
       patch user_card_path(user_card), params: {
         user_card: {
