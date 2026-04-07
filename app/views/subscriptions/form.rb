@@ -34,7 +34,8 @@ class Views::Subscriptions::Form < Views::Base
             render Views::Transactions::FormIntroFields.new(
               form:,
               transaction: subscription,
-              description_class: outdoor_input_class
+              description_class: outdoor_input_class,
+              autofocus_target: true
             )
 
             div(class: "mb-6 w-full lg:flex lg:gap-2") do

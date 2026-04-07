@@ -18,7 +18,8 @@ module RubyUI
         role: "combobox",
         data: {
           controller: "ruby-ui--combobox",
-          ruby_ui__combobox_term_value: @term.to_s
+          ruby_ui__combobox_term_value: @term.to_s,
+          action: "focusout->ruby-ui--combobox#handleFocusOut"
         }
       }
     end

@@ -28,7 +28,12 @@ module RubyUI
         data: {
           placeholder: @placeholder,
           ruby_ui__combobox_target: "trigger",
-          action: "ruby-ui--combobox#openPopover"
+          action: %w[
+            click->ruby-ui--combobox#openPopover
+            focus->ruby-ui--combobox#openPopover
+            keydown.down->ruby-ui--combobox#keyDownPressed
+            keydown.up->ruby-ui--combobox#keyUpPressed
+          ]
         },
         aria: {
           haspopup: "listbox",

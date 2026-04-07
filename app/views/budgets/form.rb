@@ -38,6 +38,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           form.text_field \
             :description,
             autocomplete: :off,
+            autofocus: true,
             class: outdoor_readonly_input_class,
             data: { controller: "blinking-placeholder", text: model_attribute(budget, :description), dynamic_description_target: :description }
         end
