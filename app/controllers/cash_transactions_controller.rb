@@ -37,9 +37,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
     @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
     handle_params
+    @chain_context = current_chain_context(mode: "create")
 
     respond_to do |format|
-      format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction) }
+      format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context) }
       format.turbo_stream
     end
   end
@@ -57,6 +58,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def create
     @cash_transaction = current_context.cash_transactions.new(assignable_cash_transaction_params.merge(user: current_user, imported: false))
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
+
+    if finish_chain_without_save_requested?
+      handle_chain_finish_without_save
+      return
+    end
 
     handle_save
   end
@@ -89,6 +95,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         render :destroy, status: destroyed ? :ok : :unprocessable_content
       end
     end
+  end
+
+  def duplicate
+    @cash_transaction = build_duplicate_cash_transaction(params[:id])
+    @chain_context = current_chain_context(mode: "duplicate")
+
+    render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context)
   end
 
   def handle_params
@@ -255,7 +268,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def assignable_cash_transaction_params
-    params = effective_cash_transaction_params.except(:source_message_id)
+    params = deduplicated_cash_transaction_params(effective_cash_transaction_params).except(:source_message_id)
     counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       return params.merge(reference_transactable_type: counterpart_reference.class.name,
@@ -362,6 +375,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     saved = @cash_transaction.save
     normalize_failed_cash_transaction_save!
+    @chain_context = current_chain_context
 
     handle_successful_save if saved
 
@@ -431,11 +445,13 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def render_update_form
+    @chain_context = current_chain_context
+
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.update(
           @cash_transaction,
-          Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction)
+          Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction, chain_context: @chain_context)
         ), status: :ok
       end
     end
@@ -451,14 +467,97 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     sync_shared_paid_state_messages_from_form!
     mark_source_message_applied
+    handle_chain_save_success
+  end
+
+  def handle_chain_save_success
+    created_record_ids = updated_chain_record_ids(@cash_transaction.id)
+
+    if continue_chain?
+      @chain_context = current_chain_context(record_ids: created_record_ids, checked: true)
+      @next_cash_transaction = next_cash_transaction_for_chain
+      return
+    end
+
     index
-    @index_context[:default_year] = @cash_transaction.cash_installments.first.year
-    @index_context[:active_month_years] = active_month_years_for(@cash_transaction)
     @index_context[:user_bank_account_id] = []
+    apply_chain_index_context(record_ids: created_record_ids)
+  end
+
+  def handle_chain_finish_without_save
+    @finished_chain_without_save = true
+    index
+    @index_context[:user_bank_account_id] = []
+    apply_chain_index_context(record_ids: current_chain_record_ids)
+
+    respond_to do |format|
+      format.turbo_stream { render :create, status: :ok }
+    end
   end
 
   def active_month_years_for(cash_transaction)
     cash_transaction.cash_installments.map { |installment| Date.new(installment.year, installment.month).strftime("%Y%m").to_i }.uniq
+  end
+
+  def apply_chain_index_context(record_ids:)
+    cash_transactions = current_context.cash_transactions.includes(:cash_installments).where(id: record_ids)
+    installment_ids = cash_transactions.flat_map { |transaction| transaction.cash_installments.pluck(:id) }.uniq
+    active_month_years = cash_transactions.flat_map { |transaction| active_month_years_for(transaction) }.uniq
+
+    @index_context[:cash_installment_ids] = installment_ids
+    @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
+    @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
+  end
+
+  def next_cash_transaction_for_chain
+    if current_chain_context[:mode] == "duplicate"
+      build_duplicate_cash_transaction(@cash_transaction.id)
+    else
+      current_context.cash_transactions.new(
+        user: current_user,
+        user_bank_account_id: current_user.user_bank_accounts.active.first&.id,
+        date: Time.zone.now
+      )
+    end
+  end
+
+  def build_duplicate_cash_transaction(id)
+    CashTransaction.duplicate(id).tap do |cash_transaction|
+      cash_transaction.price = 0
+      cash_transaction.cash_installments.each { |installment| installment.price = 0 }
+    end
+  end
+
+  def current_chain_context(mode: nil, record_ids: current_chain_record_ids, checked: continue_chain_requested?)
+    {
+      mode: mode || params[:chain_mode].presence || "create",
+      record_ids:,
+      checked:
+    }
+  end
+
+  def current_chain_record_ids
+    Array(params[:chain_record_ids]).compact_blank.map(&:to_i)
+  end
+
+  def updated_chain_record_ids(current_record_id)
+    (current_chain_record_ids + [ current_record_id ]).uniq
+  end
+
+  def continue_chain?
+    continue_chain_requested? && !finish_chain_requested?
+  end
+
+  def continue_chain_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:continue_chain])
+  end
+
+  def finish_chain_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:finish_chain])
+  end
+
+  def finish_chain_without_save_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
   end
 
   def create_shared_paid_state_message(conversation:, counterpart_user:, notification:)
@@ -795,5 +894,28 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def indexed_nested_attributes_hash?(attributes)
     attributes.keys.all? { |key| key.to_s.match?(/\A\d+\z/) }
+  end
+
+  def deduplicated_cash_transaction_params(attributes)
+    attributes.merge(
+      category_transactions_attributes: deduplicate_nested_attributes(attributes[:category_transactions_attributes], key: :category_id),
+      entity_transactions_attributes: deduplicate_nested_attributes(attributes[:entity_transactions_attributes], key: :entity_id)
+    )
+  end
+
+  def deduplicate_nested_attributes(attributes, key:)
+    seen_values = {}
+
+    normalized_nested_attributes(attributes).filter_map do |entry|
+      next entry if entry.blank?
+      next entry if ActiveModel::Type::Boolean.new.cast(entry[:_destroy])
+
+      nested_value = entry[key].presence
+      next entry if nested_value.blank?
+      next if seen_values[nested_value.to_s]
+
+      seen_values[nested_value.to_s] = true
+      entry
+    end
   end
 end

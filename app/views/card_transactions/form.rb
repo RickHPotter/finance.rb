@@ -12,11 +12,12 @@ class Views::CardTransactions::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :card_transaction
+  attr_reader :current_user, :card_transaction, :chain_context
 
-  def initialize(current_user:, card_transaction:)
+  def initialize(current_user:, card_transaction:, chain_context: nil)
     @current_user = current_user
     @card_transaction = card_transaction
+    @chain_context = chain_context
 
     set_cards
     set_user_cards
@@ -78,7 +79,8 @@ class Views::CardTransactions::Form < Views::Base
           destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction) : nil,
           destroy_id: card_transaction.persisted? ? "delete_card_transaction_#{card_transaction.id}" : nil,
           duplicate_href: card_transaction.persisted? ? duplicate_card_transaction_path(card_transaction) : nil,
-          confirmation_submit: historical_correction_confirmation_submit_for(card_transaction, :card_transaction)
+          confirmation_submit: historical_correction_confirmation_submit_for(card_transaction, :card_transaction),
+          chain_context:
         )
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }

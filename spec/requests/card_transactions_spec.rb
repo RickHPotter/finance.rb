@@ -264,6 +264,133 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "continues a create chain with the created ids tracked in the next form" do
+      expect do
+        post card_transactions_path,
+             params: card_transaction.params.merge(chain_mode: "create", continue_chain: "1"),
+             headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(1)
+
+      created_card_transaction = CardTransaction.last
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Chain Creating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
+      expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_card_transaction.id}"/)
+      expect(response.body).to include('name="continue_chain" value="1"')
+      expect(response.body).to include("checked")
+    end
+
+    it "finishes a chain without saving the current card transaction form" do
+      existing_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Existing chained card transaction",
+        price: -12_345,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+
+      expect do
+        post card_transactions_path,
+             params: {
+               chain_mode: "create",
+               chain_record_ids: [ existing_card_transaction.id ],
+               finish_chain_without_save: "1",
+               card_transaction: {
+                 description: "",
+                 price: "",
+                 date: "",
+                 user_id: user.id,
+                 user_card_id: user_card_one.id
+               }
+             },
+             headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expected_month_year = format("%<year>04d%<month>02d", year: existing_card_transaction.card_installments.first.year, month: existing_card_transaction.card_installments.first.month)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("month_year_container_#{expected_month_year}")
+      expect(response.body).to include("/card_transactions?user_card_id=#{user_card_one.id}")
+      expect(response.body).not_to include("Chain Creating")
+    end
+
+    it "keeps duplicate chain controls checked on hidden update submits" do
+      post card_transactions_path, params: {
+        chain_mode: "duplicate",
+        continue_chain: "1",
+        commit: "Update",
+        card_transaction: {
+          duplicate: "true",
+          description: "Duplicate preview",
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          price: -1000,
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          card_installments_attributes: [
+            { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: -1000 }
+          ],
+          category_transactions_attributes: [
+            { category_id: exchange_category.id }
+          ],
+          entity_transactions_attributes: [
+            { entity_id: entity_one.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="continue_chain" value="1"')
+      expect(response.body).to include("checked")
+    end
+
+    it "deduplicates repeated categories and entities when saving a duplicate chain round" do
+      extra_category = create(:category, :random, user:)
+      extra_entity = create(:entity, :random, user:)
+
+      expect do
+        post card_transactions_path, params: {
+          chain_mode: "duplicate",
+          continue_chain: "1",
+          card_transaction: {
+            description: "Duplicated card transaction",
+            price: -20_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_id: user.id,
+            user_card_id: user_card_one.id,
+            card_installments_attributes: [
+              { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: -20_000 }
+            ],
+            category_transactions_attributes: [
+              { category_id: exchange_category.id },
+              { category_id: exchange_category.id },
+              { category_id: extra_category.id }
+            ],
+            entity_transactions_attributes: [
+              { entity_id: entity_one.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] },
+              { entity_id: entity_one.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] },
+              { entity_id: extra_entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(1)
+
+      created_card_transaction = CardTransaction.last
+
+      expect(response).to have_http_status(:success)
+      expect(created_card_transaction.categories).to contain_exactly(exchange_category, extra_category)
+      expect(created_card_transaction.entities).to contain_exactly(entity_one, extra_entity)
+    end
+
     it "creates one new record with one installment and non-paying entities" do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: -2200, exchanges_attributes: [] } ]
       expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
@@ -635,7 +762,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t("activerecord.errors.models.exchange.attributes.base.paid_history_locked"))
-      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.default"))
+      expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
       expect(exchange.reload.price).to eq(-2_200)
       expect(exchange.cash_transaction.reload.price).to eq(-2_200)
     end

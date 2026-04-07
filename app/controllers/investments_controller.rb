@@ -37,17 +37,37 @@ class InvestmentsController < ApplicationController
 
     @investment.date ||= Time.zone.now
     @investment.date += 1.day if params[:next_day]
+    @chain_context = current_chain_context(mode: "create")
 
     respond_to do |format|
-      format.html { render Views::Investments::New.new(current_user:, investment: @investment) }
+      format.html { render Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context) }
       format.turbo_stream
     end
   end
 
-  def create
-    @investment = Logic::Investments.create(investment_params.merge(user: current_user, context: current_context))
+  def duplicate
+    existing_investment = current_context.investments.find(params[:id])
+    @investment = existing_investment.dup
+    @investment.duplicate = true
+    @investment.price = 0
+    @investment.date = existing_investment.date + 1.day
+    @investment.month = @investment.date.month
+    @investment.year = @investment.date.year
+    @chain_context = current_chain_context(mode: "duplicate")
 
-    load_based_on_save if @investment
+    render Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context)
+  end
+
+  def create
+    if finish_chain_without_save_requested?
+      handle_chain_finish_without_save
+      return
+    end
+
+    @investment = Logic::Investments.create(investment_params.merge(user: current_user, context: current_context))
+    @chain_context = current_chain_context
+
+    handle_chain_save_success if @investment&.errors&.empty?
 
     respond_to(&:turbo_stream)
   end
@@ -103,6 +123,7 @@ class InvestmentsController < ApplicationController
     active_month_years = params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
 
     search_term = search_investment_params[:search_term]
+    investment_ids = [ investment_params[:id] ].flatten&.compact_blank
     user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
     investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
 
@@ -114,10 +135,92 @@ class InvestmentsController < ApplicationController
       default_year:,
       active_month_years:,
       search_term:,
+      id: investment_ids,
       user_bank_account_id:,
       investment_type_id:,
       count_by_month_year:
     }
+  end
+
+  def handle_chain_save_success
+    created_record_ids = updated_chain_record_ids(@investment.id)
+
+    if continue_chain?
+      @chain_context = current_chain_context(record_ids: created_record_ids, checked: true)
+      @next_investment = next_investment_for_chain
+      return
+    end
+
+    load_based_on_save
+    apply_chain_index_context(record_ids: created_record_ids)
+  end
+
+  def handle_chain_finish_without_save
+    @finished_chain_without_save = true
+    @investment = current_context.investments.new
+    build_index_context
+    apply_chain_index_context(record_ids: current_chain_record_ids)
+
+    respond_to(&:turbo_stream)
+  end
+
+  def apply_chain_index_context(record_ids:)
+    investments = current_context.investments.where(id: record_ids)
+    active_month_years = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
+
+    @index_context[:id] = record_ids
+    @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
+    @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
+    @index_context[:user_bank_account_id] = []
+    @index_context[:investment_type_id] = []
+  end
+
+  def next_investment_for_chain
+    return duplicate_investment_sample(@investment) if current_chain_context[:mode] == "duplicate"
+
+    current_context.investments.new(user: current_user, date: Time.zone.now)
+  end
+
+  def duplicate_investment_sample(existing_investment)
+    existing_investment.dup.tap do |investment|
+      investment.duplicate = true
+      investment.price = 0
+      investment.date = existing_investment.date + 1.day
+      investment.month = investment.date.month
+      investment.year = investment.date.year
+    end
+  end
+
+  def current_chain_context(mode: nil, record_ids: current_chain_record_ids, checked: continue_chain_requested?)
+    {
+      mode: mode || params[:chain_mode].presence || "create",
+      record_ids:,
+      checked:
+    }
+  end
+
+  def current_chain_record_ids
+    Array(params[:chain_record_ids]).compact_blank.map(&:to_i)
+  end
+
+  def updated_chain_record_ids(current_record_id)
+    (current_chain_record_ids + [ current_record_id ]).uniq
+  end
+
+  def continue_chain?
+    continue_chain_requested? && !finish_chain_requested?
+  end
+
+  def continue_chain_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:continue_chain])
+  end
+
+  def finish_chain_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:finish_chain])
+  end
+
+  def finish_chain_without_save_requested?
+    ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
   end
 
   private
@@ -144,7 +247,7 @@ class InvestmentsController < ApplicationController
 
     ret_params.permit(
       :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id,
-      user_bank_account_id: [], investment_type_id: []
+      user_bank_account_id: [], investment_type_id: [], id: []
     )
   end
 end

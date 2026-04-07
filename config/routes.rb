@@ -77,6 +77,10 @@ Rails.application.routes.draw do
   end
 
   resources :cash_transactions, except: :show do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
     end
@@ -100,6 +104,10 @@ Rails.application.routes.draw do
   end
 
   resources :investments, except: :show do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
     end

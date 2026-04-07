@@ -1,10 +1,17 @@
-<% if @investment.errors.empty? %>
+<% if @finished_chain_without_save %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
+<% elsif @investment.errors.empty? %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Investment) }) %>
 
-  <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% if @next_investment.present? %>
+    <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @next_investment, chain_context: @chain_context)) %>
+  <% else %>
+    <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% end %>
 <% else %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_created, Investment) }) %>
 
-  <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @investment)) %>
+  <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context)) %>
 <% end %>

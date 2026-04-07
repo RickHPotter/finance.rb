@@ -1,10 +1,17 @@
-<% if @card_transaction.errors.empty? %>
+<% if @finished_chain_without_save %>
+  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
+<% elsif @card_transaction.errors.empty? %>
   <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, CardTransaction) }) %>
 
-  <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% if @next_card_transaction.present? %>
+    <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @next_card_transaction, chain_context: @chain_context)) %>
+  <% else %>
+    <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
+  <% end %>
 <% else %>
   <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, CardTransaction) }) %>
 
-  <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
+  <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction, chain_context: @chain_context)) %>
 <% end %>

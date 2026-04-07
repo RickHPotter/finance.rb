@@ -9,17 +9,19 @@ class Views::Investments::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types
+  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types, :chain_context
 
-  def initialize(current_user:, investment:)
+  def initialize(current_user:, investment:, chain_context: nil)
     @current_user = current_user
     @investment = investment
+    @chain_context = chain_context
 
     set_user_bank_accounts
     set_investment_types
   end
 
   def which_target_to_autofocus
+    return :price if investment.duplicate
     return :price if params[:next_day]
     return :description if investment.user_bank_account.nil?
 
@@ -37,6 +39,7 @@ class Views::Investments::Form < Views::Base
         data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
+        form.hidden_field :duplicate
 
         div(class: "w-full mb-6") do
           form.text_field :description,
@@ -88,7 +91,35 @@ class Views::Investments::Form < Views::Base
         end
 
         div(class: "w-full") do
-          Button(type: :submit, variant: :purple) { action_model(:submit, investment) }
+          div(class: "flex w-full flex-col gap-3") do
+            unless investment.persisted?
+              render Views::Transactions::ChainControls.new(
+                mode: chain_mode,
+                record_ids: chain_record_ids,
+                checked: chain_checked?
+              )
+            end
+
+            div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+              Button(type: :submit, variant: :purple, class: "w-64") { action_model(:submit, investment) }
+
+              unless investment.persisted?
+                Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain", value: "1") do
+                  action_message(:finish_chain)
+                end
+
+                Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain_without_save", value: "1") do
+                  action_message(:finish_chain_without_save)
+                end
+              end
+
+              if investment.persisted?
+                Button(link: duplicate_investment_path(investment), class: "min-w-64", data: { turbo_frame: "_top" }) do
+                  action_message(:duplicate)
+                end
+              end
+            end
+          end
         end
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
@@ -121,5 +152,17 @@ class Views::Investments::Form < Views::Base
       controller: "autofocus",
       autofocus_select_value: select
     }
+  end
+
+  def chain_mode
+    chain_context&.dig(:mode) || (investment.duplicate ? "duplicate" : "create")
+  end
+
+  def chain_record_ids
+    chain_context&.dig(:record_ids) || []
+  end
+
+  def chain_checked?
+    chain_context&.dig(:checked) || false
   end
 end

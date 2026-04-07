@@ -49,6 +49,26 @@ RSpec.describe CashTransaction, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "duplicates installments without carrying paid state" do
+      transaction = create(
+        :cash_transaction,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        description: "Duplicate source",
+        price: 1000,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      transaction.cash_installments.first.update!(paid: true)
+
+      duplicate = described_class.duplicate(transaction.id)
+
+      expect(duplicate.cash_installments.first).to be_new_record
+      expect(duplicate.cash_installments.first.paid).to be(false)
+    end
+
     it "defaults context to the user's main context" do
       transaction = described_class.new(
         user: subject.user,

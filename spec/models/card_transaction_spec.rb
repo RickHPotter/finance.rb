@@ -119,6 +119,27 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "duplicates installments without carrying paid or projection state" do
+      transaction = create(
+        :card_transaction,
+        user: user_card.user,
+        context: user_card.user.main_context,
+        user_card:,
+        description: "Duplicate source",
+        price: -1000,
+        date: Date.new(2026, 4, 3),
+        month: 5,
+        year: 2026
+      )
+
+      duplicate = described_class.duplicate(transaction.id)
+      duplicated_installment = duplicate.card_installments.first
+
+      expect(duplicated_installment).to be_new_record
+      expect(duplicated_installment.cash_transaction_id).to be_nil
+      expect(duplicated_installment.paid).to be(false)
+    end
+
     it "defaults context to the user's main context" do
       transaction = described_class.new(
         user: card_transaction.user,

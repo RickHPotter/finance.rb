@@ -25,7 +25,7 @@ module Logic
 
       financial_scope.investments
                      .includes(:user_bank_account, :investment_type)
-                     .where(investment_params)
+                     .where(investment_params.compact_blank)
                      .where("description ILIKE ?", "%#{search_term}%")
                      .where("year = ? AND month = ?", year, month)
                      .order(:date)

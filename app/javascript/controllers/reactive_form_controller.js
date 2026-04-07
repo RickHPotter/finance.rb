@@ -232,6 +232,10 @@ export default class extends Controller {
     let allOptions = this.comboboxOptions(combobox)
     let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
+    if (this.categoryAlreadySelected(this.comboboxOptionValue(selectedOption))) {
+      this.resetComboboxSelection(combobox, selectedOption)
+      return
+    }
 
     this._insertCategory(selectedOption)
 
@@ -277,6 +281,10 @@ export default class extends Controller {
     let allOptions = this.comboboxOptions(combobox)
     let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
+    if (this.entityAlreadySelected(this.comboboxOptionValue(selectedOption))) {
+      this.resetComboboxSelection(combobox, selectedOption)
+      return
+    }
 
     this._insertEntity(selectedOption)
 
@@ -590,6 +598,15 @@ export default class extends Controller {
 
   // Entities
 
+  categoryAlreadySelected(value) {
+    return this.categoryWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".categories_category_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
+
+      return input?.value === value && destroyInput?.value !== "true" && wrapper.checkVisibility()
+    })
+  }
+
   _insertEntity(selectedOption) {
     selectedOption.dataset.comboboxPermanentlyHidden = "true"
     selectedOption.classList.add("hidden")
@@ -632,6 +649,15 @@ export default class extends Controller {
           option.dataset.filterableAs = ""
         }
       })
+    })
+  }
+
+  entityAlreadySelected(value) {
+    return this.entityWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".entities_entity_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
+
+      return input?.value === value && destroyInput?.value !== "true" && wrapper.checkVisibility()
     })
   }
 

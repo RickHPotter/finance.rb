@@ -55,8 +55,10 @@ en:
     index: "Listing"
     show: "Details of"
     new: "Creating"
+    chain_create: "Chain Creating"
     edit: "Editing"
     duplicate: "Duplicating"
+    chain_duplicate: "Chain Duplicating"
     destroy: "Destroying"
     merge: "Merging"
   actions:
@@ -85,6 +87,10 @@ en:
     send: "Send"
     toggle_sign: "Toggle Sign"
     calculate_installments_price: "Calculate Installments Price"
+    create_more: "Create more"
+    duplicate_more: "Duplicate more"
+    finish_chain: "Finish chain"
+    finish_chain_without_save: "Finish chain without saving"
 
   navigation:
     previous: "Previous"
@@ -168,8 +174,10 @@ pt-BR:
     index: "Listando"
     show: "Detalhes de"
     new: "Criando"
+    chain_create: "Criando em cadeia"
     edit: "Editando"
     duplicate: "Duplicando"
+    chain_duplicate: "Duplicando em cadeia"
     destroy: "Deletando"
     merge: "Mesclando"
   actions:
@@ -198,6 +206,10 @@ pt-BR:
     send: "Enviar"
     toggle_sign: "Inverter Sinal"
     calculate_installments_price: "Calcular Preço das Parcelas"
+    create_more: "Criar mais"
+    duplicate_more: "Duplicar mais"
+    finish_chain: "Finalizar cadeia"
+    finish_chain_without_save: "Finalizar cadeia sem salvar"
 
   navigation:
     previous: "Anterior"
