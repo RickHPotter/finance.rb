@@ -51,14 +51,13 @@ Phase 2:
   - remove `HotwireCombobox` usage from easy in-scope forms first
   - prove the migration pattern on forms that are not JS-driven after selection
 - phase 2:
-  - remove `hw-combobox` event coupling from `reactive_form_controller.js`
+  - remove legacy combobox coupling from `reactive_form_controller.js`
   - migrate card/cash/budget/investment entry surfaces that still depend on old
     combobox internals
   - add the missing `RubyUI::Combobox` behaviors exposed by those migrations
 - finalization:
-  - remove the package import from `app/javascript/controllers/application.js` once
-    no live form flow still depends on `HotwireCombobox`
-  - remove the `hotwire_combobox` gem completely at the end of the slice
+  - remove the old package import from `app/javascript/controllers/application.js`
+  - remove the `hotwire_combobox` gem/package completely at the end of the slice
 
 ### Risks
 

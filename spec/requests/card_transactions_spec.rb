@@ -64,6 +64,18 @@ RSpec.describe "CardTransactions", type: :request do
 
   before { sign_in user }
 
+  describe "[ #new ]" do
+    it "renders RubyUI comboboxes for user card, category, and entity selection" do
+      user_card_one
+
+      get new_card_transaction_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).not_to include("hw-combobox")
+    end
+  end
+
   def switch_to_context!(context)
     patch switch_context_path(context)
     expect(response).to redirect_to(root_path)

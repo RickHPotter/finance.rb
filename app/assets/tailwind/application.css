@@ -111,42 +111,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   /*-webkit-appearance: none;*/
 }
 
-.hw-cb {
-  .hw-combobox {
+.combobox-shell {
+  @apply relative;
+
+  [data-controller~="ruby-ui--combobox"] {
     @apply w-full;
   }
 
-  .hw-combobox__main__wrapper {
+  [data-ruby-ui--combobox-target="trigger"] {
     @apply w-full;
     @apply ps-10;
   }
 
-  .hw-combobox__icon {
+  &::before {
+    content: "";
     @apply absolute;
     @apply inset-y-0;
     @apply start-3.5;
     @apply ps-3.5;
     @apply flex;
     @apply items-center;
-  }
-
-  .hw-combobox__handle {
-    @apply hidden;
-    @apply right-2;
-  }
-
-  .hw-combobox__input {
-    @apply ps-2;
-    @apply placeholder-gray-500;
-  }
-
-  .hw-combobox__listbox { }
-
-  .hw-combobox__option:hover,
-  .hw-combobox__option--navigated,
-  .hw-combobox__option--selected {
-    @apply bg-slate-600;
-    @apply text-white;
+    @apply w-5;
+    @apply h-5;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-image: var(--hw-icon-image);
+    -webkit-mask-image: var(--hw-icon-image);
+    pointer-events: none;
   }
 }
 

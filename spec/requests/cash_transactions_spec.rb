@@ -35,6 +35,16 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
+  describe "[ #new ]" do
+    it "renders RubyUI comboboxes for bank account, category, and entity selection" do
+      get new_cash_transaction_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).not_to include("hw-combobox")
+    end
+  end
+
   def switch_to_context!(context)
     patch switch_context_path(context)
     expect(response).to redirect_to(root_path)

@@ -25,9 +25,13 @@ export default class extends Controller {
   connect() {
     this.updateTriggerContent()
     this.initializeOrderTracking()
+    this.openFrame = null
+    this.closeFrame = null
   }
 
   disconnect() {
+    if (this.openFrame) cancelAnimationFrame(this.openFrame)
+    if (this.closeFrame) cancelAnimationFrame(this.closeFrame)
     if (this.cleanup) { this.cleanup() }
   }
 
@@ -99,22 +103,45 @@ export default class extends Controller {
       return
     }
 
-    this.updatePopoverPosition()
-    this.updatePopoverWidth()
-    this.triggerTarget.ariaExpanded = "true"
-    this.popoverTarget.showPopover()
-    this.highlightFirstVisibleItem()
-    if (this.hasSearchInputTarget) {
-      requestAnimationFrame(() => {
-        this.searchInputTarget.focus()
-        this.searchInputTarget.select()
-      })
+    if (this.closeFrame) {
+      cancelAnimationFrame(this.closeFrame)
+      this.closeFrame = null
     }
+
+    if (this.openFrame) cancelAnimationFrame(this.openFrame)
+    this.openFrame = requestAnimationFrame(() => {
+      this.openFrame = null
+      if (this.popoverTarget.matches(":popover-open")) return
+
+      this.updatePopoverPosition()
+      this.updatePopoverWidth()
+      this.triggerTarget.ariaExpanded = "true"
+      this.popoverTarget.showPopover()
+      this.highlightFirstVisibleItem()
+
+      if (this.hasSearchInputTarget) {
+        requestAnimationFrame(() => {
+          this.searchInputTarget.focus()
+          this.searchInputTarget.select()
+        })
+      }
+    })
   }
 
   closePopover() {
-    this.triggerTarget.ariaExpanded = "false"
-    this.popoverTarget.hidePopover()
+    if (this.openFrame) {
+      cancelAnimationFrame(this.openFrame)
+      this.openFrame = null
+    }
+
+    if (this.closeFrame) cancelAnimationFrame(this.closeFrame)
+    this.closeFrame = requestAnimationFrame(() => {
+      this.closeFrame = null
+      this.triggerTarget.ariaExpanded = "false"
+      if (this.popoverTarget.matches(":popover-open")) {
+        this.popoverTarget.hidePopover()
+      }
+    })
   }
 
   filterItems(e) {

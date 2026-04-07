@@ -41,7 +41,7 @@ class Views::UserCards::Form < Views::Base
         end
 
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "hw_user_card_card_id", class: "hw-cb w-full lg:w-3/12 mb-2 wallet-icon") do
+          div(id: "user_card_card_combobox", class: "combobox-shell w-full lg:w-3/12 mb-2 wallet-icon") do
             bold_label(form, :card_id, "user_card_card_id")
 
             render Views::Shared::SingleSelectCombobox.new(

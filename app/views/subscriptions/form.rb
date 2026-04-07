@@ -39,7 +39,7 @@ class Views::Subscriptions::Form < Views::Base
             )
 
             div(class: "mb-6 w-full lg:flex lg:gap-2") do
-              div(id: "hw_subscription_category_id", class: "hw-cb mb-3 w-full plus-icon lg:mb-0 lg:w-1/3") do
+              div(id: "subscription_category_combobox", class: "combobox-shell mb-3 w-full plus-icon lg:mb-0 lg:w-1/3") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[category_id]",
                   options: @categories,
@@ -49,7 +49,7 @@ class Views::Subscriptions::Form < Views::Base
                 )
               end
 
-              div(id: "hw_subscription_entity_id", class: "hw-cb mb-3 w-full user-icon lg:mb-0 lg:w-1/3") do
+              div(id: "subscription_entity_combobox", class: "combobox-shell mb-3 w-full user-icon lg:mb-0 lg:w-1/3") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[entity_id]",
                   options: @entities,
@@ -59,7 +59,7 @@ class Views::Subscriptions::Form < Views::Base
                 )
               end
 
-              div(id: "hw_subscription_status", class: "hw-cb w-full status-icon lg:w-1/3") do
+              div(id: "subscription_status_combobox", class: "combobox-shell w-full status-icon lg:w-1/3") do
                 render Views::Shared::SingleSelectCombobox.new(
                   name: "subscription[status]",
                   options: Subscription.statuses.keys.map { |status| [ model_attribute(Subscription, "statuses.#{status}"), status ] },

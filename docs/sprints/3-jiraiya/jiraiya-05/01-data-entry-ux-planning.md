@@ -21,30 +21,23 @@ That means `JIRAIYA-05` can start from UX/product goals, not from repair work.
 
 ## Current Baseline
 
-### 1. Combobox stack is still transitional
+### 1. Combobox stack has been consolidated
 
-The app already has `RubyUI::Combobox`, but the transaction-entry stack still relies
-on `HotwireCombobox` behavior in important places:
+The app now uses `RubyUI::Combobox` across the migrated entry surfaces.
 
-- `app/javascript/controllers/application.js` still imports and registers
-  `@josefarias/hotwire_combobox`
-- `app/javascript/controllers/reactive_form_controller.js` still talks directly to
-  `hw-combobox` events, DOM classes, and internal controller state
-- card/cash/budget/investment form controls still emit `hw-combobox:selection`
-  actions
-
-So the repo is in a mixed state, not a completed migration.
+The `hotwire_combobox` dependency and old `hw-combobox` integration path have been
+removed from the shipped stack.
 
 Planned migration style:
 
 - do not replace everything in one go
 - first migrate the easy form surfaces where combobox content is not manipulated by
   Stimulus or custom JavaScript
-- then migrate the form surfaces that are still deeply coupled to `hw-combobox`,
-  especially card/cash transaction entry
+- then migrate the form surfaces that are still deeply coupled to transaction-entry
+  Stimulus behavior, especially card/cash transaction entry
 - build any missing `RubyUI::Combobox` behavior as the migration exposes it, instead
   of trying to guess the entire missing feature set upfront
-- the end result of Slice 2 is to remove the `hotwire_combobox` gem completely
+- the end result of Slice 2 was the full removal of `hotwire_combobox`
 - during migration, prefer making `RubyUI::Combobox` support the minimum behavior
   needed for existing Stimulus controllers to keep working, instead of rewriting all
   dependent JS up front
@@ -112,7 +105,8 @@ decision gate, not as an assumed requirement of the base consolidation work.
 `JIRAIYA-05` should cover:
 
 1. consolidating entry primitives across transaction forms
-2. removing the remaining `HotwireCombobox` dependency from user-facing form flows
+2. keeping `RubyUI::Combobox` as the single supported combobox primitive in
+   user-facing form flows
 3. making chain creation / duplication materially faster
 4. unifying date/datetime behavior across desktop and mobile
 5. making bulk actions more informative before the user confirms them
@@ -135,8 +129,8 @@ For now, `JIRAIYA-05` should not include:
 3. Mobile behavior should be intentionally supported, not tolerated.
 4. New UI work should stay inside the current stack: Phlex, Tailwind, Turbo,
    Stimulus, and `ruby_ui`.
-5. `HotwireCombobox` should not remain as a hidden dependency once this track is
-   complete.
+5. `RubyUI::Combobox` should remain the only supported combobox primitive in this
+   track.
 6. Combobox migration should happen step by step, not through one destabilizing
    rewrite.
 7. Date entry should optimize for fast typed input first, not picker-first novelty.

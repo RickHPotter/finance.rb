@@ -28,39 +28,45 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "hw_cash_transaction_user_bank_account_id", class: "hw-cb w-full lg:w-2/12 mb-3 wallet-icon") do
-      form.combobox \
-        :user_bank_account_id,
-        user_bank_accounts,
-        mobile_at: "360px",
-        include_blank: false,
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-2/12 mb-3 wallet-icon") do
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "cash_transaction[user_bank_account_id]",
+        options: user_bank_accounts.map { |label, value| [ label, value, {} ] },
+        selected_value: cash_transaction.user_bank_account_id,
         placeholder: model_attribute(cash_transaction, :user_bank_account_id),
-        data: { reactive_form_target: :input }
+        input_data: {
+          reactive_form_target: :input
+        }
+      )
     end
   end
 
   def category_and_entity_fields
     div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
-      div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
-        combobox_tag \
-          :category_transaction,
-          categories,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "cash_transaction_category_combobox", class: "combobox-shell lg:w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(cash_transaction, :category_id),
           disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-          data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
       end
 
-      div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
-        combobox_tag \
-          :entity_transaction,
-          entities,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "cash_transaction_entity_combobox", class: "combobox-shell lg:w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(cash_transaction, :entity_id),
           disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-          data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
       end
     end
   end

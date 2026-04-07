@@ -224,7 +224,7 @@ too visible to ignore.
       `reactive_form_controller`-heavy transaction forms
     - make `RubyUI::Combobox` match the minimum missing behavior needed for the
       existing Stimulus integration to work during migration
-    - remove the `hotwire_combobox` gem completely by the end of the slice
+    - `hotwire_combobox` has been removed; `RubyUI::Combobox` is now the active path
     - validate by manual pass; add request specs only when they are actually needed
       and do not add feature specs
   - Improve chain creation / duplication into a faster repeated-entry workflow.

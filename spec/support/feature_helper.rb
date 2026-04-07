@@ -32,13 +32,6 @@ module FeatureHelper
     expect(page).to have_css("turbo-frame#center_container turbo-frame##{turbo_frame_id}")
   end
 
-  def hotwire_select(div_id, with:)
-    within "##{div_id} .hw-combobox__main__wrapper" do
-      page.click
-      find(".hw-combobox__listbox li[data-value='#{with}']", match: :first).click
-    end
-  end
-
   def card_transactions_search_form_params(only: nil, except: [])
     only ||= %i[category_id entity_id]
     params_to_return = only - except

@@ -44,7 +44,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         end
 
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "hw_category_id", class: "hw-cb w-full lg:w-1/4 mb-3 plus-icon") do
+          div(id: "budget_category_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
             bold_label(form, :categories)
             render Views::Shared::SingleSelectCombobox.new(
               name: :budget_category,
@@ -57,7 +57,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             )
           end
 
-          div(id: "hw_entity_id", class: "hw-cb w-full lg:w-1/4 mb-3 user-icon") do
+          div(id: "budget_entity_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 user-icon", data: { reactive_form_target: :entityCombobox }) do
             bold_label(form, :entities)
             render Views::Shared::SingleSelectCombobox.new(
               name: :budget_entity,

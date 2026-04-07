@@ -5,9 +5,6 @@ const application = Application.start()
 application.debug = false
 window.Stimulus = application
 
-import HwComboboxController from "@josefarias/hotwire_combobox"
-application.register("hw-combobox", HwComboboxController)
-
 export { application }
 
 document.addEventListener("turbo:frame-render", (event) => {
@@ -54,6 +51,8 @@ document.addEventListener("keyup", (e) => {
     e.preventDefault()
     const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse)")
     const lastPaidTransaction = paidTransactions[paidTransactions.length - 1]
+
+    if (!lastPaidTransaction) { return }
 
     lastPaidTransaction.scrollIntoView({ behavior: "smooth", block: "center" })
     lastPaidTransaction.querySelector(".cash_transaction_description").classList.add("animate-bounce")

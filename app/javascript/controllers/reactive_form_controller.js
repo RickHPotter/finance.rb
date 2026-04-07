@@ -14,14 +14,18 @@ export default class extends Controller {
     "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
 
     "categoryWrapper", "addCategory",
+    "categoryCombobox",
     "categoryColours",
 
     "entityWrapper",
+    "entityCombobox",
     "addEntity",
     "entityIcons",
 
     "exchangeIntentWrapper",
     "exchangeIntentInput",
+
+    "userCardCombobox",
 
     "updateButton"
   ]
@@ -55,7 +59,8 @@ export default class extends Controller {
       this.operationType = this.element.dataset.operationType
     }
 
-    const userCardInput = this.element.querySelector("#hw_card_transaction_user_card_id > fieldset > input")
+    const userCardCombobox = this.hasUserCardComboboxTarget ? this.resolveCombobox(this.userCardComboboxTarget) : null
+    const userCardInput = userCardCombobox ? this.selectedComboboxInput(userCardCombobox) : null
     if (userCardInput) {
       this.userCard = parseInt(userCardInput.value)
     }
@@ -84,10 +89,10 @@ export default class extends Controller {
   requestSubmitBasedOnUserCardChange({ target }) {
     if (!this.userCard) { return }
 
-    const userCardId = parseInt(target.querySelector("input").value)
+    const userCardId = parseInt(target.value)
     if (this.userCard == userCardId) { return }
 
-    this.userCard = target.querySelector("input").value
+    this.userCard = target.value
     this.requestSubmit({ target })
   }
 
@@ -245,7 +250,7 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='categoryWrapper']")
     const chipValue = wrapper.querySelector(".categories_category_id")?.value
 
-    const combobox = this.resolveCombobox(this.element.querySelector("#hw_category_id"))
+    const combobox = this.resolveCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null)
     if (!combobox) return console.error("Combobox controller not found")
 
     let allOptions = this.comboboxOptions(combobox)
@@ -290,7 +295,7 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='entityWrapper']")
     const chipValue = wrapper.querySelector(".entities_entity_id")?.value
 
-    const combobox = this.resolveCombobox(this.element.querySelector("#hw_entity_id"))
+    const combobox = this.resolveCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null)
     if (!combobox) return console.error("Combobox controller not found")
 
     let allOptions = this.comboboxOptions(combobox)
@@ -565,7 +570,7 @@ export default class extends Controller {
   _updateCategories() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.resolveCombobox(this.element.querySelector("#hw_category_id"))
+      const combobox = this.resolveCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null)
       if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.categoryWrapperTargets.map((target) => { return target.querySelector(".categories_category_id").value })
@@ -612,7 +617,7 @@ export default class extends Controller {
   _updateEntities() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.resolveCombobox(this.element.querySelector("#hw_entity_id"))
+      const combobox = this.resolveCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null)
       if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.entityWrapperTargets.map((target) => { return target.querySelector(".entities_entity_id").value })
@@ -633,33 +638,30 @@ export default class extends Controller {
   resolveCombobox(target) {
     if (!target) { return null }
 
-    const root = target.matches?.("[data-controller~='ruby-ui--combobox']") ? target : target.closest("[data-controller~='ruby-ui--combobox']")
-    if (root) {
-      const controller = this.application.getControllerForElementAndIdentifier(root, "ruby-ui--combobox")
-      return controller ? { kind: "ruby_ui", controller, root } : null
-    }
+    const root =
+      (target.matches?.("[data-controller~='ruby-ui--combobox']") ? target : null) ||
+      target.querySelector?.("[data-controller~='ruby-ui--combobox']") ||
+      target.closest?.("[data-controller~='ruby-ui--combobox']")
+    if (!root) { return null }
 
-    const legacyRoot = target.matches?.(".hw-combobox") ? target : target.closest(".hw-combobox")
-    if (!legacyRoot) { return null }
-
-    const controller = this.application.getControllerForElementAndIdentifier(legacyRoot, "hw-combobox")
-    return controller ? { kind: "hotwire", controller, root: legacyRoot } : null
+    const controller = this.application.getControllerForElementAndIdentifier(root, "ruby-ui--combobox")
+    return controller ? { controller, root } : null
   }
 
   comboboxOptions(combobox) {
-    if (combobox.kind === "hotwire") { return combobox.controller._allOptions }
-
     return combobox.controller.itemTargets
   }
 
   selectedComboboxOption(combobox, target) {
-    if (combobox.kind === "hotwire") { return combobox.controller._selectedOptionElement }
-
     return target.closest("[data-ruby-ui--combobox-target='item']") || this.checkedComboboxOption(combobox)
   }
 
   checkedComboboxOption(combobox) {
     return this.comboboxOptions(combobox).find((option) => option.querySelector("input:checked"))
+  }
+
+  selectedComboboxInput(combobox) {
+    return this.checkedComboboxOption(combobox)?.querySelector("input") || null
   }
 
   comboboxOptionValue(option) {
@@ -672,11 +674,6 @@ export default class extends Controller {
   }
 
   resetComboboxSelection(combobox, selectedOption) {
-    if (combobox.kind === "hotwire") {
-      combobox.controller.clearOrToggleOnHandleClick()
-      return
-    }
-
     const input = selectedOption.querySelector("input")
     if (input) {
       input.checked = false
@@ -691,20 +688,10 @@ export default class extends Controller {
   }
 
   closeCombobox(combobox) {
-    if (combobox.kind === "hotwire") {
-      combobox.controller.close()
-      return
-    }
-
     combobox.controller.closePopover()
   }
 
   focusCombobox(combobox) {
-    if (combobox.kind === "hotwire") {
-      combobox.controller.actingCombobox.focus()
-      return
-    }
-
     combobox.controller.triggerTarget.focus()
   }
 }

@@ -47,7 +47,7 @@ class Views::Investments::Form < Views::Base
         end
 
         div(class: "lg:flex lg:gap-2 w-full pb-3") do
-          div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
+          div(id: "investment_user_bank_account_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
             render Views::Shared::SingleSelectCombobox.new(
               name: "investment[user_bank_account_id]",
               options: @user_bank_accounts,
@@ -56,7 +56,7 @@ class Views::Investments::Form < Views::Base
             )
           end
 
-          div(id: "hw_investment_investment_type_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
+          div(id: "investment_investment_type_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
             render Views::Shared::SingleSelectCombobox.new(
               name: "investment[investment_type_id]",
               options: @investment_types,

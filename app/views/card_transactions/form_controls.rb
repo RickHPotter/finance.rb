@@ -33,40 +33,46 @@ class Views::CardTransactions::FormControls < Views::Base
   private
 
   def user_card_field
-    div(id: "hw_card_transaction_user_card_id", class: "hw-cb w-full lg:w-2/12 mb-3 wallet-icon") do
-      form.combobox \
-        :user_card_id,
-        user_cards,
-        mobile_at: "360px",
-        render_in: { partial: "card_transactions/user_card" },
-        include_blank: false,
+    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-2/12 mb-3 wallet-icon", data: { reactive_form_target: :userCardCombobox }) do
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "card_transaction[user_card_id]",
+        options: user_cards.map { |label, value| [ label, value, {} ] },
+        selected_value: card_transaction.user_card_id,
         placeholder: model_attribute(card_transaction, :user_card_id),
-        data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmitBasedOnUserCardChange", value: ".hw-combobox__input" }
+        input_data: {
+          reactive_form_target: :input,
+          action: "change->reactive-form#requestSubmitBasedOnUserCardChange"
+        }
+      )
     end
   end
 
   def category_and_entity_fields
     div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
-      div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
-        combobox_tag \
-          :category_transaction,
-          categories,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "card_transaction_category_combobox", class: "combobox-shell lg:w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,
-          data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
       end
 
-      div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
-        combobox_tag \
-          :entity_transaction,
-          entities,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "card_transaction_entity_combobox", class: "combobox-shell lg:w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(card_transaction, :entity_id),
           autofocus: autofocus_target == :entity_transaction,
-          data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
       end
     end
   end
