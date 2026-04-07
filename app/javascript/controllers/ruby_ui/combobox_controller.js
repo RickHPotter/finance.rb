@@ -132,6 +132,11 @@ export default class extends Controller {
     let resultCount = 0
 
     this.inputTargets.forEach((input) => {
+      if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") {
+        input.parentElement.classList.add("hidden")
+        return
+      }
+
       const text = this.inputContent(input).toLowerCase()
 
       if (text.indexOf(filterTerm) > -1) {
@@ -273,7 +278,11 @@ export default class extends Controller {
   }
 
   visibleInputs() {
-    return this.inputTargets.filter(input => !input.parentElement.classList.contains("hidden"))
+    return this.inputTargets.filter((input) => {
+      if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") { return false }
+
+      return !input.parentElement.classList.contains("hidden")
+    })
   }
 
   currentOption() {

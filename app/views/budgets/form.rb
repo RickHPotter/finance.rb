@@ -46,25 +46,28 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
           div(id: "hw_category_id", class: "hw-cb w-full lg:w-1/4 mb-3 plus-icon") do
             bold_label(form, :categories)
-            raw form.combobox \
-              :budget_category, @categories,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: :budget_category,
+              options: @categories.map { |label, value| [ label, value, {} ] },
+              selected_value: nil,
               placeholder: model_attribute(budget, :category_id),
-              data: { action: "hw-combobox:selection->reactive-form#insertCategory hw-combobox:selection->dynamic-description#updateDescription",
-                      value: ".hw-combobox__input" }
+              input_data: {
+                action: "change->reactive-form#insertCategory change->dynamic-description#updateDescription"
+              }
+            )
           end
 
           div(id: "hw_entity_id", class: "hw-cb w-full lg:w-1/4 mb-3 user-icon") do
             bold_label(form, :entities)
-            raw form.combobox \
-              :budget_entity,
-              @entities,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: :budget_entity,
+              options: @entities.map { |label, value| [ label, value, {} ] },
+              selected_value: nil,
               placeholder: model_attribute(budget, :entity_id),
-              data: { action: "hw-combobox:selection->reactive-form#insertEntity hw-combobox:selection->dynamic-description#updateDescription",
-                      value: ".hw-combobox__input" }
+              input_data: {
+                action: "change->reactive-form#insertEntity change->dynamic-description#updateDescription"
+              }
+            )
           end
 
           div(class: "w-full lg:w-1/4 mb-2") do

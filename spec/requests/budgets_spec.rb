@@ -43,6 +43,18 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders RubyUI comboboxes for category and entity selection" do
+      create(:entity, :random, user:)
+
+      get new_budget_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).not_to include("hw-combobox")
+    end
+  end
+
   describe "[ #update ]" do
     it "updates the record" do
       budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])

@@ -221,23 +221,23 @@ export default class extends Controller {
 
   // Categories
   insertCategory({ target }) {
-    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(target)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let selectedOption = comboboxController._selectedOptionElement
+    let allOptions = this.comboboxOptions(combobox)
+    let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
 
     this._insertCategory(selectedOption)
 
-    comboboxController.clearOrToggleOnHandleClick()
+    this.resetComboboxSelection(combobox, selectedOption)
 
     let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
 
     if (visibleOptions.length === 0) {
-      comboboxController.close()
-    } else {
-      sleep(() => { comboboxController.actingCombobox.focus() })
+      this.closeCombobox(combobox)
+    } else if (combobox.kind === "hotwire") {
+      sleep(() => { this.focusCombobox(combobox) })
     }
   }
 
@@ -245,16 +245,18 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='categoryWrapper']")
     const chipValue = wrapper.querySelector(".categories_category_id")?.value
 
-    const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
-    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(this.element.querySelector("#hw_category_id"))
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
+    let allOptions = this.comboboxOptions(combobox)
+    let removedOption = allOptions.find((option) => { return this.comboboxOptionValue(option) === chipValue })
 
     if (removedOption) {
+      delete removedOption.dataset.comboboxPermanentlyHidden
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      if (removedOption.dataset.autocompletableAs) {
+        removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      }
     }
 
     wrapper.style.display = "none"
@@ -264,23 +266,23 @@ export default class extends Controller {
 
   // Entities
   insertEntity({ target }) {
-    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(target)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let selectedOption = comboboxController._selectedOptionElement
+    let allOptions = this.comboboxOptions(combobox)
+    let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
 
     this._insertEntity(selectedOption)
 
-    comboboxController.clearOrToggleOnHandleClick()
+    this.resetComboboxSelection(combobox, selectedOption)
 
     let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
 
     if (visibleOptions.length === 0) {
-      comboboxController.close()
-    } else {
-      sleep(() => { comboboxController.actingCombobox.focus() })
+      this.closeCombobox(combobox)
+    } else if (combobox.kind === "hotwire") {
+      sleep(() => { this.focusCombobox(combobox) })
     }
   }
 
@@ -288,16 +290,18 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='entityWrapper']")
     const chipValue = wrapper.querySelector(".entities_entity_id")?.value
 
-    const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
-    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(this.element.querySelector("#hw_entity_id"))
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
+    let allOptions = this.comboboxOptions(combobox)
+    let removedOption = allOptions.find((option) => { return this.comboboxOptionValue(option) === chipValue })
 
     if (removedOption) {
+      delete removedOption.dataset.comboboxPermanentlyHidden
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      if (removedOption.dataset.autocompletableAs) {
+        removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      }
     }
 
     wrapper.style.display = "none"
@@ -473,11 +477,14 @@ export default class extends Controller {
 
   // Categories
   _insertCategory(selectedOption) {
+    selectedOption.dataset.comboboxPermanentlyHidden = "true"
     selectedOption.classList.add("hidden")
-    selectedOption.dataset.filterableAs = ""
+    if (selectedOption.dataset.filterableAs !== undefined) {
+      selectedOption.dataset.filterableAs = ""
+    }
 
-    const value = selectedOption.dataset.value
-    const text = selectedOption.textContent
+    const value = this.comboboxOptionValue(selectedOption)
+    const text = this.comboboxOptionText(selectedOption)
 
     this.addCategoryTarget.click()
 
@@ -558,18 +565,20 @@ export default class extends Controller {
   _updateCategories() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
-      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-      if (!comboboxController) return console.error("Combobox controller not found")
+      const combobox = this.resolveCombobox(this.element.querySelector("#hw_category_id"))
+      if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.categoryWrapperTargets.map((target) => { return target.querySelector(".categories_category_id").value })
 
-      let allOptions = comboboxController._allOptions
-      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
+      let allOptions = this.comboboxOptions(combobox)
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(this.comboboxOptionValue(option)) })
 
       toBeHidden.forEach((option) => {
+        option.dataset.comboboxPermanentlyHidden = "true"
         option.classList.add("hidden")
-        option.dataset.filterableAs = ""
+        if (option.dataset.filterableAs !== undefined) {
+          option.dataset.filterableAs = ""
+        }
       })
     })
   }
@@ -577,11 +586,14 @@ export default class extends Controller {
   // Entities
 
   _insertEntity(selectedOption) {
+    selectedOption.dataset.comboboxPermanentlyHidden = "true"
     selectedOption.classList.add("hidden")
-    selectedOption.dataset.filterableAs = ""
+    if (selectedOption.dataset.filterableAs !== undefined) {
+      selectedOption.dataset.filterableAs = ""
+    }
 
-    const value = selectedOption.dataset.value
-    const text = selectedOption.textContent
+    const value = this.comboboxOptionValue(selectedOption)
+    const text = this.comboboxOptionText(selectedOption)
 
     this.addEntityTarget.click()
 
@@ -600,19 +612,99 @@ export default class extends Controller {
   _updateEntities() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
-      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-      if (!comboboxController) return console.error("Combobox controller not found")
+      const combobox = this.resolveCombobox(this.element.querySelector("#hw_entity_id"))
+      if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.entityWrapperTargets.map((target) => { return target.querySelector(".entities_entity_id").value })
 
-      let allOptions = comboboxController._allOptions
-      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
+      let allOptions = this.comboboxOptions(combobox)
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(this.comboboxOptionValue(option)) })
 
       toBeHidden.forEach((option) => {
+        option.dataset.comboboxPermanentlyHidden = "true"
         option.classList.add("hidden")
-        option.dataset.filterableAs = ""
+        if (option.dataset.filterableAs !== undefined) {
+          option.dataset.filterableAs = ""
+        }
       })
     })
+  }
+
+  resolveCombobox(target) {
+    if (!target) { return null }
+
+    const root = target.matches?.("[data-controller~='ruby-ui--combobox']") ? target : target.closest("[data-controller~='ruby-ui--combobox']")
+    if (root) {
+      const controller = this.application.getControllerForElementAndIdentifier(root, "ruby-ui--combobox")
+      return controller ? { kind: "ruby_ui", controller, root } : null
+    }
+
+    const legacyRoot = target.matches?.(".hw-combobox") ? target : target.closest(".hw-combobox")
+    if (!legacyRoot) { return null }
+
+    const controller = this.application.getControllerForElementAndIdentifier(legacyRoot, "hw-combobox")
+    return controller ? { kind: "hotwire", controller, root: legacyRoot } : null
+  }
+
+  comboboxOptions(combobox) {
+    if (combobox.kind === "hotwire") { return combobox.controller._allOptions }
+
+    return combobox.controller.itemTargets
+  }
+
+  selectedComboboxOption(combobox, target) {
+    if (combobox.kind === "hotwire") { return combobox.controller._selectedOptionElement }
+
+    return target.closest("[data-ruby-ui--combobox-target='item']") || this.checkedComboboxOption(combobox)
+  }
+
+  checkedComboboxOption(combobox) {
+    return this.comboboxOptions(combobox).find((option) => option.querySelector("input:checked"))
+  }
+
+  comboboxOptionValue(option) {
+    return option.dataset.value || option.querySelector("input")?.value
+  }
+
+  comboboxOptionText(option) {
+    const input = option.querySelector("input")
+    return input?.dataset.text || option.textContent.trim()
+  }
+
+  resetComboboxSelection(combobox, selectedOption) {
+    if (combobox.kind === "hotwire") {
+      combobox.controller.clearOrToggleOnHandleClick()
+      return
+    }
+
+    const input = selectedOption.querySelector("input")
+    if (input) {
+      input.checked = false
+    }
+
+    if (combobox.controller.hasSearchInputTarget) {
+      combobox.controller.searchInputTarget.value = ""
+      combobox.controller.filterItems({ key: null })
+    }
+
+    combobox.controller.updateTriggerContent()
+  }
+
+  closeCombobox(combobox) {
+    if (combobox.kind === "hotwire") {
+      combobox.controller.close()
+      return
+    }
+
+    combobox.controller.closePopover()
+  }
+
+  focusCombobox(combobox) {
+    if (combobox.kind === "hotwire") {
+      combobox.controller.actingCombobox.focus()
+      return
+    }
+
+    combobox.controller.triggerTarget.focus()
   }
 }
