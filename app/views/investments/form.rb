@@ -19,7 +19,16 @@ class Views::Investments::Form < Views::Base
     set_investment_types
   end
 
+  def which_target_to_autofocus
+    return :price if params[:next_day]
+    return :description if investment.user_bank_account.nil?
+
+    :price
+  end
+
   def view_template
+    autofocus_target = which_target_to_autofocus
+
     turbo_frame_tag dom_id investment do
       form_with(
         model: investment,
@@ -32,32 +41,28 @@ class Views::Investments::Form < Views::Base
         div(class: "w-full mb-6") do
           form.text_field :description,
                           class: outdoor_input_class,
-                          autofocus: investment.user_bank_account.nil?,
                           autocomplete: :off,
                           value: investment.new_record? ? model_attribute(investment, :description_placeholder) : investment.description,
-                          data: { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
+                          data: description_data(autofocus_target)
         end
 
         div(class: "lg:flex lg:gap-2 w-full pb-3") do
           div(id: "hw_investment_user_bank_account_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
-            form.combobox \
-              :user_bank_account_id,
-              @user_bank_accounts,
-              mobile_at: "360px",
-              include_blank: false,
-              placeholder: model_attribute(investment, :user_bank_account_id),
-              data: { reactive_form_target: :input,
-                      action: "hw-combobox:selection->reactive-form#requestSubmit",
-                      value: ".hw-combobox__input" }
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "investment[user_bank_account_id]",
+              options: @user_bank_accounts,
+              selected_value: investment.user_bank_account_id,
+              placeholder: model_attribute(investment, :user_bank_account_id)
+            )
           end
 
           div(id: "hw_investment_investment_type_id", class: "hw-cb w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
-            form.combobox \
-              :investment_type_id,
-              @investment_types,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "investment[investment_type_id]",
+              options: @investment_types,
+              selected_value: investment.investment_type_id,
               placeholder: model_attribute(investment, :investment_type_id)
+            )
           end
 
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
@@ -73,15 +78,12 @@ class Views::Investments::Form < Views::Base
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
             TextField \
               form, :price,
-              autofocus: investment.user_bank_account.present?,
               inputmode: :numeric,
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
               onclick: "this.select();",
-              data: { price_mask_target: :input,
-                      reactive_form_target: :priceInput,
-                      action: "input->price-mask#applyMask" }
+              data: price_data(autofocus_target)
           end
         end
 
@@ -92,5 +94,32 @@ class Views::Investments::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  private
+
+  def description_data(autofocus_target)
+    data = { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
+    return data unless autofocus_target == :description
+
+    data.merge(autofocus_focus_data)
+  end
+
+  def price_data(autofocus_target)
+    data = {
+      price_mask_target: :input,
+      reactive_form_target: :priceInput,
+      action: "input->price-mask#applyMask"
+    }
+    return data unless autofocus_target == :price
+
+    data.merge(autofocus_focus_data(select: true))
+  end
+
+  def autofocus_focus_data(select: false)
+    {
+      controller: "autofocus",
+      autofocus_select_value: select
+    }
   end
 end

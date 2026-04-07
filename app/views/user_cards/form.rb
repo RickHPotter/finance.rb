@@ -44,12 +44,10 @@ class Views::UserCards::Form < Views::Base
           div(id: "hw_user_card_card_id", class: "hw-cb w-full lg:w-3/12 mb-2 wallet-icon") do
             bold_label(form, :card_id, "user_card_card_id")
 
-            form.combobox(
-              :card_id,
-              cards,
-              mobile_at: "360px",
-              render_in: { partial: "user_cards/card" },
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[card_id]",
+              options: cards,
+              selected_value: user_card.card_id,
               placeholder: action_attribute(:select, user_card, :card_id)
             )
           end

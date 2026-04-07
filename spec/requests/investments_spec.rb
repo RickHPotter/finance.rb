@@ -23,6 +23,31 @@ RSpec.describe "Investments", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the ruby ui comboboxes" do
+      get new_investment_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("ruby-ui--combobox")
+      expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "focuses price when using next_day" do
+      get new_investment_path, params: {
+        investment: {
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        },
+        next_day: true
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="transaction_price"')
+      expect(response.body).to include('data-controller="autofocus"')
+      expect(response.body).to include('data-autofocus-select-value="true"')
+    end
+  end
+
   describe "[ #create ]" do
     it "creates an investment" do
       expect do

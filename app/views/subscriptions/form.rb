@@ -39,30 +39,32 @@ class Views::Subscriptions::Form < Views::Base
 
             div(class: "mb-6 w-full lg:flex lg:gap-2") do
               div(id: "hw_subscription_category_id", class: "hw-cb mb-3 w-full plus-icon lg:mb-0 lg:w-1/3") do
-                form.combobox \
-                  :category_id,
-                  @categories,
-                  mobile_at: "360px",
-                  include_blank: true,
-                  placeholder: model_attribute(subscription, :category_id)
+                render Views::Shared::SingleSelectCombobox.new(
+                  name: "subscription[category_id]",
+                  options: @categories,
+                  selected_value: subscription.categories.first&.id,
+                  placeholder: model_attribute(subscription, :category_id),
+                  include_blank: true
+                )
               end
 
               div(id: "hw_subscription_entity_id", class: "hw-cb mb-3 w-full user-icon lg:mb-0 lg:w-1/3") do
-                form.combobox \
-                  :entity_id,
-                  @entities,
-                  mobile_at: "360px",
-                  include_blank: true,
-                  placeholder: model_attribute(subscription, :entity_id)
+                render Views::Shared::SingleSelectCombobox.new(
+                  name: "subscription[entity_id]",
+                  options: @entities,
+                  selected_value: subscription.entities.first&.id,
+                  placeholder: model_attribute(subscription, :entity_id),
+                  include_blank: true
+                )
               end
 
               div(id: "hw_subscription_status", class: "hw-cb w-full status-icon lg:w-1/3") do
-                form.combobox \
-                  :status,
-                  Subscription.statuses.keys.map { |status| [ model_attribute(Subscription, "statuses.#{status}"), status ] },
-                  mobile_at: "360px",
-                  include_blank: false,
+                render Views::Shared::SingleSelectCombobox.new(
+                  name: "subscription[status]",
+                  options: Subscription.statuses.keys.map { |status| [ model_attribute(Subscription, "statuses.#{status}"), status ] },
+                  selected_value: subscription.status,
                   placeholder: model_attribute(subscription, :status)
+                )
               end
             end
 

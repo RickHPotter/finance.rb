@@ -7,6 +7,9 @@ import { application } from "./application"
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 
+import AutofocusController from "./autofocus_controller"
+application.register("autofocus", AutofocusController)
+
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 

@@ -35,8 +35,8 @@ class InvestmentsController < ApplicationController
       @investment.date = investments.maximum(:date)
     end
 
-    @investment.date = @investment.date + 1.day if params[:next_day]
     @investment.date ||= Time.zone.now
+    @investment.date += 1.day if params[:next_day]
 
     respond_to do |format|
       format.html { render Views::Investments::New.new(current_user:, investment: @investment) }
