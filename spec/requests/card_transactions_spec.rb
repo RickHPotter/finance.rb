@@ -314,7 +314,8 @@ RSpec.describe "CardTransactions", type: :request do
              headers: turbo_stream_headers
       end.not_to change(CardTransaction, :count)
 
-      expected_month_year = format("%<year>04d%<month>02d", year: existing_card_transaction.card_installments.first.year, month: existing_card_transaction.card_installments.first.month)
+      expected_month_year = format("%<year>04d%<month>02d", year: existing_card_transaction.card_installments.first.year,
+                                                            month: existing_card_transaction.card_installments.first.month)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("month_year_container_#{expected_month_year}")

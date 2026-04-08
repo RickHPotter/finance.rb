@@ -20,6 +20,8 @@ standardized.
 
 ## Slice 2. Combobox Consolidation
 
+Status: complete
+
 ### Goal
 
 Make `RubyUI::Combobox` the single supported combobox primitive for the in-scope
@@ -59,6 +61,16 @@ Phase 2:
   - remove the old package import from `app/javascript/controllers/application.js`
   - remove the `hotwire_combobox` gem/package completely at the end of the slice
 
+### Shipped Outcome
+
+- `hotwire_combobox` was fully removed
+- `RubyUI::Combobox` is now the only supported combobox path in the migrated entry
+  surfaces
+- the migration covered the easy forms first, then the budget/card/cash transaction
+  surfaces
+- `reactive_form_controller.js` was adapted to the new combobox path instead of
+  keeping legacy internals alive
+
 ### Risks
 
 - current reactive-form logic relies on old controller internals, not only events
@@ -79,6 +91,8 @@ seamless replacement path, not a deep redesign of combobox behavior.
 
 ## Slice 3. Chain Creation / Duplication Workflow
 
+Status: complete
+
 ### Goal
 
 Reduce the number of actions required to create similar transactions in sequence.
@@ -90,7 +104,7 @@ Reduce the number of actions required to create similar transactions in sequence
 - keep `Budget` and `Subscription` out of this slice
 - implement chain controls in the form surface:
   - localized `Create more` / `Duplicate more` checkbox
-  - localized finish-chain button
+  - localized finish-chain buttons
 - define the carry-over behavior for both chain modes:
   - clean `new`
   - `duplicate`
@@ -131,6 +145,17 @@ The intended behavior is:
    - default to a filtered landing based on the created family
    - highlighting is optional and can be added later if useful
 
+### Shipped Outcome
+
+- `CashTransaction` now has explicit duplication
+- `Investment` now has explicit duplication
+- chained create/duplicate flow is live for card, cash, and investment
+- forms show explicit `Chain Creating` / `Chain Duplicating` state
+- chain controls now support both:
+  - finish while saving the current form
+  - finish without saving the current form
+- end-of-chain lands back on index scoped to the created family
+
 ### Model-Specific Defaults
 
 - `Investment` duplication:
@@ -145,6 +170,8 @@ If save/render latency is noticeable, add a reusable skeleton loading state duri
 chain creation. This is not required to start the slice, but it is a good fit here.
 
 ## Slice 4. Date and Datetime UX
+
+Status: complete at the main-form scope
 
 ### Goal
 
@@ -172,6 +199,14 @@ revisited later if typed entry plus conservative mobile fallback still feels bad
 
 Also do not start by adding shortcut-token grammar. First make the normal keyboard
 editing flow fast enough for heavy users.
+
+### Shipped Outcome
+
+- the main card/cash transaction forms now use the shared split date/time control
+- time entry is 24-hour friendly and optimized for keyboard use
+- editing only time preserves the current date
+- the first pass deliberately stops short of installments, exchanges, and
+  datetime-heavy modals
 
 ## Slice 5. Bulk Action Feedback
 

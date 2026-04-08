@@ -28,7 +28,7 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-2/12 mb-3 wallet-icon") do
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon") do
       render Views::Shared::SingleSelectCombobox.new(
         name: "cash_transaction[user_bank_account_id]",
         options: user_bank_accounts.map { |label, value| [ label, value, {} ] },
@@ -42,8 +42,8 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def category_and_entity_fields
-    div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
-      div(id: "cash_transaction_category_combobox", class: "combobox-shell lg:w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+    div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
+      div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
         render Views::Shared::SingleSelectCombobox.new(
           name: :category_transaction,
           options: categories.map { |label, value| [ label, value, {} ] },
@@ -56,7 +56,7 @@ class Views::CashTransactions::FormControls < Views::Base
         )
       end
 
-      div(id: "cash_transaction_entity_combobox", class: "combobox-shell lg:w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+      div(id: "cash_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
         render Views::Shared::SingleSelectCombobox.new(
           name: :entity_transaction,
           options: entities.map { |label, value| [ label, value, {} ] },
@@ -72,7 +72,7 @@ class Views::CashTransactions::FormControls < Views::Base
   end
 
   def date_field
-    div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
+    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
       render Views::Shared::DatetimeInput.new(
         form:,
         field: :date,
@@ -91,17 +91,17 @@ class Views::CashTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
     sign = positive ? "+" : "-"
 
-    div(class: "flex gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black",
+        class: "w-1/12 #{sign_bg_colour} border border-black lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         disabled: cash_transaction.card_payment?,
         data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-6/12") do
+      div(class: "w-7/12 lg:w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -126,7 +126,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-4/12") do
+      div(class: "w-3/12 lg:w-4/12") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,

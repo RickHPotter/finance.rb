@@ -127,30 +127,32 @@ body::-webkit-scrollbar { /* WebKit */
   }
 
   [data-ruby-ui--combobox-target="trigger"] {
+    @apply relative;
     @apply w-full;
     @apply ps-10;
-  }
 
-  &::before {
-    content: "";
-    @apply absolute;
-    @apply inset-y-0;
-    @apply start-3.5;
-    @apply ps-3.5;
-    @apply flex;
-    @apply items-center;
-    @apply w-5;
-    @apply h-5;
-    background-color: currentColor;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
-    mask-image: var(--hw-icon-image);
-    -webkit-mask-image: var(--hw-icon-image);
-    pointer-events: none;
+    &::before {
+      content: "";
+      @apply absolute;
+      @apply top-1/2;
+      @apply start-3.5;
+      @apply flex;
+      @apply items-center;
+      @apply justify-center;
+      @apply w-5;
+      @apply h-5;
+      transform: translateY(-50%);
+      background-color: currentColor;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+      mask-image: var(--hw-icon-image);
+      -webkit-mask-image: var(--hw-icon-image);
+      pointer-events: none;
+    }
   }
 }
 

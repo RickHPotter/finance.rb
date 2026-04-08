@@ -42,38 +42,43 @@ Planned migration style:
   needed for existing Stimulus controllers to keep working, instead of rewriting all
   dependent JS up front
 
-### 2. Chain creation and duplication are still underpowered
+### 2. Chain creation and duplication are now in place
 
-There is a real duplicate flow for `CardTransaction`, but the broader “finish this
-entry and immediately continue with the next similar one” workflow is still weak.
+The repeated-entry workflow is now live across the main in-scope models.
 
-Current limitations:
+Shipped state:
 
-- duplicate is card-first, not a unified transaction-entry workflow
-- `CashTransaction` does not expose explicit duplication yet
-- `Investment` has an implicit “next day” style helper path, but not an explicit
-  duplicate flow
-- there is no explicit chained “create more / duplicate more” flow
-- the post-save experience still assumes the user is done after one creation
+- `CardTransaction` supports chained create and duplicate flows
+- `CashTransaction` now exposes explicit duplication and chained create/duplicate
+  flows
+- `Investment` now exposes explicit duplication and chained duplicate flow
+- the form surface now shows:
+  - `Chain Creating`
+  - `Chain Duplicating`
+- chain controls now include:
+  - `Create more` / `Duplicate more`
+  - finish while saving the current form
+  - finish without saving the current form
+- end-of-chain returns to index scoped to the created family
 
-### 3. Date and datetime UX is inconsistent
+### 3. Date and datetime UX has a first shipped pass
 
-Current entry surfaces use a mix of:
+The main transaction forms now use an app-controlled split date/time input instead of
+leaning on raw `datetime-local`.
 
-- `datetime-local` on cash/card transaction forms
-- `datetime-local` on bulk payment modal
-- `date` on investments
+Shipped state:
 
-Known pain points:
+- `CardTransaction` and `CashTransaction` use the shared split control
+- time input is 24-hour friendly and optimized for keyboard entry
+- editing only time preserves the current date
+- desktop flow is faster without jumping to a custom calendar/clock
+- mobile/PWA keeps the conservative native date behavior for now
 
-- mobile/PWA datetime pickers are awkward
-- keyboard-first editing is uneven
-- there is no single app-level contract for “date only” vs “date and time”
-- browser-native segmented datetime entry is too slow for fast keyboard usage
-- locale/browser formatting rules are doing too much work for the user instead of the
-  app
-- 12-hour browser presentation plus permissive 24-hour parsing creates inconsistent
-  expectations
+Still intentionally out of scope for this first pass:
+
+- installments
+- exchanges
+- datetime-heavy modals
 
 ### 4. Bulk selection feedback is minimal
 
@@ -135,13 +140,11 @@ For now, `JIRAIYA-05` should not include:
    rewrite.
 7. Date entry should optimize for fast typed input first, not picker-first novelty.
 
-## Open Decisions Before Implementation
+## Remaining Product Decision
 
-These are product choices to settle early:
-
-1. Does partial `PayMultiple` enter this sprint at all?
-   - default answer today: no
-   - if yes, it should be a late, gated slice
+1. Partial `PayMultiple`
+   - current answer: still no
+   - if it returns, it should stay a late gated slice inside `JIRAIYA-05`
 
 ## Locked Direction For Chain Creation
 
@@ -182,8 +185,8 @@ Behavior target:
    - a localized checkbox:
      - `Create more`
      - `Duplicate more`
-   - a localized button to finish the chain immediately
-   - that finish button should behave the same as unchecking the checkbox and saving
+   - a localized button to finish the chain while saving the current form
+   - a second localized button to finish the chain without saving the current form
 
 5. End-of-chain landing
    - once the chain finishes, the index should render the transactions created in
@@ -230,6 +233,11 @@ Preferred direction:
 
 This slice should be judged by speed and daily usability, not by how fancy the picker
 looks.
+
+Current shipped boundary:
+
+- complete for main card/cash transaction forms
+- not yet extended to installments, exchanges, or datetime-heavy modals
 
 ## Locked Direction For Bulk Action Bar
 

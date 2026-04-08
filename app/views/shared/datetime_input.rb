@@ -34,7 +34,7 @@ class Views::Shared::DatetimeInput < Views::Base
       )
 
       div(class: "flex gap-1") do
-        div(class: "relative grow") do
+        div(class: "relative min-w-0 grow") do
           div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
             cached_icon :calendar
           end
@@ -54,7 +54,7 @@ class Views::Shared::DatetimeInput < Views::Base
           )
         end
 
-        div(class: "relative w-28") do
+        div(class: "relative w-28 shrink-0") do
           div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
             cached_icon :clock
           end

@@ -9,7 +9,7 @@ module RubyUI
 
     def view_template
       button(**attrs) do
-        span(class: "truncate", data: { ruby_ui__combobox_target: "triggerContent" }) do
+        span(class: "min-w-0 flex-1 truncate text-left", data: { ruby_ui__combobox_target: "triggerContent" }) do
           @placeholder
         end
         icon
@@ -24,7 +24,7 @@ module RubyUI
         class: "flex w-full items-center whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors
                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent
-               hover:text-accent-foreground h-10 px-4 py-2 justify-between",
+               hover:text-accent-foreground h-10 px-4 py-2 justify-between overflow-hidden",
         data: {
           placeholder: @placeholder,
           ruby_ui__combobox_target: "trigger",

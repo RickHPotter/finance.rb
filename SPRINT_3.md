@@ -237,6 +237,9 @@ too visible to ignore.
     - show explicit `Chain Creating` / `Chain Duplicating` form state
     - add localized `Create more` / `Duplicate more` controls plus an explicit
       finish-chain action
+    - support two explicit finish actions:
+      - save current form and finish chain
+      - finish chain without saving current form
     - when the chain finishes, land back on index with the created records in view,
       defaulting to a filtered family landing
   - Improve keyboard-first date and datetime input.
@@ -261,6 +264,28 @@ too visible to ignore.
       selection/confirmation and direct `subscription_id` update
   - If partial `PayMultiple` is still pursued later, treat it as a gated late slice
     here instead of part of the closed JIRAIYA-04 rollout.
+  - Current implementation status:
+    - Slice 2 complete:
+      - `hotwire_combobox` has been fully removed from the shipped stack
+      - `RubyUI::Combobox` is now the only supported combobox path in the migrated
+        entry surfaces
+      - keyboard-first combobox behavior and `reactive_form_controller`
+        compatibility were stabilized during the migration
+    - Slice 3 complete:
+      - chained create/duplicate flow is live for card, cash, and investment
+      - cash and investment now expose explicit duplicate flows
+      - forms show explicit `Chain Creating` / `Chain Duplicating` state
+      - both finish modes are live:
+        - save and finish
+        - finish without saving the current form
+      - end-of-chain lands back on index scoped to the created family
+    - Slice 4 complete at the main-form scope:
+      - card and cash transaction forms now use the shared split date/time control
+      - time entry is 24-hour friendly and optimized for keyboard use
+      - the existing date is preserved when only time changes
+      - mobile/PWA keeps the conservative native date behavior for now
+      - installments, exchanges, and datetime-heavy modals were intentionally left
+        out of this slice
 
 ### JIRAIYA-06/app-02: Create `Context` as scenario planning
 
