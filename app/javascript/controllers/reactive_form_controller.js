@@ -75,17 +75,6 @@ export default class extends Controller {
   }
 
   // Installments
-  setIniDate({ target }) {
-    this.transactionDate = target.value
-  }
-
-  setEndDate({ target }) {
-    if (this.transactionDate == target.value) { return }
-
-    this.transactionDate = target.value
-    this.requestSubmit({ target })
-  }
-
   requestSubmitBasedOnUserCardChange({ target }) {
     if (!this.userCard) { return }
 

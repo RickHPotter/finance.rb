@@ -73,13 +73,16 @@ class Views::CashTransactions::FormControls < Views::Base
 
   def date_field
     div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
-      TextField \
-        form, :date,
+      render Views::Shared::DatetimeInput.new(
+        form:,
+        field: :date,
+        value: cash_transaction.date,
         id: :cash_transaction_date,
-        type: "datetime-local", svg: :calendar,
-        value: cash_transaction.date.strftime("%Y-%m-%dT%H:%M"),
-        class: "font-graduate transaction-date",
-        data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
+        hidden_data: {
+          reactive_form_target: :dateInput,
+          action: "change->reactive-form#updateInstallmentsDates"
+        }
+      )
     end
   end
 

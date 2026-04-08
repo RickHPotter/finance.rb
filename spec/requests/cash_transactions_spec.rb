@@ -36,11 +36,14 @@ RSpec.describe "CashTransactions", type: :request do
   before { sign_in user }
 
   describe "[ #new ]" do
-    it "renders RubyUI comboboxes for bank account, category, and entity selection" do
+    it "renders RubyUI comboboxes and split datetime input for bank account, category, and entity selection" do
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).to include('data-controller="datetime-input"')
+      expect(response.body).to include('id="cash_transaction_date"')
+      expect(response.body).to include('id="cash_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
     end
   end

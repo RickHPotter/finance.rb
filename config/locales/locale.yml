@@ -116,6 +116,10 @@ en:
   rows_not_found: "No data to display"
   advanced_filter: "Advanced Filter"
   order: "Order"
+  datetime_input:
+    date: "Date"
+    time: "Time"
+    invalid_time: "Enter a valid time in 24-hour format."
 
 pt-BR:
   confirmation:
@@ -235,3 +239,7 @@ pt-BR:
   rows_not_found: "Sem dados para exibir"
   advanced_filter: "Filtro Avançado"
   order: "Ordem"
+  datetime_input:
+    date: "Data"
+    time: "Hora"
+    invalid_time: "Digite um horario valido no formato 24 horas."

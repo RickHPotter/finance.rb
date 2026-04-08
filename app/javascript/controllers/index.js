@@ -34,6 +34,9 @@ application.register("cursor", CursorController)
 import DatatableController from "./datatable_controller"
 application.register("datatable", DatatableController)
 
+import DatetimeInputController from "./datetime_input_controller"
+application.register("datetime-input", DatetimeInputController)
+
 import DragController from "./drag_controller"
 application.register("drag", DragController)
 
