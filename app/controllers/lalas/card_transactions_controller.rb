@@ -5,10 +5,10 @@ class Lalas::CardTransactionsController < LalasController
   include TranslateHelper
 
   def index
-    @user_card = User.first.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
-    @user_card ||= User.first.user_cards.find_by(id: card_transaction_params[:user_card_id])
+    @user_card = user.user_cards.find_by(id: params[:user_card_id]) if params[:user_card_id]
+    @user_card ||= user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
-    build_index_context(@user_card.card_installments)
+    build_index_context(card_installments_scope)
     set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
 
     respond_to do |format|
@@ -22,7 +22,7 @@ class Lalas::CardTransactionsController < LalasController
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
 
-    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(User.first, card_transaction_params, search_card_transaction_params)
+    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, card_transaction_params, search_card_transaction_params)
 
     render Views::Lalas::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
   end
@@ -34,8 +34,8 @@ class Lalas::CardTransactionsController < LalasController
     years = (min_date.year..max_date.year)
 
     card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
-    category_id = User.first.categories.where(category_name: [ "EXCHANGE" ]).ids
-    entity_id = User.first.entities.where(entity_name: "LALA").ids
+    category_id = user.categories.where(category_name: [ "EXCHANGE" ]).ids
+    entity_id = user.entities.where(entity_name: "LALA").ids
     search_term = search_card_transaction_params[:search_term]
     from_ct_price = search_card_transaction_params[:from_ct_price]
     to_ct_price = search_card_transaction_params[:to_ct_price]
@@ -49,13 +49,13 @@ class Lalas::CardTransactionsController < LalasController
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
     count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
-      User.first,
+      lala_context,
       card_transaction_params.merge(user_card_id: @user_card&.id || [], category_id:, entity_id:),
       search_card_transaction_params
     )
 
     @index_context = {
-      current_user: User.first,
+      current_user: user,
       years:,
       default_year:,
       active_month_years:,
@@ -76,6 +76,13 @@ class Lalas::CardTransactionsController < LalasController
   end
 
   private
+
+  def card_installments_scope
+    scope = lala_context.card_installments.joins(:card_transaction)
+    return scope unless @user_card.present?
+
+    scope.where(card_transactions: { user_card_id: @user_card.id })
+  end
 
   # Only allow a list of trusted parameters through.
   def card_transaction_params

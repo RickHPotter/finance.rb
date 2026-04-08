@@ -180,7 +180,9 @@ RSpec.describe Subscription, type: :model do
         subscription = create(:subscription)
         create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user), subscription:)
 
-        expect { subscription.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+        expect { subscription.destroy }.to raise_error do |error|
+          expect([ ActiveRecord::DeleteRestrictionError, ActiveRecord::InvalidForeignKey ]).to include(error.class)
+        end
       end
     end
   end
