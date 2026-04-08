@@ -179,6 +179,38 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     respond_to(&:turbo_stream)
   end
 
+  def add_to_subscription # rubocop:disable Metrics/AbcSize
+    @subscription = current_context.subscriptions.find_by(id: params[:subscription_id])
+    return render_bulk_subscription_failure(I18n.t("bulk_actions.invalid_subscription")) if @subscription.blank?
+
+    transactions = selected_card_transactions_for_bulk_subscription
+    return render_bulk_subscription_failure(I18n.t("bulk_actions.empty_selection")) if transactions.empty?
+
+    failed_transaction = nil
+
+    ActiveRecord::Base.transaction do
+      transactions.each do |transaction|
+        next if transaction.update(subscription: @subscription)
+
+        failed_transaction = transaction
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    return render_bulk_subscription_failure(notification_model_or_history_lock(failed_transaction, :not_updateda, CardTransaction)) if failed_transaction.present?
+
+    build_index_context_from_selection? || build_index_context(card_installments_for_selected_user_card)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("notification.added_to_subscription") })
+        ]
+      end
+    end
+  end
+
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     today = Time.zone.today
     min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
@@ -253,9 +285,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       from_installments_number:,
       to_installments_number:,
       user_card: @user_card,
+      user_card_id: @user_card&.id,
       force_mobile:,
       order_by:,
-      count_by_month_year:
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
     }
   end
 
@@ -263,6 +297,90 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def set_card_tabs
     set_tabs(active_menu: :card, active_sub_menu: card_tab_name_for_state)
+  end
+
+  def build_index_context_from_selection? # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    return false if params[:index_context_json].blank?
+
+    context = JSON.parse(params[:index_context_json]).with_indifferent_access
+    card_installments = current_context.card_installments
+    today = Time.zone.today
+    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
+    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
+    years = (min_date.year..max_date.year)
+
+    selected_user_card_id = context[:user_card_id].presence || context.dig(:user_card, :id) || context.dig(:user_card, "id")
+    @user_card = current_user.user_cards.find_by(id: selected_user_card_id) if selected_user_card_id.present?
+
+    card_installment_ids = Array(context[:card_installment_ids]).compact_blank
+    category_id = Array(context[:category_id]).compact_blank
+    entity_id = Array(context[:entity_id]).compact_blank
+    search_term = context[:search_term]
+    from_ct_price = context[:from_ct_price]
+    to_ct_price = context[:to_ct_price]
+    from_price = context[:from_price]
+    to_price = context[:to_price]
+    from_installments_count = context[:from_installments_count]
+    to_installments_count = context[:to_installments_count]
+    from_installments_number = context[:from_installments_number]
+    to_installments_number = context[:to_installments_number]
+    order_by = context[:order_by]
+    force_mobile = ActiveModel::Type::Boolean.new.cast(context[:force_mobile])
+    active_month_years = Array(context[:active_month_years]).map(&:to_i)
+    default_year = context[:default_year].presence&.to_i
+    default_year ||= active_month_years.max.to_s.first(4).to_i if active_month_years.any?
+    default_year ||= [ max_date, today ].min.year
+
+    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
+      current_context,
+      {
+        card_installment_ids:,
+        user_card_id: @user_card&.id || [],
+        category_id:,
+        entity_id:
+      },
+      {
+        search_term:,
+        from_ct_price:,
+        to_ct_price:,
+        from_price:,
+        to_price:,
+        from_installments_count:,
+        to_installments_count:,
+        from_installments_number:,
+        to_installments_number:,
+        force_mobile:,
+        order_by:
+      }
+    )
+
+    @mobile = force_mobile
+    @index_context = {
+      current_user:,
+      years:,
+      default_year:,
+      active_month_years:,
+      search_term:,
+      card_installment_ids:,
+      category_id:,
+      entity_id:,
+      from_ct_price:,
+      to_ct_price:,
+      from_price:,
+      to_price:,
+      from_installments_count:,
+      to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
+      user_card: @user_card,
+      user_card_id: @user_card&.id,
+      force_mobile:,
+      order_by:,
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
+    }
+
+    true
   end
 
   def handle_chain_save_success
@@ -474,5 +592,25 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def indexed_nested_attributes_hash?(attributes)
     attributes.keys.all? { |nested_key| nested_key.to_s.match?(/\A\d+\z/) }
+  end
+
+  def selected_card_transactions_for_bulk_subscription
+    current_context.card_installments.includes(:card_transaction)
+                   .where(id: Array(params[:ids].to_s.split(",")).compact_blank)
+                   .map(&:card_transaction)
+                   .uniq(&:id)
+  end
+
+  def render_bulk_subscription_failure(alert_message)
+    build_index_context_from_selection? || build_index_context(card_installments_for_selected_user_card)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message })
+        ], status: :unprocessable_content
+      end
+    end
   end
 end

@@ -73,6 +73,7 @@ Rails.application.routes.draw do
       get :month_year
       get :search
       post :pay_in_advance
+      post :add_to_subscription
     end
   end
 
@@ -83,6 +84,7 @@ Rails.application.routes.draw do
 
     collection do
       get :month_year
+      post :add_to_subscription
     end
   end
 

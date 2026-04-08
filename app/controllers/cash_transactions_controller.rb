@@ -104,6 +104,38 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context)
   end
 
+  def add_to_subscription # rubocop:disable Metrics/AbcSize
+    @subscription = current_context.subscriptions.find_by(id: params[:subscription_id])
+    return render_bulk_subscription_failure(I18n.t("bulk_actions.invalid_subscription")) if @subscription.blank?
+
+    transactions = selected_cash_transactions_for_bulk_subscription
+    return render_bulk_subscription_failure(I18n.t("bulk_actions.empty_selection")) if transactions.empty?
+
+    failed_transaction = nil
+
+    ActiveRecord::Base.transaction do
+      transactions.each do |transaction|
+        next if transaction.update(subscription: @subscription)
+
+        failed_transaction = transaction
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    return render_bulk_subscription_failure(notification_model_or_history_lock(failed_transaction, :not_updateda, CashTransaction)) if failed_transaction.present?
+
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("notification.added_to_subscription") })
+        ]
+      end
+    end
+  end
+
   def handle_params
     assign_message_context
     handle_category_params
@@ -737,7 +769,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       pending:,
       skip_budgets:,
       force_mobile:,
-      count_by_month_year:
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
     }
   end
 
@@ -745,6 +778,100 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def set_cash_tabs
     set_tabs(active_menu: :cash, active_sub_menu: :pix)
+  end
+
+  def build_index_context_from_selection? # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    return false if params[:index_context_json].blank?
+
+    context = JSON.parse(params[:index_context_json]).with_indifferent_access
+    cash_installments = current_context.cash_installments
+    today_zn = Time.zone.today.beginning_of_month
+
+    min_year = cash_installments.minimum("installments.year") || today_zn.year
+    max_year = cash_installments.maximum("installments.year") || today_zn.year
+    years = (min_year..max_year)
+
+    category_id = Array(context[:category_id]).compact_blank
+    entity_id = Array(context[:entity_id]).compact_blank
+    cash_installment_ids = Array(context[:cash_installment_ids]).compact_blank
+    user_bank_account_id = Array(context[:user_bank_account_id]).compact_blank
+    search_term = context[:search_term]
+    from_ct_price = context[:from_ct_price]
+    to_ct_price = context[:to_ct_price]
+    from_price = context[:from_price]
+    to_price = context[:to_price]
+    from_installments_count = context[:from_installments_count]
+    to_installments_count = context[:to_installments_count]
+    from_installments_number = context[:from_installments_number]
+    to_installments_number = context[:to_installments_number]
+    from_date = context[:from_date]
+    to_date = context[:to_date]
+    paid = ActiveModel::Type::Boolean.new.cast(context[:paid])
+    pending = ActiveModel::Type::Boolean.new.cast(context[:pending])
+    skip_budgets = context[:skip_budgets]
+    force_mobile = ActiveModel::Type::Boolean.new.cast(context[:force_mobile])
+    active_month_years = Array(context[:active_month_years]).map(&:to_i)
+    default_year = context[:default_year].presence&.to_i
+    default_year ||= active_month_years.max.to_s.first(4).to_i if active_month_years.any?
+    default_year ||= today_zn.year
+
+    cash_transaction_filters = {
+      category_id:,
+      entity_id:,
+      cash_installment_ids:,
+      user_bank_account_id:
+    }
+    search_filters = {
+      search_term:,
+      from_ct_price:,
+      to_ct_price:,
+      from_price:,
+      to_price:,
+      from_installments_count:,
+      to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
+      from_date:,
+      to_date:,
+      paid:,
+      pending:,
+      skip_budgets:,
+      force_mobile:
+    }
+
+    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_context, cash_transaction_filters, search_filters)
+
+    @mobile = force_mobile
+    @index_context = {
+      current_user:,
+      years:,
+      default_year:,
+      active_month_years:,
+      search_term:,
+      category_id:,
+      entity_id:,
+      cash_installment_ids:,
+      user_bank_account_id:,
+      from_ct_price:,
+      to_ct_price:,
+      from_price:,
+      to_price:,
+      from_installments_count:,
+      to_installments_count:,
+      from_installments_number:,
+      to_installments_number:,
+      from_date:,
+      to_date:,
+      user_card: @user_card,
+      paid:,
+      pending:,
+      skip_budgets:,
+      force_mobile:,
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
+    }
+
+    true
   end
 
   # Use callbacks to share common setup or constraints between actions.
@@ -916,6 +1043,26 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
       seen_values[nested_value.to_s] = true
       entry
+    end
+  end
+
+  def selected_cash_transactions_for_bulk_subscription
+    current_context.cash_installments.includes(:cash_transaction)
+                   .where(id: Array(params[:ids].to_s.split(",")).compact_blank)
+                   .map(&:cash_transaction)
+                   .uniq(&:id)
+  end
+
+  def render_bulk_subscription_failure(alert_message)
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message })
+        ], status: :unprocessable_content
+      end
     end
   end
 end

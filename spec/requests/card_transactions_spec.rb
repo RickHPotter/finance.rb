@@ -77,6 +77,56 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('id="card_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
     end
+
+    it "renders the bulk add to subscription action on the index" do
+      user_card_one
+
+      get card_transactions_path(user_card_id: user_card_one.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("actions.add_to_subscription"))
+    end
+  end
+
+  describe "[ #add_to_subscription ]" do
+    it "adds the selected card transactions to the chosen subscription" do
+      other_subscription = create(:subscription, user:, description: "Recurring card bundle")
+      first_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Streaming service",
+        price: -6_500,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      second_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_two,
+        description: "Cloud storage",
+        price: -3_200,
+        date: Date.new(2026, 4, 4),
+        month: 4,
+        year: 2026
+      )
+
+      post add_to_subscription_card_transactions_path,
+           params: {
+             ids: [ first_transaction.card_installments.first.id, second_transaction.card_installments.first.id ].join(","),
+             subscription_id: other_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(first_transaction.reload.subscription).to eq(other_subscription)
+      expect(second_transaction.reload.subscription).to eq(other_subscription)
+      expect(response.body).to include(I18n.t("notification.added_to_subscription"))
+    end
   end
 
   def switch_to_context!(context)

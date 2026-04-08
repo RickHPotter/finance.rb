@@ -131,6 +131,10 @@ class CardTransaction < ApplicationRecord
     persisted?
   end
 
+  def bulk_subscription_eligible?
+    true
+  end
+
   def operation_type
     return :edit      if persisted?
     return :duplicate if duplicate

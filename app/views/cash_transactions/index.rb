@@ -19,13 +19,19 @@ class Views::CashTransactions::Index < Views::Base
       div class: "w-full" do
         div class: "min-w-full" do
           turbo_frame_tag :cash_transactions do
-            div class: "min-h-screen", data: { controller: "datatable" } do
+            div class: "min-h-screen", data: { controller: "datatable", datatable_locale_value: I18n.locale } do
               div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm" do
                 render IndexSearchForm.new(url: cash_transactions_path, index_context:, mobile:)
               end
 
               render PayMultipleModal.new(index_context:)
               render TransferMultipleModal.new(index_context:)
+              render Views::Shared::AddToSubscriptionModal.new(
+                modal_id: "cashTransactionsAddToSubscriptionModal",
+                url: add_to_subscription_cash_transactions_path,
+                index_context:,
+                subscriptions: available_subscriptions
+              )
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count, :paid, :pending,
@@ -36,14 +42,32 @@ class Views::CashTransactions::Index < Views::Base
                 selected_label: action_message(:selected),
                 actions: [
                   {
+                    name: "pay",
                     title: model_attribute(CashInstallment, :pay),
                     label: model_attribute(CashInstallment, :pay),
+                    disabled_reason: I18n.t("bulk_actions.disabled.pay"),
                     data: { action: "click->datatable#prepareBulkAction", modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
                   },
                   {
+                    name: "transfer",
                     title: model_attribute(CashInstallment, :transfer),
                     label: model_attribute(CashInstallment, :transfer),
+                    disabled_reason: I18n.t("bulk_actions.disabled.transfer"),
                     data: { action: "click->datatable#prepareBulkAction", modal_target: "transferMultipleModal", modal_toggle: "transferMultipleModal" }
+                  },
+                  {
+                    name: "subscription",
+                    ids_kind: "record",
+                    title: action_message(:add_to_subscription),
+                    label: action_message(:add_to_subscription),
+                    disabled_reason: I18n.t("bulk_actions.disabled.subscription"),
+                    base_disabled: available_subscriptions.empty?,
+                    base_disabled_reason: I18n.t("bulk_actions.no_subscriptions_available"),
+                    data: {
+                      action: "click->datatable#prepareBulkAction",
+                      modal_target: "cashTransactionsAddToSubscriptionModal",
+                      modal_toggle: "cashTransactionsAddToSubscriptionModal"
+                    }
                   }
                 ]
               )
@@ -54,5 +78,11 @@ class Views::CashTransactions::Index < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def available_subscriptions
+    Array(index_context[:available_subscriptions])
   end
 end

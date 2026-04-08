@@ -129,7 +129,8 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
       from_date: nil,
       to_date: nil,
       user_card: @user_card,
-      count_by_month_year:
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
     }
   end
 
@@ -220,7 +221,8 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
       pending:,
       skip_budgets:,
       force_mobile:,
-      count_by_month_year:
+      count_by_month_year:,
+      available_subscriptions: current_context.subscriptions.order(:description).to_a
     }
   end
 

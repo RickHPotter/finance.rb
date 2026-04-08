@@ -40,6 +40,14 @@ class CashInstallment < Installment
     cash_transaction
   end
 
+  def bulk_pay_eligible?
+    !paid?
+  end
+
+  def bulk_transfer_eligible?
+    !paid? && cash_transaction.bulk_transfer_eligible?
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

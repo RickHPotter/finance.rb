@@ -109,6 +109,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE RETURN" ])
   end
 
+  def bulk_transfer_eligible?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+  end
+
+  def bulk_subscription_eligible?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+  end
+
   def investment?
     cash_transaction_type == "Investment"
   end

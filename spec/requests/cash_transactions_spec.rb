@@ -46,6 +46,45 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('id="cash_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
     end
+
+    it "renders the bulk add to subscription action on the index" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("actions.add_to_subscription"))
+    end
+
+    it "renders bulk eligibility data for unpaid installments and bulk action buttons" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Bulk eligible cash transaction",
+        price: 4_500,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      installment = transaction.cash_installments.first
+
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+
+      html = Nokogiri::HTML.parse(response.body)
+      checkbox = html.at_css("input[data-datatable-target='checkbox'][value='#{installment.id}']")
+      pay_button = html.at_css("button[data-bulk-action-name='pay']")
+      transfer_button = html.at_css("button[data-bulk-action-name='transfer']")
+
+      expect(checkbox).to be_present
+      expect(checkbox["data-bulk-pay-eligible"]).to eq("true")
+      expect(checkbox["data-bulk-transfer-eligible"]).to eq("true")
+      expect(pay_button).to be_present
+      expect(transfer_button).to be_present
+      expect(pay_button["data-bulk-action-name"]).to eq("pay")
+      expect(transfer_button["data-bulk-action-name"]).to eq("transfer")
+    end
   end
 
   describe "[ #duplicate ]" do
@@ -67,6 +106,47 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Duplicating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+    end
+  end
+
+  describe "[ #add_to_subscription ]" do
+    it "adds the selected cash transactions to the chosen subscription" do
+      other_subscription = create(:subscription, user:, description: "Utilities bundle")
+      first_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Water bill",
+        price: 4_500,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      second_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Power bill",
+        price: 7_500,
+        date: Date.new(2026, 4, 4),
+        month: 4,
+        year: 2026
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: [ first_transaction.cash_installments.first.id, second_transaction.cash_installments.first.id ].join(","),
+             subscription_id: other_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(first_transaction.reload.subscription).to eq(other_subscription)
+      expect(second_transaction.reload.subscription).to eq(other_subscription)
+      expect(response.body).to include(I18n.t("notification.added_to_subscription"))
     end
   end
 

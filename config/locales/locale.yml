@@ -23,6 +23,7 @@ en:
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
+    added_to_subscription: "Selected transactions were added to the subscription."
     workaround: "Suggested fix"
     history_workarounds:
       allocation_locked_after_payment: "Keep the paid portion unchanged. If the future allocation changed, create a new future-only transaction for the new categories or entities."
@@ -82,6 +83,7 @@ en:
     select: "Select one"
     selecta: "Select one"
     select_all: "Select All"
+    select_page: "Select Page"
     selected: "selected"
     type: "Type to search"
     send: "Send"
@@ -91,6 +93,7 @@ en:
     duplicate_more: "Duplicate more"
     finish_chain: "Finish chain"
     finish_chain_without_save: "Finish chain without saving"
+    add_to_subscription: "Add to Subscription"
 
   navigation:
     previous: "Previous"
@@ -120,6 +123,16 @@ en:
     date: "Date"
     time: "Time"
     invalid_time: "Enter a valid time in 24-hour format."
+  bulk_actions:
+    total_selected: "Selected total"
+    choose_subscription: "Choose subscription"
+    empty_selection: "Select at least one transaction."
+    invalid_subscription: "Select a valid subscription."
+    no_subscriptions_available: "Create a subscription first before using this action."
+    disabled:
+      pay: "Some selected transactions cannot be paid."
+      transfer: "Some selected transactions cannot be transferred."
+      subscription: "Some selected transactions cannot be added to a subscription."
 
 pt-BR:
   confirmation:
@@ -146,6 +159,7 @@ pt-BR:
     user_card_needed: Por favor, adicione um cartão antes de criar uma %{model}.
     alert: "Atenção!"
     notice: "Aviso"
+    added_to_subscription: "As transações selecionadas foram adicionadas à assinatura."
     workaround: "Como resolver"
     history_workarounds:
       allocation_locked_after_payment: "Mantenha a parte já paga intacta. Se a alocação futura mudou, crie uma nova transação apenas para o trecho futuro com as novas categorias ou entidades."
@@ -205,6 +219,7 @@ pt-BR:
     select: "Selecione um"
     selecta: "Selecione uma"
     select_all: "Selecionar Todos"
+    select_page: "Selecionar Página"
     selected: "selecionado(s)"
     type: "Digite para pesquisar"
     send: "Enviar"
@@ -214,6 +229,7 @@ pt-BR:
     duplicate_more: "Duplicar mais"
     finish_chain: "Finalizar cadeia"
     finish_chain_without_save: "Finalizar cadeia sem salvar"
+    add_to_subscription: "Adicionar à Assinatura"
 
   navigation:
     previous: "Anterior"
@@ -243,3 +259,13 @@ pt-BR:
     date: "Data"
     time: "Hora"
     invalid_time: "Digite um horario valido no formato 24 horas."
+  bulk_actions:
+    total_selected: "Total selecionado"
+    choose_subscription: "Escolha a assinatura"
+    empty_selection: "Selecione pelo menos uma transação."
+    invalid_subscription: "Selecione uma assinatura válida."
+    no_subscriptions_available: "Crie uma assinatura antes de usar esta ação."
+    disabled:
+      pay: "Algumas transações selecionadas não podem ser pagas."
+      transfer: "Algumas transações selecionadas não podem ser transferidas."
+      subscription: "Algumas transações selecionadas não podem ser adicionadas a uma assinatura."
