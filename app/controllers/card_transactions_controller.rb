@@ -179,7 +179,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     respond_to(&:turbo_stream)
   end
 
-  def add_to_subscription # rubocop:disable Metrics/AbcSize
+  def add_to_subscription
     @subscription = current_context.subscriptions.find_by(id: params[:subscription_id])
     return render_bulk_subscription_failure(I18n.t("bulk_actions.invalid_subscription")) if @subscription.blank?
 
@@ -189,12 +189,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     failed_transaction = nil
 
     ActiveRecord::Base.transaction do
-      transactions.each do |transaction|
-        next if transaction.update(subscription: @subscription)
-
-        failed_transaction = transaction
-        raise ActiveRecord::Rollback
-      end
+      @subscription.attach_transactions!(transactions)
+    rescue ActiveRecord::RecordInvalid => e
+      failed_transaction = e.record
+      raise ActiveRecord::Rollback
     end
 
     return render_bulk_subscription_failure(notification_model_or_history_lock(failed_transaction, :not_updateda, CardTransaction)) if failed_transaction.present?
@@ -595,10 +593,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def selected_card_transactions_for_bulk_subscription
-    current_context.card_installments.includes(:card_transaction)
-                   .where(id: Array(params[:ids].to_s.split(",")).compact_blank)
-                   .map(&:card_transaction)
-                   .uniq(&:id)
+    current_context.card_transactions.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
   end
 
   def render_bulk_subscription_failure(alert_message)

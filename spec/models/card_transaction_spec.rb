@@ -302,6 +302,36 @@ RSpec.describe CardTransaction, type: :model do
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
     end
 
+    it "allows allocation changes after paid history when the transaction is in the subscription flow" do
+      user = create(:user)
+      user_card = create(:user_card, user:)
+      original_entity = create(:entity, user:, entity_name: "MOI")
+      replacement_entity = create(:entity, user:, entity_name: "NOUS")
+      subscription_category = user.built_in_category("SUBSCRIPTION")
+      transaction = create_card_transaction_with_history(
+        user:,
+        user_card:,
+        description: "Subscription allocation unlock",
+        date: Date.new(2026, 3, 10),
+        price: -3_000,
+        month: 4,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: -1_000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: -1_000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: -1_000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+      transaction.categories = [ subscription_category ]
+      transaction.entities = [ original_entity ]
+      transaction.save!(validate: false)
+
+      transaction.entities = [ replacement_entity ]
+
+      expect(transaction.can_change_allocation?).to be(true)
+      expect(transaction).to be_valid
+    end
+
     it "allows a confirmed paid date correction when the ref month year stays unchanged" do
       user = create(:user)
       user_card = create(:user_card, user:)

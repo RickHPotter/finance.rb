@@ -114,12 +114,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     failed_transaction = nil
 
     ActiveRecord::Base.transaction do
-      transactions.each do |transaction|
-        next if transaction.update(subscription: @subscription)
-
-        failed_transaction = transaction
-        raise ActiveRecord::Rollback
-      end
+      @subscription.attach_transactions!(transactions)
+    rescue ActiveRecord::RecordInvalid => e
+      failed_transaction = e.record
+      raise ActiveRecord::Rollback
     end
 
     return render_bulk_subscription_failure(notification_model_or_history_lock(failed_transaction, :not_updateda, CashTransaction)) if failed_transaction.present?
@@ -1047,10 +1045,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def selected_cash_transactions_for_bulk_subscription
-    current_context.cash_installments.includes(:cash_transaction)
-                   .where(id: Array(params[:ids].to_s.split(",")).compact_blank)
-                   .map(&:cash_transaction)
-                   .uniq(&:id)
+    current_context.cash_transactions.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
   end
 
   def render_bulk_subscription_failure(alert_message)

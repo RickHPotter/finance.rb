@@ -29,7 +29,7 @@ module HasFinancialSafetyRules
   end
 
   def can_change_allocation?
-    !paid_history?
+    !paid_history? || subscription_allocation_bypass?
   end
 
   def can_destroy_with_history?
@@ -39,6 +39,21 @@ module HasFinancialSafetyRules
   # @private_instance_methods .................................................
 
   private
+
+  def subscription_allocation_bypass?
+    return false unless respond_to?(:user)
+
+    relevant_category_ids = [ *Array(original_categories), *current_subscription_category_ids ].compact.uniq
+    return false if relevant_category_ids.empty?
+
+    user.categories.where(id: relevant_category_ids, category_name: "SUBSCRIPTION").exists?
+  end
+
+  def current_subscription_category_ids
+    return [] unless respond_to?(:category_transactions)
+
+    category_transactions.reject(&:marked_for_destruction?).map(&:category_id)
+  end
 
   def normalize_proposed_dates(proposed_dates)
     Array(proposed_dates).filter_map do |value|

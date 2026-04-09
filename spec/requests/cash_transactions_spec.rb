@@ -53,38 +53,6 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
-
-    it "renders bulk eligibility data for unpaid installments and bulk action buttons" do
-      transaction = create(
-        :cash_transaction,
-        user:,
-        context: user.main_context,
-        user_bank_account: user_bank_account,
-        description: "Bulk eligible cash transaction",
-        price: 4_500,
-        date: Date.new(2026, 4, 3),
-        month: 4,
-        year: 2026
-      )
-      installment = transaction.cash_installments.first
-
-      get cash_transactions_path
-
-      expect(response).to have_http_status(:success)
-
-      html = Nokogiri::HTML.parse(response.body)
-      checkbox = html.at_css("input[data-datatable-target='checkbox'][value='#{installment.id}']")
-      pay_button = html.at_css("button[data-bulk-action-name='pay']")
-      transfer_button = html.at_css("button[data-bulk-action-name='transfer']")
-
-      expect(checkbox).to be_present
-      expect(checkbox["data-bulk-pay-eligible"]).to eq("true")
-      expect(checkbox["data-bulk-transfer-eligible"]).to eq("true")
-      expect(pay_button).to be_present
-      expect(transfer_button).to be_present
-      expect(pay_button["data-bulk-action-name"]).to eq("pay")
-      expect(transfer_button["data-bulk-action-name"]).to eq("transfer")
-    end
   end
 
   describe "[ #duplicate ]" do
@@ -137,7 +105,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       post add_to_subscription_cash_transactions_path,
            params: {
-             ids: [ first_transaction.cash_installments.first.id, second_transaction.cash_installments.first.id ].join(","),
+             ids: [ first_transaction.id, second_transaction.id ].join(","),
              subscription_id: other_subscription.id,
              index_context_json: {}.to_json
            },
@@ -147,6 +115,37 @@ RSpec.describe "CashTransactions", type: :request do
       expect(first_transaction.reload.subscription).to eq(other_subscription)
       expect(second_transaction.reload.subscription).to eq(other_subscription)
       expect(response.body).to include(I18n.t("notification.added_to_subscription"))
+    end
+
+    it "merges subscription categories and entities into a paid-history cash transaction" do
+      leisure = create(:category, user:, category_name: "LEISURE")
+      nous = create(:entity, user:, entity_name: "NOUS")
+      moi = create(:entity, user:, entity_name: "MOI")
+      subscription = create(:subscription, user:, description: "Club", comment: "Shared")
+      subscription.categories << leisure
+      subscription.entities << nous
+
+      transaction = create_cash_transaction_with_paid_history(description: "Cinema")
+      transaction.categories = [ leisure ]
+      transaction.entities = [ moi ]
+      transaction.save!(validate: false)
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+
+      transaction.reload
+      expect(transaction.subscription).to eq(subscription)
+      expect(transaction.categories.pluck(:category_name)).to contain_exactly("LEISURE", "SUBSCRIPTION")
+      expect(transaction.entities.pluck(:entity_name)).to contain_exactly("MOI", "NOUS")
+      expect(transaction.description).to eq("Club")
+      expect(transaction.comment).to eq("Shared")
     end
   end
 

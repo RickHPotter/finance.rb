@@ -116,7 +116,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       post add_to_subscription_card_transactions_path,
            params: {
-             ids: [ first_transaction.card_installments.first.id, second_transaction.card_installments.first.id ].join(","),
+             ids: [ first_transaction.id, second_transaction.id ].join(","),
              subscription_id: other_subscription.id,
              index_context_json: {}.to_json
            },
