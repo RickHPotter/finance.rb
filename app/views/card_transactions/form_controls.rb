@@ -116,11 +116,16 @@ class Views::CardTransactions::FormControls < Views::Base
           id: :transaction_price,
           class: "sign-based font-graduate",
           autocomplete: :off,
-          onclick: "this.select();",
           data: {
+            controller: "input-select",
             price_mask_target: :input,
             reactive_form_target: :priceInput,
-            action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating",
+            action: [
+              "click->input-select#select",
+              "input->price-mask#applyMask",
+              "input->reactive-form#updateInstallmentsPrices",
+              "input->reactive-form#updateExchangeWhenDuplicating"
+            ].join(" "),
             sign:
           }
       end
@@ -141,10 +146,10 @@ class Views::CardTransactions::FormControls < Views::Base
           min: 1, max: 72,
           value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
           class: "font-graduate",
-          onclick: "this.select();",
           data: {
+            controller: "input-select",
             reactive_form_target: :installmentsCountInput,
-            action: "input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
+            action: "click->input-select#select input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
           }
       end
     end

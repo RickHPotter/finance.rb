@@ -21,6 +21,7 @@ module RubyUI
             keydown.enter->ruby-ui--combobox#keyEnterPressed
             keydown->ruby-ui--combobox#keyTabPressed
             keydown.esc->ruby-ui--combobox#closeDialog:prevent
+            pointerdown->ruby-ui--combobox#handlePopoverPointerDown
             resize@window->ruby-ui--combobox#updatePopoverWidth
           ]
         }

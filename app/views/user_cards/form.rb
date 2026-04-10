@@ -80,8 +80,8 @@ class Views::UserCards::Form < Views::Base
             bold_label(form, :min_spend)
             TextField(
               form, :min_spend,
-              inputmode: :numeric, svg: :money, class: "font-graduate", onclick: "this.select();",
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+              inputmode: :numeric, svg: :money, class: "font-graduate",
+              data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
 
@@ -90,8 +90,8 @@ class Views::UserCards::Form < Views::Base
 
             TextField(
               form, :credit_limit,
-              inputmode: :numeric, svg: :money, class: "font-graduate", onclick: "this.select();",
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+              inputmode: :numeric, svg: :money, class: "font-graduate",
+              data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
         end

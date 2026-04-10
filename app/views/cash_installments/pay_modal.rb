@@ -65,9 +65,15 @@ class Views::CashInstallments::PayModal < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
-              onclick: "this.select();",
               disabled: cash_installment.cash_transaction.card_payment? || cash_installment.cash_transaction.card_advance?,
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask", sign:, min: prices_range.min, max: prices_range.max }
+              data: {
+                controller: "input-select",
+                price_mask_target: :input,
+                action: "click->input-select#select input->price-mask#applyMask",
+                sign:,
+                min: prices_range.min,
+                max: prices_range.max
+              }
           end
 
           div(class: "mx-auto pb-4 text-center") do

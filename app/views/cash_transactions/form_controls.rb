@@ -109,11 +109,11 @@ class Views::CashTransactions::FormControls < Views::Base
           id: :transaction_price,
           class: "sign-based font-graduate",
           autocomplete: :off,
-          onclick: "this.select();",
           disabled: cash_transaction.card_payment?,
           data: { price_mask_target: :input,
+                  controller: "input-select",
                   reactive_form_target: :priceInput,
-                  action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
+                  action: "click->input-select#select input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
                   sign: }
       end
 
@@ -134,9 +134,10 @@ class Views::CashTransactions::FormControls < Views::Base
           min: 1, max: 72,
           value: [ visible_cash_installments_count, 1 ].max,
           class: "font-graduate",
-          onclick: "this.select();",
           disabled: cash_transaction.card_payment?,
-          data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
+          data: { controller: "input-select",
+                  reactive_form_target: :installmentsCountInput,
+                  action: "click->input-select#select input->reactive-form#updateInstallmentsPrices" }
       end
     end
   end

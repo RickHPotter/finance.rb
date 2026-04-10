@@ -80,21 +80,23 @@ Still intentionally out of scope for this first pass:
 - exchanges
 - datetime-heavy modals
 
-### 4. Bulk selection feedback is minimal
+### 4. Bulk selection feedback is now in place
 
-`BulkActionBar` currently communicates:
+`BulkActionBar` now communicates:
 
 - selected count
-- available actions
-
-It does not communicate:
-
 - aggregate selected amount
-- selection type/constraints
-- whether the current selection mixes incompatible rows
-- page-level selection across all visible month groups
-- range selection through shift-click
-- subscription conversion as a bulk action
+- available actions
+- disabled-action reasons when the selection mixes incompatible rows
+
+Shipped behavior:
+
+- all rendered rows are selectable
+- the bar stays hidden until a selection exists, then fades away after deselection
+- `Select Page` selects every currently rendered row across visible month-year groups
+- shift-click range selection works across month-year containers
+- pay/transfer disable when the selected cash installment set contains ineligible rows
+- `Add to Subscription` is available for cash/card indexes through an existing-subscription modal
 
 ### 5. Partial `PayMultiple` is still intentionally out
 
@@ -241,7 +243,7 @@ Current shipped boundary:
 
 ## Locked Direction For Bulk Action Bar
 
-The intended direction is:
+The shipped direction is:
 
 1. add aggregate information directly in the bar
    - first target: aggregated selected price
@@ -267,15 +269,25 @@ The intended direction is:
    - card transactions are the more natural first-class candidates
    - clicking the action should open a modal to choose an existing subscription and
      confirm the attachment
-   - the write should directly update `subscription_id` on the selected eligible
-     records
-   - no background job is required for the base version if the action remains a
-     direct update
+   - the write attaches selected transaction records, not installment ids
+   - attachment syncs subscription metadata into the transaction:
+     - sets `subscription`
+     - syncs description/comment
+     - merges the transaction categories with the subscription categories and
+       `SUBSCRIPTION`
+     - merges existing transaction entities with the subscription entities
+   - no background job is required for the base version
 
 5. action feedback
    - invalid actions should stay visible but disabled
    - the bar should explain why an action is disabled, either inline or through a
      tooltip/hover message
+
+6. subscription allocation safety
+   - transactions in the subscription flow may change category/entity allocation even
+     after paid history exists
+   - this bypass is intentionally narrow and depends on the transaction having
+     `SUBSCRIPTION` in either its original or current category set
 
 ## Validation Rule
 

@@ -95,23 +95,7 @@ class InvestmentsController < ApplicationController
   end
 
   def load_based_on_save
-    min_date = current_context.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = current_context.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    years = (min_date.year..max_date.year)
-    default_year = @investment.year
-    active_month_years = [ Date.new(@investment.year, @investment.month, 1).strftime("%Y%m").to_i ]
-
-    count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
-
-    @index_context = {
-      current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      user_bank_account_id: [ @investment.user_bank_account_id ],
-      investment_type_id: [ @investment.investment_type_id ].compact_blank,
-      count_by_month_year:
-    }
+    load_based_on_affected_investments(current_context.investments.where(id: @investment.id))
   end
 
   def build_index_context # rubocop:disable Metrics/AbcSize
@@ -151,28 +135,51 @@ class InvestmentsController < ApplicationController
       return
     end
 
-    load_based_on_save
-    apply_chain_index_context(record_ids: created_record_ids)
+    load_based_on_affected_investments(current_context.investments.where(id: created_record_ids))
   end
 
   def handle_chain_finish_without_save
     @finished_chain_without_save = true
     @investment = current_context.investments.new
-    build_index_context
-    apply_chain_index_context(record_ids: current_chain_record_ids)
+    load_based_on_affected_investments(current_context.investments.where(id: current_chain_record_ids))
 
     respond_to(&:turbo_stream)
   end
 
-  def apply_chain_index_context(record_ids:)
-    investments = current_context.investments.where(id: record_ids)
-    active_month_years = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
+  def load_based_on_affected_investments(investments)
+    investments = investments.to_a
 
-    @index_context[:id] = record_ids
-    @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
-    @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
-    @index_context[:user_bank_account_id] = []
-    @index_context[:investment_type_id] = []
+    if investments.empty?
+      build_index_context
+      return
+    end
+
+    active_month_years = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
+    index_filters = affected_investment_filters(investments)
+    count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, index_filters, search_investment_params)
+
+    @index_context = {
+      current_user:,
+      years: investment_years,
+      default_year: active_month_years.max.to_s.first(4).to_i,
+      active_month_years:,
+      **index_filters,
+      count_by_month_year:
+    }
+  end
+
+  def affected_investment_filters(investments)
+    {
+      user_bank_account_id: investments.map(&:user_bank_account_id).compact.uniq,
+      investment_type_id: investments.map(&:investment_type_id).compact.uniq
+    }.compact_blank
+  end
+
+  def investment_years
+    min_date = current_context.investments.minimum("MAKE_DATE(year, month, 1)") || Time.zone.today
+    max_date = current_context.investments.maximum("MAKE_DATE(year, month, 1)") || Time.zone.today
+
+    (min_date.year..max_date.year)
   end
 
   def next_investment_for_chain

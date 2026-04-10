@@ -27,11 +27,15 @@ export default class extends Controller {
     this.initializeOrderTracking()
     this.openFrame = null
     this.closeFrame = null
+    this.pointerDownInsidePopover = false
+    this.boundSchedulePointerDownInsidePopoverClear = this.schedulePointerDownInsidePopoverClear.bind(this)
   }
 
   disconnect() {
     if (this.openFrame) cancelAnimationFrame(this.openFrame)
     if (this.closeFrame) cancelAnimationFrame(this.closeFrame)
+    window.removeEventListener("pointerup", this.boundSchedulePointerDownInsidePopoverClear)
+    window.removeEventListener("pointercancel", this.boundSchedulePointerDownInsidePopoverClear)
     if (this.cleanup) { this.cleanup() }
   }
 
@@ -51,6 +55,18 @@ export default class extends Controller {
       this.updateSelectedOrder(input)
       this.reorderItems()
     }
+  }
+
+  handlePopoverPointerDown() {
+    this.pointerDownInsidePopover = true
+    window.addEventListener("pointerup", this.boundSchedulePointerDownInsidePopoverClear, { once: true })
+    window.addEventListener("pointercancel", this.boundSchedulePointerDownInsidePopoverClear, { once: true })
+  }
+
+  schedulePointerDownInsidePopoverClear() {
+    requestAnimationFrame(() => {
+      this.pointerDownInsidePopover = false
+    })
   }
 
   inputContent(input) {
@@ -265,6 +281,7 @@ export default class extends Controller {
 
   handleFocusOut(event) {
     if (event.relatedTarget && this.element.contains(event.relatedTarget)) { return }
+    if (this.pointerDownInsidePopover) { return }
 
     this.closePopover()
   }

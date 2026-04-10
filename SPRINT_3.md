@@ -96,196 +96,70 @@ too visible to ignore.
 - Issues:
   - [#30](https://github.com/RickHPotter/finance.rb/issues/30)
 
-- Subtasks:
-  - Prevent edits to locked installments and exchanges when that would break paid
-    history.
-  - If unlocking is allowed, require an explicit warning flow.
-  - Extend `PayMultiple` to support partial payment where the rules are clear enough.
-  - Make lend-return and exchange-related cash flows stay in sync when installment
-    structure changes.
-  - Make shared exchange-return paid / not-paid state synchronize across the two users
-    through assistant messages instead of remaining local-only.
-  - Revisit category assignment so reporting can move from loose category stacking to
-    clearer allocation.
-- Extra:
-  - Keep this part narrow and rule-driven; it is easy for these changes to become too broad.
-  - Planning baseline recorded in
-    `docs/sprints/3-jiraiya/jiraiya-04/01-financial-safety-rules.md`.
-  - Workaround map recorded in
-    `docs/sprints/3-jiraiya/jiraiya-04/02-blocked-mutation-workarounds.md`.
-  - Implementation order recorded in
-    `docs/sprints/3-jiraiya/jiraiya-04/03-implementation-slices.md`.
-  - Current implementation status:
-    - Slice 1 complete: shared financial safety predicates.
-    - Slice 2 complete: domain-level write guards for paid-history rewrites, destroy
-      protection, subscription-linked writes, card advances, and exchange-mirror flows.
-    - Slice 3 complete: request-level failure behavior with explicit historical-lock
-      messages and workaround guidance.
-    - Slice 4 complete: exchange-return persistence is normalized to one shared return
-      `CashTransaction` with mirrored installments, and shared paid / not-paid state now
-      synchronizes bidirectionally through assistant messages, including derived-context
-      routing and clear hard failure when the counterpart cannot be resolved.
-    - Slice 5 complete: workaround UX now explains the narrow future confirmation
-      paths instead of only generic historical-lock guidance.
-    - Slice 6 complete: explicit confirmation is now implemented for:
-      - paid `CardTransaction` date correction while keeping the same `ref_month_year`
-      - paid `CashTransaction` month-boundary correction between adjacent periods during
-        delayed-entry cleanup
-      - paid `CashTransaction` current-month unpay correction with explicit confirmation
-      - paid `EXCHANGE RETURN` price correction with explicit confirmation
-      - paid amount rewrites when the domain can preserve accounting, mirror, and
-        counterpart invariants
-      - destroy with paid history through the same two-step confirmation shape where
-        the remaining invariants still hold
-        - `CashTransaction`: confirmation-gated destroy
-        - `CardTransaction`: confirmation-gated destroy only when the affected billing
-          cycles remain covered after removing the transaction, including already-paid
-          `CARD PAYMENT` and `CARD ADVANCE` settlement recorded in those cycles
-    - V2 direction:
-      - every historical wall that remains financially coherent after invariant checks
-        should use the same `confirm_historical_change` warning/confirmation pattern
-      - confirmation should become the default interaction shape for domain-approved
-        historical corrections, not only a tiny exception list
-      - the goal is consistent guarded correction, not a generic unsafe bypass
-	    - Post-slice stabilization complete:
-	      - maintained suite runner fixed for `.env.test`-based execution
-      - indirect projection cleanup fixed for `Investment`, `CARD ADVANCE`, and
-        `CashTransactable` aggregate switches
-      - unpaid `CardTransaction` moves into paid invoice cycles are now blocked
-      - shared paid-state sync resolution now accepts direct reverse linkage
-      - shared paid-state notifications now stay pending until explicitly acknowledged
-      - mirrored unpaid `EXCHANGE RETURN` structural edits now notify the counterpart
-        through a normal actionable assistant update and reverse-sync back into the
-        canonical `Exchange` side
-      - `UserCard` payment-schedule maintenance now updates unpaid exchange-return
-        projections correctly across contexts
-      - shared-return paid-state sync was further hardened after the first manual pass:
-        - counterpart lookup now supports structurally matched legacy/normalized pairs
-        - duplicate counterpart families are disambiguated by stable creation order
-        - paid-state assistant message deduplication no longer collapses different
-          mirrored transactions into one notification
-        - mirror sync now runs through Solid Queue with retry on deadlocks from bulk-pay
-	      - historical standalone `EXCHANGE RETURN` data now has a two-step repair path:
-	        - first sync standalone `Exchange` rows from legacy mirrored installments
-	        - then consolidate old one-installment families into one normalized shared return
-	      - next normalization track defined:
-	        - `reference_transactable` should move to an immediate-parent chain contract
-	          across sender and receiver exchange flows
-	        - admin exchange audit should become the operator surface for reviewing current
-	          vs canonical reference edges before runtime write-path migration
-	      - first canonical edge rewrite slice complete:
-	        - trio-audit-backed `ExchangeChainReferenceAudit` now separates supported
-	          vs unsupported edge rewrites
-	        - `ExchangeChainReferenceRunner` can dry-run/apply concrete
-	          `reference_transactable` rewrites for unambiguous families
-	        - ambiguous rows such as `multiple_middle_candidates` remain intentionally
-	          skipped until the chain role can be resolved without guessing
-	      - rollout cleanup complete:
-	        - canonical shared-return/reference-chain runtime is live
-	        - Exchange Audit reached zero pending after data repair plus the remaining
-	          manual operator selections
-	        - linked `BORROW RETURN` rows are now destroy-locked
-	        - settings now open the naming service directly on the dry-run/apply screen
-	        - stale one-off cleanup migration and old naming modal entry flow were removed
-	      - final pre-`PayMultiple` state:
-	        - no remaining exchange/reference normalization slice is still open
-	        - shared-return structural updates now notify the counterpart without echo loops
-	        - linked `BORROW RETURN` rows cannot be destroyed while they remain part of a
-	          canonical shared-return chain
-	        - `PayMultiple` still means bulk full-payment only; partial payment was not
-	          implemented in Sprint 3
-	        - the broader category/entity allocation redesign was not implemented;
-	          the shipped rule remains the V1 hard block once paid history exists
-	      - maintained test layers are green:
-	        `spec/models`, `spec/concerns`, `spec/requests`
+- Goal:
+  - Make paid-history changes predictable and safe without turning every correction
+    into an unsafe bypass.
+  - Normalize shared exchange-return flows so both users can rely on the same
+    canonical reference chain.
+
+- Shipped outcome:
+  - paid-history guards now block unsafe installment, allocation, destroy, card
+    advance, subscription, and exchange-mirror rewrites
+  - approved historical corrections use explicit confirmation flows instead of
+    silent mutation
+  - shared exchange-return chains now use canonical immediate-parent references
+  - shared paid-state and structural updates now route through assistant messages
+    without echo loops
+  - linked `BORROW RETURN` rows are destroy-locked while they remain part of a
+    shared-return chain
+  - Exchange Audit became the operator surface for canonical reference review and
+    reached zero pending after rollout cleanup
+  - the old rollout migration, legacy repair runners, and naming modal entry flow
+    were removed after production cleanup
+
+- Left out intentionally:
+  - partial `PayMultiple`; bulk payment still means full-installment payment
+  - broad category/entity allocation redesign; the V1 rule remains a hard block once
+    paid history exists, except for later explicitly scoped subscription allocation
+    behavior
+
+- References:
+  - [financial safety rules](docs/sprints/3-jiraiya/jiraiya-04/01-financial-safety-rules.md)
+  - [blocked mutation workarounds](docs/sprints/3-jiraiya/jiraiya-04/02-blocked-mutation-workarounds.md)
+  - [implementation slices](docs/sprints/3-jiraiya/jiraiya-04/03-implementation-slices.md)
 
 ### JIRAIYA-05/fe-02: Consolidate data entry UX
 
 - Issues:
   - [#31](https://github.com/RickHPotter/finance.rb/issues/31)
 
-- Extra:
-  - Keep new UI work aligned with the current stack: Phlex, Tailwind, Turbo, and Stimulus.
-  - Scope clarification after JIRAIYA-04 rollout:
-    - partial `PayMultiple` was intentionally not implemented in Sprint 3
-    - if it comes back, it should be treated as a UX/product expansion here, not as
-      an unfinished financial-safety migration
-  - Planning baseline:
-    - [docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md](docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md)
-    - [docs/sprints/3-jiraiya/jiraiya-05/02-implementation-slices.md](docs/sprints/3-jiraiya/jiraiya-05/02-implementation-slices.md)
-  - Final pre-implementation state:
-    - there is no unfinished pre-`PayMultiple` JIRAIYA-04 blocker left in the repo
-    - the remaining work is product/UX planning, not exchange/runtime cleanup
+- Goal:
+  - Make daily data entry faster and more consistent without leaving transitional UI
+    primitives behind.
 
-- Subtasks:
-  - Finish the migration away from `HotwireCombobox` and make `RubyUI::Combobox` the
-    default solution.
-    - do it incrementally: easy non-JS-driven forms first, then the
-      `reactive_form_controller`-heavy transaction forms
-    - make `RubyUI::Combobox` match the minimum missing behavior needed for the
-      existing Stimulus integration to work during migration
-    - `hotwire_combobox` has been removed; `RubyUI::Combobox` is now the active path
-    - validate by manual pass; add request specs only when they are actually needed
-      and do not add feature specs
-  - Improve chain creation / duplication into a faster repeated-entry workflow.
-    - add explicit duplication for cash transactions and investments
-    - keep budgets and subscriptions out of this slice
-    - support clean `new` chains and `duplicate` chains
-    - make each newly created duplicate become the next sample in the chain
-    - keep clean `new` chains clean on every round except the required card
-      selection
-    - show explicit `Chain Creating` / `Chain Duplicating` form state
-    - add localized `Create more` / `Duplicate more` controls plus an explicit
-      finish-chain action
-    - support two explicit finish actions:
-      - save current form and finish chain
-      - finish chain without saving current form
-    - when the chain finishes, land back on index with the created records in view,
-      defaulting to a filtered family landing
-  - Improve keyboard-first date and datetime input.
-    - do not start with a custom calendar/clock
-    - prioritize typed desktop entry, faster keyboard navigation, and explicit
-      24-hour normalization first
-    - preserve the existing date when the user edits only the time portion
-    - defer shortcut-token ideas until the base keyboard flow is proven insufficient
-    - keep mobile/PWA conservative until that desktop contract proves itself
-  - Improve mobile/PWA date selection so users are not forced into awkward manual
-    input.
-  - Extend `BulkActionBar` so it communicates useful aggregate information about the
-    current selection.
-    - include aggregated selected price in the bar itself
-    - allow page-wide selection across all currently rendered rows, not only single
-      month-year group selection
-    - support shift-click range selection even across month-year containers
-    - disable pay/transfer dynamically when the current selection contains
-      ineligible rows
-    - keep invalid actions visible but disabled, with a short explanation
-    - add `Add to Subscription` as a bulk action with existing-subscription modal
-      selection/confirmation and direct `subscription_id` update
-  - If partial `PayMultiple` is still pursued later, treat it as a gated late slice
-    here instead of part of the closed JIRAIYA-04 rollout.
-  - Current implementation status:
-    - Slice 2 complete:
-      - `hotwire_combobox` has been fully removed from the shipped stack
-      - `RubyUI::Combobox` is now the only supported combobox path in the migrated
-        entry surfaces
-      - keyboard-first combobox behavior and `reactive_form_controller`
-        compatibility were stabilized during the migration
-    - Slice 3 complete:
-      - chained create/duplicate flow is live for card, cash, and investment
-      - cash and investment now expose explicit duplicate flows
-      - forms show explicit `Chain Creating` / `Chain Duplicating` state
-      - both finish modes are live:
-        - save and finish
-        - finish without saving the current form
-      - end-of-chain lands back on index scoped to the created family
-    - Slice 4 complete at the main-form scope:
-      - card and cash transaction forms now use the shared split date/time control
-      - time entry is 24-hour friendly and optimized for keyboard use
-      - the existing date is preserved when only time changes
-      - mobile/PWA keeps the conservative native date behavior for now
-      - installments, exchanges, and datetime-heavy modals were intentionally left
-        out of this slice
+- Shipped outcome:
+  - `hotwire_combobox` was removed; `RubyUI::Combobox` is now the supported combobox
+    path
+  - combobox keyboard behavior was tuned for fast tab/shift-tab workflows
+  - card, cash, and investment now support chained creation/duplication where scoped
+  - chain flows support both “save and finish” and “finish without saving”
+  - card/cash transaction forms now use a split date/time input with 24-hour-friendly
+    time entry
+  - the bulk action bar now shows selected count, selected total, delayed hide, page
+    selection, and shift-range selection
+  - Pay/Transfer enablement is computed from selected-row eligibility
+  - `Add to Subscription` is available from cash/card indexes and syncs selected
+    transactions into the subscription category/entity model
+
+- Left out intentionally:
+  - installments, exchanges, and datetime-heavy modals still use their existing date
+    controls
+  - `Budget` and `Subscription` duplication were not added
+  - partial `PayMultiple` remains a future gated product decision
+
+- References:
+  - [data entry UX planning](docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md)
+  - [implementation slices](docs/sprints/3-jiraiya/jiraiya-05/02-implementation-slices.md)
 
 ### JIRAIYA-06/app-02: Create `Context` as scenario planning
 

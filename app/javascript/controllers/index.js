@@ -61,6 +61,9 @@ application.register("icon-picker", IconPickerController)
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
 
+import InputSelectController from "./input_select_controller"
+application.register("input-select", InputSelectController)
+
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
 

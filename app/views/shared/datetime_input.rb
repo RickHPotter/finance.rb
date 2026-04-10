@@ -71,8 +71,15 @@ class Views::Shared::DatetimeInput < Views::Base
             aria: { label: I18n.t("datetime_input.time") },
             class: "#{input_class} text-center font-graduate",
             data: {
+              controller: "input-select",
               datetime_input_target: "timeInput",
-              action: "input->datetime-input#formatTimeInput blur->datetime-input#sync change->datetime-input#sync keydown->datetime-input#handleKeydown"
+              action: [
+                "click->input-select#select",
+                "input->datetime-input#formatTimeInput",
+                "blur->datetime-input#sync",
+                "change->datetime-input#sync",
+                "keydown->datetime-input#handleKeydown"
+              ].join(" ")
             }
           )
         end

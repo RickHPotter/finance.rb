@@ -85,7 +85,6 @@ class Views::Investments::Form < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
-              onclick: "this.select();",
               data: price_data(autofocus_target)
           end
         end
@@ -138,13 +137,18 @@ class Views::Investments::Form < Views::Base
 
   def price_data(autofocus_target)
     data = {
+      controller: "input-select",
       price_mask_target: :input,
       reactive_form_target: :priceInput,
-      action: "input->price-mask#applyMask"
+      action: "click->input-select#select input->price-mask#applyMask"
     }
     return data unless autofocus_target == :price
 
-    data.merge(autofocus_focus_data(select: true))
+    autofocus_data = autofocus_focus_data(select: true)
+    data.merge(
+      autofocus_data,
+      controller: [ data[:controller], autofocus_data[:controller] ].join(" ")
+    )
   end
 
   def autofocus_focus_data(select: false)

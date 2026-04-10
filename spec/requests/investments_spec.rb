@@ -43,7 +43,7 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('id="transaction_price"')
-      expect(response.body).to include('data-controller="autofocus"')
+      expect(response.body).to include('data-controller="input-select autofocus"')
       expect(response.body).to include('data-autofocus-select-value="true"')
     end
   end
@@ -68,7 +68,7 @@ RSpec.describe "Investments", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Duplicating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
-      expect(response.body).to include('data-controller="autofocus"')
+      expect(response.body).to include('data-controller="input-select autofocus"')
     end
   end
 
@@ -132,7 +132,10 @@ RSpec.describe "Investments", type: :request do
       end.not_to change(Investment, :count)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("investment%5Bid%5D%5B%5D=#{existing_investment.id}")
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+      expect(response.body).to include("202603")
       expect(response.body).not_to include("Chain Creating")
     end
 
@@ -151,6 +154,11 @@ RSpec.describe "Investments", type: :request do
           }
         }, headers: turbo_stream_headers
       end.to change(Investment, :count).by(1)
+
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+      expect(response.body).to include("202603")
     end
   end
 
@@ -172,6 +180,9 @@ RSpec.describe "Investments", type: :request do
       }, headers: turbo_stream_headers
 
       expect(investment.reload.description).to eq("Updated Investment")
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
     end
   end
 

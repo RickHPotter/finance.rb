@@ -43,16 +43,18 @@ module HasFinancialSafetyRules
   def subscription_allocation_bypass?
     return false unless respond_to?(:user)
 
-    relevant_category_ids = [ *Array(original_categories), *current_subscription_category_ids ].compact.uniq
+    relevant_category_ids = persisted_subscription_category_ids
     return false if relevant_category_ids.empty?
 
     user.categories.where(id: relevant_category_ids, category_name: "SUBSCRIPTION").exists?
   end
 
-  def current_subscription_category_ids
+  def persisted_subscription_category_ids
     return [] unless respond_to?(:category_transactions)
+    return Array(original_categories).compact.uniq if Array(original_categories).present?
+    return [] unless persisted?
 
-    category_transactions.reject(&:marked_for_destruction?).map(&:category_id)
+    category_transactions.class.where(transactable: self).pluck(:category_id).compact.uniq
   end
 
   def normalize_proposed_dates(proposed_dates)

@@ -210,6 +210,8 @@ editing flow fast enough for heavy users.
 
 ## Slice 5. Bulk Action Feedback
 
+Status: complete
+
 ### Goal
 
 Make bulk actions easier to understand before confirmation.
@@ -250,14 +252,31 @@ Make bulk actions easier to understand before confirmation.
 
 - `Add to Subscription` should attach to an existing subscription, not create a new
   one from the bar
-- the base write path is a direct `subscription_id` update on the selected records
-- no job is required for the base version unless later scale/latency proves it
-  necessary
+- the shipped write path receives selected transaction record ids, not installment ids
+- attachment syncs the selected transaction into the subscription flow:
+  - sets the subscription
+  - syncs description/comment
+  - merges existing transaction categories with the subscription categories and
+    `SUBSCRIPTION`
+  - merges existing transaction entities with the subscription entities
+- no job is required for the base version unless later scale/latency proves it necessary
 
 ### Feedback Rule
 
 Keep invalid actions visible but disabled, and show a short reason for the disabled
 state either inline in the bar or through a tooltip/hover affordance.
+
+### Shipped Outcome
+
+- bulk bar now shows selected count and aggregate selected price
+- bar starts hidden, appears on first selection, and fades away after deselection
+- all rendered rows are selectable
+- pay/transfer disable dynamically when the selected cash set contains ineligible rows
+- shift-click range selection works across month-year containers
+- `Select Page` selects every currently rendered row across all visible month-year groups
+- `Add to Subscription` is available on cash/card transaction indexes
+- subscription attachment merges categories/entities and supports paid-history
+  allocation changes for transactions in the subscription flow
 
 ## Slice 6. Optional Partial `PayMultiple`
 
@@ -280,7 +299,9 @@ are written first.
 These rules should remain true throughout JIRAIYA-05:
 
 1. JIRAIYA-04 financial-safety rules remain intact.
-2. Bulk or chained entry must not bypass paid-history guards.
+2. Bulk or chained entry must not bypass paid-history guards except for the explicit
+   subscription allocation bypass, which is limited to transactions carrying
+   `SUBSCRIPTION` in their category family.
 3. Exchange/shared-return flows must keep the canonical reference chain model.
 4. UX shortcuts must not create hidden structural mutations.
 

@@ -613,6 +613,11 @@ export default class extends Controller {
     if (!priceMaskElement) return
 
     const priceMaskController = this.application.getControllerForElementAndIdentifier(priceMaskElement, "price-mask")
+    const currentValue = parseInt(this.unmaskedPriceValue || "0", 10) || 0
+    const currentSign = this.priceInputTarget.dataset.sign || "-"
+    const nextSign = currentValue === 0 ? currentSign : (currentValue > 0 ? "+" : "-")
+
+    priceMaskController?.setSignForInput(this.priceInputTarget, nextSign)
     priceMaskController?.applyMask({ target: this.priceInputTarget })
   }
 }
