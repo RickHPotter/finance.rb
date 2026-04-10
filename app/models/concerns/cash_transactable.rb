@@ -52,8 +52,7 @@ module CashTransactable
     return if rewrite_locked_paid_cash_transaction?
 
     self.previous_cash_transaction_id = cash_transaction_id
-    self.cash_transaction = resolved_context.cash_transactions.joins(:category_transactions).find_by(cash_transaction_params.without(:description)) ||
-                            CashTransaction.create(new_cash_transaction_params)
+    self.cash_transaction = existing_projection_cash_transaction_to_attach || CashTransaction.create(new_cash_transaction_params)
   end
 
   # Deals with change of `cash_transaction` due to change of self FKs, by performing necessary operations to the `previous_cash_transaction`
@@ -157,6 +156,9 @@ module CashTransactable
     if is_a?(Investment)
       paid = true
       reference_date = Time.zone.today.beginning_of_month
+    elsif is_a?(CardInstallment)
+      reference_date = card_payment_date
+      paid = reference_date.present? && Time.zone.today >= reference_date
     else
       paid = (respond_to?(:paid) && paid) || (date.present? && Time.zone.today >= date)
       reference_date = card_payment_date
@@ -196,6 +198,7 @@ module CashTransactable
 
   def rewrite_locked_paid_cash_transaction?
     return false unless protect_paid_cash_transaction_projection?
+    return false if allow_new_projection_for_locked_paid_target?
     return false unless new_record? || changed?
     return false if same_cash_transaction_projection_target?
 
@@ -225,6 +228,16 @@ module CashTransactable
     resolved_context.cash_transactions
                     .joins(:category_transactions)
                     .find_by(cash_transaction_params.without(:description))
+  end
+
+  def existing_projection_cash_transaction_to_attach
+    return if allow_new_projection_for_locked_paid_target?
+
+    target_cash_transaction_for_rewrite
+  end
+
+  def allow_new_projection_for_locked_paid_target?
+    new_record? && is_a?(CardInstallment) && target_cash_transaction_paid_history?
   end
 
   def protect_paid_cash_transaction_projection?

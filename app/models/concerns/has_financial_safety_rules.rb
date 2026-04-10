@@ -33,6 +33,8 @@ module HasFinancialSafetyRules
   end
 
   def can_destroy_with_history?
+    return true if is_a?(CashTransaction) && subscription_allocation_bypass?
+
     !paid_history?
   end
 
@@ -42,6 +44,7 @@ module HasFinancialSafetyRules
 
   def subscription_allocation_bypass?
     return false unless respond_to?(:user)
+    return true if attached_to_subscription_flow?
 
     relevant_category_ids = persisted_subscription_category_ids
     return false if relevant_category_ids.empty?
@@ -51,10 +54,17 @@ module HasFinancialSafetyRules
 
   def persisted_subscription_category_ids
     return [] unless respond_to?(:category_transactions)
-    return Array(original_categories).compact.uniq if Array(original_categories).present?
     return [] unless persisted?
 
-    category_transactions.class.where(transactable: self).pluck(:category_id).compact.uniq
+    category_transactions.proxy_association.klass.where(transactable: self).pluck(:category_id).compact.uniq
+  end
+
+  def attached_to_subscription_flow?
+    return false unless respond_to?(:subscription)
+
+    subscription.present? ||
+      subscription_id.present? ||
+      (respond_to?(:original_subscription_id) && original_subscription_id.present?)
   end
 
   def normalize_proposed_dates(proposed_dates)

@@ -357,6 +357,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             action: "mousedown->datatable#preventRangeSelection click->datatable#toggleSelection",
             bulk_price_cents: cash_installment.price,
             bulk_record_id: cash_transaction.id,
+            bulk_label: [
+              cash_transaction.description,
+              "·",
+              pretty_installments(cash_installment.number, cash_installment.cash_installments_count),
+              "·",
+              from_cent_based_to_float(cash_installment.price, "R$")
+            ].join,
             bulk_pay_eligible: cash_installment.bulk_pay_eligible?.to_s,
             bulk_transfer_eligible: cash_installment.bulk_transfer_eligible?.to_s,
             bulk_subscription_eligible: cash_transaction.bulk_subscription_eligible?.to_s

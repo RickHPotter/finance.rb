@@ -111,11 +111,26 @@ export default class extends Controller {
   prepareBulkAction(event) {
     const kind = event.currentTarget.dataset.bulkIdsKind || "installment"
     const selectedIds = this.selectedIds(kind)
+    const selectionData = this.selectedSelectionData(kind)
 
     this.element.querySelectorAll("[data-bulk-ids-input]").forEach(input => {
       if ((input.dataset.bulkIdsKind || "installment") !== kind) return
       input.value = selectedIds.join(",")
     })
+
+    this.element.querySelectorAll("[data-bulk-selection-input]").forEach(input => {
+      if ((input.dataset.bulkIdsKind || "installment") !== kind) return
+      input.value = JSON.stringify(selectionData)
+    })
+
+    const modalId = event.currentTarget.dataset.modalTarget
+    if (!modalId) return
+
+    const modalElement = document.getElementById(modalId)
+    if (!modalElement) return
+
+    const partialPayController = this.application.getControllerForElementAndIdentifier(modalElement, "partial-pay-multiple")
+    partialPayController?.loadSelection(selectionData)
   }
 
   syncBulkBars() {
@@ -219,6 +234,10 @@ export default class extends Controller {
     return [...new Set(values)]
   }
 
+  selectedSelectionData(kind) {
+    return this.selectedCheckboxes().map((checkbox) => this.selectionDataFor(checkbox, kind)).filter(Boolean)
+  }
+
   syncActionButtons(selected) {
     let hint = ""
 
@@ -261,6 +280,20 @@ export default class extends Controller {
 
   priceFromCheckbox(checkbox) {
     return parseInt(checkbox.dataset.bulkPriceCents || "0", 10)
+  }
+
+  selectionDataFor(checkbox, kind) {
+    const rawId = kind === "record" ? checkbox.dataset.bulkRecordId : checkbox.value
+    if (!rawId) return null
+
+    const signedPriceCents = this.priceFromCheckbox(checkbox)
+
+    return {
+      id: parseInt(rawId, 10),
+      priceCents: signedPriceCents,
+      priceAbsCents: Math.abs(signedPriceCents),
+      label: checkbox.dataset.bulkLabel || rawId
+    }
   }
 
   formatCurrency(cents) {

@@ -94,6 +94,7 @@ en:
     finish_chain: "Finish chain"
     finish_chain_without_save: "Finish chain without saving"
     add_to_subscription: "Add to Subscription"
+    partial_pay: "Partial Pay"
 
   navigation:
     previous: "Previous"
@@ -129,6 +130,15 @@ en:
     empty_selection: "Select at least one transaction."
     invalid_subscription: "Select a valid subscription."
     no_subscriptions_available: "Create a subscription first before using this action."
+    partial_pay:
+      title: "Confirm Partial Payment"
+      amount: "Payment amount"
+      choose_installment: "Choose partial transaction"
+      allowed_range: "Allowed range"
+      invalid_amount: "Choose an amount that fully pays all selected transactions except one."
+      invalid_selection: "Choose which transaction will remain partially paid."
+      mixed_signs: "Partial pay requires selected transactions with the same sign."
+      unavailable: "Partial pay is not available for this selection."
     disabled:
       pay: "Some selected transactions cannot be paid."
       transfer: "Some selected transactions cannot be transferred."
@@ -230,6 +240,7 @@ pt-BR:
     finish_chain: "Finalizar cadeia"
     finish_chain_without_save: "Finalizar cadeia sem salvar"
     add_to_subscription: "Adicionar à Assinatura"
+    partial_pay: "Pagar Parcial"
 
   navigation:
     previous: "Anterior"
@@ -265,6 +276,15 @@ pt-BR:
     empty_selection: "Selecione pelo menos uma transação."
     invalid_subscription: "Selecione uma assinatura válida."
     no_subscriptions_available: "Crie uma assinatura antes de usar esta ação."
+    partial_pay:
+      title: "Confirmar Pagamento Parcial"
+      amount: "Valor do pagamento"
+      choose_installment: "Escolha a transação parcial"
+      allowed_range: "Faixa permitida"
+      invalid_amount: "Escolha um valor que quite totalmente todas as transações selecionadas, exceto uma."
+      invalid_selection: "Escolha qual transação permanecerá parcialmente paga."
+      mixed_signs: "O pagamento parcial exige transações selecionadas com o mesmo sinal."
+      unavailable: "Pagamento parcial não está disponível para esta seleção."
     disabled:
       pay: "Algumas transações selecionadas não podem ser pagas."
       transfer: "Algumas transações selecionadas não podem ser transferidas."

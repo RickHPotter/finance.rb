@@ -118,7 +118,6 @@ too visible to ignore.
     were removed after production cleanup
 
 - Left out intentionally:
-  - partial `PayMultiple`; bulk payment still means full-installment payment
   - broad category/entity allocation redesign; the V1 rule remains a hard block once
     paid history exists, except for later explicitly scoped subscription allocation
     behavior
@@ -150,12 +149,15 @@ too visible to ignore.
   - Pay/Transfer enablement is computed from selected-row eligibility
   - `Add to Subscription` is available from cash/card indexes and syncs selected
     transactions into the subscription category/entity model
+  - partial `PayMultiple` is available for cash installments with a dedicated modal,
+    deterministic amount bounds, and explicit partial-installment selection
+  - card-bound partial-pay exchange-return flows now preserve the paid prefix and
+    only grow the unpaid remainder when later same-bucket source exchanges are added
 
 - Left out intentionally:
   - installments, exchanges, and datetime-heavy modals still use their existing date
     controls
   - `Budget` and `Subscription` duplication were not added
-  - partial `PayMultiple` remains a future gated product decision
 
 - References:
   - [data entry UX planning](docs/sprints/3-jiraiya/jiraiya-05/01-data-entry-ux-planning.md)

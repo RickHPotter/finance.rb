@@ -5,7 +5,7 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
 
   before_action :set_cash_installment, only: %i[pay]
 
-  def pay # rubocop:disable Metrics/AbcSize
+  def pay
     cash_installment_date  = @cash_installment.date
     cash_installment_price = @cash_installment.price
 
@@ -16,24 +16,8 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     date  = Time.zone.parse(cash_installment_params[:date]) if cash_installment_params[:date].present?
 
     min_date = [ cash_installment_date, date ].min
-    structure_change = cash_installment_price != price
-    should_send_update_notification = structure_change && @cash_installment.send(:shared_paid_state_transaction?)
-    @cash_installment.skip_shared_paid_state_sync = true if should_send_update_notification
-
-    @cash_installment = update_installment(@cash_installment, date, price)
+    @cash_installment = pay_installment(@cash_installment, date:, price:)
     return handle_failed_save(@cash_installment) if @cash_installment.errors.any?
-
-    if structure_change
-      if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
-        cash_installment_date
-      else
-        cash_installment_date + 1.day
-      end => new_date
-
-      Logic::Manipulation::CashInstallment.new(@cash_installment).split_installment(new_date, cash_installment_price - price)
-    end
-
-    Logic::SharedPaidStateSyncService.new(installment: @cash_installment, force_notify: true).call if should_send_update_notification
 
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
@@ -60,12 +44,52 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     handle_save
   end
 
+  def partial_pay_multiple
+    cash_installments = selected_cash_installments.to_a
+    return handle_empty_selection if cash_installments.empty?
+
+    partial_payment = build_partial_multiple_payment(cash_installments)
+    return handle_invalid_partial_multiple_payment(partial_payment[:alert], cash_installments.first) unless partial_payment[:valid]
+
+    failed_installment = apply_partial_multiple_payment(cash_installments, partial_payment)
+    return handle_failed_save(failed_installment) if failed_installment.present?
+
+    recalculate_balances_for(partial_payment[:min_date])
+
+    handle_save
+  end
+
   def update_installment(cash_installment, date, price = nil)
     params = { date:, paid: true }
     params.merge!(year: date.year, month: date.month) if cash_installment.date.month != date.month
     params.merge!(price:) if price
 
     cash_installment.update(params)
+    cash_installment
+  end
+
+  def pay_installment(cash_installment, date:, price:)
+    cash_installment_date = cash_installment.date
+    cash_installment_price = cash_installment.price
+    structure_change = cash_installment_price != price
+    should_send_update_notification = structure_change && cash_installment.send(:shared_paid_state_transaction?)
+    cash_installment.skip_shared_paid_state_sync = true if should_send_update_notification
+
+    cash_installment = update_installment(cash_installment, date, price)
+    return cash_installment if cash_installment.errors.any?
+
+    if structure_change
+      if cash_installment_date.strftime("%Y%m%d").to_i > date.strftime("%Y%m%d").to_i
+        cash_installment_date
+      else
+        cash_installment_date + 1.day
+      end => new_date
+
+      Logic::Manipulation::CashInstallment.new(cash_installment).split_installment(new_date, cash_installment_price - price)
+    end
+
+    Logic::SharedPaidStateSyncService.new(installment: cash_installment, force_notify: true).call if should_send_update_notification
+
     cash_installment
   end
 
@@ -104,7 +128,13 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
   end
 
   def build_index_context
-    date = Date.new(@cash_installment.year, @cash_installment.month)
+    date =
+      if @cash_installment.present?
+        Date.new(@cash_installment.year, @cash_installment.month)
+      else
+        Time.zone.today.beginning_of_month.to_date
+      end
+
     active_month_years = [ date.strftime("%Y%m").to_i ]
     years = [ date.year ]
     default_year = years.first
@@ -230,6 +260,100 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     current_context.cash_installments.includes(:cash_transaction).where(id: selected_ids, paid: false).order(:order_id)
   end
 
+  def validate_partial_multiple_payment(cash_installments, requested_amount_cents:)
+    partial_installment = cash_installments.find { |installment| installment.id.to_s == params[:partial_installment_id].to_s }
+    return invalid_partial_multiple_payment(:invalid_selection) if partial_installment.blank?
+
+    return invalid_partial_multiple_payment(:mixed_signs) if partial_multiple_payment_mixed_signs?(cash_installments)
+
+    total_abs, largest_abs = partial_multiple_payment_totals(cash_installments)
+    min_allowed, max_allowed = partial_multiple_payment_range(total_abs, largest_abs)
+    requested_amount = requested_amount_cents.abs
+
+    return invalid_partial_multiple_payment(:unavailable) if min_allowed > max_allowed
+    return invalid_partial_multiple_payment(:invalid_amount) if requested_amount < min_allowed || requested_amount > max_allowed
+
+    remaining_abs = total_abs - requested_amount
+    partial_price = build_partial_price(partial_installment, remaining_abs)
+    return invalid_partial_multiple_payment(:invalid_selection) if partial_price.blank?
+
+    {
+      valid: true,
+      partial_installment:,
+      partial_price:
+    }
+  end
+
+  def build_partial_multiple_payment(cash_installments)
+    date = Time.zone.parse(cash_installment_params[:date]) || Time.zone.now
+    validation = validate_partial_multiple_payment(cash_installments, requested_amount_cents: cash_installment_params[:price].to_i)
+
+    validation.merge(
+      date:,
+      min_date: [ *cash_installments.map(&:date), date ].min
+    )
+  end
+
+  def apply_partial_multiple_payment(cash_installments, partial_payment)
+    skip_shared_paid_state_sync_for_partial_multiple(cash_installments, partial_payment[:partial_installment], partial_payment[:partial_price])
+
+    cash_installments.each do |cash_installment|
+      next if cash_installment.id == partial_payment[:partial_installment].id
+
+      update_installment(cash_installment, partial_payment[:date])
+      return cash_installment if cash_installment.errors.any?
+    end
+
+    @cash_installment = pay_installment(partial_payment[:partial_installment], date: partial_payment[:date], price: partial_payment[:partial_price])
+    return @cash_installment if @cash_installment.errors.any?
+
+    nil
+  end
+
+  def skip_shared_paid_state_sync_for_partial_multiple(cash_installments, partial_installment, partial_price)
+    installments_requiring_sync_skip(cash_installments, partial_installment, partial_price).each do |installment|
+      installment.skip_shared_paid_state_sync = true
+    end
+  end
+
+  def partial_multiple_payment_mixed_signs?(cash_installments)
+    signed_prices = cash_installments.map(&:price).reject(&:zero?).map(&:positive?)
+    signed_prices.uniq.many?
+  end
+
+  def partial_multiple_payment_totals(cash_installments)
+    total_abs = cash_installments.sum { |installment| installment.price.abs }
+    largest_abs = cash_installments.map { |installment| installment.price.abs }.max || 0
+
+    [ total_abs, largest_abs ]
+  end
+
+  def partial_multiple_payment_range(total_abs, largest_abs)
+    [ total_abs - largest_abs + 1, total_abs - 1 ]
+  end
+
+  def build_partial_price(partial_installment, remaining_abs)
+    partial_abs = partial_installment.price.abs - remaining_abs
+    return if partial_abs <= 0
+
+    partial_installment.price.positive? ? partial_abs : partial_abs * -1
+  end
+
+  def invalid_partial_multiple_payment(key)
+    { valid: false, alert: I18n.t("bulk_actions.partial_pay.#{key}") }
+  end
+
+  def recalculate_balances_for(date)
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: date.year, month: date.month).call
+  end
+
+  def installments_requiring_sync_skip(cash_installments, partial_installment, partial_price)
+    return [] unless partial_installment.price != partial_price
+    return [] unless partial_installment.send(:shared_paid_state_transaction?)
+
+    cash_installments.select { |installment| installment.cash_transaction_id == partial_installment.cash_transaction_id }
+  end
+
   def selected_ids
     case params[:ids]
     when String then params[:ids].split(",").compact_blank
@@ -246,6 +370,19 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
         render turbo_stream: [
           turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, CashInstallment) })
         ]
+      end
+    end
+  end
+
+  def handle_invalid_partial_multiple_payment(alert, cash_installment)
+    @cash_installment = cash_installment
+    build_index_context_from_selection || build_index_context
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: })
+        ], status: :unprocessable_content
       end
     end
   end

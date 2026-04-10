@@ -562,6 +562,447 @@ RSpec.describe "CardTransactions", type: :request do
       expect(shared_exchange_return.exchanges.card_bound.order(:number, :date).pluck(:price)).to eq([ -2200, -2899 ])
     end
 
+    it "preserves the paid partial installment and increases the unpaid card-bound EXCHANGE RETURN remainder in the same bucket" do
+      create(:reference, context: user.main_context, user_card: user_card_one, month: 4, year: 2026, reference_date: Date.new(2026, 4, 12))
+
+      first_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_200,
+          date: Time.zone.local(2026, 3, 20, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_200,
+          price_to_be_returned: -2_200,
+          exchanges_attributes: [ { price: -2_200, exchange_type: :monetary, date: Time.zone.local(2026, 3, 20, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: first_params.params, headers: turbo_stream_headers
+
+      shared_exchange_return = CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction.reload
+
+      patch pay_cash_installment_path(shared_exchange_return.cash_installments.find_by!(number: 1)), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 26, 17, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: -500
+        }
+      }, headers: turbo_stream_headers
+
+      expect(shared_exchange_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -1700, false ] ])
+
+      sign_in user
+
+      second_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_899,
+          date: Time.zone.local(2026, 3, 21, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_899,
+          price_to_be_returned: -2_899,
+          exchanges_attributes: [ { price: -2_899, exchange_type: :monetary, date: Time.zone.local(2026, 3, 21, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      expect { post card_transactions_path, params: second_params.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
+
+      shared_exchange_return.reload
+
+      expect(CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -4599, false ] ])
+      expected_due_date = Time.zone.local(2026, 4, 12).end_of_day.change(usec: 999_999)
+
+      expect(shared_exchange_return.cash_installments.order(:number).pluck(:date)).to eq(
+        [ Time.zone.local(2026, 3, 26, 17, 0, 0), expected_due_date ]
+      )
+      expect(shared_exchange_return.date).to eq(expected_due_date)
+      expect(shared_exchange_return.month).to eq(4)
+      expect(shared_exchange_return.year).to eq(2026)
+    end
+
+    it "adds only the latest same-bucket exchange amount to the unpaid remainder after a partial pay" do
+      create(:reference, context: user.main_context, user_card: user_card_one, month: 4, year: 2026, reference_date: Date.new(2026, 4, 12))
+
+      first_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_200,
+          date: Time.zone.local(2026, 3, 20, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_200,
+          price_to_be_returned: -2_200,
+          exchanges_attributes: [ { price: -2_200, exchange_type: :monetary, date: Time.zone.local(2026, 3, 20, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+      second_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_899,
+          date: Time.zone.local(2026, 3, 21, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_899,
+          price_to_be_returned: -2_899,
+          exchanges_attributes: [ { price: -2_899, exchange_type: :monetary, date: Time.zone.local(2026, 3, 21, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: first_params.params, headers: turbo_stream_headers
+      first_card_transaction = CardTransaction.last
+
+      sign_in user
+
+      post card_transactions_path, params: second_params.params, headers: turbo_stream_headers
+      second_card_transaction = CardTransaction.last
+
+      shared_exchange_return = first_card_transaction.entity_transactions.first.exchanges.first.cash_transaction.reload
+
+      expect(second_card_transaction.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -5_099, false ] ])
+
+      patch pay_cash_installment_path(shared_exchange_return.cash_installments.find_by!(number: 1)), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 26, 17, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: -500
+        }
+      }, headers: turbo_stream_headers
+
+      expect(shared_exchange_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -4_599, false ] ])
+
+      sign_in user
+
+      third_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -1_300,
+          date: Time.zone.local(2026, 3, 22, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -1_300,
+          price_to_be_returned: -1_300,
+          exchanges_attributes: [ { price: -1_300, exchange_type: :monetary, date: Time.zone.local(2026, 3, 22, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: third_params.params, headers: turbo_stream_headers
+
+      shared_exchange_return.reload
+      paid_installment, unpaid_installment = shared_exchange_return.cash_installments.order(:number)
+
+      expect(CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.cash_installments_count).to eq(2)
+      expect(shared_exchange_return.price).to eq(-6_399)
+      expect(paid_installment.price).to eq(-500)
+      expect(paid_installment).to be_paid
+      expect(unpaid_installment.price).to eq(-5_899)
+      expect(unpaid_installment).not_to be_paid
+      expect(unpaid_installment.price).not_to eq(shared_exchange_return.price)
+
+      sign_in user
+
+      fourth_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -700,
+          date: Time.zone.local(2026, 3, 23, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -700,
+          price_to_be_returned: -700,
+          exchanges_attributes: [ { price: -700, exchange_type: :monetary, date: Time.zone.local(2026, 3, 23, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: fourth_params.params, headers: turbo_stream_headers
+
+      shared_exchange_return.reload
+      paid_installment, unpaid_installment = shared_exchange_return.cash_installments.order(:number)
+
+      expect(CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.price).to eq(-7_099)
+      expect(paid_installment.price).to eq(-500)
+      expect(paid_installment).to be_paid
+      expect(unpaid_installment.price).to eq(-6_599)
+      expect(unpaid_installment).not_to be_paid
+
+      patch pay_cash_installment_path(unpaid_installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 27, 17, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: -1_000
+        }
+      }, headers: turbo_stream_headers
+
+      shared_exchange_return.reload
+      first_paid, second_paid, third_unpaid = shared_exchange_return.cash_installments.order(:number)
+
+      expect(shared_exchange_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -1_000, true ], [ -5_599, false ] ])
+      expect(first_paid.date).to eq(Time.zone.local(2026, 3, 26, 17, 0, 0))
+      expect(second_paid.date).to eq(Time.zone.local(2026, 3, 27, 17, 0, 0))
+      expect(third_unpaid).not_to be_paid
+
+      sign_in user
+
+      fifth_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -900,
+          date: Time.zone.local(2026, 3, 24, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -900,
+          price_to_be_returned: -900,
+          exchanges_attributes: [ { price: -900, exchange_type: :monetary, date: Time.zone.local(2026, 3, 24, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: fifth_params.params, headers: turbo_stream_headers
+
+      shared_exchange_return.reload
+      first_paid, second_paid, third_unpaid = shared_exchange_return.cash_installments.order(:number)
+
+      expect(CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.cash_installments_count).to eq(3)
+      expect(shared_exchange_return.price).to eq(-7_999)
+      expect(first_paid.price).to eq(-500)
+      expect(first_paid).to be_paid
+      expect(second_paid.price).to eq(-1_000)
+      expect(second_paid).to be_paid
+      expect(third_unpaid.price).to eq(-6_499)
+      expect(third_unpaid).not_to be_paid
+      expect(third_unpaid.price).not_to eq(shared_exchange_return.price)
+    end
+
+    it "prefers the active unpaid shared return over older paid card-bound candidates after multiple partial pays" do
+      due_date = Time.zone.local(2026, 4, 12).end_of_day.change(usec: 999_999)
+      create(:reference, context: user.main_context, user_card: user_card_one, month: 4, year: 2026, reference_date: Date.new(2026, 4, 12))
+
+      stale_shared_return = CashTransaction.create!(
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "[ 04/2026 ] #{entity_one.entity_name} - #{user_card_one.user_card_name}",
+        date: due_date,
+        month: 4,
+        year: 2026,
+        price: -1_200,
+        cash_transaction_type: "Exchange",
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: entity_one.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: due_date, month: 4, year: 2026, price: -1_200, paid: true }
+        ]
+      )
+      stale_shared_return.cash_installments.destroy_all
+      stale_shared_return.cash_installments.create!(number: 1, date: due_date, month: 4, year: 2026, price: -1_200, paid: true)
+      stale_shared_return.update_columns(cash_installments_count: 1, paid: true)
+
+      stale_origin = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Stale card-bound source",
+        date: Time.zone.local(2025, 12, 20, 10, 0, 0),
+        month: 4,
+        year: 2026,
+        price: -1_200
+      )
+      stale_origin.category_transactions.destroy_all
+      stale_origin.category_transactions.create!(category: exchange_category)
+      stale_entity_transaction = stale_origin.entity_transactions.first
+      stale_entity_transaction.update!(entity_id: entity_one.id, is_payer: true, price: -1_200, price_to_be_returned: -1_200, exchanges_count: 1)
+      now = Time.current
+      Exchange.insert_all!([
+                             {
+                               entity_transaction_id: stale_entity_transaction.id,
+                               cash_transaction_id: stale_shared_return.id,
+                               bound_type: Exchange.bound_types[:card_bound],
+                               exchange_type: Exchange.exchange_types[:monetary],
+                               number: 1,
+                               price: -1_200,
+                               starting_price: -1_200,
+                               date: due_date,
+                               month: 4,
+                               year: 2026,
+                               created_at: now,
+                               updated_at: now
+                             }
+                           ])
+
+      shared_exchange_return = CashTransaction.create!(
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "[ 04/2026 ] #{entity_one.entity_name} - #{user_card_one.user_card_name}",
+        date: due_date,
+        month: 4,
+        year: 2026,
+        price: -7_099,
+        cash_transaction_type: "Exchange",
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: entity_one.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: Time.zone.local(2026, 3, 26, 17, 0, 0), month: 3, year: 2026, price: -500, paid: true },
+          { number: 2, date: Time.zone.local(2026, 3, 27, 17, 0, 0), month: 3, year: 2026, price: -1_000, paid: true },
+          { number: 3, date: due_date, month: 4, year: 2026, price: -5_599, paid: false }
+        ]
+      )
+      shared_exchange_return.cash_installments.destroy_all
+      shared_exchange_return.cash_installments.create!(number: 1, date: Time.zone.local(2026, 3, 26, 17, 0, 0), month: 3, year: 2026, price: -500, paid: true)
+      shared_exchange_return.cash_installments.create!(number: 2, date: Time.zone.local(2026, 3, 27, 17, 0, 0), month: 3, year: 2026, price: -1_000, paid: true)
+      shared_exchange_return.cash_installments.create!(number: 3, date: due_date, month: 4, year: 2026, price: -5_599, paid: false)
+      shared_exchange_return.update_columns(cash_installments_count: 3, paid: false)
+
+      active_origin = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Active card-bound source",
+        date: Time.zone.local(2026, 3, 24, 10, 0, 0),
+        month: 4,
+        year: 2026,
+        price: -7_099
+      )
+      active_origin.category_transactions.destroy_all
+      active_origin.category_transactions.create!(category: exchange_category)
+      active_entity_transaction = active_origin.entity_transactions.first
+      active_entity_transaction.update!(entity_id: entity_one.id, is_payer: true, price: -7_099, price_to_be_returned: -7_099, exchanges_count: 3)
+      Exchange.insert_all!([
+                             {
+                               entity_transaction_id: active_entity_transaction.id,
+                               cash_transaction_id: shared_exchange_return.id,
+                               bound_type: Exchange.bound_types[:card_bound],
+                               exchange_type: Exchange.exchange_types[:monetary],
+                               number: 1,
+                               price: -500,
+                               starting_price: -500,
+                               date: Time.zone.local(2026, 3, 26, 17, 0, 0),
+                               month: 3,
+                               year: 2026,
+                               created_at: now,
+                               updated_at: now
+                             },
+                             {
+                               entity_transaction_id: active_entity_transaction.id,
+                               cash_transaction_id: shared_exchange_return.id,
+                               bound_type: Exchange.bound_types[:card_bound],
+                               exchange_type: Exchange.exchange_types[:monetary],
+                               number: 2,
+                               price: -1_000,
+                               starting_price: -1_000,
+                               date: Time.zone.local(2026, 3, 27, 17, 0, 0),
+                               month: 3,
+                               year: 2026,
+                               created_at: now,
+                               updated_at: now
+                             },
+                             {
+                               entity_transaction_id: active_entity_transaction.id,
+                               cash_transaction_id: shared_exchange_return.id,
+                               bound_type: Exchange.bound_types[:card_bound],
+                               exchange_type: Exchange.exchange_types[:monetary],
+                               number: 3,
+                               price: -5_599,
+                               starting_price: -5_599,
+                               date: due_date,
+                               month: 4,
+                               year: 2026,
+                               created_at: now,
+                               updated_at: now
+                             }
+                           ])
+
+      new_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -900,
+          date: Time.zone.local(2026, 3, 24, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -900,
+          price_to_be_returned: -900,
+          exchanges_attributes: [ { price: -900, exchange_type: :monetary, date: Time.zone.local(2026, 3, 24, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: new_params.params, headers: turbo_stream_headers
+
+      shared_exchange_return.reload
+      stale_shared_return.reload
+      first_paid, second_paid, third_unpaid = shared_exchange_return.cash_installments.order(:number)
+
+      expect(CardTransaction.last.entity_transactions.first.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+      expect(shared_exchange_return.cash_installments_count).to eq(3)
+      expect(shared_exchange_return.price).to eq(-7_999)
+      expect(first_paid.price).to eq(-500)
+      expect(first_paid).to be_paid
+      expect(second_paid.price).to eq(-1_000)
+      expect(second_paid).to be_paid
+      expect(third_unpaid.price).to eq(-6_499)
+      expect(third_unpaid).not_to be_paid
+      expect(stale_shared_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -1_200, true ] ])
+    end
+
     it "uses different card-bound EXCHANGE RETURN cash transactions when two exchanges belong to different months" do
       current_date = Time.zone.local(2026, 3, 20, 10, 0, 0)
       card_transaction.date = current_date
@@ -595,6 +1036,33 @@ RSpec.describe "CardTransactions", type: :request do
       expect(april_return.cash_installments.order(:number).pluck(:price)).to eq([ -6_000 ])
       expect(may_return.description).to eq("[ 05/2026 ] #{entity_one.entity_name} - #{user_card_one.user_card_name}")
       expect(may_return.cash_installments.order(:number).pluck(:price)).to eq([ -6_000 ])
+    end
+
+    it "creates a past-dated EXCHANGE card transaction with an unpaid card-bound exchange return in the same bucket" do
+      card_transaction.date = Time.zone.local(2026, 3, 15, 10, 0, 0)
+      card_transaction.month = 4
+      card_transaction.year = 2026
+      card_transaction.card_installments = { count: 2 }
+      card_transaction.category_transactions = [ { category_id: exchange_category.id } ]
+      card_transaction.entity_transactions = [
+        {
+          entity_id: entity_one.id,
+          price: -12_000,
+          price_to_be_returned: -12_000,
+          exchanges_attributes: [
+            { price: -6_000, exchange_type: :monetary, date: Time.zone.local(2026, 3, 16, 10, 0, 0), month: 3, year: 2026 },
+            { price: -6_000, exchange_type: :monetary, date: Time.zone.local(2026, 3, 20, 10, 0, 0), month: 3, year: 2026 }
+          ]
+        }
+      ]
+
+      expect { post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers }.to change(CardTransaction, :count).by(1)
+
+      created_card_transaction = CardTransaction.last
+      exchange_return = created_card_transaction.entity_transactions.first.exchanges.first.cash_transaction
+
+      expect(exchange_return.cash_installments.order(:number).pluck(:price)).to eq([ -12_000 ])
+      expect(exchange_return.cash_installments.order(:number).pluck(:paid)).to eq([ false ])
     end
   end
 

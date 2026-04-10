@@ -25,6 +25,7 @@ class Views::CashTransactions::Index < Views::Base
               end
 
               render PayMultipleModal.new(index_context:)
+              render PartialPayMultipleModal.new(index_context:)
               render TransferMultipleModal.new(index_context:)
               render Views::Shared::AddToSubscriptionModal.new(
                 modal_id: "cashTransactionsAddToSubscriptionModal",
@@ -46,7 +47,24 @@ class Views::CashTransactions::Index < Views::Base
                     title: model_attribute(CashInstallment, :pay),
                     label: model_attribute(CashInstallment, :pay),
                     disabled_reason: I18n.t("bulk_actions.disabled.pay"),
-                    data: { action: "click->datatable#prepareBulkAction", modal_target: "cashInstallmentsModal", modal_toggle: "cashInstallmentsModal" }
+                    menu_items: [
+                      {
+                        label: model_attribute(CashInstallment, :pay),
+                        data: {
+                          action: "click->datatable#prepareBulkAction",
+                          modal_target: "cashInstallmentsModal",
+                          modal_toggle: "cashInstallmentsModal"
+                        }
+                      },
+                      {
+                        label: action_message(:partial_pay),
+                        data: {
+                          action: "click->datatable#prepareBulkAction",
+                          modal_target: "cashInstallmentsPartialModal",
+                          modal_toggle: "cashInstallmentsPartialModal"
+                        }
+                      }
+                    ]
                   },
                   {
                     name: "transfer",

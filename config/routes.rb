@@ -95,6 +95,7 @@ Rails.application.routes.draw do
 
     collection do
       post :pay_multiple
+      post :partial_pay_multiple
       post :transfer_multiple
     end
   end

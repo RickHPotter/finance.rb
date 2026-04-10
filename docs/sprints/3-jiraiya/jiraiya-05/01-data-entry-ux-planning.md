@@ -98,14 +98,23 @@ Shipped behavior:
 - pay/transfer disable when the selected cash installment set contains ineligible rows
 - `Add to Subscription` is available for cash/card indexes through an existing-subscription modal
 
-### 5. Partial `PayMultiple` is still intentionally out
+### 5. Partial `PayMultiple` was pulled into the slice later
 
-The shipped `pay_multiple` flow bulk-pays full installments only.
+The shipped cash-installment bulk flow now supports both:
 
-That is the current product decision, not an incomplete hidden rollout.
+- full `PayMultiple`
+- partial `PayMultiple`
 
-If partial `PayMultiple` returns, it should be treated as a later `JIRAIYA-05`
-decision gate, not as an assumed requirement of the base consolidation work.
+The partial path is intentionally constrained:
+
+- the entered amount must fully pay all selected installments except one
+- the remaining partial installment must be explicitly selected from the valid
+  candidates
+- the selection becomes invalid again if the amount no longer fits the chosen
+  partial target
+
+This keeps the bulk partial-pay behavior deterministic instead of turning it into
+free-form allocation.
 
 ## Scope
 
@@ -117,6 +126,7 @@ decision gate, not as an assumed requirement of the base consolidation work.
 3. making chain creation / duplication materially faster
 4. unifying date/datetime behavior across desktop and mobile
 5. making bulk actions more informative before the user confirms them
+6. adding the constrained partial `PayMultiple` flow for cash installments
 
 ## Non-Goals
 
@@ -126,7 +136,8 @@ For now, `JIRAIYA-05` should not include:
 - category/entity allocation redesign beyond the current hard safety block
 - conversation/assistant product work
 - a full rewrite of every form/controller in one shot
-- partial `PayMultiple` unless it is deliberately pulled in later
+- another round of partial-payment expansion beyond the current deterministic
+  cash-installment flow
 
 ## Product Principles
 
@@ -144,9 +155,9 @@ For now, `JIRAIYA-05` should not include:
 
 ## Remaining Product Decision
 
-1. Partial `PayMultiple`
-   - current answer: still no
-   - if it returns, it should stay a late gated slice inside `JIRAIYA-05`
+1. Partial-payment expansion beyond the current shipped flow
+   - current answer: no broader expansion yet
+   - if it returns, it should stay tightly scoped to deterministic cases
 
 ## Locked Direction For Chain Creation
 

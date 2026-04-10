@@ -6,7 +6,7 @@ module HasCardInstallments
 
   included do
     # @security (i.e. attr_accessible) ........................................
-    attr_accessor :original_installments
+    attr_accessor :original_installments, :original_installment_projection_rows
 
     # @relationships ..........................................................
     has_many :card_installments, dependent: :destroy
@@ -19,12 +19,12 @@ module HasCardInstallments
 
   # @public_class_methods .....................................................
   def card_installments_attributes=(attrs)
-    self.original_installments = card_installments.order(:number).map { |i| i.slice(:number, :year, :month, :price) }
+    snapshot_original_installments
     super
   end
 
   def card_installments=(attrs)
-    self.original_installments = card_installments.order(:number).map { |i| i.slice(:number, :year, :month, :price) }
+    snapshot_original_installments
     super
   end
 
@@ -33,7 +33,7 @@ module HasCardInstallments
   protected
 
   def remember_card_installments
-    self.original_installments = installments.order(:number).map { |i| i.slice(:number, :year, :month, :price) }
+    snapshot_original_installments(scope: installments)
   end
 
   # Sets the `card_installments_count` of each record of `card_transaction.card_installments` based on the `card_installments_count` of given `self`.
@@ -45,5 +45,12 @@ module HasCardInstallments
   def update_card_transaction_count_and_invoke_cash_transactable
     card_installments_count = card_installments.count
     card_installments.each { |i| i.update(card_installments_count:) if i.persisted? }
+  end
+
+  def snapshot_original_installments(scope: card_installments)
+    ordered_scope = scope.order(:number)
+
+    self.original_installments = ordered_scope.map { |installment| installment.slice(:number, :year, :month, :price) }
+    self.original_installment_projection_rows = ordered_scope.map { |installment| installment.slice(:number, :year, :month, :price, :cash_transaction_id) }
   end
 end

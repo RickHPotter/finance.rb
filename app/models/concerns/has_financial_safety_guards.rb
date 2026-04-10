@@ -353,8 +353,8 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def destroy_locked_by_history?
-    return true if paid_history?
     return card_destroy_locked_by_settlement_history? if is_a?(CardTransaction)
+    return true if paid_history?
 
     false
   end
@@ -367,11 +367,21 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def affected_card_cycles
-    installments.filter_map do |installment|
-      next if installment.month.blank? || installment.year.blank?
+    card_cycle_source_rows.filter_map do |row|
+      month = cycle_row_value(row, :month)
+      year = cycle_row_value(row, :year)
+      next if month.blank? || year.blank?
 
-      [ installment.month, installment.year ]
+      [ month, year ]
     end.uniq
+  end
+
+  def card_cycle_source_rows
+    Array(original_installment_projection_rows).presence || Array(original_installments).presence || installments
+  end
+
+  def cycle_row_value(row, key)
+    row.respond_to?(key) ? row.public_send(key) : row[key]
   end
 
   def remaining_card_cycle_total(month:, year:)
@@ -390,14 +400,29 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   def remaining_invoice_paid_amount(month:, year:)
     return 0 if remaining_card_cycle_total(month:, year:).zero?
 
-    invoice = invoice_cash_transaction_for_cycle(month:, year:)
-    return 0 unless invoice
-
-    invoice.cash_installments.where(paid: true).sum(:price).abs
+    relevant_invoice_cash_transactions_for_cycle(month:, year:).sum do |invoice|
+      invoice.cash_installments.where(paid: true).sum(:price).abs
+    end
   end
 
   def invoice_cash_transaction_for_cycle(month:, year:)
     context.cash_transactions.find_by(cash_transaction_type: "CardInstallment", user_card_id:, month:, year:)
+  end
+
+  def relevant_invoice_cash_transactions_for_cycle(month:, year:)
+    transactions = card_cycle_source_rows.filter_map do |row|
+      next unless cycle_row_value(row, :month).to_i == month.to_i
+      next unless cycle_row_value(row, :year).to_i == year.to_i
+
+      cash_transaction_id = cycle_row_value(row, :cash_transaction_id)
+      next if cash_transaction_id.blank?
+
+      CashTransaction.find_by(id: cash_transaction_id)
+    end.uniq
+
+    return transactions if transactions.present?
+
+    Array(invoice_cash_transaction_for_cycle(month:, year:)).compact
   end
 
   def remaining_advance_paid_amount(month:, year:)
@@ -413,7 +438,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
   def card_destroy_locked_by_settlement_history?
     affected_card_cycles.any? do |month, year|
-      invoice_cash_transaction_for_cycle(month:, year:)&.paid_history? ||
+      relevant_invoice_cash_transactions_for_cycle(month:, year:).any?(&:paid_history?) ||
         paid_card_advance_transactions_for_cycle(month:, year:).any?
     end
   end

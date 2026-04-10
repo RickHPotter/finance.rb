@@ -85,6 +85,9 @@ application.register("nested-form", NestedFormController)
 import NotificationController from "./notification_controller"
 application.register("notification", NotificationController)
 
+import PartialPayMultipleController from "./partial_pay_multiple_controller"
+application.register("partial-pay-multiple", PartialPayMultipleController)
+
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)
 

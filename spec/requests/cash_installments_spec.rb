@@ -365,16 +365,19 @@ RSpec.describe "CashInstallments", type: :request do
 
       expect(response).to have_http_status(:ok)
       exchange_return = first_exchange.cash_transaction.reload
+      due_day = [ card_transaction.user_card.due_date_day, Time.days_in_month(4, 2026) ].min
+      expected_due_date = Time.zone.local(2026, 4, due_day).end_of_day.change(usec: 999_999)
+
       expect(exchange_return.cash_installments.order(:number).pluck(:number, :date, :month, :year, :price)).to eq(
         [
           [ 1, Time.zone.local(2026, 3, 26, 17, 0, 0), 3, 2026, -500 ],
-          [ 2, Time.zone.local(2026, 4, 10, 0, 0, 0), 4, 2026, -2_500 ]
+          [ 2, expected_due_date, 4, 2026, -2_500 ]
         ]
       )
       expect(entity_transaction.reload.exchanges.order(:number).pluck(:number, :date, :month, :year, :price)).to eq(
         [
           [ 1, Time.zone.local(2026, 3, 26, 17, 0, 0), 3, 2026, -500 ],
-          [ 2, Time.zone.local(2026, 4, 10, 0, 0, 0), 4, 2026, -2_500 ]
+          [ 2, expected_due_date, 4, 2026, -2_500 ]
         ]
       )
     end
@@ -946,6 +949,160 @@ RSpec.describe "CashInstallments", type: :request do
     end
   end
 
+  describe "[ #partial_pay_multiple ]" do
+    it "fully pays all selected installments except the chosen partial installment" do
+      first = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      ).cash_installments.first
+      third_transaction = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 2.days,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 2.days, month: 3, year: 2026, price: 900, paid: false) ]
+      )
+      third = third_transaction.cash_installments.first
+      paid_at = Time.zone.local(2026, 3, 20, 10, 0, 0)
+
+      expect do
+        post partial_pay_multiple_cash_installments_path, params: {
+          ids: [ first.id, second.id, third.id ],
+          partial_installment_id: third.id,
+          cash_installment: {
+            date: paid_at.strftime("%Y-%m-%dT%H:%M"),
+            price: 1_500
+          }
+        }, headers: turbo_stream_headers
+      end.to change(CashInstallment, :count).by(1)
+
+      third_transaction.reload
+      paid_partial = third_transaction.cash_installments.find_by!(number: 1)
+      remainder = third_transaction.cash_installments.find_by!(number: 2)
+
+      expect(response).to have_http_status(:ok)
+      expect(first.reload).to be_paid
+      expect(second.reload).to be_paid
+      expect(first.date.to_date).to eq(Date.new(2026, 3, 20))
+      expect(second.date.to_date).to eq(Date.new(2026, 3, 20))
+      expect(paid_partial.reload).to be_paid
+      expect(paid_partial.price).to eq(300)
+      expect(paid_partial.date.to_date).to eq(Date.new(2026, 3, 20))
+      expect(remainder.price).to eq(600)
+      expect(remainder).not_to be_paid
+    end
+
+    it "rejects amounts outside the allowed partial-pay range" do
+      first = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      ).cash_installments.first
+      third = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 2.days,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 2.days, month: 3, year: 2026, price: 900, paid: false) ]
+      ).cash_installments.first
+
+      expect do
+        post partial_pay_multiple_cash_installments_path, params: {
+          ids: [ first.id, second.id, third.id ],
+          partial_installment_id: third.id,
+          cash_installment: {
+            date: Time.zone.local(2026, 3, 20, 10, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+            price: 1_000
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashInstallment, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("bulk_actions.partial_pay.invalid_amount"))
+      expect(first.reload).not_to be_paid
+      expect(second.reload).not_to be_paid
+      expect(third.reload).not_to be_paid
+    end
+
+    it "rejects partial-installment selections that cannot remain partially unpaid" do
+      first = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      ).cash_installments.first
+      third = create(
+        :cash_transaction,
+        user:,
+        user_bank_account:,
+        date: installment_date + 2.days,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 2.days, month: 3, year: 2026, price: 900, paid: false) ]
+      ).cash_installments.first
+
+      expect do
+        post partial_pay_multiple_cash_installments_path, params: {
+          ids: [ first.id, second.id, third.id ],
+          partial_installment_id: first.id,
+          cash_installment: {
+            date: Time.zone.local(2026, 3, 20, 10, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+            price: 1_500
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashInstallment, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("bulk_actions.partial_pay.invalid_selection"))
+      expect(first.reload).not_to be_paid
+      expect(second.reload).not_to be_paid
+      expect(third.reload).not_to be_paid
+    end
+  end
+
   describe "[ #transfer_multiple ]" do
     it "moves all selected installments to the chosen reference month" do
       first = create(
@@ -1159,6 +1316,59 @@ RSpec.describe "CashInstallments", type: :request do
       expect(second_derived.reload.month).to eq(5)
       expect(first_main.reload.month).to eq(3)
       expect(second_main.reload.month).to eq(3)
+    end
+
+    it "keeps partial_pay_multiple changes inside the derived context" do
+      first_main = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main partial installment one",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 500, paid: false) ]
+      ).cash_installments.first
+      second_main_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main partial installment two",
+        date: installment_date + 1.day,
+        month: 3,
+        year: 2026,
+        cash_installments: [ build(:cash_installment, number: 1, date: installment_date + 1.day, month: 3, year: 2026, price: 700, paid: false) ]
+      )
+      second_main = second_main_transaction.cash_installments.first
+
+      derived_context = Logic::ContextCloneService.new(
+        source_context: user.main_context,
+        name: "Cash Installment Partial Isolation"
+      ).call
+      first_derived = derived_context.cash_transactions.find_by!(description: "Main partial installment one").cash_installments.first
+      second_derived_transaction = derived_context.cash_transactions.find_by!(description: "Main partial installment two")
+      second_derived = second_derived_transaction.cash_installments.first
+
+      switch_to_context!(derived_context)
+
+      expect do
+        post partial_pay_multiple_cash_installments_path, params: {
+          ids: [ first_derived.id, second_derived.id ],
+          partial_installment_id: second_derived.id,
+          cash_installment: {
+            date: Time.zone.local(2026, 3, 20, 10, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+            price: 800
+          }
+        }, headers: turbo_stream_headers
+      end.to change { second_derived_transaction.reload.cash_installments.count }.by(1)
+
+      expect(first_derived.reload).to be_paid
+      expect(second_derived.reload).to be_paid
+      expect(second_derived.price).to eq(300)
+      expect(first_main.reload).not_to be_paid
+      expect(second_main.reload).not_to be_paid
     end
 
     it "does not allow paying a main-context installment while switched to the derived context" do

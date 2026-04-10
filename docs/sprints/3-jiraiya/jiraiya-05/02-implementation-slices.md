@@ -278,21 +278,29 @@ state either inline in the bar or through a tooltip/hover affordance.
 - subscription attachment merges categories/entities and supports paid-history
   allocation changes for transactions in the subscription flow
 
-## Slice 6. Optional Partial `PayMultiple`
+## Slice 6. Partial `PayMultiple`
 
 ### Goal
 
-Only if explicitly approved later: allow partial bulk payment where the rules are
-fully deterministic.
+Allow partial bulk payment where the rules stay fully deterministic.
 
 ### Status
 
-Not part of the default `JIRAIYA-05` implementation plan.
+Shipped after the earlier slices stabilized.
 
-### Gate
+### Shipped Outcome
 
-Do not start this slice unless the previous slices are done and the allocation rules
-are written first.
+- `Pay` now exposes both full pay and partial pay for cash-installment bulk actions
+- partial pay uses a dedicated modal with:
+  - constrained min/max amount based on the selected set
+  - a dynamic partial-installment selector that only lists valid candidates
+  - submit blocking when the chosen partial target no longer matches the entered amount
+- bulk partial pay fully pays every selected installment except one, which remains
+  partially unpaid
+- card-bound shared `EXCHANGE RETURN` flows preserve the paid prefix after partial
+  settlement and only add later same-bucket source deltas onto the unpaid remainder
+- request coverage now includes the card-bound regression case where multiple
+  same-bucket source exchanges exist before and after a partial pay split
 
 ## Cross-Slice Invariants
 
@@ -312,7 +320,7 @@ These rules should remain true throughout JIRAIYA-05:
 3. Slice 3: repeated-entry workflow
 4. Slice 4: date and datetime UX
 5. Slice 5: bulk action feedback
-6. Slice 6: optional partial `PayMultiple`
+6. Slice 6: partial `PayMultiple`
 
 ## What Is Still Missing Before Implementation?
 
@@ -321,6 +329,6 @@ From a backend/safety standpoint: nothing critical.
 The remaining missing items are product decisions:
 
 - the first-pass model scope
-- whether partial `PayMultiple` stays out
+- whether partial payment should expand beyond the current deterministic cash flow
 
 That means implementation can start as soon as those product choices are locked.

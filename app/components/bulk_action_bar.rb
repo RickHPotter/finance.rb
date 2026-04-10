@@ -3,6 +3,7 @@
 module Components
   class BulkActionBar < Base
     include TranslateHelper
+    include CacheHelper
 
     attr_reader :selected_label, :actions
 
@@ -51,19 +52,55 @@ module Components
                   bulk_base_disabled_reason: action[:base_disabled_reason]
                 }.compact.merge(action[:data] || {})
 
-                Button(
-                  title: action[:title],
-                  class: "flex-1 md:flex-none md:min-w-32",
-                  disabled: action[:base_disabled],
-                  data: action_data
-                ) do
-                  action[:label]
+                if action[:menu_items].present?
+                  render_menu_action(action, action_data)
+                else
+                  Button(
+                    title: action[:title],
+                    class: "flex-1 md:flex-none md:min-w-32",
+                    disabled: action[:base_disabled],
+                    data: action_data
+                  ) do
+                    action[:label]
+                  end
                 end
               end
             end
 
             p(class: "min-h-5 text-center text-xs text-slate-500 md:text-left", data: { datatable_target: :selectionHint }) do
               ""
+            end
+          end
+        end
+      end
+    end
+
+    private
+
+    def render_menu_action(action, action_data)
+      Popover(options: { trigger: "click", placement: "top-start" }, class: "flex-1 md:flex-none") do
+        PopoverTrigger(class: "w-full") do
+          Button(
+            title: action[:title],
+            class: "flex w-full items-center justify-between gap-2 md:min-w-32",
+            disabled: action[:base_disabled],
+            data: action_data
+          ) do
+            span { action[:label] }
+            span(class: "text-xs") { "v" }
+          end
+        end
+
+        PopoverContent(class: "z-50 !opacity-100 min-w-44 p-1") do
+          div(class: "flex flex-col gap-1") do
+            action[:menu_items].each do |item|
+              button(
+                type: :button,
+                class: "w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100",
+                data: (item[:data] || {}).merge(action: [ item.dig(:data, :action), "click->ruby-ui--popover#close" ].compact.join(" "))
+              ) do
+                item[:label]
+              end
             end
           end
         end

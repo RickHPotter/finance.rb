@@ -63,9 +63,16 @@ export default class extends Controller {
   };
 
   handleClick = (event) => {
+    if (this.triggerTarget.querySelector("button[disabled]")) return
+
     event.stopPropagation();
     this.openValue = !this.openValue;
     this.openValue ? this.showPopover() : this.hidePopover();
+  };
+
+  close = () => {
+    this.openValue = false;
+    this.hidePopover();
   };
 
   handleOutsideClick = (event) => {
