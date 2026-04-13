@@ -144,6 +144,9 @@ too visible to ignore.
   - chain flows support both “save and finish” and “finish without saving”
   - card/cash transaction forms now use a split date/time input with 24-hour-friendly
     time entry
+  - payment and transfer modals now use the same shared split date/time control,
+    including localized weekday feedback and max-datetime validation with shared
+    flash feedback
   - the bulk action bar now shows selected count, selected total, delayed hide, page
     selection, and shift-range selection
   - Pay/Transfer enablement is computed from selected-row eligibility
@@ -153,10 +156,12 @@ too visible to ignore.
     deterministic amount bounds, and explicit partial-installment selection
   - card-bound partial-pay exchange-return flows now preserve the paid prefix and
     only grow the unpaid remainder when later same-bucket source exchanges are added
+  - duplicate-mode `EXCHANGE` card transaction cleanup now avoids reviving removed
+    payer entities/categories when a duplicated exchange is converted into a regular
+    transaction
 
 - Left out intentionally:
-  - installments, exchanges, and datetime-heavy modals still use their existing date
-    controls
+  - installments and exchange-specific forms still use their existing date controls
   - `Budget` and `Subscription` duplication were not added
 
 - References:

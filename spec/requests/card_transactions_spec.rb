@@ -1547,6 +1547,73 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(existing_card_transaction.description)
     end
+
+    it "drops duplicated payer entities that no longer have exchanges when replacing the entity with a regular one" do
+      leisure_category = create(:category, user:, category_name: "LEISURE")
+
+      exchange_duplicate_params = Params::CardTransactions.new(
+        card_transaction: {
+          description: "Original exchange transaction",
+          price: -2_200,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity_one.id,
+          price: -2_200,
+          price_to_be_returned: -2_200,
+          exchanges_attributes: [
+            { price: -2_200, exchange_type: :monetary, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
+          ]
+        } ]
+      )
+
+      post card_transactions_path, params: exchange_duplicate_params.params, headers: turbo_stream_headers
+      CardTransaction.last
+      duplicated_params = Params::CardTransactions.new(
+        card_transaction: {
+          description: "Duplicated exchange replacement",
+          price: -2_200,
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: leisure_category.id } ],
+        entity_transactions: [
+          {
+            entity_id: entity_one.id,
+            price: -2_200,
+            price_to_be_returned: -2_200,
+            exchanges_attributes: []
+          },
+          {
+            entity_id: entity_two.id,
+            price: 0,
+            price_to_be_returned: 0,
+            exchanges_attributes: []
+          }
+        ]
+      )
+
+      expect do
+        post card_transactions_path, params: duplicated_params.params.merge(chain_mode: "duplicate"), headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(1)
+
+      duplicated_transaction = CardTransaction.last
+
+      expect(duplicated_transaction.categories.pluck(:id)).to contain_exactly(leisure_category.id)
+      expect(duplicated_transaction.entities.pluck(:id)).to contain_exactly(entity_two.id)
+      expect(duplicated_transaction.entity_transactions.find_by(entity_id: entity_two.id).exchanges.count).to eq(0)
+      expect(duplicated_transaction.entity_transactions.find_by(entity_id: entity_one.id)).to be_nil
+    end
   end
 
   describe "[ context isolation ]" do

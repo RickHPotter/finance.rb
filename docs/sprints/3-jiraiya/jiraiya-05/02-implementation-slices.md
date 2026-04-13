@@ -205,8 +205,18 @@ editing flow fast enough for heavy users.
 - the main card/cash transaction forms now use the shared split date/time control
 - time entry is 24-hour friendly and optimized for keyboard use
 - editing only time preserves the current date
-- the first pass deliberately stops short of installments, exchanges, and
-  datetime-heavy modals
+- payment and transfer modals now use the same shared control
+- the shared control also provides a localized weekday hint and a max-datetime guard
+  with shared flash feedback
+- the first pass deliberately stops short of installments and exchange-specific forms
+
+### Regression Notes
+
+- duplicate-mode `EXCHANGE` card transaction flows now ignore hidden or removed payer
+  wrappers while recalculating exchange state client-side
+- duplicate-mode create/update also prunes stale payer entity rows without surviving
+  exchanges server-side, so replacing an exchange entity/category with a regular pair
+  does not resurrect the old `EXCHANGE` state
 
 ## Slice 5. Bulk Action Feedback
 

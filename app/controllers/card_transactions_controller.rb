@@ -75,6 +75,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     end
 
     @card_transaction.build_month_year if @card_transaction.user_card_id
+    prune_exchange_entity_transactions_without_exchanges!
 
     first_installment = @card_transaction.card_installments.first
     @card_transaction.card_installments.each_with_index do |ci, index|
@@ -94,6 +95,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
     @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
     @card_transaction.build_month_year if @card_transaction.user_card_id
+    prune_exchange_entity_transactions_without_exchanges!
 
     handle_save
   end
@@ -590,6 +592,22 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def indexed_nested_attributes_hash?(attributes)
     attributes.keys.all? { |nested_key| nested_key.to_s.match?(/\A\d+\z/) }
+  end
+
+  def prune_exchange_entity_transactions_without_exchanges!
+    return unless duplicate_cleanup_context?
+
+    @card_transaction.entity_transactions.each do |entity_transaction|
+      next if entity_transaction.marked_for_destruction?
+      next if entity_transaction.price_to_be_returned.to_i.zero?
+      next if entity_transaction.exchanges.reject(&:marked_for_destruction?).present?
+
+      entity_transaction.mark_for_destruction
+    end
+  end
+
+  def duplicate_cleanup_context?
+    current_chain_context[:mode] == "duplicate" || @card_transaction.duplicate
   end
 
   def selected_card_transactions_for_bulk_subscription

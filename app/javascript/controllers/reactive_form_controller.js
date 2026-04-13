@@ -161,12 +161,16 @@ export default class extends Controller {
     const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
 
     entityTransactionWrappers.forEach((wrapper) => {
+      if (wrapper.style.display === "none") { return }
+      if (wrapper.querySelector("input[name*='[_destroy]']")?.value === "true") { return }
+      if (!wrapper.querySelector(".entities_entity_id")?.value) { return }
+
       const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
       const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
       const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
 
       if (parseInt(_removeMask(price.value)) === 0) { return }
-      if (parseInt(_removeMask(priceToBeReturned.value) === 0)) { return }
+      if (parseInt(_removeMask(priceToBeReturned.value)) === 0) { return }
 
       price.value = this.priceInputTarget.value
       price.dispatchEvent(new Event("input"))

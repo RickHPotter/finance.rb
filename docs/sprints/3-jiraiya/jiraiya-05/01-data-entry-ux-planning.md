@@ -78,7 +78,6 @@ Still intentionally out of scope for this first pass:
 
 - installments
 - exchanges
-- datetime-heavy modals
 
 ### 4. Bulk selection feedback is now in place
 
@@ -249,8 +248,8 @@ looks.
 
 Current shipped boundary:
 
-- complete for main card/cash transaction forms
-- not yet extended to installments, exchanges, or datetime-heavy modals
+- complete for main card/cash transaction forms and the main pay/transfer modals
+- still not extended to installments or exchange-specific forms
 
 ## Locked Direction For Bulk Action Bar
 
