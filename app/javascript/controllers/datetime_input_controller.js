@@ -1,11 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["hiddenInput", "dateInput", "timeInput"]
-  static values = { invalidTimeMessage: String }
+  static targets = ["hiddenInput", "dateInput", "timeInput", "weekdayLabel"]
+  static values = { invalidTimeMessage: String, maxDatetime: String, maxDatetimeMessage: String }
 
   connect() {
+    this.handleFormSubmit = this.handleFormSubmit.bind(this)
     this.syncVisibleFromHidden()
+    this.updateWeekdayLabel()
+    this.hiddenInputTarget.form?.addEventListener("submit", this.handleFormSubmit)
+  }
+
+  disconnect() {
+    this.hiddenInputTarget.form?.removeEventListener("submit", this.handleFormSubmit)
   }
 
   formatTimeInput() {
@@ -28,6 +35,7 @@ export default class extends Controller {
     if (!nextDate) {
       this.clearValidity()
       this.hiddenInputTarget.value = ""
+      this.updateWeekdayLabel()
       return
     }
 
@@ -39,10 +47,18 @@ export default class extends Controller {
 
     this.clearValidity()
     this.timeInputTarget.value = parsedTime
+    this.updateWeekdayLabel()
 
     const nextValue = `${nextDate}T${parsedTime}`
+    if (!this.withinAllowedRange(nextValue)) {
+      this.setInvalidMax()
+      this.showMessage("alert", this.maxDatetimeMessageValue)
+      return
+    }
+
     if (this.hiddenInputTarget.value === nextValue) return
 
+    this.clearDateValidity()
     this.hiddenInputTarget.value = nextValue
     this.hiddenInputTarget.dispatchEvent(new Event("input", { bubbles: true }))
     this.hiddenInputTarget.dispatchEvent(new Event("change", { bubbles: true }))
@@ -57,12 +73,16 @@ export default class extends Controller {
 
   syncVisibleFromHidden() {
     const value = this.hiddenInputTarget.value
-    if (!value) return
+    if (!value) {
+      this.updateWeekdayLabel()
+      return
+    }
 
     const [datePart, timePart] = value.split("T")
     this.dateInputTarget.value = datePart || ""
     this.timeInputTarget.value = timePart ? timePart.slice(0, 5) : ""
     this.formatTimeInput()
+    this.updateWeekdayLabel()
   }
 
   currentDateValue() {
@@ -124,5 +144,67 @@ export default class extends Controller {
 
   clearValidity() {
     this.timeInputTarget.setCustomValidity("")
+  }
+
+  clearDateValidity() {
+    this.dateInputTarget.setCustomValidity("")
+  }
+
+  updateWeekdayLabel() {
+    if (!this.hasWeekdayLabelTarget) return
+
+    const dateValue = this.currentDateValue()
+    if (!dateValue) {
+      this.weekdayLabelTarget.textContent = ""
+      return
+    }
+
+    const weekday = this.weekdayFormatter().format(this.dateFromInputValue(dateValue))
+    this.weekdayLabelTarget.textContent = weekday
+  }
+
+  weekdayFormatter() {
+    return new Intl.DateTimeFormat(this.locale(), { weekday: "long" })
+  }
+
+  locale() {
+    return window.APP_LOCALE || document.documentElement.lang || navigator.language || "en"
+  }
+
+  dateFromInputValue(value) {
+    const [year, month, day] = value.split("-").map(number => parseInt(number, 10))
+    return new Date(year, month - 1, day)
+  }
+
+  handleFormSubmit(event) {
+    this.sync()
+    if (this.dateInputTarget.validationMessage || this.timeInputTarget.validationMessage) {
+      event.preventDefault()
+    }
+  }
+
+  withinAllowedRange(nextValue) {
+    if (!this.hasMaxDatetimeValue || !this.maxDatetimeValue) return true
+
+    return this.dateTimeFromValue(nextValue) <= this.dateTimeFromValue(this.maxDatetimeValue)
+  }
+
+  dateTimeFromValue(value) {
+    const [datePart, timePart = "00:00"] = value.split("T")
+    const [year, month, day] = datePart.split("-").map(number => parseInt(number, 10))
+    const [hour, minute] = timePart.split(":").map(number => parseInt(number, 10))
+    return new Date(year, month - 1, day, hour, minute)
+  }
+
+  setInvalidMax() {
+    this.dateInputTarget.setCustomValidity(this.maxDatetimeMessageValue)
+    this.dateInputTarget.reportValidity()
+  }
+
+  showMessage(type, message) {
+    const frame = document.querySelector("turbo-frame#notification")
+    if (!frame) return
+
+    frame.src = `static/notification?${type}=${encodeURIComponent(message)}`
   }
 }

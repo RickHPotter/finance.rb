@@ -88,13 +88,13 @@ class Views::CashTransactions::PartialPayMultipleModal < Views::Base
           div(class: "mx-auto text-center") do
             bold_label(form, :payment_date)
 
-            TextField \
-              form, :date,
-              type: "datetime-local",
-              svg: :calendar,
-              class: "font-graduate",
-              max: Time.zone.now.end_of_day.strftime("%Y-%m-%dT%H:%M"),
-              value: Time.zone.now.strftime("%Y-%m-%dT%H:%M")
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: Time.zone.now,
+              id: "cash_installments_partial_payment_date",
+              max_datetime: Time.zone.now.end_of_day
+            )
           end
 
           p(class: "min-h-5 text-center text-sm text-red-600", data: { partial_pay_multiple_target: "message" }) { "" }

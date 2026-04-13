@@ -41,12 +41,13 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
         div(class: "mx-auto pb-4 text-center") do
           bold_label(form, :date)
 
-          TextField \
-            form, :date,
-            type: "datetime-local",
-            svg: :calendar,
-            class: "font-graduate",
-            value: Time.zone.now.strftime("%Y-%m-%dT%H:%M")
+          render Views::Shared::DatetimeInput.new(
+            form:,
+            field: :date,
+            value: Time.zone.now,
+            id: "cash_installments_multiple_transfer_date",
+            max_datetime: Time.zone.now.end_of_day
+          )
         end
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
