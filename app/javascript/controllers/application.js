@@ -20,7 +20,7 @@ document.addEventListener("keyup", (e) => {
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
   if (inInput) {
-    if (key === "escape") document.activeElement.blur()
+    if (key === "escape" && !window.__reactiveFormQuickJumpActive) document.activeElement.blur()
     return
   }
 
@@ -86,7 +86,7 @@ document.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
   if (inInput) {
-    if (key === "escape") document.activeElement.blur()
+    if (key === "escape" && !window.__reactiveFormQuickJumpActive) document.activeElement.blur()
     return
   }
 
@@ -96,19 +96,6 @@ document.addEventListener("keydown", (e) => {
     document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
   }
 
-  if (key === "d") {
-    e.preventDefault()
-
-    const selectors = ["#card_transaction_description", "#cash_transaction_description", "#investment_description"]
-    selectors.forEach(selector => {
-      const descriptionInput = document.querySelector(selector)
-      if (!descriptionInput) return
-
-      const textLength = descriptionInput.value.length
-      descriptionInput.focus()
-      descriptionInput.setSelectionRange(textLength, textLength)
-    })
-  }
 })
 
 function findVisibleSelectAllControl() {

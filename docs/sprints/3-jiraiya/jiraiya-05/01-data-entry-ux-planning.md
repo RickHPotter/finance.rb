@@ -71,6 +71,8 @@ Shipped state:
 - `CardTransaction` and `CashTransaction` use the shared split control
 - time input is 24-hour friendly and optimized for keyboard entry
 - editing only time preserves the current date
+- transaction forms now expose an `Esc` quick-jump overlay for fast field-to-field
+  keyboard navigation
 - desktop flow is faster without jumping to a custom calendar/clock
 - mobile/PWA keeps the conservative native date behavior for now
 

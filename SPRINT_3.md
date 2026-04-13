@@ -147,6 +147,8 @@ too visible to ignore.
   - payment and transfer modals now use the same shared split date/time control,
     including localized weekday feedback and max-datetime validation with shared
     flash feedback
+  - transaction forms now expose an `Esc` quick-jump overlay for keyboard-first
+    navigation across the main form fields and chain toggle
   - the bulk action bar now shows selected count, selected total, delayed hide, page
     selection, and shift-range selection
   - Pay/Transfer enablement is computed from selected-row eligibility

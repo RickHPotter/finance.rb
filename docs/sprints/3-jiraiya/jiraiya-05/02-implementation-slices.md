@@ -205,6 +205,8 @@ editing flow fast enough for heavy users.
 - the main card/cash transaction forms now use the shared split date/time control
 - time entry is 24-hour friendly and optimized for keyboard use
 - editing only time preserves the current date
+- transaction forms now expose an `Esc` quick-jump overlay that maps the main fields
+  and chain toggle to keyboard shortcuts
 - payment and transfer modals now use the same shared control
 - the shared control also provides a localized weekday hint and a max-datetime guard
   with shared flash feedback
