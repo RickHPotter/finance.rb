@@ -68,20 +68,34 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         div do
           span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :price).downcase }
 
-          TextFieldTag(
-            :subscription_modal_price,
-            svg: :money,
-            id: :subscription_modal_price,
-            class: "font-graduate w-full",
-            value: 0,
-            required: true,
-            onclick: "this.select();",
-            data: {
-              price_mask_target: :input,
-              action: "input->price-mask#applyMask",
-              subscription_transactions_target: "priceInput"
-            }
-          )
+          div(class: "flex items-center gap-1") do
+            Button(
+              type: :button,
+              size: :lg,
+              class: "w-1/6 border border-black bg-red-300 lg:hidden",
+              tabindex: -1,
+              title: action_message(:toggle_sign),
+              data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
+            ) { "-" }
+
+            div(class: "w-5/6 lg:w-full") do
+              TextFieldTag(
+                :subscription_modal_price,
+                svg: :money,
+                id: :subscription_modal_price,
+                class: "sign-based font-graduate w-full",
+                value: 0,
+                required: true,
+                data: {
+                  controller: "input-select",
+                  price_mask_target: :input,
+                  action: "click->input-select#select input->price-mask#applyMask",
+                  subscription_transactions_target: "priceInput",
+                  sign: "-"
+                }
+              )
+            end
+          end
         end
 
         div do

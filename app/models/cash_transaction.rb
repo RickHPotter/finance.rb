@@ -49,6 +49,27 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   # @public_instance_methods ..................................................
 
+  def self.duplicate(id)
+    existing_cash_transaction = find(id)
+
+    cash_transaction = existing_cash_transaction.dup
+    cash_transaction.duplicate = true
+    cash_transaction.cash_installments = existing_cash_transaction.cash_installments.map do |installment|
+      installment.dup.tap do |duplicate_installment|
+        duplicate_installment.paid = false
+      end
+    end
+    cash_transaction.category_transactions = existing_cash_transaction.category_transactions.map(&:dup)
+
+    existing_cash_transaction.entity_transactions.each do |entity_transaction|
+      new_entity_transaction = entity_transaction.dup
+      new_entity_transaction.exchanges = entity_transaction.exchanges.map(&:dup)
+      cash_transaction.entity_transactions.push(new_entity_transaction)
+    end
+
+    cash_transaction
+  end
+
   def entity_bundle
     return user_card.user_card_name if categories.pluck(:category_name).intersect?([ "CARD ADVANCE", "CARD PAYMENT" ])
 
@@ -86,6 +107,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return false if linked_borrow_return?
 
     !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE RETURN" ])
+  end
+
+  def bulk_transfer_eligible?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+  end
+
+  def bulk_subscription_eligible?
+    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
   end
 
   def investment?

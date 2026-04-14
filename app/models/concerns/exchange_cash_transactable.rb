@@ -81,9 +81,20 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   # @return [void].
   #
   def create_cash_transaction
-    self.cash_transaction = shared_projection_cash_transaction || CashTransaction.create(projection_cash_transaction_params)
+    manually_assigned_projection_cash_transaction = cash_transaction.present? && cash_transaction.persisted?
+    existing_projection_cash_transaction = shared_projection_cash_transaction
+    created_projection_cash_transaction = existing_projection_cash_transaction.blank?
+    initial_projection_sync = !manually_assigned_projection_cash_transaction &&
+                              (created_projection_cash_transaction ||
+                               (transactable.previously_new_record? && projection_cash_transaction_without_paid_history?(existing_projection_cash_transaction)))
+
+    self.cash_transaction = existing_projection_cash_transaction || CashTransaction.create(projection_cash_transaction_params)
     assign_projection_cash_transaction_to_siblings!
-    sync_projection_cash_transaction!(cash_transaction:, exchanges: synchronized_projection_exchanges(cash_transaction:))
+    sync_projection_cash_transaction!(
+      cash_transaction:,
+      exchanges: synchronized_projection_exchanges(cash_transaction:),
+      allow_initial_paid_projection_rebuild: initial_projection_sync
+    )
   end
 
   # @note This is a method that is called before_update.
@@ -210,24 +221,35 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     delete_projection_cash_transaction(CashTransaction.find_by(id: destroyed_projection_cash_transaction_id))
   end
 
-  def sync_projection_cash_transaction!(cash_transaction:, exchanges: projection_exchanges)
+  def sync_projection_cash_transaction!(cash_transaction:, exchanges: projection_exchanges, allow_initial_paid_projection_rebuild: false)
     return _destroy_cash_transaction if exchanges.empty?
 
-    projection_price = exchanges.sum(&:price)
+    previous_projection_price = cash_transaction.price
+    projection_price = projection_cash_transaction_price(cash_transaction:, exchanges:, current_projection_price: previous_projection_price)
     return _destroy_cash_transaction if projection_price.zero?
 
-    projection_date = exchanges.min_by(&:date).date
+    projection_date = projection_cash_transaction_date(exchanges)
+    projection_month, projection_year = if card_bound?
+                                          card_bound_projection_bucket_month_year(exchanges)
+                                        else
+                                          [ projection_date.month, projection_date.year ]
+                                        end
 
     cash_transaction.update_columns(
       description: projection_description,
       starting_price: projection_price,
       price: projection_price,
       date: projection_date,
-      month: projection_date.month,
-      year: projection_date.year
+      month: projection_month,
+      year: projection_year
     )
 
-    rebuild_projection_installments!(cash_transaction:, exchanges:)
+    rebuild_projection_installments!(
+      cash_transaction:,
+      exchanges:,
+      allow_initial_paid_projection_rebuild:,
+      projection_date:
+    )
     cash_transaction.update_columns(
       cash_installments_count: cash_transaction.cash_installments.count,
       paid: cash_transaction.cash_installments.where(paid: false).none?
@@ -235,16 +257,28 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     sync_projection_reference_transactable!(cash_transaction:)
   end
 
-  def rebuild_projection_installments!(cash_transaction:, exchanges:)
-    if cash_transaction.cash_installments.where(paid: true).exists?
-      raise "Cannot rebuild paid projection installments" unless standalone? && editable_unpaid_projection_change?
+  def rebuild_projection_installments!(cash_transaction:, exchanges:, allow_initial_paid_projection_rebuild: false, projection_date: nil)
+    if allow_initial_paid_projection_rebuild
+      cash_transaction.cash_installments.delete_all
+      return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
 
-      return rebuild_standalone_projection_installments_preserving_paid!(cash_transaction:, exchanges:)
+      return rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
+    end
+
+    if cash_transaction.cash_installments.where(paid: true).exists?
+      return rebuild_standalone_projection_installments_preserving_paid!(cash_transaction:, exchanges:) if standalone? && editable_unpaid_projection_change?
+      return rebuild_card_bound_projection_installments_preserving_paid!(cash_transaction:, exchanges:, projection_date:) if card_bound?
+
+      raise "Cannot rebuild paid projection installments"
     end
 
     cash_transaction.cash_installments.delete_all
-    return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:) if card_bound?
+    return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
 
+    rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
+  end
+
+  def rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:, paid_by_date: false)
     installments_count = exchanges.count
     exchanges.sort_by do |exchange|
       [ exchange.date, exchange.number, exchange.persisted? ? 0 : 1, exchange.id || Float::INFINITY ]
@@ -256,7 +290,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
         year: exchange.year,
         price: exchange.price,
         starting_price: exchange.price,
-        cash_installments_count: installments_count
+        cash_installments_count: installments_count,
+        paid: paid_by_date ? (exchange.date.present? && Time.zone.today >= exchange.date) : false
       )
     end
   end
@@ -282,9 +317,34 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:)
+  def rebuild_card_bound_projection_installments_preserving_paid!(cash_transaction:, exchanges:, projection_date: nil)
+    paid_installments = cash_transaction.cash_installments.order(:number).select(&:paid?)
+    remaining_price = cash_transaction.cash_installments.where(paid: false).sum(:price) +
+                      card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)
+    installments_count = paid_installments.count + (remaining_price.zero? ? 0 : 1)
+
+    cash_transaction.cash_installments.where(paid: false).delete_all
+    cash_transaction.cash_installments.where(id: paid_installments.map(&:id)).update_all(cash_installments_count: installments_count)
+
+    return if remaining_price.zero?
+
+    projection_date ||= projection_cash_transaction_date(exchanges)
+
+    cash_transaction.cash_installments.create!(
+      number: paid_installments.count + 1,
+      date: projection_date,
+      month: projection_date.month,
+      year: projection_date.year,
+      price: remaining_price,
+      starting_price: remaining_price,
+      cash_installments_count: installments_count,
+      paid: false
+    )
+  end
+
+  def rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date: nil, paid_by_date: false)
     projection_price = exchanges.sum(&:price)
-    projection_date = exchanges.min_by(&:date).date
+    projection_date ||= exchanges.min_by(&:date).date
 
     cash_transaction.cash_installments.create!(
       number: 1,
@@ -293,8 +353,25 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       year: projection_date.year,
       price: projection_price,
       starting_price: projection_price,
-      cash_installments_count: 1
+      cash_installments_count: 1,
+      paid: paid_by_date ? (projection_date.present? && Time.zone.today >= projection_date) : false
     )
+  end
+
+  def projection_cash_transaction_date(exchanges)
+    return exchanges.min_by(&:date).date unless card_bound?
+
+    bucket_month, bucket_year = card_bound_projection_bucket_month_year(exchanges)
+    reference = transactable.user_card.references.find_by(
+      context: transactable.context,
+      month: bucket_month,
+      year: bucket_year
+    )
+
+    return reference.reference_date.end_of_day if reference.present?
+
+    due_day = [ transactable.user_card.due_date_day, Time.days_in_month(bucket_month, bucket_year) ].min
+    Time.zone.local(bucket_year, bucket_month, due_day).end_of_day
   end
 
   def assign_projection_cash_transaction_to_siblings!
@@ -333,7 +410,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       (excluding.present? && ((excluding.id.present? && exchange.id == excluding.id) || exchange.equal?(excluding))) || exchange.marked_for_destruction?
     end
 
-    candidate_exchanges.select(&:monetary?).select { |exchange| same_projection_bucket?(exchange) }
+    candidate_exchanges.select(&:monetary?).select { |exchange| same_projection_group?(exchange, cash_transaction:) }
   end
 
   def delete_projection_cash_transaction(cash_transaction)
@@ -358,15 +435,37 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       paid_prefix_unchanged?(paid_installments, desired_rows)
   end
 
-  def shared_projection_cash_transaction
-    if card_bound? && projection_exchanges.filter_map(&:cash_transaction).exclude?(existing_card_bound_projection_cash_transaction)
-      return existing_card_bound_projection_cash_transaction
-    end
+  def editable_card_bound_projection_change?
+    return false unless card_bound?
 
-    projection_exchanges.filter_map(&:cash_transaction).find(&:present?) ||
-      entity_transaction.exchanges.where.not(id: id).where.not(cash_transaction_id: nil).to_a.select do |exchange|
-        same_projection_bucket?(exchange)
-      end.first&.cash_transaction ||
+    paid_installments = cash_transaction.cash_installments.order(:number).select(&:paid?)
+    paid_installments.present?
+  end
+
+  def projection_cash_transaction_without_paid_history?(cash_transaction)
+    return true if cash_transaction.blank?
+
+    cash_transaction.cash_installments.where(paid: true).none?
+  end
+
+  def projection_cash_transaction_price(cash_transaction:, exchanges:, current_projection_price: cash_transaction.price)
+    return exchanges.sum(&:price) unless card_bound? && cash_transaction.cash_installments.where(paid: true).exists?
+
+    current_projection_price + card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)
+  end
+
+  def card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)
+    existing_exchange_ids = Exchange.where(cash_transaction_id: cash_transaction.id).pluck(:id).to_set
+
+    exchanges.reject do |exchange|
+      exchange.id.present? && existing_exchange_ids.include?(exchange.id)
+    end.sum(&:price)
+  end
+
+  def shared_projection_cash_transaction
+    return standalone_shared_projection_cash_transaction unless card_bound?
+
+    preferred_card_bound_projection_cash_transaction(card_bound_visible_projection_cash_transactions) ||
       existing_card_bound_projection_cash_transaction
   end
 
@@ -406,22 +505,96 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def existing_card_bound_projection_cash_transaction
     return if standalone?
 
-    transactable.context.cash_transactions
-                .where(
-                  user_id: user.id,
-                  user_card_id: transactable.user_card_id,
-                  context_id: transactable.context_id,
-                  cash_transaction_type: model_name.name,
-                  description: projection_description
-                )
-                .order(:id)
-                .first
+    matched_cash_transaction = preferred_card_bound_projection_cash_transaction(
+      candidate_card_bound_projection_cash_transactions.where(id: candidate_card_bound_projection_cash_transaction_ids)
+    )
+    return matched_cash_transaction if matched_cash_transaction.present?
+
+    preferred_card_bound_projection_cash_transaction(
+      candidate_card_bound_projection_cash_transactions.where(description: projection_description)
+    )
   end
 
   def same_projection_bucket?(exchange)
     return true if standalone?
 
     exchange.month == month && exchange.year == year
+  end
+
+  def same_projection_group?(exchange, cash_transaction:)
+    return same_projection_bucket?(exchange) if standalone?
+
+    return true if cash_transaction.present? &&
+                   ((exchange.cash_transaction_id.present? && exchange.cash_transaction_id == cash_transaction.id) ||
+                    exchange.cash_transaction == cash_transaction)
+
+    same_projection_bucket?(exchange)
+  end
+
+  def card_bound_projection_bucket_month_year(exchanges)
+    matching_exchange = exchanges.find { |exchange| exchange.month == month && exchange.year == year }
+    return [ matching_exchange.month, matching_exchange.year ] if matching_exchange.present?
+
+    latest_exchange = exchanges.max_by { |exchange| [ exchange.year, exchange.month, exchange.number, exchange.date.to_i ] }
+    [ latest_exchange.month, latest_exchange.year ]
+  end
+
+  def candidate_card_bound_projection_cash_transaction_ids
+    Exchange.joins(:entity_transaction)
+            .where(
+              bound_type: :card_bound,
+              month:,
+              year:,
+              entity_transactions: {
+                entity_id: entity_transaction.entity_id,
+                transactable_type: transactable.class.name
+              }
+            )
+            .where.not(cash_transaction_id: nil)
+            .distinct
+            .pluck(:cash_transaction_id)
+  end
+
+  def candidate_card_bound_projection_cash_transactions
+    transactable.context.cash_transactions.where(
+      user_id: user.id,
+      user_card_id: transactable.user_card_id,
+      context_id: transactable.context_id,
+      cash_transaction_type: model_name.name
+    )
+  end
+
+  def preferred_card_bound_projection_cash_transaction(scope)
+    scope.includes(:cash_installments, :exchanges).to_a.max_by do |cash_transaction|
+      [
+        cash_transaction.cash_installments.any? { |installment| !installment.paid? } ? 1 : 0,
+        cash_transaction.exchanges.size,
+        cash_transaction.cash_installments.any?(&:paid?) ? 1 : 0,
+        cash_transaction.cash_installments.size,
+        cash_transaction.updated_at.to_i,
+        cash_transaction.id
+      ]
+    end
+  end
+
+  def standalone_shared_projection_cash_transaction
+    projection_exchanges.filter_map(&:cash_transaction).find(&:present?) ||
+      entity_transaction.exchanges.where.not(id: id).where.not(cash_transaction_id: nil).to_a.select do |exchange|
+        same_projection_bucket?(exchange)
+      end.first&.cash_transaction ||
+      existing_card_bound_projection_cash_transaction
+  end
+
+  def card_bound_visible_projection_cash_transactions
+    visible_candidate_ids = projection_exchanges.filter_map(&:cash_transaction_id)
+    visible_candidate_ids.concat(
+      entity_transaction.exchanges.where.not(id: id).where.not(cash_transaction_id: nil).to_a.select do |exchange|
+        same_projection_bucket?(exchange)
+      end.filter_map(&:cash_transaction_id)
+    )
+    visible_candidate_ids << existing_card_bound_projection_cash_transaction&.id
+
+    candidate_card_bound_projection_cash_transactions.where(id: visible_candidate_ids.compact.uniq)
   end
 
   def desired_projection_rows
@@ -446,6 +619,27 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
         desired_row[:year] == installment.year &&
         desired_row[:price] == installment.price
     end
+  end
+
+  def remove_paid_projection_exchanges(sorted_exchanges, paid_installments)
+    remaining_exchanges = sorted_exchanges.dup
+
+    paid_installments.each do |installment|
+      matched_index = remaining_exchanges.find_index do |exchange|
+        projection_row_matches_installment?(exchange, installment)
+      end
+      remaining_exchanges.delete_at(matched_index) if matched_index.present?
+    end
+
+    remaining_exchanges
+  end
+
+  def projection_row_matches_installment?(exchange, installment)
+    exchange.number == installment.number &&
+      exchange.date == installment.date &&
+      exchange.month == installment.month &&
+      exchange.year == installment.year &&
+      exchange.price == installment.price
   end
 
   def sort_projection_exchanges(exchanges)

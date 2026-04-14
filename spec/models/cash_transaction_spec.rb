@@ -49,6 +49,26 @@ RSpec.describe CashTransaction, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "duplicates installments without carrying paid state" do
+      transaction = create(
+        :cash_transaction,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        description: "Duplicate source",
+        price: 1000,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      transaction.cash_installments.first.update!(paid: true)
+
+      duplicate = described_class.duplicate(transaction.id)
+
+      expect(duplicate.cash_installments.first).to be_new_record
+      expect(duplicate.cash_installments.first.paid).to be(false)
+    end
+
     it "defaults context to the user's main context" do
       transaction = described_class.new(
         user: subject.user,
@@ -516,6 +536,34 @@ RSpec.describe CashTransaction, type: :model do
 
       expect(transaction).to be_invalid
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.allocation_locked_after_payment"))
+    end
+
+    it "allows allocation changes after paid history when the transaction is in the subscription flow" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      original_entity = create(:entity, user:, entity_name: "MOI")
+      replacement_entity = create(:entity, user:, entity_name: "NOUS")
+      subscription_category = user.built_in_category("SUBSCRIPTION")
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Subscription allocation unlock",
+        date: Date.new(2026, 3, 10),
+        price: 3_000,
+        installments_attributes: [
+          { number: 1, price: 1_000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 1_000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false },
+          { number: 3, price: 1_000, date: Date.new(2026, 5, 10), month: 5, year: 2026, paid: false }
+        ]
+      )
+      transaction.categories = [ subscription_category ]
+      transaction.entities = [ original_entity ]
+      transaction.save!(validate: false)
+
+      transaction.entities = [ replacement_entity ]
+
+      expect(transaction.can_change_allocation?).to be(true)
+      expect(transaction).to be_valid
     end
 
     it "allows unpaid future installment edits after the latest paid boundary" do

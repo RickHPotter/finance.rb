@@ -11,11 +11,12 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :cash_transaction
+  attr_reader :current_user, :cash_transaction, :chain_context
 
-  def initialize(current_user:, cash_transaction:)
+  def initialize(current_user:, cash_transaction:, chain_context: nil)
     @current_user = current_user
     @cash_transaction = cash_transaction
+    @chain_context = chain_context
 
     set_banks
     set_user_bank_accounts
@@ -67,7 +68,9 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           transaction: cash_transaction,
           destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction) : nil,
           destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil,
-          confirmation_submit: historical_correction_confirmation_submit_for(cash_transaction, :cash_transaction)
+          duplicate_href: cash_transaction.persisted? && cash_transaction.can_be_destroyed? ? duplicate_cash_transaction_path(cash_transaction) : nil,
+          confirmation_submit: historical_correction_confirmation_submit_for(cash_transaction, :cash_transaction),
+          chain_context:
         ) do
           if cash_transaction.exchange_return?
             transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)

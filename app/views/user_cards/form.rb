@@ -41,15 +41,13 @@ class Views::UserCards::Form < Views::Base
         end
 
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "hw_user_card_card_id", class: "hw-cb w-full lg:w-3/12 mb-2 wallet-icon") do
+          div(id: "user_card_card_combobox", class: "combobox-shell w-full lg:w-3/12 mb-2 wallet-icon") do
             bold_label(form, :card_id, "user_card_card_id")
 
-            form.combobox(
-              :card_id,
-              cards,
-              mobile_at: "360px",
-              render_in: { partial: "user_cards/card" },
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_card[card_id]",
+              options: cards,
+              selected_value: user_card.card_id,
               placeholder: action_attribute(:select, user_card, :card_id)
             )
           end
@@ -82,8 +80,8 @@ class Views::UserCards::Form < Views::Base
             bold_label(form, :min_spend)
             TextField(
               form, :min_spend,
-              inputmode: :numeric, svg: :money, class: "font-graduate", onclick: "this.select();",
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+              inputmode: :numeric, svg: :money, class: "font-graduate",
+              data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
 
@@ -92,8 +90,8 @@ class Views::UserCards::Form < Views::Base
 
             TextField(
               form, :credit_limit,
-              inputmode: :numeric, svg: :money, class: "font-graduate", onclick: "this.select();",
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+              inputmode: :numeric, svg: :money, class: "font-graduate",
+              data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
             )
           end
         end

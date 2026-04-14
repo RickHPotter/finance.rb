@@ -14,20 +14,28 @@ export default class extends Controller {
     "monthYearInstallment", "priceInstallmentInput", "installmentsCountInput",
 
     "categoryWrapper", "addCategory",
+    "categoryCombobox",
     "categoryColours",
 
     "entityWrapper",
+    "entityCombobox",
     "addEntity",
     "entityIcons",
 
     "exchangeIntentWrapper",
     "exchangeIntentInput",
 
+    "userCardCombobox",
+
     "updateButton"
   ]
 
   connect() {
     this.debounceTimeout = null
+    this.quickJumpOverlay = null
+    this.quickJumpArmed = false
+    this.boundHandleDocumentKeydown = this.handleDocumentKeydown.bind(this)
+    this.boundHandleDocumentPointerdown = this.handleDocumentPointerdown.bind(this)
 
     if (this.element.querySelector("#categories_nested")) {
       this._updateCategories()
@@ -55,10 +63,27 @@ export default class extends Controller {
       this.operationType = this.element.dataset.operationType
     }
 
-    const userCardInput = this.element.querySelector("#hw_card_transaction_user_card_id > fieldset > input")
+    const userCardCombobox = this.hasUserCardComboboxTarget ? this.resolveCombobox(this.userCardComboboxTarget) : null
+    const userCardInput = userCardCombobox ? this.selectedComboboxInput(userCardCombobox) : null
     if (userCardInput) {
       this.userCard = parseInt(userCardInput.value)
     }
+
+    if (this.quickJumpEnabled()) {
+      document.addEventListener("keydown", this.boundHandleDocumentKeydown, true)
+      document.addEventListener("pointerdown", this.boundHandleDocumentPointerdown, true)
+    }
+  }
+
+  disconnect() {
+    if (this.boundHandleDocumentKeydown) {
+      document.removeEventListener("keydown", this.boundHandleDocumentKeydown, true)
+    }
+    if (this.boundHandleDocumentPointerdown) {
+      document.removeEventListener("pointerdown", this.boundHandleDocumentPointerdown, true)
+    }
+
+    this.clearQuickJumpState()
   }
 
   clear({ target }) {
@@ -70,24 +95,13 @@ export default class extends Controller {
   }
 
   // Installments
-  setIniDate({ target }) {
-    this.transactionDate = target.value
-  }
-
-  setEndDate({ target }) {
-    if (this.transactionDate == target.value) { return }
-
-    this.transactionDate = target.value
-    this.requestSubmit({ target })
-  }
-
   requestSubmitBasedOnUserCardChange({ target }) {
     if (!this.userCard) { return }
 
-    const userCardId = parseInt(target.querySelector("input").value)
+    const userCardId = parseInt(target.value)
     if (this.userCard == userCardId) { return }
 
-    this.userCard = target.querySelector("input").value
+    this.userCard = target.value
     this.requestSubmit({ target })
   }
 
@@ -167,12 +181,16 @@ export default class extends Controller {
     const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
 
     entityTransactionWrappers.forEach((wrapper) => {
+      if (wrapper.style.display === "none") { return }
+      if (wrapper.querySelector("input[name*='[_destroy]']")?.value === "true") { return }
+      if (!wrapper.querySelector(".entities_entity_id")?.value) { return }
+
       const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
       const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
       const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
 
       if (parseInt(_removeMask(price.value)) === 0) { return }
-      if (parseInt(_removeMask(priceToBeReturned.value) === 0)) { return }
+      if (parseInt(_removeMask(priceToBeReturned.value)) === 0) { return }
 
       price.value = this.priceInputTarget.value
       price.dispatchEvent(new Event("input"))
@@ -221,23 +239,27 @@ export default class extends Controller {
 
   // Categories
   insertCategory({ target }) {
-    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(target)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let selectedOption = comboboxController._selectedOptionElement
+    let allOptions = this.comboboxOptions(combobox)
+    let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
+    if (this.categoryAlreadySelected(this.comboboxOptionValue(selectedOption))) {
+      this.resetComboboxSelection(combobox, selectedOption)
+      return
+    }
 
     this._insertCategory(selectedOption)
 
-    comboboxController.clearOrToggleOnHandleClick()
+    this.resetComboboxSelection(combobox, selectedOption)
 
     let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
 
     if (visibleOptions.length === 0) {
-      comboboxController.close()
-    } else {
-      sleep(() => { comboboxController.actingCombobox.focus() })
+      this.closeCombobox(combobox)
+    } else if (combobox.kind === "hotwire") {
+      sleep(() => { this.focusCombobox(combobox) })
     }
   }
 
@@ -245,16 +267,18 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='categoryWrapper']")
     const chipValue = wrapper.querySelector(".categories_category_id")?.value
 
-    const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
-    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
+    let allOptions = this.comboboxOptions(combobox)
+    let removedOption = allOptions.find((option) => { return this.comboboxOptionValue(option) === chipValue })
 
     if (removedOption) {
+      delete removedOption.dataset.comboboxPermanentlyHidden
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      if (removedOption.dataset.autocompletableAs) {
+        removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      }
     }
 
     wrapper.style.display = "none"
@@ -264,23 +288,27 @@ export default class extends Controller {
 
   // Entities
   insertEntity({ target }) {
-    const comboboxController = this.application.getControllerForElementAndIdentifier(target, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(target)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let selectedOption = comboboxController._selectedOptionElement
+    let allOptions = this.comboboxOptions(combobox)
+    let selectedOption = this.selectedComboboxOption(combobox, target)
     if (!selectedOption) return
+    if (this.entityAlreadySelected(this.comboboxOptionValue(selectedOption))) {
+      this.resetComboboxSelection(combobox, selectedOption)
+      return
+    }
 
     this._insertEntity(selectedOption)
 
-    comboboxController.clearOrToggleOnHandleClick()
+    this.resetComboboxSelection(combobox, selectedOption)
 
     let visibleOptions = allOptions.filter((option) => { return !option.classList.contains("hidden") })
 
     if (visibleOptions.length === 0) {
-      comboboxController.close()
-    } else {
-      sleep(() => { comboboxController.actingCombobox.focus() })
+      this.closeCombobox(combobox)
+    } else if (combobox.kind === "hotwire") {
+      sleep(() => { this.focusCombobox(combobox) })
     }
   }
 
@@ -288,16 +316,18 @@ export default class extends Controller {
     const wrapper = target.closest("[data-reactive-form-target='entityWrapper']")
     const chipValue = wrapper.querySelector(".entities_entity_id")?.value
 
-    const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
-    const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-    if (!comboboxController) return console.error("Combobox controller not found")
+    const combobox = this.resolveCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null)
+    if (!combobox) return console.error("Combobox controller not found")
 
-    let allOptions = comboboxController._allOptions
-    let removedOption = allOptions.find((option) => { return option.dataset.value === chipValue })
+    let allOptions = this.comboboxOptions(combobox)
+    let removedOption = allOptions.find((option) => { return this.comboboxOptionValue(option) === chipValue })
 
     if (removedOption) {
+      delete removedOption.dataset.comboboxPermanentlyHidden
       removedOption.classList.remove("hidden")
-      removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      if (removedOption.dataset.autocompletableAs) {
+        removedOption.dataset.filterableAs = removedOption.dataset.autocompletableAs
+      }
     }
 
     wrapper.style.display = "none"
@@ -473,11 +503,14 @@ export default class extends Controller {
 
   // Categories
   _insertCategory(selectedOption) {
+    selectedOption.dataset.comboboxPermanentlyHidden = "true"
     selectedOption.classList.add("hidden")
-    selectedOption.dataset.filterableAs = ""
+    if (selectedOption.dataset.filterableAs !== undefined) {
+      selectedOption.dataset.filterableAs = ""
+    }
 
-    const value = selectedOption.dataset.value
-    const text = selectedOption.textContent
+    const value = this.comboboxOptionValue(selectedOption)
+    const text = this.comboboxOptionText(selectedOption)
 
     this.addCategoryTarget.click()
 
@@ -558,30 +591,44 @@ export default class extends Controller {
   _updateCategories() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector("#hw_category_id .hw-combobox")
-      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-      if (!comboboxController) return console.error("Combobox controller not found")
+      const combobox = this.resolveCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null)
+      if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.categoryWrapperTargets.map((target) => { return target.querySelector(".categories_category_id").value })
 
-      let allOptions = comboboxController._allOptions
-      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
+      let allOptions = this.comboboxOptions(combobox)
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(this.comboboxOptionValue(option)) })
 
       toBeHidden.forEach((option) => {
+        option.dataset.comboboxPermanentlyHidden = "true"
         option.classList.add("hidden")
-        option.dataset.filterableAs = ""
+        if (option.dataset.filterableAs !== undefined) {
+          option.dataset.filterableAs = ""
+        }
       })
     })
   }
 
   // Entities
 
-  _insertEntity(selectedOption) {
-    selectedOption.classList.add("hidden")
-    selectedOption.dataset.filterableAs = ""
+  categoryAlreadySelected(value) {
+    return this.categoryWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".categories_category_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
 
-    const value = selectedOption.dataset.value
-    const text = selectedOption.textContent
+      return input?.value === value && destroyInput?.value !== "true" && wrapper.checkVisibility()
+    })
+  }
+
+  _insertEntity(selectedOption) {
+    selectedOption.dataset.comboboxPermanentlyHidden = "true"
+    selectedOption.classList.add("hidden")
+    if (selectedOption.dataset.filterableAs !== undefined) {
+      selectedOption.dataset.filterableAs = ""
+    }
+
+    const value = this.comboboxOptionValue(selectedOption)
+    const text = this.comboboxOptionText(selectedOption)
 
     this.addEntityTarget.click()
 
@@ -600,19 +647,332 @@ export default class extends Controller {
   _updateEntities() {
     // NOTE: sleeping here is due to the fact that the combobox controller is initialised AFTER reactive-form controller
     sleep(() => {
-      const combobox = this.element.querySelector("#hw_entity_id .hw-combobox")
-      const comboboxController = this.application.getControllerForElementAndIdentifier(combobox, "hw-combobox")
-      if (!comboboxController) return console.error("Combobox controller not found")
+      const combobox = this.resolveCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null)
+      if (!combobox) return console.error("Combobox controller not found")
 
       const chipValues = this.entityWrapperTargets.map((target) => { return target.querySelector(".entities_entity_id").value })
 
-      let allOptions = comboboxController._allOptions
-      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(option.dataset.value) })
+      let allOptions = this.comboboxOptions(combobox)
+      let toBeHidden = allOptions.filter((option) => { return chipValues.includes(this.comboboxOptionValue(option)) })
 
       toBeHidden.forEach((option) => {
+        option.dataset.comboboxPermanentlyHidden = "true"
         option.classList.add("hidden")
-        option.dataset.filterableAs = ""
+        if (option.dataset.filterableAs !== undefined) {
+          option.dataset.filterableAs = ""
+        }
       })
     })
+  }
+
+  entityAlreadySelected(value) {
+    return this.entityWrapperTargets.some((wrapper) => {
+      const input = wrapper.querySelector(".entities_entity_id")
+      const destroyInput = wrapper.querySelector("input[name*='_destroy']")
+
+      return input?.value === value && destroyInput?.value !== "true" && wrapper.checkVisibility()
+    })
+  }
+
+  resolveCombobox(target) {
+    if (!target) { return null }
+
+    const root =
+      (target.matches?.("[data-controller~='ruby-ui--combobox']") ? target : null) ||
+      target.querySelector?.("[data-controller~='ruby-ui--combobox']") ||
+      target.closest?.("[data-controller~='ruby-ui--combobox']")
+    if (!root) { return null }
+
+    const controller = this.application.getControllerForElementAndIdentifier(root, "ruby-ui--combobox")
+    return controller ? { controller, root } : null
+  }
+
+  comboboxOptions(combobox) {
+    return combobox.controller.itemTargets
+  }
+
+  selectedComboboxOption(combobox, target) {
+    return target.closest("[data-ruby-ui--combobox-target='item']") || this.checkedComboboxOption(combobox)
+  }
+
+  checkedComboboxOption(combobox) {
+    return this.comboboxOptions(combobox).find((option) => option.querySelector("input:checked"))
+  }
+
+  selectedComboboxInput(combobox) {
+    return this.checkedComboboxOption(combobox)?.querySelector("input") || null
+  }
+
+  comboboxOptionValue(option) {
+    return option.dataset.value || option.querySelector("input")?.value
+  }
+
+  comboboxOptionText(option) {
+    const input = option.querySelector("input")
+    return input?.dataset.text || option.textContent.trim()
+  }
+
+  resetComboboxSelection(combobox, selectedOption) {
+    const input = selectedOption.querySelector("input")
+    if (input) {
+      input.checked = false
+    }
+
+    if (combobox.controller.hasSearchInputTarget) {
+      combobox.controller.searchInputTarget.value = ""
+      combobox.controller.filterItems({ key: null })
+    }
+
+    combobox.controller.updateTriggerContent()
+  }
+
+  closeCombobox(combobox) {
+    combobox.controller.closePopover()
+  }
+
+  focusCombobox(combobox) {
+    combobox.controller.triggerTarget.focus()
+  }
+
+  handleDocumentKeydown(event) {
+    if (!this.quickJumpEnabled()) { return }
+    if (event.metaKey || event.ctrlKey || event.altKey) { return }
+
+    const activeElement = document.activeElement
+    const eventInsideForm = this.element.contains(event.target) || this.element.contains(activeElement)
+    if (!eventInsideForm) { return }
+
+    if (event.key === "Escape") {
+      event.preventDefault()
+      event.stopPropagation()
+      this.showQuickJumpState()
+      return
+    }
+
+    if (!this.quickJumpArmed) { return }
+    if (event.key.toLowerCase() === "d") {
+      event.preventDefault()
+      event.stopPropagation()
+      this.toggleDuplicateChain()
+      this.clearQuickJumpState()
+      return
+    }
+
+    if (!/^[1-9]$/.test(event.key)) {
+      this.clearQuickJumpState()
+      return
+    }
+
+    const field = this.quickJumpFields()[parseInt(event.key, 10) - 1]
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!field) {
+      this.clearQuickJumpState()
+      return
+    }
+
+    this.focusQuickJumpField(field)
+  }
+
+  quickJumpEnabled() {
+    return this.element.id === "transaction_form"
+  }
+
+  showQuickJumpState() {
+    const fields = this.quickJumpFields()
+    if (fields.length === 0) { return }
+    this.quickJumpArmed = true
+    window.__reactiveFormQuickJumpActive = true
+
+    if (!this.quickJumpOverlay) {
+      this.quickJumpOverlay = document.createElement("div")
+      this.quickJumpOverlay.className = "fixed inset-x-0 bottom-4 z-50 mx-auto w-fit max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-700 bg-slate-950/95 px-4 py-3 text-xs shadow-2xl ring-1 ring-slate-800 backdrop-blur-md"
+      this.quickJumpOverlay.setAttribute("aria-live", "polite")
+      this.quickJumpOverlay.setAttribute("role", "status")
+      document.body.appendChild(this.quickJumpOverlay)
+    }
+
+    this.quickJumpOverlay.innerHTML = `
+      <div class="mb-2 flex items-center gap-2 border-b border-slate-800 pb-2">
+        <span class="rounded-md border border-amber-400/60 bg-amber-300/10 px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-amber-200">ESC</span>
+        <span class="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">Quick Jump</span>
+      </div>
+      <div class="flex flex-wrap gap-2 text-slate-200">
+        ${fields.map((field, index) => `
+          <span class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1.5">
+            <span class="rounded-md border border-sky-400/40 bg-sky-300/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-sky-200">${index + 1}</span>
+            <span class="text-[11px] font-medium tracking-wide text-slate-100">${field.label}</span>
+          </span>
+        `).join("")}
+        ${this.continueChainInput() ? `
+          <span class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1.5">
+            <span class="rounded-md border border-violet-400/40 bg-violet-300/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-violet-200">D</span>
+            <span class="text-[11px] font-medium tracking-wide text-slate-100">${this.duplicateLabel()}</span>
+          </span>
+        ` : ""}
+      </div>
+    `
+  }
+
+  clearQuickJumpState() {
+    this.quickJumpArmed = false
+    window.__reactiveFormQuickJumpActive = false
+
+    if (this.quickJumpOverlay) {
+      this.quickJumpOverlay.remove()
+      this.quickJumpOverlay = null
+    }
+  }
+
+  handleDocumentPointerdown(event) {
+    if (!this.quickJumpOverlay) { return }
+    if (this.quickJumpOverlay.contains(event.target)) { return }
+
+    this.clearQuickJumpState()
+  }
+
+  quickJumpFields() {
+    return [
+      this.quickJumpTextField("#card_transaction_description, #cash_transaction_description", this.descriptionLabel()),
+      this.quickJumpTextField("#card_transaction_comment, #cash_transaction_comment", this.commentLabel()),
+      this.quickJumpCombobox(this.hasUserCardComboboxTarget ? this.userCardComboboxTarget : this.element.querySelector("#cash_transaction_user_bank_account_combobox"), this.accountLabel()),
+      this.quickJumpCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null, this.categoryLabel()),
+      this.quickJumpCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null, this.entityLabel()),
+      this.quickJumpDateField(),
+      this.quickJumpTimeField(),
+      this.quickJumpField(this.hasPriceInputTarget ? this.priceInputTarget : null, this.priceLabel()),
+      this.quickJumpField(this.hasInstallmentsCountInputTarget ? this.installmentsCountInputTarget : null, this.installmentsLabel()),
+      this.quickJumpField(this.exchangeIntentElement(), this.exchangeIntentLabel())
+    ].filter(Boolean)
+  }
+
+  quickJumpTextField(selector, fallbackLabel) {
+    const element = this.element.querySelector(selector)
+    return this.quickJumpField(element, element?.dataset?.text || element?.placeholder || fallbackLabel)
+  }
+
+  quickJumpCombobox(target, fallbackLabel) {
+    const combobox = this.resolveCombobox(target)
+    if (!combobox) { return null }
+
+    const label = combobox.controller.triggerTarget?.dataset?.placeholder || fallbackLabel
+    return {
+      label,
+      focus: () => this.focusCombobox(combobox)
+    }
+  }
+
+  quickJumpDateField() {
+    const visibleDateInput = this.hasDateInputTarget ? this.element.querySelector(`#${this.dateInputTarget.id}_date_input`) : null
+    const label = visibleDateInput?.ariaLabel || visibleDateInput?.getAttribute("aria-label") || this.dateLabel()
+    return this.quickJumpField(visibleDateInput, label)
+  }
+
+  quickJumpTimeField() {
+    const visibleTimeInput = this.hasDateInputTarget ? this.element.querySelector(`#${this.dateInputTarget.id}_time_input`) : null
+    const label = visibleTimeInput?.ariaLabel || visibleTimeInput?.getAttribute("aria-label") || this.timeLabel()
+    return this.quickJumpField(visibleTimeInput, label)
+  }
+
+  quickJumpField(element, label) {
+    if (!element || !element.checkVisibility()) { return null }
+    if (element.disabled) { return null }
+
+    return {
+      label,
+      focus: () => this.focusElement(element)
+    }
+  }
+
+  focusQuickJumpField(field) {
+    this.clearQuickJumpState()
+    field.focus()
+  }
+
+  focusElement(element) {
+    element.focus()
+
+    if (["INPUT", "TEXTAREA"].includes(element.tagName) && element.select) {
+      const valueLength = element.value?.length || 0
+      if (this.supportsSelectionRange(element)) {
+        element.setSelectionRange(valueLength, valueLength)
+      }
+      element.select()
+    }
+  }
+
+  supportsSelectionRange(element) {
+    if (element.tagName === "TEXTAREA") { return true }
+    if (element.tagName !== "INPUT") { return false }
+
+    return !["date", "time", "datetime-local", "month", "week", "color", "number"].includes(element.type)
+  }
+
+  exchangeIntentElement() {
+    if (!this.hasExchangeIntentInputTarget) { return null }
+    if (!this.hasExchangeIntentWrapperTarget || !this.exchangeIntentWrapperTarget.checkVisibility()) { return null }
+
+    return this.exchangeIntentInputTarget
+  }
+
+  descriptionLabel() {
+    return "description"
+  }
+
+  commentLabel() {
+    return "comment"
+  }
+
+  accountLabel() {
+    return this.hasUserCardComboboxTarget ? "card" : "account"
+  }
+
+  categoryLabel() {
+    return "category"
+  }
+
+  entityLabel() {
+    return "entity"
+  }
+
+  dateLabel() {
+    return "date"
+  }
+
+  timeLabel() {
+    return "time"
+  }
+
+  priceLabel() {
+    return "price"
+  }
+
+  installmentsLabel() {
+    return "installments"
+  }
+
+  exchangeIntentLabel() {
+    return "intent"
+  }
+
+  duplicateLabel() {
+    return "duplicate more"
+  }
+
+  continueChainInput() {
+    const input = this.element.querySelector("input[name='continue_chain']")
+    if (!input || !input.checkVisibility() || input.disabled) { return null }
+
+    return input
+  }
+
+  toggleDuplicateChain() {
+    const input = this.continueChainInput()
+    if (!input) { return }
+
+    input.checked = !input.checked
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new Event("change", { bubbles: true }))
   }
 }

@@ -7,6 +7,9 @@ import { application } from "./application"
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 
+import AutofocusController from "./autofocus_controller"
+application.register("autofocus", AutofocusController)
+
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
@@ -30,6 +33,9 @@ application.register("cursor", CursorController)
 
 import DatatableController from "./datatable_controller"
 application.register("datatable", DatatableController)
+
+import DatetimeInputController from "./datetime_input_controller"
+application.register("datetime-input", DatetimeInputController)
 
 import DragController from "./drag_controller"
 application.register("drag", DragController)
@@ -55,6 +61,9 @@ application.register("icon-picker", IconPickerController)
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
 
+import InputSelectController from "./input_select_controller"
+application.register("input-select", InputSelectController)
+
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
 
@@ -75,6 +84,9 @@ application.register("nested-form", NestedFormController)
 
 import NotificationController from "./notification_controller"
 application.register("notification", NotificationController)
+
+import PartialPayMultipleController from "./partial_pay_multiple_controller"
+application.register("partial-pay-multiple", PartialPayMultipleController)
 
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)

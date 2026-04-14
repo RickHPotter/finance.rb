@@ -2,7 +2,7 @@
   "name": "finance.rb",
   "private": true,
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "0.28.0"
   },
   "scripts": {
     "build": "esbuild app/javascript/*.* --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets"
@@ -13,12 +13,11 @@
     "@floating-ui/dom": "^1.7.4",
     "@hotwired/stimulus": "^3.2.2",
     "@hotwired/turbo-rails": "^8.0.13",
-    "@josefarias/hotwire_combobox": "^0.3.2",
     "@stimulus-components/clipboard": "^5.0.0",
     "apexcharts": "^5.3.4",
     "chart.js": "^4.5.1",
-    "flowbite": "^3.1.2",
-    "hotkeys-js": "^3.13.9",
+    "flowbite": "^4.0.1",
+    "hotkeys-js": "4.0.3",
     "mustache": "^4.2.0",
     "stimulus-notification": "^2.2.0",
     "stimulus-rails-autosave": "^5.1.0",

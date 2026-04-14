@@ -6,38 +6,17 @@ export default class extends Controller {
   static targets = ["input"]
 
   connect() {
+    this.boundHandleKeydown = this.handleKeydown.bind(this)
+    this.element.addEventListener("keydown", this.boundHandleKeydown)
     this.applyMasks()
   }
 
+  disconnect() {
+    this.element.removeEventListener("keydown", this.boundHandleKeydown)
+  }
+
   toggleSign({ target }) {
-    const sign = target.textContent
-    const priceTargets = this.element.querySelectorAll(target.dataset.target)
-
-    switch (sign) {
-      case "+":
-        Array.from(priceTargets).forEach((priceTarget) => {
-          priceTarget.dataset.sign = "-"
-        })
-        target.textContent = "-"
-        target.classList.remove("bg-green-300")
-        target.classList.add("bg-red-300")
-        break
-      case "-":
-        Array.from(priceTargets).forEach((priceTarget) => {
-          priceTarget.dataset.sign = "+"
-        })
-        target.textContent = "+"
-        target.classList.remove("bg-red-300")
-        target.classList.add("bg-green-300")
-        break
-      default:
-        return
-    }
-
-    Array.from(priceTargets).forEach((priceTarget) => {
-      const new_price = _removeMask(priceTarget.value) * - 1
-      priceTarget.value = _applyMask(new_price.toString())
-    })
+    this.setSignForSelector(target.dataset.target, target.textContent === "+" ? "-" : "+")
   }
 
   applyMasks() {
@@ -71,6 +50,15 @@ export default class extends Controller {
     target.value = _applyMask(absValue.toString())
   }
 
+  handleKeydown(event) {
+    if (!(event.target instanceof HTMLInputElement)) return
+    if (!event.target.dataset.sign) return
+    if (event.key !== "+" && event.key !== "-") return
+
+    event.preventDefault()
+    this.setSignForInput(event.target, event.key)
+  }
+
   removeMasks() {
     [...this.inputTargets].forEach((target) => {
       this.removeMask({ target })
@@ -83,5 +71,46 @@ export default class extends Controller {
 
   removeMask({ target }) {
     target.value = _removeMask(target.value)
+  }
+
+  setSignForInput(input, sign) {
+    const toggleButton = this.signToggleButtons().find((button) => {
+      const selector = button.dataset.target
+      return selector && input.matches(selector)
+    })
+
+    if (toggleButton?.dataset.target) {
+      this.setSignForSelector(toggleButton.dataset.target, sign)
+      return
+    }
+
+    this.updatePriceTargets([ input ], sign)
+  }
+
+  setSignForSelector(selector, sign) {
+    const priceTargets = Array.from(this.element.querySelectorAll(selector))
+    this.updatePriceTargets(priceTargets, sign)
+    this.signToggleButtons()
+      .filter((button) => button.dataset.target === selector)
+      .forEach((button) => this.updateToggleButton(button, sign))
+  }
+
+  updatePriceTargets(priceTargets, sign) {
+    priceTargets.forEach((priceTarget) => {
+      const absoluteValue = Math.abs(parseInt(_removeMask(priceTarget.value || "0"), 10) || 0)
+      priceTarget.dataset.sign = sign
+      const nextValue = sign === "-" ? absoluteValue * -1 : absoluteValue
+      priceTarget.value = _applyMask(nextValue.toString())
+    })
+  }
+
+  signToggleButtons() {
+    return Array.from(this.element.querySelectorAll("[data-action*='price-mask#toggleSign']"))
+  }
+
+  updateToggleButton(button, sign) {
+    button.textContent = sign
+    button.classList.toggle("bg-green-300", sign === "+")
+    button.classList.toggle("bg-red-300", sign === "-")
   }
 }

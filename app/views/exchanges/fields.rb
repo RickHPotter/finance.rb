@@ -74,12 +74,12 @@ module Views
                 :price,
                 inputmode: :numeric,
                 class: "dynamic-price sign-based price-input w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
-                onclick: "this.select();",
                 data: {
+                  controller: "input-select",
                   price_mask_target: :input,
                   entity_transaction_target: :priceExchangeInput,
                   exchange_lock_target: :price,
-                  action: "input->price-mask#applyMask"
+                  action: "click->input-select#select input->price-mask#applyMask"
                 }
 
               div do

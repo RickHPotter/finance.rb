@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CardInstallments::Index < Views::Base
+class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 
@@ -40,8 +40,10 @@ class Views::CardInstallments::Index < Views::Base
       div(
         class: "rounded-lg shadow-sm overflow-hidden my-2",
         style: "background-clip: padding-box; #{style}",
-        data: { id: card_installment.id, datatable_target: :row }
+        data: { id: card_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
+        render_row_checkbox(card_installment, card_transaction, mobile: true)
+
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
@@ -89,29 +91,37 @@ class Views::CardInstallments::Index < Views::Base
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
-                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
+                action: [
+                  "mousedown->datatable#preventRangeSelection",
+                  "click->datatable#toggleCardSelection",
+                  "dragstart->datatable#start",
+                  "dragover->datatable#activate",
+                  "drop->datatable#drop"
+                ].join(" ") }
       ) do
-        div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
-          date, time = I18n.l(card_installment.date, format: :shorter).split(",")
-          div(class: "grid grid-cols-1") do
-            span(class: "rounded-xs text-xs mr-auto") { date }
-            span(class: "rounded-xs text-xs mr-auto") { time }
-          end
+        render_row_checkbox(card_installment, card_transaction, wrapper_class: "col-span-5 flex items-center gap-1 relative px-2") do
+          div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
+            date, time = I18n.l(card_installment.date, format: :shorter).split(",")
+            div(class: "grid grid-cols-1") do
+              span(class: "rounded-xs text-xs mr-auto") { date }
+              span(class: "rounded-xs text-xs mr-auto") { time }
+            end
 
-          if user_card_id.nil?
-            link_to card_transaction.user_card.user_card_name,
-                    card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
-                    class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
+            if user_card_id.nil?
+              link_to card_transaction.user_card.user_card_name,
+                      card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
+                      class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
+                      data: { turbo_frame: "_top", turbo_prefetch: false }
+            end
+
+            link_to card_transaction.description, edit_card_transaction_path(card_transaction),
+                    id: "edit_card_transaction_#{card_transaction.id}",
+                    class: "flex-5 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: "_top", turbo_prefetch: false }
-          end
 
-          link_to card_transaction.description, edit_card_transaction_path(card_transaction),
-                  id: "edit_card_transaction_#{card_transaction.id}",
-                  class: "flex-5 truncate text-md underline underline-offset-[3px]",
-                  data: { turbo_frame: "_top", turbo_prefetch: false }
-
-          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
-            pretty_installments(card_installment.number, card_installment.card_installments_count)
+            span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              pretty_installments(card_installment.number, card_installment.card_installments_count)
+            end
           end
         end
 
@@ -225,6 +235,39 @@ class Views::CardInstallments::Index < Views::Base
         name: category.name,
         style: "border-color: black"
       }
+    end
+  end
+
+  def render_row_checkbox(card_installment, card_transaction, mobile: false, wrapper_class: nil)
+    div(class: wrapper_class || "flex items-center gap-1 relative px-2 #{'pt-2' if mobile}") do
+      label(class: "group inline-flex cursor-pointer items-center justify-center", data: { action: "mousedown->datatable#preventRangeSelection" }) do
+        input(
+          type: :checkbox,
+          value: card_installment.id,
+          class: "peer sr-only",
+          data: {
+            datatable_target: :checkbox,
+            action: "mousedown->datatable#preventRangeSelection click->datatable#toggleSelection",
+            bulk_price_cents: card_installment.price,
+            bulk_record_id: card_transaction.id,
+            bulk_pay_eligible: false.to_s,
+            bulk_transfer_eligible: false.to_s,
+            bulk_subscription_eligible: card_transaction.bulk_subscription_eligible?.to_s
+          }
+        )
+
+        unless mobile
+          span(
+            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+                peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
+                peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
+          ) do
+            span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
+          end
+        end
+      end
+
+      yield if block_given?
     end
   end
 end

@@ -65,21 +65,27 @@ class Views::CashInstallments::PayModal < Views::Base
               svg: :money,
               id: :transaction_price,
               class: "font-graduate",
-              onclick: "this.select();",
               disabled: cash_installment.cash_transaction.card_payment? || cash_installment.cash_transaction.card_advance?,
-              data: { price_mask_target: :input, action: "input->price-mask#applyMask", sign:, min: prices_range.min, max: prices_range.max }
+              data: {
+                controller: "input-select",
+                price_mask_target: :input,
+                action: "click->input-select#select input->price-mask#applyMask",
+                sign:,
+                min: prices_range.min,
+                max: prices_range.max
+              }
           end
 
           div(class: "mx-auto pb-4 text-center") do
             bold_label(form, :payment_date)
 
-            TextField \
-              form, :date,
-              type: "datetime-local",
-              svg: :calendar,
-              class: "font-graduate",
-              max: Time.zone.now.end_of_day.strftime("%Y-%m-%dT%H:%M"),
-              value: proposed_date
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: Time.zone.parse(proposed_date),
+              id: "cash_installment_#{cash_installment.id}_payment_date",
+              max_datetime: Time.zone.now.end_of_day
+            )
           end
 
           div(class: "grid grid-cols-2 gap-4 justify-between text-md") do

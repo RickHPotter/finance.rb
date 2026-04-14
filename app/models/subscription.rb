@@ -59,6 +59,16 @@ class Subscription < ApplicationRecord
     transactions_count.zero?
   end
 
+  def attach_transactions!(transactions)
+    subscription_category = user&.built_in_category("SUBSCRIPTION")
+
+    Array(transactions).each do |transaction|
+      sync_attached_transaction!(transaction, subscription_category:)
+    end
+
+    refresh_price!
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
@@ -100,6 +110,20 @@ class Subscription < ApplicationRecord
       sync_transaction_installments(transaction)
       sync_transaction_month_year(transaction)
     end
+  end
+
+  def sync_attached_transaction!(transaction, subscription_category:)
+    transaction.user = user
+    transaction.context = context if transaction.respond_to?(:context=)
+    transaction.subscription = self
+    transaction.description = description
+    transaction.comment = comment
+    transaction.historical_correction_confirmation = true if transaction.respond_to?(:historical_correction_confirmation=)
+
+    transaction.categories = [ *transaction.categories, *categories, subscription_category ].compact.uniq
+    transaction.entities = [ *transaction.entities, *entities ].compact.uniq
+
+    transaction.save!
   end
 
   def sync_transaction_categories(transaction, subscription_category)

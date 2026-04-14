@@ -33,13 +33,12 @@ class Views::UserBankAccounts::Form < Views::Base
         end
 
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "hw_user_bank_account_bank_id", class: "hw-cb w-full lg:w-4/12 bank-icon") do
+          div(id: "user_bank_account_bank_combobox", class: "combobox-shell w-full lg:w-4/12 bank-icon") do
             bold_label(form, :bank_id, "user_bank_account_bank_id")
-            plain form.combobox(
-              :bank_id,
-              banks,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: "user_bank_account[bank_id]",
+              options: banks,
+              selected_value: user_bank_account.bank_id,
               placeholder: action_attribute(:select, user_bank_account, :bank_id)
             )
           end

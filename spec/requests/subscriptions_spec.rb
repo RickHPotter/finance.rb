@@ -75,6 +75,26 @@ RSpec.describe "Subscriptions", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the ruby ui comboboxes" do
+      get new_subscription_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("ruby-ui--combobox")
+      expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders a sign-aware modal price input with mobile fallback toggle" do
+      get new_subscription_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="subscription_modal_price"')
+      expect(response.body).to include("click->price-mask#toggleSign")
+      expect(response.body).to include("sign-based")
+      expect(response.body).to include('data-sign="-"')
+    end
+  end
+
   describe "[ #create ]" do
     it "creates a subscription with linked cash and card transactions" do
       expect do

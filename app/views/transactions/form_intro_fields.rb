@@ -28,7 +28,7 @@ class Views::Transactions::FormIntroFields < Views::Base
       cached_icon :quote
       form.text_area \
         :comment,
-        class: "text-gray-500 p-4 ps-9 w-full border-1 border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
+        class: "text-gray-500 p-4 ps-9 w-full border border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
         disabled: comment_disabled,
         data: { controller: "text-area-autogrow blinking-placeholder", text: model_attribute(transaction, :comment_placeholder) }
     end

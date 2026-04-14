@@ -21,7 +21,7 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
     ModalShell(id: modal_id, title: model_attribute(CashInstallment, :transfer_multiple)) do
       form_with(model: CashInstallment.new, url: transfer_multiple_cash_installments_path, method: :post) do |form|
         hidden_field_tag :ids, "", data: { bulk_ids_input: true }
-        hidden_field_tag :index_context_json, index_context.to_json
+        hidden_field_tag :index_context_json, index_context.except(:available_subscriptions).to_json
 
         div(class: "mx-auto pb-4 text-center") do
           bold_label(form, :reference)
@@ -41,12 +41,13 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
         div(class: "mx-auto pb-4 text-center") do
           bold_label(form, :date)
 
-          TextField \
-            form, :date,
-            type: "datetime-local",
-            svg: :calendar,
-            class: "font-graduate",
-            value: Time.zone.now.strftime("%Y-%m-%dT%H:%M")
+          render Views::Shared::DatetimeInput.new(
+            form:,
+            field: :date,
+            value: Time.zone.now,
+            id: "cash_installments_multiple_transfer_date",
+            max_datetime: Time.zone.now.end_of_day
+          )
         end
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do

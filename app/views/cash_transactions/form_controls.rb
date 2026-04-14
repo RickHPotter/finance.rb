@@ -28,52 +28,61 @@ class Views::CashTransactions::FormControls < Views::Base
   private
 
   def user_bank_account_field
-    div(id: "hw_cash_transaction_user_bank_account_id", class: "hw-cb w-full lg:w-2/12 mb-3 wallet-icon") do
-      form.combobox \
-        :user_bank_account_id,
-        user_bank_accounts,
-        mobile_at: "360px",
-        include_blank: false,
+    div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon") do
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "cash_transaction[user_bank_account_id]",
+        options: user_bank_accounts.map { |label, value| [ label, value, {} ] },
+        selected_value: cash_transaction.user_bank_account_id,
         placeholder: model_attribute(cash_transaction, :user_bank_account_id),
-        data: { reactive_form_target: :input }
+        input_data: {
+          reactive_form_target: :input
+        }
+      )
     end
   end
 
   def category_and_entity_fields
-    div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
-      div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
-        combobox_tag \
-          :category_transaction,
-          categories,
-          mobile_at: "360px",
-          include_blank: false,
+    div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
+      div(id: "cash_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(cash_transaction, :category_id),
           disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-          data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
       end
 
-      div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
-        combobox_tag \
-          :entity_transaction,
-          entities,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "cash_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(cash_transaction, :entity_id),
           disabled: cash_transaction.card_payment? || cash_transaction.exchange_return?,
-          data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
       end
     end
   end
 
   def date_field
-    div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
-      TextField \
-        form, :date,
+    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
+      render Views::Shared::DatetimeInput.new(
+        form:,
+        field: :date,
+        value: cash_transaction.date,
         id: :cash_transaction_date,
-        type: "datetime-local", svg: :calendar,
-        value: cash_transaction.date.strftime("%Y-%m-%dT%H:%M"),
-        class: "font-graduate transaction-date",
-        data: { reactive_form_target: :dateInput, action: "change->reactive-form#updateInstallmentsDates" }
+        hidden_data: {
+          reactive_form_target: :dateInput,
+          action: "change->reactive-form#updateInstallmentsDates"
+        }
+      )
     end
   end
 
@@ -82,17 +91,17 @@ class Views::CashTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
     sign = positive ? "+" : "-"
 
-    div(class: "flex gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black",
+        class: "w-1/12 #{sign_bg_colour} border border-black lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         disabled: cash_transaction.card_payment?,
         data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-6/12") do
+      div(class: "w-7/12 lg:w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -100,11 +109,11 @@ class Views::CashTransactions::FormControls < Views::Base
           id: :transaction_price,
           class: "sign-based font-graduate",
           autocomplete: :off,
-          onclick: "this.select();",
           disabled: cash_transaction.card_payment?,
           data: { price_mask_target: :input,
+                  controller: "input-select",
                   reactive_form_target: :priceInput,
-                  action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
+                  action: "click->input-select#select input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices",
                   sign: }
       end
 
@@ -117,7 +126,7 @@ class Views::CashTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-4/12") do
+      div(class: "w-3/12 lg:w-4/12") do
         TextFieldTag \
           :cash_installments_count,
           type: :number,
@@ -125,9 +134,10 @@ class Views::CashTransactions::FormControls < Views::Base
           min: 1, max: 72,
           value: [ visible_cash_installments_count, 1 ].max,
           class: "font-graduate",
-          onclick: "this.select();",
           disabled: cash_transaction.card_payment?,
-          data: { reactive_form_target: :installmentsCountInput, action: "input->reactive-form#updateInstallmentsPrices" }
+          data: { controller: "input-select",
+                  reactive_form_target: :installmentsCountInput,
+                  action: "click->input-select#select input->reactive-form#updateInstallmentsPrices" }
       end
     end
   end

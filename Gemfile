@@ -22,8 +22,6 @@ gem "turbo-rails"
 gem "image_processing", "~> 1.2"
 
 # UI
-# gem "hotwire_datepicker", git: "https://github.com/RickHPotter/hotwire_datepicker.git"
-gem "hotwire_combobox", git: "https://github.com/RickHPotter/hotwire_combobox.git", branch: "rick/main"
 gem "phlex-rails"
 gem "tailwind_merge", "~> 1.1"
 

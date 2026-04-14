@@ -35,6 +35,120 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
+  describe "[ #new ]" do
+    it "renders RubyUI comboboxes and split datetime input for bank account, category, and entity selection" do
+      get new_cash_transaction_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).to include('data-controller="datetime-input"')
+      expect(response.body).to include('id="cash_transaction_date"')
+      expect(response.body).to include('id="cash_transaction_date_time_input"')
+      expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the bulk add to subscription action on the index" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("actions.add_to_subscription"))
+    end
+  end
+
+  describe "[ #duplicate ]" do
+    it "renders a duplicated cash transaction form without creating a new record" do
+      existing_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Duplicated cash transaction",
+        price: 12_345,
+        date: Date.new(2026, 4, 2),
+        month: 4,
+        year: 2026
+      )
+
+      expect { get duplicate_cash_transaction_path(existing_cash_transaction) }.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+    end
+  end
+
+  describe "[ #add_to_subscription ]" do
+    it "adds the selected cash transactions to the chosen subscription" do
+      other_subscription = create(:subscription, user:, description: "Utilities bundle")
+      first_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Water bill",
+        price: 4_500,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      second_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Power bill",
+        price: 7_500,
+        date: Date.new(2026, 4, 4),
+        month: 4,
+        year: 2026
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: [ first_transaction.id, second_transaction.id ].join(","),
+             subscription_id: other_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(first_transaction.reload.subscription).to eq(other_subscription)
+      expect(second_transaction.reload.subscription).to eq(other_subscription)
+      expect(response.body).to include(I18n.t("notification.added_to_subscription"))
+    end
+
+    it "merges subscription categories and entities into a paid-history cash transaction" do
+      leisure = create(:category, user:, category_name: "LEISURE")
+      nous = create(:entity, user:, entity_name: "NOUS")
+      moi = create(:entity, user:, entity_name: "MOI")
+      subscription = create(:subscription, user:, description: "Club", comment: "Shared")
+      subscription.categories << leisure
+      subscription.entities << nous
+
+      transaction = create_cash_transaction_with_paid_history(description: "Cinema")
+      transaction.categories = [ leisure ]
+      transaction.entities = [ moi ]
+      transaction.save!(validate: false)
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+
+      transaction.reload
+      expect(transaction.subscription).to eq(subscription)
+      expect(transaction.categories.pluck(:category_name)).to contain_exactly("LEISURE", "SUBSCRIPTION")
+      expect(transaction.entities.pluck(:entity_name)).to contain_exactly("MOI", "NOUS")
+      expect(transaction.description).to eq("Club")
+      expect(transaction.comment).to eq("Shared")
+    end
+  end
+
   def switch_to_context!(context)
     patch switch_context_path(context)
     expect(response).to redirect_to(root_path)
@@ -121,6 +235,130 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "continues a create chain with the created ids tracked in the next form" do
+      expect do
+        post cash_transactions_path,
+             params: cash_transaction.params.merge(chain_mode: "create", continue_chain: "1"),
+             headers: turbo_stream_headers
+      end.to change(CashTransaction, :count).by(1)
+
+      created_cash_transaction = CashTransaction.last
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Chain Creating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
+      expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_cash_transaction.id}"/)
+      expect(response.body).to include('name="continue_chain" value="1"')
+      expect(response.body).to include("checked")
+    end
+
+    it "finishes a chain without saving the current cash transaction form" do
+      existing_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Existing chained cash transaction",
+        price: 12_345,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+
+      expect do
+        post cash_transactions_path,
+             params: {
+               chain_mode: "create",
+               chain_record_ids: [ existing_cash_transaction.id ],
+               finish_chain_without_save: "1",
+               cash_transaction: {
+                 description: "",
+                 price: "",
+                 date: "",
+                 user_id: user.id,
+                 user_bank_account_id: user_bank_account.id
+               }
+             },
+             headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("month_year_container_202604")
+      expect(response.body).to include("cash_transaction%5Bcash_installment_ids%5D")
+      expect(response.body).not_to include("Chain Creating")
+    end
+
+    it "keeps duplicate chain controls checked on hidden update submits" do
+      post cash_transactions_path, params: {
+        chain_mode: "duplicate",
+        continue_chain: "1",
+        commit: "Update",
+        cash_transaction: {
+          description: "Duplicate preview",
+          date: Time.zone.today,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          price: 1000,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          cash_installments_attributes: [
+            { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 1000, paid: false }
+          ],
+          category_transactions_attributes: [
+            { category_id: category.id }
+          ],
+          entity_transactions_attributes: [
+            { entity_id: entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="continue_chain" value="1"')
+      expect(response.body).to include("checked")
+    end
+
+    it "deduplicates repeated categories and entities when saving a duplicate chain round" do
+      extra_category = create(:category, :random, user:)
+      extra_entity = create(:entity, :random, user:)
+
+      expect do
+        post cash_transactions_path, params: {
+          chain_mode: "duplicate",
+          continue_chain: "1",
+          cash_transaction: {
+            description: "Duplicated cash transaction",
+            price: 20_000,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            cash_installments_attributes: [
+              { number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, price: 20_000, paid: false }
+            ],
+            category_transactions_attributes: [
+              { category_id: category.id },
+              { category_id: category.id },
+              { category_id: extra_category.id }
+            ],
+            entity_transactions_attributes: [
+              { entity_id: entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] },
+              { entity_id: entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] },
+              { entity_id: extra_entity.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.to change(CashTransaction, :count).by(1)
+
+      created_cash_transaction = CashTransaction.last
+
+      expect(response).to have_http_status(:success)
+      expect(created_cash_transaction.categories).to contain_exactly(category, extra_category)
+      expect(created_cash_transaction.entities).to contain_exactly(entity, extra_entity)
+    end
+
     it "creates a cash transaction with installments, categories, and entities" do
       expect { post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers }.to change(CashTransaction, :count).by(1)
 

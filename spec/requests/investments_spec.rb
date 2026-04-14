@@ -23,7 +23,122 @@ RSpec.describe "Investments", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the ruby ui comboboxes" do
+      get new_investment_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("ruby-ui--combobox")
+      expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "focuses price when using next_day" do
+      get new_investment_path, params: {
+        investment: {
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        },
+        next_day: true
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="transaction_price"')
+      expect(response.body).to include('data-controller="input-select autofocus"')
+      expect(response.body).to include('data-autofocus-select-value="true"')
+    end
+  end
+
+  describe "[ #duplicate ]" do
+    it "renders a duplicated investment form without creating a new record" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Duplicated investment",
+        price: 2000,
+        date: Date.new(2026, 3, 14),
+        month: 3,
+        year: 2026
+      )
+
+      expect { get duplicate_investment_path(investment) }.not_to change(Investment, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('data-controller="input-select autofocus"')
+    end
+  end
+
   describe "[ #create ]" do
+    it "continues a create chain with the created ids tracked in the next form" do
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "Tesouro Selic",
+            price: 1234,
+            date: Date.new(2026, 3, 14),
+            month: 3,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id
+          },
+          chain_mode: "create",
+          continue_chain: "1"
+        }, headers: turbo_stream_headers
+      end.to change(Investment, :count).by(1)
+
+      created_investment = Investment.last
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Chain Creating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
+      expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_investment.id}"/)
+      expect(response.body).to include('name="continue_chain" value="1"')
+      expect(response.body).to include("checked")
+    end
+
+    it "finishes a chain without saving the current investment form" do
+      existing_investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        investment_type: investment_type,
+        description: "Existing chained investment",
+        price: 1234,
+        date: Date.new(2026, 3, 14),
+        month: 3,
+        year: 2026
+      )
+
+      expect do
+        post investments_path, params: {
+          chain_mode: "create",
+          chain_record_ids: [ existing_investment.id ],
+          finish_chain_without_save: "1",
+          investment: {
+            description: "",
+            price: "",
+            date: "",
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Investment, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+      expect(response.body).to include("202603")
+      expect(response.body).not_to include("Chain Creating")
+    end
+
     it "creates an investment" do
       expect do
         post investments_path, params: {
@@ -39,6 +154,11 @@ RSpec.describe "Investments", type: :request do
           }
         }, headers: turbo_stream_headers
       end.to change(Investment, :count).by(1)
+
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+      expect(response.body).to include("202603")
     end
   end
 
@@ -60,6 +180,9 @@ RSpec.describe "Investments", type: :request do
       }, headers: turbo_stream_headers
 
       expect(investment.reload.description).to eq("Updated Investment")
+      expect(response.body).not_to include("investment%5Bid%5D")
+      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
+      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
     end
   end
 

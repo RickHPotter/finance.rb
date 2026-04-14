@@ -33,54 +33,64 @@ class Views::CardTransactions::FormControls < Views::Base
   private
 
   def user_card_field
-    div(id: "hw_card_transaction_user_card_id", class: "hw-cb w-full lg:w-2/12 mb-3 wallet-icon") do
-      form.combobox \
-        :user_card_id,
-        user_cards,
-        mobile_at: "360px",
-        render_in: { partial: "card_transactions/user_card" },
-        include_blank: false,
+    div(id: "card_transaction_user_card_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon",
+        data: { reactive_form_target: :userCardCombobox }) do
+      render Views::Shared::SingleSelectCombobox.new(
+        name: "card_transaction[user_card_id]",
+        options: user_cards.map { |label, value| [ label, value, {} ] },
+        selected_value: card_transaction.user_card_id,
         placeholder: model_attribute(card_transaction, :user_card_id),
-        data: { reactive_form_target: :input, action: "hw-combobox:selection->reactive-form#requestSubmitBasedOnUserCardChange", value: ".hw-combobox__input" }
+        input_data: {
+          reactive_form_target: :input,
+          action: "change->reactive-form#requestSubmitBasedOnUserCardChange"
+        }
+      )
     end
   end
 
   def category_and_entity_fields
-    div(class: "flex w-full lg:w-4/12 gap-2 mb-3 lg:mb-0") do
-      div(id: "hw_category_id", class: "hw-cb lg:w-1/2 plus-icon") do
-        combobox_tag \
-          :category_transaction,
-          categories,
-          mobile_at: "360px",
-          include_blank: false,
+    div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
+      div(id: "card_transaction_category_combobox", class: "combobox-shell w-1/2 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :category_transaction,
+          options: categories.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(card_transaction, :category_id),
           autofocus: autofocus_target == :category_transaction,
-          data: { action: "hw-combobox:selection->reactive-form#insertCategory", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertCategory"
+          }
+        )
       end
 
-      div(id: "hw_entity_id", class: "hw-cb lg:w-1/2 user-icon") do
-        combobox_tag \
-          :entity_transaction,
-          entities,
-          mobile_at: "360px",
-          include_blank: false,
+      div(id: "card_transaction_entity_combobox", class: "combobox-shell w-1/2 user-icon", data: { reactive_form_target: :entityCombobox }) do
+        render Views::Shared::SingleSelectCombobox.new(
+          name: :entity_transaction,
+          options: entities.map { |label, value| [ label, value, {} ] },
+          selected_value: nil,
           placeholder: model_attribute(card_transaction, :entity_id),
           autofocus: autofocus_target == :entity_transaction,
-          data: { action: "hw-combobox:selection->reactive-form#insertEntity", value: ".hw-combobox__input" }
+          input_data: {
+            action: "change->reactive-form#insertEntity"
+          }
+        )
       end
     end
   end
 
   def date_field
-    div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
-      TextField \
-        form, :date,
+    div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
+      render Views::Shared::DatetimeInput.new(
+        form:,
+        field: :date,
+        value: card_transaction.date,
         id: :card_transaction_date,
-        type: "datetime-local", svg: :calendar,
-        value: card_transaction.date.strftime("%Y-%m-%dT%H:%M"),
-        class: "font-graduate transaction-date",
         autofocus: autofocus_target == :date,
-        data: { reactive_form_target: :dateInput, action: "focusin->reactive-form#setIniDate focusout->reactive-form#setEndDate" }
+        hidden_data: {
+          reactive_form_target: :dateInput,
+          action: "change->reactive-form#requestSubmit"
+        }
+      )
     end
   end
 
@@ -89,16 +99,16 @@ class Views::CardTransactions::FormControls < Views::Base
     sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
     sign = positive ? "+" : "-"
 
-    div(class: "flex gap-1 mb-3 lg:mb-0") do
+    div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black",
+        class: "w-1/12 #{sign_bg_colour} border border-black lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
       ) { sign }
 
-      div(class: "w-6/12") do
+      div(class: "w-7/12 lg:w-7/12") do
         TextField \
           form, :price,
           inputmode: :numeric,
@@ -106,11 +116,16 @@ class Views::CardTransactions::FormControls < Views::Base
           id: :transaction_price,
           class: "sign-based font-graduate",
           autocomplete: :off,
-          onclick: "this.select();",
           data: {
+            controller: "input-select",
             price_mask_target: :input,
             reactive_form_target: :priceInput,
-            action: "input->price-mask#applyMask input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating",
+            action: [
+              "click->input-select#select",
+              "input->price-mask#applyMask",
+              "input->reactive-form#updateInstallmentsPrices",
+              "input->reactive-form#updateExchangeWhenDuplicating"
+            ].join(" "),
             sign:
           }
       end
@@ -123,7 +138,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { action: "click->reactive-form#updateFullPrice" }
       ) { "=" }
 
-      div(class: "w-4/12") do
+      div(class: "w-3/12 lg:w-4/12") do
         TextFieldTag \
           :card_installments_count,
           type: :number,
@@ -131,10 +146,10 @@ class Views::CardTransactions::FormControls < Views::Base
           min: 1, max: 72,
           value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
           class: "font-graduate",
-          onclick: "this.select();",
           data: {
+            controller: "input-select",
             reactive_form_target: :installmentsCountInput,
-            action: "input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
+            action: "click->input-select#select input->reactive-form#updateInstallmentsPrices input->reactive-form#updateExchangeWhenDuplicating"
           }
       end
     end

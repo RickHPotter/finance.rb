@@ -19,18 +19,18 @@ class Views::CashTransactions::PayMultipleModal < Views::Base
     ModalShell(id: modal_id, title: model_attribute(CashInstallment, :confirm_payment)) do
       form_with(model: CashInstallment.new, url: pay_multiple_cash_installments_path, method: :post) do |form|
         hidden_field_tag :ids, "", data: { bulk_ids_input: true }
-        hidden_field_tag :index_context_json, index_context.to_json
+        hidden_field_tag :index_context_json, index_context.except(:available_subscriptions).to_json
 
         div(class: "mx-auto pb-4 text-center") do
           bold_label(form, :payment_date)
 
-          TextField \
-            form, :date,
-            type: "datetime-local",
-            svg: :calendar,
-            class: "font-graduate",
-            max: Time.zone.now.end_of_day.strftime("%Y-%m-%dT%H:%M"),
-            value: Time.zone.now.strftime("%Y-%m-%dT%H:%M")
+          render Views::Shared::DatetimeInput.new(
+            form:,
+            field: :date,
+            value: Time.zone.now,
+            id: "cash_installments_multiple_payment_date",
+            max_datetime: Time.zone.now.end_of_day
+          )
         end
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do

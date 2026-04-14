@@ -9,7 +9,7 @@ class Investment < ApplicationRecord
   include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date
+  attr_accessor :min_date, :duplicate
 
   # @relationships ............................................................
   belongs_to :user

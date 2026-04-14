@@ -30,8 +30,7 @@ module Components
             svg: :money,
             value: from_value,
             placeholder: model_attribute(object, from_field),
-            onclick: "this.select();",
-            data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+            data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
         end
 
         div(class: "hidden lg:flex m-auto") do
@@ -44,8 +43,7 @@ module Components
             svg: :money,
             value: to_value,
             placeholder: model_attribute(object, to_field),
-            onclick: "this.select();",
-            data: { price_mask_target: :input, action: "input->price-mask#applyMask" }
+            data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask" }
         end
       end
     end

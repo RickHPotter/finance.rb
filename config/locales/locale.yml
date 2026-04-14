@@ -23,6 +23,7 @@ en:
     user_card_needed: Please add a user card before creating a %{model}.
     alert: "Attention!"
     notice: "Notice"
+    added_to_subscription: "Selected transactions were added to the subscription."
     workaround: "Suggested fix"
     history_workarounds:
       allocation_locked_after_payment: "Keep the paid portion unchanged. If the future allocation changed, create a new future-only transaction for the new categories or entities."
@@ -55,8 +56,10 @@ en:
     index: "Listing"
     show: "Details of"
     new: "Creating"
+    chain_create: "Chain Creating"
     edit: "Editing"
     duplicate: "Duplicating"
+    chain_duplicate: "Chain Duplicating"
     destroy: "Destroying"
     merge: "Merging"
   actions:
@@ -80,11 +83,18 @@ en:
     select: "Select one"
     selecta: "Select one"
     select_all: "Select All"
+    select_page: "Select Page"
     selected: "selected"
     type: "Type to search"
     send: "Send"
     toggle_sign: "Toggle Sign"
     calculate_installments_price: "Calculate Installments Price"
+    create_more: "Create more"
+    duplicate_more: "Duplicate more"
+    finish_chain: "Finish chain"
+    finish_chain_without_save: "Finish chain without saving"
+    add_to_subscription: "Add to Subscription"
+    partial_pay: "Partial Pay"
 
   navigation:
     previous: "Previous"
@@ -110,6 +120,30 @@ en:
   rows_not_found: "No data to display"
   advanced_filter: "Advanced Filter"
   order: "Order"
+  datetime_input:
+    date: "Date"
+    time: "Time"
+    invalid_time: "Enter a valid time in 24-hour format."
+    invalid_max: "Choose a payment date and time up to the end of today."
+  bulk_actions:
+    total_selected: "Selected total"
+    choose_subscription: "Choose subscription"
+    empty_selection: "Select at least one transaction."
+    invalid_subscription: "Select a valid subscription."
+    no_subscriptions_available: "Create a subscription first before using this action."
+    partial_pay:
+      title: "Confirm Partial Payment"
+      amount: "Payment amount"
+      choose_installment: "Choose partial transaction"
+      allowed_range: "Allowed range"
+      invalid_amount: "Choose an amount that fully pays all selected transactions except one."
+      invalid_selection: "Choose which transaction will remain partially paid."
+      mixed_signs: "Partial pay requires selected transactions with the same sign."
+      unavailable: "Partial pay is not available for this selection."
+    disabled:
+      pay: "Some selected transactions cannot be paid."
+      transfer: "Some selected transactions cannot be transferred."
+      subscription: "Some selected transactions cannot be added to a subscription."
 
 pt-BR:
   confirmation:
@@ -136,6 +170,7 @@ pt-BR:
     user_card_needed: Por favor, adicione um cartão antes de criar uma %{model}.
     alert: "Atenção!"
     notice: "Aviso"
+    added_to_subscription: "As transações selecionadas foram adicionadas à assinatura."
     workaround: "Como resolver"
     history_workarounds:
       allocation_locked_after_payment: "Mantenha a parte já paga intacta. Se a alocação futura mudou, crie uma nova transação apenas para o trecho futuro com as novas categorias ou entidades."
@@ -168,8 +203,10 @@ pt-BR:
     index: "Listando"
     show: "Detalhes de"
     new: "Criando"
+    chain_create: "Criando em cadeia"
     edit: "Editando"
     duplicate: "Duplicando"
+    chain_duplicate: "Duplicando em cadeia"
     destroy: "Deletando"
     merge: "Mesclando"
   actions:
@@ -193,11 +230,18 @@ pt-BR:
     select: "Selecione um"
     selecta: "Selecione uma"
     select_all: "Selecionar Todos"
+    select_page: "Selecionar Página"
     selected: "selecionado(s)"
     type: "Digite para pesquisar"
     send: "Enviar"
     toggle_sign: "Inverter Sinal"
     calculate_installments_price: "Calcular Preço das Parcelas"
+    create_more: "Criar mais"
+    duplicate_more: "Duplicar mais"
+    finish_chain: "Finalizar cadeia"
+    finish_chain_without_save: "Finalizar cadeia sem salvar"
+    add_to_subscription: "Adicionar à Assinatura"
+    partial_pay: "Pagar Parcial"
 
   navigation:
     previous: "Anterior"
@@ -223,3 +267,27 @@ pt-BR:
   rows_not_found: "Sem dados para exibir"
   advanced_filter: "Filtro Avançado"
   order: "Ordem"
+  datetime_input:
+    date: "Data"
+    time: "Hora"
+    invalid_time: "Digite um horario valido no formato 24 horas."
+    invalid_max: "Escolha uma data e hora de pagamento até o fim de hoje."
+  bulk_actions:
+    total_selected: "Total selecionado"
+    choose_subscription: "Escolha a assinatura"
+    empty_selection: "Selecione pelo menos uma transação."
+    invalid_subscription: "Selecione uma assinatura válida."
+    no_subscriptions_available: "Crie uma assinatura antes de usar esta ação."
+    partial_pay:
+      title: "Confirmar Pagamento Parcial"
+      amount: "Valor do pagamento"
+      choose_installment: "Escolha a transação parcial"
+      allowed_range: "Faixa permitida"
+      invalid_amount: "Escolha um valor que quite totalmente todas as transações selecionadas, exceto uma."
+      invalid_selection: "Escolha qual transação permanecerá parcialmente paga."
+      mixed_signs: "O pagamento parcial exige transações selecionadas com o mesmo sinal."
+      unavailable: "Pagamento parcial não está disponível para esta seleção."
+    disabled:
+      pay: "Algumas transações selecionadas não podem ser pagas."
+      transfer: "Algumas transações selecionadas não podem ser transferidas."
+      subscription: "Algumas transações selecionadas não podem ser adicionadas a uma assinatura."

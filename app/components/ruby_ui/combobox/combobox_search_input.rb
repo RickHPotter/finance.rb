@@ -25,7 +25,11 @@ module RubyUI
         placeholder: @placeholder,
         data: {
           ruby_ui__combobox_target: "searchInput",
-          action: "keyup->ruby-ui--combobox#filterItems search->ruby-ui--combobox#filterItems"
+          action: %w[
+            keyup->ruby-ui--combobox#filterItems
+            search->ruby-ui--combobox#filterItems
+            keydown->ruby-ui--combobox#keyTabPressed
+          ]
         },
         autocomplete: "off",
         autocorrect: "off",

@@ -34,6 +34,10 @@ class LalasController < ApplicationController
     user.entities.find_by(entity_name: "LALA")
   end
 
+  def lala_context
+    user.main_context
+  end
+
   def exchange_category
     user.categories.find_by(category_name: "EXCHANGE")
   end
@@ -43,6 +47,7 @@ class LalasController < ApplicationController
 
     user.user_cards
         .joins(card_transactions: %i[category_transactions entity_transactions])
+        .where(card_transactions: { context_id: lala_context.id })
         .where(category_transactions: { category_id: exchange_category.id })
         .where(entity_transactions: { entity_id: lala.id })
         .group("user_cards.id")

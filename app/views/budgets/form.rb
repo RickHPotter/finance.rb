@@ -38,32 +38,36 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           form.text_field \
             :description,
             autocomplete: :off,
+            autofocus: true,
             class: outdoor_readonly_input_class,
             data: { controller: "blinking-placeholder", text: model_attribute(budget, :description), dynamic_description_target: :description }
         end
 
         div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "hw_category_id", class: "hw-cb w-full lg:w-1/4 mb-3 plus-icon") do
+          div(id: "budget_category_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
             bold_label(form, :categories)
-            raw form.combobox \
-              :budget_category, @categories,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: :budget_category,
+              options: @categories.map { |label, value| [ label, value, {} ] },
+              selected_value: nil,
               placeholder: model_attribute(budget, :category_id),
-              data: { action: "hw-combobox:selection->reactive-form#insertCategory hw-combobox:selection->dynamic-description#updateDescription",
-                      value: ".hw-combobox__input" }
+              input_data: {
+                action: "change->reactive-form#insertCategory change->dynamic-description#updateDescription"
+              }
+            )
           end
 
-          div(id: "hw_entity_id", class: "hw-cb w-full lg:w-1/4 mb-3 user-icon") do
+          div(id: "budget_entity_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 user-icon", data: { reactive_form_target: :entityCombobox }) do
             bold_label(form, :entities)
-            raw form.combobox \
-              :budget_entity,
-              @entities,
-              mobile_at: "360px",
-              include_blank: false,
+            render Views::Shared::SingleSelectCombobox.new(
+              name: :budget_entity,
+              options: @entities.map { |label, value| [ label, value, {} ] },
+              selected_value: nil,
               placeholder: model_attribute(budget, :entity_id),
-              data: { action: "hw-combobox:selection->reactive-form#insertEntity hw-combobox:selection->dynamic-description#updateDescription",
-                      value: ".hw-combobox__input" }
+              input_data: {
+                action: "change->reactive-form#insertEntity change->dynamic-description#updateDescription"
+              }
+            )
           end
 
           div(class: "w-full lg:w-1/4 mb-2") do
@@ -118,29 +122,40 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             end
           end
 
-          div do
+          div(class: "w-full lg:w-1/4") do
+            positive = budget.value.to_i.positive?
+            sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
+            sign = positive ? "+" : "-"
+
             bold_label(form, :value)
 
             div(class: "flex-1 flex gap-x-1 mb-3 lg:mb-0") do
-              Button(size: :lg, class: "w-1/6 bg-red-500 border border-black hover:bg-red-600", tabindex: -1) { "-" }
+              Button(
+                type: :button,
+                size: :lg,
+                class: "w-1/6 #{sign_bg_colour} border border-black lg:hidden",
+                tabindex: -1,
+                title: action_message(:toggle_sign),
+                data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
+              ) { sign }
 
-              div(class: "w-full lg:w-5/6") do
+              div(class: "w-5/6 lg:w-full") do
                 TextField \
                   form, :value,
                   inputmode: :numeric,
                   svg: :money,
-                  class: "font-graduate",
+                  class: "sign-based font-graduate",
                   value: budget.value || -10_000,
-                  onclick: "this.select();",
-                  data: { dynamic_description_target: :value,
-                          price_mask_target: :input, action: "input->price-mask#applyMask input->dynamic-description#updateDescription",
-                          sign: "-" }
+                  data: { controller: "input-select",
+                          dynamic_description_target: :value,
+                          price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask input->dynamic-description#updateDescription",
+                          sign: }
               end
             end
           end
         end
 
-        div(class: "flex items-center justify-center gap-2 w-1/2 mb-3 mx-auto") do
+        div(class: "flex items-center justify-center gap-2 mb-3 mx-auto") do
           div(class: "w-full lg:w-1/2 mb-2") do
             bold_label(form, :first_installment_only)
             div(class: "mb-3") do

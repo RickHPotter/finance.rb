@@ -73,12 +73,18 @@ Rails.application.routes.draw do
       get :month_year
       get :search
       post :pay_in_advance
+      post :add_to_subscription
     end
   end
 
   resources :cash_transactions, except: :show do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
+      post :add_to_subscription
     end
   end
 
@@ -89,6 +95,7 @@ Rails.application.routes.draw do
 
     collection do
       post :pay_multiple
+      post :partial_pay_multiple
       post :transfer_multiple
     end
   end
@@ -100,6 +107,10 @@ Rails.application.routes.draw do
   end
 
   resources :investments, except: :show do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
     end

@@ -5,9 +5,6 @@ const application = Application.start()
 application.debug = false
 window.Stimulus = application
 
-import HwComboboxController from "@josefarias/hotwire_combobox"
-application.register("hw-combobox", HwComboboxController)
-
 export { application }
 
 document.addEventListener("turbo:frame-render", (event) => {
@@ -23,7 +20,7 @@ document.addEventListener("keyup", (e) => {
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
   if (inInput) {
-    if (key === "escape") document.activeElement.blur()
+    if (key === "escape" && !window.__reactiveFormQuickJumpActive) document.activeElement.blur()
     return
   }
 
@@ -54,6 +51,8 @@ document.addEventListener("keyup", (e) => {
     e.preventDefault()
     const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse)")
     const lastPaidTransaction = paidTransactions[paidTransactions.length - 1]
+
+    if (!lastPaidTransaction) { return }
 
     lastPaidTransaction.scrollIntoView({ behavior: "smooth", block: "center" })
     lastPaidTransaction.querySelector(".cash_transaction_description").classList.add("animate-bounce")
@@ -87,7 +86,7 @@ document.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase()
   const inInput = ["INPUT", "TEXTAREA"].includes(tag) || document.activeElement?.isContentEditable
   if (inInput) {
-    if (key === "escape") document.activeElement.blur()
+    if (key === "escape" && !window.__reactiveFormQuickJumpActive) document.activeElement.blur()
     return
   }
 
@@ -97,19 +96,6 @@ document.addEventListener("keydown", (e) => {
     document.querySelector("body").scrollBy({ top: distance, left: 0, behavior: "smooth" })
   }
 
-  if (key === "d") {
-    e.preventDefault()
-
-    const selectors = ["#card_transaction_description", "#cash_transaction_description", "#investment_description"]
-    selectors.forEach(selector => {
-      const descriptionInput = document.querySelector(selector)
-      if (!descriptionInput) return
-
-      const textLength = descriptionInput.value.length
-      descriptionInput.focus()
-      descriptionInput.setSelectionRange(textLength, textLength)
-    })
-  }
 })
 
 function findVisibleSelectAllControl() {

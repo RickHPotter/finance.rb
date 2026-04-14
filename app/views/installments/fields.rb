@@ -78,12 +78,12 @@ module Views
                 class: "sign-based price-input
                         w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
                 readonly:,
-                onclick: "this.select();",
                 data: {
+                  controller: "input-select",
                   price_mask_target: :input,
                   reactive_form_target: :priceInstallmentInput,
                   installment_lock_target: :price,
-                  action: "input->price-mask#applyMask",
+                  action: "click->input-select#select input->price-mask#applyMask",
                   sign:
                 }
 

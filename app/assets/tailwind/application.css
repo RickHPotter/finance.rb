@@ -1,14 +1,23 @@
 @import "tailwindcss";
+@import "flowbite/src/themes/default";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/typography";
+@plugin "flowbite/plugin";
 @plugin "tailwindcss-animate";
 
 @config "../../../config/tailwind.config.js";
 @source "../../../config/safelist.txt";
+@source "../../../node_modules/flowbite";
 
 @theme {
   --breakpoint-xxs: 390px;
+  --radius-xxs: 0.125rem;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 }
 
 /*
@@ -104,49 +113,55 @@ body::-webkit-scrollbar { /* WebKit */
   height: 0;
 }
 
-/* TODO: I realised I couldnt open datepicker by clicking on the input instead of the indicator icon */
-/* Hide this again (maybe) after implmenting a real datepicker */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  /*display: none;*/
-  /*-webkit-appearance: none;*/
+.datetime-input-date::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
 }
 
-.hw-cb {
-  .hw-combobox {
+.datetime-input-date::-webkit-clear-button,
+.datetime-input-date::-webkit-inner-spin-button {
+  display: none;
+}
+
+.datetime-input-date {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.combobox-shell {
+  @apply relative;
+
+  [data-controller~="ruby-ui--combobox"] {
     @apply w-full;
   }
 
-  .hw-combobox__main__wrapper {
+  [data-ruby-ui--combobox-target="trigger"] {
+    @apply relative;
     @apply w-full;
     @apply ps-10;
-  }
 
-  .hw-combobox__icon {
-    @apply absolute;
-    @apply inset-y-0;
-    @apply start-3.5;
-    @apply ps-3.5;
-    @apply flex;
-    @apply items-center;
-  }
-
-  .hw-combobox__handle {
-    @apply hidden;
-    @apply right-2;
-  }
-
-  .hw-combobox__input {
-    @apply ps-2;
-    @apply placeholder-gray-500;
-  }
-
-  .hw-combobox__listbox { }
-
-  .hw-combobox__option:hover,
-  .hw-combobox__option--navigated,
-  .hw-combobox__option--selected {
-    @apply bg-slate-600;
-    @apply text-white;
+    &::before {
+      content: "";
+      @apply absolute;
+      @apply top-1/2;
+      @apply start-3.5;
+      @apply flex;
+      @apply items-center;
+      @apply justify-center;
+      @apply w-5;
+      @apply h-5;
+      transform: translateY(-50%);
+      background-color: currentColor;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+      mask-image: var(--hw-icon-image);
+      -webkit-mask-image: var(--hw-icon-image);
+      pointer-events: none;
+    }
   }
 }
 

@@ -4,7 +4,6 @@ class Views::Layouts::Application < Views::Base
   register_output_helper :csrf_meta_tags
   register_output_helper :csp_meta_tag
   register_output_helper :stylesheet_link_tag
-  register_output_helper :combobox_style_tag
   register_output_helper :javascript_include_tag
   register_output_helper :javascript_tag
 
@@ -29,7 +28,6 @@ class Views::Layouts::Application < Views::Base
         stylesheet_link_tag("tailwind", data: { turbo_track: :reload })
         stylesheet_link_tag("application", data: { turbo_track: :reload })
 
-        combobox_style_tag
         javascript_include_tag("application", data: { turbo_track: :reload }, type: :module)
       end
 

@@ -61,9 +61,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       div(
         class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay}",
         style: "background-clip: padding-box; #{style}",
-        data: { id: cash_installment.id, datatable_target: :row, action: "click->datatable#toggleCardSelection" }
+        data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
-        render_row_checkbox(cash_installment, mobile: true)
+        render_row_checkbox(cash_installment, cash_transaction, mobile: true)
 
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
@@ -162,9 +162,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
-                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
+                action: [
+                  "mousedown->datatable#preventRangeSelection",
+                  "click->datatable#toggleCardSelection",
+                  "dragstart->datatable#start",
+                  "dragover->datatable#activate",
+                  "drop->datatable#drop"
+                ].join(" ") }
       ) do
-        render_row_checkbox(cash_installment) do
+        render_row_checkbox(cash_installment, cash_transaction) do
           div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do
             if should_display_link_to_pay
               button(
@@ -339,23 +345,36 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     info
   end
 
-  def render_row_checkbox(cash_installment, mobile: false)
+  def render_row_checkbox(cash_installment, cash_transaction, mobile: false)
     div(class: "flex items-center gap-1 relative px-2") do
-      label(class: "group inline-flex cursor-pointer items-center justify-center") do
+      label(class: "group inline-flex cursor-pointer items-center justify-center", data: { action: "mousedown->datatable#preventRangeSelection" }) do
         input(
           type: :checkbox,
           value: cash_installment.id,
           class: "peer sr-only",
-          disabled: cash_installment.paid?,
-          data: { datatable_target: :checkbox, action: "change->datatable#toggleSelection" }
+          data: {
+            datatable_target: :checkbox,
+            action: "mousedown->datatable#preventRangeSelection click->datatable#toggleSelection",
+            bulk_price_cents: cash_installment.price,
+            bulk_record_id: cash_transaction.id,
+            bulk_label: [
+              cash_transaction.description,
+              "·",
+              pretty_installments(cash_installment.number, cash_installment.cash_installments_count),
+              "·",
+              from_cent_based_to_float(cash_installment.price, "R$")
+            ].join,
+            bulk_pay_eligible: cash_installment.bulk_pay_eligible?.to_s,
+            bulk_transfer_eligible: cash_installment.bulk_transfer_eligible?.to_s,
+            bulk_subscription_eligible: cash_transaction.bulk_subscription_eligible?.to_s
+          }
         )
 
         unless mobile
           span(
             class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
-                peer-focus:ring-2 peer-focus:ring-blue-300 size-4
-                peer-disabled:bg-slate-300 peer-disabled:text-slate-400"
+                peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
           ) do
             span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
           end

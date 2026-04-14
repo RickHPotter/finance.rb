@@ -42,7 +42,12 @@ class CardTransaction < ApplicationRecord
 
     card_transaction = existing_card_transaction.dup
     card_transaction.duplicate = true
-    card_transaction.card_installments     = existing_card_transaction.card_installments.map(&:dup)
+    card_transaction.card_installments = existing_card_transaction.card_installments.map do |installment|
+      installment.dup.tap do |duplicate_installment|
+        duplicate_installment.cash_transaction_id = nil
+        duplicate_installment.paid = false
+      end
+    end
     card_transaction.category_transactions = existing_card_transaction.category_transactions.map(&:dup)
 
     existing_card_transaction.entity_transactions.each do |et|
@@ -124,6 +129,10 @@ class CardTransaction < ApplicationRecord
 
   def can_be_destroyed?
     persisted?
+  end
+
+  def bulk_subscription_eligible?
+    true
   end
 
   def operation_type

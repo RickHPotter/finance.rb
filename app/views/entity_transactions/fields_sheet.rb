@@ -45,10 +45,10 @@ module Views
                       svg: :money,
                       id: "entity_transaction_price_#{form.index}",
                       class: "font-graduate dynamic-price",
-                      onclick: "this.select();",
-                      data: { price_mask_target: :input,
+                      data: { controller: "input-select",
+                              price_mask_target: :input,
                               entity_transaction_target: :priceInput,
-                              action: "input->price-mask#applyMask input->entity-transaction#updatePrice",
+                              action: "click->input-select#select input->price-mask#applyMask input->entity-transaction#updatePrice",
                               sign: }
                   end
 
@@ -66,10 +66,15 @@ module Views
                       svg: :money,
                       id: "entity_transaction_price_to_be_returned_#{form.index}",
                       class: "font-graduate dynamic-price",
-                      onclick: "this.select();",
-                      data: { price_mask_target: :input,
+                      data: { controller: "input-select",
+                              price_mask_target: :input,
                               entity_transaction_target: :priceToBeReturnedInput,
-                              action: "input->price-mask#applyMask input->entity-transaction#updatePrice input->entity-transaction#toggleExchanges",
+                              action: [
+                                "click->input-select#select",
+                                "input->price-mask#applyMask",
+                                "input->entity-transaction#updatePrice",
+                                "input->entity-transaction#toggleExchanges"
+                              ].join(" "),
                               sign: }
                   end
 
@@ -90,8 +95,9 @@ module Views
                                  value: entity_transaction&.exchanges_count&.to_i,
                                  id: "entity_transaction_exchanges_count_#{form.index}",
                                  class: "font-graduate #{'opacity-50' unless entity_transaction.is_payer}",
-                                 onclick: "this.select();",
-                                 data: { entity_transaction_target: :exchangesCountInput, action: "input->entity-transaction#updateExchangesPrices" }
+                                 data: { controller: "input-select",
+                                         entity_transaction_target: :exchangesCountInput,
+                                         action: "click->input-select#select input->entity-transaction#updateExchangesPrices" }
                   end
 
                   div(class: "m-auto") do

@@ -18,6 +18,16 @@ RSpec.describe "UserCards", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the ruby ui combobox" do
+      get new_user_card_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("ruby-ui--combobox")
+      expect(response.body).not_to include("hw-combobox")
+    end
+  end
+
   describe "[ #create ]" do
     it "creates a user card" do
       expect do

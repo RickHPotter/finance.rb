@@ -20,13 +20,22 @@ export default class extends Controller {
   ]
 
   selectedItemIndex = null
+  ignoreNextTriggerFocus = false
 
   connect() {
     this.updateTriggerContent()
     this.initializeOrderTracking()
+    this.openFrame = null
+    this.closeFrame = null
+    this.pointerDownInsidePopover = false
+    this.boundSchedulePointerDownInsidePopoverClear = this.schedulePointerDownInsidePopoverClear.bind(this)
   }
 
   disconnect() {
+    if (this.openFrame) cancelAnimationFrame(this.openFrame)
+    if (this.closeFrame) cancelAnimationFrame(this.closeFrame)
+    window.removeEventListener("pointerup", this.boundSchedulePointerDownInsidePopoverClear)
+    window.removeEventListener("pointercancel", this.boundSchedulePointerDownInsidePopoverClear)
     if (this.cleanup) { this.cleanup() }
   }
 
@@ -46,6 +55,18 @@ export default class extends Controller {
       this.updateSelectedOrder(input)
       this.reorderItems()
     }
+  }
+
+  handlePopoverPointerDown() {
+    this.pointerDownInsidePopover = true
+    window.addEventListener("pointerup", this.boundSchedulePointerDownInsidePopoverClear, { once: true })
+    window.addEventListener("pointercancel", this.boundSchedulePointerDownInsidePopoverClear, { once: true })
+  }
+
+  schedulePointerDownInsidePopoverClear() {
+    requestAnimationFrame(() => {
+      this.pointerDownInsidePopover = false
+    })
   }
 
   inputContent(input) {
@@ -79,25 +100,64 @@ export default class extends Controller {
   }
 
   openPopover(event) {
-    event.preventDefault()
-
-    this.updatePopoverPosition()
-    this.updatePopoverWidth()
-    this.triggerTarget.ariaExpanded = "true"
-    this.selectedItemIndex = null
-    this.itemTargets.forEach(item => item.ariaCurrent = "false")
-    this.popoverTarget.showPopover()
-    if (this.hasSearchInputTarget) {
-      requestAnimationFrame(() => {
-        this.searchInputTarget.focus()
-        this.searchInputTarget.select()
-      })
+    if (event?.type === "focus" && this.ignoreNextTriggerFocus) {
+      return
     }
+
+    if (event?.type === "click") {
+      event.preventDefault()
+    }
+
+    if (this.popoverTarget.matches(":popover-open")) {
+      this.updatePopoverWidth()
+      if (this.hasSearchInputTarget && event?.type === "focus") {
+        requestAnimationFrame(() => {
+          this.searchInputTarget.focus()
+          this.searchInputTarget.select()
+        })
+      }
+      return
+    }
+
+    if (this.closeFrame) {
+      cancelAnimationFrame(this.closeFrame)
+      this.closeFrame = null
+    }
+
+    if (this.openFrame) cancelAnimationFrame(this.openFrame)
+    this.openFrame = requestAnimationFrame(() => {
+      this.openFrame = null
+      if (this.popoverTarget.matches(":popover-open")) return
+
+      this.updatePopoverPosition()
+      this.updatePopoverWidth()
+      this.triggerTarget.ariaExpanded = "true"
+      this.popoverTarget.showPopover()
+      this.highlightFirstVisibleItem()
+
+      if (this.hasSearchInputTarget) {
+        requestAnimationFrame(() => {
+          this.searchInputTarget.focus()
+          this.searchInputTarget.select()
+        })
+      }
+    })
   }
 
   closePopover() {
-    this.triggerTarget.ariaExpanded = "false"
-    this.popoverTarget.hidePopover()
+    if (this.openFrame) {
+      cancelAnimationFrame(this.openFrame)
+      this.openFrame = null
+    }
+
+    if (this.closeFrame) cancelAnimationFrame(this.closeFrame)
+    this.closeFrame = requestAnimationFrame(() => {
+      this.closeFrame = null
+      this.triggerTarget.ariaExpanded = "false"
+      if (this.popoverTarget.matches(":popover-open")) {
+        this.popoverTarget.hidePopover()
+      }
+    })
   }
 
   filterItems(e) {
@@ -114,9 +174,12 @@ export default class extends Controller {
 
     let resultCount = 0
 
-    this.selectedItemIndex = null
-
     this.inputTargets.forEach((input) => {
+      if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") {
+        input.parentElement.classList.add("hidden")
+        return
+      }
+
       const text = this.inputContent(input).toLowerCase()
 
       if (text.indexOf(filterTerm) > -1) {
@@ -128,9 +191,15 @@ export default class extends Controller {
     })
 
     this.emptyStateTarget.classList.toggle("hidden", resultCount !== 0)
+    this.highlightFirstVisibleItem()
   }
 
   keyDownPressed() {
+    if (!this.popoverTarget.matches(":popover-open")) {
+      this.openPopover()
+      return
+    }
+
     if (this.selectedItemIndex !== null) {
       this.selectedItemIndex++
     } else {
@@ -141,6 +210,11 @@ export default class extends Controller {
   }
 
   keyUpPressed() {
+    if (!this.popoverTarget.matches(":popover-open")) {
+      this.openPopover()
+      return
+    }
+
     if (this.selectedItemIndex !== null) {
       this.selectedItemIndex--
     } else {
@@ -152,6 +226,11 @@ export default class extends Controller {
 
   focusSelectedInput() {
     const visibleInputs = this.inputTargets.filter(input => !input.parentElement.classList.contains("hidden"))
+    if (visibleInputs.length === 0) {
+      this.selectedItemIndex = null
+      this.itemTargets.forEach(item => item.ariaCurrent = "false")
+      return
+    }
 
     this.wrapSelectedInputIndex(visibleInputs.length)
 
@@ -167,11 +246,44 @@ export default class extends Controller {
 
   keyEnterPressed(event) {
     event.preventDefault()
-    const option = this.itemTargets.find(item => item.ariaCurrent === "true")
+    const option = this.currentOption() || (this.hasSearchTerm() ? this.firstVisibleOption() : null)
 
     if (option) {
-      option.click()
+      this.activateOption(option)
     }
+  }
+
+  keyTabPressed(event) {
+    if (event.key !== "Tab") { return }
+
+    const option = this.currentOption() || (this.hasSearchTerm() ? this.firstVisibleOption() : null)
+    const nextElement = this.adjacentElement({ backwards: event.shiftKey })
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (option) {
+      this.activateOption(option)
+    }
+
+    this.ignoreNextTriggerFocus = true
+    this.closePopover()
+
+    requestAnimationFrame(() => {
+      this.searchInputTarget?.blur()
+      this.triggerTarget.blur()
+      nextElement?.focus()
+      requestAnimationFrame(() => {
+        this.ignoreNextTriggerFocus = false
+      })
+    })
+  }
+
+  handleFocusOut(event) {
+    if (event.relatedTarget && this.element.contains(event.relatedTarget)) { return }
+    if (this.pointerDownInsidePopover) { return }
+
+    this.closePopover()
   }
 
   wrapSelectedInputIndex(length) {
@@ -194,6 +306,92 @@ export default class extends Controller {
 
   updatePopoverWidth() {
     this.popoverTarget.style.width = `${this.triggerTarget.offsetWidth}px`
+  }
+
+  highlightFirstVisibleItem() {
+    const visibleInputs = this.visibleInputs()
+    this.itemTargets.forEach(item => item.ariaCurrent = "false")
+
+    if (visibleInputs.length === 0 || !this.hasSearchTerm()) {
+      this.selectedItemIndex = null
+      return
+    }
+
+    this.selectedItemIndex = 0
+    visibleInputs[0].parentElement.ariaCurrent = "true"
+  }
+
+  visibleInputs() {
+    return this.inputTargets.filter((input) => {
+      if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") { return false }
+
+      return !input.parentElement.classList.contains("hidden")
+    })
+  }
+
+  currentOption() {
+    return this.itemTargets.find(item => item.ariaCurrent === "true")
+  }
+
+  firstVisibleOption() {
+    return this.visibleInputs()[0]?.parentElement
+  }
+
+  hasSearchTerm() {
+    if (!this.hasSearchInputTarget) { return false }
+
+    return this.searchInputTarget.value.trim().length > 0
+  }
+
+  activateOption(option) {
+    const input = option?.querySelector("input")
+    if (!input) { return }
+
+    if (input.type === "radio") {
+      if (!input.checked) {
+        input.checked = true
+        input.dispatchEvent(new Event("input", { bubbles: true }))
+        input.dispatchEvent(new Event("change", { bubbles: true }))
+      } else {
+        this.updateTriggerContent()
+        this.closePopover()
+      }
+      return
+    }
+
+    option.click()
+  }
+
+  focusAdjacentElement({ backwards = false } = {}) {
+    this.adjacentElement({ backwards })?.focus()
+  }
+
+  adjacentElement({ backwards = false } = {}) {
+    const focusables = this.focusableElements()
+    const currentIndex = focusables.indexOf(this.triggerTarget)
+    if (currentIndex === -1) { return null }
+
+    const nextIndex = backwards ? currentIndex - 1 : currentIndex + 1
+    return focusables[nextIndex] || null
+  }
+
+  focusableElements() {
+    const selector = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled]):not([type='hidden'])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(", ")
+
+    return Array.from(document.querySelectorAll(selector))
+      .filter(element => !this.popoverTarget.contains(element))
+      .filter(element => this.isVisible(element))
+  }
+
+  isVisible(element) {
+    return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length)
   }
 
   initializeOrderTracking() {

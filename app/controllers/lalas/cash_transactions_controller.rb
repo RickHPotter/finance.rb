@@ -5,7 +5,7 @@ class Lalas::CashTransactionsController < LalasController
   include TranslateHelper
 
   def index
-    build_index_context(User.first.cash_installments)
+    build_index_context(lala_context.cash_installments)
 
     respond_to do |format|
       format.html { render Views::Lalas::CashTransactions::Index.new(index_context: @index_context) }
@@ -18,7 +18,7 @@ class Lalas::CashTransactionsController < LalasController
     month_year = search_cash_transaction_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
-    cash_installments, = Logic::CashTransactions.find_by_ref_month_year(User.first, cash_transaction_params, search_cash_transaction_params)
+    cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, cash_transaction_params, search_cash_transaction_params)
 
     render Views::Lalas::CashTransactions::MonthYear.new(mobile:, month_year:, month_year_str:, cash_installments:)
   end
@@ -29,8 +29,8 @@ class Lalas::CashTransactionsController < LalasController
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
 
-    category_id = User.first.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
-    entity_id = User.first.entities.where(entity_name: "LALA").ids
+    category_id = user.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
+    entity_id = user.entities.where(entity_name: "LALA").ids
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
     paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
@@ -42,13 +42,13 @@ class Lalas::CashTransactionsController < LalasController
     default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
 
     count_by_month_year = Logic::CashTransactions.find_count_based_on_search(
-      User.first,
+      lala_context,
       cash_transaction_params.merge(category_id:, entity_id:),
       search_cash_transaction_params
     )
 
     @index_context = {
-      current_user: User.first,
+      current_user: user,
       years:,
       default_year:,
       active_month_years:,
