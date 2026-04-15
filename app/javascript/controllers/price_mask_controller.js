@@ -21,6 +21,8 @@ export default class extends Controller {
 
   applyMasks() {
     this.inputTargets.forEach(target => {
+      if (this.isBlankPriceValue(target.value)) return
+
       target.value = _applyMask(target.value)
     })
   }
@@ -29,6 +31,11 @@ export default class extends Controller {
     const value = _removeMask(target.value)
     const min = target.dataset.min ? parseInt(target.dataset.min) : undefined
     const max = target.dataset.max ? parseInt(target.dataset.max) : undefined
+
+    if (this.isBlankPriceValue(target.value)) {
+      target.value = ""
+      return
+    }
 
     if (!target.dataset.sign && min == undefined && max == undefined) {
       target.value = _applyMask(value)
@@ -97,8 +104,12 @@ export default class extends Controller {
 
   updatePriceTargets(priceTargets, sign) {
     priceTargets.forEach((priceTarget) => {
-      const absoluteValue = Math.abs(parseInt(_removeMask(priceTarget.value || "0"), 10) || 0)
+      const rawValue = _removeMask(priceTarget.value || "")
       priceTarget.dataset.sign = sign
+
+      if (this.isBlankPriceValue(rawValue)) return
+
+      const absoluteValue = Math.abs(parseInt(rawValue, 10) || 0)
       const nextValue = sign === "-" ? absoluteValue * -1 : absoluteValue
       priceTarget.value = _applyMask(nextValue.toString())
     })
@@ -112,5 +123,10 @@ export default class extends Controller {
     button.textContent = sign
     button.classList.toggle("bg-green-300", sign === "+")
     button.classList.toggle("bg-red-300", sign === "-")
+  }
+
+  isBlankPriceValue(value) {
+    const rawValue = _removeMask(value || "")
+    return rawValue === "" || rawValue === "-"
   }
 }

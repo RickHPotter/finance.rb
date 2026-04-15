@@ -347,6 +347,58 @@ export default class extends Controller {
     this.element.requestSubmit()
   }
 
+  applyPaidState(event) {
+    event.preventDefault()
+
+    const { target } = event
+    const paidStateInput = this.findFormInput(target.dataset.paidStateInputId)
+    const paidInput = this.findFormInput(target.dataset.paidInputId)
+    const pendingInput = this.findFormInput(target.dataset.pendingInputId)
+    const value = target.dataset.paidStateValue
+    if (!paidStateInput || !paidInput || !pendingInput || !value) return
+
+    paidStateInput.value = value
+
+    switch (value) {
+      case "paid":
+        paidInput.value = "true"
+        pendingInput.value = "false"
+        break
+      case "pending":
+        paidInput.value = "false"
+        pendingInput.value = "true"
+        break
+      default:
+        paidInput.value = "true"
+        pendingInput.value = "true"
+    }
+
+    this.syncPaidStateButtons(target, value)
+    this.element.requestSubmit()
+  }
+
+  findFormInput(inputId) {
+    if (!inputId) return null
+
+    return this.element.querySelector(`#${inputId}`)
+  }
+
+  syncPaidStateButtons(activeButton, value) {
+    const buttons = activeButton.parentElement?.querySelectorAll("[data-paid-state-value]")
+    if (!buttons) return
+
+    buttons.forEach((button) => {
+      const active = button.dataset.paidStateValue === value
+      button.setAttribute("aria-pressed", String(active))
+      button.classList.toggle("border-blue-700", active)
+      button.classList.toggle("bg-blue-100", active)
+      button.classList.toggle("text-blue-900", active)
+      button.classList.toggle("border-slate-300", !active)
+      button.classList.toggle("bg-white", !active)
+      button.classList.toggle("text-slate-600", !active)
+    })
+  }
+
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒
   // ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓█▓▒

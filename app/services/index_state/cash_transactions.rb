@@ -2,6 +2,8 @@
 
 module IndexState
   class CashTransactions < Base
+    extend CashPaidState
+
     DEFAULT_SORT = "default"
     DEFAULT_DIRECTION = "asc"
     VALID_SORTS = %w[default description installment_date transaction_date price].freeze
@@ -24,6 +26,7 @@ module IndexState
       *RANGE_FILTER_KEYS,
       :paid,
       :pending,
+      :paid_state,
       :skip_budgets,
       :force_mobile,
       :sort,
@@ -99,11 +102,16 @@ module IndexState
     end
 
     def filter_context
+      paid_filters = self.class.resolve_paid_filters(
+        paid_state: source_context[:paid_state],
+        paid: source_context[:paid],
+        pending: source_context[:pending]
+      )
+
       values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :skip_budgets).merge(
         compact_filter_context,
         user_card: nil,
-        paid: boolean(source_context[:paid]),
-        pending: boolean(source_context[:pending]),
+        **paid_filters,
         force_mobile: boolean(source_context[:force_mobile])
       )
     end
@@ -206,7 +214,14 @@ module IndexState
     end
 
     def search_filters_for_count
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :paid, :pending, :skip_budgets, :force_mobile).merge(
+      paid_filters = self.class.resolve_paid_filters(
+        paid_state: source_context[:paid_state],
+        paid: source_context[:paid],
+        pending: source_context[:pending]
+      )
+
+      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :skip_budgets, :force_mobile).merge(
+        **paid_filters,
         sort: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).first,
         direction: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).last
       )

@@ -96,6 +96,75 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('name="sort"')
       expect(response.body).to include('name="direction"')
       expect(response.body).not_to include('name="order_by"')
+      expect(response.body).to include('data-sort-field="description"')
+      expect(response.body).to include('data-sort-field="installment_date"')
+      expect(response.body).to include('data-sort-field="transaction_date"')
+      expect(response.body).to include('data-sort-field="price"')
+    end
+
+    it "renders the mobile sort preset select" do
+      user_card_one
+
+      get card_transactions_path(user_card_id: user_card_one.id), headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="card_transactions_sort_preset"')
+      expect(response.body).to include('data-action="change-&gt;datatable#applySortPreset"')
+
+      document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("form#search_form #card_transactions_sort_preset")).to be_present
+    end
+
+    it "keeps advanced filter range fields blank until the user fills them" do
+      user_card_one
+
+      get card_transactions_path(user_card_id: user_card_one.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to match(/name="from_installments_count"[^>]*value="1"|value="1"[^>]*name="from_installments_count"/)
+      expect(response.body).not_to match(/name="to_installments_count"[^>]*value="72"|value="72"[^>]*name="to_installments_count"/)
+      expect(response.body).to include("price-mask#toggleSign")
+      expect(response.body).to include('data-sign="+"')
+      expect(response.body).to include("price-range-from-ct-price")
+      expect(response.body).to include("price-range-to-price")
+    end
+
+    it "renders a filter summary with a reset link that keeps the explicit card scope" do
+      user_card_one
+      category = create(:category, user:, category_name: "FOOD")
+
+      get card_transactions_path(
+        user_card_id: user_card_one.id,
+        search_term: "market",
+        from_installments_count: 1,
+        to_installments_count: 68,
+        card_transaction: { category_id: [ category.id ] }
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.active"))
+      expect(response.body).to include(I18n.t("filters.summary.clear"))
+      expect(response.body).to include("user_card_id=#{user_card_one.id}")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      chips = document.css("a[aria-label^=\"#{I18n.t('filters.summary.clear')}\"]")
+      search_chip = chips.find { |chip| chip.text.include?(I18n.t("filters.summary.items.search_term", value: "market")) }
+      category_chip = chips.find { |chip| chip.text.include?(I18n.t("filters.summary.items.categories", count: 1)) }
+      installments_chip = chips.find { |chip| chip.text.include?(I18n.t("filters.summary.items.installments_count", value: "1 -> 68")) }
+
+      expect(search_chip).to be_present
+      expect(search_chip["href"]).to include("user_card_id=#{user_card_one.id}")
+      expect(search_chip["href"]).not_to include("search_term=")
+      expect(search_chip["title"]).to eq(I18n.t("filters.summary.items.search_term", value: "market"))
+      expect(search_chip.text).to end_with("x")
+
+      expect(category_chip).to be_present
+      expect(category_chip["href"]).to include("search_term=market")
+      expect(category_chip["href"]).not_to include("category_id")
+
+      expect(installments_chip).to be_present
+      expect(installments_chip["href"]).not_to include("from_installments_count")
+      expect(installments_chip["href"]).not_to include("to_installments_count")
     end
   end
 
@@ -1583,7 +1652,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body.index("Alpha dinner")).to be < response.body.index("Zulu movie")
     end
 
-    it "renders visible sort controls in the card month-year header" do
+    it "keeps the month-year response free of duplicated sort controls" do
       create(
         :card_transaction,
         user:,
@@ -1605,10 +1674,10 @@ RSpec.describe "CardTransactions", type: :request do
       }
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('data-sort-field="description"')
-      expect(response.body).to include('data-sort-field="installment_date"')
-      expect(response.body).to include('data-sort-field="transaction_date"')
-      expect(response.body).to include('data-sort-field="price"')
+      expect(response.body).not_to include('data-sort-field="description"')
+      expect(response.body).not_to include('data-sort-field="installment_date"')
+      expect(response.body).not_to include('data-sort-field="transaction_date"')
+      expect(response.body).not_to include('data-sort-field="price"')
     end
 
     it "keeps supporting legacy order_by while the new sort contract is rolling out" do

@@ -739,6 +739,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         to_date
         paid
         pending
+        paid_state
         month_year
         skip_budgets
         force_mobile
@@ -840,13 +841,22 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       to_installments_number: search_cash_transaction_params[:to_installments_number],
       from_date: search_cash_transaction_params[:from_date],
       to_date: search_cash_transaction_params[:to_date],
-      paid: search_cash_transaction_params[:paid],
-      pending: search_cash_transaction_params[:pending],
+      paid: month_year_paid_filters[:paid],
+      pending: month_year_paid_filters[:pending],
+      paid_state: month_year_paid_filters[:paid_state],
       skip_budgets: search_cash_transaction_params[:skip_budgets],
       sort:,
       direction:,
       force_mobile: mobile
     }
+  end
+
+  def month_year_paid_filters
+    @month_year_paid_filters ||= IndexState::CashTransactions.resolve_paid_filters(
+      paid_state: search_cash_transaction_params[:paid_state],
+      paid: search_cash_transaction_params[:paid],
+      pending: search_cash_transaction_params[:pending]
+    )
   end
 
   def normalized_nested_attributes(attributes)

@@ -4,13 +4,12 @@ module Logic
   class CashInstallments
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
-
-      case [ raw_conditions[:paid], raw_conditions[:pending] ]
-      when %w[false false] then return []
-      when %w[true true]   then paid = nil
-      when %w[true false]  then paid = true
-      when %w[false true]  then paid = false
-      end
+      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
+        paid_state: raw_conditions[:paid_state],
+        paid: raw_conditions[:paid],
+        pending: raw_conditions[:pending]
+      )
+      paid = paid_filters[:paid] if paid_filters[:paid] != paid_filters[:pending]
 
       conditions = {
         price: raw_conditions[:installments_price],

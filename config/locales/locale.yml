@@ -120,6 +120,25 @@ en:
   rows_not_found: "No data to display"
   advanced_filter: "Advanced Filter"
   order: "Order"
+  filters:
+    summary:
+      active: "Active filters"
+      clear: "Clear filters"
+      items:
+        search_term: "Search: %{value}"
+        categories: "Categories (%{count})"
+        entities: "Entities (%{count})"
+        transaction_price: "Transaction amount (%{value})"
+        installment_price: "Installment amount (%{value})"
+        installments_count: "Installments (%{value})"
+        date_range: "Date range (%{value})"
+        paid_state: "Status: %{value}"
+        account: "Account (%{count})"
+    paid_state:
+      label: "Status"
+      all: "All"
+      paid: "Paid"
+      pending: "Pending"
   sorting:
     badge:
       idle: "SORT"
@@ -273,6 +292,25 @@ pt-BR:
   rows_not_found: "Sem dados para exibir"
   advanced_filter: "Filtro Avançado"
   order: "Ordem"
+  filters:
+    summary:
+      active: "Filtros"
+      clear: "Limpar filtros"
+      items:
+        search_term: "Busca: %{value}"
+        categories: "Categorias (%{count})"
+        entities: "Entidades (%{count})"
+        transaction_price: "Valor da Movimentação (%{value})"
+        installment_price: "Valor da Parcela (%{value})"
+        installments_count: "Parcelas (%{value})"
+        date_range: "Período (%{value})"
+        paid_state: "Estado: %{value}"
+        account: "Conta (%{count})"
+    paid_state:
+      label: "Estado"
+      all: "Todos"
+      paid: "Pago"
+      pending: "Pendente"
   sorting:
     badge:
       idle: "ORD."

@@ -68,20 +68,6 @@ class Views::CashTransactions::MonthYear < Views::Base
                 render_header_label(model_attribute(CashTransaction, :balance), align: :right)
               end
             end
-
-            div(class: "flex flex-wrap items-center gap-2 border-t border-slate-300 bg-white/70 px-3 py-2 text-xs text-slate-600") do
-              span(class: "uppercase tracking-[0.18em]") { I18n.t(:order) }
-              span(class: "hidden text-gray-800 md:inline") { "->" }
-              render_sort_button(label: I18n.t("balances.types.default"), field: "default", reset: true)
-              span(class: "hidden text-gray-800 md:inline") { "|" }
-              render_sort_button(label: model_attribute(CashTransaction, :cash_installment_date), field: "installment_date")
-              span(class: "hidden text-zinc-400 md:inline") { "/" }
-              render_sort_button(label: model_attribute(CashTransaction, :cash_transaction_date), field: "transaction_date")
-              span(class: "hidden text-gray-800 md:inline") { "|" }
-              render_sort_button(label: model_attribute(CashTransaction, :description), field: "description")
-              span(class: "hidden text-gray-800 md:inline") { "|" }
-              render_sort_button(label: model_attribute(CashTransaction, :price), field: "price")
-            end
           end
 
           if cash_installments.present? || budgets.present?
@@ -109,54 +95,5 @@ class Views::CashTransactions::MonthYear < Views::Base
     alignment = align == :right ? "text-right ml-auto" : ""
 
     span(class: "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}") { label }
-  end
-
-  def render_sort_button(label:, field:, reset: false)
-    button(
-      type: "button",
-      class: sort_button_class(field),
-      data: {
-        action: "click->datatable#submitSort",
-        sort_field: field,
-        sort_default_direction: "asc",
-        sort_reset: reset.to_s
-      },
-      aria: { pressed: active_sort?(field).to_s }
-    ) do
-      span(class: "text-xs md:text-sm") { label }
-      span(class: sort_badge_class(field)) { sort_badge_label(field) }
-    end
-  end
-
-  def sort_button_class(field)
-    base = "inline-flex items-center gap-2 rounded-md ring transition-colors px-2 py-1 text-xs"
-    state = active_sort?(field) ? "ring-blue-700 bg-blue-100 text-blue-900" : "ring-slate-400 bg-white text-slate-700 hover:ring-slate-600 hover:bg-slate-50"
-
-    "#{base} #{state}"
-  end
-
-  def sort_badge_class(field)
-    base = "rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide"
-    state = active_sort?(field) ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"
-
-    "#{base} #{state}"
-  end
-
-  def sort_badge_label(field)
-    return I18n.t("balances.mobile.current") if field == "default" && active_sort?(field)
-
-    active_sort?(field) ? I18n.t("sorting.direction.#{current_direction}") : I18n.t("sorting.badge.idle")
-  end
-
-  def active_sort?(field)
-    current_sort == field
-  end
-
-  def current_sort
-    index_context[:sort]
-  end
-
-  def current_direction
-    index_context[:direction]
   end
 end

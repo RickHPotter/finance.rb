@@ -476,6 +476,17 @@ Locked direction:
   stack supports it cleanly
 - keep account/card scope explicit instead of hiding it behind inferred-only state
 
+Implementation notes:
+
+- keep the current visible desktop/mobile structure and add one shared summary row
+  instead of introducing more always-visible controls
+- build active-filter summaries from index-state service objects rather than
+  controllers so card and cash can share the same rendering contract
+- normalize cash paid-state UX around an explicit `all / paid / pending` control
+  while still translating to the existing backend search contract internally
+- use reset links that clear transient filters without inventing hidden scope
+  rules
+
 ### Guardrail
 
 This slice is about clarity and consistency, not about adding every imaginable new
@@ -501,6 +512,13 @@ Locked direction:
 - dedicated budget sorting is out of scope for this sprint
 - stop at budget state/filter cleanup
 - do not add a future parser boundary or query parameter in this feature
+
+Implementation notes:
+
+- reuse the shared active-filter summary/clear behavior for the dedicated budget index
+- keep budget filters limited to the existing search, category, and entity controls
+- do not render a budget sort toolbar or expose budget sort controls in this slice
+- keep the existing budget month-year grouping and `order_id` row order untouched
 
 ### Exit Condition
 

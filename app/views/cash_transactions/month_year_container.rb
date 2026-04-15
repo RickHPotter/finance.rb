@@ -8,7 +8,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_installments_count, :to_installments_count,
               :from_installments_number, :to_installments_number,
               :from_date, :to_date,
-              :paid, :pending,
+              :paid, :pending, :paid_state,
               :user_bank_account_id, :active_month_years, :default_year,
               :skip_budgets, :sort, :direction, :force_mobile
 
@@ -29,6 +29,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @to_date = index_context[:to_date]
     @paid = index_context[:paid]
     @pending = index_context[:pending]
+    @paid_state = index_context[:paid_state]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @active_month_years = index_context[:active_month_years]
     @default_year = index_context[:default_year]
@@ -61,6 +62,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         to_date:,
         paid:,
         pending:,
+        paid_state:,
         default_year:,
         active_month_years: active_month_years.to_json,
         skip_budgets:,

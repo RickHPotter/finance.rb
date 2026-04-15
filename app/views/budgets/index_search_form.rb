@@ -50,33 +50,37 @@ class Views::Budgets::IndexSearchForm < Views::Base
           value: search_term,
           data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
 
-        if mobile
-          Sheet(id: "advanced_filter") do
-            SheetTrigger do
-              Button(type: :button, icon: true, class: "scale-105") do
-                cached_icon(:filter)
-              end
-            end
-
-            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-              SheetHeader do
-                SheetTitle { pluralise_model(Budget, 2) }
-                SheetDescription { I18n.t(:advanced_filter) }
+        div(class: "flex items-center gap-2") do
+          if mobile
+            Sheet(id: "advanced_filter") do
+              SheetTrigger do
+                Button(type: :button, icon: true, class: "scale-105") do
+                  cached_icon(:filter)
+                end
               end
 
-              SheetMiddle do
-                div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  div do
-                    render Views::Categories::Combobox.new(name: "budget[category_id][]", categories:, selected_category_ids:)
-                  end
+              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+                SheetHeader do
+                  SheetTitle { pluralise_model(Budget, 2) }
+                  SheetDescription { I18n.t(:advanced_filter) }
+                end
 
-                  div do
-                    render Views::Entities::Combobox.new(name: "budget[entity_id][]", entities:, selected_entity_ids:)
+                SheetMiddle do
+                  div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                    div do
+                      render Views::Categories::Combobox.new(name: "budget[category_id][]", categories:, selected_category_ids:)
+                    end
+
+                    div do
+                      render Views::Entities::Combobox.new(name: "budget[entity_id][]", entities:, selected_entity_ids:)
+                    end
                   end
                 end
               end
             end
           end
+
+          render Views::Shared::ClearFiltersButton.new(href: clear_filters_path) if filter_summary[:active]
         end
       end
 
@@ -89,6 +93,12 @@ class Views::Budgets::IndexSearchForm < Views::Base
           div(class: "w-1/2") do
             render Views::Entities::Combobox.new(name: "budget[entity_id][]", entities:, selected_entity_ids:)
           end
+        end
+      end
+
+      if filter_summary[:active]
+        div(class: "mt-1") do
+          render Views::Shared::FilterSummary.new(summary: filter_summary)
         end
       end
 
@@ -120,4 +130,10 @@ class Views::Budgets::IndexSearchForm < Views::Base
   def selected_entity_ids
     Array(entity_id).map(&:to_s)
   end
+
+  def filter_summary
+    @filter_summary ||= IndexState::FilterSummary.new(surface: :budgets, index_context:).to_h
+  end
+
+  def clear_filters_path = budgets_path
 end

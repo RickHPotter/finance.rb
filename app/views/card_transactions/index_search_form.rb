@@ -3,8 +3,6 @@
 class Views::CardTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::SelectTag
-  include Phlex::Rails::Helpers::OptionsForSelect
 
   include TranslateHelper
   include ComponentsHelper
@@ -59,105 +57,103 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       build_month_year_selector
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
-      input type: "hidden", name: :sort, value: sort, id: :card_transactions_sort
-      input type: "hidden", name: :direction, value: direction, id: :card_transactions_direction
+      input type: "hidden", name: :sort, value: sort, id: "card_transactions_sort"
+      input type: "hidden", name: :direction, value: direction, id: "card_transactions_direction"
 
-      div(class: "flex justify-between items-center gap-2") do
-        TextFieldTag \
-          :search_term,
-          svg: :magnifying_glass,
-          clearable: true,
-          placeholder: "#{action_message(:search)}...",
-          value: search_term,
-          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+      div(class: "flex items-center gap-2") do
+        div(class: mobile ? "w-full" : "grid flex-1 grid-cols-3 gap-2") do
+          TextFieldTag \
+            :search_term,
+            svg: :magnifying_glass,
+            clearable: true,
+            placeholder: "#{action_message(:search)}...",
+            value: search_term,
+            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
 
-        Sheet(id: "advanced_filter") do
-          SheetTrigger do
-            Button(type: :button, icon: true, class: "scale-105") do
-              cached_icon(:filter)
-            end
-          end
-
-          SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-            SheetHeader do
-              SheetTitle { pluralise_model(CardTransaction, 2) }
-              SheetDescription { I18n.t(:advanced_filter) }
-            end
-
-            SheetMiddle do
-              if mobile
-                div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  div do
-                    render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
-                  end
-
-                  div do
-                    render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
-                  end
-                end
-              end
-
-              PriceRangeFields(
-                form:,
-                object: CardTransaction,
-                from_field: :from_ct_price,
-                to_field: :to_ct_price,
-                from_value: from_ct_price,
-                to_value: to_ct_price,
-                subject_label_key: :self
-              )
-
-              PriceRangeFields(
-                form:,
-                object: CardTransaction,
-                from_field: :from_price,
-                to_field: :to_price,
-                from_value: from_price,
-                to_value: to_price,
-                subject_label_key: :card_installment
-              )
-
-              InstallmentsCountRangeFields(
-                form:,
-                from_field: :from_installments_count,
-                to_field: :to_installments_count,
-                from_value: from_installments_count || 1,
-                to_value: to_installments_count || 72,
-                subject_label_key: :card_installment
-              )
-            end
-          end
-        end
-      end
-
-      if mobile
-        div class: "mt-2" do
-          label(class: "mb-1 block font-poetsen-one font-thin text-gray-500", for: :card_transactions_sort_preset) { I18n.t(:order) }
-
-          select_tag(
-            :sort_preset,
-            class: input_class_without_icon,
-            id: :card_transactions_sort_preset,
-            data: { action: "change->datatable#applySortPreset", sort_preset: true }
-          ) do
-            options_for_select(mobile_sort_options, selected_mobile_sort_value)
-          end
-        end
-      end
-
-      unless mobile
-        div(class: "flex gap-2 mt-1") do
-          div(class: "w-1/2") do
+          unless mobile
             render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
-          end
 
-          div(class: "w-1/2") do
             render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
           end
         end
+
+        unless mobile
+          div(class: "flex items-center gap-2") do
+            Sheet(id: "advanced_filter") do
+              SheetTrigger do
+                Button(type: :button, icon: true, class: "scale-105") do
+                  cached_icon(:filter)
+                end
+              end
+
+              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+                SheetHeader do
+                  SheetTitle { pluralise_model(CardTransaction, 2) }
+                  SheetDescription { I18n.t(:advanced_filter) }
+                end
+
+                SheetMiddle do
+                  if mobile
+                    div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                      div do
+                        render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
+                      end
+
+                      div do
+                        render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
+                      end
+                    end
+                  end
+
+                  PriceRangeFields(
+                    form:,
+                    object: CardTransaction,
+                    from_field: :from_ct_price,
+                    to_field: :to_ct_price,
+                    from_value: from_ct_price,
+                    to_value: to_ct_price,
+                    subject_label_key: :self
+                  )
+
+                  PriceRangeFields(
+                    form:,
+                    object: CardTransaction,
+                    from_field: :from_price,
+                    to_field: :to_price,
+                    from_value: from_price,
+                    to_value: to_price,
+                    subject_label_key: :card_installment
+                  )
+
+                  InstallmentsCountRangeFields(
+                    form:,
+                    from_field: :from_installments_count,
+                    to_field: :to_installments_count,
+                    from_value: from_installments_count,
+                    to_value: to_installments_count,
+                    subject_label_key: :card_installment
+                  )
+                end
+              end
+            end
+          end
+
+          render Views::Shared::ClearFiltersButton.new(href: clear_filters_path) if filter_summary[:active]
+        end
+
+        form.submit :search, class: :hidden
       end
 
-      form.submit :search, class: :hidden
+      render_mobile_sort_select
+
+      unless mobile
+        render Views::Shared::IndexToolbar.new(
+          summary: filter_summary,
+          sort_options: sort_toolbar_options,
+          current_sort: sort,
+          current_direction: direction
+        )
+      end
     end
   end
 
@@ -187,8 +183,22 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     Array(entity_id).map(&:to_s)
   end
 
-  def selected_mobile_sort_value
-    "#{sort}:#{direction}"
+  def filter_summary
+    @filter_summary ||= IndexState::FilterSummary.new(surface: :card_transactions, index_context:).to_h
+  end
+
+  def clear_filters_path
+    user_card.present? ? "#{url}?#{{ user_card_id: user_card.id }.to_query}" : url
+  end
+
+  def render_mobile_sort_select
+    return unless mobile
+
+    render Views::Shared::SortPresetSelect.new(
+      input_id: "card_transactions_sort_preset",
+      options: mobile_sort_options,
+      selected_value: "#{sort}:#{direction}"
+    )
   end
 
   def mobile_sort_options
@@ -204,6 +214,15 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       [ "#{model_attribute(CardTransaction, :description)} (#{desc})", "description:desc" ],
       [ "#{model_attribute(CardTransaction, :price)} (#{asc})", "price:asc" ],
       [ "#{model_attribute(CardTransaction, :price)} (#{desc})", "price:desc" ]
+    ]
+  end
+
+  def sort_toolbar_options
+    [
+      { label: model_attribute(CardTransaction, :card_installment_date), field: "installment_date" },
+      { label: model_attribute(CardTransaction, :card_transaction_date), field: "transaction_date" },
+      { label: model_attribute(CardTransaction, :description), field: "description" },
+      { label: model_attribute(CardTransaction, :price), field: "price" }
     ]
   end
 end

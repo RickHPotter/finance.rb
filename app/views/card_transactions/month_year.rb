@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::MonthYear < Views::Base
-  include Phlex::Rails::Helpers::ButtonTag
-
   include TranslateHelper
   include CacheHelper
 
   attr_reader :mobile, :month_year, :month_year_date, :month, :year, :user_card_id,
               :card_installments, :total_amount, :modal_id,
-              :min_date, :max_date, :sort, :direction
+              :min_date, :max_date
 
-  def initialize(mobile:, month_year:, user_card_id:, card_installments:, sort_state: {})
+  def initialize(mobile:, month_year:, user_card_id:, card_installments:)
     @mobile = mobile
     @month_year = month_year
     @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")
@@ -20,8 +18,6 @@ class Views::CardTransactions::MonthYear < Views::Base
     @card_installments = card_installments
     @total_amount = card_installments.sum(&:price)
     @modal_id = "cardTransactionModal_#{user_card_id}_#{month}_#{year}"
-    @sort = sort_state[:sort]
-    @direction = sort_state[:direction]
 
     return unless user_card_id
 
@@ -104,18 +100,6 @@ class Views::CardTransactions::MonthYear < Views::Base
                 render_header_label(I18n.t(:datatable_actions), align: :right)
               end
             end
-
-            div(class: "flex flex-wrap items-center gap-2 border-t border-slate-300 bg-white/70 px-3 py-2 text-xs text-slate-600") do
-              span(class: "uppercase tracking-[0.18em]") { I18n.t(:order) }
-              span(class: "hidden text-gray-800 md:inline") { "->" }
-              render_sort_button(label: model_attribute(CardTransaction, :card_installment_date), field: "installment_date")
-              span(class: "hidden text-zinc-400 md:inline") { "/" }
-              render_sort_button(label: model_attribute(CardTransaction, :card_transaction_date), field: "transaction_date")
-              span(class: "hidden text-gray-800 md:inline") { "|" }
-              render_sort_button(label: model_attribute(CardTransaction, :description), field: "description")
-              span(class: "hidden text-gray-800 md:inline") { "|" }
-              render_sort_button(label: model_attribute(CardTransaction, :price), field: "price")
-            end
           end
 
           if card_installments.present?
@@ -142,58 +126,9 @@ class Views::CardTransactions::MonthYear < Views::Base
     span(class: header_label_class(align)) { label }
   end
 
-  def render_sort_button(label:, field:)
-    button(
-      type: "button",
-      class: sort_button_class(field),
-      data: {
-        action: "click->datatable#submitSort",
-        sort_field: field,
-        sort_default_direction: "asc"
-      },
-      aria: { pressed: active_sort?(field).to_s }
-    ) do
-      span(class: sort_button_label_class) { label }
-      span(class: sort_badge_class(field)) { sort_badge_label(field) }
-    end
-  end
-
   def header_label_class(align)
     alignment = align == :right ? "text-right ml-auto" : ""
 
     "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}"
-  end
-
-  def sort_button_class(field)
-    base = "inline-flex items-center gap-2 rounded-md ring transition-colors"
-    spacing = "px-2 py-1"
-    size = "text-xs"
-    state =
-      if active_sort?(field)
-        "ring-blue-700 bg-blue-100 text-blue-900"
-      else
-        "ring-slate-400 bg-white text-slate-700 hover:ring-slate-600 hover:bg-slate-50"
-      end
-
-    "#{base} #{spacing} #{size} #{state}"
-  end
-
-  def sort_button_label_class
-    "text-xs md:text-sm"
-  end
-
-  def sort_badge_class(field)
-    base = "rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide"
-    state = active_sort?(field) ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"
-
-    "#{base} #{state}"
-  end
-
-  def sort_badge_label(field)
-    active_sort?(field) ? I18n.t("sorting.direction.#{direction}") : I18n.t("sorting.badge.idle")
-  end
-
-  def active_sort?(field)
-    sort == field
   end
 end
