@@ -33,10 +33,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
+    sort, direction = IndexState::CardTransactions.resolve_sort(
+      sort: search_card_transaction_params[:sort],
+      direction: search_card_transaction_params[:direction],
+      order_by: search_card_transaction_params[:order_by]
+    )
 
     card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_context, card_transaction_params, search_card_transaction_params)
 
-    render Views::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
+    render Views::CardTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      user_card_id:,
+      card_installments:,
+      sort_state: { sort:, direction: }
+    )
   end
 
   def show; end

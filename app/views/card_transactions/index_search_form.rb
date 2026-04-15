@@ -18,6 +18,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
+              :sort, :direction,
               :user_card, :categories, :entities,
               :count_by_month_year,
               :mobile
@@ -38,6 +39,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
     @user_card = index_context[:user_card]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @mobile = mobile
@@ -56,6 +59,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       build_month_year_selector
 
       TextFieldTag :user_card_id, class: :hidden, value: params[:user_card_id] || params.dig(:card_transaction, :user_card_id) || user_card&.id
+      input type: "hidden", name: :sort, value: sort, id: :card_transactions_sort
+      input type: "hidden", name: :direction, value: direction, id: :card_transactions_direction
 
       div(class: "flex justify-between items-center gap-2") do
         TextFieldTag \
@@ -120,21 +125,22 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                 to_value: to_installments_count || 72,
                 subject_label_key: :card_installment
               )
-
-              div class: "my-auto pt-4" do
-                label(class: "font-poetsen-one font-thin text-gray-500", for: :order_by) { I18n.t(:order) }
-
-                select_tag(:order_by, class: input_class_without_icon, data: { placeholder: action_message(:selecta) }) do
-                  options_for_select(
-                    [
-                      [ model_attribute(CardTransaction, :card_installment_date), "installment_date" ],
-                      [ model_attribute(CardTransaction, :card_transaction_date), "transaction_date" ]
-                    ],
-                    index_context[:order_by] || "installment_date"
-                  )
-                end
-              end
             end
+          end
+        end
+      end
+
+      if mobile
+        div class: "mt-2" do
+          label(class: "mb-1 block font-poetsen-one font-thin text-gray-500", for: :card_transactions_sort_preset) { I18n.t(:order) }
+
+          select_tag(
+            :sort_preset,
+            class: input_class_without_icon,
+            id: :card_transactions_sort_preset,
+            data: { action: "change->datatable#applySortPreset", sort_preset: true }
+          ) do
+            options_for_select(mobile_sort_options, selected_mobile_sort_value)
           end
         end
       end
@@ -179,5 +185,22 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
   def selected_entity_ids
     Array(entity_id).map(&:to_s)
+  end
+
+  def selected_mobile_sort_value
+    "#{sort}:#{direction}"
+  end
+
+  def mobile_sort_options
+    [
+      [ "#{model_attribute(CardTransaction, :card_installment_date)} (ASC)", "installment_date:asc" ],
+      [ "#{model_attribute(CardTransaction, :card_installment_date)} (DESC)", "installment_date:desc" ],
+      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (ASC)", "transaction_date:asc" ],
+      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (DESC)", "transaction_date:desc" ],
+      [ "#{model_attribute(CardTransaction, :description)} (ASC)", "description:asc" ],
+      [ "#{model_attribute(CardTransaction, :description)} (DESC)", "description:desc" ],
+      [ "#{model_attribute(CardTransaction, :price)} (ASC)", "price:asc" ],
+      [ "#{model_attribute(CardTransaction, :price)} (DESC)", "price:desc" ]
+    ]
   end
 end

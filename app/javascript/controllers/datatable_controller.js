@@ -66,6 +66,30 @@ export default class extends Controller {
     this.syncBulkBars()
   }
 
+  submitSort(event) {
+    event.preventDefault()
+
+    const button = event.currentTarget
+    const sort = button.dataset.sortField
+    const defaultDirection = button.dataset.sortDefaultDirection || "asc"
+    if (!sort) return
+
+    const currentSort = this.sortInput?.value
+    const currentDirection = this.directionInput?.value || defaultDirection
+    const direction = currentSort === sort ? this.toggleDirection(currentDirection) : defaultDirection
+
+    this.updateSortState({ sort, direction })
+    this.submitSearchForm()
+  }
+
+  applySortPreset(event) {
+    const [sort, direction] = String(event.currentTarget.value || "").split(":")
+    if (!sort || !direction) return
+
+    this.updateSortState({ sort, direction })
+    this.submitSearchForm()
+  }
+
   start(event) {
     event.dataTransfer.setData("text/plain", event.target.dataset.id)
     event.target.classList.add("opacity-50")
@@ -349,5 +373,35 @@ export default class extends Controller {
         })
       }, 300)
     }, 2000)
+  }
+
+  get searchForm() {
+    return this.element.querySelector("#search_form") || document.getElementById("search_form")
+  }
+
+  get sortInput() {
+    return this.searchForm?.querySelector("[name='sort']")
+  }
+
+  get directionInput() {
+    return this.searchForm?.querySelector("[name='direction']")
+  }
+
+  get sortPresetInput() {
+    return this.searchForm?.querySelector("[data-sort-preset]")
+  }
+
+  updateSortState({ sort, direction }) {
+    if (this.sortInput) this.sortInput.value = sort
+    if (this.directionInput) this.directionInput.value = direction
+    if (this.sortPresetInput) this.sortPresetInput.value = `${sort}:${direction}`
+  }
+
+  submitSearchForm() {
+    this.searchForm?.requestSubmit()
+  }
+
+  toggleDirection(direction) {
+    return direction === "desc" ? "asc" : "desc"
   }
 }

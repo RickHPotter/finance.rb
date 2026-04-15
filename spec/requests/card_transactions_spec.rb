@@ -86,6 +86,17 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
+
+    it "uses canonical sort fields instead of the legacy order select on the index" do
+      user_card_one
+
+      get card_transactions_path(user_card_id: user_card_one.id)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="sort"')
+      expect(response.body).to include('name="direction"')
+      expect(response.body).not_to include('name="order_by"')
+    end
   end
 
   describe "[ #add_to_subscription ]" do
@@ -1570,6 +1581,34 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body.index("Alpha dinner")).to be < response.body.index("Zulu movie")
+    end
+
+    it "renders visible sort controls in the card month-year header" do
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Header controls",
+        price: -4_500,
+        date: Date.new(2026, 3, 1),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202603",
+        sort: "installment_date",
+        direction: "asc",
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-sort-field="description"')
+      expect(response.body).to include('data-sort-field="installment_date"')
+      expect(response.body).to include('data-sort-field="transaction_date"')
+      expect(response.body).to include('data-sort-field="price"')
     end
 
     it "keeps supporting legacy order_by while the new sort contract is rolling out" do
