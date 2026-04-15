@@ -25,8 +25,14 @@ module Logic
       month_year = search_params.delete(:month_year)
       month = month_year[4..]
       year = month_year[0..3]
+      sort, direction = IndexState::CashTransactions.resolve_sort(
+        sort: search_params[:sort],
+        direction: search_params[:direction]
+      )
 
       raw_conditions = build_conditions_from_params(cash_transaction_params, search_params)
+      raw_conditions[:sort] = sort
+      raw_conditions[:direction] = direction
 
       [
         Logic::CashInstallments.find_by_ref_month_year(financial_scope, month, year, raw_conditions),

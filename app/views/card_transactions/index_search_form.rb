@@ -192,15 +192,18 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   end
 
   def mobile_sort_options
+    asc = I18n.t("sorting.direction.asc")
+    desc = I18n.t("sorting.direction.desc")
+
     [
-      [ "#{model_attribute(CardTransaction, :card_installment_date)} (ASC)", "installment_date:asc" ],
-      [ "#{model_attribute(CardTransaction, :card_installment_date)} (DESC)", "installment_date:desc" ],
-      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (ASC)", "transaction_date:asc" ],
-      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (DESC)", "transaction_date:desc" ],
-      [ "#{model_attribute(CardTransaction, :description)} (ASC)", "description:asc" ],
-      [ "#{model_attribute(CardTransaction, :description)} (DESC)", "description:desc" ],
-      [ "#{model_attribute(CardTransaction, :price)} (ASC)", "price:asc" ],
-      [ "#{model_attribute(CardTransaction, :price)} (DESC)", "price:desc" ]
+      [ "#{model_attribute(CardTransaction, :card_installment_date)} (#{asc})", "installment_date:asc" ],
+      [ "#{model_attribute(CardTransaction, :card_installment_date)} (#{desc})", "installment_date:desc" ],
+      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (#{asc})", "transaction_date:asc" ],
+      [ "#{model_attribute(CardTransaction, :card_transaction_date)} (#{desc})", "transaction_date:desc" ],
+      [ "#{model_attribute(CardTransaction, :description)} (#{asc})", "description:asc" ],
+      [ "#{model_attribute(CardTransaction, :description)} (#{desc})", "description:desc" ],
+      [ "#{model_attribute(CardTransaction, :price)} (#{asc})", "price:asc" ],
+      [ "#{model_attribute(CardTransaction, :price)} (#{desc})", "price:desc" ]
     ]
   end
 end

@@ -70,6 +70,12 @@ export default class extends Controller {
     event.preventDefault()
 
     const button = event.currentTarget
+    if (this.datasetBoolean(button.dataset.sortReset)) {
+      this.updateSortState({ sort: "default", direction: "asc" })
+      this.submitSearchForm()
+      return
+    }
+
     const sort = button.dataset.sortField
     const defaultDirection = button.dataset.sortDefaultDirection || "asc"
     if (!sort) return

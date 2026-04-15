@@ -108,9 +108,9 @@ class Views::CardTransactions::MonthYear < Views::Base
             div(class: "flex flex-wrap items-center gap-2 border-t border-slate-300 bg-white/70 px-3 py-2 text-xs text-slate-600") do
               span(class: "uppercase tracking-[0.18em]") { I18n.t(:order) }
               span(class: "hidden text-gray-800 md:inline") { "->" }
-              render_sort_button(label: model_attribute(CardTransaction, :card_installment_date), field: "installment_date", grouped: true)
+              render_sort_button(label: model_attribute(CardTransaction, :card_installment_date), field: "installment_date")
               span(class: "hidden text-zinc-400 md:inline") { "/" }
-              render_sort_button(label: model_attribute(CardTransaction, :card_transaction_date), field: "transaction_date", grouped: true)
+              render_sort_button(label: model_attribute(CardTransaction, :card_transaction_date), field: "transaction_date")
               span(class: "hidden text-gray-800 md:inline") { "|" }
               render_sort_button(label: model_attribute(CardTransaction, :description), field: "description")
               span(class: "hidden text-gray-800 md:inline") { "|" }
@@ -142,10 +142,10 @@ class Views::CardTransactions::MonthYear < Views::Base
     span(class: header_label_class(align)) { label }
   end
 
-  def render_sort_button(label:, field:, grouped: false)
+  def render_sort_button(label:, field:)
     button(
       type: "button",
-      class: sort_button_class(field, grouped:),
+      class: sort_button_class(field),
       data: {
         action: "click->datatable#submitSort",
         sort_field: field,
@@ -164,15 +164,13 @@ class Views::CardTransactions::MonthYear < Views::Base
     "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}"
   end
 
-  def sort_button_class(field, grouped:)
+  def sort_button_class(field)
     base = "inline-flex items-center gap-2 rounded-md ring transition-colors"
     spacing = "px-2 py-1"
     size = "text-xs"
     state =
       if active_sort?(field)
         "ring-blue-700 bg-blue-100 text-blue-900"
-      elsif grouped
-        "ring-slate-300 bg-white text-slate-700 hover:ring-slate-500 hover:bg-slate-50"
       else
         "ring-slate-400 bg-white text-slate-700 hover:ring-slate-600 hover:bg-slate-50"
       end
@@ -192,7 +190,7 @@ class Views::CardTransactions::MonthYear < Views::Base
   end
 
   def sort_badge_label(field)
-    active_sort?(field) ? direction.to_s.upcase : "SORT"
+    active_sort?(field) ? I18n.t("sorting.direction.#{direction}") : I18n.t("sorting.badge.idle")
   end
 
   def active_sort?(field)

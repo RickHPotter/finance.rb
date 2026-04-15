@@ -817,6 +817,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def month_year_index_context(mobile) # rubocop:disable Metrics/AbcSize
+    sort, direction = IndexState::CashTransactions.resolve_sort(
+      sort: search_cash_transaction_params[:sort],
+      direction: search_cash_transaction_params[:direction]
+    )
+
     {
       default_year: params[:default_year],
       active_month_years: params[:active_month_years].present? ? JSON.parse(params[:active_month_years]).map(&:to_i) : [],
@@ -838,8 +843,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       paid: search_cash_transaction_params[:paid],
       pending: search_cash_transaction_params[:pending],
       skip_budgets: search_cash_transaction_params[:skip_budgets],
-      sort: search_cash_transaction_params[:sort],
-      direction: search_cash_transaction_params[:direction],
+      sort:,
+      direction:,
       force_mobile: mobile
     }
   end

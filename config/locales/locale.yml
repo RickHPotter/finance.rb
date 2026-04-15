@@ -120,6 +120,12 @@ en:
   rows_not_found: "No data to display"
   advanced_filter: "Advanced Filter"
   order: "Order"
+  sorting:
+    badge:
+      idle: "SORT"
+    direction:
+      asc: "ASC"
+      desc: "DESC"
   datetime_input:
     date: "Date"
     time: "Time"
@@ -267,6 +273,12 @@ pt-BR:
   rows_not_found: "Sem dados para exibir"
   advanced_filter: "Filtro Avançado"
   order: "Ordem"
+  sorting:
+    badge:
+      idle: "ORD."
+    direction:
+      asc: "CRESC."
+      desc: "DECRESC."
   datetime_input:
     date: "Data"
     time: "Hora"

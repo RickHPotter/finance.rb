@@ -53,6 +53,14 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
+
+    it "uses canonical sort fields on the index form" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="sort"')
+      expect(response.body).to include('name="direction"')
+    end
   end
 
   describe "[ #duplicate ]" do
@@ -3251,6 +3259,130 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "sorts cash rows by description while keeping budgets visible after them" do
+      first_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Zulu rent",
+        price: 4_500,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      second_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Alpha salary",
+        price: 9_500,
+        date: Date.new(2026, 3, 11),
+        month: 3,
+        year: 2026
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "March household budget",
+        month: 3,
+        year: 2026,
+        value: -3_000,
+        remaining_value: -3_000
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "description",
+        direction: "asc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{first_transaction.id}")).to be > response.body.index("edit_cash_transaction_#{second_transaction.id}")
+      expect(response.body).to include('data-sort-field="default"')
+      expect(response.body).to include('data-sort-field="installment_date"')
+      expect(response.body).to include('data-sort-field="transaction_date"')
+      expect(response.body).to include('data-sort-field="description"')
+      expect(response.body).to include('data-sort-field="price"')
+      expect(response.body).to include("edit_budget_#{budget.id}")
+      expect(response.body.index("edit_budget_#{budget.id}")).to be > response.body.index("edit_cash_transaction_#{second_transaction.id}")
+    end
+
+    it "sorts cash rows by transaction date ascending" do
+      later_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Later booking",
+        price: 4_000,
+        date: Date.new(2026, 3, 22),
+        month: 3,
+        year: 2026
+      )
+      earlier_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Earlier booking",
+        price: 4_000,
+        date: Date.new(2026, 3, 3),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "transaction_date",
+        direction: "asc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{earlier_transaction.id}")).to be <
+                                                                                        response.body.index("edit_cash_transaction_#{later_transaction.id}")
+    end
+
+    it "sorts cash rows by price descending" do
+      smaller_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Smaller payment",
+        price: 2_000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      bigger_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Bigger payment",
+        price: 8_000,
+        date: Date.new(2026, 3, 11),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "price",
+        direction: "desc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{bigger_transaction.id}")).to be <
+                                                                                       response.body.index("edit_cash_transaction_#{smaller_transaction.id}")
     end
   end
 end

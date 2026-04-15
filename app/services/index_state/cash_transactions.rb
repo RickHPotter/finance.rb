@@ -4,7 +4,7 @@ module IndexState
   class CashTransactions < Base
     DEFAULT_SORT = "default"
     DEFAULT_DIRECTION = "asc"
-    VALID_SORTS = %w[default description installment_date price].freeze
+    VALID_SORTS = %w[default description installment_date transaction_date price].freeze
     VALID_DIRECTIONS = %w[asc desc].freeze
     TRANSACTION_FILTER_KEYS = %i[category_id entity_id cash_installment_ids user_bank_account_id].freeze
     RANGE_FILTER_KEYS = %i[
@@ -29,6 +29,13 @@ module IndexState
       :sort,
       :direction
     ].freeze
+
+    def self.resolve_sort(sort:, direction:)
+      resolved_sort = sort.presence_in(VALID_SORTS) || DEFAULT_SORT
+      resolved_direction = direction.presence_in(VALID_DIRECTIONS) || DEFAULT_DIRECTION
+
+      [ resolved_sort, resolved_direction ]
+    end
 
     attr_reader :cash_installments, :transaction_filters, :search_filters, :selection_context, :years_override, :default_year_override, :active_month_years_override
 
@@ -71,13 +78,14 @@ module IndexState
 
     def resolved_state
       today_zn = Time.zone.today.beginning_of_month
+      sort, direction = self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction])
 
       {
         today_zn:,
         years: years_override || year_range_for(today_zn),
         active_month_years: active_month_years_override || active_month_years_for(today_zn:),
-        sort: normalized_sort(source_context[:sort]),
-        direction: normalized_direction(source_context[:direction])
+        sort:,
+        direction:
       }
     end
 
@@ -199,17 +207,9 @@ module IndexState
 
     def search_filters_for_count
       values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :paid, :pending, :skip_budgets, :force_mobile).merge(
-        sort: normalized_sort(source_context[:sort]),
-        direction: normalized_direction(source_context[:direction])
+        sort: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).first,
+        direction: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).last
       )
-    end
-
-    def normalized_sort(sort)
-      sort.presence_in(VALID_SORTS) || DEFAULT_SORT
-    end
-
-    def normalized_direction(direction)
-      direction.presence_in(VALID_DIRECTIONS) || DEFAULT_DIRECTION
     end
   end
 end
