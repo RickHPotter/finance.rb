@@ -10,7 +10,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_date, :to_date,
               :paid, :pending,
               :user_bank_account_id, :active_month_years, :default_year,
-              :skip_budgets, :force_mobile
+              :skip_budgets, :sort, :direction, :force_mobile
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -33,6 +33,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @active_month_years = index_context[:active_month_years]
     @default_year = index_context[:default_year]
     @skip_budgets = index_context[:skip_budgets]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
     @force_mobile = index_context[:force_mobile]
   end
 
@@ -62,6 +64,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         default_year:,
         active_month_years: active_month_years.to_json,
         skip_budgets:,
+        sort:,
+        direction:,
         force_mobile:
       },
       path_lambda: ->(params) { month_year_cash_transactions_path(params) }

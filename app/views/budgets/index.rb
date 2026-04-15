@@ -23,7 +23,7 @@ class Views::Budgets::Index < Views::Base
                 render IndexSearchForm.new(index_context:, mobile:)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :active_month_years))
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :active_month_years, :sort, :direction))
             end
 
             render Views::Shared::MobileFloatingNav.new(new_href: new_budget_path(format: :turbo_stream))

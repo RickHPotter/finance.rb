@@ -79,31 +79,17 @@ class BudgetsController < ApplicationController
     @active_month_years = [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ]
   end
 
-  def build_index_context # rubocop:disable Metrics/AbcSize
-    min_date = current_context.budgets.active.minimum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
-    max_date = current_context.budgets.active.maximum("MAKE_DATE(budgets.year, budgets.month, 1)") || Time.zone.today
-
-    default_active_month_years = [ min_date.strftime("%Y%m").to_i, (min_date + 1.month).strftime("%Y%m").to_i ]
-    years = @years || (min_date.year..max_date.year)
-    default_year = @default_year || params[:default_year]&.to_i || min_date.year
-    active_month_years = @active_month_years || (params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years)
-
-    category_id = [ budget_params[:category_id] ].flatten&.compact_blank
-    entity_id = [ budget_params[:entity_id] ].flatten&.compact_blank
-    search_term = search_budget_params[:search_term]
-
-    count_by_month_year = Logic::Budgets.find_count_based_on_search(current_context, budget_params, search_budget_params)
-
-    @index_context = {
+  def build_index_context
+    @index_context = IndexState::Budgets.new(
       current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      search_term:,
-      category_id:,
-      entity_id:,
-      count_by_month_year:
-    }
+      current_context:,
+      params:,
+      budget_filters: budget_params,
+      search_filters: search_budget_params,
+      years: @years,
+      default_year: @default_year,
+      active_month_years: @active_month_years
+    ).to_h
   end
 
   private
@@ -118,7 +104,7 @@ class BudgetsController < ApplicationController
   end
 
   def search_budget_params
-    params.permit(:search_term, :month_year)
+    params.permit(:search_term, :month_year, :sort, :direction)
   end
 
   def multiple_budget_params

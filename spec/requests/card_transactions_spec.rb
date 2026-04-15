@@ -1535,6 +1535,77 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("delete_card_transaction_#{created_transaction.id}_#{installments.second.id}")
     end
+
+    it "supports the canonical sort and direction params for month-year rows" do
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Alpha dinner",
+        price: -4_500,
+        date: Date.new(2026, 3, 1),
+        month: 3,
+        year: 2026
+      )
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Zulu movie",
+        price: -4_500,
+        date: Date.new(2026, 3, 2),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202603",
+        sort: "description",
+        direction: "asc",
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.index("Alpha dinner")).to be < response.body.index("Zulu movie")
+    end
+
+    it "keeps supporting legacy order_by while the new sort contract is rolling out" do
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Late transaction",
+        price: -2_500,
+        date: Date.new(2026, 3, 3),
+        month: 3,
+        year: 2026
+      )
+      create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Early transaction",
+        price: -2_500,
+        date: Date.new(2026, 3, 2),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202603",
+        order_by: "transaction_date",
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.index("Early transaction")).to be < response.body.index("Late transaction")
+    end
   end
 
   describe "[ #duplicate ]" do

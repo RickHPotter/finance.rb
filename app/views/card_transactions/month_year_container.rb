@@ -8,7 +8,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
               :from_installments_count, :to_installments_count,
               :from_installments_number, :to_installments_number,
               :user_card_id, :active_month_years,
-              :order_by, :force_mobile
+              :sort, :direction, :order_by, :force_mobile
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -25,6 +25,8 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
     @to_installments_number = index_context[:to_installments_number]
     @user_card_id = index_context[:user_card]&.id
     @active_month_years = index_context[:active_month_years]
+    @sort = index_context[:sort]
+    @direction = index_context[:direction]
     @order_by = index_context[:order_by]
     @force_mobile = index_context[:force_mobile]
   end
@@ -48,6 +50,8 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
         to_installments_count:,
         from_installments_number:,
         to_installments_number:,
+        sort:,
+        direction:,
         order_by:,
         force_mobile:
       },

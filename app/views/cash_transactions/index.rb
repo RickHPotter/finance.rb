@@ -37,7 +37,7 @@ class Views::CashTransactions::Index < Views::Base
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count, :paid, :pending,
                                                                                :from_date, :to_date,
-                                                                               :user_bank_account_id, :active_month_years, :skip_budgets))
+                                                                               :user_bank_account_id, :active_month_years, :skip_budgets, :sort, :direction))
 
               BulkActionBar(
                 selected_label: action_message(:selected),
