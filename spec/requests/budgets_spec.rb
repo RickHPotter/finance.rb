@@ -67,7 +67,21 @@ RSpec.describe "Budgets", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
+      expect(response.body).to include('data-controller="reactive-form price-mask dynamic-description"')
+      expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
+      expect(response.body).to include('data-reactive-form-target="monthYearCombobox"')
+      expect(response.body).to include('data-reactive-form-target="priceInput"')
       expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the edit month field as a quick jump target" do
+      budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+
+      get edit_budget_path(budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
+      expect(response.body).to include('data-reactive-form-target="monthYearInput"')
     end
   end
 

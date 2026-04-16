@@ -185,7 +185,12 @@ class InvestmentsController < ApplicationController
   def next_investment_for_chain
     return duplicate_investment_sample(@investment) if current_chain_context[:mode] == "duplicate"
 
-    current_context.investments.new(user: current_user, date: Time.zone.now)
+    @investment.dup.tap do |investment|
+      investment.description = investment.price = nil
+      investment.date = Time.zone.now
+      investment.month = investment.date.month
+      investment.year = investment.date.year
+    end
   end
 
   def duplicate_investment_sample(existing_investment)
@@ -218,17 +223,11 @@ class InvestmentsController < ApplicationController
     continue_chain_requested? && !finish_chain_requested?
   end
 
-  def continue_chain_requested?
-    ActiveModel::Type::Boolean.new.cast(params[:continue_chain])
-  end
+  def continue_chain_requested? = ActiveModel::Type::Boolean.new.cast(params[:continue_chain])
 
-  def finish_chain_requested?
-    ActiveModel::Type::Boolean.new.cast(params[:finish_chain])
-  end
+  def finish_chain_requested? = ActiveModel::Type::Boolean.new.cast(params[:finish_chain])
 
-  def finish_chain_without_save_requested?
-    ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
-  end
+  def finish_chain_without_save_requested? = ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
 
   private
 
@@ -236,7 +235,6 @@ class InvestmentsController < ApplicationController
     set_tabs(active_menu: :cash, active_sub_menu: :investment)
   end
 
-  # Use callbacks to share common setup or constraints between actions.
   def set_investment
     @investment = current_context.investments.find(params[:id])
   end
@@ -245,7 +243,6 @@ class InvestmentsController < ApplicationController
     params.permit(%i[search_term month_year])
   end
 
-  # Only allow a list of trusted parameters through.
   def investment_params
     return {} if params[:investment].blank?
 

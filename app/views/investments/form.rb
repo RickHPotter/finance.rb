@@ -36,7 +36,7 @@ class Views::Investments::Form < Views::Base
         model: investment,
         id: :investment_form,
         class: "contents text-black",
-        data: { controller: "price-mask", action: "submit->price-mask#removeMasks" }
+        data: { controller: "reactive-form price-mask", reactive_form_quick_jump_value: true, action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate
@@ -59,7 +59,8 @@ class Views::Investments::Form < Views::Base
             )
           end
 
-          div(id: "investment_investment_type_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon") do
+          div(id: "investment_investment_type_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 plus-icon",
+              data: { reactive_form_target: :investmentTypeCombobox }) do
             render Views::Shared::SingleSelectCombobox.new(
               name: "investment[investment_type_id]",
               options: @investment_types,
