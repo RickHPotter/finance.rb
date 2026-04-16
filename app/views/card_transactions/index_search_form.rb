@@ -95,13 +95,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                 SheetMiddle do
                   if mobile
                     div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      div do
-                        render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
-                      end
-
-                      div do
-                        render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
-                      end
+                      render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
+                      render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
                     end
                   end
 

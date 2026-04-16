@@ -22,29 +22,20 @@ RSpec.describe "Budgets", type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it "renders active filter summary chips without exposing budget sorting controls" do
+    it "keeps budget filters compact without summary chips or sorting controls" do
       get budgets_path, params: {
         search_term: "food",
         budget: { category_id: [ category.id ] }
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("filters.summary.active"))
-      expect(response.body).to include(I18n.t("filters.summary.clear"))
       expect(response.body).not_to include('data-sort-field="description"')
+      expect(response.body).not_to include(I18n.t("filters.summary.active"))
 
       document = Nokogiri::HTML.fragment(response.body)
       chips = document.css("a[aria-label^=\"#{I18n.t('filters.summary.clear')}\"]")
-      search_chip = chips.find { |chip| chip.text.include?(I18n.t("filters.summary.items.search_term", value: "food")) }
-      category_chip = chips.find { |chip| chip.text.include?(I18n.t("filters.summary.items.categories", count: 1)) }
 
-      expect(search_chip).to be_present
-      expect(search_chip["href"]).not_to include("search_term=")
-      expect(search_chip["title"]).to eq(I18n.t("filters.summary.items.search_term", value: "food"))
-
-      expect(category_chip).to be_present
-      expect(category_chip["href"]).to include("search_term=food")
-      expect(category_chip["href"]).not_to include("category_id")
+      expect(chips).to be_empty
     end
   end
 

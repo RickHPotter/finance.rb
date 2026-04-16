@@ -43,13 +43,18 @@ class Views::Budgets::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-12 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3 col-span-5 pl-10") { model_attribute(Budget, :description) }
-            div(class: "py-3 col-span-3") { model_attribute(Budget, :categories) }
-            div(class: "py-3 col-span-2") { model_attribute(Budget, :entities) }
-            div(class: "py-3 text-end")   { model_attribute(Budget, :remaining) }
-            div(class: "py-3 text-end")   { model_attribute(CashTransaction, :balance) }
-          end
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-12",
+            rows: [
+              [
+                { class: "col-span-5 pl-8", label: model_attribute(Budget, :description) },
+                { class: "col-span-3 flex justify-center", label: model_attribute(Budget, :categories), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(Budget, :entities), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(Budget, :remaining), align: :right },
+                { class: "flex items-end justify-end", label: model_attribute(CashTransaction, :balance), align: :right }
+              ]
+            ]
+          )
 
           if budgets.present?
             render Views::Budgets::Budgets.new(mobile:, budgets:)

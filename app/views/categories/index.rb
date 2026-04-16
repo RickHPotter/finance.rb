@@ -60,21 +60,25 @@ class Views::Categories::Index < Views::Base
 
           div(class: "my-4", data: { datatable_target: "table" }) do
             div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-              div(class: "bg-slate-300 grid grid-cols-7 py-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-                div(class: "col-span-2")
-                div(class: "text-center col-span-2 text-slate-600") { pluralise_model(CardTransaction, 2) }
-                div(class: "text-center col-span-2 text-slate-600") { pluralise_model(CashTransaction, 2) }
-                div
-              end
-
-              div(class: "bg-slate-300 grid grid-cols-7 py-1 border-b border-slate-400 font-semibold text-black font-graduate") do
-                div(class: "col-span-2 text-center") { model_attribute(Category, :category_name) }
-                div(class: "text-center") { model_attribute(Category, :count) }
-                div(class: "text-center") { model_attribute(Category, :spent) }
-                div(class: "text-center") { model_attribute(Category, :count) }
-                div(class: "text-center") { model_attribute(Category, :spent) }
-                div(class: "text-center") { I18n.t(:datatable_actions) }
-              end
+              render Views::Shared::TableHeader.new(
+                grid_class: "grid grid-cols-7",
+                rows: [
+                  [
+                    { class: "col-span-2", label: nil },
+                    { class: "col-span-2 flex justify-center", label: pluralise_model(CardTransaction, 2), align: :center },
+                    { class: "col-span-2 flex justify-center", label: pluralise_model(CashTransaction, 2), align: :center },
+                    { class: "", label: nil }
+                  ],
+                  [
+                    { class: "col-span-2 flex justify-center", label: model_attribute(Category, :category_name), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Category, :count), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Category, :spent), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Category, :count), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Category, :spent), align: :center },
+                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                  ]
+                ]
+              )
 
               if categories.present?
                 categories.each do |record|

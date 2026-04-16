@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
@@ -81,7 +81,6 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
 
           unless mobile
             render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
-
             render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
           end
         end
@@ -104,13 +103,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
                 SheetMiddle do
                   if mobile
                     div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      div do
-                        render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
-                      end
-
-                      div do
-                        render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
-                      end
+                      render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
+                      render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
                     end
                   end
 

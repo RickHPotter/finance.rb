@@ -78,29 +78,18 @@ class Views::CardTransactions::MonthYear < Views::Base
         end
 
         div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "rounded-t-lg border-b border-slate-400 bg-slate-200") do
-            div(class: "grid grid-cols-12 gap-x-3 px-3 py-3 text-black font-graduate") do
-              div(class: "col-span-5 col-start-1 gap-4 pb-2 pl-8") do
-                render_header_label(model_attribute(CardTransaction, :description))
-              end
-
-              div(class: "col-span-3 flex justify-center pb-2") do
-                render_header_label(model_attribute(CardTransaction, :categories))
-              end
-
-              div(class: "col-span-2 flex justify-center pb-2") do
-                render_header_label(model_attribute(CardTransaction, :entities))
-              end
-
-              div(class: "flex items-end justify-end pb-2") do
-                render_header_label(model_attribute(CardTransaction, :price), align: :right)
-              end
-
-              div(class: "flex items-end justify-end pb-2") do
-                render_header_label(I18n.t(:datatable_actions), align: :right)
-              end
-            end
-          end
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-12",
+            rows: [
+              [
+                { class: "col-span-5 col-start-1 gap-4 pl-8", label: model_attribute(CardTransaction, :description) },
+                { class: "col-span-3 flex justify-center", label: model_attribute(CardTransaction, :categories), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(CardTransaction, :entities), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(CardTransaction, :price), align: :right },
+                { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+              ]
+            ]
+          )
 
           if card_installments.present?
             render Views::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:)
@@ -118,17 +107,5 @@ class Views::CardTransactions::MonthYear < Views::Base
         end
       end
     end
-  end
-
-  private
-
-  def render_header_label(label, align: :left)
-    span(class: header_label_class(align)) { label }
-  end
-
-  def header_label_class(align)
-    alignment = align == :right ? "text-right ml-auto" : ""
-
-    "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}"
   end
 end

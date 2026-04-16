@@ -59,13 +59,18 @@ class Views::UserBankAccounts::Index < Views::Base
 
           div(class: "my-4", data: { datatable_target: "table" }) do
             div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-              div(class: "bg-slate-300 grid grid-cols-6 py-1 gap-1 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-                div(class: "col-span-2 text-center") { model_attribute(UserBankAccount, :description) }
-                div(class: "text-center") { model_attribute(UserBankAccount, :count) }
-                div(class: "text-end") { model_attribute(UserBankAccount, :spent) }
-                div(class: "text-end") { model_attribute(UserBankAccount, :balance) }
-                div(class: "text-center") { I18n.t(:datatable_actions) }
-              end
+              render Views::Shared::TableHeader.new(
+                grid_class: "grid grid-cols-6",
+                rows: [
+                  [
+                    { class: "col-span-2 flex justify-center", label: model_attribute(UserBankAccount, :description), align: :center },
+                    { class: "flex justify-center", label: model_attribute(UserBankAccount, :count), align: :center },
+                    { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :spent), align: :right },
+                    { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :balance), align: :right },
+                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                  ]
+                ]
+              )
 
               if user_bank_accounts.present?
                 user_bank_accounts.each do |record|

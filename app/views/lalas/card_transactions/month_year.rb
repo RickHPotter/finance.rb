@@ -69,12 +69,17 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
         )
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-11 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3 col-span-5") { model_attribute(CardTransaction, :description) }
-            div(class: "py-3 col-span-3") { model_attribute(CardTransaction, :categories) }
-            div(class: "py-3 col-span-2") { model_attribute(CardTransaction, :entities) }
-            div(class: "py-3 text-end")   { model_attribute(CardTransaction, :price) }
-          end
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-11",
+            rows: [
+              [
+                { class: "col-span-5", label: model_attribute(CardTransaction, :description) },
+                { class: "col-span-3 flex justify-center", label: model_attribute(CardTransaction, :categories), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(CardTransaction, :entities), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(CardTransaction, :price), align: :right }
+              ]
+            ]
+          )
 
           if card_installments.present?
             render Views::Lalas::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:)

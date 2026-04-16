@@ -46,29 +46,18 @@ class Views::CashTransactions::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:)
 
         div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "rounded-t-lg border-b border-slate-400 bg-slate-200") do
-            div(class: "grid grid-cols-12 gap-x-3 px-3 py-3 text-black font-graduate") do
-              div(class: "col-span-5 col-start-1 gap-4 pb-2 pl-8") do
-                render_header_label(model_attribute(CashTransaction, :description))
-              end
-
-              div(class: "col-span-3 flex justify-center pb-2") do
-                render_header_label(model_attribute(CashTransaction, :categories))
-              end
-
-              div(class: "col-span-2 flex justify-center pb-2") do
-                render_header_label(model_attribute(CashTransaction, :entities))
-              end
-
-              div(class: "flex items-end justify-end pb-2") do
-                render_header_label(model_attribute(CashTransaction, :price), align: :right)
-              end
-
-              div(class: "flex items-end justify-end pb-2") do
-                render_header_label(model_attribute(CashTransaction, :balance), align: :right)
-              end
-            end
-          end
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-12",
+            rows: [
+              [
+                { class: "col-span-5 col-start-1 gap-4 pl-8", label: model_attribute(CashTransaction, :description) },
+                { class: "col-span-3 flex justify-center", label: model_attribute(CashTransaction, :categories), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(CashTransaction, :entities), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(CashTransaction, :price), align: :right },
+                { class: "flex items-end justify-end", label: model_attribute(CashTransaction, :balance), align: :right }
+              ]
+            ]
+          )
 
           if cash_installments.present? || budgets.present?
             render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
@@ -87,13 +76,5 @@ class Views::CashTransactions::MonthYear < Views::Base
         end
       end
     end
-  end
-
-  private
-
-  def render_header_label(label, align: :left)
-    alignment = align == :right ? "text-right ml-auto" : ""
-
-    span(class: "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}") { label }
   end
 end

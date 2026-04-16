@@ -12,20 +12,14 @@ class Views::Shared::IndexToolbar < Views::Base
 
   def view_template
     div(class: toolbar_class) do
-      div do
-        render Views::Shared::SortToolbar.new(
-          title: I18n.t(:order),
-          options: sort_options,
-          current_sort:,
-          current_direction:
-        )
-      end
+      render Views::Shared::SortToolbar.new(
+        title: I18n.t(:order),
+        options: sort_options,
+        current_sort:,
+        current_direction:
+      )
 
-      if summary[:active]
-        div do
-          render Views::Shared::FilterSummary.new(summary:)
-        end
-      end
+      render Views::Shared::FilterSummary.new(summary:) if summary[:active]
     end
   end
 
