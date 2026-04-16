@@ -63,11 +63,10 @@ RSpec.describe CardTransaction, type: :model do
   end
 
   def create_card_transaction_with_history(user:, user_card:, installments_attributes:, **attrs)
+    default_category = default_history_category(user:, attrs:)
     transaction = create(:card_transaction, user:, context: user.main_context, user_card:, **attrs)
-    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
-    transaction.card_installments.delete_all
-    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
-    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+    replace_categories(transaction, default_category) if default_category.present?
+    replace_installments(transaction)
 
     installments_attributes.each do |installment_attrs|
       transaction.card_installments.create!(installment_attrs.merge(paid: false))
@@ -85,6 +84,24 @@ RSpec.describe CardTransaction, type: :model do
 
     transaction.update_column(:card_installments_count, transaction.card_installments.count)
     transaction.reload
+  end
+
+  def default_history_category(user:, attrs:)
+    return if attrs.key?(:category_transactions_attributes)
+
+    create(:category, :random, user:)
+  end
+
+  def replace_categories(transaction, category)
+    transaction.category_transactions.destroy_all
+    transaction.category_transactions.create!(category:)
+  end
+
+  def replace_installments(transaction)
+    stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+    transaction.card_installments.delete_all
+    Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+    CashTransaction.where(id: stale_cash_transaction_ids).delete_all
   end
 
   describe "[ activerecord validations ]" do

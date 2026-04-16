@@ -361,6 +361,8 @@ Preferred direction:
 
 ### Slice 1. Current-Surface Audit And State Contract
 
+Status: complete
+
 ### Goal
 
 Freeze one canonical state model for the in-scope indexes before changing the UI.
@@ -386,6 +388,8 @@ The repo has one explicit contract for index state that later slices can build o
 instead of extending ad hoc param duplication again.
 
 ### Slice 2. Header-Triggered Ordering For Card Index
+
+Status: complete
 
 ### Goal
 
@@ -421,6 +425,8 @@ card surface.
 
 ### Slice 3. Cash Ordering And Mixed-Row Guardrails
 
+Status: complete
+
 ### Goal
 
 Bring the same visible sort behavior to cash without destabilizing the
@@ -454,6 +460,8 @@ If budgets and cash rows need one combined chronological surface later, that sho
 be planned as a distinct product decision.
 
 ### Slice 4. Filter UX Consolidation
+
+Status: complete
 
 ### Goal
 
@@ -494,6 +502,8 @@ filter.
 
 ### Slice 5. Budget Follow-Through And Query-Language Boundary
 
+Status: complete
+
 ### Goal
 
 Finish the track by aligning the dedicated budget index with the new filter/sort
@@ -515,7 +525,8 @@ Locked direction:
 
 Implementation notes:
 
-- reuse the shared active-filter summary/clear behavior for the dedicated budget index
+- dedicated budgets intentionally do not render the shared filter summary because
+  the filter surface is small
 - keep budget filters limited to the existing search, category, and entity controls
 - do not render a budget sort toolbar or expose budget sort controls in this slice
 - keep the existing budget month-year grouping and `order_id` row order untouched
@@ -525,6 +536,40 @@ Implementation notes:
 `JIRAIYA-03` ends with a cleaner shared index-state model, visible ordering on the
 main transaction surfaces, and no forced commitment to a premature query language.
 
+## Shipped Outcome
+
+`JIRAIYA-03/fe-01` is complete.
+
+The implementation shipped:
+
+- one shared index-state foundation with small surface-specific state objects for
+  card, cash, budget, investment, and subscription indexes
+- canonical `sort` + `direction` params, with card `order_by` retained only as a
+  compatibility bridge
+- server-authoritative sorting for card and cash month-year groups
+- visible desktop sort controls and compact mobile sort selects
+- sortable card columns for installment date, transaction date, description, and
+  installment price
+- sortable cash columns for installment date, transaction date, description, and
+  installment price
+- non-sortable category, entity, balance, and action columns for V1
+- cash budget rows kept visible inside cash month groups without participating in
+  mixed sorting
+- index-search-form filter consolidation, active filter chips, clear links, and a
+  tri-state paid filter
+- signed advanced price inputs and blank-preserving range filters
+- standardized finance table-header styling and compact budget filters
+- which-key quick jump support for investment and budget forms
+- modal polish for pay, pay multiple, transfer, and pay-in-advance flows, including
+  transfer dates without a max-date cap and autofocus on the first useful modal
+  input
+
+Intentionally not shipped:
+
+- mixed cash-plus-budget row sorting
+- dedicated budget sorting
+- a free-form query language or placeholder query parser
+
 ## Validation
 
 - request specs should protect real server-driven sort and filter behavior
@@ -532,15 +577,20 @@ main transaction surfaces, and no forced commitment to a premature query languag
 - bulk-action index restoration should be checked anywhere index state is serialized
 - do not add feature specs unless the interaction cannot be protected another way
 
+Latest maintained validation for the completed feature:
+
+- `bin/rspec spec/models spec/concerns spec/requests`
+- 649 examples, 0 failures
+
 ## Recommendation
 
-Build `JIRAIYA-03` in this order:
+The implementation followed this order:
 
 1. normalize index state first
 2. prove header sorting on card
 3. extend the same contract to cash with explicit budget guardrails
 4. only then consolidate filter UX
 
-That keeps the work grounded in the current architecture, delivers visible progress
+That kept the work grounded in the current architecture, delivered visible progress
 early, and avoids overcommitting to a query-language or datagrid rewrite before the
 real index-state model is coherent.

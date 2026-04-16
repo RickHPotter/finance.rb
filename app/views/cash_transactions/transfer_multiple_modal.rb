@@ -32,7 +32,7 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
           end
 
           div(class: "relative w-full") do
-            select_tag(:reference_date, class: "border rounded w-full py-1") do
+            select_tag(:reference_date, class: "border rounded w-full py-1", data: { controller: "autofocus" }) do
               options_for_select(options)
             end
           end
@@ -45,8 +45,7 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
             form:,
             field: :date,
             value: Time.zone.now,
-            id: "cash_installments_multiple_transfer_date",
-            max_datetime: Time.zone.now.end_of_day
+            id: "cash_installments_multiple_transfer_date"
           )
         end
 

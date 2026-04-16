@@ -1481,6 +1481,30 @@ RSpec.describe "CardTransactions", type: :request do
     end
   end
 
+  describe "[ #month_year ]" do
+    it "renders the pay in advance modal with autofocus on the date input" do
+      card_transaction.description = "Pay in advance autofocus"
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+      created_transaction = CardTransaction.order(:id).last
+      installment = created_transaction.card_installments.first
+      installment_month_year = "#{installment.year}#{installment.month.to_s.rjust(2, '0')}"
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: installment_month_year,
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      modal_id = "cardTransactionModal_#{user_card_one.id}_#{installment.month}_#{installment.year}"
+      date_input = document.at_css("##{modal_id} #card_transaction_date")
+
+      expect(date_input["data-controller"]).to include("autofocus")
+    end
+  end
+
   describe "[ #destroy ]" do
     before do
       (1..3).each do |i|
@@ -1826,18 +1850,19 @@ RSpec.describe "CardTransactions", type: :request do
 
       switch_to_context!(derived_context)
 
+      derived_only_category = create(:category, :random, user:)
       create_params = Params::CardTransactions.new(
         card_transaction: {
           description: "Derived only card transaction",
           price: -11_000,
-          date: Date.new(2026, 4, 12),
-          month: 5,
-          year: 2026,
+          date: Date.new(2036, 1, 12),
+          month: 2,
+          year: 2036,
           user_id: user.id,
           user_card_id: user_card_one.id
         },
         card_installments: { count: 1 },
-        category_transactions: [ { category_id: exchange_category.id } ],
+        category_transactions: [ { category_id: derived_only_category.id } ],
         entity_transactions: [ {
           entity_id: entity_one.id,
           price: 0,
@@ -1850,6 +1875,7 @@ RSpec.describe "CardTransactions", type: :request do
         post card_transactions_path, params: create_params.params, headers: turbo_stream_headers
       end.to change { derived_context.card_transactions.reload.count }.by(1)
                                                                       .and change { user.main_context.card_transactions.reload.count }.by(0)
+      derived_only_card_transaction = derived_context.card_transactions.find_by!(description: "Derived only card transaction")
 
       update_params = Params::CardTransactions.new
       update_params.use_base(derived_card_transaction, card_transaction_options: { description: "Derived updated card transaction", price: -12_500 })
@@ -1862,14 +1888,15 @@ RSpec.describe "CardTransactions", type: :request do
       expect(main_card_transaction.reload.description).to eq("Main isolated card transaction")
       expect(main_card_transaction.price).to eq(-9_000)
 
-      card_installment_id = derived_card_transaction.card_installments.first.id
+      card_installment_id = derived_only_card_transaction.card_installments.first.id
 
       expect do
-        delete card_transaction_path(derived_card_transaction, card_installment_id:), headers: turbo_stream_headers
+        delete card_transaction_path(derived_only_card_transaction, card_installment_id:), headers: turbo_stream_headers
       end.to change { derived_context.card_transactions.reload.count }.by(-1)
                                                                       .and change { user.main_context.card_transactions.reload.count }.by(0)
 
       expect(CardTransaction.exists?(main_card_transaction.id)).to be(true)
+      expect(derived_card_transaction.reload.description).to eq("Derived updated card transaction")
     end
   end
 

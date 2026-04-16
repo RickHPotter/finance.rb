@@ -118,6 +118,34 @@ RSpec.describe "CashTransactions", type: :request do
       expect(paid_state_chip["title"]).to eq(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
       expect(paid_state_chip.text).to end_with("x")
     end
+
+    it "does not cap the transfer bulk action date" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      transfer_date_input = document.at_css("#cash_installments_multiple_transfer_date")
+      transfer_datetime_wrapper = transfer_date_input.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      payment_date_input = document.at_css("#cash_installments_multiple_payment_date")
+      payment_datetime_wrapper = payment_date_input.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(transfer_datetime_wrapper["data-datetime-input-max-datetime-value"]).to be_blank
+      expect(payment_datetime_wrapper["data-datetime-input-max-datetime-value"]).to be_present
+    end
+
+    it "renders autofocus targets for pay multiple and transfer modals" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      pay_multiple_date = document.at_css("#cash_installments_multiple_payment_date_date_input")
+      transfer_reference = document.at_css("select[name='reference_date']")
+
+      expect(pay_multiple_date["data-controller"]).to include("autofocus")
+      expect(transfer_reference["data-controller"]).to include("autofocus")
+    end
   end
 
   describe "[ #duplicate ]" do
@@ -3316,6 +3344,34 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "renders the pay modal with autofocus on the payment date input" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        date: Time.zone.now,
+        month: Time.zone.now.month,
+        year: Time.zone.now.year,
+        cash_installments: [ build(:cash_installment, number: 1, date: Time.zone.now, month: Time.zone.now.month, year: Time.zone.now.year, paid: false) ]
+      )
+      cash_installment = transaction.cash_installments.first
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      pay_modal_price = document.at_css("#cashInstallmentModal_#{cash_installment.id} #transaction_price")
+      pay_modal_date = document.at_css("#cashInstallmentModal_#{cash_installment.id} #cash_installment_#{cash_installment.id}_payment_date_date_input")
+
+      expect(pay_modal_price["data-controller"]).not_to include("autofocus")
+      expect(pay_modal_date["data-controller"]).to include("autofocus")
     end
 
     it "sorts cash rows by description while keeping budgets visible after them" do

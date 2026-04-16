@@ -87,9 +87,32 @@ too visible to ignore.
   - Rework transaction indexes so ordering can be triggered from the table header.
   - Improve the current filtering model and make it more expressive.
   - Keep common filters simple while leaving room for a more advanced query syntax.
-- Extra:
-  - Review whether current index screens need a dedicated search language or just a
-    stronger structured filter UI.
+
+- Shipped outcome:
+  - card and cash transaction indexes now use a canonical `sort` + `direction`
+    contract while preserving legacy card `order_by` compatibility
+  - desktop card/cash month-year groups expose visible sort controls for the
+    approved sortable columns, with compact mobile sort controls for PWA layouts
+  - common filters were consolidated into the index search form with active-filter
+    feedback, clear links, and an explicit `all / paid / pending` paid-state
+    control
+  - advanced filters now keep blank range values blank and support signed price
+    inputs consistently across card and cash
+  - table-header and filter-row presentation was standardized across the finance
+    index surfaces
+  - budget sorting was intentionally deferred; the budget index keeps compact
+    filters without sort controls or summary chips
+  - modal/data-entry polish shipped with the slice, including which-key support for
+    investment and budget forms, transfer dates without a max-date cap, and modal
+    autofocus for pay, pay multiple, transfer, and pay-in-advance flows
+
+- Left out intentionally:
+  - a free-form query language or reserved parser parameter
+  - mixed cash-plus-budget row sorting
+  - dedicated budget sorting
+
+- References:
+  - [datatables, filters, and ordering planning](docs/sprints/3-jiraiya/jiraiya-03/01-datatables-filters-ordering-planning.md)
 
 ### JIRAIYA-04/be-02: Tighten financial safety rules
 

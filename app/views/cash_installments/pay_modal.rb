@@ -84,6 +84,7 @@ class Views::CashInstallments::PayModal < Views::Base
               field: :date,
               value: Time.zone.parse(proposed_date),
               id: "cash_installment_#{cash_installment.id}_payment_date",
+              autofocus: true,
               max_datetime: Time.zone.now.end_of_day
             )
           end
