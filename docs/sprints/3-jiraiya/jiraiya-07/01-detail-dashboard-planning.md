@@ -166,6 +166,89 @@ Budget V1 does not need sorting or a mini query language.
 
 ## Implementation Slices
 
+### Current Status
+
+- Slice 1 is implemented: context-scoped `show` endpoints and dashboard shells exist
+  for cash transactions, card transactions, and budgets.
+- Slice 2 is implemented: the cash transaction dashboard now renders summary,
+  installments, allocations, references, and primary guarded actions, and cash
+  month-year rows expose a localized `Analyse` entry point while description links
+  still open edit.
+
+### Handoff Snapshot - 2026-04-22
+
+Slice 1 shipped the routing/controller foundation:
+
+- `resources :cash_transactions`, `resources :card_transactions`, and
+  `resources :budgets` expose `show`.
+- `CashTransactionsController#show`, `CardTransactionsController#show`, and
+  `BudgetsController#show` use context-scoped lookups through existing
+  `set_*` methods.
+- Placeholder Phlex dashboard shells exist for card transactions and budgets.
+- Request specs cover rendering and cross-context not-found behavior.
+
+Slice 2 shipped the first real dashboard pattern for cash:
+
+- `Views::CashTransactions::Show` now renders hero/status, summary cards,
+  installments, allocations, links/references, and guarded actions.
+- Cash dashboard actions include edit, duplicate when allowed, pay when exactly one
+  pending cash installment exists, destroy through the existing guarded delete flow,
+  and return to the cash index.
+- `Views::CashInstallments::Index` now renders a localized `Analyse` link for cash
+  month-year rows on desktop and mobile.
+- Description links intentionally still point to `edit_cash_transaction_path`.
+- The planned three-dots dropdown was deferred because no reusable dropdown/action
+  menu existed and changing row structure would risk breaking selection/drag
+  behavior. Current V1 uses a compact direct `Analyse` link.
+- Locales were added for dashboard section labels, partial status, cash reference
+  labels, `CashInstallment#number`, and `CashTransaction#subscription_id`.
+- `spec/requests/cash_transactions_spec.rb` covers the dashboard sections/actions
+  and the month-year `Analyse` link while preserving description-to-edit behavior.
+
+Verification already run after Slice 2:
+
+- `ruby -e 'require "yaml"; %w[config/locales/locale.yml config/locales/models/cash_transactions.yml config/locales/models/cash_installments.yml].each { |file| YAML.load_file(file) }; puts "YAML OK"'`
+- `bin/rubocop -A`
+- `bin/rspec spec/requests/cash_transactions_spec.rb`
+- `bin/rspec spec/models spec/concerns spec/requests`
+
+All checks passed in the source session:
+
+- RuboCop: 447 files, 0 offenses.
+- Cash request spec: 66 examples, 0 failures.
+- Default non-feature suite: 653 examples, 0 failures.
+
+Known working tree from the source session after Slice 2:
+
+- `app/views/cash_installments/index.rb`
+- `app/views/cash_transactions/show.rb`
+- `config/locales/locale.yml`
+- `config/locales/models/cash_installments.yml`
+- `config/locales/models/cash_transactions.yml`
+- `docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md`
+- `spec/requests/cash_transactions_spec.rb`
+
+Next session should start Slice 3.
+
+Recommended Slice 3 path:
+
+- Inspect `app/views/card_installments/index.rb`,
+  `app/views/card_transactions/month_year.rb`,
+  `app/views/card_transactions/show.rb`, and existing card pay-in-advance/edit
+  action patterns before editing.
+- Build `Views::CardTransactions::Show` using the cash dashboard vocabulary, but
+  with card-specific sections: card summary, billing cycle, card installments,
+  generated cash invoice/payment links, exchange/return state, categories/entities,
+  and guarded actions.
+- Add localized `Analyse` links in card month-year rows while keeping description
+  links pointed at edit.
+- Do not offer duplicate for generated/special card rows where duplication would be
+  misleading.
+- Add focused request specs for card dashboard rendering and card month-year
+  `Analyse` links.
+- Run `bin/rubocop -A`, focused card request specs, then
+  `bin/rspec spec/models spec/concerns spec/requests`.
+
 ### Slice 1. Route And Dashboard Foundation
 
 Goal:

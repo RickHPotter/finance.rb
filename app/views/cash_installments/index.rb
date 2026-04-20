@@ -45,7 +45,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
-      should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
+      should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
@@ -59,7 +59,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay}",
+        class: "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay}",
         style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
@@ -68,33 +68,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              if cash_transaction.investment?
-                default_year = cash_transaction.year
-                active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
-                investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment_type_id }
-
-                link_to cash_transaction.description,
-                        investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
-                        title: cash_transaction.comment,
-                        data: { turbo_frame: "_top", turbo_prefetch: false }
-              elsif cash_transaction.card_advance?
-                card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
-                default_year = card_.year
-                active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
-
-                link_to cash_transaction.description,
-                        card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
-                        title: cash_transaction.comment,
-                        data: { turbo_frame: "_top", turbo_prefetch: false }
-              else
-                link_to cash_transaction.description, edit_cash_transaction_path(cash_transaction),
-                        id: "edit_cash_transaction_#{cash_transaction.id}",
-                        class: "cash_transaction_description truncate text-md underline underline-offset-[3px]",
-                        title: cash_transaction.comment,
-                        data: { turbo_frame: "_top" }
-              end
+              render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
 
               span(class: "flex-shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
@@ -104,30 +78,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1 flex items-center") do
-              if should_display_link_to_pay
-                button(
-                  class: "hover:bg-white hover:text-red-400 hover:rounded-full transition-all duration-200",
-                  title: model_attribute(cash_installment, :pay),
-                  data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-                ) do
-                  cached_icon(icon)
-                end
-              elsif cash_transaction.card_payment?
-                button(
-                  class: "hover:bg-white hover:text-blue-600 hover:rounded-sm",
-                  title: model_attribute(cash_installment, :change_date),
-                  data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-                ) do
-                  cached_icon(:check_calendar)
-                end
-              else
-                button(
-                  class: "hover:bg-white hover:text-money hover:rounded-full transition-all duration-200",
-                  title: model_attribute(cash_installment, :already_paid)
-                ) do
-                  cached_icon(icon)
-                end
-              end
+              render_action_menu(cash_installment, cash_transaction, payable: should_display_link_to_pay)
 
               span(class: "whitespace-nowrap pl-2") do
                 format = cash_transaction.investment? ? "%B %Y" : :short
@@ -152,13 +103,17 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
-      should_display_link_to_pay, icon = choose_link_and_icon(cash_installment)
+      should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
-        class: "grid grid-cols-12 hover:opacity-80 #{'animate-pulse' if should_display_link_to_pay}",
-        style: "background-clip: padding-box; #{style}",
+        class: [
+          "group relative z-0 grid grid-cols-12 hover:z-40",
+          "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
+          "hover:[&>*:not([data-row-actions]):not([data-row-background])]:opacity-80",
+          ("animate-pulse" if should_display_link_to_pay)
+        ].compact.join(" "),
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -170,30 +125,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                   "drop->datatable#drop"
                 ].join(" ") }
       ) do
+        div(
+          class: "pointer-events-none absolute inset-0 z-0 transition-opacity group-hover:opacity-80",
+          style: "background-clip: padding-box; #{style}",
+          data: { row_background: true }
+        )
+
         render_row_checkbox(cash_installment, cash_transaction) do
           div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do
-            if should_display_link_to_pay
-              button(
-                type: :button,
-                class: "hover:bg-white hover:text-red-500 hover:rounded-full",
-                title: model_attribute(cash_installment, :pay),
-                data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-              ) do
-                cached_icon(icon)
-              end
-            elsif cash_transaction.card_payment?
-              button(
-                class: "hover:bg-white hover:text-blue-600 hover:rounded-sm",
-                title: model_attribute(cash_installment, :change_date),
-                data: { modal_target: "cashInstallmentModal_#{cash_installment.id}", modal_toggle: "cashInstallmentModal_#{cash_installment.id}" }
-              ) do
-                cached_icon(:check_calendar)
-              end
-            else
-              span(class: "hover:bg-white hover:text-money hover:rounded-sm", title: model_attribute(cash_installment, :already_paid)) do
-                cached_icon(icon)
-              end
-            end
+            render_action_menu(cash_installment, cash_transaction, payable: should_display_link_to_pay)
 
             date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
             div(class: "grid grid-cols-1 mr-auto") do
@@ -204,34 +144,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
-          if cash_transaction.investment?
-            default_year = cash_transaction.year
-            active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
-            investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment_type_id }
-
-            link_to cash_transaction.description,
-                    investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
-                    title: cash_transaction.comment,
-                    data: { turbo_frame: "_top", turbo_prefetch: false }
-          elsif cash_transaction.card_advance?
-            card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
-            default_year = card_.year
-            active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
-
-            link_to cash_transaction.description,
-                    card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
-                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
-                    title: cash_transaction.comment,
-                    data: { turbo_frame: "_top", turbo_prefetch: false }
-          else
-            link_to cash_transaction.description,
-                    edit_cash_transaction_path(cash_transaction),
-                    id: "edit_cash_transaction_#{cash_transaction.id}",
-                    class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]",
-                    title: cash_transaction.comment,
-                    data: { turbo_frame: "_top" }
-          end
+          render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
 
           span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
@@ -255,12 +168,105 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def choose_link_and_icon(cash_installment)
-    case [ cash_installment.paid, cash_installment.date > Time.zone.today ]
-    in [ true,  _     ] then [ false, :check_square ]
-    in [ false, true  ] then [ true,  :warning_octagon ]
-    in [ false, false ] then [ true,  :x_circle ]
+  def should_display_link_to_pay?(cash_installment)
+    !cash_installment.paid?
+  end
+
+  def render_description_link(cash_transaction, class:)
+    if cash_transaction.investment?
+      default_year = cash_transaction.year
+      active_month_years = "[#{Date.new(cash_transaction.year, cash_transaction.month).strftime('%Y%m')}]"
+      investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment_type_id }
+
+      link_to cash_transaction.description,
+              investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
+              class:,
+              title: cash_transaction.comment,
+              data: { turbo_frame: "_top", turbo_prefetch: false }
+    elsif cash_transaction.card_advance?
+      card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
+      default_year = card_.year
+      active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
+
+      link_to cash_transaction.description,
+              card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+              class:,
+              title: cash_transaction.comment,
+              data: { turbo_frame: "_top", turbo_prefetch: false }
+    else
+      link_to cash_transaction.description,
+              edit_cash_transaction_path(cash_transaction),
+              id: "edit_cash_transaction_#{cash_transaction.id}",
+              class:,
+              title: cash_transaction.comment,
+              data: { turbo_frame: "_top" }
     end
+  end
+
+  def render_action_menu(cash_installment, cash_transaction, payable:)
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 flex-shrink-0") do
+      PopoverTrigger(class: "flex") do
+        button(
+          type: :button,
+          id: "cash_installment_actions_#{cash_installment.id}",
+          class: "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4",
+          title: I18n.t("actions_column")
+        ) do
+          cached_icon(:ellipsis)
+        end
+      end
+
+      PopoverContent(class: "z-[60] !opacity-100 min-w-44 p-1") do
+        div(class: "flex flex-col gap-1") do
+          action_menu_link(action_message(:analyse), cash_transaction_path(cash_transaction))
+          action_menu_button(model_attribute(cash_installment, :pay), modal_id: "cashInstallmentModal_#{cash_installment.id}") if payable
+          if cash_transaction.card_payment?
+            action_menu_button(model_attribute(cash_installment, :change_date),
+                               modal_id: "cashInstallmentModal_#{cash_installment.id}")
+          end
+          action_menu_link(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction)) if cash_transaction.can_be_destroyed?
+          action_menu_destroy_link(cash_transaction) if cash_transaction.can_be_destroyed?
+        end
+      end
+    end
+  end
+
+  def action_menu_link(label, href)
+    link_to label,
+            href,
+            class: action_menu_item_class,
+            data: { turbo_frame: "_top", turbo_prefetch: false, action: "click->ruby-ui--popover#close" }
+  end
+
+  def action_menu_button(label, modal_id:)
+    button(
+      type: :button,
+      class: action_menu_item_class,
+      data: {
+        modal_target: modal_id,
+        modal_toggle: modal_id,
+        action: "click->ruby-ui--popover#close"
+      }
+    ) do
+      label
+    end
+  end
+
+  def action_menu_destroy_link(cash_transaction)
+    link_to action_message(:destroy),
+            cash_transaction_path(cash_transaction),
+            id: "delete_cash_transaction_#{cash_transaction.id}",
+            class: "#{action_menu_item_class} text-red-700 hover:bg-red-50",
+            data: {
+              turbo_method: :delete,
+              turbo_confirm: I18n.t("confirmation.sure"),
+              turbo_frame: "_top",
+              action: "click->ruby-ui--popover#close"
+            }
+  end
+
+  def action_menu_item_class
+    "w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
   end
 
   def render_mobile_entities(cash_transaction, avatar_name)
@@ -346,7 +352,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_row_checkbox(cash_installment, cash_transaction, mobile: false)
-    div(class: "flex items-center gap-1 relative px-2") do
+    div(class: "flex items-center gap-1 relative px-2", data: { row_actions: true }) do
       label(class: "group inline-flex cursor-pointer items-center justify-center", data: { action: "mousedown->datatable#preventRangeSelection" }) do
         input(
           type: :checkbox,

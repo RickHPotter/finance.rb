@@ -232,7 +232,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def can_be_destroyed?
-    return false if card_payment? || card_advance? || exchange_return? || linked_borrow_return?
+    return false if card_payment? || card_advance? || exchange_return? || investment? || linked_borrow_return?
 
     persisted?
   end

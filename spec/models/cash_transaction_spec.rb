@@ -233,6 +233,19 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.counterpart_shared_return_transaction).to be_nil
     end
 
+    it "does not allow investment-derived cash transactions to be destroyed directly" do
+      transaction = create(
+        :cash_transaction,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        cash_transaction_type: "Investment",
+        description: "Investment cash transaction"
+      )
+
+      expect(transaction).not_to be_can_be_destroyed
+    end
+
     it "finds a receiver-side descendant through a canonical parent chain" do
       sender = create(:user, :random)
       receiver = create(:user, :random)

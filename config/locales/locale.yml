@@ -97,8 +97,21 @@ en:
     add_to_subscription: "Add to Subscription"
     partial_pay: "Partial Pay"
   dashboards:
+    empty: "Nothing to display yet."
+    sections:
+      summary: "Summary"
+      installments: "Installments"
+      allocations: "Allocations"
+      links: "Links and references"
+    status:
+      partial: "Partial"
     cash_transactions:
       placeholder: "Dashboard foundation ready. Slice 2 will add installments, allocations, links, and history."
+      reference: "Reference"
+      reference_descendants:
+        one: "1 linked return or derived transaction"
+        other: "%{count} linked returns or derived transactions"
+      borrow_return: "Borrow Return"
     card_transactions:
       placeholder: "Dashboard foundation ready. A later slice will add billing-cycle, invoice, exchange, and history details."
     budgets:
@@ -277,8 +290,21 @@ pt-BR:
     add_to_subscription: "Adicionar à Assinatura"
     partial_pay: "Pagar Parcial"
   dashboards:
+    empty: "Nada para exibir ainda."
+    sections:
+      summary: "Resumo"
+      installments: "Parcelas"
+      allocations: "Alocações"
+      links: "Vínculos e referências"
+    status:
+      partial: "Parcial"
     cash_transactions:
       placeholder: "Base do painel pronta. A Slice 2 adicionará parcelas, alocações, vínculos e histórico."
+      reference: "Referência"
+      reference_descendants:
+        one: "1 devolução ou movimentação derivada vinculada"
+        other: "%{count} devoluções ou movimentações derivadas vinculadas"
+      borrow_return: "Retorno de Empréstimo"
     card_transactions:
       placeholder: "Base do painel pronta. Uma próxima slice adicionará detalhes de ciclo, fatura, trocas e histórico."
     budgets:

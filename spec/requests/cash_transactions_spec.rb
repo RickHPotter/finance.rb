@@ -149,23 +149,42 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard shell" do
+    it "renders a context-scoped dashboard with installments, allocations, links, and actions" do
       transaction = create(
         :cash_transaction,
         user:,
         context: user.main_context,
         user_bank_account:,
-        description: "Cash dashboard foundation",
-        price: 12_000
+        subscription:,
+        description: "Cash dashboard details",
+        comment: "Dashboard comment",
+        price: 12_000,
+        date: Date.new(2026, 4, 15),
+        month: 4,
+        year: 2026,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 4, 15), month: 4, year: 2026, price: 6_000, balance: 6_000, paid: true),
+          build(:cash_installment, number: 2, date: Date.new(2026, 5, 15), month: 5, year: 2026, price: 6_000, balance: 12_000, paid: false)
+        ]
       )
+      create(:category_transaction, transactable: transaction, category:)
+      create(:entity_transaction, transactable: transaction, entity:, price: 0)
 
       get cash_transaction_path(transaction)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Cash dashboard foundation")
+      expect(response.body).to include("Cash dashboard details")
+      expect(response.body).to include("Dashboard comment")
       expect(response.body).to include(I18n.t("actions.analyse"))
-      expect(response.body).to include(I18n.t("dashboards.cash_transactions.placeholder"))
+      expect(response.body).to include(I18n.t("dashboards.sections.installments"))
+      expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
+      expect(response.body).to include(I18n.t("dashboards.status.partial"))
+      expect(response.body).to include(category.name)
+      expect(response.body).to include(entity.entity_name)
+      expect(response.body).to include(subscription.description)
       expect(response.body).to include(edit_cash_transaction_path(transaction))
+      expect(response.body).to include(duplicate_cash_transaction_path(transaction))
+      expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
     end
   end
 
@@ -3368,6 +3387,73 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "renders row actions in the menu while keeping description links pointed at edit" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Analysable cash row",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      installment = transaction.cash_installments.first
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(cash_transaction_path(transaction))
+      expect(response.body).to include(edit_cash_transaction_path(transaction))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(duplicate_cash_transaction_path(transaction))
+      expect(response.body).to include("delete_cash_transaction_#{transaction.id}")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_cash_transaction_#{transaction.id}")
+      description_column = description_link.parent
+      action_button = document.at_css("#cash_installment_actions_#{installment.id}")
+      pay_action = document.at_css("button[data-modal-toggle='cashInstallmentModal_#{installment.id}']")
+
+      expect(description_link["href"]).to eq(edit_cash_transaction_path(transaction))
+      expect(description_column["class"]).to include("col-span-4")
+      expect(description_column.text).not_to include(I18n.t("actions.analyse"))
+      expect(action_button).to be_present
+      expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
+    end
+
+    it "does not render row-menu destroy for investment-derived cash rows" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Investment",
+        description: "Investment cash row",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: true)
+        ]
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(cash_transaction_path(transaction))
+      expect(response.body).not_to include("delete_cash_transaction_#{transaction.id}")
     end
 
     it "renders the pay modal with autofocus on the payment date input" do

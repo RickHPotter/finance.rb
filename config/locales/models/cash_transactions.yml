@@ -33,6 +33,7 @@ en:
         starting_price: Original Price
         paid: Paid
         not_paid: Not Paid
+        subscription_id: Subscription
         user_bank_account_id: Account
         user_card_id: Card
         month: Month
@@ -97,6 +98,7 @@ pt-BR:
         starting_price: Preço Inicial
         paid: Pago
         not_paid: Pendente
+        subscription_id: Assinatura
         user_bank_account_id: Conta
         user_card_id: Cartão
         month: Mês
