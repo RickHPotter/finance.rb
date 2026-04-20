@@ -72,6 +72,7 @@ en:
     newa: "New"
     create: "Create"
     edit: "Edit"
+    analyse: "Analyse"
     duplicate: "Duplicate"
     update: "Update"
     destroy: "Destroy"
@@ -95,6 +96,13 @@ en:
     finish_chain_without_save: "Finish chain without saving"
     add_to_subscription: "Add to Subscription"
     partial_pay: "Partial Pay"
+  dashboards:
+    cash_transactions:
+      placeholder: "Dashboard foundation ready. Slice 2 will add installments, allocations, links, and history."
+    card_transactions:
+      placeholder: "Dashboard foundation ready. A later slice will add billing-cycle, invoice, exchange, and history details."
+    budgets:
+      placeholder: "Dashboard foundation ready. A later slice will add budget consumption, matching transactions, and remaining value details."
 
   navigation:
     previous: "Previous"
@@ -244,6 +252,7 @@ pt-BR:
     newa: "Nova"
     create: "Criar"
     edit: "Editar"
+    analyse: "Analisar"
     duplicate: "Duplicar"
     update: "Atualizar"
     destroy: "Deletar"
@@ -267,6 +276,13 @@ pt-BR:
     finish_chain_without_save: "Finalizar cadeia sem salvar"
     add_to_subscription: "Adicionar à Assinatura"
     partial_pay: "Pagar Parcial"
+  dashboards:
+    cash_transactions:
+      placeholder: "Base do painel pronta. A Slice 2 adicionará parcelas, alocações, vínculos e histórico."
+    card_transactions:
+      placeholder: "Base do painel pronta. Uma próxima slice adicionará detalhes de ciclo, fatura, trocas e histórico."
+    budgets:
+      placeholder: "Base do painel pronta. Uma próxima slice adicionará consumo do orçamento, movimentações relacionadas e valor restante."
 
   navigation:
     previous: "Anterior"

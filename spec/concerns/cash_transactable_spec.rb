@@ -6,8 +6,8 @@ RSpec.describe CashTransactable, type: :concern do
   let(:user) { create(:user, :random) }
   let(:bank) { create(:bank, :random) }
   let(:card) { create(:card, :random, bank:) }
-  let(:user_card) { create(:user_card, :random, user:, card:) }
-  let(:user_card_two) { create(:user_card, :random, user:, card:) }
+  let(:user_card) { create(:user_card, :random, user:, card:, user_card_name: "Primary #{card.card_name}") }
+  let(:user_card_two) { create(:user_card, :random, user:, card:, user_card_name: "Secondary #{card.card_name}") }
   let(:base_date) { Time.zone.today.beginning_of_month + 1.month + 9.days + 12.hours }
 
   let(:card_transaction_one) do

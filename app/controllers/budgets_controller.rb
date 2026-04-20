@@ -3,7 +3,7 @@
 class BudgetsController < ApplicationController
   include TabsConcern
 
-  before_action :set_budget, only: %i[edit update destroy]
+  before_action :set_budget, only: %i[show edit update destroy]
   before_action :set_budget_tabs
 
   def index
@@ -24,6 +24,10 @@ class BudgetsController < ApplicationController
     budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_context, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
 
     render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:)
+  end
+
+  def show
+    render Views::Budgets::Show.new(budget: @budget)
   end
 
   def new

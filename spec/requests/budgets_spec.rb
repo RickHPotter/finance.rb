@@ -85,6 +85,26 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard shell" do
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Budget dashboard foundation",
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      get budget_path(budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Budget dashboard foundation")
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("dashboards.budgets.placeholder"))
+      expect(response.body).to include(edit_budget_path(budget))
+    end
+  end
+
   describe "[ #update ]" do
     it "updates the record" do
       budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
@@ -208,6 +228,9 @@ RSpec.describe "Budgets", type: :request do
       ).call
 
       switch_to_context!(derived_context)
+
+      get budget_path(main_budget)
+      expect(response).to have_http_status(:not_found)
 
       get edit_budget_path(main_budget)
       expect(response).to have_http_status(:not_found)

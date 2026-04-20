@@ -3,7 +3,7 @@
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_card_transaction, only: %i[edit update destroy]
+  before_action :set_card_transaction, only: %i[show edit update destroy]
   before_action :set_card_tabs, except: :index
 
   def index
@@ -44,7 +44,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
-  def show; end
+  def show
+    render Views::CardTransactions::Show.new(card_transaction: @card_transaction)
+  end
 
   def new
     @card_transaction = current_context.card_transactions.new(

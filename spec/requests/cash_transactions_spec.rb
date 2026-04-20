@@ -148,6 +148,27 @@ RSpec.describe "CashTransactions", type: :request do
     end
   end
 
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard shell" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Cash dashboard foundation",
+        price: 12_000
+      )
+
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Cash dashboard foundation")
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("dashboards.cash_transactions.placeholder"))
+      expect(response.body).to include(edit_cash_transaction_path(transaction))
+    end
+  end
+
   describe "[ #duplicate ]" do
     it "renders a duplicated cash transaction form without creating a new record" do
       existing_cash_transaction = create(
@@ -2037,6 +2058,9 @@ RSpec.describe "CashTransactions", type: :request do
       ).call
 
       switch_to_context!(derived_context)
+
+      get cash_transaction_path(main_cash_transaction)
+      expect(response).to have_http_status(:not_found)
 
       get edit_cash_transaction_path(main_cash_transaction)
       expect(response).to have_http_status(:not_found)

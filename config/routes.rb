@@ -64,7 +64,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :card_transactions, except: :show do
+  resources :card_transactions do
     member do
       get :duplicate
     end
@@ -77,7 +77,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :cash_transactions, except: :show do
+  resources :cash_transactions do
     member do
       get :duplicate
     end
@@ -100,7 +100,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :budgets, except: :show do
+  resources :budgets do
     collection do
       get :month_year
     end

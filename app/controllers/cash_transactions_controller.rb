@@ -3,7 +3,7 @@
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :set_cash_transaction, only: %i[show edit update destroy]
   before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
   before_action :set_cash_tabs
 
@@ -31,7 +31,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
-  def show; end
+  def show
+    render Views::CashTransactions::Show.new(cash_transaction: @cash_transaction)
+  end
 
   def new
     user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id

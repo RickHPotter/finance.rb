@@ -1740,6 +1740,27 @@ RSpec.describe "CardTransactions", type: :request do
     end
   end
 
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard shell" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card dashboard foundation",
+        price: -12_000
+      )
+
+      get card_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Card dashboard foundation")
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.placeholder"))
+      expect(response.body).to include(edit_card_transaction_path(transaction))
+    end
+  end
+
   describe "[ #duplicate ]" do
     it "renders a duplicated transaction form without creating a new record" do
       post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
@@ -1917,6 +1938,9 @@ RSpec.describe "CardTransactions", type: :request do
       ).call
 
       switch_to_context!(derived_context)
+
+      get card_transaction_path(main_card_transaction)
+      expect(response).to have_http_status(:not_found)
 
       get edit_card_transaction_path(main_card_transaction)
       expect(response).to have_http_status(:not_found)
