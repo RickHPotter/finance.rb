@@ -235,6 +235,17 @@ too visible to ignore.
 - Extra:
   - Reuse existing Phlex and `ruby_ui` patterns instead of treating these as isolated pages.
 
+- Locked direction:
+  - Dashboards are reached through a dedicated `Analyse` action in month-year rows.
+  - Description links keep opening `edit`.
+  - Dashboards are full-page V1 screens, not modals or sheets.
+  - Dashboards may include existing action buttons such as edit, duplicate, pay, and
+    destroy, but must keep existing safety rules intact.
+  - Implementation starts with `CashTransaction`.
+
+- References:
+  - [detail dashboard planning](docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md)
+
 ### JIRAIYA-08/fe-04: Refine conversations and create a first assistant flow
 
 - Issues:
