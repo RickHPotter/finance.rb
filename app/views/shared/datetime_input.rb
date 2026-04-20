@@ -54,8 +54,9 @@ class Views::Shared::DatetimeInput < Views::Base
               class: "#{input_class} datetime-input-date font-graduate",
               data: {
                 datetime_input_target: "dateInput",
+                controller: ("autofocus" if autofocus),
                 action: "change->datetime-input#sync"
-              }
+              }.compact
             )
           end
 

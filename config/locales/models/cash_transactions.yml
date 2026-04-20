@@ -27,6 +27,8 @@ en:
         comment: Comment
         comment_placeholder: Any comment about?
         date: Date
+        cash_transaction_date: Cash Transaction Date
+        cash_installment_date: Cash Installment Date
         price: Price
         starting_price: Original Price
         paid: Paid
@@ -89,6 +91,8 @@ pt-BR:
         comment: Comentário
         comment_placeholder: Algum comentário?
         date: Data
+        cash_transaction_date: Data da Movimentação
+        cash_installment_date: Data da Parcela
         price: Preço
         starting_price: Preço Inicial
         paid: Pago

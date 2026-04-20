@@ -43,14 +43,21 @@ class Views::Investments::IndexSearchForm < Views::Base
               data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
 
-      div(class: "flex justify-between items-center gap-2") do
-        TextFieldTag \
-          :search_term,
-          svg: :magnifying_glass,
-          clearable: true,
-          placeholder: "#{action_message(:search)}...",
-          value: search_term,
-          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+      div(class: "flex items-center gap-2") do
+        div(class: mobile ? "w-full" : "grid flex-1 grid-cols-3 gap-2") do
+          TextFieldTag \
+            :search_term,
+            svg: :magnifying_glass,
+            clearable: true,
+            placeholder: "#{action_message(:search)}...",
+            value: search_term,
+            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+
+          unless mobile
+            render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+            render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
+          end
+        end
 
         if mobile
           Sheet(id: "advanced_filter") do
@@ -68,27 +75,11 @@ class Views::Investments::IndexSearchForm < Views::Base
 
               SheetMiddle do
                 div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                  div do
-                    render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
-                  end
-                  div do
-                    render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
-                  end
+                  render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
+                  render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
                 end
               end
             end
-          end
-        end
-      end
-
-      unless mobile
-        div(class: "flex gap-2 mt-1") do
-          div(class: "w-1/2") do
-            render Views::UserBankAccounts::Combobox.new(name: "investment[user_bank_account_id][]", user_bank_accounts:, selected_user_bank_account_ids:)
-          end
-
-          div(class: "w-1/2") do
-            render Views::InvestmentTypes::Combobox.new(name: "investment[investment_type_id][]", investment_types:, selected_investment_type_ids:)
           end
         end
       end

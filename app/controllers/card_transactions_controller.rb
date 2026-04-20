@@ -36,7 +36,12 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_context, card_transaction_params, search_card_transaction_params)
 
-    render Views::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
+    render Views::CardTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      user_card_id:,
+      card_installments:
+    )
   end
 
   def show; end
@@ -211,86 +216,16 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     end
   end
 
-  def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-    today = Time.zone.today
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
-
-    if @user_card && max_date > today
-
-      reference = current_context.references.where(user_card: @user_card, reference_closing_date: [ Date.tomorrow.. ]).order(:reference_closing_date).first
-
-      if reference
-        month_year_reference = Date.new(reference.year, reference.month)
-        [ month_year_reference.strftime("%Y%m").to_i ]
-      else
-        [ [ today, max_date ].min.strftime("%Y%m").to_i ]
-      end
-    else
-      [ [ today, max_date ].min.strftime("%Y%m").to_i ]
-    end => default_active_month_years
-
-    years = (min_date.year..max_date.year)
-
-    card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
-    category_id = [ card_transaction_params[:category_id] ].flatten&.compact_blank
-    entity_id = [ card_transaction_params[:entity_id] ].flatten&.compact_blank
-    search_term = search_card_transaction_params[:search_term]
-    from_ct_price = search_card_transaction_params[:from_ct_price]
-    to_ct_price = search_card_transaction_params[:to_ct_price]
-    from_price = search_card_transaction_params[:from_price]
-    to_price = search_card_transaction_params[:to_price]
-    from_installments_count = search_card_transaction_params[:from_installments_count]
-    to_installments_count = search_card_transaction_params[:to_installments_count]
-    from_installments_number = search_card_transaction_params[:from_installments_number]
-    to_installments_number = search_card_transaction_params[:to_installments_number]
-    force_mobile = search_card_transaction_params[:force_mobile]
-    order_by = search_card_transaction_params[:order_by]
-
-    if params[:all_month_years]
-      associations = {}
-      associations.merge!({ categories: { id: category_id } }) if category_id.present?
-      associations.merge!({ entities: { id: entity_id } })     if entity_id.present?
-
-      card_installments
-        .joins(card_transaction: associations.keys)
-        .where(card_transaction: associations).map { |i| Date.new(i.year, i.month).strftime("%Y%m").to_i }
-                                              .uniq
-    else
-      params[:active_month_years] ? JSON.parse(params[:active_month_years]).map(&:to_i) : default_active_month_years
-    end => active_month_years
-    default_year = (active_month_years.max.to_s.first(4) || params[:default_year])&.to_i || [ max_date, Time.zone.today ].min.year
-
-    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
-      current_context,
-      card_transaction_params.merge(user_card_id: @user_card&.id || []),
-      search_card_transaction_params
-    )
-
-    @index_context = {
+  def build_index_context(card_installments)
+    @index_context = IndexState::CardTransactions.new(
       current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      search_term:,
-      card_installment_ids:,
-      category_id:,
-      entity_id:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
-      from_installments_number:,
-      to_installments_number:,
+      current_context:,
+      params:,
+      card_installments:,
       user_card: @user_card,
-      user_card_id: @user_card&.id,
-      force_mobile:,
-      order_by:,
-      count_by_month_year:,
-      available_subscriptions: current_context.subscriptions.order(:description).to_a
-    }
+      transaction_filters: card_transaction_params,
+      search_filters: search_card_transaction_params
+    ).to_h
   end
 
   private
@@ -299,86 +234,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     set_tabs(active_menu: :card, active_sub_menu: card_tab_name_for_state)
   end
 
-  def build_index_context_from_selection? # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def build_index_context_from_selection?
     return false if params[:index_context_json].blank?
 
-    context = JSON.parse(params[:index_context_json]).with_indifferent_access
-    card_installments = current_context.card_installments
-    today = Time.zone.today
-    min_date = card_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
-    max_date = card_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || (today + 1.month)
-    years = (min_date.year..max_date.year)
-
-    selected_user_card_id = context[:user_card_id].presence || context.dig(:user_card, :id) || context.dig(:user_card, "id")
-    @user_card = current_user.user_cards.find_by(id: selected_user_card_id) if selected_user_card_id.present?
-
-    card_installment_ids = Array(context[:card_installment_ids]).compact_blank
-    category_id = Array(context[:category_id]).compact_blank
-    entity_id = Array(context[:entity_id]).compact_blank
-    search_term = context[:search_term]
-    from_ct_price = context[:from_ct_price]
-    to_ct_price = context[:to_ct_price]
-    from_price = context[:from_price]
-    to_price = context[:to_price]
-    from_installments_count = context[:from_installments_count]
-    to_installments_count = context[:to_installments_count]
-    from_installments_number = context[:from_installments_number]
-    to_installments_number = context[:to_installments_number]
-    order_by = context[:order_by]
-    force_mobile = ActiveModel::Type::Boolean.new.cast(context[:force_mobile])
-    active_month_years = Array(context[:active_month_years]).map(&:to_i)
-    default_year = context[:default_year].presence&.to_i
-    default_year ||= active_month_years.max.to_s.first(4).to_i if active_month_years.any?
-    default_year ||= [ max_date, today ].min.year
-
-    count_by_month_year = Logic::CardInstallments.find_count_based_on_search(
-      current_context,
-      {
-        card_installment_ids:,
-        user_card_id: @user_card&.id || [],
-        category_id:,
-        entity_id:
-      },
-      {
-        search_term:,
-        from_ct_price:,
-        to_ct_price:,
-        from_price:,
-        to_price:,
-        from_installments_count:,
-        to_installments_count:,
-        from_installments_number:,
-        to_installments_number:,
-        force_mobile:,
-        order_by:
-      }
-    )
-
-    @mobile = force_mobile
-    @index_context = {
+    @index_context = IndexState::CardTransactions.new(
       current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      search_term:,
-      card_installment_ids:,
-      category_id:,
-      entity_id:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
-      from_installments_number:,
-      to_installments_number:,
-      user_card: @user_card,
-      user_card_id: @user_card&.id,
-      force_mobile:,
-      order_by:,
-      count_by_month_year:,
-      available_subscriptions: current_context.subscriptions.order(:description).to_a
-    }
+      current_context:,
+      params:,
+      card_installments: current_context.card_installments,
+      user_card: nil,
+      transaction_filters: card_transaction_params,
+      search_filters: search_card_transaction_params,
+      selection_context: JSON.parse(params[:index_context_json])
+    ).to_h
+    @user_card = @index_context[:user_card]
+    @mobile = @index_context[:force_mobile]
 
     true
   end
@@ -504,6 +374,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_number
         month_year
         force_mobile
+        sort
+        direction
         order_by
       ]
     )

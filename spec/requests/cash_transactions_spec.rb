@@ -53,6 +53,99 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
+
+    it "uses canonical sort fields on the index form" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="sort"')
+      expect(response.body).to include('name="direction"')
+      expect(response.body).to include('data-sort-field="default"')
+      expect(response.body).to include('data-sort-field="installment_date"')
+      expect(response.body).to include('data-sort-field="transaction_date"')
+      expect(response.body).to include('data-sort-field="description"')
+      expect(response.body).to include('data-sort-field="price"')
+    end
+
+    it "renders the mobile sort preset select" do
+      get cash_transactions_path, headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="cash_transactions_sort_preset"')
+      expect(response.body).to include('data-action="change-&gt;datatable#applySortPreset"')
+
+      document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("form#search_form #cash_transactions_sort_preset")).to be_present
+    end
+
+    it "keeps advanced filter range fields blank until the user fills them" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to match(/name="from_installments_count"[^>]*value="1"|value="1"[^>]*name="from_installments_count"/)
+      expect(response.body).not_to match(/name="to_installments_count"[^>]*value="72"|value="72"[^>]*name="to_installments_count"/)
+      expect(response.body).to include("price-mask#toggleSign")
+      expect(response.body).to include('data-sign="+"')
+      expect(response.body).to include("price-range-from-ct-price")
+      expect(response.body).to include("price-range-to-price")
+    end
+
+    it "renders a filter summary and explicit paid-state control when cash filters are active" do
+      get cash_transactions_path, params: {
+        search_term: "rent",
+        paid_state: "pending",
+        cash_transaction: {
+          category_id: [ category.id ],
+          user_bank_account_id: [ user_bank_account.id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.active"))
+      expect(response.body).to include(I18n.t("filters.summary.clear"))
+      expect(response.body).to include(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
+      expect(response.body).to include("paid_state=pending")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      chips = document.css("a[aria-label^=\"#{I18n.t('filters.summary.clear')}\"]")
+      paid_state_chip = chips.find do |chip|
+        chip.text.include?(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
+      end
+
+      expect(paid_state_chip).to be_present
+      expect(paid_state_chip["href"]).to include("search_term=rent")
+      expect(paid_state_chip["href"]).not_to include("paid_state=")
+      expect(paid_state_chip["title"]).to eq(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
+      expect(paid_state_chip.text).to end_with("x")
+    end
+
+    it "does not cap the transfer bulk action date" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      transfer_date_input = document.at_css("#cash_installments_multiple_transfer_date")
+      transfer_datetime_wrapper = transfer_date_input.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      payment_date_input = document.at_css("#cash_installments_multiple_payment_date")
+      payment_datetime_wrapper = payment_date_input.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(transfer_datetime_wrapper["data-datetime-input-max-datetime-value"]).to be_blank
+      expect(payment_datetime_wrapper["data-datetime-input-max-datetime-value"]).to be_present
+    end
+
+    it "renders autofocus targets for pay multiple and transfer modals" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      pay_multiple_date = document.at_css("#cash_installments_multiple_payment_date_date_input")
+      transfer_reference = document.at_css("select[name='reference_date']")
+
+      expect(pay_multiple_date["data-controller"]).to include("autofocus")
+      expect(transfer_reference["data-controller"]).to include("autofocus")
+    end
   end
 
   describe "[ #duplicate ]" do
@@ -3251,6 +3344,195 @@ RSpec.describe "CashTransactions", type: :request do
 
       follow_redirect! if response.redirect?
       expect(response).to have_http_status(:success)
+    end
+
+    it "renders the pay modal with autofocus on the payment date input" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        date: Time.zone.now,
+        month: Time.zone.now.month,
+        year: Time.zone.now.year,
+        cash_installments: [ build(:cash_installment, number: 1, date: Time.zone.now, month: Time.zone.now.month, year: Time.zone.now.year, paid: false) ]
+      )
+      cash_installment = transaction.cash_installments.first
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      pay_modal_price = document.at_css("#cashInstallmentModal_#{cash_installment.id} #transaction_price")
+      pay_modal_date = document.at_css("#cashInstallmentModal_#{cash_installment.id} #cash_installment_#{cash_installment.id}_payment_date_date_input")
+
+      expect(pay_modal_price["data-controller"]).not_to include("autofocus")
+      expect(pay_modal_date["data-controller"]).to include("autofocus")
+    end
+
+    it "sorts cash rows by description while keeping budgets visible after them" do
+      first_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Zulu rent",
+        price: 4_500,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      second_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Alpha salary",
+        price: 9_500,
+        date: Date.new(2026, 3, 11),
+        month: 3,
+        year: 2026
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "March household budget",
+        month: 3,
+        year: 2026,
+        value: -3_000,
+        remaining_value: -3_000
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "description",
+        direction: "asc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{first_transaction.id}")).to be > response.body.index("edit_cash_transaction_#{second_transaction.id}")
+      expect(response.body).not_to include('data-sort-field="default"')
+      expect(response.body).not_to include('data-sort-field="installment_date"')
+      expect(response.body).not_to include('data-sort-field="transaction_date"')
+      expect(response.body).not_to include('data-sort-field="description"')
+      expect(response.body).not_to include('data-sort-field="price"')
+      expect(response.body).to include("edit_budget_#{budget.id}")
+      expect(response.body.index("edit_budget_#{budget.id}")).to be > response.body.index("edit_cash_transaction_#{second_transaction.id}")
+    end
+
+    it "sorts cash rows by transaction date ascending" do
+      later_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Later booking",
+        price: 4_000,
+        date: Date.new(2026, 3, 22),
+        month: 3,
+        year: 2026
+      )
+      earlier_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Earlier booking",
+        price: 4_000,
+        date: Date.new(2026, 3, 3),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "transaction_date",
+        direction: "asc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{earlier_transaction.id}")).to be <
+                                                                                        response.body.index("edit_cash_transaction_#{later_transaction.id}")
+    end
+
+    it "filters cash rows by the explicit paid state" do
+      paid_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Already paid rent",
+        price: 4_000,
+        date: Date.new(2026, 3, 8),
+        month: 3,
+        year: 2026
+      )
+      pending_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Pending rent",
+        price: 4_000,
+        date: Date.new(2026, 3, 9),
+        month: 3,
+        year: 2026
+      )
+      paid_transaction.cash_installments.first.update!(paid: true)
+      pending_transaction.cash_installments.first.update!(paid: false)
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        paid_state: "pending",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("edit_cash_transaction_#{pending_transaction.id}")
+      expect(response.body).not_to include("edit_cash_transaction_#{paid_transaction.id}")
+    end
+
+    it "sorts cash rows by price descending" do
+      smaller_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Smaller payment",
+        price: 2_000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      bigger_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Bigger payment",
+        price: 8_000,
+        date: Date.new(2026, 3, 11),
+        month: 3,
+        year: 2026
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202603",
+        sort: "price",
+        direction: "desc",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.index("edit_cash_transaction_#{bigger_transaction.id}")).to be <
+                                                                                       response.body.index("edit_cash_transaction_#{smaller_transaction.id}")
     end
   end
 end

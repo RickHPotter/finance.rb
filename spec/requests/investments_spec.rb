@@ -29,6 +29,10 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("ruby-ui--combobox")
+      expect(response.body).to include('id="investment_form"')
+      expect(response.body).to include('data-controller="reactive-form price-mask"')
+      expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
+      expect(response.body).to include('data-reactive-form-target="investmentTypeCombobox"')
       expect(response.body).not_to include("hw-combobox")
     end
 
@@ -99,6 +103,8 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_investment.id}"/)
       expect(response.body).to include('name="continue_chain" value="1"')
       expect(response.body).to include("checked")
+      expect(response.body).to match(/name="investment\[user_bank_account_id\]"[^>]*value="#{user_bank_account.id}"[^>]*checked/)
+      expect(response.body).to match(/name="investment\[investment_type_id\]"[^>]*value="#{investment_type.id}"[^>]*checked/)
     end
 
     it "finishes a chain without saving the current investment form" do

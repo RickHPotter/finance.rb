@@ -29,6 +29,7 @@ class Views::CashTransactions::PayMultipleModal < Views::Base
             field: :date,
             value: Time.zone.now,
             id: "cash_installments_multiple_payment_date",
+            autofocus: true,
             max_datetime: Time.zone.now.end_of_day
           )
         end

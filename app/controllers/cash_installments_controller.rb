@@ -139,121 +139,32 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     years = [ date.year ]
     default_year = years.first
 
-    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_context, {}, {})
-
-    @index_context = {
+    @index_context = IndexState::CashTransactions.new(
       current_user:,
+      current_context:,
+      params:,
+      cash_installments: current_context.cash_installments,
+      transaction_filters: {},
+      search_filters: {},
       years:,
       default_year:,
-      active_month_years:,
-      category_id: "",
-      entity_id: "",
-      from_ct_price: nil,
-      to_ct_price: nil,
-      from_price: nil,
-      to_price: nil,
-      from_installments_count: nil,
-      to_installments_count: nil,
-      from_installments_number: nil,
-      to_installments_number: nil,
-      from_date: nil,
-      to_date: nil,
-      user_card: @user_card,
-      count_by_month_year:,
-      available_subscriptions: current_context.subscriptions.order(:description).to_a
-    }
+      active_month_years:
+    ).to_h
   end
 
-  def build_index_context_from_selection # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def build_index_context_from_selection
     return false if params[:index_context_json].blank?
 
-    context = JSON.parse(params[:index_context_json]).with_indifferent_access
-    cash_installments = current_context.cash_installments
-    today_zn = Time.zone.today.beginning_of_month
-
-    min_year = cash_installments.minimum("installments.year") || today_zn.year
-    max_year = cash_installments.maximum("installments.year") || today_zn.year
-    years = (min_year..max_year)
-
-    category_id = Array(context[:category_id]).compact_blank
-    entity_id = Array(context[:entity_id]).compact_blank
-    cash_installment_ids = Array(context[:cash_installment_ids]).compact_blank
-    user_bank_account_id = Array(context[:user_bank_account_id]).compact_blank
-    search_term = context[:search_term]
-    from_ct_price = context[:from_ct_price]
-    to_ct_price = context[:to_ct_price]
-    from_price = context[:from_price]
-    to_price = context[:to_price]
-    from_installments_count = context[:from_installments_count]
-    to_installments_count = context[:to_installments_count]
-    from_installments_number = context[:from_installments_number]
-    to_installments_number = context[:to_installments_number]
-    from_date = context[:from_date]
-    to_date = context[:to_date]
-    paid = ActiveModel::Type::Boolean.new.cast(context[:paid])
-    pending = ActiveModel::Type::Boolean.new.cast(context[:pending])
-    skip_budgets = context[:skip_budgets]
-    force_mobile = ActiveModel::Type::Boolean.new.cast(context[:force_mobile])
-    active_month_years = Array(context[:active_month_years]).map(&:to_i)
-    default_year = context[:default_year].presence&.to_i
-    default_year ||= active_month_years.max.to_s.first(4).to_i if active_month_years.any?
-    default_year ||= today_zn.year
-
-    cash_transaction_filters = {
-      category_id:,
-      entity_id:,
-      cash_installment_ids:,
-      user_bank_account_id:
-    }
-    search_filters = {
-      search_term:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
-      from_installments_number:,
-      to_installments_number:,
-      from_date:,
-      to_date:,
-      paid:,
-      pending:,
-      skip_budgets:,
-      force_mobile:
-    }
-
-    count_by_month_year = Logic::CashTransactions.find_count_based_on_search(current_context, cash_transaction_filters, search_filters)
-
-    @mobile = force_mobile
-    @index_context = {
+    @index_context = IndexState::CashTransactions.new(
       current_user:,
-      years:,
-      default_year:,
-      active_month_years:,
-      search_term:,
-      category_id:,
-      entity_id:,
-      cash_installment_ids:,
-      user_bank_account_id:,
-      from_ct_price:,
-      to_ct_price:,
-      from_price:,
-      to_price:,
-      from_installments_count:,
-      to_installments_count:,
-      from_installments_number:,
-      to_installments_number:,
-      from_date:,
-      to_date:,
-      user_card: @user_card,
-      paid:,
-      pending:,
-      skip_budgets:,
-      force_mobile:,
-      count_by_month_year:,
-      available_subscriptions: current_context.subscriptions.order(:description).to_a
-    }
+      current_context:,
+      params:,
+      cash_installments: current_context.cash_installments,
+      transaction_filters: {},
+      search_filters: {},
+      selection_context: JSON.parse(params[:index_context_json])
+    ).to_h
+    @mobile = @index_context[:force_mobile]
   end
 
   def selected_cash_installments

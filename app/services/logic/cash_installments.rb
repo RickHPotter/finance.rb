@@ -4,13 +4,12 @@ module Logic
   class CashInstallments
     def self.find_by_ref_month_year(financial_scope, month, year, raw_conditions)
       search_term_condition = "cash_transactions.description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
-
-      case [ raw_conditions[:paid], raw_conditions[:pending] ]
-      when %w[false false] then return []
-      when %w[true true]   then paid = nil
-      when %w[true false]  then paid = true
-      when %w[false true]  then paid = false
-      end
+      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
+        paid_state: raw_conditions[:paid_state],
+        paid: raw_conditions[:paid],
+        pending: raw_conditions[:pending]
+      )
+      paid = paid_filters[:paid] if paid_filters[:paid] != paid_filters[:pending]
 
       conditions = {
         price: raw_conditions[:installments_price],
@@ -22,7 +21,18 @@ module Logic
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 
-      fetch_cash_installments(financial_scope, month, year, { conditions:, search_term_condition:, ids: raw_conditions[:cash_installment_ids] })
+      fetch_cash_installments(
+        financial_scope,
+        month,
+        year,
+        {
+          conditions:,
+          search_term_condition:,
+          ids: raw_conditions[:cash_installment_ids],
+          sort: raw_conditions[:sort],
+          direction: raw_conditions[:direction]
+        }
+      )
     end
 
     def self.find_by_query(financial_scope, entity_id, query)
@@ -46,7 +56,26 @@ module Logic
                  .where(options[:search_term_condition])
 
       relation = relation.where(id: options[:ids]) if options[:ids].present?
-      relation.order(:order_id)
+      apply_sort(relation, sort: options[:sort], direction: options[:direction])
+    end
+
+    def self.apply_sort(relation, sort:, direction:)
+      direction = direction == "desc" ? "DESC" : "ASC"
+
+      case sort
+      when "description"
+        relation.select("installments.*", "cash_transactions.description")
+                .order(Arel.sql("cash_transactions.description #{direction}, installments.id #{direction}"))
+      when "installment_date"
+        relation.order(Arel.sql("installments.date #{direction}, installments.id #{direction}"))
+      when "transaction_date"
+        relation.select("installments.*", "cash_transactions.date")
+                .order(Arel.sql("cash_transactions.date #{direction}, installments.id #{direction}"))
+      when "price"
+        relation.order(Arel.sql("installments.price #{direction}, installments.id #{direction}"))
+      else
+        relation.order(order_id: :asc)
+      end
     end
 
     def self.cash_installments_relation(financial_scope)

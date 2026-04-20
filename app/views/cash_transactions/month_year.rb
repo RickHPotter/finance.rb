@@ -45,14 +45,19 @@ class Views::CashTransactions::MonthYear < Views::Base
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-12 px-2 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3 col-span-5 pl-10") { model_attribute(CashTransaction, :description) }
-            div(class: "py-3 col-span-3") { model_attribute(CashTransaction, :categories) }
-            div(class: "py-3 col-span-2") { model_attribute(CashTransaction, :entities) }
-            div(class: "py-3 text-end")   { model_attribute(CashTransaction, :price) }
-            div(class: "py-3 text-end")   { model_attribute(CashTransaction, :balance) }
-          end
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-12",
+            rows: [
+              [
+                { class: "col-span-5 col-start-1 gap-4 pl-8", label: model_attribute(CashTransaction, :description) },
+                { class: "col-span-3 flex justify-center", label: model_attribute(CashTransaction, :categories), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(CashTransaction, :entities), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(CashTransaction, :price), align: :right },
+                { class: "flex items-end justify-end", label: model_attribute(CashTransaction, :balance), align: :right }
+              ]
+            ]
+          )
 
           if cash_installments.present? || budgets.present?
             render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)

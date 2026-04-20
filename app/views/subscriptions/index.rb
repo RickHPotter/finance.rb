@@ -42,15 +42,20 @@ class Views::Subscriptions::Index < Views::Base
 
             div(class: "my-4", data: { datatable_target: :table }) do
               div(class: "overflow-hidden rounded-lg border-1 border-slate-300 shadow-sm") do
-                div(class: "grid grid-cols-12 gap-2 border-b border-slate-400 bg-slate-300 py-1 font-graduate font-semibold text-black") do
-                  div(class: "col-span-3 px-3 text-center") { model_attribute(Subscription, :description) }
-                  div(class: "col-span-1 px-2 text-center") { model_attribute(Subscription, :status) }
-                  div(class: "col-span-2 px-2 text-center") { model_attribute(Subscription, :category_id) }
-                  div(class: "col-span-2 px-2 text-center") { model_attribute(Subscription, :entity_id) }
-                  div(class: "col-span-2 px-2 text-center") { model_attribute(Subscription, :transactions_count) }
-                  div(class: "col-span-1 px-2 text-center") { model_attribute(Subscription, :price) }
-                  div(class: "col-span-1 px-2 text-center") { I18n.t(:datatable_actions) }
-                end
+                render Views::Shared::TableHeader.new(
+                  grid_class: "grid grid-cols-12",
+                  rows: [
+                    [
+                      { class: "col-span-3 flex justify-center", label: model_attribute(Subscription, :description), align: :center },
+                      { class: "col-span-1 flex justify-center", label: model_attribute(Subscription, :status), align: :center },
+                      { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :category_id), align: :center },
+                      { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :entity_id), align: :center },
+                      { class: "col-span-2 flex justify-center", label: model_attribute(Subscription, :transactions_count), align: :center },
+                      { class: "col-span-1 flex items-end justify-end", label: model_attribute(Subscription, :price), align: :right },
+                      { class: "col-span-1 flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                    ]
+                  ]
+                )
 
                 if subscriptions.present?
                   subscriptions.each do |subscription|

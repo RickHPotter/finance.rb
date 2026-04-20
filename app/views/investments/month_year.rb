@@ -49,14 +49,19 @@ class Views::Investments::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-          div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-t-lg font-semibold text-black font-graduate") do
-            div(class: "py-3")            { model_attribute(Investment, :date) }
-            div(class: "py-3 col-span-2") { model_attribute(Investment, :description) }
-            div(class: "py-3")            { model_attribute(Investment, :user_bank_account_id) }
-            div(class: "py-3")            { model_attribute(Investment, :investment_type_id) }
-            div(class: "py-3 text-end")   { model_attribute(Investment, :price) }
-            div(class: "py-3")            { I18n.t(:datatable_actions) }
-          end
+          render Views::Shared::TableHeader.new(
+            grid_class: "grid grid-cols-7",
+            rows: [
+              [
+                { class: "flex justify-center", label: model_attribute(Investment, :date), align: :center },
+                { class: "col-span-2", label: model_attribute(Investment, :description) },
+                { class: "flex justify-center", label: model_attribute(Investment, :user_bank_account_id), align: :center },
+                { class: "flex justify-center", label: model_attribute(Investment, :investment_type_id), align: :center },
+                { class: "flex items-end justify-end", label: model_attribute(Investment, :price), align: :right },
+                { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+              ]
+            ]
+          )
 
           if investments.present?
             render_investments

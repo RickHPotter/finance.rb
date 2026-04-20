@@ -34,13 +34,21 @@ class Views::Subscriptions::IndexSearchForm < Views::Base
               class: "w-full",
               data: { controller: "reactive-form" } do |_form|
       div(class: "flex items-center gap-2") do
-        TextFieldTag \
-          :search_term,
-          svg: :magnifying_glass,
-          clearable: true,
-          placeholder: "#{action_message(:search)}...",
-          value: search_term,
-          data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+        div(class: mobile ? "w-full" : "grid flex-1 grid-cols-4 gap-2") do
+          TextFieldTag \
+            :search_term,
+            svg: :magnifying_glass,
+            clearable: true,
+            placeholder: "#{action_message(:search)}...",
+            value: search_term,
+            data: { controller: "cursor", action: "input->reactive-form#submitWithDelay" }
+
+          unless mobile
+            render Views::Categories::Combobox.new(name: "subscription[category_id][]", categories:, selected_category_ids:)
+            render Views::Entities::Combobox.new(name: "subscription[entity_id][]", entities:, selected_entity_ids:)
+            render Views::Subscriptions::StatusesCombobox.new(name: "subscription[status][]", selected_statuses:)
+          end
+        end
 
         if mobile
           Sheet(id: "advanced_filter") do
@@ -58,36 +66,12 @@ class Views::Subscriptions::IndexSearchForm < Views::Base
 
               SheetMiddle do
                 div(class: "grid grid-cols-1 gap-y-2 mb-2 w-full") do
-                  div do
-                    render Views::Categories::Combobox.new(name: "subscription[category_id][]", categories:, selected_category_ids:)
-                  end
-
-                  div do
-                    render Views::Entities::Combobox.new(name: "subscription[entity_id][]", entities:, selected_entity_ids:)
-                  end
-
-                  div do
-                    render Views::Subscriptions::StatusesCombobox.new(name: "subscription[status][]", selected_statuses:)
-                  end
+                  render Views::Categories::Combobox.new(name: "subscription[category_id][]", categories:, selected_category_ids:)
+                  render Views::Entities::Combobox.new(name: "subscription[entity_id][]", entities:, selected_entity_ids:)
+                  render Views::Subscriptions::StatusesCombobox.new(name: "subscription[status][]", selected_statuses:)
                 end
               end
             end
-          end
-        end
-      end
-
-      unless mobile
-        div(class: "mt-1 flex gap-2") do
-          div(class: "w-1/3") do
-            render Views::Categories::Combobox.new(name: "subscription[category_id][]", categories:, selected_category_ids:)
-          end
-
-          div(class: "w-1/3") do
-            render Views::Entities::Combobox.new(name: "subscription[entity_id][]", entities:, selected_entity_ids:)
-          end
-
-          div(class: "w-1/3") do
-            render Views::Subscriptions::StatusesCombobox.new(name: "subscription[status][]", selected_statuses:)
           end
         end
       end

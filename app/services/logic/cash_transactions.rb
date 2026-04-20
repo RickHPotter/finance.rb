@@ -25,8 +25,14 @@ module Logic
       month_year = search_params.delete(:month_year)
       month = month_year[4..]
       year = month_year[0..3]
+      sort, direction = IndexState::CashTransactions.resolve_sort(
+        sort: search_params[:sort],
+        direction: search_params[:direction]
+      )
 
       raw_conditions = build_conditions_from_params(cash_transaction_params, search_params)
+      raw_conditions[:sort] = sort
+      raw_conditions[:direction] = direction
 
       [
         Logic::CashInstallments.find_by_ref_month_year(financial_scope, month, year, raw_conditions),
@@ -42,13 +48,18 @@ module Logic
       return {} if cash_transaction_params.blank? && search_params.blank?
 
       associations = build_conditions_for_associations(cash_transaction_params)
+      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
+        paid_state: search_params.delete(:paid_state),
+        paid: search_params.delete(:paid),
+        pending: search_params.delete(:pending)
+      )
 
       cash_transaction_params = cash_transaction_params.to_unsafe_h if cash_transaction_params.is_a?(ActionController::Parameters)
       cash_transaction_params.merge({
         price: build_price_range_conditions(search_params),
         cash_installment_ids: cash_transaction_params[:cash_installment_ids],
-        paid: search_params.delete(:paid),
-        pending: search_params.delete(:pending),
+        paid: paid_filters[:paid],
+        pending: paid_filters[:pending],
         installments_price: build_cash_transaction_price_range_conditions(search_params),
         cash_installments_count: build_installments_count_range_conditions(search_params),
         installments_number: build_installments_number_range_conditions(search_params),
@@ -56,7 +67,7 @@ module Logic
         search_term: search_params.delete(:search_term),
         skip_budgets: search_params.delete(:skip_budgets),
         associations:
-      }.compact_blank)
+      }.compact)
     end
 
     def self.build_conditions_from_cash_transaction_params(params)
@@ -167,13 +178,12 @@ module Logic
       conditions = build_conditions_from_cash_transaction_params(cash_transaction_params)
       conditions[:cash_transaction] = conditions[:cash_transaction].except("date") if conditions[:cash_transaction].present?
       conditions[:date] = build_date_range_conditions(search_params)
-
-      case [ search_params[:paid], search_params[:pending] ]
-      when %w[false false] then return []
-      when %w[true true]   then paid = nil
-      when %w[true false]  then paid = true
-      when %w[false true]  then paid = false
-      end
+      paid_filters = IndexState::CashTransactions.resolve_paid_filters(
+        paid_state: search_params[:paid_state],
+        paid: search_params[:paid],
+        pending: search_params[:pending]
+      )
+      paid = paid_filters[:paid] if paid_filters[:paid] != paid_filters[:pending]
 
       conditions.merge!(paid:) if paid.in?([ true, false ])
 

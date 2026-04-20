@@ -65,7 +65,8 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
               class: "font-graduate",
               min: min_date,
               max: max_date,
-              value: default_date
+              value: default_date,
+              data: { controller: "autofocus" }
           end
 
           div(class: "mx-auto pb-4 text-center") do

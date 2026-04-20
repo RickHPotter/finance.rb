@@ -9,7 +9,11 @@ module Logic
       search_term  = search_params.delete(:search_term) || ""
       category_ids = card_transaction_params.delete(:category_id).presence
       entity_ids   = card_transaction_params.delete(:entity_id).presence
-      order_by     = search_params.delete(:order_by)
+      sort, direction = IndexState::CardTransactions.resolve_sort(
+        sort: search_params.delete(:sort),
+        direction: search_params.delete(:direction),
+        order_by: search_params.delete(:order_by)
+      )
 
       joins      = { card_transaction: %i[categories entities] }
       inclusions = joins
@@ -30,14 +34,9 @@ module Logic
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
 
-      if order_by == "transaction_date"
-        order_clause = "card_transactions.date, installments.id"
-        relation = relation.select("installments.*", "card_transactions.date")
-      else
-        order_clause = "installments.date, installments.id"
-      end
+      relation = apply_sort(relation, sort:, direction:)
 
-      relation.distinct.order(order_clause)
+      relation.distinct
     end
 
     def self.build_conditions_from_params(card_transaction_params, search_params)
@@ -137,6 +136,21 @@ module Logic
       relation = relation.distinct.select("installments.id, installments.month, installments.year")
 
       relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
+    end
+
+    def self.apply_sort(relation, sort:, direction:)
+      direction = direction == "desc" ? "DESC" : "ASC"
+
+      case sort
+      when "transaction_date"
+        relation.select("installments.*", "card_transactions.date").order(Arel.sql("card_transactions.date #{direction}, installments.id #{direction}"))
+      when "description"
+        relation.select("installments.*", "card_transactions.description").order(Arel.sql("card_transactions.description #{direction}, installments.id #{direction}"))
+      when "price"
+        relation.order(Arel.sql("installments.price #{direction}, installments.id #{direction}"))
+      else
+        relation.order(Arel.sql("installments.date #{direction}, installments.id #{direction}"))
+      end
     end
   end
 end

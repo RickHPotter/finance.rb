@@ -112,13 +112,18 @@ class Views::UserCards::Form < Views::Base
             h3(class: "text-lg font-bold mb-4") { pluralise_model(Reference, 2) }
 
             div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
-              div(class: "bg-slate-300 grid grid-cols-5 py-1 gap-1 border-b border-slate-400 font-semibold text-black font-graduate") do
-                div(class: "text-center") { model_attribute(Reference, :year) }
-                div(class: "text-center") { model_attribute(Reference, :month) }
-                div(class: "text-center") { model_attribute(Reference, :reference_closing_date) }
-                div(class: "text-center") { model_attribute(Reference, :reference_date) }
-                div(class: "text-center") { I18n.t(:datatable_actions) }
-              end
+              render Views::Shared::TableHeader.new(
+                grid_class: "grid grid-cols-5",
+                rows: [
+                  [
+                    { class: "flex justify-center", label: model_attribute(Reference, :year), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Reference, :month), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Reference, :reference_closing_date), align: :center },
+                    { class: "flex justify-center", label: model_attribute(Reference, :reference_date), align: :center },
+                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                  ]
+                ]
+              )
 
               unpaid_references.each_with_index do |reference, index|
                 row_class = index.even? ? "bg-gray-100" : "bg-gray-200"

@@ -5,7 +5,7 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
 export default class extends Controller {
-  static values = { type: String }
+  static values = { quickJump: Boolean, type: String }
   static targets = [
     "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
@@ -26,6 +26,9 @@ export default class extends Controller {
     "exchangeIntentInput",
 
     "userCardCombobox",
+    "investmentTypeCombobox",
+    "monthYearCombobox",
+    "monthYearInput",
 
     "updateButton"
   ]
@@ -345,6 +348,58 @@ export default class extends Controller {
 
   submit() {
     this.element.requestSubmit()
+  }
+
+  applyPaidState(event) {
+    event.preventDefault()
+
+    const { target } = event
+    const paidStateInput = this.findFormInput(target.dataset.paidStateInputId)
+    const paidInput = this.findFormInput(target.dataset.paidInputId)
+    const pendingInput = this.findFormInput(target.dataset.pendingInputId)
+    const value = target.dataset.paidStateValue
+    if (!paidStateInput || !paidInput || !pendingInput || !value) return
+
+    paidStateInput.value = value
+
+    switch (value) {
+      case "paid":
+        paidInput.value = "true"
+        pendingInput.value = "false"
+        break
+      case "pending":
+        paidInput.value = "false"
+        pendingInput.value = "true"
+        break
+      default:
+        paidInput.value = "true"
+        pendingInput.value = "true"
+    }
+
+    this.syncPaidStateButtons(target, value)
+    this.element.requestSubmit()
+  }
+
+  findFormInput(inputId) {
+    if (!inputId) return null
+
+    return this.element.querySelector(`#${inputId}`)
+  }
+
+  syncPaidStateButtons(activeButton, value) {
+    const buttons = activeButton.parentElement?.querySelectorAll("[data-paid-state-value]")
+    if (!buttons) return
+
+    buttons.forEach((button) => {
+      const active = button.dataset.paidStateValue === value
+      button.setAttribute("aria-pressed", String(active))
+      button.classList.toggle("border-blue-700", active)
+      button.classList.toggle("bg-blue-100", active)
+      button.classList.toggle("text-blue-900", active)
+      button.classList.toggle("border-slate-300", !active)
+      button.classList.toggle("bg-white", !active)
+      button.classList.toggle("text-slate-600", !active)
+    })
   }
 
   // ░▒▓███████▓▒░░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░▒▓████████▓▒░▒▓████████▓▒░
@@ -776,7 +831,7 @@ export default class extends Controller {
   }
 
   quickJumpEnabled() {
-    return this.element.id === "transaction_form"
+    return this.quickJumpValue || this.element.id === "transaction_form"
   }
 
   showQuickJumpState() {
@@ -833,6 +888,9 @@ export default class extends Controller {
   }
 
   quickJumpFields() {
+    if (this.element.id === "investment_form") return this.investmentQuickJumpFields()
+    if (this.element.querySelector("#budget_description")) return this.budgetQuickJumpFields()
+
     return [
       this.quickJumpTextField("#card_transaction_description, #cash_transaction_description", this.descriptionLabel()),
       this.quickJumpTextField("#card_transaction_comment, #cash_transaction_comment", this.commentLabel()),
@@ -844,6 +902,27 @@ export default class extends Controller {
       this.quickJumpField(this.hasPriceInputTarget ? this.priceInputTarget : null, this.priceLabel()),
       this.quickJumpField(this.hasInstallmentsCountInputTarget ? this.installmentsCountInputTarget : null, this.installmentsLabel()),
       this.quickJumpField(this.exchangeIntentElement(), this.exchangeIntentLabel())
+    ].filter(Boolean)
+  }
+
+  investmentQuickJumpFields() {
+    return [
+      this.quickJumpTextField("#investment_description", this.descriptionLabel()),
+      this.quickJumpCombobox(this.element.querySelector("#investment_user_bank_account_combobox"), this.accountLabel()),
+      this.quickJumpCombobox(this.hasInvestmentTypeComboboxTarget ? this.investmentTypeComboboxTarget : null, this.investmentTypeLabel()),
+      this.quickJumpField(this.hasDateInputTarget ? this.dateInputTarget : null, this.dateLabel()),
+      this.quickJumpField(this.hasPriceInputTarget ? this.priceInputTarget : null, this.priceLabel())
+    ].filter(Boolean)
+  }
+
+  budgetQuickJumpFields() {
+    return [
+      this.quickJumpTextField("#budget_description", this.descriptionLabel()),
+      this.quickJumpCombobox(this.hasCategoryComboboxTarget ? this.categoryComboboxTarget : null, this.categoryLabel()),
+      this.quickJumpCombobox(this.hasEntityComboboxTarget ? this.entityComboboxTarget : null, this.entityLabel()),
+      this.quickJumpCombobox(this.hasMonthYearComboboxTarget ? this.monthYearComboboxTarget : null, this.monthYearLabel()) ||
+        this.quickJumpField(this.hasMonthYearInputTarget ? this.monthYearInputTarget : null, this.monthYearLabel()),
+      this.quickJumpField(this.hasPriceInputTarget ? this.priceInputTarget : null, this.priceLabel())
     ].filter(Boolean)
   }
 
@@ -950,6 +1029,14 @@ export default class extends Controller {
 
   installmentsLabel() {
     return "installments"
+  }
+
+  investmentTypeLabel() {
+    return "investment type"
+  }
+
+  monthYearLabel() {
+    return "month/year"
   }
 
   exchangeIntentLabel() {
