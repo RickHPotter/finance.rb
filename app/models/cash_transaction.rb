@@ -255,10 +255,17 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     end
   end
 
-  def sync_exchange_projection_back_to_source! # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def sync_exchange_projection_back_to_source! # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
     return unless exchange_return?
 
-    payer_entity_transaction = exchanges.includes(:entity_transaction).first&.entity_transaction
+    payer_entity_transactions = exchanges.includes(:entity_transaction)
+                                         .map(&:entity_transaction)
+                                         .compact
+                                         .select(&:is_payer?)
+                                         .uniq
+    return unless payer_entity_transactions.one?
+
+    payer_entity_transaction = payer_entity_transactions.first
     return if payer_entity_transaction.blank?
 
     desired_rows = cash_installments.order(:number, :date).map do |installment|

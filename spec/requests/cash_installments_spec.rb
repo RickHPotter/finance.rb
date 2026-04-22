@@ -382,6 +382,86 @@ RSpec.describe "CashInstallments", type: :request do
       )
     end
 
+    it "does not rewrite source card-bound exchange aggregates when the shared return belongs to multiple card transactions" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random, bank: bank), due_date_day: 24, days_until_due_date: 7, user_card_name: "NBNK")
+      entity = create(:entity, user:, entity_name: "LALA")
+      create(:reference, context: user.main_context, user_card:, month: 4, year: 2026, reference_date: Date.new(2026, 4, 24))
+
+      first_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_200,
+          date: Time.zone.local(2026, 4, 18, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity.id,
+          price: -2_200,
+          price_to_be_returned: -2_200,
+          exchanges_attributes: [ { price: -2_200, exchange_type: :monetary, date: Time.zone.local(2026, 4, 18, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+      second_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -2_899,
+          date: Time.zone.local(2026, 4, 19, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: entity.id,
+          price: -2_899,
+          price_to_be_returned: -2_899,
+          exchanges_attributes: [ { price: -2_899, exchange_type: :monetary, date: Time.zone.local(2026, 4, 19, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: first_params.params, headers: turbo_stream_headers
+      first_card_transaction = CardTransaction.last
+
+      sign_in user
+
+      post card_transactions_path, params: second_params.params, headers: turbo_stream_headers
+      second_card_transaction = CardTransaction.last
+
+      shared_exchange_return = first_card_transaction.entity_transactions.first.exchanges.first.cash_transaction.reload
+      first_entity_transaction = first_card_transaction.entity_transactions.first.reload
+      second_entity_transaction = second_card_transaction.entity_transactions.first.reload
+
+      expect(second_entity_transaction.exchanges.first.cash_transaction_id).to eq(shared_exchange_return.id)
+
+      patch pay_cash_installment_path(shared_exchange_return.cash_installments.find_by!(number: 1)), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 4, 18, 12, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: -500
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(shared_exchange_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -4_599, false ] ])
+      expect(first_entity_transaction.reload.slice("price", "price_to_be_returned", "exchanges_count")).to eq(
+        "price" => -2_200,
+        "price_to_be_returned" => -2_200,
+        "exchanges_count" => 1
+      )
+      expect(first_entity_transaction.exchanges.order(:number, :date).pluck(:number, :price, :month, :year)).to eq([ [ 1, -2_200, 4, 2026 ] ])
+      expect(second_entity_transaction.reload.slice("price", "price_to_be_returned", "exchanges_count")).to eq(
+        "price" => -2_899,
+        "price_to_be_returned" => -2_899,
+        "exchanges_count" => 1
+      )
+      expect(second_entity_transaction.exchanges.order(:number, :date).pluck(:number, :price, :month, :year)).to eq([ [ 1, -2_899, 4, 2026 ] ])
+    end
+
     it "synchronizes paid state to the counterpart shared return and informs via assistant message" do
       sender = user
       receiver = create(:user, :random)

@@ -89,6 +89,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   def card_paid_invoice_cycle_rewrite_attempted?
     installments.any? do |installment|
       next false unless installment.persisted? && installment.changed?
+      next false unless card_installment_projection_target_changed?(installment)
       next false if installment.date.blank?
 
       target_reference = user_card.find_or_create_reference_for(installment.date, context:)
@@ -103,6 +104,10 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
       target_cash_transaction.paid_history?
     end
+  end
+
+  def card_installment_projection_target_changed?(installment)
+    (installment.changes.except("updated_at").keys & %w[date month year cash_transaction_id]).present?
   end
 
   def allocation_changed_after_payment?
@@ -193,8 +198,24 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
   def parent_financial_fields_changed_for_lock?
     return false if historical_correction_candidate?
+    return false if editable_unpaid_amount_correction?
 
     parent_financial_fields_changed?
+  end
+
+  def editable_unpaid_amount_correction?
+    return false unless will_save_change_to_price?
+    return false if will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year?
+    return false if changed_installments.empty?
+    return false unless current_installment_total == price
+    return false unless can_edit_unpaid_future_installments?(editable_installment_dates)
+
+    changed_installments.all? do |installment|
+      installment.persisted? &&
+        !installment_previously_paid?(installment) &&
+        !installment.marked_for_destruction? &&
+        installment.changes.except("updated_at").keys == [ "price" ]
+    end
   end
 
   def original_category_ids

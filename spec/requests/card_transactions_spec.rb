@@ -1394,6 +1394,34 @@ RSpec.describe "CardTransactions", type: :request do
       expect(movable_transaction.card_installments.first.year).to eq(original_year)
     end
 
+    it "allows changing a future unpaid installment amount when its date resolves to an older paid invoice cycle" do
+      user_card_one.update!(due_date_day: 14, days_until_due_date: 7)
+      transaction = create_card_transaction_with_history(
+        description: "Future amount correction",
+        installments: [
+          { number: 1, price: -1000, date: Time.zone.local(2026, 2, 14, 12), month: 4, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Time.zone.local(2026, 3, 14, 12), month: 5, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Time.zone.local(2026, 4, 14, 12), month: 6, year: 2026, paid: false }
+        ]
+      )
+      paid_invoice = transaction.card_installments.find_by!(number: 1).cash_transaction
+      future_installment = transaction.card_installments.find_by!(number: 2)
+      future_invoice = future_installment.cash_transaction
+      future_invoice.cash_installments.update_all(paid: false)
+      future_invoice.update_column(:paid, false)
+      params = Params::CardTransactions.new
+      params.use_base(transaction, card_transaction_options: { price: -3003 })
+      params.card_installments.detect { |installment| installment[:id] == future_installment.id }[:price] = -1003
+
+      put card_transaction_path(transaction), params: params.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(future_installment.reload.price).to eq(-1003)
+      expect(future_installment.cash_transaction).to eq(future_invoice)
+      expect(future_invoice.reload.paid_history?).to be(false)
+      expect(paid_invoice.reload.paid_history?).to be(true)
+    end
+
     it "preserves paid installment state in actionable update messages when standalone mirrored exchanges are restructured" do
       receiver = create(:user, :random)
       receiver_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
