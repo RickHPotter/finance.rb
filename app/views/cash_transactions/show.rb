@@ -55,7 +55,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction), variant: :outline) if duplicate_allowed?
         pay_action_button
         destroy_action
-        dashboard_action(action_model(:index, CashTransaction, 2), cash_transactions_path, variant: :primary)
+        dashboard_action(action_model(:index, CashTransaction, 2), cash_index_path, variant: :primary)
       end
     end
   end
@@ -185,11 +185,17 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def destroy_action
     return unless cash_transaction.can_be_destroyed?
 
-    link_to action_message(:destroy),
-            cash_transaction_path(cash_transaction),
-            id: "delete_cash_transaction_#{cash_transaction.id}",
-            class: dashboard_action_class(:destroy),
-            data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top" }
+    LinkWithConfirmation(
+      id: "cash_transaction_dashboard_destroy_#{cash_transaction.id}",
+      text: action_message(:destroy),
+      link_params: {
+        href: cash_transaction_path(cash_transaction),
+        variant: :ghost,
+        id: "delete_cash_transaction_#{cash_transaction.id}",
+        class: dashboard_action_class(:destroy),
+        data: { turbo_method: :delete, turbo_frame: "_top" }
+      }
+    )
   end
 
   def dashboard_action_class(variant)
@@ -201,6 +207,18 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     when :destroy then "#{base_class} bg-red-600 text-white hover:bg-red-700"
     else "#{base_class} border border-slate-300 text-slate-700 hover:bg-slate-100"
     end
+  end
+
+  def cash_index_path
+    cash_transactions_path(
+      default_year: cash_transaction.year,
+      active_month_years: active_month_years_param(cash_transaction.year, cash_transaction.month),
+      cash_transaction: { user_bank_account_id: cash_transaction.user_bank_account_id }
+    )
+  end
+
+  def active_month_years_param(year, month)
+    [ Date.new(year, month, 1).strftime("%Y%m").to_i ].to_json
   end
 
   def link_item(label, value, href)

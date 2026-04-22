@@ -178,6 +178,13 @@ Budget V1 does not need sorting or a mini query language.
   card installments, generated invoice cash links, allocations, references,
   exchanges, card advance state, and guarded actions, and card month-year rows
   expose a localized `Analyse` entry point while description links still open edit.
+- Slice 4 is implemented: the budget dashboard now renders summary, budget
+  definition/rules, allocations, matched month consumption rows, remaining/balance
+  state, and guarded actions, and budget month-year rows expose a localized
+  `Analyse` entry point while description links still open edit.
+- Slice 5 is implemented: cash, card, and budget dashboards now return to useful
+  filtered indexes, use full-page navigation intentionally, and the remaining
+  dashboard/action polish is documented as shipped.
 
 ### Handoff Snapshot - 2026-04-22
 
@@ -201,9 +208,9 @@ Slice 2 shipped the first real dashboard pattern for cash:
 - `Views::CashInstallments::Index` now renders a localized `Analyse` link for cash
   month-year rows on desktop and mobile.
 - Description links intentionally still point to `edit_cash_transaction_path`.
-- The planned three-dots dropdown was deferred because no reusable dropdown/action
-  menu existed and changing row structure would risk breaking selection/drag
-  behavior. Current V1 uses a compact direct `Analyse` link.
+- Cash month-year row actions now use a compact three-dots dropdown for Analyse,
+  Pay/change-date when available, Duplicate when allowed, and Destroy when allowed.
+  Destroy uses the app confirm modal rather than the browser confirm dialog.
 - Locales were added for dashboard section labels, partial status, cash reference
   labels, `CashInstallment#number`, and `CashTransaction#subscription_id`.
 - `spec/requests/cash_transactions_spec.rb` covers the dashboard sections/actions
@@ -243,10 +250,20 @@ Slice 3 shipped the card dashboard pattern:
 - `Views::CardInstallments::Index` now renders a localized `Analyse` link for card
   month-year rows on desktop and mobile.
 - Description links intentionally still point to `edit_card_transaction_path`.
+- Card row action buttons were harmonized into compact square icon buttons, with
+  Analyse using the show/eye icon after visual review.
 - Locales were added for card dashboard invoice/exchange/reference labels,
   `CardInstallment#number`, and card transaction subscription/advance labels.
 - `spec/requests/card_transactions_spec.rb` covers the dashboard sections/actions
   and the month-year `Analyse` link while preserving description-to-edit behavior.
+
+Adjacent action polish after Slice 3:
+
+- Subscription index actions now use the same compact icon-button treatment and
+  expose Destroy only when `Subscription#can_be_destroyed?` allows it.
+- Investment month-year rows now include a duplicate/copy action that chains from
+  the same account and investment type without applying the account-link
+  `next_day: true` behavior.
 
 Verification already run after Slice 3:
 
@@ -272,22 +289,59 @@ Known working tree from the source session after Slice 3:
 - `docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md`
 - `spec/requests/card_transactions_spec.rb`
 
-Next session should start Slice 4.
+Slice 4 shipped the budget dashboard pattern:
 
-Recommended Slice 4 path:
+- `Views::Budgets::Show` now renders hero/status, summary cards, budget
+  definition/rules, category/entity allocations, matched month consumption rows,
+  and guarded actions.
+- Budget dashboard actions include edit, destroy through the existing guarded modal
+  delete flow, and return to the budget index.
+- `Views::Budgets::Budgets` now renders a localized `Analyse` link for budget
+  month-year rows on desktop and mobile.
+- Description links intentionally still point to `edit_budget_path`.
+- Locales were added for budget dashboard definition/consumption/status/rule labels
+  and missing `Budget#starting_value` / `Budget#balance` model labels.
+- `spec/requests/budgets_spec.rb` covers the dashboard sections/actions and the
+  month-year `Analyse` link while preserving description-to-edit behavior.
 
-- Inspect `app/views/budgets/budgets.rb`, `app/views/budgets/month_year.rb`,
-  `app/views/budgets/show.rb`, `app/models/budget.rb`, and existing budget request
-  specs before editing.
-- Build `Views::Budgets::Show` using the cash/card dashboard vocabulary, but with
-  budget-specific sections: budget definition, matching categories/entities,
-  current month consumption, remaining amount, and related cash transactions.
-- Add localized `Analyse` links in budget month-year rows while keeping existing
-  edit behavior unchanged.
-- Add focused request specs for budget dashboard rendering and budget month-year
-  `Analyse` links.
-- Run `bin/rubocop -A`, focused budget request specs, then
-  `bin/rspec spec/models spec/concerns spec/requests`.
+Verification already run after Slice 4:
+
+- `ruby -c app/views/budgets/show.rb`
+- `ruby -c app/views/budgets/budgets.rb`
+- `ruby -c spec/requests/budgets_spec.rb`
+- `ruby -e 'require "yaml"; YAML.load_file("config/locales/locale.yml"); YAML.load_file("config/locales/models/budgets.yml"); puts "YAML OK"'`
+- `bin/rubocop -A app/views/budgets/show.rb app/views/budgets/budgets.rb spec/requests/budgets_spec.rb`
+- `bin/rspec spec/requests/budgets_spec.rb`
+
+Slice 5 shipped the dashboard navigation/polish pass:
+
+- Cash dashboards now return to the cash index with the source year/month active
+  and the source bank account filter applied.
+- Card dashboards now return to the card index with the source year/month active
+  and the source card filter applied.
+- Budget dashboards now return to the budget index with the source year/month
+  active and the budget category/entity filters applied.
+- Cash and card dashboard destroy actions now use the app confirmation modal
+  instead of the browser confirm dialog.
+- Budget row actions use the same compact three-dots pattern for `Analyse` and
+  guarded `Destroy`, while preserving description-to-edit behavior.
+- Dashboard/index links that leave row frames continue to use top-level Turbo
+  navigation intentionally.
+- Request specs cover the filtered return-link parameters for cash, card, and
+  budget dashboards.
+
+Verification already run after Slice 5:
+
+- `ruby -c app/views/cash_transactions/show.rb`
+- `ruby -c app/views/card_transactions/show.rb`
+- `ruby -c app/views/budgets/show.rb`
+- `ruby -c spec/requests/cash_transactions_spec.rb`
+- `ruby -c spec/requests/card_transactions_spec.rb`
+- `ruby -c spec/requests/budgets_spec.rb`
+- `bin/rubocop -A app/views/cash_transactions/show.rb app/views/card_transactions/show.rb app/views/budgets/show.rb spec/requests/cash_transactions_spec.rb spec/requests/card_transactions_spec.rb spec/requests/budgets_spec.rb`
+- `bin/rspec spec/requests/cash_transactions_spec.rb:152 spec/requests/card_transactions_spec.rb:1776 spec/requests/budgets_spec.rb`
+
+JIRAIYA-07 is complete unless a later visual review finds more dashboard polish.
 
 ### Slice 1. Route And Dashboard Foundation
 

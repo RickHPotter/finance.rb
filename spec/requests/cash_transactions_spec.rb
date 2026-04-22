@@ -185,6 +185,9 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(edit_cash_transaction_path(transaction))
       expect(response.body).to include(duplicate_cash_transaction_path(transaction))
       expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
+      expect(response.body).to include("active_month_years")
+      expect(response.body).to include("user_bank_account_id")
+      expect(response.body).to include(user_bank_account.id.to_s)
     end
   end
 

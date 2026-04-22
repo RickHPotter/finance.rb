@@ -123,6 +123,24 @@ en:
       advance_cash_transaction: "Advance cash transaction"
     budgets:
       placeholder: "Dashboard foundation ready. A later slice will add budget consumption, matching transactions, and remaining value details."
+      consumed: "Consumed"
+      consumption: "Budget consumption"
+      definition: "Budget definition"
+      source: "Source"
+      boolean:
+        "yes": "Yes"
+        "no": "No"
+      status:
+        available: "Available"
+        exact: "Fully used"
+        exceeded: "Exceeded"
+      rules:
+        inclusive:
+          enabled: "Inclusive matching"
+          disabled: "Any matching allocation"
+        first_installment_only:
+          enabled: "First installment only"
+          disabled: "All installments"
 
   navigation:
     previous: "Previous"
@@ -323,6 +341,24 @@ pt-BR:
       advance_cash_transaction: "Movimentação de antecipação"
     budgets:
       placeholder: "Base do painel pronta. Uma próxima slice adicionará consumo do orçamento, movimentações relacionadas e valor restante."
+      consumed: "Consumido"
+      consumption: "Consumo do orçamento"
+      definition: "Definição do orçamento"
+      source: "Origem"
+      boolean:
+        "yes": "Sim"
+        "no": "Não"
+      status:
+        available: "Disponível"
+        exact: "Totalmente usado"
+        exceeded: "Excedido"
+      rules:
+        inclusive:
+          enabled: "Combinação inclusiva"
+          disabled: "Qualquer alocação correspondente"
+        first_installment_only:
+          enabled: "Apenas primeira parcela"
+          disabled: "Todas as parcelas"
 
   navigation:
     previous: "Anterior"

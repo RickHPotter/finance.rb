@@ -5,6 +5,7 @@ require "rails_helper"
 RSpec.describe "Budgets", type: :request do
   let(:user) { create(:user, :random) }
   let(:category) { create(:category, :random, user:) }
+  let(:entity) { create(:entity, :random, user:) }
   let(:bank) { create(:bank, :random) }
   let(:user_bank_account) { create(:user_bank_account, :random, user:, bank:) }
 
@@ -86,22 +87,48 @@ RSpec.describe "Budgets", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard shell" do
+    it "renders a context-scoped dashboard with definition, allocations, consumption, and actions" do
+      cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Groceries for budget",
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -2_500,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -2_500, paid: true)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
       budget = create(
         :budget,
         user:,
         context: user.main_context,
-        description: "Budget dashboard foundation",
+        description: "Budget dashboard details",
+        month: 3,
+        year: 2026,
+        value: -10_000,
         budget_categories: [ build(:budget_category, category:) ]
       )
 
       get budget_path(budget)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Budget dashboard foundation")
+      expect(response.body).to include("Budget dashboard details")
+      expect(response.body).to include("Groceries for budget")
       expect(response.body).to include(I18n.t("actions.analyse"))
-      expect(response.body).to include(I18n.t("dashboards.budgets.placeholder"))
+      expect(response.body).to include(I18n.t("dashboards.budgets.consumption"))
+      expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
+      expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
       expect(response.body).to include(edit_budget_path(budget))
+      expect(response.body).to include(cash_transaction_path(cash_transaction))
+      expect(response.body).to include("delete_budget_#{budget.id}")
+      expect(response.body).to include("active_month_years")
+      expect(response.body).to include("category_id")
+      expect(response.body).to include(category.id.to_s)
     end
   end
 
@@ -139,12 +166,27 @@ RSpec.describe "Budgets", type: :request do
   end
 
   describe "[ #month_year ]" do
-    it "renders successfully" do
-      create(:budget, user:, month: 3, year: 2026, budget_categories: [ build(:budget_category, category:) ])
+    it "renders Analyse links while keeping description links pointed at edit" do
+      budget = create(:budget, user:, month: 3, year: 2026, budget_categories: [ build(:budget_category, category:) ])
 
       get month_year_budgets_path, params: { month_year: "202603" }
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include(budget_path(budget))
+      expect(response.body).to include(edit_budget_path(budget))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("actions.destroy"))
+      expect(response.body).to include("delete_budget_#{budget.id}")
+      expect(response.body).to include("linkWithConfirmDialog_budget_menu_destroy_#{budget.id}")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_budget_#{budget.id}")
+      analyse_link = document.at_css("#analyse_budget_#{budget.id}")
+      action_button = document.at_css("#budget_actions_#{budget.id}")
+
+      expect(description_link["href"]).to eq(edit_budget_path(budget))
+      expect(analyse_link["href"]).to eq(budget_path(budget))
+      expect(action_button).to be_present
     end
   end
 

@@ -1819,6 +1819,9 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(edit_card_transaction_path(transaction))
       expect(response.body).to include(duplicate_card_transaction_path(transaction))
       expect(response.body).to include(cash_transaction_path(transaction.card_installments.first.cash_transaction))
+      expect(response.body).to include("active_month_years")
+      expect(response.body).to include("user_card_id")
+      expect(response.body).to include(user_card_one.id.to_s)
     end
   end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Budgets::Budgets < Views::Base
+class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
 
@@ -48,6 +48,14 @@ class Views::Budgets::Budgets < Views::Base
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
+          div(class: "mb-3 flex items-center justify-between gap-2") do
+            render_action_menu(budget)
+
+            span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
+              from_cent_based_to_float(budget.value, "R$")
+            end
+          end
+
           div(class: "flex items-center justify-between gap-4 w-full text-sm") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               link_to budget.description,
@@ -55,10 +63,6 @@ class Views::Budgets::Budgets < Views::Base
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top" }
-
-              span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
-                from_cent_based_to_float(budget.value, "R$")
-              end
             end
           end
 
@@ -106,8 +110,8 @@ class Views::Budgets::Budgets < Views::Base
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
         }
       ) do
-        div(class: "flex items-center justify-between gap-2 rounded-sm pl-2") do
-          span(class: "size-4", title: pluralise_model(budget, 1)) { cached_icon(:piggy_safe) }
+        div(class: "flex items-center justify-center gap-1 rounded-sm px-2") do
+          render_action_menu(budget)
 
           month, year = I18n.l(budget.date, format: "%B %Y").split
           div(class: "grid grid-cols-1 mr-auto") do
@@ -122,10 +126,6 @@ class Views::Budgets::Budgets < Views::Base
                   id: "edit_budget_#{budget.id}",
                   class: "flex-1 truncate text-md",
                   data: { turbo_frame: "_top" }
-
-          span(class: "p-1 rounded-sm bg-white border border-black shrink-0 opacity-0") do
-            pretty_installments(1, 1)
-          end
         end
 
         render_desktop_categories(budget)
@@ -208,5 +208,61 @@ class Views::Budgets::Budgets < Views::Base
         style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
       }
     end
+  end
+
+  def render_action_menu(budget)
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 flex-shrink-0") do
+      PopoverTrigger(class: "flex") do
+        button(
+          type: :button,
+          id: "budget_actions_#{budget.id}",
+          class: action_button_class,
+          title: I18n.t("actions_column"),
+          aria: { label: I18n.t("actions_column") }
+        ) do
+          cached_icon(:ellipsis)
+        end
+      end
+
+      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
+        div(class: "flex flex-col gap-1") do
+          action_menu_link(action_message(:analyse), budget_path(budget), id: "analyse_budget_#{budget.id}")
+          action_menu_destroy_link(budget)
+        end
+      end
+    end
+  end
+
+  def action_menu_link(label, href, id: nil)
+    link_to label,
+            href,
+            id:,
+            class: action_menu_item_class,
+            data: { turbo_frame: "_top", turbo_prefetch: false, action: "click->ruby-ui--popover#close" }
+  end
+
+  def action_menu_destroy_link(budget)
+    LinkWithConfirmation(
+      id: "budget_menu_destroy_#{budget.id}",
+      text: action_message(:destroy),
+      link_params: {
+        href: budget_path(budget),
+        variant: :ghost,
+        id: "delete_budget_#{budget.id}",
+        class: action_menu_item_class,
+        data: {
+          turbo_method: :delete,
+          turbo_frame: "_top"
+        }
+      }
+    )
+  end
+
+  def action_menu_item_class
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+  end
+
+  def action_button_class
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
   end
 end

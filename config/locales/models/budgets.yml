@@ -11,8 +11,10 @@ en:
         description: Description
         active: Active
         value: Budget Value
+        starting_value: Starting Value
         remaining_value: Remaining Value
         remaining: Remaining
+        balance: Balance
         month: Month
         year: Year
         month_year: Month/Year Reference
@@ -49,8 +51,10 @@ pt-BR:
         description: Descrição
         active: Ativo
         value: Valor do Orçamento
+        starting_value: Valor Inicial
         remaining_value: Valor Restante
         remaining: Restante
+        balance: Saldo
         month: Mês
         year: Ano
         month_year: Referência Mês/Ano

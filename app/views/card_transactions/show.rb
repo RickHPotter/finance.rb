@@ -57,7 +57,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_action(action_message(:duplicate), duplicate_card_transaction_path(card_transaction), variant: :outline) if duplicate_allowed?
         pay_in_advance_action
         destroy_action
-        dashboard_action(action_model(:index, CardTransaction, 2), card_transactions_path(user_card_id: card_transaction.user_card_id), variant: :primary)
+        dashboard_action(action_model(:index, CardTransaction, 2), card_index_path, variant: :primary)
       end
     end
   end
@@ -220,11 +220,17 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def destroy_action
     return unless card_transaction.can_be_destroyed?
 
-    link_to action_message(:destroy),
-            card_transaction_path(card_transaction),
-            id: "delete_card_transaction_#{card_transaction.id}",
-            class: dashboard_action_class(:destroy),
-            data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top" }
+    LinkWithConfirmation(
+      id: "card_transaction_dashboard_destroy_#{card_transaction.id}",
+      text: action_message(:destroy),
+      link_params: {
+        href: card_transaction_path(card_transaction),
+        variant: :ghost,
+        id: "delete_card_transaction_#{card_transaction.id}",
+        class: dashboard_action_class(:destroy),
+        data: { turbo_method: :delete, turbo_frame: "_top" }
+      }
+    )
   end
 
   def dashboard_action_class(variant)
@@ -236,6 +242,18 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     when :destroy then "#{base_class} bg-red-600 text-white hover:bg-red-700"
     else "#{base_class} border border-slate-300 text-slate-700 hover:bg-slate-100"
     end
+  end
+
+  def card_index_path
+    card_transactions_path(
+      user_card_id: card_transaction.user_card_id,
+      default_year: card_transaction.year,
+      active_month_years: active_month_years_param(card_transaction.year, card_transaction.month)
+    )
+  end
+
+  def active_month_years_param(year, month)
+    [ Date.new(year, month, 1).strftime("%Y%m").to_i ].to_json
   end
 
   def link_item(label, value, href)
