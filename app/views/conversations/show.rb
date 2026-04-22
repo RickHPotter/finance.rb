@@ -32,7 +32,7 @@ class Views::Conversations::Show < Views::Base
 
               div(class: "flex min-w-0 flex-1 flex-col items-start") do
                 h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg") { conversation.title_for(current_user) }
-                p(class: "mt-1 text-left text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
+                p(class: "mt-1 text-left text-2xs font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
                 render_scenario_badge
               end
             end
@@ -100,7 +100,7 @@ class Views::Conversations::Show < Views::Base
 
   def render_scenario_badge
     badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
-                  "px-3 py-1 text-[10px] font-semibold uppercase"
+                  "px-3 py-1 text-2xs font-semibold uppercase"
 
     div(class: badge_class) do
       plain(Context.model_name.human)
@@ -151,7 +151,7 @@ class Views::Conversations::Show < Views::Base
   end
 
   def message_filter_badge_class(selected)
-    base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] transition"
+    base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-2xs font-semibold uppercase tracking-[0.16em] transition"
 
     return "#{base_class} border-stone-800 bg-stone-900 text-white" if selected
 
@@ -159,7 +159,7 @@ class Views::Conversations::Show < Views::Base
   end
 
   def message_side_badge_class(side, selected)
-    base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] transition"
+    base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-2xs font-semibold uppercase tracking-[0.16em] transition"
 
     return "#{base_class} border-amber-600 bg-amber-500 text-white"     if selected && side == "theirs"
     return "#{base_class} border-emerald-600 bg-emerald-500 text-white" if selected && side == "mine"

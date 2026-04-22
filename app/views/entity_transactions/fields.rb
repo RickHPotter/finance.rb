@@ -22,13 +22,13 @@ module Views
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
               if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
-                div(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
+                div(class: "flex items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
                   div(class: "flex items-center gap-2 flex-1") do
                     content
                   end
                 end
               else
-                Sheet(class: "flex items-center px-2 py-1 rounded-lg border-1 border-slate-400 text-black outline-none text-sm") do
+                Sheet(class: "flex items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
                   SheetTrigger(class: "flex items-center gap-2 flex-1") do
                     content
                   end

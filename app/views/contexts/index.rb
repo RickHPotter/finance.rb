@@ -95,11 +95,11 @@ class Views::Contexts::Index < Views::Base
       end
 
       if current_context == context
-        span(class: "inline-flex rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+        span(class: "inline-flex rounded-full bg-emerald-500 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.18em] text-white") do
           I18n.t("contexts.index.current")
         end
       elsif context.archived?
-        span(class: "inline-flex rounded-full bg-stone-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+        span(class: "inline-flex rounded-full bg-stone-500 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.18em] text-white") do
           I18n.t("contexts.index.archived")
         end
       end

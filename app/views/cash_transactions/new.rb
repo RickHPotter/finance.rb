@@ -30,7 +30,7 @@ class Views::CashTransactions::New < Views::Base
   end
 
   def badge_class
-    base = "rounded-sm border border-1 px-3 shadow-md"
+    base = "rounded-sm border border px-3 shadow-md"
     return "#{base} border-orange-400 bg-orange-200" if @cash_transaction.duplicate
     return "#{base} border-cyan-500 bg-cyan-200" if @chain_context&.dig(:record_ids)&.any?
 

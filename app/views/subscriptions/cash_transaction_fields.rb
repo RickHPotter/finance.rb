@@ -38,16 +38,20 @@ class Views::Subscriptions::CashTransactionFields < Views::Base
           p(class: "text-sm font-semibold text-slate-800", data: { role: "price-display" }) { formatted_price }
         end
 
-        div(class: "flex items-center gap-2") do
+        div(class: "flex items-center gap-1") do
           button(
             type: :button,
-            class: "rounded border border-sky-200 bg-sky-50 p-2 text-sky-700 hover:bg-sky-100",
+            class: action_button_class,
+            title: action_message(:edit),
+            aria: { label: action_message(:edit) },
             data: { action: "subscription-transactions#editRow" }
           ) { cached_icon(:pencil) }
 
           button(
             type: :button,
-            class: "rounded border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100",
+            class: destructive_action_button_class,
+            title: action_message(:destroy),
+            aria: { label: action_message(:destroy) },
             data: { action: "subscription-transactions#removeRow nested-form#remove" }
           ) { cached_icon(:destroy) }
         end
@@ -59,6 +63,15 @@ class Views::Subscriptions::CashTransactionFields < Views::Base
   end
 
   private
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "#{action_button_class} border-red-200 text-red-700 hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:!text-current"
+  end
 
   def account_name
     user_bank_accounts.find { |(_, id)| id == cash_transaction.user_bank_account_id }&.first || model_attribute(CashTransaction, :user_bank_account_id)

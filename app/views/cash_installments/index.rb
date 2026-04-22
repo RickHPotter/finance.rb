@@ -70,7 +70,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               render_description_link(cash_transaction, class: "cash_transaction_description truncate text-md underline underline-offset-[3px]")
 
-              span(class: "flex-shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -146,7 +146,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           render_description_link(cash_transaction, class: "cash_transaction_description flex-1 truncate text-md underline underline-offset-[3px]")
 
-          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
           end
         end
@@ -204,7 +204,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_action_menu(cash_installment, cash_transaction, payable:)
-    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 flex-shrink-0") do
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
       PopoverTrigger(class: "flex") do
         button(
           type: :button,
@@ -216,13 +216,12 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
       end
 
-      PopoverContent(class: "z-[60] !opacity-100 min-w-44 p-1") do
+      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:analyse), cash_transaction_path(cash_transaction))
           action_menu_button(model_attribute(cash_installment, :pay), modal_id: "cashInstallmentModal_#{cash_installment.id}") if payable
           if cash_transaction.card_payment?
-            action_menu_button(model_attribute(cash_installment, :change_date),
-                               modal_id: "cashInstallmentModal_#{cash_installment.id}")
+            action_menu_button(model_attribute(cash_installment, :change_date), modal_id: "cashInstallmentModal_#{cash_installment.id}")
           end
           action_menu_link(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction)) if cash_transaction.can_be_destroyed?
           action_menu_destroy_link(cash_transaction) if cash_transaction.can_be_destroyed?
@@ -253,16 +252,19 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def action_menu_destroy_link(cash_transaction)
-    link_to action_message(:destroy),
-            cash_transaction_path(cash_transaction),
-            id: "delete_cash_transaction_#{cash_transaction.id}",
-            class: "#{action_menu_item_class} text-red-700 hover:bg-red-50",
-            data: {
-              turbo_method: :delete,
-              turbo_confirm: I18n.t("confirmation.sure"),
-              turbo_frame: "_top",
-              action: "click->ruby-ui--popover#close"
-            }
+    LinkWithConfirmation(
+      id: "cash_transaction_menu_destroy_#{cash_transaction.id}",
+      text: action_message(:destroy),
+      link_params: {
+        href: cash_transaction_path(cash_transaction),
+        id: "delete_cash_transaction_#{cash_transaction.id}",
+        class: "#{action_menu_item_class} text-red-700 hover:bg-red-50",
+        data: {
+          turbo_method: :delete,
+          turbo_frame: "_top"
+        }
+      }
+    )
   end
 
   def action_menu_item_class
@@ -338,7 +340,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         avatar_name: avatar_name || entity.avatar_name,
         href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
         data: { turbo_frame: "_top", turbo_prefetch: "false" },
-        info_class: "entity_exchanges_info text-[10px] leading-tight opacity-60",
+        info_class: "entity_exchanges_info text-2xs leading-tight opacity-60",
         info_text: entity_exchanges_info(entity_transaction)
       }
     end
@@ -382,7 +384,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
                 peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
           ) do
-            span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
+            span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
           end
         end
       end

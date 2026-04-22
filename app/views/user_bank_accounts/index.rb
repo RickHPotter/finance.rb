@@ -58,7 +58,7 @@ class Views::UserBankAccounts::Index < Views::Base
           )
 
           div(class: "my-4", data: { datatable_target: "table" }) do
-            div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-6",
                 rows: [
@@ -67,7 +67,7 @@ class Views::UserBankAccounts::Index < Views::Base
                     { class: "flex justify-center", label: model_attribute(UserBankAccount, :count), align: :center },
                     { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :spent), align: :right },
                     { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :balance), align: :right },
-                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                    { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                   ]
                 ]
               )

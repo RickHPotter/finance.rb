@@ -59,7 +59,7 @@ class Views::UserCards::Index < Views::Base
           )
 
           div(class: "my-4", data: { datatable_target: "table" }) do
-            div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-9",
                 rows: [
@@ -76,7 +76,7 @@ class Views::UserCards::Index < Views::Base
                     { class: "flex justify-start", label: model_attribute(UserCard, :due_date) },
                     { class: "flex items-end justify-end", label: model_attribute(UserCard, :min_spend), align: :right },
                     { class: "flex items-end justify-end", label: model_attribute(UserCard, :credit_limit), align: :right },
-                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                    { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                   ]
                 ]
               )

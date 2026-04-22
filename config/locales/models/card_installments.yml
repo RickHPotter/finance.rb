@@ -18,6 +18,7 @@ en:
         self: Card Installment
         count: Count
         id: ID
+        number: Number
         date: Date
         price: Price
         starting_price: Original Price
@@ -54,6 +55,7 @@ pt-BR:
         self: Parcela
         count: Quantidade
         id: ID
+        number: Número
         date: Data
         price: Preço
         starting_price: Preço Inicial

@@ -48,7 +48,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
                 cash_transaction.description
               end
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -75,7 +75,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
               border = style.split("; color:").last
               cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-xs", style: "border-color: #{border}") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-xs", style: "border-color: #{border}") do
                   category.name
                 end
               end
@@ -111,7 +111,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             cash_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
           end
         end
@@ -119,7 +119,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
           border = style.split("; color:").last
           cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm", style: "border-color: #{border}") do
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-sm", style: "border-color: #{border}") do
               category.name
             end
           end

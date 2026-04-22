@@ -40,7 +40,7 @@ class Views::Shared::FilterSummary < Views::Base
       aria: { label: "#{I18n.t('filters.summary.clear')}: #{item[:label]}" }
     ) do
       span(class: "text-xs md:text-sm") { item[:label] }
-      span(class: "rounded bg-slate-200 px-1 text-[10px] font-semibold leading-4 text-slate-600") { "x" }
+      span(class: "rounded bg-slate-200 px-1 text-2xs font-semibold leading-4 text-slate-600") { "x" }
     end
   end
 

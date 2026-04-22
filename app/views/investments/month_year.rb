@@ -48,17 +48,16 @@ class Views::Investments::MonthYear < Views::Base
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-7",
             rows: [
               [
-                { class: "flex justify-center", label: model_attribute(Investment, :date), align: :center },
-                { class: "col-span-2", label: model_attribute(Investment, :description) },
+                { class: "col-span-2 col-start-2", label: model_attribute(Investment, :description) },
                 { class: "flex justify-center", label: model_attribute(Investment, :user_bank_account_id), align: :center },
                 { class: "flex justify-center", label: model_attribute(Investment, :investment_type_id), align: :center },
                 { class: "flex items-end justify-end", label: model_attribute(Investment, :price), align: :right },
-                { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                { class: "flex justify-center", label: I18n.t(:datatable_actions) }
               ]
             ]
           )
@@ -100,8 +99,10 @@ class Views::Investments::MonthYear < Views::Base
 
                 link_to investment.user_bank_account.user_bank_account_name,
                         new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
-                        class: "p-1 rounded-sm bg-white border border-black flex-shrink-0",
+                        class: "p-1 rounded-sm bg-white border border-black shrink-0",
                         data: { turbo_frame: "_top" }
+
+                render_duplicate_action(investment)
               end
             end
 
@@ -109,7 +110,7 @@ class Views::Investments::MonthYear < Views::Base
               if investment.investment_type.nil?
                 plain "-"
               else
-                div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full") do
+                div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border text-sm w-full") do
                   investment.investment_type.display_name.upcase
                 end
               end
@@ -155,7 +156,7 @@ class Views::Investments::MonthYear < Views::Base
           div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
                     new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 text-sm underline bg-white border-black text-indigo-600",
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-sm underline bg-white border-black text-indigo-600",
                     data: { turbo_frame: "_top" }
           end
 
@@ -165,7 +166,7 @@ class Views::Investments::MonthYear < Views::Base
             else
               title = investment.investment_type.display_name.upcase
 
-              div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border-1 text-sm w-full", title:) do
+              div(class: "block truncate text-center px-2 py-1 rounded-sm bg-zinc-700 text-white border text-sm w-full", title:) do
                 title
               end
             end
@@ -176,7 +177,9 @@ class Views::Investments::MonthYear < Views::Base
           end
 
           div(class: "py-2 flex items-center justify-center") do
-            div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
+            div(class: "flex items-center justify-center gap-1 px-2") do
+              render_duplicate_action(investment)
+
               LinkWithConfirmation(
                 id: investment.id,
                 icon: :destroy,
@@ -184,7 +187,7 @@ class Views::Investments::MonthYear < Views::Base
                   href: investment_path(investment),
                   size: :xs,
                   id: "delete_investment_#{investment.id}",
-                  class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
+                  class: destructive_action_button_class,
                   data: { turbo_method: :delete }
                 }
               )
@@ -193,5 +196,27 @@ class Views::Investments::MonthYear < Views::Base
         end
       end
     end
+  end
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-slate-300 bg-white text-slate-800 " \
+      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+  end
+
+  def render_duplicate_action(investment)
+    link_to(
+      new_investment_path(investment: investment.slice(:user_bank_account_id, :investment_type_id)),
+      id: "duplicate_investment_#{investment.id}",
+      class: action_button_class,
+      title: action_message(:duplicate),
+      aria: { label: action_message(:duplicate) },
+      data: { turbo_frame: "_top", turbo_prefetch: false }
+    ) do
+      cached_icon(:copy)
+    end
+  end
+
+  def destructive_action_button_class
+    "#{action_button_class} border-red-200 text-red-700 hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:!text-current"
   end
 end

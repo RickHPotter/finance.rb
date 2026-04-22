@@ -143,7 +143,7 @@ class Views::Subscriptions::Form < Views::Base
       end
 
       div(
-        class: "min-h-[14rem] max-h-[14rem] flex-1 space-y-2 overflow-y-auto border-1 border-slate-200 bg-white/80 p-3 shadow-inner",
+        class: "min-h-[14rem] max-h-[14rem] flex-1 space-y-2 overflow-y-auto border border-slate-200 bg-white/80 p-3 shadow-inner",
         style: "scrollbar-width: thin; scrollbar-color: #94a3b8 #e2e8f0;",
         data: {
           controller: "nested-form",

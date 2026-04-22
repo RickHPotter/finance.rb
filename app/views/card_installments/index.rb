@@ -38,7 +38,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-2",
+        class: "rounded-lg shadow-sm overflow-visible my-2",
         style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
@@ -50,7 +50,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               if user_card_id.nil?
                 link_to card_transaction.user_card.user_card_name,
                         card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
-                        class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
+                        class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
                         data: { turbo_frame: "_top", turbo_prefetch: false }
               end
 
@@ -59,9 +59,11 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top", turbo_prefetch: false }
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
+
+              render_analyse_link(card_transaction, mobile: true)
             end
           end
 
@@ -110,7 +112,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             if user_card_id.nil?
               link_to card_transaction.user_card.user_card_name,
                       card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
-                      class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border-1 border-slate-200 text-slate-200",
+                      class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
@@ -119,7 +121,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                     class: "flex-5 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: "_top", turbo_prefetch: false }
 
-            span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+            span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
               pretty_installments(card_installment.number, card_installment.card_installments_count)
             end
           end
@@ -134,11 +136,15 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
 
         div(class: "py-2 flex items-center justify-center") do
-          div(class: "flex items-center justify-center px-2 ml-auto rounded-md") do
+          div(class: "flex items-center justify-end gap-1 px-2 ml-auto") do
+            render_analyse_link(card_transaction)
+
             link_to(
               duplicate_card_transaction_path(card_transaction),
-              class: "p-1 bg-slate-200 border border-slate-200 text-black",
-              data: { turbo_frame: "_top" }
+              class: action_button_class,
+              title: action_message(:duplicate),
+              aria: { label: action_message(:duplicate) },
+              data: { turbo_frame: "_top", turbo_prefetch: false }
             ) do
               cached_icon :copy
             end
@@ -150,7 +156,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 href: card_transaction_path(card_transaction, card_installment_id: card_installment.id),
                 size: :xs,
                 id: "delete_card_transaction_#{card_transaction.id}_#{card_installment.id}",
-                class: "text-red-600 hover:text-red-800 mx-2 bg-white rounded-4xl",
+                class: destructive_action_button_class,
                 data: { turbo_method: :delete, turbo_frame: "_top", turbo_prefetch: "false" }
               }
             )
@@ -158,6 +164,29 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
       end
     end
+  end
+
+  def render_analyse_link(card_transaction, mobile: false)
+    link_to card_transaction_path(card_transaction),
+            class: analyse_link_class(mobile),
+            title: action_message(:analyse),
+            aria: { label: action_message(:analyse) },
+            data: { turbo_frame: "_top", turbo_prefetch: false } do
+      cached_icon(:eye)
+    end
+  end
+
+  def analyse_link_class(_mobile)
+    action_button_class
+  end
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-slate-300 bg-white text-slate-800 " \
+      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "#{action_button_class} border-red-200 text-red-700 hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:!text-current"
   end
 
   def render_mobile_entities(card_transaction)
@@ -216,7 +245,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         avatar_name: entity.avatar_name,
         href:,
         data: { turbo_frame: "_top", turbo_prefetch: "false" },
-        info_class: "entity_exchanges_info text-[10px] leading-tight text-zinc-500",
+        info_class: "entity_exchanges_info text-2xs leading-tight text-zinc-500",
         info_text: entity_exchanges_info(entity_transaction)
       }
     end
@@ -262,7 +291,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
                 peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
           ) do
-            span(class: "text-[10px] font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
+            span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
           end
         end
       end

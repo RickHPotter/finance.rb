@@ -28,7 +28,7 @@ module Views
       return if current_context.blank?
 
       badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
-                    "px-3 py-1 text-[10px] font-semibold uppercase"
+                    "px-3 py-1 text-2xs font-semibold uppercase"
 
       div(class: badge_class) do
         plain(Context.model_name.human)

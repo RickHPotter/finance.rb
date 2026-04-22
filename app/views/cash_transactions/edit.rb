@@ -9,7 +9,7 @@ class Views::CashTransactions::Edit < Views::Base
   def view_template
     turbo_frame_tag :center_container do
       div(class: "bg-white p-4 shadow-md rounded-lg") do
-        span(class: "rounded-sm shadow-md bg-lime-200 border border-1 border-lime-400 px-3") { I18n.t("gerund.edit") }
+        span(class: "rounded-sm shadow-md bg-lime-200 border border border-lime-400 px-3") { I18n.t("gerund.edit") }
 
         render Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction)
       end

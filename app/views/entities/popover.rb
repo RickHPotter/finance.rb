@@ -39,7 +39,7 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 mr-2") do
+        PopoverContent(class: "z-50 opacity-100! mr-2") do
           div(class: "flex flex-wrap justify-end gap-1 min-w-36") do
             items.each do |item|
               render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6 mb-1", name_class: mobile_name_class)
@@ -62,7 +62,7 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 mr-2") do
+        PopoverContent(class: "z-50 opacity-100! mr-2") do
           div(class: "flex flex-col gap-2 min-w-36") do
             items.each do |item|
               render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: "entity_entity_name")

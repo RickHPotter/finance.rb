@@ -174,6 +174,10 @@ Budget V1 does not need sorting or a mini query language.
   installments, allocations, references, and primary guarded actions, and cash
   month-year rows expose a localized `Analyse` entry point while description links
   still open edit.
+- Slice 3 is implemented: the card transaction dashboard now renders summary,
+  card installments, generated invoice cash links, allocations, references,
+  exchanges, card advance state, and guarded actions, and card month-year rows
+  expose a localized `Analyse` entry point while description links still open edit.
 
 ### Handoff Snapshot - 2026-04-22
 
@@ -228,25 +232,61 @@ Known working tree from the source session after Slice 2:
 - `docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md`
 - `spec/requests/cash_transactions_spec.rb`
 
-Next session should start Slice 3.
+Slice 3 shipped the card dashboard pattern:
 
-Recommended Slice 3 path:
+- `Views::CardTransactions::Show` now renders hero/status, summary cards,
+  installments, invoice cash links, allocations, links/references, exchanges, and
+  guarded actions.
+- Card dashboard actions include edit, duplicate when the card row is not a card
+  advance, pay in advance when the existing cycle flow is available, destroy through
+  the existing guarded delete flow, and return to the card index.
+- `Views::CardInstallments::Index` now renders a localized `Analyse` link for card
+  month-year rows on desktop and mobile.
+- Description links intentionally still point to `edit_card_transaction_path`.
+- Locales were added for card dashboard invoice/exchange/reference labels,
+  `CardInstallment#number`, and card transaction subscription/advance labels.
+- `spec/requests/card_transactions_spec.rb` covers the dashboard sections/actions
+  and the month-year `Analyse` link while preserving description-to-edit behavior.
 
-- Inspect `app/views/card_installments/index.rb`,
-  `app/views/card_transactions/month_year.rb`,
-  `app/views/card_transactions/show.rb`, and existing card pay-in-advance/edit
-  action patterns before editing.
-- Build `Views::CardTransactions::Show` using the cash dashboard vocabulary, but
-  with card-specific sections: card summary, billing cycle, card installments,
-  generated cash invoice/payment links, exchange/return state, categories/entities,
-  and guarded actions.
-- Add localized `Analyse` links in card month-year rows while keeping description
-  links pointed at edit.
-- Do not offer duplicate for generated/special card rows where duplication would be
-  misleading.
-- Add focused request specs for card dashboard rendering and card month-year
+Verification already run after Slice 3:
+
+- `ruby -c app/views/card_transactions/show.rb`
+- `ruby -c app/views/card_installments/index.rb`
+- `ruby -c spec/requests/card_transactions_spec.rb`
+- `ruby -e 'require "yaml"; %w[config/locales/locale.yml config/locales/models/card_transactions.yml config/locales/models/card_installments.yml].each { |file| YAML.load_file(file) }; puts "YAML OK"'`
+- `bin/rubocop -A app/views/card_transactions/show.rb app/views/card_installments/index.rb spec/requests/card_transactions_spec.rb`
+- `bin/rspec spec/requests/card_transactions_spec.rb:1740 spec/requests/card_transactions_spec.rb:1778`
+- `bin/rspec spec/requests/card_transactions_spec.rb`
+
+All checks passed in the source session:
+
+- Card request spec: 51 examples, 0 failures.
+
+Known working tree from the source session after Slice 3:
+
+- `app/views/card_installments/index.rb`
+- `app/views/card_transactions/show.rb`
+- `config/locales/locale.yml`
+- `config/locales/models/card_installments.yml`
+- `config/locales/models/card_transactions.yml`
+- `docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md`
+- `spec/requests/card_transactions_spec.rb`
+
+Next session should start Slice 4.
+
+Recommended Slice 4 path:
+
+- Inspect `app/views/budgets/budgets.rb`, `app/views/budgets/month_year.rb`,
+  `app/views/budgets/show.rb`, `app/models/budget.rb`, and existing budget request
+  specs before editing.
+- Build `Views::Budgets::Show` using the cash/card dashboard vocabulary, but with
+  budget-specific sections: budget definition, matching categories/entities,
+  current month consumption, remaining amount, and related cash transactions.
+- Add localized `Analyse` links in budget month-year rows while keeping existing
+  edit behavior unchanged.
+- Add focused request specs for budget dashboard rendering and budget month-year
   `Analyse` links.
-- Run `bin/rubocop -A`, focused card request specs, then
+- Run `bin/rubocop -A`, focused budget request specs, then
   `bin/rspec spec/models spec/concerns spec/requests`.
 
 ### Slice 1. Route And Dashboard Foundation

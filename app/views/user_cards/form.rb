@@ -111,7 +111,7 @@ class Views::UserCards::Form < Views::Base
           div(class: "w-full mt-8 mb-8") do
             h3(class: "text-lg font-bold mb-4") { pluralise_model(Reference, 2) }
 
-            div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-5",
                 rows: [
@@ -120,7 +120,7 @@ class Views::UserCards::Form < Views::Base
                     { class: "flex justify-center", label: model_attribute(Reference, :month), align: :center },
                     { class: "flex justify-center", label: model_attribute(Reference, :reference_closing_date), align: :center },
                     { class: "flex justify-center", label: model_attribute(Reference, :reference_date), align: :center },
-                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                    { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                   ]
                 ]
               )

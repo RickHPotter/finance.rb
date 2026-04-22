@@ -47,7 +47,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
                 card_transaction.description
               end
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
             end
@@ -64,7 +64,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
               card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs") do
+                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs") do
                   category.name
                 end
               end
@@ -98,7 +98,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             card_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white text-black border border-black flex-shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+          span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
             pretty_installments(card_installment.number, card_installment.card_installments_count)
           end
         end
@@ -111,20 +111,20 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             first_one = card_transaction.categories.first
             remaining = card_transaction.categories[1..]
 
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
               first_one.name
             end
 
-            Popover(options: { placement: "right" }, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+            Popover(options: { placement: "right" }, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
               PopoverTrigger(class: "w-full") do
                 button(class: "text-xs") do
                   "+#{card_transaction.categories.count - 1}"
                 end
               end
 
-              PopoverContent(class: "z-50 !opacity-100 ml-2") do
+              PopoverContent(class: "z-50 opacity-100! ml-2") do
                 remaining.each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
                     category.name
                   end
                 end
@@ -132,7 +132,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             end
           else
             card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm") do
+              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
                 category.name
               end
             end
@@ -177,7 +177,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
-        info_class: "entity_exchanges_info text-[10px] leading-tight text-zinc-500",
+        info_class: "entity_exchanges_info text-2xs leading-tight text-zinc-500",
         info_text: entity_exchanges_info(entity_transaction)
       }
     end

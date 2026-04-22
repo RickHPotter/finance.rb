@@ -21,7 +21,7 @@ class Views::Contexts::Show < Views::Base
               h1(class: "mt-1 text-2xl font-semibold text-stone-900") { display_context.name }
               p(class: "mt-2 text-sm text-stone-500") { display_context.description.presence || I18n.t("contexts.index.no_description") }
               if display_context.archived?
-                span(class: "mt-3 inline-flex rounded-full bg-stone-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+                span(class: "mt-3 inline-flex rounded-full bg-stone-500 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.18em] text-white") do
                   I18n.t("contexts.index.archived")
                 end
               end
@@ -87,7 +87,7 @@ class Views::Contexts::Show < Views::Base
 
   def render_stat(label, value)
     div(class: "rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3") do
-      p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
       p(class: "mt-2 text-xl font-semibold text-stone-900") { value.to_s }
     end
   end

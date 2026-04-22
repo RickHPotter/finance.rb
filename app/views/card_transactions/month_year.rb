@@ -86,7 +86,7 @@ class Views::CardTransactions::MonthYear < Views::Base
                 { class: "col-span-3 flex justify-center", label: model_attribute(CardTransaction, :categories), align: :center },
                 { class: "col-span-2 flex justify-center", label: model_attribute(CardTransaction, :entities), align: :center },
                 { class: "flex items-end justify-end", label: model_attribute(CardTransaction, :price), align: :right },
-                { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                { class: "flex justify-center", label: I18n.t(:datatable_actions) }
               ]
             ]
           )

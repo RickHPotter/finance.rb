@@ -61,7 +61,7 @@ class Views::Shared::DatetimeInput < Views::Base
           end
 
           p(
-            class: "mt-0.5 min-h-4 px-1 text-[10px] leading-4 font-graduate text-muted-foreground",
+            class: "mt-0.5 min-h-4 px-1 text-2xs leading-4 font-graduate text-muted-foreground",
             data: { datetime_input_target: "weekdayLabel" }
           )
         end

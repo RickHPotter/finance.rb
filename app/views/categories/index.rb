@@ -59,7 +59,7 @@ class Views::Categories::Index < Views::Base
           )
 
           div(class: "my-4", data: { datatable_target: "table" }) do
-            div(class: "rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-7",
                 rows: [
@@ -75,7 +75,7 @@ class Views::Categories::Index < Views::Base
                     { class: "flex justify-center", label: model_attribute(Category, :spent), align: :center },
                     { class: "flex justify-center", label: model_attribute(Category, :count), align: :center },
                     { class: "flex justify-center", label: model_attribute(Category, :spent), align: :center },
-                    { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                    { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                   ]
                 ]
               )

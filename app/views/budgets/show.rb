@@ -54,7 +54,7 @@ class Views::Budgets::Show < Views::Base
 
   def dashboard_stat(label, value)
     div(class: "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3") do
-      p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
       p(class: "mt-2 text-lg font-bold text-slate-950") { value.to_s }
     end
   end

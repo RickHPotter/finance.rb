@@ -114,6 +114,13 @@ en:
       borrow_return: "Borrow Return"
     card_transactions:
       placeholder: "Dashboard foundation ready. A later slice will add billing-cycle, invoice, exchange, and history details."
+      invoice: "Invoice cash links"
+      exchanges: "Exchanges"
+      reference: "Reference"
+      reference_descendants:
+        one: "1 linked card or cash transaction"
+        other: "%{count} linked card or cash transactions"
+      advance_cash_transaction: "Advance cash transaction"
     budgets:
       placeholder: "Dashboard foundation ready. A later slice will add budget consumption, matching transactions, and remaining value details."
 
@@ -307,6 +314,13 @@ pt-BR:
       borrow_return: "Retorno de Empréstimo"
     card_transactions:
       placeholder: "Base do painel pronta. Uma próxima slice adicionará detalhes de ciclo, fatura, trocas e histórico."
+      invoice: "Vínculos da fatura"
+      exchanges: "Trocas"
+      reference: "Referência"
+      reference_descendants:
+        one: "1 transação de cartão ou movimentação vinculada"
+        other: "%{count} transações de cartão ou movimentações vinculadas"
+      advance_cash_transaction: "Movimentação de antecipação"
     budgets:
       placeholder: "Base do painel pronta. Uma próxima slice adicionará consumo do orçamento, movimentações relacionadas e valor restante."
 

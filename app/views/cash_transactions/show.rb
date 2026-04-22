@@ -74,7 +74,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def installments_section
     section_card(I18n.t("dashboards.sections.installments")) do
       div(class: "overflow-hidden rounded-2xl border border-slate-200") do
-        div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white") do
+        div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
           span(class: "col-span-3") { model_attribute(CashInstallment, :date) }
           span(class: "col-span-2 text-center") { model_attribute(CashInstallment, :number) }
           span(class: "col-span-3 text-right") { model_attribute(CashInstallment, :price) }
@@ -120,7 +120,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def dashboard_stat(label, value, emphasis: false)
     div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
       p(class: "#{emphasis ? 'text-2xl' : 'text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
     end
   end
@@ -137,7 +137,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def allocation_group(label, names)
     div(class: "mb-4 last:mb-0") do
-      p(class: "text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500") { label }
+      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { label }
 
       if names.present?
         div(class: "mt-2 flex flex-wrap gap-2") do
@@ -206,7 +206,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def link_item(label, value, href)
     link_to href, class: "block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-400",
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
-      p(class: "text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500") { label }
+      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { label }
       p(class: "mt-1 truncate text-sm font-bold text-slate-950") { value }
     end
   end

@@ -21,6 +21,35 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders a duplicate action that chains from the account and type without next_day" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get month_year_investments_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        investment: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      duplicate_link = document.at_css("#duplicate_investment_#{investment.id}")
+
+      expect(duplicate_link).to be_present
+      expect(duplicate_link["href"]).to include(new_investment_path)
+      expect(duplicate_link["href"]).to include("investment%5Buser_bank_account_id%5D=#{user_bank_account.id}")
+      expect(duplicate_link["href"]).to include("investment%5Binvestment_type_id%5D=#{investment_type.id}")
+      expect(duplicate_link["href"]).not_to include("next_day")
+    end
   end
 
   describe "[ #new ]" do

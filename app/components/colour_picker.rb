@@ -14,7 +14,7 @@ module Components
         div class: "relative", data: { action: "click->colour-picker#toggle" } do
           raw @form.text_field(@field, type: :hidden, value: @colour, readonly: true, data: { colour_picker_target: "selectedValue" })
 
-          div(class: "w-10 h-10 rounded-full border-1", style: "background-color: #{@colour}", data: { colour_picker_target: "indicator" })
+          div(class: "w-10 h-10 rounded-full border", style: "background-color: #{@colour}", data: { colour_picker_target: "indicator" })
         end
 
         div class: "hidden absolute z-50 w-72 mt-2 p-3 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-zinc-300",

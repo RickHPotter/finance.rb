@@ -3416,6 +3416,8 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("actions.analyse"))
       expect(response.body).to include(duplicate_cash_transaction_path(transaction))
       expect(response.body).to include("delete_cash_transaction_#{transaction.id}")
+      expect(response.body).to include("linkWithConfirmDialog_cash_transaction_menu_destroy_#{transaction.id}")
+      expect(response.body).not_to include("data-turbo-confirm")
 
       document = Nokogiri::HTML.fragment(response.body)
       description_link = document.at_css("#edit_cash_transaction_#{transaction.id}")

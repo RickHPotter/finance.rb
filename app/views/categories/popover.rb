@@ -33,7 +33,7 @@ class Views::Categories::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100") do
+        PopoverContent(class: "z-50 opacity-100!") do
           div(class: "flex max-w-56 flex-wrap justify-start gap-1") do
             items.each do |item|
               render_pill(item, class: mobile_pill_class)
@@ -56,7 +56,7 @@ class Views::Categories::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 ml-2") do
+        PopoverContent(class: "z-50 opacity-100! ml-2") do
           div(class: "flex min-w-36 flex-col gap-2") do
             items.drop(1).each do |item|
               render_pill(item, class: desktop_pill_class)
@@ -90,7 +90,7 @@ class Views::Categories::Popover < Views::Base
   end
 
   def base_pill_class(size_class)
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black #{size_class}"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black #{size_class}"
   end
 
   def mobile_trigger_button_class
@@ -108,10 +108,10 @@ class Views::Categories::Popover < Views::Base
   end
 
   def mobile_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs"
   end
 
   def desktop_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm"
   end
 end

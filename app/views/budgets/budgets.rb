@@ -56,7 +56,7 @@ class Views::Budgets::Budgets < Views::Base
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top" }
 
-              span(class: "flex-shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
+              span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
                 from_cent_based_to_float(budget.value, "R$")
               end
             end
@@ -123,7 +123,7 @@ class Views::Budgets::Budgets < Views::Base
                   class: "flex-1 truncate text-md",
                   data: { turbo_frame: "_top" }
 
-          span(class: "p-1 rounded-sm bg-white border border-black flex-shrink-0 opacity-0") do
+          span(class: "p-1 rounded-sm bg-white border border-black shrink-0 opacity-0") do
             pretty_installments(1, 1)
           end
         end

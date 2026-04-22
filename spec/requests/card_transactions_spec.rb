@@ -1738,26 +1738,87 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body.index("Early transaction")).to be < response.body.index("Late transaction")
     end
-  end
 
-  describe "[ #show ]" do
-    it "renders a context-scoped dashboard shell" do
+    it "renders Analyse links while keeping description links pointed at edit" do
       transaction = create(
         :card_transaction,
         user:,
         context: user.main_context,
         user_card: user_card_one,
-        description: "Card dashboard foundation",
-        price: -12_000
+        description: "Analysable card row",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+        ]
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202604",
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(card_transaction_path(transaction))
+      expect(response.body).to include(edit_card_transaction_path(transaction))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_card_transaction_#{transaction.id}")
+
+      expect(description_link["href"]).to eq(edit_card_transaction_path(transaction))
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard with installments, allocations, invoices, links, and actions" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        subscription:,
+        description: "Card dashboard details",
+        comment: "Dashboard card comment",
+        price: -12_000,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026, price: -6_000, paid: true),
+          build(:card_installment, number: 2, date: Date.new(2026, 5, 10), month: 5, year: 2026, price: -6_000, paid: false)
+        ],
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [
+          build(
+            :entity_transaction,
+            entity: entity_one,
+            transactable: nil,
+            price: -12_000,
+            price_to_be_returned: -12_000,
+            exchanges: [
+              build(:exchange, price: -12_000, exchange_type: :monetary, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+            ]
+          )
+        ]
       )
 
       get card_transaction_path(transaction)
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Card dashboard foundation")
+      expect(response.body).to include("Card dashboard details")
+      expect(response.body).to include("Dashboard card comment")
       expect(response.body).to include(I18n.t("actions.analyse"))
-      expect(response.body).to include(I18n.t("dashboards.card_transactions.placeholder"))
+      expect(response.body).to include(I18n.t("dashboards.sections.installments"))
+      expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.invoice"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.exchanges"))
+      expect(response.body).to include(I18n.t("dashboards.status.partial"))
+      expect(response.body).to include(exchange_category.name)
+      expect(response.body).to include(entity_one.entity_name)
+      expect(response.body).to include(subscription.description)
       expect(response.body).to include(edit_card_transaction_path(transaction))
+      expect(response.body).to include(duplicate_card_transaction_path(transaction))
+      expect(response.body).to include(cash_transaction_path(transaction.card_installments.first.cash_transaction))
     end
   end
 

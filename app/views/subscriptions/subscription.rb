@@ -56,12 +56,18 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "col-span-1 flex items-center justify-center px-2 py-3") do
-        link_to(
-          edit_subscription_path(subscription),
-          id: "edit_subscription_#{subscription.id}",
-          class: "mx-1 rounded-4xl bg-sky-200 text-blue-600 hover:text-blue-800",
-          data: { turbo_frame: "_top" }
-        ) { cached_icon(:pencil) }
+        div(class: "flex items-center justify-end gap-1") do
+          link_to(
+            edit_subscription_path(subscription),
+            id: "edit_subscription_#{subscription.id}",
+            class: action_button_class,
+            title: action_message(:edit),
+            aria: { label: action_message(:edit) },
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) { cached_icon(:pencil) }
+
+          render_destroy_action if subscription.can_be_destroyed?
+        end
       end
     end
   end
@@ -117,6 +123,30 @@ class Views::Subscriptions::Subscription < Views::Base
 
       yield
     end
+  end
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+  end
+
+  def render_destroy_action
+    LinkWithConfirmation(
+      id: subscription.id,
+      icon: :destroy,
+      link_params: {
+        href: subscription_path(subscription),
+        size: :xs,
+        id: "delete_subscription_#{subscription.id}",
+        class: destructive_action_button_class,
+        data: { turbo_method: :delete }
+      }
+    )
   end
 
   def render_mobile_categories

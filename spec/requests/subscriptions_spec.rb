@@ -73,6 +73,19 @@ RSpec.describe "Subscriptions", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders destroy action only for subscriptions without linked transactions" do
+      destroyable_subscription = create(:subscription, user:, context: user.main_context)
+      locked_subscription = create(:subscription, user:, context: user.main_context)
+      create(:cash_transaction, user:, user_bank_account:, subscription: locked_subscription)
+
+      get subscriptions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("delete_subscription_#{destroyable_subscription.id}")
+      expect(response.body).to include("linkWithConfirmDialog_#{destroyable_subscription.id}")
+      expect(response.body).not_to include("delete_subscription_#{locked_subscription.id}")
+    end
   end
 
   describe "[ #new ]" do

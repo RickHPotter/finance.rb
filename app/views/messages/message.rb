@@ -299,7 +299,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def status_badge_class
-    "mt-3 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-[10px] font-semibold uppercase"
+    "mt-3 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-2xs font-semibold uppercase"
   end
 
   def action_button_class(action_button_key)
