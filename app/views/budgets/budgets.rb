@@ -44,31 +44,29 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-visible bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row }
       ) do
         div(class: "p-4") do
-          div(class: "mb-3 flex items-center justify-between gap-2") do
-            render_action_menu(budget)
-
-            span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
-              from_cent_based_to_float(budget.value, "R$")
-            end
-          end
-
-          div(class: "flex items-center justify-between gap-4 w-full text-sm") do
+          div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               link_to budget.description,
                       edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top" }
+
+              span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
+                from_cent_based_to_float(budget.value, "R$")
+              end
             end
           end
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1") do
               span(class: "flex items-center justify-start gap-2 rounded-sm") do
+                render_action_menu(budget)
+
                 case budget.remaining_value <=> budget.value
                 when -1
                   :x_circle
@@ -87,6 +85,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
               from_cent_based_to_float(budget.remaining_value, "R$")
             end
           end
+
           div(class: "flex items-center justify-between gap-2") do
             render_mobile_categories(budget)
 

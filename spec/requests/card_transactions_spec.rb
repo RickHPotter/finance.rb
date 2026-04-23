@@ -1835,7 +1835,6 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Card dashboard details")
       expect(response.body).to include("Dashboard card comment")
-      expect(response.body).to include(I18n.t("actions.analyse"))
       expect(response.body).to include(I18n.t("dashboards.sections.installments"))
       expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
       expect(response.body).to include(I18n.t("dashboards.card_transactions.invoice"))

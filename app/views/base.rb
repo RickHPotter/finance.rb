@@ -27,7 +27,7 @@ module Views
     def render_scenario_badge
       return if current_context.blank?
 
-      badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
+      badge_class = "mt-2 flex w-fit self-start items-start border-l-4 border-red-700 bg-rose-400/30 " \
                     "px-3 py-1 text-2xs font-semibold uppercase"
 
       div(class: badge_class) do

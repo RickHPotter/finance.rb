@@ -40,8 +40,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def dashboard_header
     div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0") do
-        p(class: "text-xs font-semibold uppercase tracking-[0.22em] text-slate-500") { action_model(:analyse, CardTransaction) }
-        h1(class: "mt-2 text-3xl font-black tracking-tight text-slate-950") { card_transaction.description }
+        h1(class: "text-4xl font-black tracking-tight text-slate-950") { card_transaction.description }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do

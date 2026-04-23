@@ -77,7 +77,7 @@ class Views::CardTransactions::MonthYear < Views::Base
           end
         end
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-12",
             rows: [

@@ -119,7 +119,6 @@ RSpec.describe "Budgets", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Budget dashboard details")
       expect(response.body).to include("Groceries for budget")
-      expect(response.body).to include(I18n.t("actions.analyse"))
       expect(response.body).to include(I18n.t("dashboards.budgets.consumption"))
       expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
       expect(response.body).to include(I18n.t("dashboards.sections.allocations"))

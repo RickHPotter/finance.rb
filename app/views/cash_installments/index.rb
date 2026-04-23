@@ -258,7 +258,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       link_params: {
         href: cash_transaction_path(cash_transaction),
         id: "delete_cash_transaction_#{cash_transaction.id}",
-        class: "#{action_menu_item_class} text-red-700 hover:bg-red-50",
+        variant: :ghost,
+        class: action_menu_item_class,
         data: {
           turbo_method: :delete,
           turbo_frame: "_top"
@@ -268,7 +269,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def action_menu_item_class
-    "w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
   end
 
   def render_mobile_entities(cash_transaction, avatar_name)

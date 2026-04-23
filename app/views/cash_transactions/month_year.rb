@@ -45,7 +45,7 @@ class Views::CashTransactions::MonthYear < Views::Base
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-12",
             rows: [

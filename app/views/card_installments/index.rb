@@ -62,13 +62,15 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
-
-              render_analyse_link(card_transaction, mobile: true)
             end
           end
 
           div(class: "flex items-center justify-between py-2") do
-            span(class: "text-xs text-start flex-1") { I18n.l(card_installment.date, format: :short) }
+            div(class: "text-xs text-start flex-1 flex items-center") do
+              render_action_menu(card_installment, card_transaction)
+
+              span(class: "whitespace-nowrap pl-2") { I18n.l(card_installment.date, format: :short) }
+            end
 
             div(class: "whitespace-nowrap") do
               from_cent_based_to_float(card_installment.price, "R$")
@@ -83,6 +85,54 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         end
       end
     end
+  end
+
+  def render_action_menu(card_installment, card_transaction)
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+      PopoverTrigger(class: "flex") do
+        button(
+          type: :button,
+          id: "card_installment_actions_#{card_installment.id}",
+          class: action_menu_button_class,
+          title: I18n.t("actions_column"),
+          aria: { label: I18n.t("actions_column") }
+        ) do
+          cached_icon(:ellipsis)
+        end
+      end
+
+      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
+        div(class: "flex flex-col gap-1") do
+          action_menu_link(action_message(:analyse), card_transaction_path(card_transaction))
+          action_menu_link(action_message(:duplicate), duplicate_card_transaction_path(card_transaction)) unless card_transaction.card_advance_category?
+          action_menu_destroy_link(card_installment, card_transaction) if card_transaction.can_be_destroyed?
+        end
+      end
+    end
+  end
+
+  def action_menu_link(label, href)
+    link_to label,
+            href,
+            class: action_menu_item_class,
+            data: { turbo_frame: "_top", turbo_prefetch: false, action: "click->ruby-ui--popover#close" }
+  end
+
+  def action_menu_destroy_link(card_installment, card_transaction)
+    LinkWithConfirmation(
+      id: "card_transaction_menu_destroy_#{card_transaction.id}_#{card_installment.id}",
+      text: action_message(:destroy),
+      link_params: {
+        href: card_transaction_path(card_transaction, card_installment_id: card_installment.id),
+        variant: :ghost,
+        id: "delete_card_transaction_#{card_transaction.id}_#{card_installment.id}",
+        class: action_menu_item_class,
+        data: {
+          turbo_method: :delete,
+          turbo_frame: "_top"
+        }
+      }
+    )
   end
 
   def render_card_installment(card_installment, card_transaction, style)
@@ -187,6 +237,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def destructive_action_button_class
     "#{action_button_class} border-red-200 text-red-700 hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:!text-current"
+  end
+
+  def action_menu_button_class
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+  end
+
+  def action_menu_item_class
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
   end
 
   def render_mobile_entities(card_transaction)
