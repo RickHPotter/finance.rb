@@ -14,17 +14,82 @@ RSpec.describe "Settings", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("settings.tabs.naming"))
       expect(response.body).not_to include(I18n.t("settings.tabs.exchange_audit"))
+      expect(response.body).not_to include(I18n.t("settings.tabs.exchange_return_audit"))
       expect(response.body).to include(preview_naming_convention_path)
     end
 
-    it "shows the admin exchange audit tab for admin users" do
+    it "shows the admin audit tabs for admin users" do
       user.update!(admin: true)
 
       get settings_path
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(I18n.t("settings.tabs.exchange_audit"))
+      expect(response.body).to include(I18n.t("settings.tabs.exchange_return_audit"))
+      expect(response.body).to include(I18n.t("settings.tabs.card_exchange_projection_audit"))
       expect(response.body).to include(exchange_audit_admin_settings_path)
+      expect(response.body).to include(exchange_return_audit_admin_settings_path)
+      expect(response.body).to include(card_exchange_projection_audit_admin_settings_path)
+    end
+  end
+
+  describe "[ GET /admin/settings/exchange_return_audit ]" do
+    before { sign_in user }
+
+    it "returns not found for non-admin users" do
+      get exchange_return_audit_admin_settings_path
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "renders successfully for admin users" do
+      user.update!(admin: true)
+
+      get exchange_return_audit_admin_settings_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("settings.exchange_return_audit.title"))
+      expect(response.body).to include(I18n.t("settings.exchange_return_audit.filters.pending"))
+      expect(response.body).to include(I18n.t("settings.exchange_return_audit.filters.paid"))
+    end
+
+    it "round-trips the paid status filter" do
+      user.update!(admin: true)
+
+      get exchange_return_audit_admin_settings_path, params: { status_filter: "paid" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="status_filter" value="paid"')
+    end
+  end
+
+  describe "[ GET /admin/settings/card_exchange_projection_audit ]" do
+    before { sign_in user }
+
+    it "returns not found for non-admin users" do
+      get card_exchange_projection_audit_admin_settings_path
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "renders successfully for admin users" do
+      user.update!(admin: true)
+
+      get card_exchange_projection_audit_admin_settings_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("settings.card_exchange_projection_audit.title"))
+      expect(response.body).to include(I18n.t("settings.card_exchange_projection_audit.filters.pending"))
+      expect(response.body).to include(I18n.t("settings.card_exchange_projection_audit.filters.paid"))
+    end
+
+    it "round-trips the paid status filter" do
+      user.update!(admin: true)
+
+      get card_exchange_projection_audit_admin_settings_path, params: { status_filter: "paid" }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('name="status_filter" value="paid"')
     end
   end
 

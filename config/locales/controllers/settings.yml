@@ -5,6 +5,8 @@ en:
     tabs:
       naming: "Naming Service"
       exchange_audit: "Exchange Audit"
+      exchange_return_audit: "Exchange Return Audit"
+      card_exchange_projection_audit: "Card Projection Audit"
     exchange_audit:
       loading: "Loading exchange audit..."
       title: "Exchange Audit"
@@ -104,6 +106,86 @@ en:
       receiver_exchange_return: "Receiver Exchange Return"
       shared_return: "Shared Return"
       message: "Message"
+    exchange_return_audit:
+      loading: "Loading exchange return audit..."
+      title: "Exchange Return Audit"
+      description: "Review EXCHANGE RETURN cash transactions whose totals diverge from installments, exchange rows, or linked source-sheet aggregates."
+      empty: "No exchange return mismatches were found."
+      open: "Open"
+      date: "Date"
+      context: "Context"
+      status_label: "Status"
+      month_year: "Month / Year"
+      filters:
+        pending: "Pending"
+        paid: "Paid"
+      summary:
+        rows: "Rows"
+        installment_mismatches: "Installment Mismatches"
+        stale_source_rows: "Rows With Stale Sources"
+      metrics:
+        cash_total: "Cash Total"
+        installments_total: "Installments Total"
+        exchange_rows_total: "Exchange Rows Total"
+        source_rows: "Stale Source Rows"
+      stale_rows:
+        title: "Stale Linked Source Rows"
+        description: "These linked payer entity transactions disagree with the exchange rows scoped to this shared return."
+        aggregate: "Aggregate"
+        aggregate_exchange_total: "All Monetary Exchanges"
+        scoped_exchange_total: "Scoped Exchange Total"
+        delta: "Delta"
+      allocation_rows:
+        title: "Source Allocation Issues"
+        description: "These source transactions have entity splits that do not reconcile with the transaction total."
+        transaction_total: "Transaction Total"
+        allocation_total: "Allocation Total"
+        missing_amount: "Missing Amount"
+      issue_codes:
+        installments_total_mismatch: "Cash total differs from installments"
+        exchange_rows_total_mismatch: "Cash total differs from exchange rows"
+        stale_linked_source_rows: "Linked source aggregates are stale"
+        source_allocation_mismatch: "Source entity allocation is incomplete"
+        missing_moi_allocation: "Missing MOI allocation for the self-share"
+        entity_allocation_mismatch: "Entity allocation does not match the transaction total"
+    card_exchange_projection_audit:
+      loading: "Loading card projection audit..."
+      title: "Card Projection Audit"
+      description: "Review card transactions whose payer exchange rows no longer match the source installment month/year and amount projection."
+      empty: "No card projection mismatches were found."
+      open: "Open"
+      date: "Date"
+      context: "Context"
+      status_label: "Status"
+      month_year: "Month / Year"
+      bucket: "Bucket"
+      installment_number: "Installment"
+      expected_rows: "Expected Projection Rows"
+      actual_rows: "Actual Exchange Rows"
+      filters:
+        pending: "Pending"
+        paid: "Paid"
+      summary:
+        rows: "Rows"
+        shape_mismatches: "Shape Mismatches"
+        duplicate_buckets: "Duplicate Buckets"
+      metrics:
+        card_total: "Card Total"
+        expected_total: "Expected Total"
+        actual_total: "Actual Total"
+      allocation_rows:
+        title: "Source Allocation Issues"
+        description: "These card transactions have entity splits that do not reconcile with the transaction total."
+        transaction_total: "Transaction Total"
+        allocation_total: "Allocation Total"
+        missing_amount: "Missing Amount"
+      issue_codes:
+        payer_exchange_total_mismatch: "Payer exchanges differ from declared payer total"
+        projection_shape_mismatch: "Payer exchanges do not match installment projection"
+        duplicate_projection_buckets: "Payer exchanges repeat a projection bucket"
+        source_allocation_mismatch: "Source entity allocation is incomplete"
+        missing_moi_allocation: "Missing MOI allocation for the self-share"
+        entity_allocation_mismatch: "Entity allocation does not match the transaction total"
 
 pt-BR:
   settings:
@@ -112,6 +194,8 @@ pt-BR:
     tabs:
       naming: "Naming Service"
       exchange_audit: "Auditoria de Trocas"
+      exchange_return_audit: "Auditoria de Exchange Return"
+      card_exchange_projection_audit: "Auditoria de Projeção do Card"
     exchange_audit:
       loading: "Carregando auditoria de trocas..."
       title: "Auditoria de Trocas"
@@ -211,3 +295,83 @@ pt-BR:
       receiver_exchange_return: "Retorno da Troca do Destinatário"
       shared_return: "Retorno Compartilhado"
       message: "Mensagem"
+    exchange_return_audit:
+      loading: "Carregando auditoria de exchange return..."
+      title: "Auditoria de Exchange Return"
+      description: "Revise CashTransactions de EXCHANGE RETURN cujos totais divergem dos installments, das exchange rows ou dos agregados exibidos nas sheets de origem."
+      empty: "Nenhuma divergência de exchange return foi encontrada."
+      open: "Abrir"
+      date: "Data"
+      context: "Contexto"
+      status_label: "Status"
+      month_year: "Mês / Ano"
+      filters:
+        pending: "Pendentes"
+        paid: "Pagos"
+      summary:
+        rows: "Linhas"
+        installment_mismatches: "Divergências com Installments"
+        stale_source_rows: "Linhas Com Origens Desatualizadas"
+      metrics:
+        cash_total: "Total do Cash"
+        installments_total: "Total dos Installments"
+        exchange_rows_total: "Total das Exchange Rows"
+        source_rows: "Origens Desatualizadas"
+      stale_rows:
+        title: "Linhas de Origem Desatualizadas"
+        description: "Estas entity transactions pagadoras divergem das exchange rows deste retorno compartilhado."
+        aggregate: "Agregado"
+        aggregate_exchange_total: "Todas as Monetary Exchanges"
+        scoped_exchange_total: "Total das Exchange Rows"
+        delta: "Diferença"
+      allocation_rows:
+        title: "Problemas de Alocação da Origem"
+        description: "Estas transações de origem têm divisões por entidade que não fecham com o total da transação."
+        transaction_total: "Total da Transação"
+        allocation_total: "Total da Alocação"
+        missing_amount: "Valor Faltante"
+      issue_codes:
+        installments_total_mismatch: "O total do cash diverge dos installments"
+        exchange_rows_total_mismatch: "O total do cash diverge das exchange rows"
+        stale_linked_source_rows: "Os agregados das origens estão desatualizados"
+        source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+        missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+        entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"
+    card_exchange_projection_audit:
+      loading: "Carregando auditoria de projeção do card..."
+      title: "Auditoria de Projeção do Card"
+      description: "Revise card transactions cujas payer exchange rows não batem mais com a projeção de month/year e valor dos installments de origem."
+      empty: "Nenhuma divergência de projeção do card foi encontrada."
+      open: "Abrir"
+      date: "Data"
+      context: "Contexto"
+      status_label: "Status"
+      month_year: "Mês / Ano"
+      bucket: "Bucket"
+      installment_number: "Parcela"
+      expected_rows: "Linhas Esperadas da Projeção"
+      actual_rows: "Exchange Rows Atuais"
+      filters:
+        pending: "Pendentes"
+        paid: "Pagos"
+      summary:
+        rows: "Linhas"
+        shape_mismatches: "Divergências de Estrutura"
+        duplicate_buckets: "Buckets Duplicados"
+      metrics:
+        card_total: "Total do Card"
+        expected_total: "Total Esperado"
+        actual_total: "Total Atual"
+      allocation_rows:
+        title: "Problemas de Alocação da Origem"
+        description: "Estas transações do card têm divisões por entidade que não fecham com o total da transação."
+        transaction_total: "Total da Transação"
+        allocation_total: "Total da Alocação"
+        missing_amount: "Valor Faltante"
+      issue_codes:
+        payer_exchange_total_mismatch: "As payer exchanges divergem do total declarado para os pagadores"
+        projection_shape_mismatch: "As payer exchanges não batem com a projeção dos installments"
+        duplicate_projection_buckets: "As payer exchanges repetem um bucket de projeção"
+        source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+        missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+        entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"

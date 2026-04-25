@@ -24,6 +24,8 @@ class Views::Settings::Show < Views::Base
             data: { controller: "naming-tabs", naming_tabs_current_value: default_tab_name }) do
           div(class: "flex flex-wrap gap-2 border-b border-slate-200 pb-3") do
             tab_button(name: "exchange_audit", label: I18n.t("settings.tabs.exchange_audit")) if show_exchange_audit
+            tab_button(name: "exchange_return_audit", label: I18n.t("settings.tabs.exchange_return_audit")) if show_exchange_audit
+            tab_button(name: "card_exchange_projection_audit", label: I18n.t("settings.tabs.card_exchange_projection_audit")) if show_exchange_audit
             tab_button(name: "naming", label: I18n.t("settings.tabs.naming"))
           end
 
@@ -32,6 +34,18 @@ class Views::Settings::Show < Views::Base
               div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "exchange_audit" }) do
                 turbo_frame_tag :settings_exchange_audit_content, src: exchange_audit_admin_settings_path do
                   loading_state
+                end
+              end
+
+              div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "exchange_return_audit" }) do
+                turbo_frame_tag :settings_exchange_return_audit_content, src: exchange_return_audit_admin_settings_path do
+                  loading_state(I18n.t("settings.exchange_return_audit.loading"))
+                end
+              end
+
+              div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "card_exchange_projection_audit" }) do
+                turbo_frame_tag :settings_card_exchange_projection_audit_content, src: card_exchange_projection_audit_admin_settings_path do
+                  loading_state(I18n.t("settings.card_exchange_projection_audit.loading"))
                 end
               end
             end
@@ -57,9 +71,9 @@ class Views::Settings::Show < Views::Base
     ) { label }
   end
 
-  def loading_state
+  def loading_state(text = I18n.t("settings.exchange_audit.loading"))
     div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500") do
-      I18n.t("settings.exchange_audit.loading")
+      text
     end
   end
 

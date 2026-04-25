@@ -140,6 +140,8 @@ Rails.application.routes.draw do
 
     resource :settings, only: [] do
       get :exchange_audit
+      get :exchange_return_audit
+      get :card_exchange_projection_audit
       patch :apply_exchange_audit
     end
   end
