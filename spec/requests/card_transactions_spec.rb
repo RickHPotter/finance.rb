@@ -2088,7 +2088,9 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(advanced_card_transaction.categories.pluck(:category_name)).to include("CARD ADVANCE")
       expect(advanced_card_transaction.price).to eq(200)
+      expect(advanced_card_transaction.description).to eq(advanced_card_transaction.card_advance_description)
       expect(advanced_card_transaction.advance_cash_transaction).to be_present
+      expect(advanced_card_transaction.advance_cash_transaction.description).to eq(advanced_card_transaction.card_advance_description)
       expect(advanced_card_transaction.advance_cash_transaction.price).to eq(-200)
     end
 

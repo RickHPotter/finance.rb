@@ -4,7 +4,7 @@ class Views::Shared::DatetimeInput < Views::Base
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :form, :field, :value, :id, :hidden_data, :autofocus, :disabled, :max_datetime, :max_datetime_message
+  attr_reader :form, :field, :value, :id, :hidden_data, :autofocus, :disabled, :max_datetime, :max_datetime_message, :show_time
 
   def initialize(form:, field:, value:, id:, **options)
     @form = form
@@ -16,6 +16,7 @@ class Views::Shared::DatetimeInput < Views::Base
     @disabled = options.fetch(:disabled, false)
     @max_datetime = options.fetch(:max_datetime, nil)
     @max_datetime_message = options.fetch(:max_datetime_message, nil)
+    @show_time = options.fetch(:show_time, true)
   end
 
   def view_template
@@ -66,35 +67,37 @@ class Views::Shared::DatetimeInput < Views::Base
           )
         end
 
-        div(class: "w-28 shrink-0") do
-          div(class: "relative") do
-            div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
-              cached_icon :clock
-            end
+        if show_time
+          div(class: "w-28 shrink-0") do
+            div(class: "relative") do
+              div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+                cached_icon :clock
+              end
 
-            input(
-              type: "text",
-              id: "#{id}_time_input",
-              value: time_value,
-              disabled:,
-              inputmode: "numeric",
-              autocomplete: "off",
-              placeholder: "20:20",
-              maxlength: 5,
-              aria: { label: I18n.t("datetime_input.time") },
-              class: "#{input_class} text-center font-graduate",
-              data: {
-                controller: "input-select",
-                datetime_input_target: "timeInput",
-                action: [
-                  "click->input-select#select",
-                  "input->datetime-input#formatTimeInput",
-                  "blur->datetime-input#sync",
-                  "change->datetime-input#sync",
-                  "keydown->datetime-input#handleKeydown"
-                ].join(" ")
-              }
-            )
+              input(
+                type: "text",
+                id: "#{id}_time_input",
+                value: time_value,
+                disabled:,
+                inputmode: "numeric",
+                autocomplete: "off",
+                placeholder: "20:20",
+                maxlength: 5,
+                aria: { label: I18n.t("datetime_input.time") },
+                class: "#{input_class} text-center font-graduate",
+                data: {
+                  controller: "input-select",
+                  datetime_input_target: "timeInput",
+                  action: [
+                    "click->input-select#select",
+                    "input->datetime-input#formatTimeInput",
+                    "blur->datetime-input#sync",
+                    "change->datetime-input#sync",
+                    "keydown->datetime-input#handleKeydown"
+                  ].join(" ")
+                }
+              )
+            end
           end
         end
       end

@@ -36,8 +36,9 @@ class InvestmentsController < ApplicationController
     end
 
     @investment.date ||= Time.zone.now
-    @investment.date += 1.day if params[:next_day]
-    @chain_context = current_chain_context(mode: "create")
+    @investment.date += 1.day if next_day_duplicate_requested?
+    @investment.duplicate = next_day_duplicate_requested?
+    @chain_context = current_chain_context(mode: chain_mode_for_new_investment)
 
     respond_to do |format|
       format.html { render Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context) }
@@ -50,7 +51,7 @@ class InvestmentsController < ApplicationController
     @investment = existing_investment.dup
     @investment.duplicate = true
     @investment.price = 0
-    @investment.date = existing_investment.date + 1.day
+    @investment.date = existing_investment.date
     @investment.month = @investment.date.month
     @investment.year = @investment.date.year
     @chain_context = current_chain_context(mode: "duplicate")
@@ -183,7 +184,7 @@ class InvestmentsController < ApplicationController
   end
 
   def next_investment_for_chain
-    return duplicate_investment_sample(@investment) if current_chain_context[:mode] == "duplicate"
+    return duplicate_investment_sample(@investment, advance_date: next_day_duplicate_requested?) if current_chain_context[:mode] == "duplicate"
 
     @investment.dup.tap do |investment|
       investment.description = investment.price = nil
@@ -193,11 +194,11 @@ class InvestmentsController < ApplicationController
     end
   end
 
-  def duplicate_investment_sample(existing_investment)
+  def duplicate_investment_sample(existing_investment, advance_date: false)
     existing_investment.dup.tap do |investment|
       investment.duplicate = true
       investment.price = 0
-      investment.date = existing_investment.date + 1.day
+      investment.date = advance_date ? existing_investment.date + 1.day : existing_investment.date
       investment.month = investment.date.month
       investment.year = investment.date.year
     end
@@ -230,6 +231,10 @@ class InvestmentsController < ApplicationController
   def finish_chain_without_save_requested? = ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
 
   private
+
+  def next_day_duplicate_requested? = ActiveModel::Type::Boolean.new.cast(params[:next_day])
+
+  def chain_mode_for_new_investment = next_day_duplicate_requested? ? "duplicate" : "create"
 
   def set_investment_tabs
     set_tabs(active_menu: :cash, active_sub_menu: :investment)

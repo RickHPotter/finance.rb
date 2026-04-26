@@ -22,7 +22,7 @@ RSpec.describe "Investments", type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    it "renders a duplicate action that chains from the account and type without next_day" do
+    it "renders a duplicate action that uses the duplicate route" do
       investment = create(
         :investment,
         user:,
@@ -45,9 +45,7 @@ RSpec.describe "Investments", type: :request do
       duplicate_link = document.at_css("#duplicate_investment_#{investment.id}")
 
       expect(duplicate_link).to be_present
-      expect(duplicate_link["href"]).to include(new_investment_path)
-      expect(duplicate_link["href"]).to include("investment%5Buser_bank_account_id%5D=#{user_bank_account.id}")
-      expect(duplicate_link["href"]).to include("investment%5Binvestment_type_id%5D=#{investment_type.id}")
+      expect(duplicate_link["href"]).to eq(duplicate_investment_path(investment))
       expect(duplicate_link["href"]).not_to include("next_day")
     end
   end
@@ -75,9 +73,14 @@ RSpec.describe "Investments", type: :request do
       }
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="next_day"')
       expect(response.body).to include('id="transaction_price"')
       expect(response.body).to include('data-controller="input-select autofocus"')
       expect(response.body).to include('data-autofocus-select-value="true"')
+      expect(response.body).to include('data-datetime-input-target="weekdayLabel"')
+      expect(response.body).not_to include('id="investment_date_time_input"')
     end
   end
 
@@ -102,6 +105,11 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include("Duplicating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
       expect(response.body).to include('data-controller="input-select autofocus"')
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css("#investment_date")["value"]).to eq("2026-03-14T00:00")
+      expect(document.at_css("#investment_date_time_input")).to be_nil
     end
   end
 
@@ -134,6 +142,65 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include("checked")
       expect(response.body).to match(/name="investment\[user_bank_account_id\]"[^>]*value="#{user_bank_account.id}"[^>]*checked/)
       expect(response.body).to match(/name="investment\[investment_type_id\]"[^>]*value="#{investment_type.id}"[^>]*checked/)
+    end
+
+    it "continues a next_day duplicate chain from the newly created investment date" do
+      create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Seed investment",
+        price: 1000,
+        date: Date.new(2026, 3, 23),
+        month: 3,
+        year: 2026
+      )
+
+      get new_investment_path, params: {
+        investment: {
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        },
+        next_day: true
+      }
+
+      expect(response).to have_http_status(:success)
+      initial_document = Nokogiri::HTML.fragment(response.body)
+
+      expect(initial_document.at_css("#investment_date")["value"]).to eq("2026-03-24T00:00")
+
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "Duplicated next day",
+            price: 1234,
+            date: Date.new(2026, 3, 24),
+            month: 3,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id,
+            duplicate: true
+          },
+          next_day: true,
+          chain_mode: "duplicate",
+          continue_chain: "1"
+        }, headers: turbo_stream_headers
+      end.to change(Investment, :count).by(1)
+
+      created_investment = Investment.order(:id).last
+
+      expect(created_investment.date.to_date).to eq(Date.new(2026, 3, 24))
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Chain Duplicating")
+
+      next_document = Nokogiri::HTML.fragment(response.body)
+
+      expect(next_document.at_css("#investment_date")["value"]).to eq("2026-03-25T00:00")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="next_day"')
     end
 
     it "finishes a chain without saving the current investment form" do

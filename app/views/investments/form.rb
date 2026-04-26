@@ -3,6 +3,7 @@
 class Views::Investments::Form < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
@@ -70,13 +71,15 @@ class Views::Investments::Form < Views::Base
           end
 
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
-            TextField \
-              form, :date,
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: investment.date || Time.zone.now,
               id: :investment_date,
-              type: :date, svg: :calendar,
-              value: investment.date.to_date || Time.zone.today,
-              class: "font-graduate",
-              data: { reactive_form_target: :dateInput }
+              show_time: false,
+              hidden_data: { reactive_form_target: :dateInput },
+              autofocus: autofocus_target == :date
+            )
           end
 
           div(class: "w-full lg:w-3/12 mb-3 lg:mb-0") do
@@ -93,6 +96,8 @@ class Views::Investments::Form < Views::Base
         div(class: "w-full") do
           div(class: "flex w-full flex-col gap-3") do
             unless investment.persisted?
+              hidden_field_tag(:next_day, "1") if next_day_duplicate_requested?
+
               render Views::Transactions::ChainControls.new(
                 mode: chain_mode,
                 record_ids: chain_record_ids,
@@ -162,6 +167,8 @@ class Views::Investments::Form < Views::Base
   def chain_mode
     chain_context&.dig(:mode) || (investment.duplicate ? "duplicate" : "create")
   end
+
+  def next_day_duplicate_requested? = ActiveModel::Type::Boolean.new.cast(params[:next_day])
 
   def chain_record_ids
     chain_context&.dig(:record_ids) || []

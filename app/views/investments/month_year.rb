@@ -98,7 +98,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
                         data: { turbo_frame: "_top" }
 
                 link_to investment.user_bank_account.user_bank_account_name,
-                        new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
+                        new_investment_path(next_day: true, chain_mode: "duplicate", investment: investment.slice(:user_bank_account_id, :investment_type_id)),
                         class: "p-1 rounded-sm bg-white border border-black shrink-0",
                         data: { turbo_frame: "_top" }
               end
@@ -157,7 +157,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
           div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
-                    new_investment_path(next_day: true, investment: investment.slice(:user_bank_account_id, :investment_type_id)),
+                    new_investment_path(next_day: true, chain_mode: "duplicate", investment: investment.slice(:user_bank_account_id, :investment_type_id)),
                     class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-sm underline bg-white border-black text-indigo-600",
                     data: { turbo_frame: "_top" }
           end
@@ -216,7 +216,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
       PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
-          action_menu_link(action_message(:duplicate), new_investment_path(investment: investment.slice(:user_bank_account_id, :investment_type_id)))
+          action_menu_link(action_message(:duplicate), duplicate_investment_path(investment))
           action_menu_destroy_link(investment)
         end
       end
@@ -254,7 +254,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
   def render_duplicate_action(investment)
     link_to(
-      new_investment_path(investment: investment.slice(:user_bank_account_id, :investment_type_id)),
+      duplicate_investment_path(investment),
       id: "duplicate_investment_#{investment.id}",
       class: action_button_class,
       title: action_message(:duplicate),

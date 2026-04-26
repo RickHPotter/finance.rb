@@ -16,6 +16,8 @@ export default class extends Controller {
   }
 
   formatTimeInput() {
+    if (!this.hasTimeInputTarget) return
+
     const digits = this.timeInputTarget.value.replace(/\D/g, "").slice(0, 4)
 
     if (digits.length <= 2) {
@@ -39,14 +41,14 @@ export default class extends Controller {
       return
     }
 
-    const parsedTime = this.parseTime(this.timeInputTarget.value, this.currentTimeValue())
+    const parsedTime = this.parseTime(this.currentTimeInputValue(), this.currentTimeValue())
     if (!parsedTime) {
       this.setInvalidTime()
       return
     }
 
     this.clearValidity()
-    this.timeInputTarget.value = parsedTime
+    if (this.hasTimeInputTarget) this.timeInputTarget.value = parsedTime
     this.updateWeekdayLabel()
 
     const nextValue = `${nextDate}T${parsedTime}`
@@ -69,6 +71,10 @@ export default class extends Controller {
 
     event.preventDefault()
     this.sync()
+
+    if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) return
+
+    this.hiddenInputTarget.form?.requestSubmit()
   }
 
   syncVisibleFromHidden() {
@@ -80,8 +86,10 @@ export default class extends Controller {
 
     const [datePart, timePart] = value.split("T")
     this.dateInputTarget.value = datePart || ""
-    this.timeInputTarget.value = timePart ? timePart.slice(0, 5) : ""
-    this.formatTimeInput()
+    if (this.hasTimeInputTarget) {
+      this.timeInputTarget.value = timePart ? timePart.slice(0, 5) : ""
+      this.formatTimeInput()
+    }
     this.updateWeekdayLabel()
   }
 
@@ -91,6 +99,10 @@ export default class extends Controller {
 
   currentTimeValue() {
     return this.hiddenInputTarget.value.split("T")[1]?.slice(0, 5) || "00:00"
+  }
+
+  currentTimeInputValue() {
+    return this.hasTimeInputTarget ? this.timeInputTarget.value : ""
   }
 
   parseTime(value, fallback) {
@@ -138,11 +150,15 @@ export default class extends Controller {
   }
 
   setInvalidTime() {
+    if (!this.hasTimeInputTarget) return
+
     this.timeInputTarget.setCustomValidity(this.invalidTimeMessageValue)
     this.timeInputTarget.reportValidity()
   }
 
   clearValidity() {
+    if (!this.hasTimeInputTarget) return
+
     this.timeInputTarget.setCustomValidity("")
   }
 
@@ -178,9 +194,15 @@ export default class extends Controller {
 
   handleFormSubmit(event) {
     this.sync()
-    if (this.dateInputTarget.validationMessage || this.timeInputTarget.validationMessage) {
+    if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) {
       event.preventDefault()
     }
+  }
+
+  timeValidationMessagePresent() {
+    if (!this.hasTimeInputTarget) return false
+
+    this.timeInputTarget.validationMessage
   }
 
   withinAllowedRange(nextValue) {

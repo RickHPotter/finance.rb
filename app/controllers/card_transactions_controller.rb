@@ -175,9 +175,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def pay_in_advance
-    description = model_attribute(CardTransaction, :card_advance_description)
-
-    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params.merge(description:), context: current_context)
+    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params, context: current_context)
+    @card_transaction.description = @card_transaction.card_advance_description
     @card_transaction.card_installments.first.assign_attributes(@card_transaction.slice(:year, :month))
     @card_transaction.save
 
