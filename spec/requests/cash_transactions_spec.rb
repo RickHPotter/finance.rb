@@ -40,11 +40,33 @@ RSpec.describe "CashTransactions", type: :request do
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="datetime-input"')
       expect(response.body).to include('id="cash_transaction_date"')
       expect(response.body).to include('id="cash_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the cash-specific form skeleton on edit" do
+      existing_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Existing cash transaction",
+        price: 12_345,
+        date: Date.new(2026, 4, 2),
+        month: 4,
+        year: 2026
+      )
+
+      get edit_cash_transaction_path(existing_cash_transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -183,10 +205,45 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(subscription.description)
       expect(response.body).to include(edit_cash_transaction_path(transaction))
       expect(response.body).to include(duplicate_cash_transaction_path(transaction))
+      expect(response.body).to include("border-orange-500")
       expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
       expect(response.body).to include("active_month_years")
       expect(response.body).to include("user_bank_account_id")
       expect(response.body).to include(user_bank_account.id.to_s)
+    end
+
+    it "does not render broken reference links to transactions outside the current context" do
+      foreign_user = create(:user, :random)
+      foreign_bank = create(:bank, :random)
+      foreign_account = create(:user_bank_account, :random, user: foreign_user, bank: foreign_bank)
+      foreign_transaction = create(
+        :cash_transaction,
+        user: foreign_user,
+        context: foreign_user.main_context,
+        user_bank_account: foreign_account,
+        description: "Foreign reference transaction",
+        price: -8_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Local borrow return",
+        price: 8_000,
+        date: Date.new(2026, 4, 11),
+        month: 4,
+        year: 2026,
+        reference_transactable: foreign_transaction
+      )
+
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include(cash_transaction_path(foreign_transaction))
     end
   end
 

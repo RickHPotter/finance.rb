@@ -52,6 +52,9 @@ application.register("exchange", ExchangeController)
 import ExchangeLockController from "./exchange_lock_controller"
 application.register("exchange-lock", ExchangeLockController)
 
+import FormLoadingController from "./form_loading_controller"
+application.register("form-loading", FormLoadingController)
+
 import HistoryNavController from "./history_nav_controller"
 application.register("history-nav", HistoryNavController)
 

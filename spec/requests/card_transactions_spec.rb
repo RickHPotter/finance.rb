@@ -71,11 +71,34 @@ RSpec.describe "CardTransactions", type: :request do
       get new_card_transaction_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="datetime-input"')
       expect(response.body).to include('id="card_transaction_date"')
       expect(response.body).to include('id="card_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the card-specific form skeleton on edit" do
+      user_card_one
+      existing_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Existing card transaction",
+        price: -12_345,
+        date: Date.new(2026, 4, 2),
+        month: 4,
+        year: 2026
+      )
+
+      get edit_card_transaction_path(existing_card_transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -1845,6 +1868,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(subscription.description)
       expect(response.body).to include(edit_card_transaction_path(transaction))
       expect(response.body).to include(duplicate_card_transaction_path(transaction))
+      expect(response.body).to include("border-orange-500")
       expect(response.body).to include(cash_transaction_path(transaction.card_installments.first.cash_transaction))
       expect(response.body).to include("active_month_years")
       expect(response.body).to include("user_card_id")

@@ -55,6 +55,8 @@ RSpec.describe "Investments", type: :request do
       get new_investment_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="investment_form_submission_skeleton"')
       expect(response.body).to include("ruby-ui--combobox")
       expect(response.body).to include('id="investment_form"')
       expect(response.body).to include('data-controller="reactive-form price-mask"')
@@ -110,6 +112,27 @@ RSpec.describe "Investments", type: :request do
 
       expect(document.at_css("#investment_date")["value"]).to eq("2026-03-14T00:00")
       expect(document.at_css("#investment_date_time_input")).to be_nil
+    end
+
+    it "renders destroy on the persisted edit form" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Editable investment",
+        price: 2000,
+        date: Date.new(2026, 3, 14),
+        month: 3,
+        year: 2026
+      )
+
+      get edit_investment_path(investment)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("delete_investment_#{investment.id}")
+      expect(response.body).to include(I18n.t("actions.destroy"))
     end
   end
 

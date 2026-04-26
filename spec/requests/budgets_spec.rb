@@ -67,6 +67,9 @@ RSpec.describe "Budgets", type: :request do
       get new_budget_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("New")
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="budget_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="reactive-form price-mask dynamic-description"')
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
@@ -81,8 +84,27 @@ RSpec.describe "Budgets", type: :request do
       get edit_budget_path(budget)
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("Editing")
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
       expect(response.body).to include('data-reactive-form-target="monthYearInput"')
+    end
+
+    it "renders a duplicated budget form without creating a new record" do
+      budget = create(
+        :budget,
+        user:,
+        description: "Duplicated budget",
+        month: 3,
+        year: 2026,
+        value: -10_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      expect { get duplicate_budget_path(budget) }.not_to change(Budget, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to include('id="budget_form_submission_skeleton"')
     end
   end
 
@@ -123,11 +145,46 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
       expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
       expect(response.body).to include(edit_budget_path(budget))
+      expect(response.body).to include(duplicate_budget_path(budget))
       expect(response.body).to include(cash_transaction_path(cash_transaction))
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include("active_month_years")
       expect(response.body).to include("category_id")
       expect(response.body).to include(category.id.to_s)
+    end
+
+    it "shows Available for expense budgets that still have room remaining" do
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Partially consumed budget",
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -25_787,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -25_787, paid: true)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Expense budget status",
+        month: 3,
+        year: 2026,
+        value: -60_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      get budget_path(budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("dashboards.budgets.status.available"))
+      expect(response.body).not_to include(I18n.t("dashboards.budgets.status.exceeded"))
     end
   end
 
@@ -174,17 +231,21 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include(budget_path(budget))
       expect(response.body).to include(edit_budget_path(budget))
       expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("actions.duplicate"))
       expect(response.body).to include(I18n.t("actions.destroy"))
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include("linkWithConfirmDialog_budget_menu_destroy_#{budget.id}")
+      expect(response.body).to include(duplicate_budget_path(budget))
 
       document = Nokogiri::HTML.fragment(response.body)
       description_link = document.at_css("#edit_budget_#{budget.id}")
       analyse_link = document.at_css("#analyse_budget_#{budget.id}")
+      duplicate_link = document.at_css("#duplicate_budget_#{budget.id}")
       action_button = document.at_css("#budget_actions_#{budget.id}")
 
       expect(description_link["href"]).to eq(edit_budget_path(budget))
       expect(analyse_link["href"]).to eq(budget_path(budget))
+      expect(duplicate_link["href"]).to eq(duplicate_budget_path(budget))
       expect(action_button).to be_present
     end
   end

@@ -47,6 +47,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "flex flex-wrap gap-2 lg:justify-end") do
         dashboard_action(action_model(:edit, Budget), edit_budget_path(budget), variant: :outline)
+        dashboard_action(action_message(:duplicate), duplicate_budget_path(budget), variant: :duplicate)
         destroy_action
         dashboard_action(action_model(:index, Budget, 2), budget_index_path, variant: :primary)
       end
@@ -188,6 +189,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
     case variant
     when :primary then "#{base_class} bg-slate-900 text-white hover:bg-slate-700"
+    when :duplicate then "#{base_class} border border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
     when :destroy then "#{base_class} bg-red-600 text-white hover:bg-red-700"
     else "#{base_class} border border-slate-300 text-slate-700 hover:bg-slate-100"
     end
@@ -270,17 +272,25 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def status_label
-    return I18n.t("dashboards.budgets.status.exceeded") if budget.remaining_value.negative?
+    return I18n.t("dashboards.budgets.status.exceeded") if budget_exceeded?
     return I18n.t("dashboards.budgets.status.exact") if budget.remaining_value.zero?
 
     I18n.t("dashboards.budgets.status.available")
   end
 
   def status_class
-    return "bg-red-100 text-red-800" if budget.remaining_value.negative?
+    return "bg-red-100 text-red-800" if budget_exceeded?
     return "bg-amber-100 text-amber-900" if budget.remaining_value.zero?
 
     "bg-emerald-100 text-emerald-800"
+  end
+
+  def budget_exceeded?
+    if budget.value.negative?
+      budget.remaining_value.positive?
+    else
+      budget.remaining_value.negative?
+    end
   end
 
   def rule_label(rule, enabled)

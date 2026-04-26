@@ -52,6 +52,15 @@ class BudgetsController < ApplicationController
     end
   end
 
+  def duplicate
+    @budget = current_context.budgets.duplicate(params[:id])
+
+    respond_to do |format|
+      format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
+      format.turbo_stream { render Views::Budgets::New.new(current_user:, budget: @budget) }
+    end
+  end
+
   def update
     @budget = Logic::Budgets.update(@budget, budget_params.merge(user: current_user, context: current_context))
 

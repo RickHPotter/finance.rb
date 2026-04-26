@@ -210,26 +210,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
         end
 
-        div(class: "grid grid-cols-1 lg:flex items-center justify-center gap-2 mx-auto") do
-          Button(type: :submit, variant: :purple) { action_model(:submit, budget) }
-
-          if budget.persisted?
-            LinkWithConfirmation(
-              id: budget.id,
-              text: action_model(:destroy, budget),
-              link_params: {
-                href: budget_path(budget),
-                id: "delete_budget_#{budget.id}",
-                variant: :destructive,
-                data: { turbo_method: :delete }
-              }
-            )
-
-            card_transactions_sheet
-            cash_transactions_sheet
-            exchange_return_cash_transactions_sheet
-          end
-        end
+        render_actions_row
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
@@ -242,6 +223,48 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     end.to_json
   end
 
+  def render_actions_row
+    if budget.persisted?
+      persisted_actions_row
+    else
+      new_record_actions_row
+    end
+  end
+
+  def persisted_actions_row
+    div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+      Button(type: :submit, variant: :purple, class: "min-w-64") { action_message(:submit) }
+
+      Button(
+        link: duplicate_budget_path(budget),
+        class: "min-w-64 border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white",
+        data: { turbo_frame: "_top" }
+      ) do
+        action_message(:duplicate)
+      end
+
+      LinkWithConfirmation(
+        id: budget.id,
+        text: action_message(:destroy),
+        link_params: {
+          href: budget_path(budget),
+          id: "delete_budget_#{budget.id}",
+          variant: :destructive,
+          class: "min-w-64",
+          data: { turbo_method: :delete }
+        }
+      )
+
+      list_menu
+    end
+  end
+
+  def new_record_actions_row
+    div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+      Button(type: :submit, variant: :purple, class: "min-w-64") { action_message(:submit) }
+    end
+  end
+
   def entities_json
     current_user.entities.to_h do |c|
       [ c.id, asset_path("avatars/#{c.avatar_name}") ]
@@ -249,10 +272,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def card_transactions_sheet
+    card_transactions_sheet_with_trigger("w-full", action_model(:index, CardTransaction, 2))
+  end
+
+  def card_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, CardTransaction, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -299,10 +326,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def cash_transactions_sheet
+    cash_transactions_sheet_with_trigger("w-full", action_model(:index, CashTransaction, 2))
+  end
+
+  def cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, CashTransaction, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -347,10 +378,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def exchange_return_cash_transactions_sheet
+    exchange_return_cash_transactions_sheet_with_trigger("w-full", action_model(:index, Exchange, 2))
+  end
+
+  def exchange_return_cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, Exchange, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -415,5 +450,25 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     return [ 0 ] if exchange_return_cash_installments.empty?
 
     exchange_return_cash_installments
+  end
+
+  def list_menu
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+      PopoverTrigger(class: "flex") do
+        Button(type: :button, class: "min-w-64") { "List" }
+      end
+
+      PopoverContent(class: "z-60 opacity-100! min-w-64 p-1") do
+        div(class: "flex flex-col gap-1") do
+          card_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CardTransaction, 2))
+          cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CashTransaction, 2))
+          exchange_return_cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, Exchange, 2))
+        end
+      end
+    end
+  end
+
+  def sheet_menu_item_button_class
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
   end
 end

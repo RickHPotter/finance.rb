@@ -226,6 +226,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
       PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:analyse), budget_path(budget), id: "analyse_budget_#{budget.id}")
+          action_menu_link(action_message(:duplicate), duplicate_budget_path(budget), id: "duplicate_budget_#{budget.id}")
           action_menu_destroy_link(budget)
         end
       end

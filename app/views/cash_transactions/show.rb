@@ -37,7 +37,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def dashboard_header
     div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
-      div(class: "min-w-0") do
+      div(class: "min-w-0 text-left") do
         h1(class: "text-4xl font-black tracking-tight text-slate-950") { cash_transaction.description }
         render_scenario_badge
 
@@ -51,7 +51,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "flex flex-wrap gap-2 lg:justify-end") do
         dashboard_action(action_model(:edit, CashTransaction), edit_cash_transaction_path(cash_transaction), variant: :outline)
-        dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction), variant: :outline) if duplicate_allowed?
+        dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction), variant: :duplicate) if duplicate_allowed?
         pay_action_button
         destroy_action
         dashboard_action(action_model(:index, CashTransaction, 2), cash_index_path, variant: :primary)
@@ -202,7 +202,8 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
     case variant
     when :primary then "#{base_class} bg-slate-900 text-white hover:bg-slate-700"
-    when :pay then "#{base_class} bg-money text-white hover:opacity-80"
+    when :duplicate then "#{base_class} border border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
+    when :pay then "#{base_class} border border-green-500 bg-green-100 text-green-900 hover:border-green-400 hover:bg-green-500 hover:text-white"
     when :destroy then "#{base_class} bg-red-600 text-white hover:bg-red-700"
     else "#{base_class} border border-slate-300 text-slate-700 hover:bg-slate-100"
     end
@@ -229,7 +230,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def reference_link_item
-    reference = cash_transaction.reference_transactable
+    reference = dashboard_reference
     return if reference.blank?
 
     link_item(I18n.t("dashboards.cash_transactions.reference"), reference.description, reference_path_for(reference))
@@ -275,13 +276,29 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     @reference_descendants ||= cash_transaction.reference_children(scope: current_context.cash_transactions).to_a
   end
 
+  def dashboard_reference
+    @dashboard_reference ||= begin
+      reference = cash_transaction.reference_transactable
+      reference if visible_dashboard_reference?(reference)
+    end
+  end
+
+  def visible_dashboard_reference?(reference)
+    case reference
+    when CashTransaction then current_context.cash_transactions.exists?(id: reference.id)
+    when CardTransaction then current_context.card_transactions.exists?(id: reference.id)
+    when Budget then current_context.budgets.exists?(id: reference.id)
+    else false
+    end
+  end
+
   def payable_installment
     @payable_installment ||= installments.reject(&:paid?).one? ? installments.reject(&:paid?).first : nil
   end
 
   def dashboard_links_empty?
     cash_transaction.subscription.blank? &&
-      cash_transaction.reference_transactable.blank? &&
+      dashboard_reference.blank? &&
       reference_descendants.empty? &&
       !cash_transaction.card_payment? &&
       !cash_transaction.card_advance? &&

@@ -42,7 +42,7 @@ class Views::Transactions::FormActions < Views::Base
         end
 
         if duplicate_href.present?
-          Button(link: duplicate_href, class: "min-w-64", data: { turbo_frame: "_top" }) do
+          Button(link: duplicate_href, class: duplicate_button_class, data: { turbo_frame: "_top" }) do
             action_message(:duplicate)
           end
         end
@@ -107,5 +107,9 @@ class Views::Transactions::FormActions < Views::Base
 
   def chain_checked?
     chain_context&.dig(:checked) || false
+  end
+
+  def duplicate_button_class
+    "min-w-64 border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
   end
 end

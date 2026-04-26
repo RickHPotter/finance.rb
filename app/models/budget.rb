@@ -6,7 +6,7 @@ class Budget < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :recalculate_balance
+  attr_accessor :recalculate_balance, :duplicate
 
   # @relationships ............................................................
   belongs_to :user
@@ -37,6 +37,16 @@ class Budget < ApplicationRecord
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
+  def self.duplicate(id)
+    existing_budget = find(id)
+
+    existing_budget.dup.tap do |budget|
+      budget.duplicate = true
+      budget.budget_categories = existing_budget.budget_categories.map(&:dup)
+      budget.budget_entities = existing_budget.budget_entities.map(&:dup)
+    end
+  end
+
   # @public_instance_methods ..................................................
   def date
     Date.new(year, month).beginning_of_month

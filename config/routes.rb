@@ -101,6 +101,10 @@ Rails.application.routes.draw do
   end
 
   resources :budgets do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
     end

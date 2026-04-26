@@ -9,8 +9,11 @@ class Views::Investments::New < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "bg-white p-4 shadow-md rounded-lg") do
-        span(class: badge_class) { badge_text }
+      render Views::Shared::FormShell.new(
+        badge_text:,
+        badge_class:,
+        skeleton_view: Views::Investments::FormSubmissionSkeleton
+      ) do
         render Views::Investments::Form.new(current_user: @current_user, investment: @investment, chain_context: @chain_context)
       end
     end
