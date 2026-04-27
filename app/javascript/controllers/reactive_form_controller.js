@@ -191,17 +191,16 @@ export default class extends Controller {
       const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
       const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
       const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
+      const transactionPrice  = this.priceInputTarget.value
+      const installmentsCount = this.installmentsCountInputTarget.value
 
-      if (parseInt(_removeMask(price.value)) === 0) { return }
-      if (parseInt(_removeMask(priceToBeReturned.value)) === 0) { return }
-
-      price.value = this.priceInputTarget.value
-      price.dispatchEvent(new Event("input"))
-
-      priceToBeReturned.value = this.priceInputTarget.value
+      priceToBeReturned.value = transactionPrice
       priceToBeReturned.dispatchEvent(new Event("input"))
 
-      exchangesCount.value = this.installmentsCountInputTarget.value
+      price.value = transactionPrice
+      price.dispatchEvent(new Event("input"))
+
+      exchangesCount.value = installmentsCount
       exchangesCount.dispatchEvent(new Event("input"))
     })
   }
