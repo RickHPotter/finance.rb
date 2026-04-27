@@ -32,6 +32,10 @@ class Context < ApplicationRecord
     archived_at.present?
   end
 
+  def removable?
+    derived? && archived? && derived_contexts.none?
+  end
+
   private
 
   def assign_scenario_key

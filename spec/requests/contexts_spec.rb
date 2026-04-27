@@ -225,6 +225,64 @@ RSpec.describe "Contexts", type: :request do
     end
   end
 
+  describe "[ #destroy ]" do
+    it "removes an archived leaf derived context" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+
+      expect do
+        delete context_path(archived_context)
+      end.to change { user.contexts.exists?(archived_context.id) }.from(true).to(false)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(flash[:notice]).to eq(I18n.t("contexts.destroy.success"))
+    end
+
+    it "does not remove an active derived context" do
+      scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
+
+      expect do
+        delete context_path(scenario_context)
+      end.not_to change(Context, :count)
+
+      expect(response).to redirect_to(context_path(scenario_context))
+      expect(flash[:alert]).to eq(I18n.t("contexts.destroy.archive_required"))
+    end
+
+    it "does not remove the main context" do
+      expect do
+        delete context_path(user.main_context)
+      end.not_to change(Context, :count)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(flash[:alert]).to eq(I18n.t("contexts.destroy.main_forbidden"))
+    end
+
+    it "does not remove an archived context that still has child contexts" do
+      archived_parent = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+      create(:context, user:, name: "Scenario B", source_context: archived_parent, archived_at: Time.current)
+
+      expect do
+        delete context_path(archived_parent)
+      end.not_to change(Context, :count)
+
+      expect(response).to redirect_to(context_path(archived_parent))
+      expect(flash[:alert]).to eq(I18n.t("contexts.destroy.has_children"))
+    end
+
+    it "shows the destroy action only for archived leaf derived contexts" do
+      archived_leaf = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+      archived_parent = create(:context, user:, name: "Scenario B", source_context: user.main_context, archived_at: Time.current)
+      create(:context, user:, name: "Scenario C", source_context: archived_parent, archived_at: Time.current)
+
+      get context_path(archived_leaf)
+      expect(response.body).to include("delete_context_#{archived_leaf.id}")
+      expect(response.body).to include(I18n.t("contexts.show.destroy"))
+
+      get context_path(archived_parent)
+      expect(response.body).not_to include("delete_context_#{archived_parent.id}")
+    end
+  end
+
   describe "[ #dismiss ]" do
     it "renders an empty overlay frame" do
       get dismiss_contexts_path

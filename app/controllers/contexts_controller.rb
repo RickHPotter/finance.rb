@@ -30,6 +30,30 @@ class ContextsController < ApplicationController
     redirect_to context_path(context)
   end
 
+  def destroy
+    context = current_user.contexts.find(params[:id])
+
+    if context.main?
+      redirect_to contexts_path, alert: t("contexts.destroy.main_forbidden")
+      return
+    end
+
+    unless context.archived?
+      redirect_to context_path(context), alert: t("contexts.destroy.archive_required")
+      return
+    end
+
+    if context.derived_contexts.exists?
+      redirect_to context_path(context), alert: t("contexts.destroy.has_children")
+      return
+    end
+
+    context.destroy!
+    session[:current_context_id] = current_user.main_context.id if current_context == context
+
+    redirect_to contexts_path, notice: t("contexts.destroy.success")
+  end
+
   def dismiss
     render inline: helpers.turbo_frame_tag(:context_overlay), layout: false
   end

@@ -6,6 +6,7 @@ export default class extends Controller {
 
   connect() {
     this.handleFormSubmit = this.handleFormSubmit.bind(this)
+    this.skipSubmitOnNextSync = false
     this.syncVisibleFromHidden()
     this.updateWeekdayLabel()
     this.hiddenInputTarget.form?.addEventListener("submit", this.handleFormSubmit)
@@ -62,11 +63,21 @@ export default class extends Controller {
 
     this.clearDateValidity()
     this.hiddenInputTarget.value = nextValue
+    if (this.skipSubmitOnNextSync) {
+      this.skipSubmitOnNextSync = false
+      return
+    }
+
     this.hiddenInputTarget.dispatchEvent(new Event("input", { bubbles: true }))
     this.hiddenInputTarget.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   handleKeydown(event) {
+    if (event.key === "Tab") {
+      this.skipSubmitOnNextSync = true
+      return
+    }
+
     if (event.key !== "Enter") return
 
     event.preventDefault()

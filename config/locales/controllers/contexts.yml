@@ -15,6 +15,11 @@ en:
     archive:
       success: Context archived.
       main_forbidden: Main context cannot be archived.
+    destroy:
+      success: Context removed.
+      main_forbidden: Main context cannot be removed.
+      archive_required: Only archived contexts can be removed.
+      has_children: Archive or remove child contexts first.
     unarchive:
       success: Context restored.
     new:
@@ -28,6 +33,7 @@ en:
     show:
       label: Context
       archive: Archive context
+      destroy: Remove context
       unarchive: Restore context
       create_child: Create child context
       switch: Switch context
@@ -56,6 +62,11 @@ pt-BR:
     archive:
       success: Contexto arquivado.
       main_forbidden: O contexto principal nao pode ser arquivado.
+    destroy:
+      success: Contexto removido.
+      main_forbidden: O contexto principal nao pode ser removido.
+      archive_required: Apenas contextos arquivados podem ser removidos.
+      has_children: Arquive ou remova primeiro os contextos filhos.
     unarchive:
       success: Contexto restaurado.
     new:
@@ -69,6 +80,7 @@ pt-BR:
     show:
       label: Contexto
       archive: Arquivar contexto
+      destroy: Remover contexto
       unarchive: Restaurar contexto
       create_child: Criar contexto filho
       switch: Trocar contexto

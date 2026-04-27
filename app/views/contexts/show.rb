@@ -70,6 +70,19 @@ class Views::Contexts::Show < Views::Base
               ) { I18n.t("contexts.show.unarchive") }
             end
 
+            if display_context.removable?
+              LinkWithConfirmation(
+                id: "context_destroy_#{display_context.id}",
+                text: I18n.t("contexts.show.destroy"),
+                link_params: {
+                  href: context_path(display_context),
+                  id: "delete_context_#{display_context.id}",
+                  class: "inline-flex items-center rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700",
+                  data: { turbo_method: :delete, turbo_frame: "_top" }
+                }
+              )
+            end
+
             if current_context != display_context && !display_context.archived?
               button_to(
                 switch_context_path(display_context),
