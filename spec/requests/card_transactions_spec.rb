@@ -152,6 +152,24 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("price-range-to-price")
     end
 
+    it "keeps the exchange bound type filter selected when filtering exchange rows" do
+      user_card_one
+
+      get card_transactions_path(
+        user_card_id: user_card_one.id,
+        exchange_bound_type: "card_bound",
+        card_transaction: { category_id: [ exchange_category.id ] }
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.items.exchange_bound_type", value: I18n.t("filters.exchange_bound_type.card_bound")))
+      expect(response.body).to include('name="exchange_bound_type"')
+      expect(response.body).to include('id="exchange_bound_type"')
+      expect(response.body).to include('form="search_form"')
+      expect(response.body).to include('data-controller="request-submit"')
+      expect(response.body).to include('data-request-submit-form-id-value="search_form"')
+    end
+
     it "renders a filter summary with a reset link that keeps the explicit card scope" do
       user_card_one
       category = create(:category, user:, category_name: "FOOD")
@@ -1820,6 +1838,90 @@ RSpec.describe "CardTransactions", type: :request do
       description_link = document.at_css("#edit_card_transaction_#{transaction.id}")
 
       expect(description_link["href"]).to eq(edit_card_transaction_path(transaction))
+    end
+
+    it "filters exchange rows by bound type" do
+      card_bound_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card-bound exchange row",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000,
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [],
+        card_installments: [ build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026, price: -2_000) ]
+      )
+      payer_card_bound = create(
+        :entity_transaction,
+        transactable: card_bound_transaction,
+        entity: entity_one,
+        is_payer: true,
+        price: -2_000,
+        price_to_be_returned: -2_000
+      )
+      create(
+        :exchange,
+        entity_transaction: payer_card_bound,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+
+      standalone_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Standalone exchange row",
+        date: Date.new(2026, 3, 11),
+        month: 4,
+        year: 2026,
+        price: -2_500,
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [],
+        card_installments: [ build(:card_installment, number: 1, date: Date.new(2026, 4, 11), month: 4, year: 2026, price: -2_500) ]
+      )
+      payer_standalone = create(
+        :entity_transaction,
+        transactable: standalone_transaction,
+        entity: entity_two,
+        is_payer: true,
+        price: -2_500,
+        price_to_be_returned: -2_500
+      )
+      create(
+        :exchange,
+        entity_transaction: payer_standalone,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_500,
+        date: Date.new(2026, 4, 11),
+        month: 4,
+        year: 2026
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202604",
+        exchange_bound_type: "card_bound",
+        card_transaction: {
+          user_card_id: user_card_one.id,
+          category_id: [ exchange_category.id ]
+        }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Card-bound exchange row")
+      expect(response.body).not_to include("Standalone exchange row")
     end
   end
 

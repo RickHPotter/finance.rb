@@ -373,6 +373,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_count
         from_installments_number
         to_installments_number
+        exchange_bound_type
         month_year
         force_mobile
         sort

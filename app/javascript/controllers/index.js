@@ -46,6 +46,9 @@ application.register("dynamic-description", DynamicDescriptionController)
 import EntityTransactionController from "./entity_transaction_controller"
 application.register("entity-transaction", EntityTransactionController)
 
+import ExchangeStateSheetController from "./exchange_state_sheet_controller"
+application.register("exchange-state-sheet", ExchangeStateSheetController)
+
 import ExchangeController from "./exchange_controller"
 application.register("exchange", ExchangeController)
 
@@ -105,6 +108,9 @@ application.register("pwa-installation", PwaInstallationController)
 
 import ReactiveFormController from "./reactive_form_controller"
 application.register("reactive-form", ReactiveFormController)
+
+import RequestSubmitController from "./request_submit_controller"
+application.register("request-submit", RequestSubmitController)
 
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)

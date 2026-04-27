@@ -29,6 +29,7 @@ module Logic
           conditions:,
           search_term_condition:,
           ids: raw_conditions[:cash_installment_ids],
+          exchange_bound_type: raw_conditions[:exchange_bound_type],
           sort: raw_conditions[:sort],
           direction: raw_conditions[:direction]
         }
@@ -44,6 +45,7 @@ module Logic
 
     def self.fetch_cash_installments(financial_scope, month, year, options)
       relation = cash_installments_relation(financial_scope)
+                 .left_joins(cash_transaction: %i[categories entities])
                  .where(year:, month:)
                  .includes(cash_transaction: [
                              :categories,
@@ -56,7 +58,17 @@ module Logic
                  .where(options[:search_term_condition])
 
       relation = relation.where(id: options[:ids]) if options[:ids].present?
+      relation = apply_exchange_bound_type_filter(relation, options[:exchange_bound_type])
+      relation = relation.distinct
       apply_sort(relation, sort: options[:sort], direction: options[:direction])
+    end
+
+    def self.apply_exchange_bound_type_filter(relation, exchange_bound_type)
+      return relation if exchange_bound_type.blank? || exchange_bound_type == "all"
+
+      relation.left_joins(cash_transaction: :exchanges)
+              .where(exchanges: { bound_type: exchange_bound_type })
+              .distinct
     end
 
     def self.apply_sort(relation, sort:, direction:)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base
+class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
@@ -16,6 +16,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :from_date, :to_date,
+              :exchange_bound_type,
               :paid, :pending, :paid_state,
               :sort, :direction,
               :user_bank_account_id, :categories, :entities,
@@ -40,6 +41,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @to_installments_count = index_context[:to_installments_count]
     @from_date = index_context[:from_date]
     @to_date = index_context[:to_date]
+    @exchange_bound_type = index_context[:exchange_bound_type]
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @paid_state = index_context[:paid_state]
@@ -146,6 +148,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
                     from_value: from_date,
                     to_value: to_date
                   )
+
+                  render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
                 end
               end
             end
@@ -190,6 +194,10 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   def selected_category_ids = Array(category_id).map(&:to_s)
 
   def selected_entity_ids = Array(entity_id).map(&:to_s)
+
+  def show_exchange_bound_type_filter?
+    exchange_bound_type.present? || selected_category_ids.include?(current_user.built_in_category("EXCHANGE RETURN").id.to_s)
+  end
 
   def filter_summary = @filter_summary ||= IndexState::FilterSummary.new(surface: :cash_transactions, index_context:).to_h
 

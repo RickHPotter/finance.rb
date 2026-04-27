@@ -141,6 +141,43 @@ RSpec.describe "CashTransactions", type: :request do
       expect(paid_state_chip.text).to end_with("x")
     end
 
+    it "keeps the exchange bound type filter selected for exchange return filters" do
+      get cash_transactions_path, params: {
+        exchange_bound_type: "card_bound",
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.items.exchange_bound_type", value: I18n.t("filters.exchange_bound_type.card_bound")))
+      expect(response.body).to include('name="exchange_bound_type"')
+      expect(response.body).to include('id="exchange_bound_type"')
+      expect(response.body).to include('form="search_form"')
+      expect(response.body).to include('data-controller="request-submit"')
+      expect(response.body).to include('data-request-submit-form-id-value="search_form"')
+    end
+
+    it "shows the exchange bound type filter for exchange return and not for exchange" do
+      get cash_transactions_path, params: {
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="exchange_bound_type"')
+
+      get cash_transactions_path, params: {
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('id="exchange_bound_type"')
+    end
+
     it "does not cap the transfer bulk action date" do
       get cash_transactions_path
 
@@ -3714,6 +3751,112 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("edit_cash_transaction_#{pending_transaction.id}")
       expect(response.body).not_to include("edit_cash_transaction_#{paid_transaction.id}")
+    end
+
+    it "filters exchange return cash rows by exchange bound type" do
+      card_bound_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Card-bound mirrored return source",
+        date: Date.new(2026, 3, 20),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_bound_source.category_transactions.destroy_all
+      card_bound_source.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      payer_card_bound = card_bound_source.entity_transactions.first
+      payer_card_bound.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 1)
+      card_bound_exchange = create(
+        :exchange,
+        entity_transaction: payer_card_bound,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_000,
+        date: Date.new(2026, 4, 20),
+        month: 4,
+        year: 2026
+      )
+      card_bound_return = card_bound_exchange.cash_transaction.reload
+
+      standalone_source = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Standalone mirrored return source",
+        date: Date.new(2026, 4, 21),
+        month: 4,
+        year: 2026,
+        price: -2_500
+      )
+      standalone_source.category_transactions.destroy_all
+      standalone_source.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      standalone_entity = standalone_source.entity_transactions.first&.entity || create(:entity, :random, user:)
+      payer_standalone = standalone_source.entity_transactions.first || create(
+        :entity_transaction,
+        transactable: standalone_source,
+        entity: standalone_entity,
+        is_payer: true,
+        price: -2_500,
+        price_to_be_returned: -2_500
+      )
+      payer_standalone.update!(entity: standalone_entity, is_payer: true, price: -2_500, price_to_be_returned: -2_500)
+      standalone_exchange = create(
+        :exchange,
+        entity_transaction: payer_standalone,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_500,
+        date: Date.new(2026, 4, 21),
+        month: 4,
+        year: 2026
+      )
+      standalone_return = standalone_exchange.cash_transaction.reload
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202604",
+        exchange_bound_type: "card_bound",
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(card_bound_return.description)
+      expect(response.body).not_to include(standalone_return.description)
+    end
+
+    it "does not duplicate a cash row when categories and entities create join fanout" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Fanout cash row",
+        date: Date.new(2026, 4, 18),
+        month: 4,
+        year: 2026,
+        price: 1_719
+      )
+
+      extra_category = create(:category, :random, user:)
+      extra_entity = create(:entity, :random, user:)
+
+      transaction.category_transactions.create!(category: extra_category)
+      transaction.entity_transactions.create!(entity: extra_entity, price: 0, price_to_be_returned: 0)
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202604",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.scan("edit_cash_transaction_#{transaction.id}").size).to eq(1)
     end
 
     it "sorts cash rows by price descending" do

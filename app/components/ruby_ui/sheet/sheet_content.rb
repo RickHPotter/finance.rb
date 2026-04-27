@@ -79,7 +79,8 @@ module RubyUI
         data_state: "open",
         data_action: "click->ruby-ui--sheet-content#close",
         class: if @no_blur
-                 ""
+                 "fixed pointer-events-auto inset-0 z-50 bg-background/65 data-[state=open]:animate-in data-[state=closed]:animate-out " \
+                   "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
                else
                  "fixed pointer-events-auto inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out
                   data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"

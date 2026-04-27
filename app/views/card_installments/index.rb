@@ -137,20 +137,32 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
+      text_style = auto_text_color(card_transaction.category_transactions.order(:id).map(&:category).first&.hex_colour)
+
       div(
-        class: "grid grid-cols-12 hover:opacity-80 transition-all",
-        style: "background-clip: padding-box; #{style}",
+        class: [
+          "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
+          "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
+          "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]"
+        ].join(" "),
+        style: text_style,
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
                 action: [
                   "mousedown->datatable#preventRangeSelection",
-                  "click->datatable#toggleCardSelection",
                   "dragstart->datatable#start",
                   "dragover->datatable#activate",
                   "drop->datatable#drop"
                 ].join(" ") }
       ) do
+        div(
+          class: "pointer-events-none absolute inset-0 z-0 transition-all duration-150 " \
+                 "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
+          style: "background-clip: padding-box; #{style}",
+          data: { row_background: true }
+        )
+
         render_row_checkbox(card_installment, card_transaction, wrapper_class: "col-span-5 flex items-center gap-1 relative px-2") do
           div(class: "flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
             date, time = I18n.l(card_installment.date, format: :shorter).split(",")
@@ -301,19 +313,30 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       {
         name: entity.entity_name,
         avatar_name: entity.avatar_name,
-        href:,
-        data: { turbo_frame: "_top", turbo_prefetch: "false" },
-        info_class: "entity_exchanges_info text-2xs leading-tight text-zinc-500",
-        info_text: entity_exchanges_info(entity_transaction)
+        name_href: href,
+        name_data: { turbo_frame: "_top", turbo_prefetch: "false" },
+        info_class: "entity_exchanges_info text-xs leading-tight",
+        info_component: exchange_info_component(entity_transaction)
       }
     end
   end
 
   def entity_exchanges_info(entity_transaction)
-    info = ""
-    info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
-    info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
-    info
+    return if entity_transaction.exchanges_count.zero?
+
+    [
+      "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]",
+      "(#{entity_transaction.exchanges_count})"
+    ].join(" ")
+  end
+
+  def exchange_info_component(entity_transaction)
+    return if entity_transaction.exchanges_count.zero?
+
+    Views::EntityTransactions::ExchangeStateSheet.new(
+      entity_transaction:,
+      trigger_text: entity_exchanges_info(entity_transaction)
+    )
   end
 
   def card_category_popover_items(card_transaction)

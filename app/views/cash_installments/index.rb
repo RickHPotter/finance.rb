@@ -104,29 +104,31 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
+      text_style = auto_text_color(categories_for(cash_transaction).first&.hex_colour)
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
         class: [
-          "group relative z-0 grid grid-cols-12 hover:z-40",
+          "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
-          "hover:[&>*:not([data-row-actions]):not([data-row-background])]:opacity-80",
+          "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
           ("animate-pulse" if should_display_link_to_pay)
         ].compact.join(" "),
+        style: text_style,
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
                 action: [
                   "mousedown->datatable#preventRangeSelection",
-                  "click->datatable#toggleCardSelection",
                   "dragstart->datatable#start",
                   "dragover->datatable#activate",
                   "drop->datatable#drop"
                 ].join(" ") }
       ) do
         div(
-          class: "pointer-events-none absolute inset-0 z-0 transition-opacity group-hover:opacity-80",
+          class: "pointer-events-none absolute inset-0 z-0 transition-all duration-150 " \
+                 "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
           style: "background-clip: padding-box; #{style}",
           data: { row_background: true }
         )
@@ -339,19 +341,30 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       {
         name: entity.entity_name,
         avatar_name: avatar_name || entity.avatar_name,
-        href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
-        data: { turbo_frame: "_top", turbo_prefetch: "false" },
-        info_class: "entity_exchanges_info text-2xs leading-tight opacity-60",
-        info_text: entity_exchanges_info(entity_transaction)
+        name_href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
+        name_data: { turbo_frame: "_top", turbo_prefetch: "false" },
+        info_class: "entity_exchanges_info text-xs leading-tight",
+        info_component: exchange_info_component(entity_transaction)
       }
     end
   end
 
   def entity_exchanges_info(entity_transaction)
-    info = ""
-    info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
-    info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
-    info
+    return if entity_transaction.exchanges_count.zero?
+
+    [
+      "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]",
+      "(#{entity_transaction.exchanges_count})"
+    ].join(" ")
+  end
+
+  def exchange_info_component(entity_transaction)
+    return if entity_transaction.exchanges_count.zero?
+
+    Views::EntityTransactions::ExchangeStateSheet.new(
+      entity_transaction:,
+      trigger_text: entity_exchanges_info(entity_transaction)
+    )
   end
 
   def render_row_checkbox(cash_installment, cash_transaction, mobile: false)

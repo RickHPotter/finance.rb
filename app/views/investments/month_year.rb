@@ -69,9 +69,9 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
           end
 
           div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
-            span(class: "py-3 col-span-5 text-center") { "#{model_attribute(Investment, :total_amount)}:" }
+            span(class: "py-3 col-span-5 text-end") { "#{model_attribute(Investment, :total_amount)}:" }
 
-            span(class: "py-3 col-start-6 text-end", id: :totalAmount, data: { price: total_amount }) do
+            span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

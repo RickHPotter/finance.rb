@@ -16,7 +16,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :sort, :direction,
+              :exchange_bound_type, :sort, :direction,
               :user_card, :categories, :entities,
               :count_by_month_year,
               :mobile
@@ -37,6 +37,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @exchange_bound_type = index_context[:exchange_bound_type]
     @sort = index_context[:sort]
     @direction = index_context[:direction]
     @user_card = index_context[:user_card]
@@ -128,6 +129,8 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
                     to_value: to_installments_count,
                     subject_label_key: :card_installment
                   )
+
+                  render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
                 end
               end
             end
@@ -176,6 +179,10 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
   def selected_entity_ids
     Array(entity_id).map(&:to_s)
+  end
+
+  def show_exchange_bound_type_filter?
+    exchange_bound_type.present? || selected_category_ids.include?(current_user.built_in_category("EXCHANGE").id.to_s)
   end
 
   def filter_summary

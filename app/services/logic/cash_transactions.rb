@@ -22,6 +22,9 @@ module Logic
     end
 
     def self.find_by_ref_month_year(financial_scope, cash_transaction_params, search_params)
+      cash_transaction_params = cash_transaction_params.to_h.deep_dup.with_indifferent_access
+      search_params = search_params.to_h.deep_dup.with_indifferent_access
+
       month_year = search_params.delete(:month_year)
       month = month_year[4..]
       year = month_year[0..3]
@@ -58,6 +61,7 @@ module Logic
       cash_transaction_params.merge({
         price: build_price_range_conditions(search_params),
         cash_installment_ids: cash_transaction_params[:cash_installment_ids],
+        exchange_bound_type: search_params.delete(:exchange_bound_type),
         paid: paid_filters[:paid],
         pending: paid_filters[:pending],
         installments_price: build_cash_transaction_price_range_conditions(search_params),
@@ -87,6 +91,7 @@ module Logic
       {
         price: installments_price,
         number: installments_number,
+        exchange_bound_type: params.delete(:exchange_bound_type),
         cash_transaction: {
           **params.without(:cash_installments_attributes, :category_transactions_attributes, :entity_transactions_attributes).compact_blank,
           **associations.compact_blank
@@ -166,6 +171,9 @@ module Logic
     end
 
     def self.find_count_based_on_search(financial_scope, cash_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+      cash_transaction_params = cash_transaction_params.to_h.deep_dup.with_indifferent_access
+      search_params = search_params.to_h.deep_dup.with_indifferent_access
+
       search_term = search_params.delete(:search_term) || ""
       category_ids = cash_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
@@ -194,6 +202,7 @@ module Logic
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = Logic::CashInstallments.apply_exchange_bound_type_filter(relation, conditions[:exchange_bound_type])
 
       relation = relation.distinct.select("installments.id, installments.month, installments.year")
 

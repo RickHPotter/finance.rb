@@ -56,7 +56,12 @@ class Views::Shared::DatetimeInput < Views::Base
               data: {
                 datetime_input_target: "dateInput",
                 controller: ("autofocus" if autofocus),
-                action: "change->datetime-input#sync"
+                action: [
+                  "input->datetime-input#syncQuiet",
+                  "change->datetime-input#syncQuiet",
+                  "blur->datetime-input#commit",
+                  "keydown->datetime-input#handleDateKeydown"
+                ].join(" ")
               }.compact
             )
           end
@@ -91,8 +96,8 @@ class Views::Shared::DatetimeInput < Views::Base
                   action: [
                     "click->input-select#select",
                     "input->datetime-input#formatTimeInput",
-                    "blur->datetime-input#sync",
-                    "change->datetime-input#sync",
+                    "blur->datetime-input#commit",
+                    "change->datetime-input#commit",
                     "keydown->datetime-input#handleKeydown"
                   ].join(" ")
                 }

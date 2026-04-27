@@ -3,6 +3,9 @@
 module Logic
   class CardInstallments
     def self.find_ref_month_year_by_params(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+      card_transaction_params = card_transaction_params.to_h.deep_dup.with_indifferent_access
+      search_params = search_params.to_h.deep_dup.with_indifferent_access
+
       month_year   = search_params.delete(:month_year)
       year         = month_year[0..3]
       month        = month_year[4..]
@@ -33,6 +36,7 @@ module Logic
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = apply_exchange_bound_type_filter(relation, search_params[:exchange_bound_type])
 
       relation = apply_sort(relation, sort:, direction:)
 
@@ -113,6 +117,9 @@ module Logic
     end
 
     def self.find_count_based_on_search(financial_scope, card_transaction_params, search_params) # rubocop:disable Metrics/AbcSize
+      card_transaction_params = card_transaction_params.to_h.deep_dup.with_indifferent_access
+      search_params = search_params.to_h.deep_dup.with_indifferent_access
+
       search_term  = search_params.delete(:search_term) || ""
       category_ids = card_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
@@ -132,10 +139,19 @@ module Logic
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
+      relation = apply_exchange_bound_type_filter(relation, search_params[:exchange_bound_type])
 
       relation = relation.distinct.select("installments.id, installments.month, installments.year")
 
       relation.group_by { |record| Date.new(record.year, record.month, 1).strftime("%Y%m").to_i }
+    end
+
+    def self.apply_exchange_bound_type_filter(relation, exchange_bound_type)
+      return relation if exchange_bound_type.blank? || exchange_bound_type == "all"
+
+      relation.left_joins(card_transaction: { entity_transactions: :exchanges })
+              .where(exchanges: { bound_type: exchange_bound_type })
+              .distinct
     end
 
     def self.apply_sort(relation, sort:, direction:)

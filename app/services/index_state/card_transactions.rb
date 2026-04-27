@@ -20,6 +20,7 @@ module IndexState
     SEARCH_FILTER_KEYS = [
       :search_term,
       *RANGE_FILTER_KEYS,
+      :exchange_bound_type,
       :force_mobile,
       :sort,
       :direction,
@@ -40,9 +41,7 @@ module IndexState
       [ resolved_sort, resolved_direction ]
     end
 
-    def self.legacy_order_by_for(sort)
-      SORT_TO_LEGACY_ORDER_BY[sort] || DEFAULT_SORT
-    end
+    def self.legacy_order_by_for(sort) = SORT_TO_LEGACY_ORDER_BY[sort] || DEFAULT_SORT
 
     def initialize(current_user:, current_context:, params:, **options)
       super(current_user:, current_context:, params:)
@@ -101,7 +100,7 @@ module IndexState
     end
 
     def filter_context
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS).merge(
+      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type).merge(
         compact_filter_context,
         user_card_context,
         force_mobile: boolean(source_context[:force_mobile])
@@ -234,7 +233,7 @@ module IndexState
     end
 
     def search_filters_for_count(state)
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :force_mobile).merge(
+      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :force_mobile, :exchange_bound_type).merge(
         sort: state[:sort],
         direction: state[:direction]
       )

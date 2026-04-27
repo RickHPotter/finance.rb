@@ -7,6 +7,7 @@ export default class extends Controller {
   connect() {
     this.handleFormSubmit = this.handleFormSubmit.bind(this)
     this.skipSubmitOnNextSync = false
+    this.pendingQuietValue = null
     this.syncVisibleFromHidden()
     this.updateWeekdayLabel()
     this.hiddenInputTarget.form?.addEventListener("submit", this.handleFormSubmit)
@@ -33,11 +34,16 @@ export default class extends Controller {
     this.clearValidity()
   }
 
-  sync() {
+  sync({ dispatch = true } = {}) {
     const nextDate = this.currentDateValue()
     if (!nextDate) {
       this.clearValidity()
-      this.hiddenInputTarget.value = ""
+      if (dispatch) {
+        this.hiddenInputTarget.value = ""
+        this.pendingQuietValue = null
+      } else {
+        this.pendingQuietValue = ""
+      }
       this.updateWeekdayLabel()
       return
     }
@@ -59,10 +65,19 @@ export default class extends Controller {
       return
     }
 
-    if (this.hiddenInputTarget.value === nextValue) return
+    if (!dispatch) {
+      this.pendingQuietValue = nextValue
+      return
+    }
+
+    const pendingChanged = this.pendingQuietValue !== null && this.pendingQuietValue === nextValue && this.hiddenInputTarget.value !== nextValue
+    if (this.hiddenInputTarget.value === nextValue && !pendingChanged) return
 
     this.clearDateValidity()
     this.hiddenInputTarget.value = nextValue
+    this.pendingQuietValue = null
+    if (!dispatch) return
+
     if (this.skipSubmitOnNextSync) {
       this.skipSubmitOnNextSync = false
       return
@@ -70,6 +85,25 @@ export default class extends Controller {
 
     this.hiddenInputTarget.dispatchEvent(new Event("input", { bubbles: true }))
     this.hiddenInputTarget.dispatchEvent(new Event("change", { bubbles: true }))
+  }
+
+  syncQuiet() {
+    this.sync({ dispatch: false })
+  }
+
+  commit() {
+    this.sync({ dispatch: true })
+  }
+
+  handleDateKeydown(event) {
+    if (event.key !== "Enter") return
+
+    event.preventDefault()
+    this.commit()
+
+    if (this.dateInputTarget.validationMessage) return
+
+    this.hiddenInputTarget.form?.requestSubmit()
   }
 
   handleKeydown(event) {
@@ -81,7 +115,7 @@ export default class extends Controller {
     if (event.key !== "Enter") return
 
     event.preventDefault()
-    this.sync()
+    this.commit()
 
     if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) return
 
@@ -204,7 +238,7 @@ export default class extends Controller {
   }
 
   handleFormSubmit(event) {
-    this.sync()
+    this.commit()
     if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) {
       event.preventDefault()
     }

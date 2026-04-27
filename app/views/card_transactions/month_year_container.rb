@@ -6,6 +6,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
+              :exchange_bound_type,
               :from_installments_number, :to_installments_number,
               :user_card_id, :active_month_years,
               :sort, :direction, :order_by, :force_mobile
@@ -21,6 +22,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @exchange_bound_type = index_context[:exchange_bound_type]
     @from_installments_number = index_context[:from_installments_number]
     @to_installments_number = index_context[:to_installments_number]
     @user_card_id = index_context[:user_card]&.id
@@ -48,6 +50,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
         to_price:,
         from_installments_count:,
         to_installments_count:,
+        exchange_bound_type:,
         from_installments_number:,
         to_installments_number:,
         sort:,

@@ -177,6 +177,7 @@ en:
         transaction_price: "Transaction amount (%{value})"
         installment_price: "Installment amount (%{value})"
         installments_count: "Installments (%{value})"
+        exchange_bound_type: "Exchange: %{value}"
         date_range: "Date range (%{value})"
         paid_state: "Status: %{value}"
         account: "Account (%{count})"
@@ -185,6 +186,11 @@ en:
       all: "All"
       paid: "Paid"
       pending: "Pending"
+    exchange_bound_type:
+      label: "Exchange"
+      all: "All"
+      card_bound: "Card Bound"
+      standalone: "Standalone"
   sorting:
     badge:
       idle: "SORT"
@@ -395,6 +401,7 @@ pt-BR:
         transaction_price: "Valor da Movimentação (%{value})"
         installment_price: "Valor da Parcela (%{value})"
         installments_count: "Parcelas (%{value})"
+        exchange_bound_type: "Troca: %{value}"
         date_range: "Período (%{value})"
         paid_state: "Estado: %{value}"
         account: "Conta (%{count})"
@@ -403,6 +410,11 @@ pt-BR:
       all: "Todos"
       paid: "Pago"
       pending: "Pendente"
+    exchange_bound_type:
+      label: "Troca"
+      all: "Todos"
+      card_bound: "Cartão"
+      standalone: "Avulso"
   sorting:
     badge:
       idle: "ORD."
