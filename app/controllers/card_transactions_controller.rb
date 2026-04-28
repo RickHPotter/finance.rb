@@ -101,6 +101,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def update
     @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
     @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
+    @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
 

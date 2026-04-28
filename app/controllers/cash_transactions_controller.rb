@@ -75,6 +75,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
+    @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
     @cash_transaction.update_installments if params[:commit] == "Update"
 

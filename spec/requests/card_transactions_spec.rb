@@ -101,6 +101,7 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
+      expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
     end
 
     it "renders the bulk add to subscription action on the index" do

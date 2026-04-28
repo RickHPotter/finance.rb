@@ -107,13 +107,13 @@ class Views::CardTransactions::Form < Views::Base
   end
 
   def historical_correction_confirmation_submit_for(transaction, param_key)
-    return unless transaction.historical_correction_confirmation_prompt?
+    return unless transaction.persisted?
 
     {
       field_id: "#{param_key}_historical_correction_confirmation",
       name: "#{param_key}[historical_correction_confirmation]",
-      current_value: true,
-      value: true,
+      value: "1",
+      checked: ActiveModel::Type::Boolean.new.cast(transaction.historical_correction_confirmation),
       label: I18n.t("actions.confirm_historical_change")
     }
   end

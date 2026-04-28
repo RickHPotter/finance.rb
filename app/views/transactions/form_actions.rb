@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Views::Transactions::FormActions < Views::Base
-  include Phlex::Rails::Helpers::HiddenFieldTag
   include TranslateHelper
 
   attr_reader :transaction, :destroy_href, :destroy_id, :duplicate_href, :confirmation_submit, :chain_context
@@ -17,29 +16,13 @@ class Views::Transactions::FormActions < Views::Base
 
   def view_template(&)
     div(class: "flex w-full flex-col gap-3") do
-      render_chain_controls
+      render_top_control
 
       div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-        if confirmation_submit.present?
-          hidden_field_tag(
-            confirmation_submit[:name],
-            confirmation_submit[:current_value],
-            id: confirmation_submit[:field_id]
-          )
-        end
-
         Button(type: :submit, variant: :purple, class: "w-64") { action_message(:submit) }
 
         render_finish_chain_button
         render_finish_chain_without_save_button
-
-        if confirmation_submit.present?
-          Button(
-            type: :submit,
-            variant: :outline,
-            class: "w-64 border-amber-300 text-amber-900"
-          ) { confirmation_submit[:label] }
-        end
 
         if duplicate_href.present?
           Button(link: duplicate_href, class: duplicate_button_class, data: { turbo_frame: "_top" }) do
@@ -68,7 +51,24 @@ class Views::Transactions::FormActions < Views::Base
 
   private
 
-  def render_chain_controls
+  def render_top_control
+    if confirmation_submit.present?
+      label(class: "flex w-full items-center justify-center pt-1") do
+        span(class: "flex items-center gap-2 text-sm font-medium text-slate-700") do
+          input(
+            type: "checkbox",
+            name: confirmation_submit[:name],
+            value: confirmation_submit[:value],
+            checked: confirmation_submit[:checked],
+            id: confirmation_submit[:field_id],
+            class: "h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+          )
+          plain confirmation_submit[:label]
+        end
+      end
+      return
+    end
+
     return unless transaction.new_record?
     return if transaction.persisted?
 
