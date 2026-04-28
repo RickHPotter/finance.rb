@@ -21,7 +21,7 @@ module Views
         positive = transactable.price.to_i.positive?
         sign = positive ? "-" : "+"
 
-        if entity_transaction.exchanges.empty? || entity_transaction.exchanges.first&.standalone?
+        if entity_transaction.exchanges_count.to_i.zero? || entity_transaction.exchanges.first&.standalone?
           :standalone
         else
           :card_bound
@@ -165,7 +165,7 @@ module Views
                 end
               end
 
-              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges.count > 1
+              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges_count.to_i > 1
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
                 render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
               end

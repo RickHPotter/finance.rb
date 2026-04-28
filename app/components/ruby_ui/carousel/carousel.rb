@@ -17,7 +17,7 @@ module RubyUI
 
     def default_attrs
       {
-        class: ["relative group", orientation_classes],
+        class: [ "relative group", orientation_classes ],
         role: "region",
         aria_roledescription: "carousel",
         data: {
@@ -33,12 +33,12 @@ module RubyUI
 
     def default_options
       {
-        axis: (@orientation == :horizontal) ? "x" : "y"
+        axis: @orientation == :horizontal ? "x" : "y"
       }
     end
 
     def orientation_classes
-      (@orientation == :horizontal) ? "is-horizontal" : "is-vertical"
+      @orientation == :horizontal ? "is-horizontal" : "is-vertical"
     end
   end
 end

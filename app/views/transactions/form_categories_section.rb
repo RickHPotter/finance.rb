@@ -11,7 +11,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   def view_template
     div(
       id: "categories_nested",
-      class: "border-y border-r border-purple-200 py-2 pr-2",
+      class: "border-y py-2 md:border-r md:pr-2",
       data: {
         controller: "nested-form form-collection-carousel",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
@@ -23,11 +23,11 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         end
       end
 
-      div(class: "grid grid-cols-[1.875rem_minmax(0,1fr)_1.875rem] items-stretch gap-2") do
+      div(class: "grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
         Button(
           type: :button,
           variant: :outline,
-          class: "h-full min-h-12 w-full rounded-xl border border-slate-300 px-0 text-base",
+          class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
           data: {
             form_collection_carousel_target: "prevButton",
             action: "click->form-collection-carousel#scrollPrev"
@@ -45,7 +45,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         Button(
           type: :button,
           variant: :outline,
-          class: "h-full min-h-12 w-full rounded-xl border border-slate-300 px-0 text-base",
+          class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
           data: {
             form_collection_carousel_target: "nextButton",
             action: "click->form-collection-carousel#scrollNext"

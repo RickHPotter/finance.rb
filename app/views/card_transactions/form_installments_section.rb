@@ -13,7 +13,8 @@ class Views::CardTransactions::FormInstallmentsSection < Views::Base
       form:,
       association_name: :card_installments,
       installments: ordered_card_installments,
-      record_class: CardInstallment
+      record_class: CardInstallment,
+      mobile_layout: rails_view_context.instance_variable_get(:@mobile) || false
     )
   end
 
