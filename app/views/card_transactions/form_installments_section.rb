@@ -9,22 +9,12 @@ class Views::CardTransactions::FormInstallmentsSection < Views::Base
   end
 
   def view_template
-    div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
-        data: { controller: "nested-form installment-lock", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-      template(data_nested_form_target: "template") do
-        form.fields_for :card_installments, CardInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
-          render Views::Installments::Fields.new(form: installment_fields)
-        end
-      end
-
-      form.fields_for :card_installments, ordered_card_installments do |installment_fields|
-        render Views::Installments::Fields.new(form: installment_fields)
-      end
-
-      div(data_nested_form_target: "target")
-
-      button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
-    end
+    render Views::Installments::Section.new(
+      form:,
+      association_name: :card_installments,
+      installments: ordered_card_installments,
+      record_class: CardInstallment
+    )
   end
 
   private

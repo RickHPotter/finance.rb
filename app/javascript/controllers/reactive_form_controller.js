@@ -458,6 +458,8 @@ export default class extends Controller {
       startingRailsDate.monthsForwards(1)
       proposedDate.monthsForwards(1)
     })
+
+    this.element.dispatchEvent(new CustomEvent("installments:layout-changed", { bubbles: true }))
   }
 
   // FIXME: this way will be a legacy and will serve as a user_card setting

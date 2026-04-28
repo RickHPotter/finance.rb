@@ -105,6 +105,7 @@ module Views
 
           form.check_box :paid, style: "display: none", class: :installment_paid
 
+          form.hidden_field :id if installment.persisted?
           form.hidden_field :number, class: :installment_number
           form.hidden_field :month, class: :installment_month
           form.hidden_field :year, class: :installment_year
