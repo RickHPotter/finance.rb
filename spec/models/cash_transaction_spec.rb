@@ -69,6 +69,39 @@ RSpec.describe CashTransaction, type: :model do
       expect(duplicate.cash_installments.first.paid).to be(false)
     end
 
+    it "duplicates installments and exchanges in stable number order" do
+      transaction = create(
+        :cash_transaction,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        description: "Ordered duplicate source",
+        price: 3000,
+        date: Date.new(2026, 4, 3),
+        month: 4,
+        year: 2026
+      )
+      transaction.cash_installments.destroy_all
+      transaction.cash_installments.create!(number: 2, price: 1000, date: Date.new(2026, 5, 3), month: 5, year: 2026, paid: false)
+      transaction.cash_installments.create!(number: 1, price: 2000, date: Date.new(2026, 4, 3), month: 4, year: 2026, paid: true)
+
+      payer = transaction.entity_transactions.first || transaction.entity_transactions.create!(
+        entity: create(:entity, user: subject.user),
+        is_payer: true,
+        price: 3000,
+        price_to_be_returned: 3000
+      )
+      payer.exchanges.destroy_all
+      payer.exchanges.create!(number: 2, exchange_type: :monetary, bound_type: :standalone, price: 1000, date: Date.new(2026, 5, 3), month: 5, year: 2026)
+      payer.exchanges.create!(number: 1, exchange_type: :monetary, bound_type: :standalone, price: 2000, date: Date.new(2026, 4, 3), month: 4, year: 2026)
+
+      duplicate = described_class.duplicate(transaction.id)
+
+      expect(duplicate.cash_installments.map(&:number)).to eq([ 1, 2 ])
+      expect(duplicate.entity_transactions.first.exchanges.map(&:number)).to eq([ 1, 2 ])
+      expect(duplicate.entity_transactions.first.exchanges_count).to eq(2)
+    end
+
     it "defaults context to the user's main context" do
       transaction = described_class.new(
         user: subject.user,
