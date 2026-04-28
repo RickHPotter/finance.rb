@@ -72,8 +72,10 @@ class Views::CardTransactions::Form < Views::Base
           user_card_date:
         )
         render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
-        render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
-        render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
+        div(class: "mb-3 grid grid-cols-2 gap-0 items-stretch") do
+          render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
+          render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
+        end
         render Views::Transactions::FormActions.new(
           transaction: card_transaction,
           destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction) : nil,

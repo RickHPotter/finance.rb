@@ -58,6 +58,9 @@ application.register("exchange-state-sheet", ExchangeStateSheetController)
 import FormLoadingController from "./form_loading_controller"
 application.register("form-loading", FormLoadingController)
 
+import FormCollectionCarouselController from "./form_collection_carousel_controller"
+application.register("form-collection-carousel", FormCollectionCarouselController)
+
 import HistoryNavController from "./history_nav_controller"
 application.register("history-nav", HistoryNavController)
 

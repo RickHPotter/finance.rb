@@ -27,9 +27,13 @@ module Views
           :card_bound
         end => default_bound_type
 
-        SheetContent(side: :top, class: "max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto", data: { controller: "price-mask" }) do
+        SheetContent(
+          side: :middle,
+          class: "max-h-[90vh] max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto rounded-xl border border-slate-300 text-black overflow-hidden flex flex-col",
+          data: { controller: "price-mask" }
+        ) do
           SheetHeader do
-            SheetTitle(class: "entities_entity_name") { entity_transaction&.entity&.entity_name }
+            SheetTitle(class: "entities_entity_name text-black") { entity_transaction&.entity&.entity_name }
             SheetDescription { "" }
           end
 
@@ -102,7 +106,7 @@ module Views
 
                   div(class: "m-auto") do
                     Button(
-                      class: "bg-gray-100 rounded-sm", disabled: !entity_transaction.is_payer,
+                      class: "bg-gray-100 text-black rounded-sm", disabled: !entity_transaction.is_payer,
                       data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
                     ) do
                       cached_icon(:equals)
@@ -177,21 +181,24 @@ module Views
       def render_helper_popover(target:, icon:)
         Popover(class: "m-auto") do
           PopoverTrigger(class: "w-full") do
-            Button(class: "bg-gray-100 rounded-sm") do
+            Button(class: "bg-gray-100 text-black rounded-sm") do
               cached_icon(icon)
             end
           end
 
           PopoverContent(class: "w-40") do
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
               model_attribute(Exchange, :full_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
               model_attribute(Exchange, :half_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
               model_attribute(Exchange, :third_price)
             end
           end

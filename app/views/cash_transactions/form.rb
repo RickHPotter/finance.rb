@@ -61,8 +61,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           entities: @entities
         )
         render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
-        render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+        div(class: "mb-3 grid grid-cols-2 gap-0 items-stretch") do
+          render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+          render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+        end
 
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,

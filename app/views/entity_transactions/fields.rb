@@ -22,13 +22,16 @@ module Views
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
               if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
-                div(class: "flex items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
+                div(class: "flex min-h-12 items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
                   div(class: "flex items-center gap-2 flex-1") do
                     content
                   end
                 end
               else
-                Sheet(class: "flex items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
+                Sheet(
+                  class: "flex min-h-12 items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm",
+                  data: { ruby_ui__sheet_portal_value: true }
+                ) do
                   SheetTrigger(class: "flex items-center gap-2 flex-1") do
                     content
                   end
@@ -47,6 +50,7 @@ module Views
           end
 
           form.hidden_field :entity_id, class: :entities_entity_id, data: { entity_transaction_target: "entitySelect" }
+          form.hidden_field :id if entity_transaction.persisted?
           form.hidden_field :_destroy
         end
       end

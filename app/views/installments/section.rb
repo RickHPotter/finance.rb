@@ -12,7 +12,7 @@ class Views::Installments::Section < Views::Base
 
   def view_template
     div(
-      class: "pb-3",
+      class: "border-t border-purple-200 py-2",
       data: {
         controller: "nested-form installment-lock installments-display",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
