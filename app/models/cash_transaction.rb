@@ -369,6 +369,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
                        :ordered_exchanges_for_duplicate
 
   def prevent_linked_borrow_return_destruction
+    return if context_destroying?
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -377,6 +378,10 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def linked_borrow_return?
     borrow_return? && reference_transactable.present?
+  end
+
+  def context_destroying?
+    context&.destroying_for_removal?
   end
 
   def assign_default_context

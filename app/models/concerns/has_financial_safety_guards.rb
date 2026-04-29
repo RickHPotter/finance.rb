@@ -43,6 +43,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def prevent_destroy_when_paid_history_is_locked
+    return if context_destroying?
     return unless destroy_locked_by_history?
     return if confirmed_destroy_with_history?
 
@@ -270,6 +271,10 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
   def changed_installments
     installments.select(&:changed?)
+  end
+
+  def context_destroying?
+    respond_to?(:context) && context&.destroying_for_removal?
   end
 
   def same_month_paid_state_correction_candidate?

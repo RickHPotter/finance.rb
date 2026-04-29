@@ -281,6 +281,41 @@ RSpec.describe "Contexts", type: :request do
       get context_path(archived_parent)
       expect(response.body).not_to include("delete_context_#{archived_parent.id}")
     end
+
+    it "removes an archived context even when contained card transactions would normally block destruction" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+      user_card = create(:user_card, user:)
+      create(:card_transaction, user:, context: archived_context, user_card:)
+
+      allow_any_instance_of(CardTransaction).to receive(:destroy_locked_by_history?).and_return(true)
+
+      expect do
+        delete context_path(archived_context)
+      end.to change { user.contexts.exists?(archived_context.id) }.from(true).to(false)
+
+      expect(response).to redirect_to(contexts_path)
+      expect(flash[:notice]).to eq(I18n.t("contexts.destroy.success"))
+    end
+
+    it "does not remove an archived context when main-context records still reference it" do
+      archived_context = create(:context, user:, name: "Scenario A", source_context: user.main_context, archived_at: Time.current)
+      derived_cash_transaction = create(:cash_transaction, user:, context: archived_context,
+                                                           user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)),
+        reference_transactable: derived_cash_transaction
+      )
+
+      expect do
+        delete context_path(archived_context)
+      end.not_to change(Context, :count)
+
+      expect(response).to redirect_to(context_path(archived_context))
+      expect(flash[:alert]).to eq(I18n.t("contexts.destroy.cross_context_dependencies"))
+    end
   end
 
   describe "[ #dismiss ]" do
