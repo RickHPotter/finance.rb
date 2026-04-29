@@ -19,7 +19,7 @@ class Views::Transactions::FormActions < Views::Base
       render_top_control
 
       div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-        Button(type: :submit, variant: :purple, class: "w-64") { action_message(:submit) }
+        Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(transaction))}") { action_message(:submit) }
 
         render_finish_chain_button
         render_finish_chain_without_save_button
@@ -37,8 +37,8 @@ class Views::Transactions::FormActions < Views::Base
             link_params: {
               href: destroy_href,
               id: destroy_id,
-              variant: :destructive,
-              class: "min-w-64",
+              variant: :outline,
+              class: "min-w-64 #{destroy_button_class}",
               data: { turbo_method: :delete }
             }
           )
@@ -107,9 +107,5 @@ class Views::Transactions::FormActions < Views::Base
 
   def chain_checked?
     chain_context&.dig(:checked) || false
-  end
-
-  def duplicate_button_class
-    "min-w-64 border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
   end
 end

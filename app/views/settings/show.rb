@@ -22,7 +22,7 @@ class Views::Settings::Show < Views::Base
 
         div(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm",
             data: { controller: "naming-tabs", naming_tabs_current_value: default_tab_name }) do
-          div(class: "flex flex-wrap gap-2 border-b border-slate-200 pb-3") do
+          div(class: "flex gap-2 overflow-x-auto border-b border-slate-200 pb-3") do
             tab_button(name: "exchange_audit", label: I18n.t("settings.tabs.exchange_audit")) if show_exchange_audit
             tab_button(name: "exchange_return_audit", label: I18n.t("settings.tabs.exchange_return_audit")) if show_exchange_audit
             tab_button(name: "card_exchange_projection_audit", label: I18n.t("settings.tabs.card_exchange_projection_audit")) if show_exchange_audit
@@ -66,7 +66,7 @@ class Views::Settings::Show < Views::Base
   def tab_button(name:, label:)
     button(
       type: :button,
-      class: "rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors",
+      class: "shrink-0 rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors",
       data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
     ) { label }
   end

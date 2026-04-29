@@ -60,7 +60,7 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_trend_card
-    div(class: "rounded-[28px] border border-stone-200 bg-gradient-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm") do
+    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm") do
       div(class: "flex items-center justify-between gap-3") do
         div do
           p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.trend") }
@@ -109,7 +109,7 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_breakdown_card
-    div(class: "rounded-[28px] border border-stone-200 bg-gradient-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm") do
+    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm") do
       div(class: "flex items-center justify-between gap-3") do
         div do
           p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.breakdown") }
@@ -153,6 +153,8 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_scenario_badge
+    return if current_context.main?
+
     div(class: "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-2xs font-semibold uppercase") do
       plain(Context.model_name.human)
       plain(": ")

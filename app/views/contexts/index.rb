@@ -62,7 +62,7 @@ class Views::Contexts::Index < Views::Base
 
   def render_context_card(context, root:)
     if root
-      div(class: "rounded-3xl border border-sky-300 bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm") do
+      div(class: "rounded-3xl border border-sky-300 bg-linear-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm") do
         render_context_card_content(context, root:)
       end
       return

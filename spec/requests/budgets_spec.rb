@@ -148,9 +148,7 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include(duplicate_budget_path(budget))
       expect(response.body).to include(cash_transaction_path(cash_transaction))
       expect(response.body).to include("delete_budget_#{budget.id}")
-      expect(response.body).to include("active_month_years")
-      expect(response.body).to include("category_id")
-      expect(response.body).to include(category.id.to_s)
+      expect(response.body).to include(category.name)
     end
 
     it "shows Available for expense budgets that still have room remaining" do

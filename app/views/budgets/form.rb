@@ -174,40 +174,9 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           end
         end
 
-        div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data_nested_form_target: "template") do
-            form.fields_for :budget_categories, BudgetCategory.new, child_index: "NEW_RECORD" do |budget_category_fields|
-              render CategoryFields.new(form: budget_category_fields)
-            end
-          end
-
-          budget_categories_association = budget.budget_categories.includes(:category) if budget.budget_categories.count > 1
-          form.fields_for :budget_categories, budget_categories_association do |budget_category_fields|
-            render CategoryFields.new(form: budget_category_fields)
-          end
-
-          div(data_nested_form_target: "target")
-
-          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
-        end
-
-        div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data_nested_form_target: "template") do
-            form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields|
-              render EntityFields.new(form: budget_entity_fields)
-            end
-          end
-
-          budget_entities_association = budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1
-          form.fields_for :budget_entities, budget_entities_association do |budget_entity_fields|
-            render EntityFields.new(form: budget_entity_fields)
-          end
-
-          div(data_nested_form_target: "target")
-
-          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
+        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+          render Views::Budgets::FormCategoriesSection.new(form:, budget:)
+          render Views::Budgets::FormEntitiesSection.new(form:, budget:)
         end
 
         render_actions_row
@@ -233,11 +202,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def persisted_actions_row
     div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-      Button(type: :submit, variant: :purple, class: "min-w-64") { action_message(:submit) }
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
 
       Button(
         link: duplicate_budget_path(budget),
-        class: "min-w-64 border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white",
+        class: "min-w-64 #{duplicate_button_class}",
         data: { turbo_frame: "_top" }
       ) do
         action_message(:duplicate)
@@ -249,8 +218,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         link_params: {
           href: budget_path(budget),
           id: "delete_budget_#{budget.id}",
-          variant: :destructive,
-          class: "min-w-64",
+          variant: :outline,
+          class: "min-w-64 #{destroy_button_class}",
           data: { turbo_method: :delete }
         }
       )
@@ -261,7 +230,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def new_record_actions_row
     div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-      Button(type: :submit, variant: :purple, class: "min-w-64") { action_message(:submit) }
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
     end
   end
 

@@ -77,7 +77,7 @@ class Views::UserCards::UserCard < Views::Base
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
     div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_card.id, datatable_target: :row }) do
-      div(class: "p-4 bg-gradient-to-r from-blue-500 to-blue-700") do
+      div(class: "p-4 bg-linear-to-r from-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :credit_card

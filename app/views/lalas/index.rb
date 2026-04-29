@@ -11,7 +11,7 @@ class Views::Lalas::Index < Views::Base
         end
       end
 
-      div(class: "mx-1 break-words bg-white shadow-md shadow-red-50 rounded-lg") do
+      div(class: "mx-1 wrap-break-word bg-white shadow-md shadow-red-50 rounded-lg") do
         div(class: "p-1 md:p-2 lg:p-3") do
           div(class: "hidden relative", data: { controller: "price-sum" }) do
             div(

@@ -486,7 +486,7 @@ RSpec.describe "Conversations", type: :request do
 
       expect(response.body).to include(I18n.t("actions.show"))
       expect(response.body).to include(edit_card_transaction_path(card_transaction))
-      expect(response.body).to include("md:min-w-[44rem]")
+      expect(response.body).to include("md:min-w-176")
     end
 
     it "labels sender-side historical show state as destroyed for destroy notifications" do

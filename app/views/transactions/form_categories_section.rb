@@ -23,7 +23,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         end
       end
 
-      div(class: "grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
+      div(class: "grid min-h-[3.5rem] grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
         Button(
           type: :button,
           variant: :outline,
@@ -34,8 +34,8 @@ class Views::Transactions::FormCategoriesSection < Views::Base
           }
         ) { "←" }
 
-        div(class: "overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
-          div(class: "flex -ml-2", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
+        div(class: "min-h-[3.5rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
+          div(class: "flex min-h-[3.5rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
             form.fields_for :category_transactions, category_transactions_association, include_id: false do |category_transaction_fields|
               render_item(category_transaction_fields)
             end

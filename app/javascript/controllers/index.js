@@ -118,6 +118,9 @@ application.register("reactive-form", ReactiveFormController)
 import RequestSubmitController from "./request_submit_controller"
 application.register("request-submit", RequestSubmitController)
 
+import ShowSectionCardController from "./show_section_card_controller"
+application.register("show-section-card", ShowSectionCardController)
+
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)
 

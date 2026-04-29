@@ -27,9 +27,8 @@ class Views::Budgets::New < Views::Base
   end
 
   def badge_class
-    base = "rounded-sm border border px-3 shadow-md"
-    return "#{base} border-orange-400 bg-orange-200" if @budget.duplicate
+    return form_badge_class(:duplicate) if @budget.duplicate
 
-    "#{base} border-sky-400 bg-sky-200"
+    form_badge_class(:new)
   end
 end

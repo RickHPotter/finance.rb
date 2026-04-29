@@ -730,14 +730,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   # Use callbacks to share common setup or constraints between actions.
   def set_cash_transaction
-    @cash_transaction = current_context.cash_transactions
-                                       .includes(
-                                         :cash_installments,
-                                         :categories,
-                                         category_transactions: :category,
-                                         entity_transactions: %i[entity exchanges]
-                                       )
-                                       .find(params[:id])
+    @cash_transaction = current_context.cash_transactions.find(params[:id])
   end
 
   def search_cash_transaction_params

@@ -29,18 +29,18 @@ class Views::UserBankAccounts::Index < Views::Base
   end
 
   def desktop_index
-    div(class: "flex justify-between mb-6 bg-white p-4 shadow-md rounded-lg") do
+    div(class: "mb-6 flex items-center justify-between rounded-lg bg-white p-4 shadow-md") do
       link_to(
-        action_model(:newa, UserBankAccount),
-        new_user_bank_account_path,
+        include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
+        user_bank_accounts_path(include_inactive: include_inactive?),
         class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
         data: { turbo_frame: "_top" }
       )
 
       link_to(
-        include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
-        user_bank_accounts_path(include_inactive: include_inactive?),
-        class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+        action_model(:newa, UserBankAccount),
+        new_user_bank_account_path,
+        class: index_new_button_class,
         data: { turbo_frame: "_top" }
       )
     end

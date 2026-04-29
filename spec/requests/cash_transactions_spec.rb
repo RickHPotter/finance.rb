@@ -247,9 +247,7 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(duplicate_cash_transaction_path(transaction))
       expect(response.body).to include("border-orange-500")
       expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
-      expect(response.body).to include("active_month_years")
-      expect(response.body).to include("user_bank_account_id")
-      expect(response.body).to include(user_bank_account.id.to_s)
+      expect(response.body).to include(user_bank_account.user_bank_account_name)
     end
 
     it "does not render broken reference links to transactions outside the current context" do

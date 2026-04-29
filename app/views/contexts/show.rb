@@ -14,7 +14,7 @@ class Views::Contexts::Show < Views::Base
   def view_template
     turbo_frame_tag :context_overlay do
       div(class: "fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4") do
-        div(class: "w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl") do
+        div(class: "max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:rounded-3xl sm:p-6") do
           div(class: "mb-5 flex items-start justify-between gap-4") do
             div do
               p(class: "text-xs font-semibold uppercase tracking-[0.2em] text-stone-500") { I18n.t("contexts.show.label") }
@@ -34,7 +34,7 @@ class Views::Contexts::Show < Views::Base
             ) { "x" }
           end
 
-          div(class: "grid gap-3 md:grid-cols-3") do
+          div(class: "grid gap-3 sm:grid-cols-2 md:grid-cols-3") do
             render_stat(I18n.t("contexts.show.stats.cash_transactions"), display_context.cash_transactions.count)
             render_stat(I18n.t("contexts.show.stats.card_transactions"), display_context.card_transactions.count)
             render_stat(I18n.t("contexts.show.stats.budgets"), display_context.budgets.count)
@@ -43,11 +43,12 @@ class Views::Contexts::Show < Views::Base
             render_stat(I18n.t("contexts.show.stats.references"), display_context.references.count)
           end
 
-          div(class: "mt-6 flex flex-wrap justify-end gap-3") do
+          div(class: "mt-6 grid gap-3 sm:flex sm:flex-wrap sm:justify-end") do
             unless display_context.archived?
               link_to(
                 new_context_path(source_context_id: display_context.id),
-                class: "inline-flex items-center rounded-2xl border border-sky-300 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50",
+                class: "inline-flex items-center justify-center rounded-2xl border border-sky-300 px-4 py-2 " \
+                       "text-center text-sm font-medium text-sky-700 transition hover:bg-sky-50",
                 data: { turbo_frame: :context_overlay, turbo_prefetch: false }
               ) { I18n.t("contexts.show.create_child") }
             end
@@ -58,7 +59,8 @@ class Views::Contexts::Show < Views::Base
                 method: :patch,
                 form: { data: { turbo: false } },
                 data: { turbo: false, turbo_prefetch: false },
-                class: "inline-flex items-center rounded-2xl border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100"
+                class: "inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-2 " \
+                       "text-center text-sm font-medium text-stone-700 transition hover:bg-stone-100"
               ) { I18n.t("contexts.show.archive") }
             elsif display_context.derived?
               button_to(
@@ -66,7 +68,8 @@ class Views::Contexts::Show < Views::Base
                 method: :patch,
                 form: { data: { turbo: false } },
                 data: { turbo: false, turbo_prefetch: false },
-                class: "inline-flex items-center rounded-2xl border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                class: "inline-flex items-center justify-center rounded-2xl border border-emerald-300 px-4 py-2 " \
+                       "text-center text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
               ) { I18n.t("contexts.show.unarchive") }
             end
 
@@ -77,7 +80,8 @@ class Views::Contexts::Show < Views::Base
                 link_params: {
                   href: context_path(display_context),
                   id: "delete_context_#{display_context.id}",
-                  class: "inline-flex items-center rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700",
+                  class: "inline-flex items-center justify-center rounded-2xl bg-red-600 px-4 py-2 " \
+                         "text-center text-sm font-semibold text-white transition hover:bg-red-700",
                   data: { turbo_method: :delete, turbo_frame: "_top" }
                 }
               )
@@ -87,7 +91,8 @@ class Views::Contexts::Show < Views::Base
               button_to(
                 switch_context_path(display_context),
                 method: :patch,
-                class: "inline-flex items-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                class: "inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-4 py-2 " \
+                       "text-center text-sm font-semibold text-white transition hover:bg-emerald-600"
               ) { I18n.t("contexts.show.switch") }
             end
           end

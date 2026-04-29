@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-class Views::Transactions::FormEntitiesSection < Views::Base
-  attr_reader :form, :transaction
+class Views::Budgets::FormEntitiesSection < Views::Base
+  attr_reader :form, :budget
 
-  def initialize(form:, transaction:)
+  def initialize(form:, budget:)
     @form = form
-    @transaction = transaction
+    @budget = budget
   end
 
   def view_template
@@ -18,8 +18,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
       }
     ) do
       template(data_nested_form_target: "template") do
-        form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
-          render_item(entity_transaction_fields)
+        form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields|
+          render_item(budget_entity_fields)
         end
       end
 
@@ -36,8 +36,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
 
         div(class: "min-h-[3.5rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
           div(class: "flex min-h-[3.5rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
-            form.fields_for :entity_transactions, entity_transactions_association, include_id: false do |entity_transaction_fields|
-              render_item(entity_transaction_fields)
+            form.fields_for :budget_entities, budget_entities_association, include_id: false do |budget_entity_fields|
+              render_item(budget_entity_fields)
             end
           end
         end
@@ -59,13 +59,13 @@ class Views::Transactions::FormEntitiesSection < Views::Base
 
   private
 
-  def entity_transactions_association
-    transaction.entity_transactions.includes(:entity, :exchanges) if transaction.entity_transactions.count > 1
+  def budget_entities_association
+    budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1
   end
 
-  def render_item(entity_transaction_fields)
+  def render_item(budget_entity_fields)
     div(class: "min-w-0 shrink-0 max-w-full pl-2") do
-      render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
+      render Views::Budgets::EntityFields.new(form: budget_entity_fields)
     end
   end
 end

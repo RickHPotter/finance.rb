@@ -50,7 +50,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @public_instance_methods ..................................................
 
   def self.duplicate(id)
-    existing_cash_transaction = includes(:cash_installments, :category_transactions, entity_transactions: :exchanges).find(id)
+    existing_cash_transaction = includes(:cash_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
 
     cash_transaction = existing_cash_transaction.dup
     cash_transaction.duplicate = true

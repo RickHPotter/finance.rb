@@ -72,7 +72,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
   def mobile_row
     div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_bank_account.id, datatable_target: :row }) do
-      div(class: "p-4 bg-gradient-to-r from-blue-300 via-blue-500 to-blue-700") do
+      div(class: "p-4 bg-linear-to-r from-blue-300 via-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :money

@@ -126,8 +126,8 @@ class Views::NamingConventions::Result < Views::Base
 
   def render_result_diff(result)
     div(class: "font-semibold text-gray-900") { record_label(result) }
-    div(class: "mt-1 text-red-700 line-through break-words") { result.dig(:previous_attributes, :description) }
-    div(class: "mt-1 text-green-700 break-words") { result.dig(:changes, :description) }
+    div(class: "mt-1 text-red-700 line-through wrap-break-word") { result.dig(:previous_attributes, :description) }
+    div(class: "mt-1 text-green-700 wrap-break-word") { result.dig(:changes, :description) }
   end
 
   def convention_label(name)

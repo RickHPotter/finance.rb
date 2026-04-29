@@ -87,7 +87,7 @@ class Views::Entities::Entity < Views::Base
 
   def mobile_row
     div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: entity.id, datatable_target: :row }) do
-      div(class: "p-4 bg-gradient-to-r from-slate-700 via-slate-400 to-white") do
+      div(class: "p-4 bg-linear-to-r from-slate-700 via-slate-400 to-white") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full"
@@ -118,7 +118,7 @@ class Views::Entities::Entity < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.card_transactions_total, "R$") }
               link_to(search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto -mt-4", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end
@@ -142,7 +142,7 @@ class Views::Entities::Entity < Views::Base
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.cash_transactions_total, "R$") }
               link_to(cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto mt-[-1rem]", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
+                      class: "my-auto -mt-4", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end

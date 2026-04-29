@@ -74,9 +74,8 @@ class Views::Subscriptions::Form < Views::Base
             div(class: "pt-4 grid w-full grid-cols-1 items-center justify-items-center gap-2 sm:grid-flow-col sm:auto-cols-fr") do
               Button(
                 type: :submit,
-                variant: :purple,
-                class: "w-64"
-              ) { action_model(:submit, subscription) }
+                class: "w-64 #{submit_button_class(form_action_mode(subscription))}"
+              ) { action_message(:submit) }
 
               if subscription.persisted? && subscription.can_be_destroyed?
                 Button(
@@ -84,8 +83,9 @@ class Views::Subscriptions::Form < Views::Base
                   type: :submit,
                   variant: :destructive,
                   link: subscription_path(subscription),
+                  class: "w-64 #{destroy_button_class}",
                   data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-                ) { action_model(:destroy, subscription) }
+                ) { action_message(:destroy) }
               end
             end
 
@@ -143,7 +143,7 @@ class Views::Subscriptions::Form < Views::Base
       end
 
       div(
-        class: "min-h-[14rem] max-h-[14rem] flex-1 space-y-2 overflow-y-auto border border-slate-200 bg-white/80 p-3 shadow-inner",
+        class: "min-h-56 max-h-56 flex-1 space-y-2 overflow-y-auto border border-slate-200 bg-white/80 p-3 shadow-inner",
         style: "scrollbar-width: thin; scrollbar-color: #94a3b8 #e2e8f0;",
         data: {
           controller: "nested-form",

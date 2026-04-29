@@ -19,7 +19,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     div(class: "m-2") do
       turbo_frame_tag dom_id(message) do
         div(
-          class: "whitespace-pre-wrap break-words text-start",
+          class: "whitespace-pre-wrap wrap-break-word text-start",
           data: { user_id: presented_user_id, presenter_role: presenter_role, presenter_side: presenter_side, controller: :chat, chat_target: :message }
         ) do
           div(class: "flex", data: { chat_target: :messageAlignment }) do
@@ -167,7 +167,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
         content_class: "w-[calc(100vw-1.5rem)] max-w-5xl max-h-[calc(100svh-3rem)] overflow-hidden"
       }
     ) do
-      div(class: "space-y-4 text-sm text-black min-w-[18rem] md:min-w-[44rem] lg:min-w-[56rem]") do
+      div(class: "space-y-4 text-sm text-black min-w-[18rem] md:min-w-176 lg:min-w-4xl") do
         div(class: "border-b border-stone-200 pb-3") do
           div(class: "flex items-start justify-between gap-3") do
             div(class: "space-y-2") do
@@ -193,7 +193,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
           end
         end
 
-        div(class: "grid grid-cols-1 gap-2 md:h-[21rem] md:grid-cols-2 md:items-stretch") do
+        div(class: "grid grid-cols-1 gap-2 md:h-84 md:grid-cols-2 md:items-stretch") do
           div(class: "flex h-full flex-col overflow-hidden rounded-xl border border-stone-200 bg-stone-50 p-2") do
             p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
               "#{I18n.t('gerund.show')} #{transaction.model_name.human}"

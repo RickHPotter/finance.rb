@@ -13,18 +13,27 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "min-h-[calc(100svh-12rem)] rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6") do
+      div(class: "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-6") do
         dashboard_header
 
-        div(class: "mt-6 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]") do
-          div(class: "space-y-4") do
+        if mobile?
+          div(class: "mt-6 space-y-4") do
             summary_grid
+            allocations_section
+            definition_section
             consumption_section
           end
+        else
+          div(class: "mt-6 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]") do
+            div(class: "space-y-4") do
+              summary_grid
+              consumption_section
+            end
 
-          div(class: "space-y-4") do
-            definition_section
-            allocations_section
+            div(class: "space-y-4") do
+              definition_section
+              allocations_section
+            end
           end
         end
       end
@@ -36,7 +45,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   def dashboard_header
     div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0 text-left") do
-        h1(class: "text-left text-4xl font-black tracking-tight text-slate-950") { budget.description }
+        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { budget.description }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
@@ -45,18 +54,17 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
         end
       end
 
-      div(class: "flex flex-wrap gap-2 lg:justify-end") do
-        dashboard_action(action_model(:edit, Budget), edit_budget_path(budget), variant: :outline)
+      div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(action_message(:edit), edit_budget_path(budget), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_budget_path(budget), variant: :duplicate)
         destroy_action
-        dashboard_action(action_model(:index, Budget, 2), budget_index_path, variant: :primary)
       end
     end
   end
 
   def summary_grid
     section_card(I18n.t("dashboards.sections.summary")) do
-      div(class: "grid gap-3 md:grid-cols-2 xl:grid-cols-5") do
+      div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-5") do
         dashboard_stat(model_attribute(Budget, :value), money(budget.value), emphasis: true)
         dashboard_stat(I18n.t("dashboards.budgets.consumed"), money(consumed_amount), emphasis: true)
         dashboard_stat(model_attribute(Budget, :remaining_value), money(budget.remaining_value), emphasis: true)
@@ -69,18 +77,26 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   def consumption_section
     section_card(I18n.t("dashboards.budgets.consumption")) do
       if matched_installments.present?
-        div(class: "overflow-hidden rounded-2xl border border-slate-200") do
-          div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
-            span(class: "col-span-2") { I18n.t("dashboards.budgets.source") }
-            span(class: "col-span-2") { model_attribute(CashInstallment, :date) }
-            span(class: "col-span-3") { model_attribute(CashTransaction, :description) }
-            span(class: "col-span-2 text-center") { model_attribute(CashInstallment, :number) }
-            span(class: "col-span-2 text-right") { model_attribute(CashInstallment, :price) }
-            span(class: "col-span-1 text-right") { model_attribute(CashInstallment, :paid) }
+        if mobile?
+          div(class: "space-y-3") do
+            matched_installments.each do |installment|
+              installment_mobile_card(installment)
+            end
           end
+        else
+          div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+            div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
+              span(class: "col-span-2") { I18n.t("dashboards.budgets.source") }
+              span(class: "col-span-2") { model_attribute(CashInstallment, :date) }
+              span(class: "col-span-3") { model_attribute(CashTransaction, :description) }
+              span(class: "col-span-2 text-center") { model_attribute(CashInstallment, :number) }
+              span(class: "col-span-2 text-right") { model_attribute(CashInstallment, :price) }
+              span(class: "col-span-1 text-right") { model_attribute(CashInstallment, :paid) }
+            end
 
-          matched_installments.each do |installment|
-            installment_row(installment)
+            matched_installments.each do |installment|
+              installment_row(installment)
+            end
           end
         end
       else
@@ -108,16 +124,22 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def section_card(title, &)
-    section(class: "rounded-3xl border border-slate-200 bg-slate-50/80 p-4") do
-      h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500") { title }
-      div(class: "mt-4", &)
+    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:rounded-3xl sm:p-4",
+            data: { controller: "show-section-card", show_section_card_open_value: true }) do
+      button(type: :button, class: "flex w-full items-center justify-between gap-3 text-left",
+             data: { action: "show-section-card#toggle", show_section_card_target: "button" }) do
+        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500") { title }
+        span(class: "text-lg font-semibold leading-none text-slate-500", data: { show_section_card_target: "icon" }) { "−" }
+      end
+
+      div(class: "mt-4", data: { show_section_card_target: "content" }, &)
     end
   end
 
   def dashboard_stat(label, value, emphasis: false)
     div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
       p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-2xl' : 'text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
+      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
     end
   end
 
@@ -133,6 +155,35 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
       span(class: "col-span-2 text-center") { pretty_installments(installment.number, installment_count_for(installment)) }
       span(class: "col-span-2 text-right font-bold") { money(installment.price) }
       span(class: "col-span-1 text-right") { paid_label(installment) }
+    end
+  end
+
+  def installment_mobile_card(installment)
+    transaction = installment.transactable
+
+    link_to dashboard_path_for(transaction),
+            class: "block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400",
+            data: { turbo_frame: "_top", turbo_prefetch: false } do
+      div(class: "flex items-start justify-between gap-3") do
+        div(class: "min-w-0") do
+          p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { I18n.t("dashboards.budgets.source") }
+          p(class: "mt-1 text-sm font-bold text-slate-950") { source_label(transaction) }
+        end
+
+        span(class: "rounded-full bg-slate-100 px-3 py-1 text-2xs font-bold uppercase tracking-[0.16em] text-slate-700") do
+          pretty_installments(installment.number, installment_count_for(installment))
+        end
+      end
+
+      div(class: "mt-4") do
+        p(class: "truncate text-sm font-semibold text-slate-800", title: transaction.description) { transaction.description }
+      end
+
+      div(class: "mt-4 grid grid-cols-2 gap-3") do
+        mobile_stat(model_attribute(CashInstallment, :date), localized_date(installment.date))
+        mobile_stat(model_attribute(CashInstallment, :price), money(installment.price))
+        mobile_stat(model_attribute(CashInstallment, :paid), paid_label(installment))
+      end
     end
   end
 
@@ -165,10 +216,9 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def dashboard_action(label, href, variant:)
-    link_to label,
-            href,
-            class: dashboard_action_class(variant),
-            data: { turbo_frame: "_top", turbo_prefetch: false }
+    Button(link: href, variant: dashboard_action_variant(variant), class: dashboard_action_class(variant), data: { turbo_frame: "_top", turbo_prefetch: false }) do
+      label
+    end
   end
 
   def destroy_action
@@ -177,6 +227,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
       text: action_message(:destroy),
       link_params: {
         href: budget_path(budget),
+        variant: :destructive,
         id: "delete_budget_#{budget.id}",
         class: dashboard_action_class(:destroy),
         data: { turbo_method: :delete, turbo_frame: "_top" }
@@ -185,14 +236,21 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def dashboard_action_class(variant)
-    base_class = "rounded-full px-4 py-2 text-sm font-semibold transition"
+    default = "border-slate-300 text-slate-700 hover:bg-slate-100"
+    return default if %i[primary outline].include?(variant)
 
     case variant
-    when :primary then "#{base_class} bg-slate-900 text-white hover:bg-slate-700"
-    when :duplicate then "#{base_class} border border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
-    when :destroy then "#{base_class} bg-red-600 text-white hover:bg-red-700"
-    else "#{base_class} border border-slate-300 text-slate-700 hover:bg-slate-100"
+    when :edit then "border-sky-500 bg-sky-100 text-sky-900 hover:border-sky-400 hover:bg-sky-500 hover:text-white"
+    when :duplicate then "border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white"
+    when :destroy then "border-red-500 bg-red-100 text-red-900 hover:border-red-400 hover:bg-red-500 hover:text-white"
+    else default
     end
+  end
+
+  def dashboard_action_variant(variant)
+    return :purple if variant == :edit
+
+    :outline
   end
 
   def budget_index_path

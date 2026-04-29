@@ -106,7 +106,7 @@ class Views::Investments::Form < Views::Base
             end
 
             div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-              Button(type: :submit, variant: :purple, class: "w-64") { action_message(:submit) }
+              Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(investment))}") { action_message(:submit) }
 
               unless investment.persisted?
                 Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain", value: "1") do
@@ -121,7 +121,7 @@ class Views::Investments::Form < Views::Base
               if investment.persisted?
                 Button(
                   link: duplicate_investment_path(investment),
-                  class: "min-w-64 border-orange-500 bg-orange-100 text-orange-900 hover:border-orange-400 hover:bg-orange-500 hover:text-white",
+                  class: "min-w-64 #{duplicate_button_class}",
                   data: { turbo_frame: "_top" }
                 ) do
                   action_message(:duplicate)
@@ -133,8 +133,8 @@ class Views::Investments::Form < Views::Base
                   link_params: {
                     href: investment_path(investment),
                     id: "delete_investment_#{investment.id}",
-                    variant: :destructive,
-                    class: "min-w-64",
+                    variant: :outline,
+                    class: "min-w-64 #{destroy_button_class}",
                     data: { turbo_method: :delete }
                   }
                 )

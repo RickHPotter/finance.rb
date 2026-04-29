@@ -38,7 +38,7 @@ class CardTransaction < ApplicationRecord
   # @scopes ...................................................................
   # @class_methods ............................................................
   def self.duplicate(id)
-    existing_card_transaction = includes(:card_installments, :category_transactions, entity_transactions: :exchanges).find(id)
+    existing_card_transaction = includes(:card_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
 
     card_transaction = existing_card_transaction.dup
     card_transaction.duplicate = true

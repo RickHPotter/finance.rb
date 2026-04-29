@@ -1,25 +1,25 @@
 # frozen_string_literal: true
 
-class Views::Transactions::FormEntitiesSection < Views::Base
-  attr_reader :form, :transaction
+class Views::Budgets::FormCategoriesSection < Views::Base
+  attr_reader :form, :budget
 
-  def initialize(form:, transaction:)
+  def initialize(form:, budget:)
     @form = form
-    @transaction = transaction
+    @budget = budget
   end
 
   def view_template
     div(
-      id: "entities_nested",
-      class: "border-y py-2 md:border-l md:pl-2",
+      id: "categories_nested",
+      class: "border-y py-2 md:border-r md:pr-2",
       data: {
         controller: "nested-form form-collection-carousel",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
       }
     ) do
       template(data_nested_form_target: "template") do
-        form.fields_for :entity_transactions, EntityTransaction.new, child_index: "NEW_RECORD" do |entity_transaction_fields|
-          render_item(entity_transaction_fields)
+        form.fields_for :budget_categories, BudgetCategory.new, child_index: "NEW_RECORD" do |budget_category_fields|
+          render_item(budget_category_fields)
         end
       end
 
@@ -36,8 +36,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
 
         div(class: "min-h-[3.5rem] overflow-hidden", data: { form_collection_carousel_target: "viewport" }) do
           div(class: "flex min-h-[3.5rem] -ml-2 items-center", data: { nested_form_target: "target", nested_form_insert: "beforeend" }) do
-            form.fields_for :entity_transactions, entity_transactions_association, include_id: false do |entity_transaction_fields|
-              render_item(entity_transaction_fields)
+            form.fields_for :budget_categories, budget_categories_association, include_id: false do |budget_category_fields|
+              render_item(budget_category_fields)
             end
           end
         end
@@ -53,19 +53,19 @@ class Views::Transactions::FormEntitiesSection < Views::Base
         ) { "→" }
       end
 
-      button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
+      button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
     end
   end
 
   private
 
-  def entity_transactions_association
-    transaction.entity_transactions.includes(:entity, :exchanges) if transaction.entity_transactions.count > 1
+  def budget_categories_association
+    budget.budget_categories.includes(:category) if budget.budget_categories.count > 1
   end
 
-  def render_item(entity_transaction_fields)
+  def render_item(budget_category_fields)
     div(class: "min-w-0 shrink-0 max-w-full pl-2") do
-      render Views::EntityTransactions::Fields.new(form: entity_transaction_fields)
+      render Views::Budgets::CategoryFields.new(form: budget_category_fields)
     end
   end
 end

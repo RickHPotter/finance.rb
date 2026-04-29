@@ -135,7 +135,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-7 bg-gradient-to-r hover:opacity-80 transition-all",
+          class: "grid grid-cols-7 bg-linear-to-r hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
@@ -158,7 +158,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
           div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65") do
             link_to investment.user_bank_account.user_bank_account_name,
                     new_investment_path(next_day: true, chain_mode: "duplicate", investment: investment.slice(:user_bank_account_id, :investment_type_id)),
-                    class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-sm underline bg-white border-black text-indigo-600",
+                    class: "px-2 py-1 flex items-center justify-center rounded-sm border text-sm underline bg-white border-black text-indigo-600",
                     data: { turbo_frame: "_top" }
           end
 

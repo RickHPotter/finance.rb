@@ -14,7 +14,7 @@ class Views::Budgets::CategoryFields < Views::Base
       div(class: "flex w-full my-1") do
         span(class: "flex items-center text-sm font-medium text-black") do
           div(
-            class: "category_container flex items-center justify-center px-2 py-1 rounded-sm border border-black text-sm",
+            class: "category_container flex min-h-12 items-center justify-center px-2 py-1 rounded-sm border border-black text-sm",
             style: "background: #{budget_category&.category&.hex_colour}"
           ) do
             span(class: "categories_category_name text-nowrap", data: { dynamic_description_target: :category }) do

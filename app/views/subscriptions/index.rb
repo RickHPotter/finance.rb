@@ -26,11 +26,11 @@ class Views::Subscriptions::Index < Views::Base
 
   def desktop_index
     div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
-      div(class: "flex justify-between mb-6") do
+      div(class: "mb-6 flex justify-end") do
         link_to(
           action_model(:newa, Subscription),
           new_subscription_path,
-          class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+          class: index_new_button_class,
           data: { turbo_frame: "_top" }
         )
       end

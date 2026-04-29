@@ -179,8 +179,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_cash_transaction_path(format: :turbo_stream),
                 id: "new_cash_transaction",
-                class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
-                        text-black hover:text-white font-thin items-center gap-2",
+                class: index_new_button_class,
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           span { action_message(:newa) }
           span { pluralise_model(CashTransaction, 1) }

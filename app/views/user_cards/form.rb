@@ -151,17 +151,20 @@ class Views::UserCards::Form < Views::Base
           end
         end
 
-        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, user_card) } }
+        div(class: "flex w-full flex-col gap-3") do
+          div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(user_card))}") { action_message(:submit) }
 
-        if user_card.persisted?
-          div(class: "w-full") do
-            Button(
-              id: "delete_user_card_#{user_card.id}",
-              type: :submit,
-              variant: :destructive,
-              link: user_card_path(user_card),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) { action_model(:destroy, user_card) }
+            if user_card.persisted?
+              Button(
+                id: "delete_user_card_#{user_card.id}",
+                type: :submit,
+                variant: :outline,
+                class: "w-64 #{destroy_button_class}",
+                link: user_card_path(user_card),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+              ) { action_message(:destroy) }
+            end
           end
         end
 
