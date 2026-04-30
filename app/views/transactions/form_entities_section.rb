@@ -60,7 +60,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
   private
 
   def entity_transactions_association
-    transaction.entity_transactions.includes(:entity, :exchanges) if transaction.entity_transactions.count > 1
+    association = transaction.entity_transactions.includes(:entity, :exchanges)
+    association if association.exists?
   end
 
   def render_item(entity_transaction_fields)

@@ -176,21 +176,27 @@ export default class extends Controller {
   updateExchangeWhenDuplicating({ target }) {
     if (this.operationType !== "duplicate") { return }
 
-    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
-    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategoryInput = this.element.querySelector("#exchange_category_id")
+    if (!exchangeCategoryInput) { return }
+
+    const exchangeCategoryId = exchangeCategoryInput.value
+    const selectedCategories = Array.from(this.element.querySelectorAll(".categories_category_id"))
     const exchangeCategory   = selectedCategories.find((element) => element.value === exchangeCategoryId)
     if (!exchangeCategory) { return }
 
-    const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
+    const entityTransactionWrappers = this.element.querySelectorAll("[data-reactive-form-target='entityWrapper']")
 
     entityTransactionWrappers.forEach((wrapper) => {
       if (wrapper.style.display === "none") { return }
       if (wrapper.querySelector("input[name*='[_destroy]']")?.value === "true") { return }
       if (!wrapper.querySelector(".entities_entity_id")?.value) { return }
 
-      const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
-      const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
-      const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
+      const formIndex         = wrapper.dataset.entityTransactionFormIndex
+      const price             = document.getElementById(`entity_transaction_price_${formIndex}`)
+      const priceToBeReturned = document.getElementById(`entity_transaction_price_to_be_returned_${formIndex}`)
+      const exchangesCount    = document.getElementById(`entity_transaction_exchanges_count_${formIndex}`)
+      if (!price || !priceToBeReturned || !exchangesCount) { return }
+
       const transactionPrice  = this.priceInputTarget.value
       const installmentsCount = this.installmentsCountInputTarget.value
 

@@ -18,7 +18,12 @@ module Views
 
       def view_template
         div(class: "nested-form-wrapper",
-            data: { new_record: entity_transaction.new_record?, reactive_form_target: "entityWrapper", controller: "entity-transaction" }) do
+            data: {
+              new_record: entity_transaction.new_record?,
+              reactive_form_target: "entityWrapper",
+              controller: "entity-transaction",
+              entity_transaction_form_index: form.index
+            }) do
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
               if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)

@@ -60,7 +60,8 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   private
 
   def category_transactions_association
-    transaction.category_transactions.includes(:category) if transaction.category_transactions.count > 1
+    association = transaction.category_transactions.includes(:category)
+    association if association.exists?
   end
 
   def render_item(category_transaction_fields)

@@ -29,10 +29,14 @@ export default class extends Controller {
     content.dataset.sheetOwnerId = this.sheetOwnerId
 
     if (this.portalValue) {
-      document.body.appendChild(content)
+      this.portalHost().appendChild(content)
     } else {
       this.element.appendChild(content)
     }
+  }
+
+  portalHost() {
+    return this.element.closest("form") || document.body
   }
 
   renderedContent() {
