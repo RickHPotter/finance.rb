@@ -86,8 +86,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
               span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :number) }
               span(class: "col-span-3") { model_attribute(CardTransaction, :reference_month_year) }
               span(class: "col-span-3") { model_attribute(CardInstallment, :date) }
+              span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :paid) }
               span(class: "col-span-2 text-right") { model_attribute(CardInstallment, :price) }
-              span(class: "col-span-2 text-right") { model_attribute(CardInstallment, :paid) }
             end
 
             installments.each do |installment|
@@ -101,8 +101,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
                 span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :number) }
                 span(class: "col-span-3") { model_attribute(CardTransaction, :reference_month_year) }
                 span(class: "col-span-3") { model_attribute(CashTransaction, :date) }
+                span(class: "col-span-2 text-center") { model_attribute(CashTransaction, :paid) }
                 span(class: "col-span-2 text-right") { model_attribute(CashTransaction, :price) }
-                span(class: "col-span-2 text-right") { model_attribute(CashTransaction, :paid) }
               end
 
               invoice_cash_transactions.each_with_index do |cash_transaction, index|
@@ -173,11 +173,11 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def installment_row(installment)
     div(class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm #{installment_row_class(installment)}") do
-      span(class: "col-span-2 text-center font-bold text-slate-950") { pretty_installments(installment.number, installment.card_installments_count) }
+      span(class: "col-span-2 text-center") { pretty_installments(installment.number, installment.card_installments_count) }
       span(class: "col-span-3 font-semibold text-slate-950") { installment.month_year }
-      span(class: "col-span-3 font-semibold text-slate-950") { localized_date(installment.date) }
+      span(class: "col-span-3 text-slate-700") { localized_date(installment.date) }
+      span(class: "col-span-2 flex justify-center") { installment_status_badge(installment) }
       span(class: "col-span-2 text-right font-bold text-slate-950") { money(installment.price) }
-      span(class: "col-span-2 flex justify-end") { installment_status_badge(installment) }
     end
   end
 
@@ -475,11 +475,11 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     link_to cash_transaction_path(cash_transaction),
             class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm transition #{invoice_row_class(cash_transaction)}",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
-      span(class: "col-span-2 text-center font-bold text-slate-950") { pretty_installments(number, total_count) }
+      span(class: "col-span-2 text-center") { pretty_installments(number, total_count) }
       span(class: "col-span-3 font-semibold text-slate-950") { cash_transaction.month_year }
-      span(class: "col-span-3 font-semibold text-slate-950") { localized_date(cash_transaction.date) }
+      span(class: "col-span-3 text-slate-700") { localized_date(cash_transaction.date) }
+      span(class: "col-span-2 flex justify-center") { invoice_status_badge(cash_transaction) }
       span(class: "col-span-2 text-right font-bold text-slate-950") { money(cash_transaction.price) }
-      span(class: "col-span-2 flex justify-end") { invoice_status_badge(cash_transaction) }
     end
   end
 
@@ -507,7 +507,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
         if cash_transaction.present?
           link_to cash_transaction_path(cash_transaction),
-                  class: "block rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-right transition hover:border-sky-500 hover:bg-sky-100",
+                  class: "block shadow-md rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-right transition hover:border-sky-500 hover:bg-sky-100",
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
             compact_invoice_stat(model_attribute(CashTransaction, :date), localized_date(cash_transaction.date))
             div(class: "mt-2") do

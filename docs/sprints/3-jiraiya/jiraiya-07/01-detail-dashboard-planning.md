@@ -185,6 +185,17 @@ Budget V1 does not need sorting or a mini query language.
 - Slice 5 is implemented: cash, card, and budget dashboards now return to useful
   filtered indexes, use full-page navigation intentionally, and the remaining
   dashboard/action polish is documented as shipped.
+- Slice 6 is implemented through follow-up polish:
+  - `cash_transactions#show`, `card_transactions#show`, and `budgets#show` now
+    share the same section-card / collapsible-card vocabulary
+  - `Summary` and `Allocations` are merged in the shipped dashboards instead of
+    living as separate cards
+  - desktop detail tables now consistently place status before price where that
+    helps comparison and keep number/date columns visually lighter
+  - mobile detail cards are now model-specific instead of forcing one generic
+    dashboard card layout
+  - grouped exchange rendering replaced earlier flat-list exchange rendering on
+    transaction dashboards
 
 ### Handoff Snapshot - 2026-04-22
 
@@ -342,6 +353,73 @@ Verification already run after Slice 5:
 - `bin/rspec spec/requests/cash_transactions_spec.rb:152 spec/requests/card_transactions_spec.rb:1776 spec/requests/budgets_spec.rb`
 
 JIRAIYA-07 is complete unless a later visual review finds more dashboard polish.
+
+Post-slice QA hardening that shipped after the planned rollout:
+
+- submit-loading skeletons were implemented per form for investments, budgets,
+  cash transactions, and card transactions
+- dashboard duplicate actions were visually harmonized across budget, cash, and
+  card show screens
+- budget dashboard status logic was corrected for negative-value budgets so
+  `Exceeded` is only shown when expense budgets truly cross their limit
+- cash/card dashboard links were hardened to avoid rendering broken
+  cross-context/cross-user reference links
+- shared datetime input behavior was adjusted so tabbing out of the time field
+  does not unintentionally resubmit card forms during reactive date edits
+
+### Shipped UI Snapshot
+
+The currently shipped dashboards should now be read as:
+
+- `CardTransaction`
+  - full-width `Summary` with embedded category/entity allocations
+  - full-width `Installments and Invoices`
+  - grouped `Exchanges`
+  - `Links and References`
+  - desktop installment and invoice tables mirror each other structurally
+  - mobile installment cards use a shared header and a split lower half
+
+- `CashTransaction`
+  - full-width `Summary` with embedded category/entity allocations
+  - full-width `Installments`
+  - grouped `Exchanges`
+  - `Links and References`
+  - desktop installments surface:
+    - number
+    - reference month/year
+    - date
+    - paid status
+    - price
+    - balance
+  - mobile installment cards surface:
+    - number/count
+    - paid status
+    - date
+    - reference month/year
+    - price
+    - balance
+
+- `Budget`
+  - full-width `Summary` with embedded category/entity allocations
+  - `Definition`
+  - `Consumption`
+  - desktop consumption table surfaces:
+    - number
+    - source
+    - description
+    - date
+    - paid status
+    - price
+  - mobile consumption cards surface:
+    - number/count
+    - paid status
+    - date
+    - centered description
+    - source
+    - price
+
+This is the current visual reference for later dashboard work unless a later slice
+explicitly changes it.
 
 ### Slice 1. Route And Dashboard Foundation
 

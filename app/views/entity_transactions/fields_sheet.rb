@@ -30,7 +30,7 @@ module Views
         SheetContent(
           side: :middle,
           class: "max-h-[90vh] max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto rounded-xl border border-slate-300 text-black overflow-hidden flex flex-col",
-          data: { controller: "price-mask" }
+          data: { controller: "price-mask entity-transaction" }
         ) do
           SheetHeader do
             SheetTitle(class: "entities_entity_name text-black") { entity_transaction&.entity&.entity_name }

@@ -211,7 +211,7 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard with installments, allocations, links, and actions" do
+    it "renders a context-scoped dashboard with installments, exchanges, links, and actions" do
       transaction = create(
         :cash_transaction,
         user:,
@@ -230,15 +230,17 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
       create(:category_transaction, transactable: transaction, category:)
-      create(:entity_transaction, transactable: transaction, entity:, price: 0)
-
+      entity_transaction = create(:entity_transaction, transactable: transaction, entity:, price: 0, price_to_be_returned: 6_000, is_payer: true)
+      create(:exchange, entity_transaction:, cash_transaction: transaction, number: 1, date: Date.new(2026, 4, 15), month: 4, year: 2026, price: 6_000,
+                        bound_type: :standalone)
       get cash_transaction_path(transaction)
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Cash dashboard details")
       expect(response.body).to include("Dashboard comment")
       expect(response.body).to include(I18n.t("dashboards.sections.installments"))
-      expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
+      expect(response.body).to include(I18n.t("dashboards.sections.summary"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.exchanges"))
       expect(response.body).to include(I18n.t("dashboards.status.partial"))
       expect(response.body).to include(category.name)
       expect(response.body).to include(entity.entity_name)

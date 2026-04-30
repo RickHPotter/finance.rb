@@ -2,6 +2,8 @@
 
 class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
 
@@ -16,25 +18,10 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
       div(class: "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-6") do
         dashboard_header
 
-        if mobile?
-          div(class: "mt-6 space-y-4") do
-            summary_grid
-            allocations_section
-            definition_section
-            consumption_section
-          end
-        else
-          div(class: "mt-6 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]") do
-            div(class: "space-y-4") do
-              summary_grid
-              consumption_section
-            end
-
-            div(class: "space-y-4") do
-              definition_section
-              allocations_section
-            end
-          end
+        div(class: "mt-6 space-y-4") do
+          summary_grid
+          definition_section
+          consumption_section
         end
       end
     end
@@ -71,36 +58,10 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_stat(model_attribute(Budget, :balance), money(budget.balance))
         dashboard_stat(model_attribute(Budget, :month_year), I18n.l(budget.date, format: "%B %Y"))
       end
-    end
-  end
 
-  def consumption_section
-    section_card(I18n.t("dashboards.budgets.consumption")) do
-      if matched_installments.present?
-        if mobile?
-          div(class: "space-y-3") do
-            matched_installments.each do |installment|
-              installment_mobile_card(installment)
-            end
-          end
-        else
-          div(class: "overflow-hidden rounded-2xl border border-slate-200") do
-            div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
-              span(class: "col-span-2") { I18n.t("dashboards.budgets.source") }
-              span(class: "col-span-2") { model_attribute(CashInstallment, :date) }
-              span(class: "col-span-3") { model_attribute(CashTransaction, :description) }
-              span(class: "col-span-2 text-center") { model_attribute(CashInstallment, :number) }
-              span(class: "col-span-2 text-right") { model_attribute(CashInstallment, :price) }
-              span(class: "col-span-1 text-right") { model_attribute(CashInstallment, :paid) }
-            end
-
-            matched_installments.each do |installment|
-              installment_row(installment)
-            end
-          end
-        end
-      else
-        empty_state
+      div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 xl:grid-cols-2") do
+        allocation_group(model_attribute(Budget, :categories), categories, &:category_name)
+        allocation_group(model_attribute(Budget, :entities), entities, &:entity_name)
       end
     end
   end
@@ -116,10 +77,34 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
     end
   end
 
-  def allocations_section
-    section_card(I18n.t("dashboards.sections.allocations")) do
-      allocation_group(model_attribute(Budget, :categories), categories.map(&:name))
-      allocation_group(model_attribute(Budget, :entities), entities.map(&:entity_name))
+  def consumption_section
+    section_card(I18n.t("dashboards.budgets.consumption")) do
+      if matched_installments.present?
+        if mobile?
+          div(class: "space-y-3") do
+            matched_installments.each do |installment|
+              installment_mobile_card(installment)
+            end
+          end
+        else
+          div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+            div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
+              span(class: "col-span-1 text-center") { model_attribute(CashInstallment, :number) }
+              span(class: "col-span-2") { I18n.t("dashboards.budgets.source") }
+              span(class: "col-span-3") { model_attribute(CashTransaction, :description) }
+              span(class: "col-span-2") { model_attribute(CashInstallment, :date) }
+              span(class: "col-span-2 text-center") { model_attribute(CashInstallment, :paid) }
+              span(class: "col-span-2 text-right") { model_attribute(CashInstallment, :price) }
+            end
+
+            matched_installments.each do |installment|
+              installment_row(installment)
+            end
+          end
+        end
+      else
+        empty_state
+      end
     end
   end
 
@@ -147,14 +132,14 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
     transaction = installment.transactable
 
     link_to dashboard_path_for(transaction),
-            class: "grid grid-cols-12 items-center border-t border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50",
+            class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm transition #{installment_row_class(installment)}",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
+      span(class: "col-span-1 text-center") { pretty_installments(installment.number, installment_count_for(installment)) }
       span(class: "col-span-2 font-semibold text-slate-950") { source_label(transaction) }
-      span(class: "col-span-2") { localized_date(installment.date) }
-      span(class: "col-span-3 truncate", title: transaction.description) { transaction.description }
-      span(class: "col-span-2 text-center") { pretty_installments(installment.number, installment_count_for(installment)) }
+      span(class: "col-span-3 truncate font-semibold text-slate-950", title: transaction.description) { transaction.description }
+      span(class: "col-span-2 text-slate-700") { localized_date(installment.date) }
+      span(class: "col-span-2 flex justify-center") { installment_status_badge(installment) }
       span(class: "col-span-2 text-right font-bold") { money(installment.price) }
-      span(class: "col-span-1 text-right") { paid_label(installment) }
     end
   end
 
@@ -162,43 +147,74 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
     transaction = installment.transactable
 
     link_to dashboard_path_for(transaction),
-            class: "block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400",
+            class: "block overflow-hidden rounded-xl border transition #{installment_mobile_card_class(installment)}",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
-      div(class: "flex items-start justify-between gap-3") do
-        div(class: "min-w-0") do
-          p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { I18n.t("dashboards.budgets.source") }
-          p(class: "mt-1 text-sm font-bold text-slate-950") { source_label(transaction) }
+      div(class: "p-3") do
+        div(class: "grid grid-cols-3 items-center gap-3") do
+          div(class: "flex justify-start") do
+            p(class: "inline-flex rounded-md border border-slate-300 bg-white px-2 py-1 text-2xs font-black uppercase tracking-[0.16em] text-slate-700") do
+              pretty_installments(installment.number, installment_count_for(installment))
+            end
+          end
+
+          div(class: "flex justify-center") do
+            installment_status_badge(installment)
+          end
+
+          p(class: "text-right text-sm font-bold text-slate-950") { localized_date(installment.date) }
         end
 
-        span(class: "rounded-full bg-slate-100 px-3 py-1 text-2xs font-bold uppercase tracking-[0.16em] text-slate-700") do
-          pretty_installments(installment.number, installment_count_for(installment))
+        hr(class: "my-3 border-slate-300")
+
+        p(class: "text-center text-sm font-semibold text-slate-800", title: transaction.description) { transaction.description }
+
+        hr(class: "my-3 border-slate-200")
+
+        div(class: "grid grid-cols-2 gap-3") do
+          div(class: "rounded-lg border border-slate-200 px-3 py-2 text-left") do
+            mobile_split_stat(I18n.t("dashboards.budgets.source"), source_label(transaction))
+          end
+
+          div(class: "rounded-lg border border-slate-200 px-3 py-2 text-right") do
+            mobile_split_stat(model_attribute(CashInstallment, :price), money(installment.price), emphasis: true)
+          end
         end
-      end
-
-      div(class: "mt-4") do
-        p(class: "truncate text-sm font-semibold text-slate-800", title: transaction.description) { transaction.description }
-      end
-
-      div(class: "mt-4 grid grid-cols-2 gap-3") do
-        mobile_stat(model_attribute(CashInstallment, :date), localized_date(installment.date))
-        mobile_stat(model_attribute(CashInstallment, :price), money(installment.price))
-        mobile_stat(model_attribute(CashInstallment, :paid), paid_label(installment))
       end
     end
   end
 
-  def allocation_group(label, names)
-    div(class: "mb-4 last:mb-0") do
-      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { label }
+  def mobile_split_stat(label, value, emphasis: false)
+    div do
+      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500") { label }
+      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950") { value }
+    end
+  end
 
-      if names.present?
-        div(class: "mt-2 flex flex-wrap gap-2") do
-          names.each do |name|
-            span(class: "rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-800", title: name) { name }
+  def allocation_group(label, records)
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
+
+      if records.empty?
+        p(class: "mt-2 text-sm text-slate-500") { I18n.t("dashboards.empty") }
+      else
+        div(class: "mt-3 flex flex-wrap justify-center gap-2") do
+          if label == model_attribute(Budget, :categories)
+            records.each do |category|
+              span(
+                class: "flex min-h-12 items-center justify-center break-words rounded-sm border border-black px-2 py-1 text-center text-sm text-black",
+                style: "background: #{category.hex_colour}",
+                title: category.category_name
+              ) { category.category_name }
+            end
+          else
+            records.each do |entity|
+              div(class: "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black", title: entity.entity_name) do
+                image_tag(asset_path("avatars/#{entity.avatar_name}"), class: "h-6 w-6 rounded-full") if entity.avatar_name.present?
+                span(class: "break-words") { entity.entity_name }
+              end
+            end
           end
         end
-      else
-        empty_state
       end
     end
   end
@@ -274,14 +290,14 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   def matched_cash_installments
     @matched_cash_installments ||= filtered_installments(
-      budget.context.cash_installments.includes(cash_transaction: %i[user_bank_account categories entities]).where(month: budget.month, year: budget.year),
+      budget.context.cash_installments.includes(cash_transaction: :user_bank_account).where(month: budget.month, year: budget.year),
       :cash
     ).to_a
   end
 
   def matched_card_installments
     @matched_card_installments ||= filtered_installments(
-      budget.context.card_installments.includes(card_transaction: %i[user_card categories entities]).where(month: budget.month, year: budget.year),
+      budget.context.card_installments.includes(card_transaction: :user_card).where(month: budget.month, year: budget.year),
       :card
     ).to_a
   end
@@ -326,7 +342,29 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def paid_label(installment)
-    model_attribute(CashInstallment, installment.paid? ? :paid : :not_paid)
+    installment.paid? ? I18n.t("filters.paid_state.paid") : I18n.t("filters.paid_state.pending")
+  end
+
+  def installment_status_badge(installment)
+    span(class: "rounded-full px-2.5 py-1 text-2xs font-black uppercase tracking-[0.16em] #{installment_status_badge_class(installment)}") do
+      paid_label(installment)
+    end
+  end
+
+  def installment_status_badge_class(installment)
+    installment.paid? ? "bg-emerald-200 text-emerald-950" : "bg-rose-200 text-rose-950"
+  end
+
+  def installment_row_class(installment)
+    if installment.paid?
+      "border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100"
+    else
+      "border-rose-200 bg-rose-50 text-rose-950 hover:bg-rose-100"
+    end
+  end
+
+  def installment_mobile_card_class(installment)
+    installment.paid? ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"
   end
 
   def status_label

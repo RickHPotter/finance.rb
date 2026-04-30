@@ -109,7 +109,7 @@ RSpec.describe "Budgets", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders a context-scoped dashboard with definition, allocations, consumption, and actions" do
+    it "renders a context-scoped dashboard with summary, definition, consumption, and actions" do
       cash_transaction = create(
         :cash_transaction,
         user:,
@@ -143,7 +143,7 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include("Groceries for budget")
       expect(response.body).to include(I18n.t("dashboards.budgets.consumption"))
       expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
-      expect(response.body).to include(I18n.t("dashboards.sections.allocations"))
+      expect(response.body).to include(I18n.t("dashboards.sections.summary"))
       expect(response.body).to include(edit_budget_path(budget))
       expect(response.body).to include(duplicate_budget_path(budget))
       expect(response.body).to include(cash_transaction_path(cash_transaction))
