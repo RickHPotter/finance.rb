@@ -40,7 +40,8 @@ module Logic
     end
 
     def acquire_transaction_lock!
-      Context.connection.select_value("SELECT pg_advisory_xact_lock(#{LOCK_NAMESPACE}, #{context.user_id})")
+      Context.connection.execute("SELECT pg_advisory_xact_lock(#{LOCK_NAMESPACE}, #{context.user_id})")
+      nil
     end
 
     def assert_no_cross_context_dependencies!

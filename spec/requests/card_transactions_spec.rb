@@ -1713,7 +1713,7 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "supports the canonical sort and direction params for month-year rows" do
-      create(
+      alpha = create(
         :card_transaction,
         user:,
         context: user.main_context,
@@ -1736,9 +1736,12 @@ RSpec.describe "CardTransactions", type: :request do
         year: 2026
       )
 
+      first_installment = alpha.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
+
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         sort: "description",
         direction: "asc",
         card_transaction: { user_card_id: user_card_one.id }
@@ -1749,7 +1752,7 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "keeps the month-year response free of duplicated sort controls" do
-      create(
+      transaction = create(
         :card_transaction,
         user:,
         context: user.main_context,
@@ -1761,9 +1764,12 @@ RSpec.describe "CardTransactions", type: :request do
         year: 2026
       )
 
+      first_installment = transaction.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
+
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         sort: "installment_date",
         direction: "asc",
         card_transaction: { user_card_id: user_card_one.id }
@@ -1777,7 +1783,7 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "keeps supporting legacy order_by while the new sort contract is rolling out" do
-      create(
+      late = create(
         :card_transaction,
         user:,
         context: user.main_context,
@@ -1800,9 +1806,12 @@ RSpec.describe "CardTransactions", type: :request do
         year: 2026
       )
 
+      first_installment = late.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
+
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         order_by: "transaction_date",
         card_transaction: { user_card_id: user_card_one.id }
       }

@@ -93,6 +93,9 @@ class Subscription < ApplicationRecord
   def prepare_linked_transactions
     subscription_category = user&.built_in_category("SUBSCRIPTION")
 
+    mark_destroying_transactions_as_confirmed(cash_transactions)
+    mark_destroying_transactions_as_confirmed(card_transactions)
+
     sync_transactions(cash_transactions.reject(&:marked_for_destruction?), subscription_category)
     sync_transactions(card_transactions.reject(&:marked_for_destruction?), subscription_category)
   end
@@ -109,6 +112,14 @@ class Subscription < ApplicationRecord
       sync_transaction_entities(transaction)
       sync_transaction_installments(transaction)
       sync_transaction_month_year(transaction)
+    end
+  end
+
+  def mark_destroying_transactions_as_confirmed(transactions)
+    transactions.select(&:marked_for_destruction?).each do |transaction|
+      next unless transaction.respond_to?(:historical_correction_confirmation=)
+
+      transaction.historical_correction_confirmation = true
     end
   end
 

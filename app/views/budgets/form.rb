@@ -158,18 +158,32 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           end
         end
 
-        div(class: "flex items-center justify-center gap-2 mb-3 mx-auto") do
-          div(class: "w-full lg:w-1/2 mb-2") do
-            bold_label(form, :first_installment_only)
+        div(class: "mb-3 grid grid-cols-1 gap-2 mx-auto sm:grid-cols-3") do
+          div(class: "w-full mb-2") do
+            bold_label(form, :inclusive)
             div(class: "mb-3") do
-              form.checkbox :first_installment_only, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.first_installment_only
+              form.checkbox :inclusive,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.inclusive,
+                            data: { dynamic_description_target: :inclusive, action: "change->dynamic-description#updateDescription" }
             end
           end
 
-          div(class: "w-full lg:w-1/2 mb-2") do
+          div(class: "w-full mb-2") do
+            bold_label(form, :first_installment_only)
+            div(class: "mb-3") do
+              form.checkbox :first_installment_only,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.first_installment_only
+            end
+          end
+
+          div(class: "w-full mb-2") do
             bold_label(form, :active)
             div(class: "mb-3") do
-              form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.new_record? || budget.active
+              form.checkbox :active,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.new_record? || budget.active
             end
           end
         end

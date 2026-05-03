@@ -47,6 +47,7 @@ class Views::Budgets::CategoryFields < Views::Base
         end
 
         form.hidden_field :category_id, class: :categories_category_id
+        form.hidden_field :id if budget_category.persisted?
         form.hidden_field :_destroy
       end
     end

@@ -39,6 +39,7 @@ class Views::Budgets::EntityFields < Components::Base
         end
 
         form.hidden_field :entity_id, class: :entities_entity_id
+        form.hidden_field :id if budget_entity.persisted?
         form.hidden_field :_destroy
       end
     end

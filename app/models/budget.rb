@@ -150,9 +150,14 @@ class Budget < ApplicationRecord
     entity_ids = budget_entities.map(&:entity_id)
 
     if inclusive
-      same_budget = current_ref_month_year_budgets.joins(:categories, :entities).where(categories: { id: category_ids }, entities: { id: entity_ids })
-      return if same_budget.empty?
-      return if same_budget.pluck(:id) == [ id ]
+      same_budget_ids = current_ref_month_year_budgets
+                        .joins(:categories, :entities)
+                        .where(categories: { id: category_ids }, entities: { id: entity_ids })
+                        .distinct
+                        .ids
+
+      return if same_budget_ids.empty?
+      return if same_budget_ids == [ id ]
 
       errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget"))
     else

@@ -169,7 +169,10 @@ RSpec.describe CardTransaction, type: :model do
         month: 5,
         year: 2026
       )
-      transaction.card_installments.destroy_all
+      stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+      transaction.card_installments.delete_all
+      Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+      CashTransaction.where(id: stale_cash_transaction_ids).delete_all
       transaction.card_installments.create!(number: 2, price: -1000, date: Date.new(2026, 5, 3), month: 6, year: 2026, paid: false)
       transaction.card_installments.create!(number: 1, price: -2000, date: Date.new(2026, 4, 3), month: 5, year: 2026, paid: false)
 

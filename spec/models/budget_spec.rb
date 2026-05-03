@@ -47,6 +47,33 @@ RSpec.describe Budget, type: :model do
 
       expect(budget.context).to eq(subject.user.main_context)
     end
+
+    it "remains valid when an inclusive budget adds another entity to itself" do
+      user = create(:user, :random)
+      category = create(:category, :random, user:)
+      first_entity = create(:entity, :random, user:)
+      second_entity = create(:entity, :random, user:)
+
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        month: 5,
+        year: 2026,
+        inclusive: true,
+        budget_categories: [ build(:budget_category, category:) ],
+        budget_entities: [ build(:budget_entity, entity: first_entity) ]
+      )
+
+      budget.assign_attributes(
+        budget_entities_attributes: [
+          { id: budget.budget_entities.first.id, entity_id: first_entity.id },
+          { entity_id: second_entity.id }
+        ]
+      )
+
+      expect(budget).to be_valid
+    end
   end
 end
 

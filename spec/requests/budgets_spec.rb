@@ -207,6 +207,33 @@ RSpec.describe "Budgets", type: :request do
 
       expect(budget.reload.description).to eq("Updated Budget")
     end
+
+    it "keeps an existing single category while adding a new entity" do
+      budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+
+      expect do
+        patch budget_path(budget), params: {
+          budget: {
+            description: budget.description,
+            value: budget.value,
+            inclusive: budget.inclusive,
+            first_installment_only: budget.first_installment_only,
+            month: budget.month,
+            year: budget.year,
+            active: budget.active,
+            user_id: user.id,
+            budget_categories_attributes: budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id } },
+            budget_entities_attributes: [ { entity_id: entity.id } ]
+          }
+        }, headers: turbo_stream_headers
+      end.not_to raise_error
+
+      budget.reload
+      expect(budget.budget_categories.count).to eq(1)
+      expect(budget.budget_categories.first.category_id).to eq(category.id)
+      expect(budget.budget_entities.count).to eq(1)
+      expect(budget.budget_entities.first.entity_id).to eq(entity.id)
+    end
   end
 
   describe "[ #destroy ]" do

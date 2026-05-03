@@ -60,7 +60,8 @@ class Views::Budgets::FormEntitiesSection < Views::Base
   private
 
   def budget_entities_association
-    budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1
+    association = budget.budget_entities.includes(:entity)
+    association if association.exists?
   end
 
   def render_item(budget_entity_fields)

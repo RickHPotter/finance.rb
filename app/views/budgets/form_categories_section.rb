@@ -60,7 +60,8 @@ class Views::Budgets::FormCategoriesSection < Views::Base
   private
 
   def budget_categories_association
-    budget.budget_categories.includes(:category) if budget.budget_categories.count > 1
+    association = budget.budget_categories.includes(:category)
+    association if association.exists?
   end
 
   def render_item(budget_category_fields)
