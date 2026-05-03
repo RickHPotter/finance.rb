@@ -10,11 +10,15 @@ en:
         icon: Icon
         entity_name: Entity Name
         active: Active
+        status: Status
         user_id: User
         count: Count
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        statuses:
+          active: Active
+          inactive: Inactive
         people: People
         dogs: Dogs
         cats: Cats
@@ -44,11 +48,15 @@ pt-BR:
         icon: Ícone
         entity_name: Nome da Entidade
         active: Ativo
+        status: Status
         user_id: Usuário
         count: Quantidade
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        statuses:
+          active: Ativo
+          inactive: Inativo
         people: Pessoas
         dogs: Cachorros
         cats: Gatos

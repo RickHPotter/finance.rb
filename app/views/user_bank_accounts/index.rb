@@ -2,15 +2,15 @@
 
 class Views::UserBankAccounts::Index < Views::Base
   include Phlex::Rails::Helpers::LinkTo
-  include Phlex::Rails::Helpers::TextFieldTag
 
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :user_bank_accounts, :mobile
+  attr_reader :user_bank_accounts, :index_context, :mobile
 
-  def initialize(user_bank_accounts:, mobile: false)
+  def initialize(user_bank_accounts:, index_context: {}, mobile: false)
     @user_bank_accounts = user_bank_accounts
+    @index_context = index_context
     @mobile = mobile
   end
 
@@ -24,19 +24,8 @@ class Views::UserBankAccounts::Index < Views::Base
 
   private
 
-  def include_inactive?
-    params[:include_inactive] == "false"
-  end
-
   def desktop_index
-    div(class: "mb-6 flex items-center justify-between rounded-lg bg-white p-4 shadow-md") do
-      link_to(
-        include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
-        user_bank_accounts_path(include_inactive: include_inactive?),
-        class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
-        data: { turbo_frame: "_top" }
-      )
-
+    div(class: "mb-6 flex justify-end") do
       link_to(
         action_model(:newa, UserBankAccount),
         new_user_bank_account_path,
@@ -47,23 +36,17 @@ class Views::UserBankAccounts::Index < Views::Base
 
     div(class: "min-w-full") do
       turbo_frame_tag :user_bank_accounts do
-        div(data: { controller: "datatable" }) do
-          text_field_tag(
-            :search,
-            nil,
-            type: :text,
-            placeholder: "#{action_message(:search)}...",
-            class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-            data: { action: "input->datatable#filter" }
-          )
+        div(class: "min-h-full", data: { controller: "datatable" }) do
+          render Views::UserBankAccounts::IndexSearchForm.new(index_context:, mobile: false)
 
           div(class: "my-4", data: { datatable_target: "table" }) do
             div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
-                grid_class: "grid grid-cols-6",
+                grid_class: "grid grid-cols-7",
                 rows: [
                   [
                     { class: "col-span-2 flex justify-center", label: model_attribute(UserBankAccount, :description), align: :center },
+                    { class: "flex justify-center", label: model_attribute(UserBankAccount, :status), align: :center },
                     { class: "flex justify-center", label: model_attribute(UserBankAccount, :count), align: :center },
                     { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :spent), align: :right },
                     { class: "flex items-end justify-end", label: model_attribute(UserBankAccount, :balance), align: :right },
@@ -90,23 +73,9 @@ class Views::UserBankAccounts::Index < Views::Base
     div(class: "w-full") do
       div(class: "min-w-full") do
         turbo_frame_tag :user_bank_accounts do
-          div(data: { controller: "datatable" }) do
-            div(class: "p-3 mb-6 bg-white rounded-lg shadow-sm grid grid-cols-1 gap-2") do
-              link_to(
-                include_inactive? ? action_message(:show_inactive) : action_message(:hide_inactive),
-                user_bank_accounts_path(include_inactive: include_inactive?),
-                class: "p-1 rounded-sm border border-slate-700 bg-sky-500 hover:bg-blue-400 transition-colors text-white shadow-lg font-thin",
-                data: { turbo_frame: "_top" }
-              )
-
-              text_field_tag(
-                :search,
-                nil,
-                type: :text,
-                placeholder: "#{action_message(:search)}...",
-                class: "w-full border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                data: { action: "input->datatable#filter" }
-              )
+          div(class: "min-h-full", data: { controller: "datatable" }) do
+            div(class: "mb-6 grid grid-cols-1 gap-2 rounded-lg bg-slate-50 p-3 shadow-sm") do
+              render Views::UserBankAccounts::IndexSearchForm.new(index_context:, mobile: true)
             end
 
             div(class: "mb-8", data: { datatable_target: "table" }) do

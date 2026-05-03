@@ -13,12 +13,16 @@ en:
         user_bank_account_name: Bank Account Name
         balance: Balance
         active: Active
+        status: Status
         user_id: User
         bank_id: Bank
         count: Count
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        statuses:
+          active: Active
+          inactive: Inactive
 
 pt-BR:
   activerecord:
@@ -35,9 +39,13 @@ pt-BR:
         user_bank_account_name: Nome da Conta Bancária
         balance: Saldo
         active: Ativo
+        status: Status
         user_id: Usuário
         bank_id: Banco
         count: Quantidade
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        statuses:
+          active: Ativa
+          inactive: Inativa

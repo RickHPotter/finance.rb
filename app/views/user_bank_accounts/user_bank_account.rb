@@ -25,14 +25,18 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
   def desktop_row
     div(
-      class: "grid grid-cols-6 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
+      class: "grid grid-cols-7 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
       data: { id: user_bank_account.id, datatable_target: :row }
     ) do
-      div(class: "col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold") do
+      div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
         span(class: "user_bank_account_description px-4 whitespace-nowrap") { user_bank_account.pretty_label }
       end
 
-      div(class: "jump_to_cash_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
+      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+        status_badge
+      end
+
+      div(class: "jump_to_cash_transactions px-2 py-3 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
         if user_bank_account.cash_transactions_count.positive?
           link_to(
             user_bank_account.cash_transactions_count,
@@ -45,26 +49,36 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
         end
       end
 
-      div(class: "flex items-center justify-center text-lg whitespace-nowrap ml-auto") do
+      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto") do
         span do
           from_cent_based_to_float(user_bank_account.cash_transactions_total, "R$")
         end
       end
-      div(class: "flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto") do
+      div(class: "flex items-center justify-center px-2 py-3 font-lekton text-lg whitespace-nowrap ml-auto") do
         span do
           from_cent_based_to_float(user_bank_account.balance, "R$")
         end
       end
 
-      div(class: "flex items-center justify-center") do
-        div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
+      div(class: "flex items-center justify-center px-2 py-3") do
+        div(class: "flex items-center justify-end gap-1") do
           link_to(edit_user_bank_account_path(user_bank_account), id: "edit_user_bank_account_#{user_bank_account.id}",
-                                                                  class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                                                  data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
+                                                                  class: action_button_class,
+                                                                  title: action_message(:edit),
+                                                                  aria: { label: action_message(:edit) },
+                                                                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
-          link_to(user_bank_account_path(user_bank_account), id: "delete_user_bank_account_#{user_bank_account.id}",
-                                                             class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
-                                                             data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }) { cached_icon(:destroy) }
+          LinkWithConfirmation(
+            id: user_bank_account.id,
+            icon: :destroy,
+            link_params: {
+              href: user_bank_account_path(user_bank_account),
+              size: :xs,
+              id: "delete_user_bank_account_#{user_bank_account.id}",
+              class: destructive_action_button_class,
+              data: { turbo_method: :delete }
+            }
+          )
         end
       end
     end
@@ -85,7 +99,10 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
               data: { turbo_frame: "_top" }
             )
           end
+          status_badge
+        end
 
+        div(class: "mt-2 flex justify-end") do
           link_to(cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
                   data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
         end
@@ -114,6 +131,24 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
           end
         end
       end
+    end
+  end
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+  end
+
+  def status_badge
+    colour = user_bank_account.active? ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+
+    span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
+      model_attribute(UserBankAccount, "statuses.#{user_bank_account.active? ? :active : :inactive}")
     end
   end
 end

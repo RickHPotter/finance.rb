@@ -9,11 +9,15 @@ en:
         id: ID
         category_name: Category Name
         active: Active
+        status: Status
         user_id: User
         count: Count
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        statuses:
+          active: Active
+          inactive: Inactive
         card_advance: Card Advance
         card_installment: Card Installment
         card_payment: Card Payment
@@ -34,11 +38,15 @@ pt-BR:
         id: ID
         category_name: Nome da Categoria
         active: Ativo
+        status: Status
         user_id: Usuário
         count: Quantidade
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        statuses:
+          active: Ativa
+          inactive: Inativa
         card_advance: Antecipação de Cartão
         card_installment: Parcelamento de Cartão
         card_payment: Pagamento de Cartão
