@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :entity do
     entity_name { "Nous" }
     user { custom_create(:user) }
+    built_in { false }
 
     trait :different do
       entity_name { "Moi" }
@@ -13,6 +14,11 @@ FactoryBot.define do
     trait :random do
       sequence(:entity_name) { |n| "#{Faker::Book.title} #{Faker::Book.author} #{n}".upcase }
       user { random_custom_create(:user) }
+    end
+
+    trait :built_in do
+      entity_name { "MOI" }
+      built_in { true }
     end
   end
 end
@@ -25,6 +31,7 @@ end
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null
 #  avatar_name             :string           default("people/0.png"), not null
+#  built_in                :boolean          default(FALSE), not null
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null

@@ -102,7 +102,7 @@ class Logic::CardExchangeProjectionAudit
     allocation_total = card_transaction.entity_transactions.sum(&:price)
     return if allocation_total == transaction_total
 
-    has_moi_entity = card_transaction.entity_transactions.joins(:entity).exists?(entities: { entity_name: "MOI" })
+    has_moi_entity = card_transaction.entity_transactions.joins(:entity).exists?(entities: { built_in: true })
 
     {
       transactable_type: "CardTransaction",

@@ -42,7 +42,7 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
-        subscription.entities.map(&:entity_name).join(", ").presence || "-"
+        subscription.entities.map(&:name).join(", ").presence || "-"
       end
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800") do

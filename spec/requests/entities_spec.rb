@@ -50,6 +50,21 @@ RSpec.describe "Entities", type: :request do
 
       expect(entity.reload.entity_name).to eq("Updated Entity")
     end
+
+    it "does not deactivate a built-in entity" do
+      entity = user.built_in_entity
+
+      patch entity_path(entity), params: {
+        entity: {
+          entity_name: entity.entity_name,
+          avatar_name: entity.avatar_name,
+          active: false,
+          user_id: user.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(entity.reload.active).to be(true)
+    end
   end
 
   describe "[ #destroy ]" do
@@ -59,6 +74,14 @@ RSpec.describe "Entities", type: :request do
       expect do
         delete entity_path(entity), headers: turbo_stream_headers
       end.to change(Entity, :count).by(-1)
+    end
+
+    it "does not destroy a built-in entity" do
+      entity = user.built_in_entity
+
+      expect do
+        delete entity_path(entity), headers: turbo_stream_headers
+      end.not_to change(Entity, :count)
     end
   end
 end

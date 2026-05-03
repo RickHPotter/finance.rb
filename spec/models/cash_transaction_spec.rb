@@ -587,7 +587,7 @@ RSpec.describe CashTransaction, type: :model do
     it "allows allocation changes after paid history when the transaction is in the subscription flow" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
-      original_entity = create(:entity, user:, entity_name: "MOI")
+      original_entity = user.built_in_entity
       replacement_entity = create(:entity, user:, entity_name: "NOUS")
       subscription_category = user.built_in_category("SUBSCRIPTION")
       transaction = create_cash_transaction_with_history(

@@ -66,7 +66,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 xl:grid-cols-2") do
         allocation_group(model_attribute(CashTransaction, :categories), categories.map(&:name))
-        allocation_group(model_attribute(CashTransaction, :entities), entities.map(&:entity_name))
+        allocation_group(model_attribute(CashTransaction, :entities), entities.map(&:name))
       end
     end
   end
@@ -470,7 +470,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def exchange_entity_transactions
     @exchange_entity_transactions ||= cash_transaction.entity_transactions.includes(:entity, exchanges: :cash_transaction).sort_by do |entity_transaction|
-      [ exchange_payer_entity_transaction?(entity_transaction) ? 0 : 1, entity_transaction.entity.entity_name ]
+      [ exchange_payer_entity_transaction?(entity_transaction) ? 0 : 1, entity_transaction.entity.name ]
     end
   end
 
@@ -478,7 +478,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     return true if entity_transaction.is_payer?
     return false if entity_transaction.price.to_i.zero?
 
-    entity_transaction.entity.entity_name == "MOI"
+    entity_transaction.entity.built_in?
   end
 
   def dashboard_reference

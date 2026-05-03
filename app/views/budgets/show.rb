@@ -61,7 +61,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 xl:grid-cols-2") do
         allocation_group(model_attribute(Budget, :categories), categories, &:category_name)
-        allocation_group(model_attribute(Budget, :entities), entities, &:entity_name)
+        allocation_group(model_attribute(Budget, :entities), entities, &:name)
       end
     end
   end

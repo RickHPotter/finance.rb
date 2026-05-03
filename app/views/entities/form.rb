@@ -27,6 +27,7 @@ class Views::Entities::Form < Views::Base
             class: outdoor_input_class,
             autofocus: true,
             autocomplete: :off,
+            value: entity.entity_name,
             data: { controller: "blinking-placeholder", text: model_attribute(entity, :entity_name) }
           )
         end
@@ -38,14 +39,17 @@ class Views::Entities::Form < Views::Base
         bold_label(form, :active)
 
         div(class: "pb-3") do
-          form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active
+          form.checkbox :active,
+                        class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                        checked: entity.new_record? || entity.active,
+                        disabled: entity.persisted? && entity.built_in?
         end
 
         div(class: "flex w-full flex-col gap-3") do
           div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
             Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(entity))}") { action_message(:submit) }
 
-            if entity.persisted?
+            if entity.persisted? && !entity.built_in?
               Button(
                 id: "delete_entity_#{entity.id}",
                 type: :submit,

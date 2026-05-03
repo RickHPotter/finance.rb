@@ -66,6 +66,13 @@ class User < ApplicationRecord
     categories.find_by(built_in: true, category_name:)
   end
 
+  def built_in_entity(entity_name = nil)
+    scope = entities.where(built_in: true)
+    return scope.first if entity_name.nil?
+
+    scope.find_by(entity_name:)
+  end
+
   # Helper method to return the custom `category` instances of given `user`.
   #
   # @return [ActiveRecord::Relation].
@@ -107,6 +114,8 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
       Category.new(built_in: true, category_name: "BORROW RETURN")
     )
+
+    entities.push(Entity.new(built_in: true, entity_name: "MOI"))
   end
 
   # TODO: make more visible to the user that they need to confirm their email

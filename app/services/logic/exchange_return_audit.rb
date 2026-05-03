@@ -94,7 +94,7 @@ class Logic::ExchangeReturnAudit
     allocation_total = transactable.entity_transactions.sum(:price)
     transaction_total = transactable.price.abs
     payer_total = transactable.entity_transactions.sum(:price_to_be_returned)
-    has_moi_entity = transactable.entity_transactions.joins(:entity).exists?(entities: { entity_name: "MOI" })
+    has_moi_entity = transactable.entity_transactions.joins(:entity).exists?(entities: { built_in: true })
     missing_amount = transaction_total - allocation_total
     return if missing_amount.zero?
 

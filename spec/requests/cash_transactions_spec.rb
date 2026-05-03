@@ -352,7 +352,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "merges subscription categories and entities into a paid-history cash transaction" do
       leisure = create(:category, user:, category_name: "LEISURE")
       nous = create(:entity, user:, entity_name: "NOUS")
-      moi = create(:entity, user:, entity_name: "MOI")
+      moi = user.built_in_entity
       subscription = create(:subscription, user:, description: "Club", comment: "Shared")
       subscription.categories << leisure
       subscription.entities << nous

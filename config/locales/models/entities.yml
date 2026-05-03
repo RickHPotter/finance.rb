@@ -19,9 +19,18 @@ en:
         dogs: Dogs
         cats: Cats
         countries: Countries
+        moi: MOI
         person_icons_credits: People icons created by
         dog_icons_credits: Dogs icons created by
         country_icons_credits: Country icons created by
+    errors:
+      models:
+        entity:
+          attributes:
+            active:
+              cannot_deactivate_built_in: Built-in entities cannot be deactivated
+            base:
+              cannot_destroy_built_in: Built-in entities cannot be destroyed
 
 pt-BR:
   activerecord:
@@ -44,6 +53,15 @@ pt-BR:
         dogs: Cachorros
         cats: Gatos
         countries: Países
+        moi: MOI
         person_icons_credits: Ícones de pessoas criados por
         dog_icons_credits: Ícones de cachorros criados por
         country_icons_credits: Ícones de países criados por
+    errors:
+      models:
+        entity:
+          attributes:
+            active:
+              cannot_deactivate_built_in: Entidades internas não podem ser desativadas
+            base:
+              cannot_destroy_built_in: Entidades internas não podem ser destruídas

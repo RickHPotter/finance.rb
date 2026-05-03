@@ -358,7 +358,7 @@ RSpec.describe CardTransaction, type: :model do
     it "allows allocation changes after paid history when the transaction is in the subscription flow" do
       user = create(:user)
       user_card = create(:user_card, user:)
-      original_entity = create(:entity, user:, entity_name: "MOI")
+      original_entity = user.built_in_entity
       replacement_entity = create(:entity, user:, entity_name: "NOUS")
       subscription_category = user.built_in_category("SUBSCRIPTION")
       transaction = create_card_transaction_with_history(

@@ -31,7 +31,7 @@ class Views::Entities::Entity < Views::Base
       data: { id: entity.id, datatable_target: :row }
     ) do
       div(class: "px-1 flex items-center justify-center") { image_tag asset_path("avatars/#{entity.avatar_name}"), class: "size-7 rounded-full" }
-      div(class: "col-span-2 px-1 text-center font-lekton font-semibold") { span(class: "px-4 whitespace-nowrap") { entity.entity_name } }
+      div(class: "col-span-2 px-1 text-center font-lekton font-semibold") { span(class: "px-4 whitespace-nowrap") { entity.name } }
 
       div(class: "jump_to_card_transactions px-1 flex items-center justify-center font-anonymous font-semibold whitespace-nowrap text-md") do
         if entity.card_transactions_count.positive?
@@ -77,9 +77,11 @@ class Views::Entities::Entity < Views::Base
                                             class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
                                             data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
 
-          link_to(entity_path(entity), id: "delete_entity_#{entity.id}",
-                                       class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
-                                       data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }) { cached_icon(:destroy) }
+          unless entity.built_in?
+            link_to(entity_path(entity), id: "delete_entity_#{entity.id}",
+                                         class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
+                                         data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }) { cached_icon(:destroy) }
+          end
         end
       end
     end
@@ -91,9 +93,9 @@ class Views::Entities::Entity < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full"
-            link_to(entity.entity_name, edit_entity_path(entity), id: "edit_entity_#{entity.id}",
-                                                                  class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                                  data: { turbo_frame: "_top" })
+            link_to(entity.name, edit_entity_path(entity), id: "edit_entity_#{entity.id}",
+                                                           class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                           data: { turbo_frame: "_top" })
           end
         end
       end

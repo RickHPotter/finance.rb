@@ -39,6 +39,12 @@ RSpec.describe User, type: :model do
         expect(subject.categories.built_in.pluck(:category_name)).to include(*built_in_categories)
       end
 
+      it "creates a built-in MOI entity on create" do
+        subject.save
+
+        expect(subject.entities.built_in.pluck(:entity_name)).to include("MOI")
+      end
+
       it "creates a main context on create" do
         subject.save
 
@@ -64,6 +70,13 @@ RSpec.describe User, type: :model do
         subject.save
 
         expect(subject.built_in_category("EXCHANGE RETURN")).to eq(subject.categories.find_by(category_name: "EXCHANGE RETURN"))
+      end
+
+      it "returns a built-in entity by name" do
+        subject.save
+
+        expect(subject.built_in_entity).to eq(subject.entities.find_by(built_in: true, entity_name: "MOI"))
+        expect(subject.built_in_entity("MOI")).to eq(subject.entities.find_by(built_in: true, entity_name: "MOI"))
       end
     end
   end

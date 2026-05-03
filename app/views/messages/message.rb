@@ -408,13 +408,13 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       transaction_detail_row(model_attribute(CashTransaction, :date), I18n.l(transaction.date, format: :long))
       transaction_detail_row(model_attribute(CashTransaction, :user_bank_account_id), transaction.user_bank_account&.user_bank_account_name)
       transaction_detail_row(model_attribute(CashTransaction, :categories), transaction.categories.order(:category_name).pluck(:category_name).join(", "))
-      transaction_detail_row(model_attribute(CashTransaction, :entities), transaction.entities.order(:entity_name).pluck(:entity_name).join(", "))
+      transaction_detail_row(model_attribute(CashTransaction, :entities), transaction.entities.order(:entity_name).map(&:name).join(", "))
       transaction_detail_row(model_attribute(CashTransaction, :price), from_cent_based_to_float(transaction.price, "R$"))
     when CardTransaction
       transaction_detail_row(model_attribute(CardTransaction, :date), I18n.l(transaction.date, format: :long))
       transaction_detail_row(model_attribute(CardTransaction, :user_card_id), transaction.user_card&.user_card_name)
       transaction_detail_row(model_attribute(CardTransaction, :categories), transaction.categories.order(:category_name).pluck(:category_name).join(", "))
-      transaction_detail_row(model_attribute(CardTransaction, :entities), transaction.entities.order(:entity_name).pluck(:entity_name).join(", "))
+      transaction_detail_row(model_attribute(CardTransaction, :entities), transaction.entities.order(:entity_name).map(&:name).join(", "))
       transaction_detail_row(model_attribute(CardTransaction, :price), from_cent_based_to_float(transaction.price, "R$"))
     end
   end
