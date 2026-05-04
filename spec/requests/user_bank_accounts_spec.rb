@@ -16,6 +16,54 @@ RSpec.describe "UserBankAccounts", type: :request do
     end
   end
 
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard with summary, details, and category/entity breakdowns" do
+      user_bank_account = create(:user_bank_account, user:, bank:)
+      scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
+      main_category = create(:category, user:, category_name: "Main Food")
+      scenario_category = create(:category, user:, category_name: "Scenario Food")
+      main_entity = create(:entity, user:, entity_name: "Main Entity")
+      scenario_entity = create(:entity, user:, entity_name: "Scenario Entity")
+
+      main_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Main account transaction",
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      scenario_transaction = create(
+        :cash_transaction,
+        user:,
+        context: scenario_context,
+        user_bank_account:,
+        description: "Scenario account transaction",
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      create(:category_transaction, transactable: main_transaction, category: main_category)
+      create(:category_transaction, transactable: scenario_transaction, category: scenario_category)
+      create(:entity_transaction, transactable: main_transaction, entity: main_entity)
+      create(:entity_transaction, transactable: scenario_transaction, entity: scenario_entity)
+
+      patch switch_context_path(scenario_context)
+      get user_bank_account_path(user_bank_account)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(user_bank_account.user_bank_account_name)
+      expect(response.body).to include("Summary")
+      expect(response.body).to include("Details")
+      expect(response.body).to include("Scenario Food")
+      expect(response.body).to include("Scenario Entity")
+      expect(response.body).not_to include("Main Food")
+      expect(response.body).not_to include("Main Entity")
+    end
+  end
+
   describe "[ #new ]" do
     it "renders the ruby ui combobox" do
       get new_user_bank_account_path

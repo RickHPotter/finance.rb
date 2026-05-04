@@ -39,7 +39,8 @@ RSpec.describe "Contexts", type: :request do
       get new_context_path(source_context_id: user.main_context.id)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Create Context")
+      expect(response.body).to include(I18n.t("gerund.new"))
+      expect(response.body).to include(action_message(:submit))
       expect(response.body).to include(user.main_context.name)
       expect(response.body).to include('id="context_overlay"')
     end

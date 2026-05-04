@@ -40,7 +40,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_bank_accounts, except: :show
+  resources :user_bank_accounts
   resources :categories, except: :show
   resources :entities, except: :show
   resources :contexts, only: %i[index show new create destroy] do

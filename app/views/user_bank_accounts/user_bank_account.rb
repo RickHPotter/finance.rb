@@ -29,7 +29,11 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
       data: { id: user_bank_account.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        span(class: "user_bank_account_description px-4 whitespace-nowrap") { user_bank_account.pretty_label }
+        link_to user_bank_account_path(user_bank_account),
+                class: "user_bank_account_description px-4 whitespace-nowrap hover:underline",
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
+          user_bank_account.pretty_label
+        end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
@@ -93,8 +97,8 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
             link_to(
               user_bank_account.user_bank_account_name,
-              edit_user_bank_account_path(user_bank_account),
-              id: "edit_user_bank_account_#{user_bank_account.id}",
+              user_bank_account_path(user_bank_account),
+              id: "show_user_bank_account_#{user_bank_account.id}",
               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
               data: { turbo_frame: "_top" }
             )

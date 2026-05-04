@@ -4,7 +4,7 @@ class UserBankAccountsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_user_bank_account, only: %i[edit update destroy]
+  before_action :set_user_bank_account, only: %i[show edit update destroy]
   before_action :set_banks, :set_user_bank_accounts, :set_entities, :set_categories, only: %i[new create edit update]
   before_action :set_basic_tabs
 
@@ -17,6 +17,10 @@ class UserBankAccountsController < ApplicationController
   def new
     @user_bank_account = current_user.user_bank_accounts.new
     render Views::UserBankAccounts::New.new(current_user:, user_bank_account: @user_bank_account, banks: @banks)
+  end
+
+  def show
+    render Views::UserBankAccounts::Show.new(user_bank_account: @user_bank_account)
   end
 
   def create
