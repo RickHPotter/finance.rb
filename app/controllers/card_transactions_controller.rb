@@ -161,6 +161,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       normalize_failed_card_transaction_save! unless saved
 
       if saved
+        notify_shared_return_counterpart_updates!
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
         handle_chain_save_success
       else
@@ -267,6 +268,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     index
     @index_context[:user_card] = @card_transaction.user_card
     apply_chain_index_context(record_ids: created_record_ids)
+  end
+
+  def notify_shared_return_counterpart_updates!
+    mirrored_shared_return_transactions.each do |cash_transaction|
+      Logic::SharedReturnStructureUpdateMessageService.new(transaction: cash_transaction).call
+    end
+  end
+
+  def mirrored_shared_return_transactions
+    @card_transaction.entity_transactions
+                     .includes(exchanges: :cash_transaction)
+                     .flat_map(&:exchanges)
+                     .filter_map(&:cash_transaction)
+                     .select(&:shared_return_flow?)
+                     .uniq(&:id)
   end
 
   def handle_chain_finish_without_save

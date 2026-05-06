@@ -6,7 +6,12 @@ class PushSubscriptionsController < ApplicationController
   def create
     push_subscription = current_user.push_subscriptions.find_or_initialize_by(endpoint: push_subscription_params[:endpoint])
     push_subscription.assign_attributes(p256dh: push_subscription_params[:keys][:p256dh], auth: push_subscription_params[:keys][:auth])
-    push_subscription.save
+
+    if push_subscription.changed?
+      push_subscription.save!
+    else
+      push_subscription.touch
+    end
 
     head :ok
   end

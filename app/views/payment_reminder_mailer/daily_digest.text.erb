@@ -1,0 +1,16 @@
+<%= t("payment_reminder_mailer.daily_digest.preview_title") %>
+
+<%= t("payment_reminder_mailer.daily_digest.sections.overdue.title") %>
+<% @overdue.each do |installment| %>
+- <%= installment.cash_transaction.description %> | <%= l(installment.date.to_date, format: :long) %> | <%= number_to_currency(installment.price.abs / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %> | <%= installment.number %>/<%= installment.cash_installments_count %>
+<% end %>
+
+<%= t("payment_reminder_mailer.daily_digest.sections.due_today.title") %>
+<% @due_today.each do |installment| %>
+- <%= installment.cash_transaction.description %> | <%= l(installment.date.to_date, format: :long) %> | <%= number_to_currency(installment.price.abs / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %> | <%= installment.number %>/<%= installment.cash_installments_count %>
+<% end %>
+
+<%= t("payment_reminder_mailer.daily_digest.sections.due_tomorrow.title") %>
+<% @due_tomorrow.each do |installment| %>
+- <%= installment.cash_transaction.description %> | <%= l(installment.date.to_date, format: :long) %> | <%= number_to_currency(installment.price.abs / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %> | <%= installment.number %>/<%= installment.cash_installments_count %>
+<% end %>

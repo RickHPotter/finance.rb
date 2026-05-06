@@ -1,0 +1,45 @@
+<% palette = tone == "danger" ? { border: "#ef4444", bg: "#fff1f2", pill: "#dc2626", text: "#7f1d1d" } : { border: "#f59e0b", bg: "#fffbeb", pill: "#d97706", text: "#78350f" } %>
+
+<div style="margin-bottom: 22px;">
+  <div style="margin-bottom: 10px; border-left: 5px solid <%= palette[:border] %>; padding-left: 12px; color: #0f172a;">
+    <h2 style="margin: 0; color: #0f172a !important; font-size: 20px; line-height: 1.2;"><%= title %></h2>
+    <p style="margin: 5px 0 0; color: #64748b !important; font-size: 13px; line-height: 1.4;"><%= subtitle %></p>
+  </div>
+
+  <% if installments.any? %>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="overflow: hidden; border: 1px solid #e2e8f0; border-collapse: separate; border-spacing: 0; border-radius: 18px; background: #ffffff;">
+      <% installments.each do |installment| %>
+        <% transaction = installment.cash_transaction %>
+        <tr>
+          <td style="border-bottom: 1px solid #e2e8f0; padding: 16px; background: #ffffff;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse;">
+              <tr>
+                <td class="installment-title-cell" style="vertical-align: top; color: #0f172a;">
+                  <p style="margin: 0 0 7px; color: #0f172a !important; font-size: 16px; font-weight: 800; line-height: 1.25;"><%= transaction.description %></p>
+                  <p style="margin: 0; color: #64748b !important; font-size: 13px; line-height: 1.5;">
+                    <%= l(installment.date.to_date, format: :long) %>
+                    &bull;
+                    <%= t("payment_reminder_mailer.daily_digest.installment_count", number: installment.number, count: installment.cash_installments_count) %>
+                    <% if transaction.user_bank_account.present? %>
+                      &bull;
+                      <%= transaction.user_bank_account.user_bank_account_name %>
+                    <% end %>
+                  </p>
+                </td>
+                <td width="140" class="installment-price-cell" style="width: 140px; vertical-align: top; text-align: right;">
+                  <span style="display: inline-block; white-space: nowrap; border-radius: 999px; background: <%= palette[:bg] %>; padding: 8px 12px; color: <%= palette[:text] %> !important; font-size: 14px; font-weight: 900;">
+                    <%= number_to_currency(installment.price.abs / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %>
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+  <% else %>
+    <div style="border: 1px dashed #cbd5e1; border-radius: 18px; background: #ffffff; padding: 16px; color: #64748b !important; font-size: 14px;">
+      <%= t("payment_reminder_mailer.daily_digest.empty_section") %>
+    </div>
+  <% end %>
+</div>

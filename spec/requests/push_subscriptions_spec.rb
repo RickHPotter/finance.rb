@@ -44,5 +44,27 @@ RSpec.describe "PushSubscriptions", type: :request do
       expect(push_subscription.auth).to eq("new-auth")
       expect(response).to have_http_status(:ok)
     end
+
+    it "touches an existing push subscription when the browser re-syncs the same endpoint" do
+      push_subscription = create(
+        :push_subscription,
+        user:,
+        endpoint: "https://example.com/push/1",
+        p256dh: "public-key",
+        auth: "auth-key",
+        updated_at: 2.days.ago
+      )
+
+      expect do
+        post push_subscriptions_path, params: {
+          push_subscription: {
+            endpoint: "https://example.com/push/1",
+            keys: { p256dh: "public-key", auth: "auth-key" }
+          }
+        }
+      end.to(change { push_subscription.reload.updated_at })
+
+      expect(response).to have_http_status(:ok)
+    end
   end
 end
