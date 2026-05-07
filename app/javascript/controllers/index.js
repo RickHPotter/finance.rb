@@ -154,5 +154,5 @@ application.register("tab", TabController)
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
 
-import UserBankAccountCategoryDashboardController from "./user_bank_account_category_dashboard_controller"
-application.register("user-bank-account-category-dashboard", UserBankAccountCategoryDashboardController)
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)

@@ -1,50 +1,49 @@
 import { Controller } from "@hotwired/stimulus"
 import {
+  BarController,
   CategoryScale,
   Chart,
   Filler,
   Legend,
-  LineController,
-  LineElement,
   LinearScale,
-  PointElement,
+  BarElement,
   Tooltip
 } from "chart.js"
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler)
+Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend, Filler)
 
 export default class extends Controller {
-  static targets = ["categorySelect", "categoryGroupActions", "categoryGroupOptions", "entityActions", "entityOptions", "chartCanvas", "emptyState"]
+  static targets = ["primarySelect", "groupActions", "groupOptions", "secondaryActions", "secondaryOptions", "chartCanvas", "emptyState"]
   static values = { data: Object }
 
   connect() {
     this.selectedGroupIds = new Set()
-    this.selectedEntityIds = new Set()
+    this.selectedSecondaryIds = new Set()
     this.chart = null
-    this.renderCurrentCategory()
+    this.renderCurrentPrimary()
   }
 
   disconnect() {
     this.destroyChart()
   }
 
-  changeCategory() {
-    this.renderCurrentCategory()
+  changePrimary() {
+    this.renderCurrentPrimary()
   }
 
   selectAllGroups() {
     this.selectedGroupIds = new Set(this.currentGroups().map((group) => group.id))
-    this.renderCategoryGroupToolbar()
-    this.resetSelectedEntities()
-    this.renderEntityToolbar()
+    this.renderGroupToolbar()
+    this.resetSelectedSecondaryItems()
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
   unselectAllGroups() {
     this.selectedGroupIds = new Set()
-    this.renderCategoryGroupToolbar()
-    this.resetSelectedEntities()
-    this.renderEntityToolbar()
+    this.renderGroupToolbar()
+    this.resetSelectedSecondaryItems()
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
@@ -52,61 +51,51 @@ export default class extends Controller {
     const { groupId } = event.currentTarget.dataset
     if (!groupId) return
 
-    if (this.selectedGroupIds.has(groupId)) {
-      this.selectedGroupIds.delete(groupId)
-    } else {
-      this.selectedGroupIds.add(groupId)
-    }
-
-    this.renderCategoryGroupToolbar()
-    this.resetSelectedEntities()
-    this.renderEntityToolbar()
+    this.selectedGroupIds = new Set([groupId])
+    this.renderGroupToolbar()
+    this.resetSelectedSecondaryItems()
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
-  selectAll() {
-    this.selectedEntityIds = new Set(this.currentEntities().map((entity) => entity.id))
-    this.renderEntityToolbar()
+  selectAllSecondaryItems() {
+    this.selectedSecondaryIds = new Set(this.currentSecondaryItems().map((item) => item.id))
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
-  unselectAll() {
-    this.selectedEntityIds = new Set()
-    this.renderEntityToolbar()
+  unselectAllSecondaryItems() {
+    this.selectedSecondaryIds = new Set()
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
-  toggleEntity(event) {
-    const { entityId } = event.currentTarget.dataset
-    if (!entityId) return
+  toggleSecondaryItem(event) {
+    const { secondaryId } = event.currentTarget.dataset
+    if (!secondaryId) return
 
-    if (this.selectedEntityIds.has(entityId)) {
-      this.selectedEntityIds.delete(entityId)
-    } else {
-      this.selectedEntityIds.add(entityId)
-    }
-
-    this.renderEntityToolbar()
+    this.selectedSecondaryIds = new Set([secondaryId])
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
-  renderCurrentCategory() {
+  renderCurrentPrimary() {
     this.selectedGroupIds = new Set([this.defaultGroupId()])
-    this.renderCategoryGroupToolbar()
-    this.resetSelectedEntities()
-    this.renderEntityToolbar()
+    this.renderGroupToolbar()
+    this.resetSelectedSecondaryItems()
+    this.renderSecondaryToolbar()
     this.renderChart()
   }
 
-  renderCategoryGroupToolbar() {
+  renderGroupToolbar() {
     const groups = this.currentGroups()
-    this.categoryGroupActionsTarget.innerHTML = ""
-    this.categoryGroupOptionsTarget.innerHTML = ""
+    this.groupActionsTarget.innerHTML = ""
+    this.groupOptionsTarget.innerHTML = ""
 
-    this.categoryGroupActionsTarget.appendChild(
+    this.groupActionsTarget.appendChild(
       this.buildActionButton("Select All", () => this.selectAllGroups(), this.selectedGroupIds.size === groups.length && groups.length > 0)
     )
-    this.categoryGroupActionsTarget.appendChild(
+    this.groupActionsTarget.appendChild(
       this.buildActionButton("Unselect All", () => this.unselectAllGroups(), this.selectedGroupIds.size === 0)
     )
 
@@ -117,64 +106,91 @@ export default class extends Controller {
       button.addEventListener("click", (event) => this.toggleGroup(event))
       button.className = this.filterButtonClass(this.selectedGroupIds.has(group.id))
       button.textContent = group.label
-      this.categoryGroupOptionsTarget.appendChild(button)
+      this.groupOptionsTarget.appendChild(button)
     })
   }
 
-  renderEntityToolbar() {
-    const entities = this.currentEntities()
-    this.entityActionsTarget.innerHTML = ""
-    this.entityOptionsTarget.innerHTML = ""
+  renderSecondaryToolbar() {
+    const secondaryItems = this.currentSecondaryItems()
+    this.secondaryActionsTarget.innerHTML = ""
+    this.secondaryOptionsTarget.innerHTML = ""
 
-    this.entityActionsTarget.appendChild(
-      this.buildActionButton("Select All", () => this.selectAll(), this.selectedEntityIds.size === entities.length && entities.length > 0)
+    this.secondaryActionsTarget.appendChild(
+      this.buildActionButton(
+        "Select All",
+        () => this.selectAllSecondaryItems(),
+        this.selectedSecondaryIds.size === secondaryItems.length && secondaryItems.length > 0
+      )
     )
-    this.entityActionsTarget.appendChild(
-      this.buildActionButton("Unselect All", () => this.unselectAll(), this.selectedEntityIds.size === 0)
+    this.secondaryActionsTarget.appendChild(
+      this.buildActionButton("Unselect All", () => this.unselectAllSecondaryItems(), this.selectedSecondaryIds.size === 0)
     )
 
-    entities.forEach((entity) => {
+    secondaryItems.forEach((item) => {
       const button = document.createElement("button")
       button.type = "button"
-      button.dataset.entityId = entity.id
-      button.addEventListener("click", (event) => this.toggleEntity(event))
-      button.className = this.entityButtonClass(this.selectedEntityIds.has(entity.id))
+      button.dataset.secondaryId = item.id
+      button.addEventListener("click", (event) => this.toggleSecondaryItem(event))
+      button.className = this.secondaryButtonClass(this.selectedSecondaryIds.has(item.id))
 
-      if ((entity.avatarPaths || []).length > 1) {
-        const stack = document.createElement("span")
-        stack.className = "flex -space-x-2"
-        entity.avatarPaths.slice(0, 3).forEach((avatarPath) => {
-          const avatar = document.createElement("img")
-          avatar.src = avatarPath
-          avatar.alt = entity.name
-          avatar.className = "h-6 w-6 rounded-full border-2 border-white bg-white"
-          stack.appendChild(avatar)
-        })
-        button.appendChild(stack)
-      } else if ((entity.avatarPaths || []).length === 1) {
-        const avatar = document.createElement("img")
-        avatar.src = entity.avatarPaths[0]
-        avatar.alt = entity.name
-        avatar.className = "h-6 w-6 rounded-full"
-        button.appendChild(avatar)
-      }
+      this.appendSecondaryVisual(button, item)
 
       const name = document.createElement("span")
       name.className = "break-words"
-      name.textContent = entity.name
+      name.textContent = item.name
       button.appendChild(name)
 
       const total = document.createElement("span")
-      total.className = this.entityTotalClass(this.selectedEntityIds.has(entity.id))
-      total.textContent = this.formatCurrency(entity.total)
+      total.className = this.secondaryTotalClass(this.selectedSecondaryIds.has(item.id))
+      total.textContent = this.formatCurrency(item.total)
       button.appendChild(total)
 
-      this.entityOptionsTarget.appendChild(button)
+      this.secondaryOptionsTarget.appendChild(button)
     })
   }
 
+  appendSecondaryVisual(button, item) {
+    if ((item.avatarPaths || []).length > 1) {
+      const stack = document.createElement("span")
+      stack.className = "flex -space-x-2"
+      item.avatarPaths.slice(0, 3).forEach((avatarPath) => {
+        const avatar = document.createElement("img")
+        avatar.src = avatarPath
+        avatar.alt = item.name
+        avatar.className = "h-6 w-6 rounded-full border-2 border-white bg-white"
+        stack.appendChild(avatar)
+      })
+      button.appendChild(stack)
+      return
+    }
+
+    if ((item.avatarPaths || []).length === 1) {
+      const avatar = document.createElement("img")
+      avatar.src = item.avatarPaths[0]
+      avatar.alt = item.name
+      avatar.className = "h-6 w-6 rounded-full"
+      button.appendChild(avatar)
+      return
+    }
+
+    if ((item.swatchHexes || []).length > 0) {
+      const stack = document.createElement("span")
+      stack.className = "flex -space-x-1"
+      item.swatchHexes.slice(0, 3).forEach((hex) => {
+        const swatch = document.createElement("span")
+        swatch.className = "inline-flex h-5 w-5 rounded-full border-2 border-white shadow-xs"
+        swatch.style.backgroundColor = hex
+        stack.appendChild(swatch)
+      })
+      button.appendChild(stack)
+    }
+  }
+
   renderChart() {
-    const series = this.currentEntities().filter((entity) => this.selectedEntityIds.has(entity.id)).map((entity) => ({ name: entity.name, points: entity.points || [] }))
+    const series = this.currentSecondaryItems()
+      .filter((item) => this.selectedSecondaryIds.has(item.id))
+      .map((item) => ({ name: item.name, points: item.points || [] }))
+
     if (series.length === 0) {
       this.destroyChart()
       this.chartCanvasTarget.classList.add("hidden")
@@ -190,12 +206,9 @@ export default class extends Controller {
       data: this.monthlySeries(entry.points, labels),
       borderColor: this.palette(index).border,
       backgroundColor: this.palette(index).fill,
-      fill: true,
-      tension: 0.35,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      pointHitRadius: 16,
-      borderWidth: 2
+      borderWidth: 1,
+      borderRadius: 8,
+      borderSkipped: false
     }))
 
     this.destroyChart()
@@ -204,11 +217,17 @@ export default class extends Controller {
 
   chartOptions(labels, datasets) {
     return {
-      type: "line",
+      type: "bar",
       data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        datasets: {
+          bar: {
+            categoryPercentage: 0.7,
+            barPercentage: 0.82
+          }
+        },
         interaction: { mode: "index", intersect: false },
         plugins: {
           legend: {
@@ -227,7 +246,7 @@ export default class extends Controller {
               label: (context) => `${context.dataset.label}: ${this.formatCurrencyFromFloat(context.parsed.y)}`,
               title: (items) => {
                 const raw = items[0]?.label
-                return raw ? new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(new Date(raw)) : ""
+                return raw ? new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(this.parseISODate(raw)) : ""
               }
             }
           }
@@ -250,6 +269,15 @@ export default class extends Controller {
         }
       },
       plugins: [{
+        id: "legendBottomPadding",
+        beforeInit: (chart) => {
+          const originalFit = chart.legend.fit
+          chart.legend.fit = function fitWithBottomPadding() {
+            originalFit.bind(chart.legend)()
+            this.height += 18
+          }
+        }
+      }, {
         id: "chartAreaBackground",
         beforeDraw: (chart) => {
           const { ctx, chartArea } = chart
@@ -271,51 +299,52 @@ export default class extends Controller {
     }
   }
 
-  currentCategory() {
-    return this.dataValue.categories.find((category) => category.id === this.categorySelectTarget.value)
+  currentPrimary() {
+    return this.dataValue.items.find((item) => item.id === this.primarySelectTarget.value)
   }
 
   currentGroups() {
-    return this.currentCategory()?.groups || []
+    return this.currentPrimary()?.groups || []
   }
 
   defaultGroupId() {
     return this.currentGroups().find((group) => group.id === "__all__")?.id || this.currentGroups()[0]?.id
   }
 
-  currentEntities() {
+  currentSecondaryItems() {
     const groups = this.currentGroups().filter((group) => this.selectedGroupIds.has(group.id))
-    const entityMap = new Map()
+    const secondaryItemMap = new Map()
 
     groups.forEach((group) => {
-      ;(group.entities || []).forEach((entity) => {
-        const existing = entityMap.get(entity.id)
+      ;(group.secondaryItems || []).forEach((item) => {
+        const existing = secondaryItemMap.get(item.id)
         if (!existing) {
-          entityMap.set(entity.id, {
-            ...entity,
-            points: [ ...(entity.points || []) ],
-            avatarPaths: [ ...(entity.avatarPaths || []) ]
+          secondaryItemMap.set(item.id, {
+            ...item,
+            points: [ ...(item.points || []) ],
+            avatarPaths: [ ...(item.avatarPaths || []) ],
+            swatchHexes: [ ...(item.swatchHexes || []) ]
           })
           return
         }
 
-        existing.total += entity.total || 0
+        existing.total += item.total || 0
         const pointMap = new Map(existing.points.map((point) => [point.x, point.y]))
-        ;(entity.points || []).forEach((point) => {
+        ;(item.points || []).forEach((point) => {
           pointMap.set(point.x, (pointMap.get(point.x) || 0) + (point.y || 0))
         })
         existing.points = [...pointMap.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([x, y]) => ({ x, y }))
       })
     })
 
-    return [...entityMap.values()].sort((left, right) => {
+    return [...secondaryItemMap.values()].sort((left, right) => {
       if ((left.rank || 0) !== (right.rank || 0)) return (left.rank || 0) - (right.rank || 0)
       return Math.abs(right.total || 0) - Math.abs(left.total || 0)
     })
   }
 
-  resetSelectedEntities() {
-    this.selectedEntityIds = new Set(this.currentEntities().map((entity) => entity.id))
+  resetSelectedSecondaryItems() {
+    this.selectedSecondaryIds = new Set(this.currentSecondaryItems().map((item) => item.id))
   }
 
   buildActionButton(label, handler, active = false) {
@@ -337,14 +366,14 @@ export default class extends Controller {
     ].join(" ")
   }
 
-  entityButtonClass(selected) {
+  secondaryButtonClass(selected) {
     return [
       "inline-flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm shadow-sm transition",
       selected ? "border-sky-500 bg-sky-50 text-sky-950" : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
     ].join(" ")
   }
 
-  entityTotalClass(selected) {
+  secondaryTotalClass(selected) {
     return [
       "ml-auto rounded-full px-2 py-1 text-2xs font-black uppercase tracking-[0.16em]",
       selected ? "bg-sky-200 text-sky-950" : "bg-slate-200 text-slate-700"
@@ -359,11 +388,14 @@ export default class extends Controller {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0)
   }
 
-  timelineLabels(entities) {
-    const earliestPoint = entities.flatMap((entity) => entity.points.map((point) => point.x)).sort()[0]
-    const rangeStart = this.dataValue.rangeStart || earliestPoint || this.isoDate(new Date())
-    const current = this.startOfMonth(new Date(rangeStart))
-    const end = this.startOfMonth(new Date())
+  timelineLabels(items) {
+    const pointDates = items.flatMap((item) => item.points.map((point) => point.x)).sort()
+    const earliestPoint = pointDates[0]
+    const latestPoint = pointDates[pointDates.length - 1]
+    const rangeStart = earliestPoint || this.dataValue.rangeStart || this.isoDate(new Date())
+    const rangeEnd = latestPoint || this.dataValue.rangeEnd || this.isoDate(new Date())
+    const current = this.startOfMonth(this.parseISODate(rangeStart))
+    const end = this.startOfMonth(this.parseISODate(rangeEnd))
     const labels = []
 
     while (current <= end) {
@@ -377,7 +409,7 @@ export default class extends Controller {
   monthlySeries(points, labels) {
     const totalsByDate = new Map()
     ;(points || []).forEach((point) => {
-      const monthKey = this.isoDate(this.startOfMonth(new Date(point.x)))
+      const monthKey = this.isoDate(this.startOfMonth(this.parseISODate(point.x)))
       totalsByDate.set(monthKey, (totalsByDate.get(monthKey) || 0) + (point.y / 100.0))
     })
 
@@ -385,7 +417,15 @@ export default class extends Controller {
   }
 
   isoDate(date) {
-    return date.toISOString().slice(0, 10)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  parseISODate(value) {
+    const [year, month, day] = value.split("-").map(Number)
+    return new Date(year, month - 1, day)
   }
 
   startOfMonth(date) {

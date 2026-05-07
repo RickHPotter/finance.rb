@@ -21,10 +21,10 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "mt-6 space-y-4") do
           summary_grid
-          details_section
-          # categories_section
-          # entities_section
           interactive_category_dashboard_section
+          interactive_entity_dashboard_section
+          categories_section
+          entities_section
         end
       end
     end
@@ -60,13 +60,6 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_stat(model_attribute(UserBankAccount, :spent), money(account_cash_transactions.sum(:price)), emphasis: true)
         dashboard_stat(model_attribute(UserBankAccount, :status),
                        user_bank_account.active? ? model_attribute(UserBankAccount, "statuses.active") : model_attribute(UserBankAccount, "statuses.inactive"))
-      end
-    end
-  end
-
-  def details_section
-    section_card("Details") do
-      div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
         dashboard_stat(model_attribute(UserBankAccount, :bank_id), user_bank_account.bank&.bank_name || "-")
         dashboard_stat(model_attribute(UserBankAccount, :agency_number), user_bank_account.agency_number || "-")
         dashboard_stat(model_attribute(UserBankAccount, :account_number), user_bank_account.account_number || "-")
@@ -108,75 +101,95 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def interactive_category_dashboard_section
-    section_card("Category Interactive Dashboard") do
-      if interactive_category_dashboard_payload[:categories].present?
+    interactive_breakdown_dashboard_section(
+      title: "Category Interactive Dashboard",
+      payload: interactive_category_dashboard_payload,
+      select: { id: "interactive_category_select", label: model_attribute(CashTransaction, :category_id) },
+      groups_label: model_attribute(CashTransaction, :categories),
+      secondary_label: model_attribute(CashTransaction, :entities)
+    )
+  end
+
+  def interactive_entity_dashboard_section
+    interactive_breakdown_dashboard_section(
+      title: "Entity Interactive Dashboard",
+      payload: interactive_entity_dashboard_payload,
+      select: { id: "interactive_entity_select", label: model_attribute(CashTransaction, :entity_id) },
+      groups_label: model_attribute(CashTransaction, :entities),
+      secondary_label: model_attribute(CashTransaction, :categories)
+    )
+  end
+
+  def interactive_breakdown_dashboard_section(title:, payload:, select:, groups_label:, secondary_label:)
+    section_card(title) do
+      if payload[:items].present?
         div(
           class: "space-y-4",
           data: {
-            controller: "user-bank-account-category-dashboard",
-            user_bank_account_category_dashboard_data_value: interactive_category_dashboard_payload.to_json
+            controller: "interactive-breakdown-dashboard",
+            interactive_breakdown_dashboard_data_value: payload.to_json
           }
         ) do
-          div(class: "grid gap-3 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-center") do
+          div(class: "w-full") do
             div(class: "w-full") do
-              label(for: "interactive_category_select", class: "mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500") do
-                model_attribute(CashTransaction, :category_id)
+              label(for: select[:id], class: "mb-2 block text-center font-poetsen-one text-medium font-bold text-gray-500") do
+                select[:label]
               end
 
               select(
-                id: "interactive_category_select",
+                id: select[:id],
                 class: "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm " \
                        "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400",
                 data: {
-                  user_bank_account_category_dashboard_target: "categorySelect",
-                  action: "change->user-bank-account-category-dashboard#changeCategory"
+                  interactive_breakdown_dashboard_target: "primarySelect",
+                  action: "change->interactive-breakdown-dashboard#changePrimary"
                 }
               ) do
-                interactive_category_dashboard_payload[:categories].each do |category|
-                  option(value: category[:id]) { category[:name] }
+                payload[:items].each do |item|
+                  option(value: item[:id]) { item[:name] }
                 end
               end
             end
           end
 
           div(class: "space-y-2") do
-            p(class: "text-2xs font-black uppercase tracking-[0.18em] text-slate-500") { "Categories" }
+            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { groups_label }
             div(class: "space-y-2") do
               div(
                 class: "flex flex-wrap gap-2",
-                data: { user_bank_account_category_dashboard_target: "categoryGroupActions" }
+                data: { interactive_breakdown_dashboard_target: "groupActions" }
               )
               div(
                 class: "flex flex-wrap gap-2",
-                data: { user_bank_account_category_dashboard_target: "categoryGroupOptions" }
+                data: { interactive_breakdown_dashboard_target: "groupOptions" }
               )
             end
           end
 
-          div(class: "space-y-2") do
-            p(class: "text-2xs font-black uppercase tracking-[0.18em] text-slate-500") { model_attribute(CashTransaction, :entities) }
+          div(class: "space-y-2 pb-2 sm:pb-3") do
+            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { secondary_label }
             div(class: "space-y-2") do
               div(
                 class: "flex flex-wrap gap-2",
-                data: { user_bank_account_category_dashboard_target: "entityActions" }
+                data: { interactive_breakdown_dashboard_target: "secondaryActions" }
               )
               div(
                 class: "flex flex-wrap gap-2",
-                data: { user_bank_account_category_dashboard_target: "entityOptions" }
+                data: { interactive_breakdown_dashboard_target: "secondaryOptions" }
               )
             end
           end
 
-          div(class: "rounded-2xl border border-slate-200 bg-white p-3") do
+          div(class: "mt-5 rounded-2xl border border-slate-200 bg-white p-3 sm:mt-6") do
             div(class: "h-80") do
               canvas(
                 class: "h-full w-full",
-                data: { user_bank_account_category_dashboard_target: "chartCanvas" }
+                data: { interactive_breakdown_dashboard_target: "chartCanvas" }
               )
             end
             p(
               class: "hidden py-10 text-center text-sm text-slate-500",
-              data: { user_bank_account_category_dashboard_target: "emptyState" }
+              data: { interactive_breakdown_dashboard_target: "emptyState" }
             ) { I18n.t("dashboards.empty") }
           end
         end
@@ -359,77 +372,123 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
       end
 
       {
-        rangeStart: interactive_category_dashboard_range_start,
-        categories: categories.values.sort_by { |entry| entry[:name] }.map do |entry|
-          {
-            id: entry[:id],
-            name: entry[:name],
-            groups: entry[:groups].values.sort_by { |group| [ group[:rank], group[:label] ] }.map do |group|
-              {
-                id: group[:id],
-                label: group[:label],
-                entities: sort_breakdowns(group[:entities].values).map do |entity_entry|
-                  entity_entry.except(:record, :rank).merge(
-                    points: entity_entry[:points].sort_by { |month_year, _| month_year }.map { |month_year, value| { x: month_year, y: value } }
-                  )
-                end
-              }
-            end
-          }
-        end
+        primaryKind: "category",
+        secondaryKind: "entity",
+        rangeStart: interactive_dashboard_range_start,
+        items: serialize_interactive_dashboard_entries(categories.values)
+      }
+    end
+  end
+
+  def interactive_entity_dashboard_payload
+    @interactive_entity_dashboard_payload ||= begin
+      entities = {}
+
+      account_cash_transactions_for_dashboard.each do |cash_transaction|
+        append_interactive_entity_dashboard_cash_transaction!(entities, cash_transaction)
+      end
+
+      {
+        primaryKind: "entity",
+        secondaryKind: "category",
+        rangeStart: interactive_dashboard_range_start,
+        items: serialize_interactive_dashboard_entries(entities.values)
       }
     end
   end
 
   def append_interactive_dashboard_cash_transaction!(categories, cash_transaction)
-    visible_categories = cash_transaction.categories.reject { |category| interactive_dashboard_category_excluded?(category) }
-    return if visible_categories.blank? || cash_transaction.entity_transactions.blank? || cash_transaction.cash_installments.blank?
+    selectable_categories = cash_transaction.categories.reject { |category| interactive_dashboard_base_category_excluded?(category) }
+    return if selectable_categories.blank? || cash_transaction.entity_transactions.blank? || cash_transaction.cash_installments.blank?
 
     visible_entities = cash_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
 
-    visible_categories.each do |base_category|
+    selectable_categories.each do |base_category|
       category_entry = ensure_interactive_dashboard_category_entry!(categories, base_category)
-      aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(category_entry, base_category)
-      extra_categories = visible_categories.reject { |category| category.id == base_category.id }.sort_by(&:name)
-      group_entry = ensure_interactive_dashboard_group_entry!(category_entry, extra_categories)
+      aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(category_entry, base_category, type: :category)
+      extra_categories = cash_transaction.categories.reject do |category|
+        category.id == base_category.id || interactive_dashboard_group_category_excluded?(category)
+      end.sort_by(&:name)
+      group_entry = ensure_interactive_dashboard_group_entry!(category_entry, extra_categories, type: :category)
 
-      aggregate_entity_entry = ensure_interactive_dashboard_entity_entry!(aggregate_group_entry, visible_entities)
-      append_interactive_dashboard_installments!(aggregate_entity_entry, cash_transaction.cash_installments)
+      if extra_categories.blank?
+        aggregate_entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(aggregate_group_entry, visible_entities)
+        append_interactive_dashboard_installments!(aggregate_entity_entry, cash_transaction.cash_installments)
+      end
 
       next if group_entry.blank?
 
-      entity_entry = ensure_interactive_dashboard_entity_entry!(group_entry, visible_entities)
+      entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(group_entry, visible_entities)
       append_interactive_dashboard_installments!(entity_entry, cash_transaction.cash_installments)
+    end
+  end
+
+  def append_interactive_entity_dashboard_cash_transaction!(entities, cash_transaction)
+    selectable_categories = cash_transaction.categories.reject { |category| interactive_dashboard_group_category_excluded?(category) }
+    visible_entities = cash_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
+    return if visible_entities.blank? || selectable_categories.blank? || cash_transaction.cash_installments.blank?
+
+    visible_entities.each do |base_entity|
+      entity_entry = ensure_interactive_dashboard_entity_entry!(entities, base_entity)
+      aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(entity_entry, base_entity, type: :entity)
+      extra_entities = visible_entities.reject { |entity| entity.id == base_entity.id }.sort_by(&:name)
+      group_entry = ensure_interactive_dashboard_group_entry!(entity_entry, extra_entities, type: :entity)
+
+      if extra_entities.blank?
+        aggregate_category_entry = ensure_interactive_dashboard_category_secondary_entry!(aggregate_group_entry, selectable_categories)
+        append_interactive_dashboard_installments!(aggregate_category_entry, cash_transaction.cash_installments)
+      end
+
+      next if group_entry.blank?
+
+      category_entry = ensure_interactive_dashboard_category_secondary_entry!(group_entry, selectable_categories)
+      append_interactive_dashboard_installments!(category_entry, cash_transaction.cash_installments)
     end
   end
 
   def ensure_interactive_dashboard_category_entry!(categories, category)
     categories[category.id] ||= {
       id: category.id.to_s,
+      record: category,
       name: category.name,
-      groups: {}
+      groups: {},
+      type: :category
     }
   end
 
-  def ensure_interactive_dashboard_group_entry!(category_entry, extra_categories)
-    return if extra_categories.blank?
+  def ensure_interactive_dashboard_entity_entry!(entities, entity)
+    entities[entity.id] ||= {
+      id: entity.id.to_s,
+      record: entity,
+      name: entity.name,
+      groups: {},
+      type: :entity
+    }
+  end
 
-    group_id = extra_categories.map(&:id).join("-")
+  def ensure_interactive_dashboard_group_entry!(primary_entry, extra_records, type:)
+    return if extra_records.blank?
 
-    category_entry[:groups][group_id] ||= {
+    group_id = extra_records.map(&:id).join("-")
+
+    primary_entry[:groups][group_id] ||= {
       id: group_id,
-      label: interactive_dashboard_group_label(extra_categories),
+      label: interactive_dashboard_group_label(extra_records),
+      memberIds: [ primary_entry[:record].id, *extra_records.map(&:id) ].sort.map(&:to_s),
       rank: 1,
-      entities: {}
+      secondaryItems: {},
+      type:
     }
   end
 
-  def ensure_interactive_dashboard_aggregate_group_entry!(category_entry, base_category)
-    category_entry[:groups]["__all__"] ||= {
+  def ensure_interactive_dashboard_aggregate_group_entry!(primary_entry, base_record, type:)
+    primary_entry[:groups]["__all__"] ||= {
       id: "__all__",
-      label: "ONLY #{base_category.name}",
+      label: "ONLY #{base_record.name}",
+      memberIds: [ base_record.id.to_s ],
       rank: -1,
-      entities: {}
+      secondaryItems: {},
+      type:
     }
   end
 
@@ -437,14 +496,15 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     "+ #{extra_categories.map(&:name).join(' & ')}"
   end
 
-  def ensure_interactive_dashboard_entity_entry!(group_entry, entities)
+  def ensure_interactive_dashboard_entity_secondary_entry!(group_entry, entities)
     sorted_entities = entities.sort_by(&:name)
     entity_ids = sorted_entities.map(&:id)
     entity_id = entity_ids.join("-")
 
-    group_entry[:entities][entity_id] ||= {
+    group_entry[:secondaryItems][entity_id] ||= {
       record: sorted_entities.first,
       id: entity_id,
+      memberIds: entity_ids.map(&:to_s),
       name: sorted_entities.map(&:name).join(" / "),
       avatarPaths: sorted_entities.filter_map { |entity| entity.avatar_name.present? ? asset_path("avatars/#{entity.avatar_name}") : nil },
       rank: sorted_entities.length,
@@ -453,17 +513,55 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     }
   end
 
+  def ensure_interactive_dashboard_category_secondary_entry!(group_entry, categories)
+    sorted_categories = categories.sort_by(&:name)
+    category_ids = sorted_categories.map(&:id)
+    category_id = category_ids.join("-")
+
+    group_entry[:secondaryItems][category_id] ||= {
+      record: sorted_categories.first,
+      id: category_id,
+      memberIds: category_ids.map(&:to_s),
+      name: sorted_categories.map(&:name).join(" / "),
+      swatchHexes: sorted_categories.filter_map(&:hex_colour).first(3),
+      rank: sorted_categories.length,
+      total: 0,
+      points: Hash.new(0)
+    }
+  end
+
   def append_interactive_dashboard_installments!(entity_entry, cash_installments)
     cash_installments.each do |cash_installment|
       amount = cash_installment.price.to_i
-      month_key = Date.new(cash_installment.year, cash_installment.month, 1).iso8601
+      month_key = cash_installment.date.to_date.beginning_of_month.iso8601
 
       entity_entry[:total] += amount
       entity_entry[:points][month_key] += amount
     end
   end
 
-  def interactive_category_dashboard_range_start
+  def serialize_interactive_dashboard_entries(entries)
+    entries.sort_by { |entry| entry[:name] }.map do |entry|
+      {
+        id: entry[:id],
+        name: entry[:name],
+        groups: entry[:groups].values.sort_by { |group| [ group[:rank], group[:label] ] }.map do |group|
+          {
+            id: group[:id],
+            label: group[:label],
+            memberIds: group[:memberIds],
+            secondaryItems: sort_breakdowns(group[:secondaryItems].values).map do |item|
+              item.except(:record, :rank).merge(
+                points: item[:points].sort_by { |month_year, _| month_year }.map { |month_year, value| { x: month_year, y: value } }
+              )
+            end
+          }
+        end
+      }
+    end
+  end
+
+  def interactive_dashboard_range_start
     earliest_date = account_cash_transactions.joins(:cash_installments, :categories)
                                              .where.not(categories: { category_name: [ "EXCHANGE", "EXCHANGE RETURN" ] })
                                              .minimum("installments.date")
@@ -478,8 +576,12 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
                                                  .to_a
   end
 
-  def interactive_dashboard_category_excluded?(category)
+  def interactive_dashboard_base_category_excluded?(category)
     category.built_in? && category.attributes["category_name"].in?([ "EXCHANGE", "EXCHANGE RETURN" ])
+  end
+
+  def interactive_dashboard_group_category_excluded?(category)
+    category.built_in? && category.attributes["category_name"] == "EXCHANGE RETURN"
   end
 
   def empty_state
