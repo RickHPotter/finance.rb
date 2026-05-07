@@ -27,7 +27,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_cards, except: :show do
+  resources :user_cards do
     member do
       get :reference_date
     end

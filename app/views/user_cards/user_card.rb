@@ -31,7 +31,14 @@ class Views::UserCards::UserCard < Views::Base
       class: "grid grid-cols-10 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
       data: { id: user_card.id, datatable_target: :row }
     ) do
-      div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") { span(class: "px-4 whitespace-nowrap") { brand_and_name } }
+      div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
+        link_to user_card_path(user_card),
+                id: "show_user_card_#{user_card.id}",
+                class: "px-4 whitespace-nowrap hover:underline",
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
+          brand_and_name
+        end
+      end
 
       div(class: "jump_to_card_transactions px-2 py-3 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
         if user_card.card_transactions_count.positive?
@@ -106,9 +113,9 @@ class Views::UserCards::UserCard < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :credit_card
-            link_to(brand_and_name, edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
-                                                                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                                    data: { turbo_frame: "_top" })
+            link_to(brand_and_name, user_card_path(user_card), id: "show_user_card_#{user_card.id}",
+                                                               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                               data: { turbo_frame: "_top", turbo_prefetch: false })
           end
           status_badge
         end

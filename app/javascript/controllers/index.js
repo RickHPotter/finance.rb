@@ -145,6 +145,9 @@ application.register("ruby-ui--sheet", RubyUi__SheetController)
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
 
+import ReferenceYearCarouselController from "./reference_year_carousel_controller"
+application.register("reference-year-carousel", ReferenceYearCarouselController)
+
 import SubscriptionTransactionsController from "./subscription_transactions_controller"
 application.register("subscription-transactions", SubscriptionTransactionsController)
 

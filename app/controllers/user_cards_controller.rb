@@ -4,7 +4,7 @@ class UserCardsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_user_card, only: %i[edit update destroy reference_date]
+  before_action :set_user_card, only: %i[show edit update destroy reference_date]
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
   before_action :set_basic_tabs
 
@@ -23,6 +23,10 @@ class UserCardsController < ApplicationController
     @user_card = Logic::UserCards.create(user_card_params)
 
     handle_save
+  end
+
+  def show
+    render Views::UserCards::Show.new(user_card: @user_card)
   end
 
   def edit

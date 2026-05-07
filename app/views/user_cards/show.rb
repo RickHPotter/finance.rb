@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
@@ -8,10 +8,10 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   include ColoursHelper
   include TranslateHelper
 
-  attr_reader :user_bank_account
+  attr_reader :user_card
 
-  def initialize(user_bank_account:)
-    @user_bank_account = user_bank_account
+  def initialize(user_card:)
+    @user_card = user_card
   end
 
   def view_template
@@ -21,6 +21,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "mt-6 space-y-4") do
           summary_grid
+          references_section
           interactive_category_dashboard_section
           interactive_entity_dashboard_section
           categories_section
@@ -35,18 +36,19 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   def dashboard_header
     div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0 text-left") do
-        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { user_bank_account.user_bank_account_name }
+        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { user_card.user_card_name }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
           status_badge
+          card_badge
           bank_badge
         end
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
-        dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account), variant: :edit)
-        dashboard_action(action_message(:index), user_bank_accounts_path, variant: :outline)
+        dashboard_action(action_message(:edit), edit_user_card_path(user_card), variant: :edit)
+        dashboard_action(action_message(:index), user_cards_path, variant: :outline)
         destroy_action
       end
     end
@@ -55,21 +57,92 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   def summary_grid
     section_card(I18n.t("dashboards.sections.summary")) do
       div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
-        dashboard_stat(model_attribute(UserBankAccount, :balance), money(user_bank_account.balance), emphasis: true)
-        dashboard_stat(model_attribute(UserBankAccount, :count), account_cash_transactions.count)
-        dashboard_stat(model_attribute(UserBankAccount, :spent), money(account_cash_transactions.sum(:price)), emphasis: true)
-        dashboard_stat(model_attribute(UserBankAccount, :status),
-                       user_bank_account.active? ? model_attribute(UserBankAccount, "statuses.active") : model_attribute(UserBankAccount, "statuses.inactive"))
-        dashboard_stat(model_attribute(UserBankAccount, :bank_id), user_bank_account.bank&.bank_name || "-")
-        dashboard_stat(model_attribute(UserBankAccount, :agency_number), user_bank_account.agency_number || "-")
-        dashboard_stat(model_attribute(UserBankAccount, :account_number), user_bank_account.account_number || "-")
-        dashboard_stat(model_attribute(UserBankAccount, :created_at), localized_date(user_bank_account.created_at))
+        dashboard_stat(model_attribute(UserCard, :count), scoped_card_transactions.count)
+        dashboard_stat(model_attribute(UserCard, :spent), money(scoped_card_transactions.sum(:price)), emphasis: true)
+        dashboard_stat(model_attribute(UserCard, :status),
+                       user_card.active? ? model_attribute(UserCard, "statuses.active") : model_attribute(UserCard, "statuses.inactive"))
+        dashboard_stat(model_attribute(UserCard, :card_id), user_card.card&.card_name || "-")
+        dashboard_stat(model_attribute(UserCard, :bank_id), user_card.card&.bank&.bank_name || "-")
+        dashboard_stat(model_attribute(UserCard, :current_closing_date), localized_date(current_closing_date))
+        dashboard_stat(model_attribute(UserCard, :current_due_date), localized_date(current_due_date))
+        dashboard_stat(model_attribute(UserCard, :min_spend), money(user_card.min_spend), emphasis: true)
+        dashboard_stat(model_attribute(UserCard, :credit_limit), money(user_card.credit_limit), emphasis: true)
+        dashboard_stat(model_attribute(UserCard, :created_at), localized_date(user_card.created_at))
+      end
+    end
+  end
+
+  def references_section
+    section_card(Reference.model_name.human(count: 2)) do
+      if reference_records.present?
+        div(
+          class: "space-y-4",
+          data: {
+            controller: "reference-year-carousel",
+            reference_year_carousel_years_value: reference_years.to_json
+          }
+        ) do
+          div(class: "flex items-center justify-between gap-3") do
+            button(
+              type: :button,
+              class: reference_year_button_class,
+              data: {
+                action: "reference-year-carousel#previous",
+                reference_year_carousel_target: "previousButton"
+              }
+            ) { "Prev" }
+
+            span(
+              class: "rounded-full bg-sky-100 px-4 py-1.5 text-sm font-black uppercase tracking-[0.18em] text-sky-900",
+              data: { reference_year_carousel_target: "yearBadge" }
+            )
+
+            button(
+              type: :button,
+              class: reference_year_button_class,
+              data: {
+                action: "reference-year-carousel#next",
+                reference_year_carousel_target: "nextButton"
+              }
+            ) { "Next" }
+          end
+
+          div(class: "grid gap-3 lg:grid-cols-2 xl:grid-cols-3") do
+            reference_records.each do |reference|
+              div(
+                class: "rounded-2xl border border-slate-200 bg-white px-4 py-3",
+                data: {
+                  reference_year_carousel_target: "card",
+                  reference_year: reference.year
+                }
+              ) do
+                div(class: "flex items-start justify-between gap-3") do
+                  div(class: "min-w-0") do
+                    p(class: "text-xs font-black uppercase tracking-[0.18em] text-slate-500") { reference_month_year_label(reference) }
+                    p(class: "mt-1 text-sm font-semibold text-slate-950") { "#{model_attribute(UserCard, :user_card_name)}: #{user_card.user_card_name}" }
+                  end
+
+                  span(class: "shrink-0 rounded-full bg-sky-100 px-2.5 py-1 text-2xs font-black uppercase tracking-[0.16em] text-sky-900") do
+                    localized_date(reference.reference_date)
+                  end
+                end
+
+                div(class: "mt-3 grid grid-cols-2 gap-3") do
+                  compact_stat(model_attribute(Reference, :reference_closing_date), localized_date(reference.reference_closing_date))
+                  compact_stat(model_attribute(Reference, :reference_date), localized_date(reference.reference_date), emphasis: true)
+                end
+              end
+            end
+          end
+        end
+      else
+        empty_state
       end
     end
   end
 
   def categories_section
-    section_card(model_attribute(CashTransaction, :categories), open: false) do
+    section_card(model_attribute(CardTransaction, :categories), open: false) do
       if category_breakdowns.present?
         allocation_breakdown_grid(category_breakdowns) do |entry|
           span(
@@ -85,7 +158,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def entities_section
-    section_card(model_attribute(CashTransaction, :entities), open: false) do
+    section_card(model_attribute(CardTransaction, :entities), open: false) do
       if entity_breakdowns.present?
         allocation_breakdown_grid(entity_breakdowns) do |entry|
           div(class: "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black",
@@ -104,9 +177,9 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     interactive_breakdown_dashboard_section(
       title: "Category Interactive Dashboard",
       payload: interactive_category_dashboard_payload,
-      select: { id: "interactive_category_select", label: model_attribute(CashTransaction, :category_id) },
-      groups_label: model_attribute(CashTransaction, :categories),
-      secondary_label: model_attribute(CashTransaction, :entities)
+      select: { id: "interactive_card_category_select", label: model_attribute(CardTransaction, :category_id) },
+      groups_label: model_attribute(CardTransaction, :categories),
+      secondary_label: model_attribute(CardTransaction, :entities)
     )
   end
 
@@ -114,9 +187,9 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     interactive_breakdown_dashboard_section(
       title: "Entity Interactive Dashboard",
       payload: interactive_entity_dashboard_payload,
-      select: { id: "interactive_entity_select", label: model_attribute(CashTransaction, :entity_id) },
-      groups_label: model_attribute(CashTransaction, :entities),
-      secondary_label: model_attribute(CashTransaction, :categories)
+      select: { id: "interactive_card_entity_select", label: model_attribute(CardTransaction, :entity_id) },
+      groups_label: model_attribute(CardTransaction, :entities),
+      secondary_label: model_attribute(CardTransaction, :categories)
     )
   end
 
@@ -155,42 +228,26 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
           div(class: "space-y-2") do
             p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { groups_label }
             div(class: "space-y-2") do
-              div(
-                class: "flex flex-wrap gap-2",
-                data: { interactive_breakdown_dashboard_target: "groupActions" }
-              )
-              div(
-                class: "flex flex-wrap gap-2",
-                data: { interactive_breakdown_dashboard_target: "groupOptions" }
-              )
+              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "groupActions" })
+              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "groupOptions" })
             end
           end
 
           div(class: "space-y-2 pb-2 sm:pb-3") do
             p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { secondary_label }
             div(class: "space-y-2") do
-              div(
-                class: "flex flex-wrap gap-2",
-                data: { interactive_breakdown_dashboard_target: "secondaryActions" }
-              )
-              div(
-                class: "flex flex-wrap gap-2",
-                data: { interactive_breakdown_dashboard_target: "secondaryOptions" }
-              )
+              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "secondaryActions" })
+              div(class: "flex flex-wrap gap-2", data: { interactive_breakdown_dashboard_target: "secondaryOptions" })
             end
           end
 
           div(class: "mt-5 rounded-2xl border border-slate-200 bg-white p-3 sm:mt-6") do
             div(class: "h-80") do
-              canvas(
-                class: "h-full w-full",
-                data: { interactive_breakdown_dashboard_target: "chartCanvas" }
-              )
+              canvas(class: "h-full w-full", data: { interactive_breakdown_dashboard_target: "chartCanvas" })
             end
-            p(
-              class: "hidden py-10 text-center text-sm text-slate-500",
-              data: { interactive_breakdown_dashboard_target: "emptyState" }
-            ) { I18n.t("dashboards.empty") }
+            p(class: "hidden py-10 text-center text-sm text-slate-500", data: { interactive_breakdown_dashboard_target: "emptyState" }) do
+              I18n.t("dashboards.empty")
+            end
           end
         end
       else
@@ -226,15 +283,15 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def destroy_action
-    return unless user_bank_account.cash_transactions.empty?
+    return unless user_card.card_transactions.empty?
 
     LinkWithConfirmation(
-      id: "user_bank_account_dashboard_destroy_#{user_bank_account.id}",
+      id: "user_card_dashboard_destroy_#{user_card.id}",
       text: action_message(:destroy),
       link_params: {
-        href: user_bank_account_path(user_bank_account),
+        href: user_card_path(user_card),
         variant: :destructive,
-        id: "delete_user_bank_account_#{user_bank_account.id}",
+        id: "delete_user_card_#{user_card.id}",
         class: dashboard_action_class(:destroy),
         data: { turbo_method: :delete, turbo_frame: "_top" }
       }
@@ -271,8 +328,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
           end
 
           div(class: "mt-3 grid grid-cols-2 gap-3") do
-            compact_stat(model_attribute(CashTransaction, :price), money(entry[:total]), emphasis: true)
-            compact_stat(model_attribute(CashTransaction, :count), entry[:count])
+            compact_stat(model_attribute(CardTransaction, :price), money(entry[:total]), emphasis: true)
+            compact_stat(model_attribute(CardTransaction, :count), entry[:count])
           end
         end
       end
@@ -280,26 +337,36 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def status_badge
-    colour = user_bank_account.active? ? "bg-emerald-100 text-emerald-900" : "bg-slate-200 text-slate-700"
-    label = user_bank_account.active? ? model_attribute(UserBankAccount, "statuses.active") : model_attribute(UserBankAccount, "statuses.inactive")
+    colour = user_card.active? ? "bg-emerald-100 text-emerald-900" : "bg-slate-200 text-slate-700"
+    label = user_card.active? ? model_attribute(UserCard, "statuses.active") : model_attribute(UserCard, "statuses.inactive")
 
     span(class: "rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.16em] #{colour}") { label }
   end
 
-  def bank_badge
+  def card_badge
     span(class: "rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-700") do
-      user_bank_account.bank&.bank_name || "-"
+      user_card.card&.card_name || "-"
     end
   end
 
-  def account_cash_transactions
-    @account_cash_transactions ||= current_context.cash_transactions.where(user_bank_account: user_bank_account)
+  def bank_badge
+    span(class: "rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-700") do
+      user_card.card&.bank&.bank_name || "-"
+    end
+  end
+
+  def scoped_card_transactions
+    @scoped_card_transactions ||= current_context.card_transactions.where(user_card:)
+  end
+
+  def reference_records
+    @reference_records ||= user_card.references.where(context: current_context).order(year: :asc, month: :asc).to_a
   end
 
   def category_breakdowns
     @category_breakdowns ||= begin
       entries = category_records.map do |category|
-        scoped_transactions = account_cash_transactions.joins(:categories).where(categories: { id: category.id })
+        scoped_transactions = scoped_card_transactions.joins(:categories).where(categories: { id: category.id })
         { record: category, total: scoped_transactions.sum(:price), count: scoped_transactions.count }
       end
 
@@ -310,7 +377,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   def entity_breakdowns
     @entity_breakdowns ||= begin
       entries = entity_records.map do |entity|
-        scoped_transactions = account_cash_transactions.joins(:entities).where(entities: { id: entity.id })
+        scoped_transactions = scoped_card_transactions.joins(:entities).where(entities: { id: entity.id })
         { record: entity, total: scoped_transactions.sum(:price), count: scoped_transactions.count }
       end
 
@@ -319,21 +386,21 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def category_records
-    @category_records ||= user_bank_account.user.categories
-                                           .joins(:cash_transactions)
-                                           .merge(account_cash_transactions)
-                                           .distinct
-                                           .order(:category_name)
-                                           .to_a
+    @category_records ||= user_card.user.categories
+                                   .joins(:card_transactions)
+                                   .merge(scoped_card_transactions)
+                                   .distinct
+                                   .order(:category_name)
+                                   .to_a
   end
 
   def entity_records
-    @entity_records ||= user_bank_account.user.entities
-                                         .joins(:cash_transactions)
-                                         .merge(account_cash_transactions)
-                                         .distinct
-                                         .order(:entity_name)
-                                         .to_a
+    @entity_records ||= user_card.user.entities
+                                 .joins(:card_transactions)
+                                 .merge(scoped_card_transactions)
+                                 .distinct
+                                 .order(:entity_name)
+                                 .to_a
   end
 
   def localized_date(value)
@@ -344,11 +411,25 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     from_cent_based_to_float(value.to_i, "R$")
   end
 
+  def current_due_date
+    Date.current.change(day: user_card.due_date_day)
+  end
+
+  def current_closing_date
+    current_due_date - user_card.days_until_due_date.days
+  end
+
   def compact_stat(label, value, emphasis: false)
     div do
       p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500") { label }
       p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950") { value.to_s }
     end
+  end
+
+  def reference_year_button_class
+    "inline-flex min-h-11 min-w-20 items-center justify-center rounded-sm border border-slate-300 bg-white px-3 py-2 " \
+      "text-sm font-semibold text-slate-700 shadow-sm " \
+      "transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
   end
 
   def breakdown_badge_class(total)
@@ -363,12 +444,20 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     entries.sort_by { |entry| -entry[:total].abs }
   end
 
+  def reference_month_year_label(reference)
+    I18n.l(Date.new(reference.year, reference.month, 1), format: "%b %Y")
+  end
+
+  def reference_years
+    @reference_years ||= reference_records.map(&:year).uniq.sort
+  end
+
   def interactive_category_dashboard_payload
     @interactive_category_dashboard_payload ||= begin
       categories = {}
 
-      account_cash_transactions_for_dashboard.each do |cash_transaction|
-        append_interactive_dashboard_cash_transaction!(categories, cash_transaction)
+      scoped_card_transactions_for_dashboard.each do |card_transaction|
+        append_interactive_dashboard_card_transaction!(categories, card_transaction)
       end
 
       {
@@ -384,8 +473,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     @interactive_entity_dashboard_payload ||= begin
       entities = {}
 
-      account_cash_transactions_for_dashboard.each do |cash_transaction|
-        append_interactive_entity_dashboard_cash_transaction!(entities, cash_transaction)
+      scoped_card_transactions_for_dashboard.each do |card_transaction|
+        append_interactive_entity_dashboard_card_transaction!(entities, card_transaction)
       end
 
       {
@@ -397,36 +486,36 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     end
   end
 
-  def append_interactive_dashboard_cash_transaction!(categories, cash_transaction)
-    selectable_categories = cash_transaction.categories.reject { |category| interactive_dashboard_base_category_excluded?(category) }
-    return if selectable_categories.blank? || cash_transaction.entity_transactions.blank? || cash_transaction.cash_installments.blank?
+  def append_interactive_dashboard_card_transaction!(categories, card_transaction)
+    selectable_categories = card_transaction.categories.reject { |category| interactive_dashboard_base_category_excluded?(category) }
+    return if selectable_categories.blank? || card_transaction.entity_transactions.blank? || card_transaction.card_installments.blank?
 
-    visible_entities = cash_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
+    visible_entities = card_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
 
     selectable_categories.each do |base_category|
       category_entry = ensure_interactive_dashboard_category_entry!(categories, base_category)
       aggregate_group_entry = ensure_interactive_dashboard_aggregate_group_entry!(category_entry, base_category, type: :category)
-      extra_categories = cash_transaction.categories.reject do |category|
+      extra_categories = card_transaction.categories.reject do |category|
         category.id == base_category.id || interactive_dashboard_group_category_excluded?(category)
       end.sort_by(&:name)
       group_entry = ensure_interactive_dashboard_group_entry!(category_entry, extra_categories, type: :category)
 
       if extra_categories.blank?
         aggregate_entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(aggregate_group_entry, visible_entities)
-        append_interactive_dashboard_installments!(aggregate_entity_entry, cash_transaction.cash_installments)
+        append_interactive_dashboard_installments!(aggregate_entity_entry, card_transaction.card_installments)
       end
 
       next if group_entry.blank?
 
       entity_entry = ensure_interactive_dashboard_entity_secondary_entry!(group_entry, visible_entities)
-      append_interactive_dashboard_installments!(entity_entry, cash_transaction.cash_installments)
+      append_interactive_dashboard_installments!(entity_entry, card_transaction.card_installments)
     end
   end
 
-  def append_interactive_entity_dashboard_cash_transaction!(entities, cash_transaction)
-    selectable_categories = cash_transaction.categories.reject { |category| interactive_dashboard_group_category_excluded?(category) }
-    visible_entities = cash_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
-    return if visible_entities.blank? || selectable_categories.blank? || cash_transaction.cash_installments.blank?
+  def append_interactive_entity_dashboard_card_transaction!(entities, card_transaction)
+    selectable_categories = card_transaction.categories.reject { |category| interactive_dashboard_group_category_excluded?(category) }
+    visible_entities = card_transaction.entity_transactions.filter_map(&:entity).uniq(&:id)
+    return if visible_entities.blank? || selectable_categories.blank? || card_transaction.card_installments.blank?
 
     visible_entities.each do |base_entity|
       entity_entry = ensure_interactive_dashboard_entity_entry!(entities, base_entity)
@@ -436,13 +525,13 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
       if extra_entities.blank?
         aggregate_category_entry = ensure_interactive_dashboard_category_secondary_entry!(aggregate_group_entry, selectable_categories)
-        append_interactive_dashboard_installments!(aggregate_category_entry, cash_transaction.cash_installments)
+        append_interactive_dashboard_installments!(aggregate_category_entry, card_transaction.card_installments)
       end
 
       next if group_entry.blank?
 
       category_entry = ensure_interactive_dashboard_category_secondary_entry!(group_entry, selectable_categories)
-      append_interactive_dashboard_installments!(category_entry, cash_transaction.cash_installments)
+      append_interactive_dashboard_installments!(category_entry, card_transaction.card_installments)
     end
   end
 
@@ -492,8 +581,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     }
   end
 
-  def interactive_dashboard_group_label(extra_categories)
-    "+ #{extra_categories.map(&:name).join(' & ')}"
+  def interactive_dashboard_group_label(extra_records)
+    "+ #{extra_records.map(&:name).join(' & ')}"
   end
 
   def ensure_interactive_dashboard_entity_secondary_entry!(group_entry, entities)
@@ -530,13 +619,13 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     }
   end
 
-  def append_interactive_dashboard_installments!(entity_entry, cash_installments)
-    cash_installments.each do |cash_installment|
-      amount = cash_installment.price.to_i
-      month_key = cash_installment.date.to_date.beginning_of_month.iso8601
+  def append_interactive_dashboard_installments!(entry, card_installments)
+    card_installments.each do |card_installment|
+      amount = card_installment.price.to_i
+      month_key = card_installment.date.to_date.beginning_of_month.iso8601
 
-      entity_entry[:total] += amount
-      entity_entry[:points][month_key] += amount
+      entry[:total] += amount
+      entry[:points][month_key] += amount
     end
   end
 
@@ -562,18 +651,18 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def interactive_dashboard_range_start
-    earliest_date = account_cash_transactions.joins(:cash_installments, :categories)
-                                             .where.not(categories: { category_name: [ "EXCHANGE", "EXCHANGE RETURN" ] })
-                                             .minimum("installments.date")
+    earliest_date = scoped_card_transactions.joins(:card_installments, :categories)
+                                            .where.not(categories: { category_name: [ "EXCHANGE", "EXCHANGE RETURN" ] })
+                                            .minimum("installments.date")
     return if earliest_date.blank?
 
     earliest_date.to_date.beginning_of_month.iso8601
   end
 
-  def account_cash_transactions_for_dashboard
-    @account_cash_transactions_for_dashboard ||= account_cash_transactions
-                                                 .includes(:cash_installments, :categories, entity_transactions: :entity)
-                                                 .to_a
+  def scoped_card_transactions_for_dashboard
+    @scoped_card_transactions_for_dashboard ||= scoped_card_transactions
+                                                .includes(:card_installments, :categories, entity_transactions: :entity)
+                                                .to_a
   end
 
   def interactive_dashboard_base_category_excluded?(category)
