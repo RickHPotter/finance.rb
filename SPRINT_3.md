@@ -221,6 +221,15 @@ too visible to ignore.
     notifications, and stale-form submission after context switching.
   - Query-path and recalculation benchmarking was added so context runtime behavior
     could be compared against `main_context` before rollout.
+  - Due-payment reminders were further hardened operationally:
+    - reminder selection is explicitly `main_context`-only
+    - unpaid reminders are split into overdue, due today, and due tomorrow buckets
+    - email digest is now the reliable fallback surface when mobile PWA push delivery
+      is inconsistent, especially on iPhone
+    - push now sends one high-urgency overdue summary plus per-installment due-today
+      pushes
+    - rollout is temporarily limited to `User.first` until reminder behavior is
+      validated in production
 
 ### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 
@@ -245,6 +254,20 @@ too visible to ignore.
 
 - References:
   - [detail dashboard planning](docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md)
+  - The original scope was cash/card/budget, but the dashboard pattern has since
+    expanded into:
+    - `user_bank_accounts#show`
+    - `user_cards#show`
+    - `categories#show`
+    - `entities#show`
+  - `user_bank_accounts#show` and `user_cards#show` now include interactive
+    category-first and entity-first breakdown dashboards with strict `ONLY ...`
+    grouping semantics for mixed allocations.
+  - `user_cards#show` also includes a read-only reference section with a year
+    carousel so only up to 12 references are visible per selected year.
+  - `categories#show` and `entities#show` now use pie-chart breakdowns, including a
+    shared combobox-style multi-source filter that mixes bank accounts and cards in
+    one selector.
 
 ### JIRAIYA-08/fe-04: Refine conversations and create a first assistant flow
 

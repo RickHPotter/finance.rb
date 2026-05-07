@@ -421,6 +421,178 @@ The currently shipped dashboards should now be read as:
 This is the current visual reference for later dashboard work unless a later slice
 explicitly changes it.
 
+### Handoff Snapshot - 2026-05-07
+
+The original cash/card/budget dashboard rollout is done. What followed was a long
+polish phase plus one new dashboard track for account-level analysis. This section
+is the practical source of truth for the next session.
+
+#### Detail Dashboards That Are Functionally Done
+
+- `card_transactions#show`
+- `cash_transactions#show`
+- `budgets#show`
+
+The current expectation is:
+
+- all three use the same section-card / collapsible-card vocabulary
+- `Summary` and `Allocations` are merged
+- mobile layouts are intentionally model-specific, not one generic card template
+- grouped `Exchanges` replaced flat exchange lists on transaction dashboards
+- row/table emphasis was tuned so number/date columns are visually lighter and
+  status sits before price where comparison benefits from it
+
+#### Important Transaction-form Fixes That Happened During This Work
+
+Several regressions were found while working on dashboard-adjacent form/UI flows.
+These are worth carrying as explicit context because they were non-obvious:
+
+- entity transaction sheets are portaled but still need to submit nested fields as
+  part of the owning transaction form
+- single existing nested rows must still render:
+  - one `entity_transaction`
+  - one `category_transaction`
+  - one `exchange`
+- duplicate/edit/create EXCHANGE flows were restored by fixing:
+  - nested row rendering guards
+  - modal form ownership
+  - duplicate reactive updates
+- `CardTransactionsController` now explicitly delegates shared-return counterpart
+  update messaging after a successful save by calling
+  `Logic::SharedReturnStructureUpdateMessageService` through mirrored cash
+  transactions
+
+Those fixes were not dashboard-only polish. They closed real save-path and
+notification regressions uncovered while polishing the UI.
+
+#### Expanded Dashboard Track
+
+The dashboard work no longer stops at cash/card/budget. It now also includes:
+
+- `user_bank_accounts#show`
+- `user_cards#show`
+- `categories#show`
+- `entities#show`
+
+#### `user_bank_accounts#show`
+
+The bank-account show page is no longer just an MVP shell.
+
+Current structure:
+
+- header/actions
+- merged `Summary`
+- `Category Interactive Dashboard`
+- `Entity Interactive Dashboard`
+- collapsed-by-default `Categories`
+- collapsed-by-default `Entities`
+
+Important shipped behavior:
+
+- the original "recent cash transactions" table was removed as the wrong model for
+  this page
+- the interactive dashboards use a shared Stimulus controller and `chart.js`
+- graph points use installment dates/month buckets, not raw transaction creation
+  dates
+- `ONLY <selected category>` and `ONLY <selected entity>` groups are strict:
+  mixed-category and mixed-entity transactions do not leak into those buckets
+- built-in exchange-style categories are intentionally excluded from the main
+  category select, but supported in the group-button combinations where relevant
+- categories/entities sections are collapsed by default and use 3 cards per row on
+  desktop
+
+#### `user_cards#show`
+
+`UserCard` now has a real dashboard page following the same vocabulary as account
+dashboards.
+
+Current structure:
+
+- header/actions
+- merged `Summary`
+- `References`
+- `Category Interactive Dashboard`
+- `Entity Interactive Dashboard`
+- collapsed-by-default `Categories`
+- collapsed-by-default `Entities`
+
+Important shipped behavior:
+
+- the page is scoped to `current_context`
+- references are display-only
+- the references section uses a year carousel:
+  - `Prev`
+  - year badge
+  - `Next`
+- only references for the selected year are shown, which naturally caps the visible
+  set at 12 per year
+- the same shared interactive dashboard controller is used here as on bank accounts
+
+#### `categories#show` and `entities#show`
+
+Category/entity dashboards now exist as mirrored show pages.
+
+Current structure:
+
+- `Details`
+- counterpart pie chart section:
+  - `Entities` on `categories#show`
+  - `Categories` on `entities#show`
+- `User Bank Accounts`
+- `User Cards`
+
+Important shipped behavior:
+
+- pie charts use absolute price values for slice sizing so mixed positive/negative
+  sets still render sensibly
+- the counterpart section supports a shared multi-source filter that combines:
+  - `UserBankAccount`
+  - `UserCard`
+- that source filter does not use a native multi-select anymore; it now uses the
+  shared combobox/checkbox pattern
+
+#### Current State Of The Interactive Breakdown Work
+
+What is stable enough to assume now:
+
+- the category-first and entity-first dashboards share one generic Stimulus
+  controller
+- strict `ONLY ...` grouping semantics are covered by request specs for both bank
+  accounts and cards
+- date bucketing has been corrected to use the intended installment/reference
+  month-year values
+- chart legend toggles remain enabled
+
+Still worth treating as product-sensitive:
+
+- how far the combination-button language should expand
+- whether later analytics should apportion mixed allocations instead of treating
+  combinations as first-class groups
+- whether exchange-heavy categories deserve a separate dashboard mode instead of
+  being folded into the current breakdown UI
+
+#### Context / Modal / Index Polish That Also Shipped During This Slice
+
+These do not belong to the original dashboard plan, but they were part of the same
+working stream and affect the current UI baseline:
+
+- `contexts#index`, `contexts#show`, and `contexts#new` were visually aligned to
+  the app’s newer button/form language
+- context switch from the modal now forces a full-page reload
+- simple CRUD indexes (`user_bank_accounts`, `user_cards`, `categories`,
+  `entities`) were moved toward the `subscriptions#index` row/action pattern
+- built-in `MOI` entity is now non-destroyable in the UI/controller path as well
+
+#### Practical Next-session Assumption
+
+If the next session starts from "where are we?", the shortest accurate answer is:
+
+- context purge incident is resolved and hardened
+- cash/card/budget dashboards are shipped
+- bank account, user card, category, and entity dashboards now exist
+- the remaining work in this area is more likely to be polish, reuse, and product
+  decisions than route/controller foundation work
+
 ### Slice 1. Route And Dashboard Foundation
 
 Goal:

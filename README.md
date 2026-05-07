@@ -20,9 +20,11 @@ UI focused on practical day-to-day navigation.
 - card transactions and card installments
 - budgets with category and entity filters
 - investments and bank accounts
+- scenario contexts for isolated planning
+- detail dashboards for transactions, budgets, accounts, cards, categories, and entities
 - exchange-return flows between transactions and entities
 - references for card billing cycles
-- chat, notifications, and PWA-friendly navigation
+- chat, reminder emails, notifications, and PWA-friendly navigation
 
 The goal is not only to register money movement, but also to preserve the logic around
 how that movement actually happens.
@@ -73,3 +75,10 @@ long-term maintainability.
 That means improving navigation, reducing friction in common flows, tightening
 financial rules, and continuing to make the app feel closer to a real product than a
 prototype.
+
+Recent work has been especially focused on:
+
+- context-safe scenario planning and operational hardening
+- full-page detail dashboards and interactive breakdown screens
+- reminder reliability, with email digests acting as a fallback for less reliable
+  mobile PWA push delivery
