@@ -118,6 +118,9 @@ application.register("reactive-form", ReactiveFormController)
 import RequestSubmitController from "./request_submit_controller"
 application.register("request-submit", RequestSubmitController)
 
+import PieBreakdownChartController from "./pie_breakdown_chart_controller"
+application.register("pie-breakdown-chart", PieBreakdownChartController)
+
 import ShowSectionCardController from "./show_section_card_controller"
 application.register("show-section-card", ShowSectionCardController)
 

@@ -66,10 +66,10 @@ RSpec.describe "UserCards", type: :request do
       expect(response.body).to include("Entity Interactive Dashboard")
       expect(response.body).to include("Scenario Food")
       expect(response.body).to include("Scenario Entity")
-      expect(response.body).to include("2026-04-20")
+      expect(response.body).to include(I18n.l(Date.new(2026, 4, 20), format: :short))
       expect(response.body).not_to include("Main Food")
       expect(response.body).not_to include("Main Entity")
-      expect(response.body).not_to include("2026-04-12")
+      expect(response.body).not_to include(I18n.l(Date.new(2026, 4, 12), format: :short))
     end
 
     it "includes future installment points in the interactive category dashboard payload" do
@@ -138,10 +138,15 @@ RSpec.describe "UserCards", type: :request do
         ]
       )
 
+      assets_only_transaction.category_transactions.destroy_all
+      assets_only_transaction.entity_transactions.destroy_all
       create(:category_transaction, transactable: assets_only_transaction, category: assets)
+      create(:entity_transaction, transactable: assets_only_transaction, entity: gigi)
+
+      mixed_transaction.category_transactions.destroy_all
+      mixed_transaction.entity_transactions.destroy_all
       create(:category_transaction, transactable: mixed_transaction, category: assets)
       create(:category_transaction, transactable: mixed_transaction, category: lend_request)
-      create(:entity_transaction, transactable: assets_only_transaction, entity: gigi)
       create(:entity_transaction, transactable: mixed_transaction, entity: gigi)
       create(:entity_transaction, transactable: mixed_transaction, entity: moi)
 

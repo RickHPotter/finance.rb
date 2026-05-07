@@ -31,7 +31,14 @@ class Views::Entities::Entity < Views::Base
       data: { id: entity.id, datatable_target: :row }
     ) do
       div(class: "px-2 py-3 flex items-center justify-center") { image_tag asset_path("avatars/#{entity.avatar_name}"), class: "size-7 rounded-full" }
-      div(class: "col-span-2 px-2 py-3 text-center font-lekton font-semibold") { span(class: "px-4 whitespace-nowrap") { entity.name } }
+      div(class: "col-span-2 px-2 py-3 text-center font-lekton font-semibold") do
+        link_to entity_path(entity),
+                id: "show_entity_#{entity.id}",
+                class: "px-4 whitespace-nowrap hover:underline",
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
+          entity.name
+        end
+      end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
         status_badge
@@ -107,9 +114,9 @@ class Views::Entities::Entity < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full"
-            link_to(entity.name, edit_entity_path(entity), id: "edit_entity_#{entity.id}",
-                                                           class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                           data: { turbo_frame: "_top" })
+            link_to(entity.name, entity_path(entity), id: "show_entity_#{entity.id}",
+                                                      class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                      data: { turbo_frame: "_top", turbo_prefetch: false })
           end
 
           status_badge

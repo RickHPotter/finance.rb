@@ -33,7 +33,13 @@ class Views::Categories::Category < Views::Base
       data: { id: category.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        span(class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md", style: "background-clip: padding-box; #{bg}; #{text}") { category.name }
+        link_to category_path(category),
+                id: "show_category_#{category.id}",
+                class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md hover:opacity-85",
+                style: "background-clip: padding-box; #{bg}; #{text}",
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
+          category.name
+        end
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
@@ -113,9 +119,9 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category
-            link_to(category.name, edit_category_path(category), id: "edit_category_#{category.id}",
-                                                                 class: "text-lg font-semibold underline underline-offset-[3px]",
-                                                                 data: { turbo_frame: "_top" })
+            link_to(category.name, category_path(category), id: "show_category_#{category.id}",
+                                                            class: "text-lg font-semibold underline underline-offset-[3px]",
+                                                            data: { turbo_frame: "_top", turbo_prefetch: false })
           end
 
           status_badge

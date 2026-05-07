@@ -62,7 +62,7 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_stat(model_attribute(UserCard, :status),
                        user_card.active? ? model_attribute(UserCard, "statuses.active") : model_attribute(UserCard, "statuses.inactive"))
         dashboard_stat(model_attribute(UserCard, :card_id), user_card.card&.card_name || "-")
-        dashboard_stat(model_attribute(UserCard, :bank_id), user_card.card&.bank&.bank_name || "-")
+        dashboard_stat("Bank", user_card.card&.bank&.bank_name || "-")
         dashboard_stat(model_attribute(UserCard, :current_closing_date), localized_date(current_closing_date))
         dashboard_stat(model_attribute(UserCard, :current_due_date), localized_date(current_due_date))
         dashboard_stat(model_attribute(UserCard, :min_spend), money(user_card.min_spend), emphasis: true)
