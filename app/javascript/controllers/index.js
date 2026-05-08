@@ -55,11 +55,11 @@ application.register("exchange-lock", ExchangeLockController)
 import ExchangeStateSheetController from "./exchange_state_sheet_controller"
 application.register("exchange-state-sheet", ExchangeStateSheetController)
 
-import FormLoadingController from "./form_loading_controller"
-application.register("form-loading", FormLoadingController)
-
 import FormCollectionCarouselController from "./form_collection_carousel_controller"
 application.register("form-collection-carousel", FormCollectionCarouselController)
+
+import FormLoadingController from "./form_loading_controller"
+application.register("form-loading", FormLoadingController)
 
 import HistoryNavController from "./history_nav_controller"
 application.register("history-nav", HistoryNavController)
@@ -75,6 +75,9 @@ application.register("installment-lock", InstallmentLockController)
 
 import InstallmentsDisplayController from "./installments_display_controller"
 application.register("installments-display", InstallmentsDisplayController)
+
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
 
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
@@ -100,6 +103,9 @@ application.register("notification", NotificationController)
 import PartialPayMultipleController from "./partial_pay_multiple_controller"
 application.register("partial-pay-multiple", PartialPayMultipleController)
 
+import PieBreakdownChartController from "./pie_breakdown_chart_controller"
+application.register("pie-breakdown-chart", PieBreakdownChartController)
+
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)
 
@@ -115,14 +121,11 @@ application.register("pwa-installation", PwaInstallationController)
 import ReactiveFormController from "./reactive_form_controller"
 application.register("reactive-form", ReactiveFormController)
 
+import ReferenceYearCarouselController from "./reference_year_carousel_controller"
+application.register("reference-year-carousel", ReferenceYearCarouselController)
+
 import RequestSubmitController from "./request_submit_controller"
 application.register("request-submit", RequestSubmitController)
-
-import PieBreakdownChartController from "./pie_breakdown_chart_controller"
-application.register("pie-breakdown-chart", PieBreakdownChartController)
-
-import ShowSectionCardController from "./show_section_card_controller"
-application.register("show-section-card", ShowSectionCardController)
 
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)
@@ -148,8 +151,8 @@ application.register("ruby-ui--sheet", RubyUi__SheetController)
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
 
-import ReferenceYearCarouselController from "./reference_year_carousel_controller"
-application.register("reference-year-carousel", ReferenceYearCarouselController)
+import ShowSectionCardController from "./show_section_card_controller"
+application.register("show-section-card", ShowSectionCardController)
 
 import SubscriptionTransactionsController from "./subscription_transactions_controller"
 application.register("subscription-transactions", SubscriptionTransactionsController)
@@ -159,6 +162,3 @@ application.register("tab", TabController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
-
-import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
-application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
