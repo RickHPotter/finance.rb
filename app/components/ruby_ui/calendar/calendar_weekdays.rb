@@ -7,7 +7,7 @@ module RubyUI
     def view_template
       template(data: { ruby_ui__calendar_target: "weekdaysTemplate" }) do
         thead(**attrs) do
-          tr(class: "flex") do
+          tr(class: "grid w-full grid-cols-7") do
             DAYS.each do |day|
               render_day(day)
             end
@@ -21,7 +21,7 @@ module RubyUI
     def render_day(day)
       th(
         scope: "col",
-        class: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+        class: "text-muted-foreground flex justify-center rounded-md font-normal text-[0.8rem]",
         aria_label: day
       ) { day[0..1] }
     end

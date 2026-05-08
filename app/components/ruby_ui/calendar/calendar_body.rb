@@ -10,6 +10,7 @@ module RubyUI
 
     def default_attrs
       {
+        class: "w-full",
         data: {
           ruby_ui__calendar_target: "calendar"
         }

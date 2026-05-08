@@ -98,7 +98,7 @@ export default class extends Controller {
         return this.renderDay(day);
       })
       .join("");
-    return `<tr class="flex w-full mt-2">${days}</tr>`;
+    return `<tr class="grid w-full grid-cols-7 mt-2">${days}</tr>`;
   }
 
   renderDay(day) {

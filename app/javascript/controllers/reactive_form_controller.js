@@ -35,6 +35,7 @@ export default class extends Controller {
 
   connect() {
     this.debounceTimeout = null
+    this.advancedFilterChanged = false
     this.quickJumpOverlay = null
     this.quickJumpArmed = false
     this.boundHandleDocumentKeydown = this.handleDocumentKeydown.bind(this)
@@ -373,15 +374,43 @@ export default class extends Controller {
     this.element.requestSubmit()
   }
 
+  submitIfChanged() {
+    if (!this.advancedFilterChanged) return
+
+    this.syncPaidStateFromActiveButton()
+    this.advancedFilterChanged = false
+    this.element.requestSubmit()
+  }
+
+  markChanged() {
+    this.advancedFilterChanged = true
+  }
+
   applyPaidState(event) {
     event.preventDefault()
 
     const { target } = event
+    const value = target.dataset.paidStateValue
+    if (!value || !this.applyPaidStateValue(target)) return
+
+    this.syncPaidStateButtons(target, value)
+    this.advancedFilterChanged = false
+    this.element.requestSubmit()
+  }
+
+  syncPaidStateFromActiveButton() {
+    const activeButton = this.element.querySelector("[data-paid-state-value][aria-pressed='true']")
+    if (!activeButton) return
+
+    this.applyPaidStateValue(activeButton)
+  }
+
+  applyPaidStateValue(target) {
     const paidStateInput = this.findFormInput(target.dataset.paidStateInputId)
     const paidInput = this.findFormInput(target.dataset.paidInputId)
     const pendingInput = this.findFormInput(target.dataset.pendingInputId)
     const value = target.dataset.paidStateValue
-    if (!paidStateInput || !paidInput || !pendingInput || !value) return
+    if (!paidStateInput || !paidInput || !pendingInput || !value) return false
 
     paidStateInput.value = value
 
@@ -399,8 +428,7 @@ export default class extends Controller {
         pendingInput.value = "true"
     }
 
-    this.syncPaidStateButtons(target, value)
-    this.element.requestSubmit()
+    return true
   }
 
   findFormInput(inputId) {

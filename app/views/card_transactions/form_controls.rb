@@ -93,7 +93,7 @@ class Views::CardTransactions::FormControls < Views::Base
         date_data: {
           next_autofocus: :time
         },
-        date_actions: "change->reactive-form#requestSubmit",
+        date_actions: mobile? ? "change->reactive-form#requestSubmit" : "blur->reactive-form#requestSubmit",
         time_actions: "change->reactive-form#updateInstallmentsDates",
         calendar: mobile?
       )

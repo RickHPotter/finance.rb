@@ -2,7 +2,7 @@
 
 class DuePaymentsNotifier
   def call
-    users_to_notify.find_each do |user|
+    User.all.find_each do |user|
       installments = reminder_installments_for(user)
       next if installments.values_at(:overdue, :due_today).all?(&:empty?)
 
@@ -30,13 +30,6 @@ class DuePaymentsNotifier
   end
 
   private
-
-  def users_to_notify
-    first_user = User.order(:id).first
-    return User.none if first_user.blank?
-
-    User.where(id: first_user.id)
-  end
 
   def reminder_installments_for(user)
     today = Time.zone.today

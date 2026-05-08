@@ -45,8 +45,8 @@ class Views::Shared::DatetimeInput < Views::Base
         data: { datetime_input_target: "hiddenInput" }.merge(hidden_data)
       )
 
-      div(class: calendar ? "grid grid-cols-[minmax(0,2fr)_minmax(7rem,1fr)] gap-2" : "flex gap-1") do
-        div(class: "min-w-0 grow") do
+      div(class: datetime_layout_class) do
+        div(class: date_container_class) do
           div(class: calendar ? "hidden" : "relative") do
             div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
               cached_icon :calendar
@@ -111,6 +111,7 @@ class Views::Shared::DatetimeInput < Views::Base
                 class: "#{input_class} text-center font-graduate",
                 data: {
                   controller: time_input_controllers,
+                  autofocus_select_value: visible_time_autofocus?,
                   datetime_input_target: "timeInput",
                   action: [
                     "click->input-select#select",
@@ -150,6 +151,19 @@ class Views::Shared::DatetimeInput < Views::Base
       ("autofocus" if autofocus),
       ("ruby-ui--calendar-input" if calendar)
     ].compact.join(" ").presence
+  end
+
+  def datetime_layout_class
+    return "grid grid-cols-[minmax(0,2fr)_minmax(7rem,1fr)] gap-2" if calendar && show_time
+    return "flex justify-center" if calendar
+
+    "flex gap-1"
+  end
+
+  def date_container_class
+    return "min-w-0 w-full grow mx-auto" if calendar && !show_time
+
+    "min-w-0 grow"
   end
 
   def time_input_controllers

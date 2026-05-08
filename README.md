@@ -80,5 +80,7 @@ Recent work has been especially focused on:
 
 - context-safe scenario planning and operational hardening
 - full-page detail dashboards and interactive breakdown screens
+- mobile-first form polish, including RubyUI calendar/clock controls and matching
+  skeleton states for transaction and investment entry
 - reminder reliability, with email digests acting as a fallback for less reliable
   mobile PWA push delivery

@@ -78,7 +78,8 @@ class Views::Investments::Form < Views::Base
               id: :investment_date,
               show_time: false,
               hidden_data: { reactive_form_target: :dateInput },
-              autofocus: autofocus_target == :date
+              autofocus: autofocus_target == :date,
+              calendar: mobile?
             )
           end
 

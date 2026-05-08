@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base
+class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
@@ -95,7 +95,11 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               end
             end
 
-            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+            SheetContent(
+              side: :middle,
+              class: "w-4/5 lg:w-1/2",
+              data: { action: "input->reactive-form#markChanged change->reactive-form#markChanged close->reactive-form#submitIfChanged" }
+            ) do
               SheetHeader do
                 SheetTitle { pluralise_model(CashTransaction, 2) }
                 SheetDescription { I18n.t(:advanced_filter) }

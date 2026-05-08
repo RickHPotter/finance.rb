@@ -1790,7 +1790,7 @@ RSpec.describe "CardTransactions", type: :request do
         user_card: user_card_one,
         description: "Late transaction",
         price: -2_500,
-        date: Date.new(2026, 3, 3),
+        date: Date.new(2026, 3, 7),
         month: 3,
         year: 2026
       )
@@ -1801,7 +1801,7 @@ RSpec.describe "CardTransactions", type: :request do
         user_card: user_card_one,
         description: "Early transaction",
         price: -2_500,
-        date: Date.new(2026, 3, 2),
+        date: Date.new(2026, 3, 6),
         month: 3,
         year: 2026
       )

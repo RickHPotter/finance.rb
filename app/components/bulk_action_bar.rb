@@ -87,7 +87,6 @@ module Components
             data: action_data
           ) do
             span { action[:label] }
-            span(class: "text-xs") { "v" }
           end
         end
 

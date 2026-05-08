@@ -167,6 +167,18 @@ too visible to ignore.
   - chain flows support both “save and finish” and “finish without saving”
   - card/cash transaction forms now use a split date/time input with 24-hour-friendly
     time entry
+  - mobile cash/card transaction forms now replace native date/time fields with a
+    RubyUI calendar plus a compact clock picker; date changes update installment
+    dates, while card date changes still intentionally refresh the form so card
+    reference calculations remain correct
+  - after a card date refresh, focus is handed to the time control instead of falling
+    back to date, category, or entity; on mobile this means the clock hour input is
+    selected
+  - investment forms now use the same RubyUI calendar on mobile in date-only mode,
+    with the calendar taking the full date slot and no clock rendered
+  - transaction and investment form submission skeletons were updated so mobile
+    loading states match the RubyUI calendar/clock controls instead of the old
+    compact native inputs
   - payment and transfer modals now use the same shared split date/time control,
     including localized weekday feedback and max-datetime validation with shared
     flash feedback

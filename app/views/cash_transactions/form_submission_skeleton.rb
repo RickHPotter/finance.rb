@@ -3,30 +3,38 @@
 class Views::CashTransactions::FormSubmissionSkeleton < Views::Base
   def view_template
     div(class: "space-y-5", id: "cash_transaction_form_submission_skeleton") do
+      # hint badge
       div(class: "flex justify-center") do
         Skeleton(class: "h-7 w-28 rounded-sm")
       end
 
       div(class: "space-y-5") do
+        # description
         Skeleton(class: "h-16 w-full rounded-md")
+        # comment
         Skeleton(class: "h-24 w-full rounded-lg")
       end
 
+      # third row (user_card, category, entity, date/time, price, button, installments_count)
       div(class: "pt-2") do
         div(class: "lg:flex lg:gap-2 w-full") do
+          # user_bank_account/user_card
           div(class: "w-full lg:w-[16%] lg:flex-none mb-3") do
             Skeleton(class: "h-10 w-full rounded-md")
           end
 
+          # categories and entities
           div(class: "flex w-full lg:flex-1 gap-2 mb-3 lg:mb-0 min-w-0") do
             Skeleton(class: "h-10 w-1/2 rounded-md")
             Skeleton(class: "h-10 w-1/2 rounded-md")
           end
 
+          # date/time
           div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
             render_datetime_skeleton
           end
 
+          # price and installments controls
           div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
             Skeleton(class: "h-10 w-1/12 rounded-md lg:hidden")
             div(class: "w-7/12 lg:w-7/12") do
@@ -155,6 +163,7 @@ class Views::CashTransactions::FormSubmissionSkeleton < Views::Base
   def render_collection_section_skeleton(border_class:)
     div(class: border_class) do
       div(class: "grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
+        # prev carousel
         Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100")
 
         div(class: "overflow-hidden") do
@@ -166,6 +175,7 @@ class Views::CashTransactions::FormSubmissionSkeleton < Views::Base
           end
         end
 
+        # next carousel
         Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100")
       end
     end
