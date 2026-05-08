@@ -14,9 +14,12 @@ class Views::Shared::FormShell < Views::Base
       class: "relative rounded-lg bg-white p-4 shadow-md",
       data: {
         controller: "form-loading",
+        form_loading_preview_value: skeleton_preview?.to_s,
         action: "turbo:submit-start->form-loading#start turbo:submit-end->form-loading#stop"
       }
     ) do
+      skeleton_preview_toggle
+
       div(data: { form_loading_target: "content" }) do
         span(class: badge_class) { badge_text } if badge_text.present?
         yield
@@ -30,5 +33,21 @@ class Views::Shared::FormShell < Views::Base
         render skeleton_view.new
       end
     end
+  end
+
+  private
+
+  def skeleton_preview?
+    Rails.env.development? && params[:skeleton].present?
+  end
+
+  def skeleton_preview_toggle
+    return unless Rails.env.development?
+
+    button(
+      type: :button,
+      class: "absolute right-3 top-3 z-20 rounded-sm border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-100",
+      data: { action: "form-loading#togglePreview" }
+    ) { "Toggle skeleton" }
   end
 end

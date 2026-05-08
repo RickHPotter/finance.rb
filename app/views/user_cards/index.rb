@@ -43,21 +43,15 @@ class Views::UserCards::Index < Views::Base
           div(class: "my-4", data: { datatable_target: "table" }) do
             div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
-                grid_class: "grid grid-cols-10",
+                grid_class: "grid grid-cols-9",
                 rows: [
                   [
-                    { class: "col-span-2", label: nil },
-                    { class: "col-span-2 flex justify-center", label: pluralise_model(CardTransaction, 2), align: :center },
-                    { class: "col-span-6", label: nil }
-                  ],
-                  [
                     { class: "col-span-2 flex justify-center", label: model_attribute(UserCard, :user_card_name), align: :center },
+                    { class: "flex justify-center", label: model_attribute(UserCard, :status), align: :center },
                     { class: "flex justify-center", label: model_attribute(UserCard, :count), align: :center },
                     { class: "flex justify-center", label: model_attribute(UserCard, :spent), align: :center },
-                    { class: "flex justify-center", label: model_attribute(UserCard, :status), align: :center },
                     { class: "flex items-end justify-end pr-2", label: model_attribute(UserCard, :closing_date), align: :right },
                     { class: "flex justify-start", label: model_attribute(UserCard, :due_date) },
-                    { class: "flex items-end justify-end", label: model_attribute(UserCard, :min_spend), align: :right },
                     { class: "flex items-end justify-end", label: model_attribute(UserCard, :credit_limit), align: :right },
                     { class: "flex justify-center", label: I18n.t(:datatable_actions) }
                   ]

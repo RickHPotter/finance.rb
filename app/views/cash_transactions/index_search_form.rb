@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
@@ -87,70 +87,68 @@ class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable M
           end
         end
 
-        unless mobile
-          div(class: "flex items-center gap-2") do
-            Sheet(id: "advanced_filter") do
-              SheetTrigger do
-                Button(type: :button, icon: true, class: "scale-105") do
-                  cached_icon(:filter)
-                end
+        div(class: "flex shrink-0 items-center gap-2") do
+          Sheet(id: "advanced_filter") do
+            SheetTrigger do
+              Button(type: :button, icon: true, class: "scale-105") do
+                cached_icon(:filter)
+              end
+            end
+
+            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+              SheetHeader do
+                SheetTitle { pluralise_model(CashTransaction, 2) }
+                SheetDescription { I18n.t(:advanced_filter) }
               end
 
-              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-                SheetHeader do
-                  SheetTitle { pluralise_model(CashTransaction, 2) }
-                  SheetDescription { I18n.t(:advanced_filter) }
-                end
-
-                SheetMiddle do
-                  if mobile
-                    div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
-                      render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
-                    end
+              SheetMiddle do
+                if mobile
+                  div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                    render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
+                    render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
                   end
-
-                  render Views::CashTransactions::PaidStateFilter.new(current_state: paid_state || "all")
-
-                  PriceRangeFields(
-                    form:,
-                    object: CashTransaction,
-                    from_field: :from_ct_price,
-                    to_field: :to_ct_price,
-                    from_value: from_ct_price,
-                    to_value: to_ct_price,
-                    subject_label_key: :self
-                  )
-
-                  PriceRangeFields(
-                    form:,
-                    object: CashTransaction,
-                    from_field: :from_price,
-                    to_field: :to_price,
-                    from_value: from_price,
-                    to_value: to_price,
-                    subject_label_key: :cash_installment
-                  )
-
-                  InstallmentsCountRangeFields(
-                    form:,
-                    from_field: :from_installments_count,
-                    to_field: :to_installments_count,
-                    from_value: from_installments_count,
-                    to_value: to_installments_count,
-                    subject_label_key: :cash_installment
-                  )
-
-                  DateRangeFields(
-                    form:,
-                    from_field: :from_date,
-                    to_field: :to_date,
-                    from_value: from_date,
-                    to_value: to_date
-                  )
-
-                  render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
                 end
+
+                render Views::CashTransactions::PaidStateFilter.new(current_state: paid_state || "all")
+
+                PriceRangeFields(
+                  form:,
+                  object: CashTransaction,
+                  from_field: :from_ct_price,
+                  to_field: :to_ct_price,
+                  from_value: from_ct_price,
+                  to_value: to_ct_price,
+                  subject_label_key: :self
+                )
+
+                PriceRangeFields(
+                  form:,
+                  object: CashTransaction,
+                  from_field: :from_price,
+                  to_field: :to_price,
+                  from_value: from_price,
+                  to_value: to_price,
+                  subject_label_key: :cash_installment
+                )
+
+                InstallmentsCountRangeFields(
+                  form:,
+                  from_field: :from_installments_count,
+                  to_field: :to_installments_count,
+                  from_value: from_installments_count,
+                  to_value: to_installments_count,
+                  subject_label_key: :cash_installment
+                )
+
+                DateRangeFields(
+                  form:,
+                  from_field: :from_date,
+                  to_field: :to_date,
+                  from_value: from_date,
+                  to_value: to_date
+                )
+
+                render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
               end
             end
           end

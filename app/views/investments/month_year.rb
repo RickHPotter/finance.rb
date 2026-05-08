@@ -50,12 +50,12 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
         div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
           render Views::Shared::TableHeader.new(
-            grid_class: "grid grid-cols-7",
+            grid_class: "grid grid-cols-8",
             rows: [
               [
                 { class: "col-span-2 col-start-2", label: model_attribute(Investment, :description) },
                 { class: "flex justify-center", label: model_attribute(Investment, :user_bank_account_id), align: :center },
-                { class: "flex justify-center", label: model_attribute(Investment, :investment_type_id), align: :center },
+                { class: "col-span-2 flex justify-center", label: model_attribute(Investment, :investment_type_id), align: :center },
                 { class: "flex items-end justify-end", label: model_attribute(Investment, :price), align: :right },
                 { class: "flex justify-center", label: I18n.t(:datatable_actions) }
               ]
@@ -135,7 +135,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-7 bg-linear-to-r hover:opacity-80 transition-all",
+          class: "grid grid-cols-8 bg-linear-to-r hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
@@ -162,7 +162,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
                     data: { turbo_frame: "_top" }
           end
 
-          div(class: "py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
+          div(class: "col-span-2 py-2 flex items-center justify-center gap-2 hover:opacity-65 min-w-0") do
             if investment.investment_type.nil?
               plain "-"
             else

@@ -4,7 +4,8 @@ class Views::Shared::DatetimeInput < Views::Base
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :form, :field, :value, :id, :hidden_data, :autofocus, :disabled, :max_datetime, :max_datetime_message, :show_time
+  attr_reader :form, :field, :value, :id, :hidden_data, :date_data, :time_data, :date_actions, :time_actions, :autofocus, :disabled, :max_datetime,
+              :max_datetime_message, :show_time
 
   def initialize(form:, field:, value:, id:, **options)
     @form = form
@@ -12,6 +13,10 @@ class Views::Shared::DatetimeInput < Views::Base
     @value = value
     @id = id
     @hidden_data = options.fetch(:hidden_data, {})
+    @date_data = options.fetch(:date_data, {})
+    @time_data = options.fetch(:time_data, {})
+    @date_actions = Array(options.fetch(:date_actions, []))
+    @time_actions = Array(options.fetch(:time_actions, []))
     @autofocus = options.fetch(:autofocus, false)
     @disabled = options.fetch(:disabled, false)
     @max_datetime = options.fetch(:max_datetime, nil)
@@ -58,11 +63,12 @@ class Views::Shared::DatetimeInput < Views::Base
                 controller: ("autofocus" if autofocus),
                 action: [
                   "input->datetime-input#syncQuiet",
-                  "change->datetime-input#syncQuiet",
+                  "change->datetime-input#commit",
                   "blur->datetime-input#commit",
-                  "keydown->datetime-input#handleDateKeydown"
+                  "keydown->datetime-input#handleDateKeydown",
+                  *date_actions
                 ].join(" ")
-              }.compact
+              }.merge(date_data).compact
             )
           end
 
@@ -98,9 +104,10 @@ class Views::Shared::DatetimeInput < Views::Base
                     "input->datetime-input#formatTimeInput",
                     "blur->datetime-input#commit",
                     "change->datetime-input#commit",
-                    "keydown->datetime-input#handleKeydown"
+                    "keydown->datetime-input#handleKeydown",
+                    *time_actions
                   ].join(" ")
-                }
+                }.merge(time_data).compact
               )
             end
           end

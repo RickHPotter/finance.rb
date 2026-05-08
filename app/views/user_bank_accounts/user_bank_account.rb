@@ -89,7 +89,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
   end
 
   def mobile_row
-    div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_bank_account.id, datatable_target: :row }) do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: user_bank_account.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-blue-300 via-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -104,11 +104,6 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
             )
           end
           status_badge
-        end
-
-        div(class: "mt-2 flex justify-end") do
-          link_to(cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
-                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
         end
       end
 
@@ -131,6 +126,20 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(user_bank_account.cash_transactions_total, "R$") }
+            end
+          end
+        end
+
+        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3") do
+          Button(
+            link: cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
+            variant: :outline,
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) do
+            span(class: "inline-flex items-center gap-2") do
+              cached_icon(:jump_to)
+              plain pluralise_model(CashTransaction, 2)
             end
           end
         end

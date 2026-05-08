@@ -78,60 +78,58 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           end
         end
 
-        unless mobile
-          div(class: "flex items-center gap-2") do
-            Sheet(id: "advanced_filter") do
-              SheetTrigger do
-                Button(type: :button, icon: true, class: "scale-105") do
-                  cached_icon(:filter)
-                end
+        div(class: "flex shrink-0 items-center gap-2") do
+          Sheet(id: "advanced_filter") do
+            SheetTrigger do
+              Button(type: :button, icon: true, class: "scale-105") do
+                cached_icon(:filter)
+              end
+            end
+
+            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+              SheetHeader do
+                SheetTitle { pluralise_model(CardTransaction, 2) }
+                SheetDescription { I18n.t(:advanced_filter) }
               end
 
-              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-                SheetHeader do
-                  SheetTitle { pluralise_model(CardTransaction, 2) }
-                  SheetDescription { I18n.t(:advanced_filter) }
-                end
-
-                SheetMiddle do
-                  if mobile
-                    div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
-                      render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
-                    end
+              SheetMiddle do
+                if mobile
+                  div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                    render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
+                    render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
                   end
-
-                  PriceRangeFields(
-                    form:,
-                    object: CardTransaction,
-                    from_field: :from_ct_price,
-                    to_field: :to_ct_price,
-                    from_value: from_ct_price,
-                    to_value: to_ct_price,
-                    subject_label_key: :self
-                  )
-
-                  PriceRangeFields(
-                    form:,
-                    object: CardTransaction,
-                    from_field: :from_price,
-                    to_field: :to_price,
-                    from_value: from_price,
-                    to_value: to_price,
-                    subject_label_key: :card_installment
-                  )
-
-                  InstallmentsCountRangeFields(
-                    form:,
-                    from_field: :from_installments_count,
-                    to_field: :to_installments_count,
-                    from_value: from_installments_count,
-                    to_value: to_installments_count,
-                    subject_label_key: :card_installment
-                  )
-
-                  render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
                 end
+
+                PriceRangeFields(
+                  form:,
+                  object: CardTransaction,
+                  from_field: :from_ct_price,
+                  to_field: :to_ct_price,
+                  from_value: from_ct_price,
+                  to_value: to_ct_price,
+                  subject_label_key: :self
+                )
+
+                PriceRangeFields(
+                  form:,
+                  object: CardTransaction,
+                  from_field: :from_price,
+                  to_field: :to_price,
+                  from_value: from_price,
+                  to_value: to_price,
+                  subject_label_key: :card_installment
+                )
+
+                InstallmentsCountRangeFields(
+                  form:,
+                  from_field: :from_installments_count,
+                  to_field: :to_installments_count,
+                  from_value: from_installments_count,
+                  to_value: to_installments_count,
+                  subject_label_key: :card_installment
+                )
+
+                render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
               end
             end
           end

@@ -109,7 +109,7 @@ class Views::Entities::Entity < Views::Base
   end
 
   def mobile_row
-    div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: entity.id, datatable_target: :row }) do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: entity.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-slate-700 via-slate-400 to-white") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -142,8 +142,6 @@ class Views::Entities::Entity < Views::Base
 
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.card_transactions_total, "R$") }
-              link_to(search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto -mt-4", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
             end
           end
         end
@@ -166,8 +164,32 @@ class Views::Entities::Entity < Views::Base
 
             div(class: "flex items-center") do
               span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(entity.cash_transactions_total, "R$") }
-              link_to(cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
-                      class: "my-auto -mt-4", data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
+            end
+          end
+        end
+
+        div(class: "mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3") do
+          Button(
+            link: search_card_transactions_path(card_transaction: { entity_id: entity.id }, all_month_years: true),
+            variant: :outline,
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) do
+            span(class: "inline-flex items-center gap-2") do
+              cached_icon(:jump_to)
+              plain pluralise_model(CardTransaction, 2)
+            end
+          end
+
+          Button(
+            link: cash_transactions_path(cash_transaction: { entity_id: entity.id }, all_month_years: true),
+            variant: :outline,
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) do
+            span(class: "inline-flex items-center gap-2") do
+              cached_icon(:jump_to)
+              plain pluralise_model(CashTransaction, 2)
             end
           end
         end

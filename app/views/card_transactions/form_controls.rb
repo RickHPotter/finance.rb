@@ -89,7 +89,8 @@ class Views::CardTransactions::FormControls < Views::Base
         hidden_data: {
           reactive_form_target: :dateInput,
           action: "change->reactive-form#requestSubmit"
-        }
+        },
+        time_actions: "change->reactive-form#updateInstallmentsDates"
       )
     end
   end

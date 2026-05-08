@@ -28,7 +28,7 @@ class Views::UserCards::UserCard < Views::Base
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
     div(
-      class: "grid grid-cols-10 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
+      class: "grid grid-cols-9 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
       data: { id: user_card.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
@@ -38,6 +38,10 @@ class Views::UserCards::UserCard < Views::Base
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           brand_and_name
         end
+      end
+
+      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+        status_badge
       end
 
       div(class: "jump_to_card_transactions px-2 py-3 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
@@ -58,22 +62,17 @@ class Views::UserCards::UserCard < Views::Base
           from_cent_based_to_float(user_card.card_transactions_total, "R$")
         end
       end
-      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
-        status_badge
-      end
+
       div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto pr-2 border-r border-black") do
         span(class: "current_closing_date") { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter) }
       end
+
       div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap mr-auto") do
         span(class: "current_due_date") do
           I18n.l(Date.current.change(day: user_card.due_date_day), format: :shorter)
         end
       end
-      div(class: "flex items-center justify-center px-2 py-3 font-lekton text-lg whitespace-nowrap ml-auto") do
-        span do
-          from_cent_based_to_float(user_card.min_spend, "R$")
-        end
-      end
+
       div(class: "flex items-center justify-center px-2 py-3 font-lekton text-lg whitespace-nowrap ml-auto") do
         span do
           from_cent_based_to_float(user_card.credit_limit, "R$")
@@ -108,7 +107,7 @@ class Views::UserCards::UserCard < Views::Base
     brand_name = user_card.card.card_name
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
-    div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_card.id, datatable_target: :row }) do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: user_card.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -118,10 +117,6 @@ class Views::UserCards::UserCard < Views::Base
                                                                data: { turbo_frame: "_top", turbo_prefetch: false })
           end
           status_badge
-        end
-
-        div(class: "mt-2 flex justify-end") do
-          link_to(card_transactions_path(user_card_id: user_card.id), data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
         end
       end
 
@@ -167,6 +162,20 @@ class Views::UserCards::UserCard < Views::Base
             end
 
             div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day), format: :short) } }
+          end
+        end
+
+        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3") do
+          Button(
+            link: card_transactions_path(user_card_id: user_card.id),
+            variant: :outline,
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) do
+            span(class: "inline-flex items-center gap-2") do
+              cached_icon(:jump_to)
+              plain pluralise_model(CardTransaction, 2)
+            end
           end
         end
       end

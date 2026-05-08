@@ -163,7 +163,7 @@ export default class extends Controller {
     if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.now() }
 
     const railsDueDate = this._getDueDate()
-    this._updateWrappers(railsDueDate)
+    this._updateWrappers(railsDueDate, { preserveLocked: true })
   }
 
   async updateInstallmentsPrices({ target }) {
@@ -420,6 +420,10 @@ export default class extends Controller {
     return new RailsDate(this.element.querySelector(".installment_date").value)
   }
 
+  transactionDateInput() {
+    return this.element.querySelector(".transaction-date")
+  }
+
   _updateWrappers(startingRailsDate, { preserveLocked = false } = {}) {
     const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.style.display !== "none")
     const firstVisibleInstallment = visibleInstallmentsWrappers[0]
@@ -435,7 +439,7 @@ export default class extends Controller {
       startingRailsDate.setMonth(railsDate.month)
     }
 
-    let proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
+    let proposedDate = new RailsDate(this.transactionDateInput().value)
 
     visibleInstallmentsWrappers.forEach((target, index) => {
       const locked = preserveLocked && target.dataset.locked === "true"
