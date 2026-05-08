@@ -49,12 +49,14 @@ export default class extends Controller {
 
   selectedDateValueChanged(value, prevValue) {
     // update the viewDateValue to the first day of month of the selected date (This will trigger updateCalendar() function)
-    const newViewDate = new Date(this.selectedDateValue);
+    const newViewDate = this.dateFromValue(this.selectedDateValue);
     newViewDate.setDate(2); // set the day to the 2nd (to avoid issues with months with different number of days and timezones)
-    this.viewDateValue = newViewDate.toISOString().slice(0, 10);
+    this.viewDateValue = this.isoDate(newViewDate);
 
     // Re-render the calendar
     this.updateCalendar();
+
+    if (prevValue === undefined) return;
 
     // update the input value
     this.rubyUiCalendarInputOutlets.forEach((outlet) => {
@@ -71,7 +73,7 @@ export default class extends Controller {
     const date = this.viewDate();
     date.setDate(2); // set the day to the 2nd (to avoid issues with months with different number of days and timezones)
     date.setMonth(date.getMonth() + adjustment);
-    return date.toISOString().slice(0, 10);
+    return this.isoDate(date);
   }
 
   updateCalendar() {
@@ -102,7 +104,7 @@ export default class extends Controller {
   renderDay(day) {
     const today = new Date();
     let dateHTML = "";
-    const data = { day: day, dayDate: day.getDate() };
+    const data = { day: this.isoDate(day), dayDate: day.getDate() };
 
     if (day.toDateString() === this.selectedDate().toDateString()) {
       // selectedDate
@@ -137,12 +139,12 @@ export default class extends Controller {
   }
 
   selectedDate() {
-    return new Date(this.selectedDateValue);
+    return this.dateFromValue(this.selectedDateValue);
   }
 
   viewDate() {
     return this.viewDateValue
-      ? new Date(this.viewDateValue)
+      ? this.dateFromValue(this.viewDateValue)
       : this.selectedDate();
   }
 
@@ -231,6 +233,26 @@ export default class extends Controller {
       (matched) => map[matched],
     );
     return formattedDate;
+  }
+
+  dateFromValue(value) {
+    const match = value?.match?.(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      return new Date(
+        parseInt(match[1], 10),
+        parseInt(match[2], 10) - 1,
+        parseInt(match[3], 10),
+      );
+    }
+
+    return new Date(value);
+  }
+
+  isoDate(date) {
+    const year = date.getFullYear();
+    const month = ("0" + (date.getMonth() + 1)).slice(-2);
+    const day = ("0" + date.getDate()).slice(-2);
+    return `${year}-${month}-${day}`;
   }
 
   getDaySuffix(day) {

@@ -31,15 +31,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
 
           # date/time
           div(class: "w-full lg:w-[20%] lg:flex-none mb-3 lg:mb-0") do
-            div(class: "flex gap-1 mb-1") do
-              Skeleton(class: "h-10 min-w-0 grow rounded-md")
-              Skeleton(class: "h-10 w-28 shrink-0 rounded-md")
-            end
-            # date weekday
-            div(class: "flex") do
-              Skeleton(class: "mx-auto h-4 w-20 rounded-sm")
-              div(class: "h-0 w-28")
-            end
+            render_datetime_skeleton
           end
 
           # price and installments controls
@@ -76,6 +68,52 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   end
 
   private
+
+  def render_datetime_skeleton
+    div(class: "grid grid-cols-[minmax(0,2fr)_minmax(7rem,1fr)] gap-2 lg:hidden") do
+      render_calendar_skeleton
+      render_clock_skeleton
+    end
+
+    div(class: "hidden lg:block") do
+      div(class: "flex gap-1 mb-1") do
+        Skeleton(class: "h-10 min-w-0 grow rounded-md")
+        Skeleton(class: "h-10 w-28 shrink-0 rounded-md")
+      end
+      div(class: "flex") do
+        Skeleton(class: "mx-auto h-4 w-20 rounded-sm")
+        div(class: "h-0 w-28")
+      end
+    end
+  end
+
+  def render_calendar_skeleton
+    div(class: "rounded-md border border-slate-200 bg-white p-3 shadow-sm") do
+      div(class: "mb-3 flex items-center justify-between") do
+        Skeleton(class: "h-7 w-7 rounded-md")
+        Skeleton(class: "h-5 w-20 rounded-sm")
+        Skeleton(class: "h-7 w-7 rounded-md")
+      end
+
+      div(class: "grid grid-cols-7 gap-1") do
+        35.times do
+          Skeleton(class: "aspect-square w-full rounded-md")
+        end
+      end
+    end
+  end
+
+  def render_clock_skeleton
+    div(class: "flex h-full flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-sm") do
+      2.times do
+        div(class: "grid min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-1") do
+          Skeleton(class: "h-7 w-full rounded-md")
+          Skeleton(class: "h-12 w-full rounded-md")
+          Skeleton(class: "h-7 w-full rounded-md")
+        end
+      end
+    end
+  end
 
   def render_installments_skeleton
     div(class: "space-y-2 border-t border-purple-100 py-1") do

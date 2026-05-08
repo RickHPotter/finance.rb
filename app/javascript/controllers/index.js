@@ -148,6 +148,9 @@ application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
 import RubyUi__SheetController from "./ruby_ui/sheet_controller"
 application.register("ruby-ui--sheet", RubyUi__SheetController)
 
+import RubyUi__TimePickerController from "./ruby_ui/time_picker_controller"
+application.register("ruby-ui--time-picker", RubyUi__TimePickerController)
+
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
 

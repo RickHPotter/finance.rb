@@ -28,6 +28,7 @@ class Views::CardTransactions::Form < Views::Base
   end
 
   def which_target_to_autofocus(card_transaction)
+    return :time                 if params[:next_autofocus] == "time"
     return :date                 if card_transaction.duplicate && params[:commit] != "Update"
     return :description          if params[:commit] != "Update"
     return :category_transaction if card_transaction.category_transactions.empty?

@@ -111,7 +111,25 @@ export default class extends Controller {
   requestSubmit({ target }) {
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
-    if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
+    if (hasValue) {
+      this.setNextAutofocus(target)
+      target.form.requestSubmit(this.updateButtonTarget)
+    }
+  }
+
+  setNextAutofocus(target) {
+    if (!target.dataset.nextAutofocus) { return }
+
+    let input = target.form.querySelector("input[name='next_autofocus']")
+
+    if (!input) {
+      input = document.createElement("input")
+      input.type = "hidden"
+      input.name = "next_autofocus"
+      target.form.appendChild(input)
+    }
+
+    input.value = target.dataset.nextAutofocus
   }
 
   updateFullPrice() {

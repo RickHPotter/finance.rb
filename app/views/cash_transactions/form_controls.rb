@@ -82,7 +82,8 @@ class Views::CashTransactions::FormControls < Views::Base
           reactive_form_target: :dateInput
         },
         date_actions: "change->reactive-form#updateInstallmentsDates",
-        time_actions: "change->reactive-form#updateInstallmentsDates"
+        time_actions: "change->reactive-form#updateInstallmentsDates",
+        calendar: mobile?
       )
     end
   end

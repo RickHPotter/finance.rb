@@ -86,11 +86,16 @@ class Views::CardTransactions::FormControls < Views::Base
         value: card_transaction.date,
         id: :card_transaction_date,
         autofocus: autofocus_target == :date,
+        time_autofocus: autofocus_target == :time,
         hidden_data: {
-          reactive_form_target: :dateInput,
-          action: "change->reactive-form#requestSubmit"
+          reactive_form_target: :dateInput
         },
-        time_actions: "change->reactive-form#updateInstallmentsDates"
+        date_data: {
+          next_autofocus: :time
+        },
+        date_actions: "change->reactive-form#requestSubmit",
+        time_actions: "change->reactive-form#updateInstallmentsDates",
+        calendar: mobile?
       )
     end
   end
