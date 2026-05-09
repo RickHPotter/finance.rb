@@ -377,7 +377,7 @@ RSpec.describe "CashTransactions", type: :request do
       expect(transaction.categories.pluck(:category_name)).to contain_exactly("LEISURE", "SUBSCRIPTION")
       expect(transaction.entities.pluck(:entity_name)).to contain_exactly("MOI", "NOUS")
       expect(transaction.description).to eq("Club")
-      expect(transaction.comment).to eq("Shared")
+      expect(transaction.comment).to eq("Barbecue at Aunt's\nCinema")
     end
   end
 

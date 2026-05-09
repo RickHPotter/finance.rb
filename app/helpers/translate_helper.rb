@@ -54,6 +54,13 @@ module TranslateHelper
     history_lock_payload_for(record) || notification_model(notification, model)
   end
 
+  def failure_notifications_for(record, notification, model)
+    [
+      notification_model(notification, model),
+      *failure_detail_notifications_for(record)
+    ].compact
+  end
+
   # Takes a model instance or class and an attribute name, and returns a human-readable attribute name based on the model and attribute.
   #
   # @example Get human-readable attribute name:
@@ -146,6 +153,21 @@ module TranslateHelper
 
   def history_lock_payload_for(record)
     each_record_with_errors(record).lazy.map { |candidate| specific_history_error_payload(candidate) }.find(&:present?)
+  end
+
+  def failure_detail_notifications_for(record)
+    each_record_with_errors(record).flat_map do |candidate|
+      payload = specific_history_error_payload(candidate)
+      next [ payload ] if payload.present?
+
+      candidate.errors.full_messages.reject do |message|
+        generic_invalid_error?(candidate, message)
+      end
+    end.uniq
+  end
+
+  def generic_invalid_error?(record, message)
+    record.errors.details[:base].any? { |detail| detail[:error] == :invalid } && message == record.errors.full_message(:base, :invalid)
   end
 
   def each_record_with_errors(record, seen = [])

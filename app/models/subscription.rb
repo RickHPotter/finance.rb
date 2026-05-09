@@ -102,11 +102,14 @@ class Subscription < ApplicationRecord
 
   def sync_transactions(transactions, subscription_category)
     transactions.each do |transaction|
-      transaction.user = user
-      transaction.context = context if transaction.respond_to?(:context=)
-      transaction.subscription = self
-      transaction.description = description
-      transaction.comment = comment
+      if metadata_only_linked_transaction_sync?(transaction)
+        sync_transaction_metadata(transaction)
+        next
+      end
+
+      next if skip_linked_transaction_sync?(transaction)
+
+      sync_transaction_metadata(transaction)
 
       sync_transaction_categories(transaction, subscription_category)
       sync_transaction_entities(transaction)
@@ -123,26 +126,79 @@ class Subscription < ApplicationRecord
     end
   end
 
-  def sync_attached_transaction!(transaction, subscription_category:)
+  def skip_linked_transaction_sync?(transaction)
+    return false if transaction.new_record? || transaction.marked_for_destruction?
+    return false if transaction.changed?
+    return false if subscription_metadata_changed?
+    return false if subscription_allocation_changed?
+
+    true
+  end
+
+  def metadata_only_linked_transaction_sync?(transaction)
+    return false if transaction.new_record? || transaction.marked_for_destruction?
+    return false if transaction.changed?
+    return false unless subscription_metadata_changed?
+    return false if subscription_allocation_changed?
+
+    true
+  end
+
+  def subscription_metadata_changed? = will_save_change_to_description? || will_save_change_to_comment?
+
+  def sync_transaction_metadata(transaction)
+    original_description = transaction.description
     transaction.user = user
     transaction.context = context if transaction.respond_to?(:context=)
     transaction.subscription = self
     transaction.description = description
-    transaction.comment = comment
+    transaction.comment = synced_transaction_comment(transaction, original_description)
+  end
+
+  def synced_transaction_comment(transaction, original_description)
+    return comment if transaction.new_record?
+    return transaction.comment if original_description.blank? || original_description == description
+
+    appended_original_description_comment(transaction.comment, original_description)
+  end
+
+  def subscription_allocation_changed?
+    association_ids_changed?(original_categories, category_transactions, :category_id) ||
+      association_ids_changed?(original_entities, entity_transactions, :entity_id)
+  end
+
+  def association_ids_changed?(original_ids, association_records, foreign_key)
+    return false if original_ids.blank?
+
+    Array(original_ids).map(&:to_i).sort != association_records.map(&foreign_key).compact.map(&:to_i).sort
+  end
+
+  def sync_attached_transaction!(transaction, subscription_category:)
+    original_description = transaction.description
+
+    transaction.user = user
+    transaction.context = context if transaction.respond_to?(:context=)
+    transaction.subscription = self
+    transaction.description = description
+    transaction.comment = appended_original_description_comment(transaction.comment, original_description)
     transaction.historical_correction_confirmation = true if transaction.respond_to?(:historical_correction_confirmation=)
 
-    transaction.categories = [ *transaction.categories, *categories, subscription_category ].compact.uniq
-    transaction.entities = [ *transaction.entities, *entities ].compact.uniq
+    transaction.categories = [ *transaction.categories, *categories, subscription_category ].compact.uniq(&:id)
+    transaction.entities = [ *transaction.entities, *entities ].compact.uniq(&:id)
 
     transaction.save!
   end
 
+  def appended_original_description_comment(current_comment, original_description)
+    [ current_comment, original_description ].compact_blank.uniq.join("\n")
+  end
+
   def sync_transaction_categories(transaction, subscription_category)
-    transaction.categories = [ *categories, subscription_category ].compact.uniq
+    transaction.categories = [ *categories, subscription_category ].compact.uniq(&:id)
   end
 
   def sync_transaction_entities(transaction)
-    transaction.entities = entities.to_a
+    transaction.entities = entities.to_a.uniq(&:id)
   end
 
   def sync_transaction_installments(transaction)
@@ -180,19 +236,9 @@ class Subscription < ApplicationRecord
   end
 
   def validate_linked_transactions
-    validate_cash_transactions_presence
     validate_card_transactions_presence
     validate_cash_transactions_safety
     validate_card_transactions_safety
-  end
-
-  def validate_cash_transactions_presence
-    cash_transactions.reject(&:marked_for_destruction?).each do |transaction|
-      next if transaction.user_bank_account_id.present?
-
-      transaction.errors.add(:user_bank_account_id, :blank)
-      errors.add(:base, :invalid)
-    end
   end
 
   def validate_card_transactions_presence
@@ -207,6 +253,7 @@ class Subscription < ApplicationRecord
   def validate_cash_transactions_safety
     cash_transactions.reject(&:marked_for_destruction?).each do |transaction|
       next if transaction.errors.any?
+      next if skip_linked_transaction_validation?(transaction)
 
       errors.add(:base, :invalid) unless transaction.valid?
     end
@@ -215,9 +262,14 @@ class Subscription < ApplicationRecord
   def validate_card_transactions_safety
     card_transactions.reject(&:marked_for_destruction?).each do |transaction|
       next if transaction.errors.any?
+      next if skip_linked_transaction_validation?(transaction)
 
       errors.add(:base, :invalid) unless transaction.valid?
     end
+  end
+
+  def skip_linked_transaction_validation?(transaction)
+    transaction.persisted? && !transaction.changed? && !subscription_allocation_changed?
   end
 end
 
