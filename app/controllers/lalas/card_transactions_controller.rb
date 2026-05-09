@@ -22,7 +22,7 @@ class Lalas::CardTransactionsController < LalasController
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
 
-    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, card_transaction_params, search_card_transaction_params)
+    card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, external_card_transaction_params, search_card_transaction_params)
 
     render Views::Lalas::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
   end
@@ -34,8 +34,8 @@ class Lalas::CardTransactionsController < LalasController
     years = (min_date.year..max_date.year)
 
     card_installment_ids = [ card_transaction_params[:card_installment_ids] ].flatten&.compact_blank
-    category_id = user.categories.where(category_name: [ "EXCHANGE" ]).ids
-    entity_id = user.entities.where(entity_name: "LALA").ids
+    category_id = external_card_category_ids
+    entity_id = external_entity_ids
     search_term = search_card_transaction_params[:search_term]
     from_ct_price = search_card_transaction_params[:from_ct_price]
     to_ct_price = search_card_transaction_params[:to_ct_price]
@@ -56,6 +56,8 @@ class Lalas::CardTransactionsController < LalasController
 
     @index_context = {
       current_user: user,
+      external_route_params:,
+      internal_route_params:,
       years:,
       default_year:,
       active_month_years:,
@@ -76,6 +78,21 @@ class Lalas::CardTransactionsController < LalasController
   end
 
   private
+
+  def external_card_transaction_params
+    card_transaction_params.merge(
+      category_id: external_card_category_ids,
+      entity_id: external_entity_ids
+    )
+  end
+
+  def external_card_category_ids
+    user.categories.where(category_name: [ "EXCHANGE" ]).ids
+  end
+
+  def external_entity_ids
+    [ lala&.id ].compact
+  end
 
   def card_installments_scope
     scope = lala_context.card_installments.joins(:card_transaction)

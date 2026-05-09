@@ -23,7 +23,8 @@ class Views::Lalas::CardTransactions::Index < Views::Base
                 render IndexSearchForm.new(index_context:)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :user_card, :active_month_years))
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :user_card, :active_month_years,
+                                                                               :external_route_params, :internal_route_params))
             end
           end
         end

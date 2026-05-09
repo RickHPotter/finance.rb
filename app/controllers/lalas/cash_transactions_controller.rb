@@ -18,7 +18,7 @@ class Lalas::CashTransactionsController < LalasController
     month_year = search_cash_transaction_params[:month_year]
     month_year_str = I18n.l(Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01"), format: "%B %Y")
 
-    cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, cash_transaction_params, search_cash_transaction_params)
+    cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, external_cash_transaction_params, search_cash_transaction_params)
 
     render Views::Lalas::CashTransactions::MonthYear.new(mobile:, month_year:, month_year_str:, cash_installments:)
   end
@@ -29,8 +29,8 @@ class Lalas::CashTransactionsController < LalasController
     default_active_month_years = [ Time.zone.today.clamp(min_date, max_date).strftime("%Y%m").to_i ]
     years = (min_date.year..max_date.year)
 
-    category_id = user.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
-    entity_id = user.entities.where(entity_name: "LALA").ids
+    category_id = external_cash_category_ids
+    entity_id = external_entity_ids
     user_bank_account_id = [ cash_transaction_params[:user_bank_account_id] ].flatten&.compact_blank
     search_term = search_cash_transaction_params[:search_term]
     paid = ActiveModel::Type::Boolean.new.cast(search_cash_transaction_params[:paid])
@@ -49,6 +49,8 @@ class Lalas::CashTransactionsController < LalasController
 
     @index_context = {
       current_user: user,
+      external_route_params:,
+      internal_route_params:,
       years:,
       default_year:,
       active_month_years:,
@@ -66,6 +68,21 @@ class Lalas::CashTransactionsController < LalasController
   end
 
   private
+
+  def external_cash_transaction_params
+    cash_transaction_params.merge(
+      category_id: external_cash_category_ids,
+      entity_id: external_entity_ids
+    )
+  end
+
+  def external_cash_category_ids
+    user.categories.where(category_name: [ "EXCHANGE RETURN", "BORROW RETURN" ]).ids
+  end
+
+  def external_entity_ids
+    [ lala&.id ].compact
+  end
 
   # Only allow a list of trusted parameters through.
   def cash_transaction_params

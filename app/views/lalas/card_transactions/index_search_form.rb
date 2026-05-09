@@ -12,7 +12,7 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :category_id, :entity_id,
               :user_card,
-              :count_by_month_year
+              :count_by_month_year, :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
     @index_context = index_context
@@ -25,10 +25,12 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
     @entity_id = index_context[:entity_id]
     @user_card = index_context[:user_card]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @external_route_params = index_context[:external_route_params]
+    @internal_route_params = index_context[:internal_route_params]
   end
 
   def view_template
-    form_with url: lalas_card_transactions_path,
+    form_with url: card_transactions_path,
               id: :search_form,
               method: :get,
               class: "w-full",
@@ -59,5 +61,14 @@ class Views::Lalas::CardTransactions::IndexSearchForm < Views::Base
 
       form.submit :search, class: :hidden
     end
+  end
+
+  private
+
+  def card_transactions_path
+    return internal_card_transactions_path(**internal_route_params) if internal_route_params.present?
+    return external_card_transactions_path(**external_route_params) if external_route_params.present?
+
+    lalas_card_transactions_path
   end
 end
