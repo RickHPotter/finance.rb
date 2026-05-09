@@ -1752,7 +1752,10 @@ RSpec.describe "CardTransactions", type: :request do
         price: -4_500,
         date: Date.new(2026, 3, 1),
         month: 3,
-        year: 2026
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 3, 1), month: 3, year: 2026, price: -4_500)
+        ]
       )
       create(
         :card_transaction,
@@ -1763,7 +1766,10 @@ RSpec.describe "CardTransactions", type: :request do
         price: -4_500,
         date: Date.new(2026, 3, 2),
         month: 3,
-        year: 2026
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 3, 2), month: 3, year: 2026, price: -4_500)
+        ]
       )
 
       first_installment = alpha.card_installments.first

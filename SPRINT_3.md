@@ -77,6 +77,12 @@ too visible to ignore.
     status, and pause/finish state.
 - Extra:
   - [HOMOLOG](https://homolog.30fev.com) deploy.
+  - Linked subscription transactions now receive metadata updates without rewriting
+    paid history; when a subscription description changes, the previous transaction
+    description is appended to the transaction comment instead of replacing an
+    existing comment.
+  - Subscription form failures now show the generic create/update failure plus
+    concrete validation or history-lock details as separate stacked notifications.
 
 ### JIRAIYA-03/fe-01: Rethink datatables, filters, and ordering
 
@@ -179,6 +185,12 @@ too visible to ignore.
   - transaction and investment form submission skeletons were updated so mobile
     loading states match the RubyUI calendar/clock controls instead of the old
     compact native inputs
+  - form failure feedback was standardized across subscription, cash/card
+    transaction, budget, and investment forms: the generic create/update failure
+    appears first, concrete validation or history-lock details stack after it, and
+    generic `is invalid` noise is suppressed
+  - the shared notification frame now owns fixed positioning so multiple flash cards
+    stack with spacing instead of rendering on top of each other
   - payment and transfer modals now use the same shared split date/time control,
     including localized weekday feedback and max-datetime validation with shared
     flash feedback

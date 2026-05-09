@@ -56,11 +56,13 @@ class Views::CashTransactions::FormSubmissionSkeleton < Views::Base
       end
 
       div(class: "space-y-3") do
+        # create more checkbox
         Skeleton(class: "mx-auto h-5 w-36 rounded-sm")
 
+        # submit buttons
         div(class: "grid grid-cols-1 gap-2 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center mx-auto w-full") do
           3.times do
-            Skeleton(class: "h-10 w-64 rounded-md")
+            Skeleton(class: "h-9 w-64 rounded-md")
           end
         end
       end

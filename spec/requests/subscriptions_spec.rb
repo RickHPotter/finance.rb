@@ -93,6 +93,8 @@ RSpec.describe "Subscriptions", type: :request do
       get new_subscription_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="subscription_form_submission_skeleton"')
       expect(response.body).to include("ruby-ui--combobox")
       expect(response.body).not_to include("hw-combobox")
     end

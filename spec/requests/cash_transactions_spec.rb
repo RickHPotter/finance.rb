@@ -379,6 +379,38 @@ RSpec.describe "CashTransactions", type: :request do
       expect(transaction.description).to eq("Club")
       expect(transaction.comment).to eq("Barbecue at Aunt's\nCinema")
     end
+
+    it "keeps the installment reference month when attaching a cash transaction with stale parent month data" do
+      subscription = create(:subscription, user:, description: "Reference-safe subscription")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "April installment",
+        price: 8_000,
+        date: Time.zone.local(2026, 4, 12),
+        month: 12,
+        year: 2026
+      )
+      installment = transaction.cash_installments.first
+      installment.update_columns(
+        date: Time.zone.local(2026, 4, 12, 14, 59),
+        month: 4,
+        year: 2026
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(installment.reload.attributes.values_at("month", "year", "date")).to eq([ 4, 2026, Time.zone.local(2026, 4, 12, 14, 59) ])
+    end
   end
 
   def switch_to_context!(context)

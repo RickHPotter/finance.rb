@@ -9,15 +9,19 @@
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width: 720px; max-width: 720px; overflow: hidden; border-collapse: separate; border-spacing: 0; border-radius: 28px; background: #0f172a; color: #f8fafc; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);">
         <tr>
           <td class="email-hero" style="background: #0f172a; background-image: linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #991b1b 100%); padding: 34px 34px 28px;">
-            <p style="margin: 0 0 10px; color: #fecdd3 !important; font-size: 12px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;">
+            <p class="email-kicker" style="margin: 0 0 10px; color: #fecdd3 !important; -webkit-text-fill-color: #fecdd3; font-size: 12px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;">
               <%= t("payment_reminder_mailer.daily_digest.kicker") %>
             </p>
-            <h1 class="email-heading" style="margin: 0; color: #ffffff !important; font-size: 34px; line-height: 1.05; letter-spacing: 0; mso-line-height-rule: exactly;">
-              <%= t("payment_reminder_mailer.daily_digest.heading", first_name: @user.first_name.presence || @user.email.split("@").first) %>
-            </h1>
-            <p class="email-summary" style="margin: 16px 0 0; max-width: 560px; color: #cbd5e1 !important; font-size: 16px; line-height: 1.6;">
-              <%= t("payment_reminder_mailer.daily_digest.summary", count: total_count, amount: number_to_currency(total_amount / 100.0, unit: "R$ ", separator: ",", delimiter: ".")) %>
-            </p>
+            <div class="gmail-blend-screen" style="background: #000000; mix-blend-mode: screen;">
+              <div class="gmail-blend-difference" style="background: #000000; mix-blend-mode: difference;">
+                <h1 class="email-heading" style="margin: 0; color: #ffffff !important; -webkit-text-fill-color: #ffffff; font-size: 34px; line-height: 1.05; letter-spacing: 0; mso-line-height-rule: exactly;">
+                  <%= t("payment_reminder_mailer.daily_digest.heading", first_name: @user.first_name.presence || @user.email.split("@").first) %>
+                </h1>
+                <p class="email-summary" style="margin: 16px 0 0; max-width: 560px; color: #cbd5e1 !important; -webkit-text-fill-color: #cbd5e1; font-size: 16px; line-height: 1.6;">
+                  <%= t("payment_reminder_mailer.daily_digest.summary", count: total_count, amount: number_to_currency(total_amount / 100.0, unit: "R$ ", separator: ",", delimiter: ".")) %>
+                </p>
+              </div>
+            </div>
           </td>
         </tr>
 

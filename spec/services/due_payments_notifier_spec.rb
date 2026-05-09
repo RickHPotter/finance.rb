@@ -76,6 +76,8 @@ RSpec.describe DuePaymentsNotifier do
       expect(mail.html_part.body.encoded).to include("Overdue rent")
       expect(mail.html_part.body.encoded).to include("Today internet")
       expect(mail.html_part.body.encoded).to include("Tomorrow card")
+      expect(mail.html_part.body.encoded).to include("gmail-blend-screen")
+      expect(mail.html_part.body.encoded).to include("-webkit-text-fill-color: #ffffff")
       expect(mail.html_part.body.encoded).not_to include("Paid old bill")
     end
 

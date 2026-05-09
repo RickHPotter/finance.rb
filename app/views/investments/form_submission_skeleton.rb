@@ -39,12 +39,12 @@ class Views::Investments::FormSubmissionSkeleton < Views::Base
 
       div(class: "space-y-3") do
         # create more checkbox
-        Skeleton(class: "mx-auto h-5 w-32 rounded-sm")
+        Skeleton(class: "mx-auto h-5 w-36 rounded-sm")
 
         # submit buttons
-        div(class: "grid grid-cols-1 gap-2 sm:grid-flow-col sm:auto-cols-fr") do
+        div(class: "grid grid-cols-1 gap-2 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center mx-auto w-full") do
           3.times do
-            Skeleton(class: "h-10 w-full rounded-md")
+            Skeleton(class: "h-9 w-64 rounded-md")
           end
         end
       end

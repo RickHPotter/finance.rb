@@ -82,5 +82,7 @@ Recent work has been especially focused on:
 - full-page detail dashboards and interactive breakdown screens
 - mobile-first form polish, including RubyUI calendar/clock controls and matching
   skeleton states for transaction and investment entry
+- consistent form-failure feedback, with stacked generic-plus-specific validation
+  notifications across transaction, subscription, budget, and investment flows
 - reminder reliability, with email digests acting as a fallback for less reliable
   mobile PWA push delivery

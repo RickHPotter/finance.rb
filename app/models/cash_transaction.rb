@@ -491,10 +491,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
     cash_installments.first&.update_columns(
       price:,
-      starting_price: price,
-      date:,
-      month:,
-      year:
+      starting_price: price
     )
   end
 

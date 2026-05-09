@@ -10,7 +10,11 @@ class Views::Subscriptions::Edit < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      render Views::Shared::FormShell.new(badge_text: I18n.t("gerund.edit"), badge_class: form_badge_class(:edit)) do
+      render Views::Shared::FormShell.new(
+        badge_text: I18n.t("gerund.edit"),
+        badge_class: form_badge_class(:edit),
+        skeleton_view: Views::Subscriptions::FormSubmissionSkeleton
+      ) do
         div(class: "flex min-h-[calc(100svh-22rem)] flex-col") do
           render Views::Subscriptions::Form.new(current_user:, subscription:)
         end
