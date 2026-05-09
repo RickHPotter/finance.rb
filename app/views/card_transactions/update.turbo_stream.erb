@@ -4,7 +4,9 @@
 
   <%= turbo_stream.replace(:center_container, Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model_or_history_lock(@card_transaction, :not_updateda, CardTransaction) }) %>
+  <% failure_notifications_for(@card_transaction, :not_updateda, CardTransaction).each_with_index do |alert, index| %>
+    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
+  <% end %>
 
   <%= turbo_stream.replace(:center_container, Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction)) %>
 <% end %>

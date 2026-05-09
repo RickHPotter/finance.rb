@@ -458,6 +458,22 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("checked")
     end
 
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post card_transactions_path,
+             params: card_transaction.params.deep_merge(card_transaction: { description: "" }),
+             headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_createda", model: CardTransaction.model_name.human))
+      expect(response.body).to include(CardTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
     it "finishes a chain without saving the current card transaction form" do
       existing_card_transaction = create(
         :card_transaction,
@@ -1258,6 +1274,20 @@ RSpec.describe "CardTransactions", type: :request do
       expect(@existing_card_transaction.reload.subscription).to eq(other_subscription)
       expect(subscription.reload.price).to eq(0)
       expect(other_subscription.reload.price).to eq(-20_000)
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      card_transaction.use_base(@existing_card_transaction, card_transaction_options: { description: "" })
+
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updateda", model: CardTransaction.model_name.human))
+      expect(response.body).to include(CardTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
     it "returns unprocessable_entity when a paid-history rewrite is blocked" do

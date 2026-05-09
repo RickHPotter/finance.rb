@@ -167,6 +167,30 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to match(/name="investment\[investment_type_id\]"[^>]*value="#{investment_type.id}"[^>]*checked/)
     end
 
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "",
+            price: 1234,
+            date: Date.new(2026, 3, 14),
+            month: 3,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Investment, :count)
+
+      expect(response.body).to include(I18n.t("notification.not_created", model: Investment.model_name.human))
+      expect(response.body).to include(Investment.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
     it "continues a next_day duplicate chain from the newly created investment date" do
       create(
         :investment,
@@ -308,6 +332,30 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).not_to include("investment%5Bid%5D")
       expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
       expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      investment = create(:investment, user:, user_bank_account:, investment_type:)
+
+      patch investment_path(investment), params: {
+        investment: {
+          description: "",
+          price: investment.price,
+          date: investment.date,
+          month: investment.month,
+          year: investment.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Investment.model_name.human))
+      expect(response.body).to include(Investment.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
   end
 

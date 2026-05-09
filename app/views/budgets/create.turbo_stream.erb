@@ -8,7 +8,9 @@
     <%= turbo_stream.replace(:center_container, Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile)) %>
   <% end %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @budget.errors.full_messages&.join || notification_model(:not_created, Budget) }) %>
+  <% failure_notifications_for(@budget, :not_created, Budget).each_with_index do |alert, index| %>
+    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
+  <% end %>
 
   <%= turbo_stream.replace(:center_container, Views::Budgets::New.new(current_user:, budget: @budget)) %>
 <% end %>

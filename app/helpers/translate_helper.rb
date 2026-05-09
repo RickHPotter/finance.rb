@@ -167,7 +167,10 @@ module TranslateHelper
   end
 
   def generic_invalid_error?(record, message)
-    record.errors.details[:base].any? { |detail| detail[:error] == :invalid } && message == record.errors.full_message(:base, :invalid)
+    return false unless record.errors.details.values.flatten.any? { |detail| detail[:error] == :invalid }
+
+    invalid_message = I18n.t("errors.messages.invalid")
+    message == invalid_message || message == record.errors.full_message(:base, :invalid) || message.end_with?(" #{invalid_message}")
   end
 
   def each_record_with_errors(record, seen = [])

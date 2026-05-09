@@ -604,6 +604,22 @@ RSpec.describe "CashTransactions", type: :request do
       expect(subscription.reload.price).to eq(20_000)
     end
 
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post cash_transactions_path,
+             params: cash_transaction.params.deep_merge(cash_transaction: { description: "" }),
+             headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_createda", model: CashTransaction.model_name.human))
+      expect(response.body).to include(CashTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
     it "ignores submitted exchanges_count and persists the real exchange counter cache" do
       exchange_category = user.built_in_category("EXCHANGE")
       receiver = create(:user, :random)
@@ -1254,6 +1270,20 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
       expect(response.body).not_to include(I18n.t("notification.not_updateda", model: CashTransaction.model_name.human))
       expect(@existing_cash_transaction.reload.description).to eq(original_description)
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { description: "" })
+
+      put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updateda", model: CashTransaction.model_name.human))
+      expect(response.body).to include(CashTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
     it "marks the source message as applied when updating from a message" do

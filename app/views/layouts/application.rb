@@ -35,7 +35,9 @@ class Views::Layouts::Application < Views::Base
 
       body(class: body_class, data: { controller: ( "letitsnow" if rails_view_context&.current_context&.derived?) }) do
         ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-355 mx-auto w-full") do
-          turbo_frame_tag :notification do
+          turbo_frame_tag :notification,
+                          class: "fixed inset-x-0 bottom-0 z-50 flex flex-col gap-3 px-4 py-6 pointer-events-none
+                                  sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-0 sm:w-full sm:max-w-md sm:items-end sm:p-6 sm:pt-16".squish do
             render partial "shared/flash"
           end
 

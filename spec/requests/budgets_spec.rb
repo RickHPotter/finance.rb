@@ -58,6 +58,30 @@ RSpec.describe "Budgets", type: :request do
         }, headers: turbo_stream_headers
       end.to change(Budget, :count).by(1)
     end
+
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post budgets_path, params: {
+          budget: {
+            description: "Food Budget",
+            value: -10_000,
+            inclusive: false,
+            first_installment_only: false,
+            month_year: "2026-03",
+            active: true,
+            user_id: user.id,
+            budget_categories_attributes: [],
+            budget_entities_attributes: []
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Budget, :count)
+
+      expect(response.body).to include(I18n.t("notification.not_created", model: Budget.model_name.human))
+      expect(response.body).to include(I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
   end
 
   describe "[ #new ]" do
@@ -206,6 +230,31 @@ RSpec.describe "Budgets", type: :request do
       }, headers: turbo_stream_headers
 
       expect(budget.reload.description).to eq("Updated Budget")
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+
+      patch budget_path(budget), params: {
+        budget: {
+          description: budget.description,
+          value: budget.value,
+          inclusive: budget.inclusive,
+          first_installment_only: budget.first_installment_only,
+          month: budget.month,
+          year: budget.year,
+          active: budget.active,
+          user_id: user.id,
+          budget_categories_attributes: budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id, _destroy: "1" } },
+          budget_entities_attributes: []
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Budget.model_name.human))
+      expect(response.body).to include(I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
     it "keeps an existing single category while adding a new entity" do
