@@ -37,13 +37,9 @@ class Views::Subscriptions::Subscription < Views::Base
         status_badge
       end
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
-        subscription.categories.map(&:name).join(", ").presence || "-"
-      end
+      render_desktop_categories
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
-        subscription.entities.map(&:name).join(", ").presence || "-"
-      end
+      render_desktop_entities
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800") do
         subscription.transactions_count
@@ -161,6 +157,20 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def render_desktop_categories
+    if subscription.categories.any?
+      render Views::Categories::Popover.new(
+        items: subscription_category_popover_items,
+        mobile: false,
+        target_ids: subscription.categories.map(&:id),
+        trigger_label: pluralise_model(Category, subscription.categories.count).upcase,
+        variant: :subscription
+      )
+    else
+      blank_allocation_cell
+    end
+  end
+
   def render_mobile_entities
     mobile_metric_card(icon: :user, label: model_attribute(Subscription, :entity_id)) do
       render Views::Entities::Popover.new(
@@ -173,11 +183,24 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def render_desktop_entities
+    if subscription.entities.any?
+      render Views::Entities::Popover.new(
+        items: subscription_entity_popover_items,
+        mobile: false,
+        target_ids: subscription.entities.map(&:id),
+        trigger_label: pluralise_model(Entity, subscription.entities.count).upcase,
+        variant: :subscription
+      )
+    else
+      blank_allocation_cell
+    end
+  end
+
   def subscription_category_popover_items
     subscription.categories.map do |category|
       {
-        name: category.name,
-        style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+        name: category.name
       }
     end
   end
@@ -189,6 +212,10 @@ class Views::Subscriptions::Subscription < Views::Base
         avatar_name: entity.avatar_name
       }
     end
+  end
+
+  def blank_allocation_cell
+    div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") { "-" }
   end
 
   def status_badge

@@ -86,7 +86,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: "whitespace-nowrap") do
+            div(class: "whitespace-nowrap", title: from_cent_based_to_float(cash_transaction.price, "R$")) do
               from_cent_based_to_float(cash_installment.price, "R$")
             end
           end
@@ -157,7 +157,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         render_desktop_entities(cash_transaction, avatar_name)
 
-        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto",
+            title: from_cent_based_to_float(cash_transaction.price, "R$")) do
           from_cent_based_to_float(cash_installment.price, "R$")
         end
 

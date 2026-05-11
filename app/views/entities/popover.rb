@@ -40,10 +40,10 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 opacity-100! mr-2") do
-          div(class: "flex flex-wrap justify-end gap-1 min-w-36") do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+          div(class: mobile_multi_entity_list_class) do
             items.each do |item|
-              render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6 mb-1", name_class: mobile_name_class)
+              render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6", name_class: multi_entity_name_class)
             end
           end
         end
@@ -63,10 +63,10 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-60 opacity-100! mt-2") do
-          div(class: "flex flex-col gap-2 min-w-36") do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+          div(class: desktop_multi_entity_list_class) do
             items.each do |item|
-              render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: desktop_name_class)
+              render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: multi_entity_name_class)
             end
           end
         end
@@ -132,7 +132,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def mobile_item_wrapper_class
-    "flex flex-col items-center w-16 text-center text-inherit"
+    "flex items-center gap-2 whitespace-nowrap text-left text-inherit"
   end
 
   def mobile_single_item_wrapper_class
@@ -142,7 +142,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_item_wrapper_class
-    "flex items-center gap-2 text-xs text-inherit"
+    "flex items-center gap-2 whitespace-nowrap text-xs text-inherit"
   end
 
   def mobile_name_class
@@ -151,6 +151,22 @@ class Views::Entities::Popover < Views::Base
 
   def desktop_name_class
     "entity_entity_name text-xs leading-tight"
+  end
+
+  def multi_entity_name_class
+    "entity_entity_name leading-tight"
+  end
+
+  def mobile_multi_entity_list_class
+    "flex min-w-56 max-w-none flex-col items-start gap-2"
+  end
+
+  def desktop_multi_entity_list_class
+    "flex min-w-56 max-w-none flex-col items-start gap-2"
+  end
+
+  def multi_entity_popover_content_class(offset_class)
+    "z-50 !opacity-100 #{offset_class} w-max max-w-none"
   end
 
   def mobile_trigger_button_class

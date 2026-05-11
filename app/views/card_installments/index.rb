@@ -54,10 +54,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                         data: { turbo_frame: "_top", turbo_prefetch: false }
               end
 
-              link_to card_transaction.description, edit_card_transaction_path(card_transaction),
-                      id: "edit_card_transaction_#{card_transaction.id}",
-                      class: "truncate text-md underline underline-offset-[3px]",
-                      data: { turbo_frame: "_top", turbo_prefetch: false }
+              render_description_link(card_transaction, class: "truncate text-md underline underline-offset-[3px]")
 
               span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -72,7 +69,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               span(class: "whitespace-nowrap pl-2") { I18n.l(card_installment.date, format: :short) }
             end
 
-            div(class: "whitespace-nowrap") do
+            div(class: "whitespace-nowrap", title: from_cent_based_to_float(card_transaction.price, "R$")) do
               from_cent_based_to_float(card_installment.price, "R$")
             end
           end
@@ -178,10 +175,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
 
-            link_to card_transaction.description, edit_card_transaction_path(card_transaction),
-                    id: "edit_card_transaction_#{card_transaction.id}",
-                    class: "flex-5 truncate text-md underline underline-offset-[3px]",
-                    data: { turbo_frame: "_top", turbo_prefetch: false }
+            render_description_link(card_transaction, class: "flex-5 truncate text-md underline underline-offset-[3px]")
 
             span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
               pretty_installments(card_installment.number, card_installment.card_installments_count)
@@ -193,7 +187,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         render_desktop_entities(card_transaction)
 
-        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto") do
+        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto",
+            title: from_cent_based_to_float(card_transaction.price, "R$")) do
           from_cent_based_to_float(card_installment.price, "R$")
         end
 
@@ -259,8 +254,17 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
   end
 
+  def render_description_link(card_transaction, class:)
+    link_to card_transaction.description,
+            edit_card_transaction_path(card_transaction),
+            id: "edit_card_transaction_#{card_transaction.id}",
+            class:,
+            title: card_transaction.comment,
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+  end
+
   def render_mobile_entities(card_transaction)
-    items = entity_popover_items(card_transaction, :id)
+    items = entity_popover_items(card_transaction)
 
     render Views::Entities::Popover.new(
       items:,
@@ -273,7 +277,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def render_desktop_entities(card_transaction)
     render Views::Entities::Popover.new(
-      items: entity_popover_items(card_transaction, :id),
+      items: entity_popover_items(card_transaction),
       mobile: false,
       target_ids: card_transaction.entities.map(&:id),
       trigger_label: "",
@@ -301,12 +305,14 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def entities_for(card_transaction, sort_key)
-    card_transaction.entity_transactions.includes(:entity).sort_by(&sort_key)
+  def entities_for(card_transaction)
+    card_transaction.entity_transactions.includes(:entity).sort_by do |entity_transaction|
+      [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+    end
   end
 
-  def entity_popover_items(card_transaction, sort_key)
-    entities_for(card_transaction, sort_key).map do |entity_transaction|
+  def entity_popover_items(card_transaction)
+    entities_for(card_transaction).map do |entity_transaction|
       entity = entity_transaction.entity
       href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }) : nil
 

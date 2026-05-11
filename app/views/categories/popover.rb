@@ -78,6 +78,8 @@ class Views::Categories::Popover < Views::Base
   end
 
   def desktop_container_class
+    return "col-span-2 py-2 flex items-center justify-center gap-2" if variant == :subscription
+
     "col-span-3 py-2 flex items-center justify-center gap-2"
   end
 
