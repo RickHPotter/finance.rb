@@ -40,7 +40,8 @@ class LalasController < ApplicationController
 
   def lala
     @lala ||= begin
-      entity = user.entities.to_a.detect { |record| external_slug_for(record.entity_name) == external_entity_slug }
+      target_slug = external_entity_slug.to_s.parameterize
+      entity = Entity.where(user_id: user.id).find_each.detect { |record| external_slug_for(record.entity_name) == target_slug }
       raise ActiveRecord::RecordNotFound, "External entity not found" if entity.blank? && scoped_entity_request?
 
       entity

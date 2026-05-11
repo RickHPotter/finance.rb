@@ -68,18 +68,35 @@ class Views::Entities::Form < Views::Base
 
     div(class: "text-xs font-thin text-slate-300 pt-2") do
       div do
-        span { model_attribute(entity, :person_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/vitaly-gorbachev", title: "people icons") { "Vitaly Gorbachev - Flaticon" }
+        span { model_attribute(entity, :person_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/vitaly-gorbachev", title: "people icons") do
+          "#{model_attribute(entity, :person_icons_credits)} - Flaticon"
+        end
       end
 
       div do
-        span { model_attribute(entity, :dog_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs icons") { "Maxim Kulikov - Flaticon" }
+        span { model_attribute(entity, :dog_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs and cats icons") do
+          "#{model_attribute(entity, :dog_icons_credits)} - Flaticon"
+        end
       end
 
       div do
-        span { model_attribute(entity, :country_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/freepik", title: "coutries icons") { "Freepik - Flaticon" }
+        span { model_attribute(entity, :bzzrincantation_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/bzzrincantation", title: "people, entities and animals icons") do
+          "#{model_attribute(entity, :bzzrincantation_icons_credits)} - Flaticon"
+        end
+      end
+
+      div do
+        span { model_attribute(entity, :country_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/freepik", title: "coutries icons") do
+          "#{model_attribute(entity, :country_icons_credits)} - Flaticon"
+        end
       end
     end
   end

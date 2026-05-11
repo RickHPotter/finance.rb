@@ -20,13 +20,22 @@ en:
           active: Active
           inactive: Inactive
         people: People
+        people_one: People 1
+        people_two: People 2
         dogs: Dogs
         cats: Cats
+        animals: Animals
+        entity_icons: Entities
         countries: Countries
         moi: MOI
-        person_icons_credits: People icons created by
-        dog_icons_credits: Dogs icons created by
-        country_icons_credits: Country icons created by
+        person_icons_credit_text: People 1 icons created by
+        person_icons_credits: Vitaly Gorbachev
+        dog_icons_credit_text: Dogs and Cats icons created by
+        dog_icons_credits: Maxim Kulikov
+        bzzrincantation_icons_credit_text: People 2, Entities and Animals icons created by
+        bzzrincantation_icons_credits: BZZRINCANTATION
+        country_icons_credit_text: Country icons created by
+        country_icons_credits: Freepik
     errors:
       models:
         entity:
@@ -58,13 +67,22 @@ pt-BR:
           active: Ativo
           inactive: Inativo
         people: Pessoas
+        people_one: Pessoas 1
+        people_two: Pessoas 2
         dogs: Cachorros
         cats: Gatos
+        animals: Animais
+        entity_icons: Entidades
         countries: Países
         moi: MOI
-        person_icons_credits: Ícones de pessoas criados por
-        dog_icons_credits: Ícones de cachorros criados por
-        country_icons_credits: Ícones de países criados por
+        person_icons_credit_text: Ícones de Pessoas 1 criados por
+        person_icons_credits: Vitaly Gorbachev
+        dog_icons_credit_text: Ícones de Cachorros e Gatos criados por
+        dog_icons_credits: Maxim Kulikov
+        bzzrincantation_icons_credit_text: Ícones de Pessoas 2, Entidades e Animais criados por
+        bzzrincantation_icons_credits: BZZRINCANTATION
+        country_icons_credit_text: Ícones de Países criados por
+        country_icons_credits: Freepik
     errors:
       models:
         entity:

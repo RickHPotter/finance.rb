@@ -8,8 +8,22 @@ module Components
 
     ICONS_PATH = "avatars"
     PEOPLE_ICONS_PATH = "avatars/people"
+    PEOPLE_2_ICONS_PATH = "avatars/people_2"
     DOGS_ICONS_PATH = "avatars/dogs"
+    CATS_ICONS_PATH = "avatars/cats"
+    ANIMALS_ICONS_PATH = "avatars/animals"
+    ENTITIES_ICONS_PATH = "avatars/entities"
     COUNTRIES_ICONS_PATH = "avatars/countries"
+    DEFAULT_TAB = "people"
+    TABS = [
+      { key: "people", label: :people_one, path: PEOPLE_ICONS_PATH },
+      { key: "people_2", label: :people_two, path: PEOPLE_2_ICONS_PATH },
+      { key: "dogs", label: :dogs, path: DOGS_ICONS_PATH },
+      { key: "cats", label: :cats, path: CATS_ICONS_PATH },
+      { key: "animals", label: :animals, path: ANIMALS_ICONS_PATH },
+      { key: "entities", label: :entity_icons, path: ENTITIES_ICONS_PATH },
+      { key: "countries", label: :countries, path: COUNTRIES_ICONS_PATH }
+    ].freeze
 
     def initialize(form:, field:, &)
       @form = form
@@ -28,75 +42,50 @@ module Components
         end
 
         div(
-          class: "hidden absolute z-50 w-72 mt-2 left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-lg border border-zinc-300",
+          class: "hidden absolute z-50 mt-2 left-1/2 w-[min(90vw,42rem)] -translate-x-1/2 rounded-lg border border-zinc-300 bg-white shadow-lg",
           data: { icon_picker_target: "iconOptionContainer" }
         ) do
           tabs
-          people_container
-          dogs_container
-          countries_container
+          TABS.each { |tab| icon_container(tab) }
         end
       end
     end
 
     def tabs
-      button_class = "w-1/2 p-2 text-center font-semibold border-b-2 border-transparent data-[active=true]:border-black data-[active=true]:text-black text-gray-500"
+      button_class = "flex-1 border-b-2 border-transparent p-2 text-center text-sm font-semibold text-gray-500 " \
+                     "data-[active=true]:border-black data-[active=true]:text-black"
 
-      div(class: "flex border-b border-gray-300") do
-        button type: "button", class: button_class, data: { action: "click->icon-picker#switchTab", tab: :people, icon_picker_target: "tabButton" } do
-          model_attribute(Entity, :people)
-        end
-
-        button type: "button", class: button_class, data: { action: "click->icon-picker#switchTab", tab: :dogs, icon_picker_target: "tabButton" } do
-          model_attribute(Entity, :dogs)
-        end
-
-        button type: "button", class: button_class, data: { action: "click->icon-picker#switchTab", tab: :countries, icon_picker_target: "tabButton" } do
-          model_attribute(Entity, :countries)
-        end
-      end
-    end
-
-    def people_container
-      div(class: "grid grid-cols-5 gap-2 p-2 data-[active=false]:hidden", data: { icon_picker_target: "iconContainer", tab: "people" }) do
-        people_avatar_files.each do |file|
-          filename = File.basename(file)
-
+      div(class: "flex overflow-x-auto border-b border-gray-300") do
+        TABS.each do |tab|
           button type: "button",
-                 class: "size-12 flex items-center justify-center rounded shadow-lg border hover:scale-110 transition-all ease-in-out duration-100
-                         cursor-pointer hover:border-black focus:outline-none",
-                 data: { action: "click->icon-picker#selectIcon", icon_picker_target: "iconOption", name: filename } do
-            img(src: asset_path("#{PEOPLE_ICONS_PATH}/#{filename}"), class: "w-full h-full object-contain")
+                 class: button_class,
+                 data: {
+                   action: "click->icon-picker#switchTab",
+                   tab: tab[:key],
+                   icon_picker_target: "tabButton",
+                   active: active_tab == tab[:key]
+                 } do
+            model_attribute(Entity, tab[:label])
           end
         end
       end
     end
 
-    def dogs_container
-      div(class: "grid grid-cols-5 gap-2 p-2", data: { icon_picker_target: "iconContainer", tab: "dogs" }) do
-        dogs_avatar_files.each do |file|
-          filename = File.basename(file)
+    def icon_container(tab)
+      div(
+        class: "max-h-[24rem] overflow-y-auto p-2 #{'hidden' unless active_tab == tab[:key]}",
+        data: { icon_picker_target: "iconContainer", tab: tab[:key] }
+      ) do
+        div(class: "grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2") do
+          avatar_files(tab[:key]).each do |file|
+            filename = File.basename(file)
 
-          button type: "button",
-                 class: "size-12 flex items-center justify-center rounded shadow-lg border hover:scale-110 transition-all ease-in-out duration-100
-                         cursor-pointer hover:border-black focus:outline-none",
-                 data: { action: "click->icon-picker#selectIcon", icon_picker_target: "iconOption", name: filename } do
-            img(src: asset_path("#{DOGS_ICONS_PATH}/#{filename}"), class: "w-full h-full object-contain")
-          end
-        end
-      end
-    end
-
-    def countries_container
-      div(class: "grid grid-cols-5 gap-2 p-2", data: { icon_picker_target: "iconContainer", tab: "countries" }) do
-        countries_avatar_files.each do |file|
-          filename = File.basename(file)
-
-          button type: "button",
-                 class: "size-12 flex items-center justify-center rounded shadow-lg border hover:scale-110 transition-all ease-in-out duration-100
-                         cursor-pointer hover:border-black focus:outline-none",
-                 data: { action: "click->icon-picker#selectIcon", icon_picker_target: "iconOption", name: filename } do
-            img(src: asset_path("#{COUNTRIES_ICONS_PATH}/#{filename}"), class: "w-full h-full object-contain")
+            button type: "button",
+                   class: "size-10 flex items-center justify-center rounded border shadow-sm transition-all duration-100 ease-in-out hover:scale-110
+                           hover:border-black focus:outline-none",
+                   data: { action: "click->icon-picker#selectIcon", icon_picker_target: "iconOption", name: filename } do
+              img(src: asset_path("#{tab[:path]}/#{filename}"), class: "h-full w-full object-contain")
+            end
           end
         end
       end
@@ -104,16 +93,15 @@ module Components
 
     private
 
-    def people_avatar_files
-      Dir.glob(Rails.root.join("app/assets/images/avatars/people/*.png")).reject { |f| f.ends_with?("/0.png") }.map { |file| File.basename(file) }
+    def active_tab
+      tab = @value.to_s.split("/").first
+      TABS.any? { |item| item[:key] == tab } ? tab : DEFAULT_TAB
     end
 
-    def dogs_avatar_files
-      Dir.glob(Rails.root.join("app/assets/images/avatars/dogs/*.png")).map { |file| File.basename(file) }
-    end
+    def avatar_files(tab)
+      files = Dir.glob(Rails.root.join("app/assets/images/avatars/#{tab}/*.png")).map { |file| File.basename(file) }.sort_by(&:downcase)
 
-    def countries_avatar_files
-      Dir.glob(Rails.root.join("app/assets/images/avatars/countries/*.png")).map { |file| File.basename(file) }
+      tab == "people" ? files.reject { |filename| filename == "0.png" } : files
     end
   end
 end

@@ -12,7 +12,7 @@ export default class extends Controller {
   selectIcon({ target }) {
     const button = target.closest("button")
     const iconName = button.dataset.name
-    const tabName = button.parentElement.dataset.tab
+    const tabName = button.closest("[data-tab]").dataset.tab
 
     this.selectedIconTarget.value = `${tabName}/${iconName}`
     const selectedTab = this.element.querySelector("div[data-tab='" + tabName + "']")
