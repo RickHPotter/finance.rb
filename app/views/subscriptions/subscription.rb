@@ -37,7 +37,9 @@ class Views::Subscriptions::Subscription < Views::Base
         status_badge
       end
 
-      render_desktop_categories
+      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
+        render_desktop_categories
+      end
 
       render_desktop_entities
 
@@ -158,17 +160,15 @@ class Views::Subscriptions::Subscription < Views::Base
   end
 
   def render_desktop_categories
-    if subscription.categories.any?
-      render Views::Categories::Popover.new(
-        items: subscription_category_popover_items,
-        mobile: false,
-        target_ids: subscription.categories.map(&:id),
-        trigger_label: pluralise_model(Category, subscription.categories.count).upcase,
-        variant: :subscription
-      )
-    else
-      blank_allocation_cell
-    end
+    return plain "-" if subscription.categories.empty?
+
+    render Views::Categories::Popover.new(
+      items: subscription_category_popover_items,
+      mobile: false,
+      target_ids: subscription.categories.map(&:id),
+      trigger_label: "",
+      variant: :subscription_compact
+    )
   end
 
   def render_mobile_entities
@@ -200,7 +200,8 @@ class Views::Subscriptions::Subscription < Views::Base
   def subscription_category_popover_items
     subscription.categories.map do |category|
       {
-        name: category.name
+        name: category.name,
+        style: category_badge_style(category)
       }
     end
   end
@@ -228,5 +229,11 @@ class Views::Subscriptions::Subscription < Views::Base
     span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
       subscription.status.humanize
     end
+  end
+
+  def category_badge_style(category)
+    colour = category.hex_colour || "#000000"
+
+    "background: #{colour}; #{auto_text_color(colour)}"
   end
 end

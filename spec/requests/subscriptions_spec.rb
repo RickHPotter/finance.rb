@@ -86,6 +86,18 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).to include("linkWithConfirmDialog_#{destroyable_subscription.id}")
       expect(response.body).not_to include("delete_subscription_#{locked_subscription.id}")
     end
+
+    it "renders category badges with their category colour" do
+      category.update!(colour: "#123456")
+      subscription = create(:subscription, user:, context: user.main_context)
+      subscription.categories << category
+
+      get subscriptions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("background: #123456")
+      expect(response.body).to include(category.name)
+    end
   end
 
   describe "[ #new ]" do
@@ -305,6 +317,8 @@ RSpec.describe "Subscriptions", type: :request do
       expect(subscription.card_transactions.reload.count).to eq(1)
       expect(subscription.card_transactions.first.date.to_date).to eq(Date.new(2026, 4, 20))
       expect(subscription.card_transactions.first.card_installments.first.price).to eq(-6100)
+      expect(subscription.card_transactions.first.card_installments.first.cash_transaction.price).to eq(-6100)
+      expect(subscription.card_transactions.first.card_installments.first.cash_transaction.cash_installments.first.price).to eq(-6100)
       expect(CardTransaction.exists?(card_transaction.id)).to be_falsey
       expect(subscription.price).to eq(-12_000)
     end

@@ -226,13 +226,19 @@ class CardTransaction < ApplicationRecord
   def sync_subscription_installment
     return if subscription_id.blank? || card_installments_count != 1
 
-    card_installments.first&.update_columns(
+    installment = card_installments.first
+    return if installment.blank?
+
+    attributes = {
       price:,
       starting_price: price,
       date:,
       month:,
       year:
-    )
+    }
+    return if attributes.all? { |attribute, value| installment.public_send(attribute) == value }
+
+    installment.update!(attributes)
   end
 
   def update_month_year
