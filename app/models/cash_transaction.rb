@@ -146,6 +146,29 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     counterpart_shared_return_transaction.present?
   end
 
+  def failed_return?
+    persisted? && categories.pluck(:category_name).include?("FAILED LEND/BORROW RETURN")
+  end
+
+  def return_failure_reportable?
+    (exchange_return? || borrow_return?) && cash_installments.where(paid: false).where.not(price: 0).exists?
+  end
+
+  def report_payment_failure!
+    failed_category = user.built_in_category("FAILED LEND/BORROW RETURN")
+    categories << failed_category unless categories.exists?(failed_category.id)
+    cash_installments.where(paid: false).where.not(price: 0).find_each do |installment|
+      installment.update!(starting_price: installment.price, price: 0)
+    end
+  end
+
+  def clear_failed_return_if_recovered!
+    return unless failed_return?
+    return if cash_installments.where(paid: false, price: 0).exists?
+
+    category_transactions.joins(:category).where(categories: { category_name: "FAILED LEND/BORROW RETURN" }).destroy_all
+  end
+
   def counterpart_shared_return_transaction
     return @counterpart_shared_return_transaction if defined?(@counterpart_shared_return_transaction) && @counterpart_shared_return_transaction.present?
 

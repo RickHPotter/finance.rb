@@ -289,6 +289,90 @@ RSpec.describe "CashInstallments", type: :request do
   end
 
   describe "[ #pay ]" do
+    it "reports failed return payments, zeroes unpaid installments, and restores only paid failed installments" do
+      cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Failed return",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: -3_000,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        cash_installments: [
+          build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, starting_price: -1_000, paid: false),
+          build(:cash_installment, number: 2, date: installment_date + 1.week, month: 3, year: 2026, price: -1_000, starting_price: -1_000, paid: false),
+          build(:cash_installment, number: 3, date: installment_date + 2.weeks, month: 3, year: 2026, price: -1_000, starting_price: -1_000, paid: false)
+        ]
+      )
+
+      patch report_payment_failure_cash_transaction_path(cash_transaction), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(cash_transaction.reload.price).to eq(-3_000)
+      expect(cash_transaction.categories.pluck(:category_name)).to include("FAILED LEND/BORROW RETURN")
+      expect(cash_transaction.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 0, false ], [ 0, false ], [ 0, false ] ])
+      expect(cash_transaction.cash_installments.order(:number).pluck(:starting_price)).to eq([ -1_000, -1_000, -1_000 ])
+      expect(cash_transaction.cash_installments.order(:number).pluck(:balance)).to eq([ 0, 0, 0 ])
+
+      first_installment = cash_transaction.cash_installments.order(:number).first
+      patch pay_cash_installment_path(first_installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 28, 12, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: 0
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(first_installment.reload).to be_paid
+      expect(first_installment.price).to eq(-1_000)
+      expect(cash_transaction.reload.categories.pluck(:category_name)).to include("FAILED LEND/BORROW RETURN")
+      expect(cash_transaction.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -1_000, true ], [ 0, false ], [ 0, false ] ])
+    end
+
+    it "uses each failed installment starting price instead of the transaction total when recovering" do
+      cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Failed partial return",
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: 200,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        cash_installments: [
+          build(:cash_installment, number: 1, date: installment_date, month: 3, year: 2026, price: 100, starting_price: 200, paid: false),
+          build(:cash_installment, number: 2, date: installment_date + 1.week, month: 3, year: 2026, price: 100, starting_price: 200, paid: false)
+        ]
+      )
+
+      patch report_payment_failure_cash_transaction_path(cash_transaction), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(cash_transaction.reload.price).to eq(200)
+      expect(cash_transaction.cash_installments.order(:number).pluck(:price, :starting_price)).to eq([ [ 0, 100 ], [ 0, 100 ] ])
+
+      first_installment = cash_transaction.cash_installments.order(:number).first
+      patch pay_cash_installment_path(first_installment), params: {
+        cash_installment: {
+          date: Time.zone.local(2026, 3, 28, 12, 0, 0).strftime("%Y-%m-%dT%H:%M"),
+          price: 0
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(first_installment.reload.price).to eq(100)
+      expect(cash_transaction.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 100, true ], [ 0, false ] ])
+    end
+
     it "marks the installment as paid and splits the remainder when the paid amount is smaller" do
       cash_transaction = create(
         :cash_transaction,

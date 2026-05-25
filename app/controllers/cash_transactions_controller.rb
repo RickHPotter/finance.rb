@@ -114,6 +114,17 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context)
   end
 
+  def report_payment_failure
+    @cash_transaction = current_context.cash_transactions.includes(:cash_installments, :categories).find(params[:id])
+    return handle_payment_failure_unavailable unless @cash_transaction.return_failure_reportable?
+
+    min_date = failed_return_recalculation_start
+    @cash_transaction.report_payment_failure!
+    recalculate_balances_from(min_date)
+
+    render_payment_failure_success
+  end
+
   def add_to_subscription # rubocop:disable Metrics/AbcSize
     @subscription = current_context.subscriptions.find_by(id: params[:subscription_id])
     return render_bulk_subscription_failure(I18n.t("bulk_actions.invalid_subscription")) if @subscription.blank?
@@ -934,6 +945,40 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
           turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
           turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message })
         ], status: :unprocessable_content
+      end
+    end
+  end
+
+  def handle_payment_failure_unavailable
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: I18n.t("cash_transactions.payment_failure.unavailable") })
+        ], status: :unprocessable_content
+      end
+    end
+  end
+
+  def failed_return_recalculation_start
+    @cash_transaction.cash_installments.where(paid: false).minimum(:date) || @cash_transaction.date
+  end
+
+  def recalculate_balances_from(date)
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: date.year, month: date.month).call
+  end
+
+  def render_payment_failure_success
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("cash_transactions.payment_failure.reported") })
+        ]
       end
     end
   end

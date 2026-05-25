@@ -6,13 +6,11 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
   before_action :set_cash_installment, only: %i[pay]
 
   def pay
-    cash_installment_date  = @cash_installment.date
-    cash_installment_price = @cash_installment.price
-
-    price = cash_installment_price
+    cash_installment_date = @cash_installment.date
+    price = default_payment_price(@cash_installment)
     date  = Time.zone.now
 
-    price = cash_installment_params[:price].to_i            if cash_installment_params[:price].present?
+    price = submitted_payment_price(@cash_installment)      if cash_installment_params[:price].present?
     date  = Time.zone.parse(cash_installment_params[:date]) if cash_installment_params[:date].present?
 
     min_date = [ cash_installment_date, date ].min
@@ -62,15 +60,16 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
   def update_installment(cash_installment, date, price = nil)
     params = { date:, paid: true }
     params.merge!(year: date.year, month: date.month) if cash_installment.date.month != date.month
-    params.merge!(price:) if price
+    params.merge!(price: price || default_payment_price(cash_installment))
 
     cash_installment.update(params)
+    cash_installment.cash_transaction.clear_failed_return_if_recovered! if cash_installment.errors.empty?
     cash_installment
   end
 
   def pay_installment(cash_installment, date:, price:)
     cash_installment_date = cash_installment.date
-    cash_installment_price = cash_installment.price
+    cash_installment_price = payment_comparison_price(cash_installment)
     structure_change = cash_installment_price != price
     should_send_update_notification = structure_change && cash_installment.send(:shared_paid_state_transaction?)
     cash_installment.skip_shared_paid_state_sync = true if should_send_update_notification
@@ -91,6 +90,33 @@ class CashInstallmentsController < ApplicationController # rubocop:disable Metri
     Logic::SharedPaidStateSyncService.new(installment: cash_installment, force_notify: true).call if should_send_update_notification
 
     cash_installment
+  end
+
+  def default_payment_price(cash_installment)
+    return payment_comparison_price(cash_installment) if failed_zeroed_return_installment?(cash_installment)
+
+    cash_installment.price
+  end
+
+  def payment_comparison_price(cash_installment)
+    return recoverable_failed_return_price(cash_installment) if failed_zeroed_return_installment?(cash_installment)
+
+    cash_installment.price
+  end
+
+  def failed_zeroed_return_installment?(cash_installment)
+    cash_installment.price.zero? && cash_installment.cash_transaction.failed_return?
+  end
+
+  def recoverable_failed_return_price(cash_installment)
+    cash_installment.starting_price
+  end
+
+  def submitted_payment_price(cash_installment)
+    submitted_price = cash_installment_params[:price].to_i
+    return default_payment_price(cash_installment) if failed_zeroed_return_installment?(cash_installment) && submitted_price.zero?
+
+    submitted_price
   end
 
   def transfer_multiple

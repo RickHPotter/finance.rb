@@ -46,20 +46,21 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
+      failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(class: "relative") do
         div(
-          class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold
-                  text-sm z-40 #{'animate-pulse' if should_display_link_to_pay}"
+          class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold text-sm z-40 " \
+                 "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}"
         ) do
           from_cent_based_to_float(cash_installment.balance, "R$")
         end
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay}",
+        class: "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}",
         style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
@@ -86,8 +87,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: "whitespace-nowrap", title: from_cent_based_to_float(cash_transaction.price, "R$")) do
-              from_cent_based_to_float(cash_installment.price, "R$")
+            div(class: price_column_class(cash_installment, cash_transaction), title: from_cent_based_to_float(cash_transaction.price, "R$")) do
+              from_cent_based_to_float(display_price(cash_installment, cash_transaction), "R$")
             end
           end
 
@@ -104,6 +105,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
+      failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
       text_style = auto_text_color(categories_for(cash_transaction).first&.hex_colour)
 
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
@@ -113,7 +115,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
           "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
-          ("animate-pulse" if should_display_link_to_pay)
+          ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
         ].compact.join(" "),
         style: text_style,
         draggable: true,
@@ -157,9 +159,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         render_desktop_entities(cash_transaction, avatar_name)
 
-        div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto",
+        div(class: price_column_class(cash_installment, cash_transaction),
             title: from_cent_based_to_float(cash_transaction.price, "R$")) do
-          from_cent_based_to_float(cash_installment.price, "R$")
+          from_cent_based_to_float(display_price(cash_installment, cash_transaction), "R$")
         end
 
         div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
@@ -223,6 +225,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:analyse), cash_transaction_path(cash_transaction))
           action_menu_button(model_attribute(cash_installment, :pay), modal_id: "cashInstallmentModal_#{cash_installment.id}") if payable
+          action_menu_report_payment_failure(cash_transaction) if cash_transaction.return_failure_reportable?
           if cash_transaction.card_payment?
             action_menu_button(model_attribute(cash_installment, :change_date), modal_id: "cashInstallmentModal_#{cash_installment.id}")
           end
@@ -238,6 +241,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             href,
             class: action_menu_item_class,
             data: { turbo_frame: "_top", turbo_prefetch: false, action: "click->ruby-ui--popover#close" }
+  end
+
+  def action_menu_report_payment_failure(cash_transaction)
+    link_to I18n.t("actions.report_payment_failure"),
+            report_payment_failure_cash_transaction_path(cash_transaction, index_context_json: index_context.to_json),
+            class: action_menu_item_class,
+            data: { turbo_method: :patch, turbo_prefetch: false, action: "click->ruby-ui--popover#close" }
   end
 
   def action_menu_button(label, modal_id:)
@@ -273,6 +283,27 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def action_menu_item_class
     "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+  end
+
+  def display_price(cash_installment, cash_transaction)
+    return recoverable_failed_return_price(cash_installment, cash_transaction) if failed_zeroed_return_installment?(cash_installment, cash_transaction)
+
+    cash_installment.price
+  end
+
+  def price_column_class(cash_installment, cash_transaction)
+    [
+      "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto",
+      ("line-through decoration-2 opacity-70" if failed_zeroed_return_installment?(cash_installment, cash_transaction))
+    ].compact.join(" ")
+  end
+
+  def failed_zeroed_return_installment?(cash_installment, cash_transaction)
+    cash_installment.price.zero? && cash_transaction.failed_return?
+  end
+
+  def recoverable_failed_return_price(cash_installment, _cash_transaction)
+    cash_installment.starting_price
   end
 
   def render_mobile_entities(cash_transaction, avatar_name)

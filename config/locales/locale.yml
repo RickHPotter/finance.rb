@@ -77,6 +77,7 @@ en:
     update: "Update"
     destroy: "Destroy"
     merge: "Merge"
+    report_payment_failure: "Report Payment Failure"
     confirm_historical_change: "Confirm Historical Change"
     all: "All"
     alla: "All"
@@ -96,6 +97,10 @@ en:
     finish_chain_without_save: "Finish chain without saving"
     add_to_subscription: "Add to Subscription"
     partial_pay: "Partial Pay"
+  cash_transactions:
+    payment_failure:
+      reported: "Payment failure reported."
+      unavailable: "Payment failure can only be reported for unpaid lend/borrow returns."
   dashboards:
     empty: "Nothing to display yet."
     sections:
@@ -301,6 +306,7 @@ pt-BR:
     update: "Atualizar"
     destroy: "Deletar"
     merge: "Mesclar"
+    report_payment_failure: "Reportar Falha no Pagamento"
     confirm_historical_change: "Confirmar Correção Histórica"
     all: "Todos os"
     alla: "Todas as"
@@ -320,6 +326,10 @@ pt-BR:
     finish_chain_without_save: "Finalizar cadeia sem salvar"
     add_to_subscription: "Adicionar à Assinatura"
     partial_pay: "Pagar Parcial"
+  cash_transactions:
+    payment_failure:
+      reported: "Falha no pagamento reportada."
+      unavailable: "A falha no pagamento só pode ser reportada para retornos de empréstimo pendentes."
   dashboards:
     empty: "Nada para exibir ainda."
     sections:

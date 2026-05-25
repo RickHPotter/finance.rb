@@ -80,6 +80,7 @@ Rails.application.routes.draw do
   resources :cash_transactions do
     member do
       get :duplicate
+      patch :report_payment_failure
     end
 
     collection do
