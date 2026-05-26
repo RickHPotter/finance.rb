@@ -6,7 +6,7 @@ class Budget < ApplicationRecord
   include HasActive
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :recalculate_balance
+  attr_accessor :recalculate_balance, :duplicate
 
   # @relationships ............................................................
   belongs_to :user
@@ -37,6 +37,16 @@ class Budget < ApplicationRecord
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
+  def self.duplicate(id)
+    existing_budget = find(id)
+
+    existing_budget.dup.tap do |budget|
+      budget.duplicate = true
+      budget.budget_categories = existing_budget.budget_categories.map(&:dup)
+      budget.budget_entities = existing_budget.budget_entities.map(&:dup)
+    end
+  end
+
   # @public_instance_methods ..................................................
   def date
     Date.new(year, month).beginning_of_month
@@ -140,9 +150,14 @@ class Budget < ApplicationRecord
     entity_ids = budget_entities.map(&:entity_id)
 
     if inclusive
-      same_budget = current_ref_month_year_budgets.joins(:categories, :entities).where(categories: { id: category_ids }, entities: { id: entity_ids })
-      return if same_budget.empty?
-      return if same_budget.pluck(:id) == [ id ]
+      same_budget_ids = current_ref_month_year_budgets
+                        .joins(:categories, :entities)
+                        .where(categories: { id: category_ids }, entities: { id: entity_ids })
+                        .distinct
+                        .ids
+
+      return if same_budget_ids.empty?
+      return if same_budget_ids == [ id ]
 
       errors.add(:base, I18n.t("activerecord.errors.models.budget.same_budget"))
     else

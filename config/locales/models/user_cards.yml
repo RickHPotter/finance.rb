@@ -16,12 +16,16 @@ en:
         min_spend: Minimun Spend
         credit_limit: Credit Limit
         active: Active
+        status: Status
         user_id: User
         card_id: Card Brand
         count: Count
         spent: Spent
         created_at: Created at
         updated_at: Updated at
+        statuses:
+          active: Active
+          inactive: Inactive
 
 pt-BR:
   activerecord:
@@ -41,9 +45,13 @@ pt-BR:
         min_spend: Gasto Mínimo
         credit_limit: Limite
         active: Ativo
+        status: Status
         user_id: Usuário
         card_id: Cartão
         count: Quantidade
         spent: Gasto
         created_at: Criado em
         updated_at: Atualizado em
+        statuses:
+          active: Ativo
+          inactive: Inativo

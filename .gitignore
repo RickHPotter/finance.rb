@@ -52,3 +52,5 @@ config/credentials.yml.enc
 .env.production
 
 /config/credentials/production.key
+
+.codex

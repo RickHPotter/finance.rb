@@ -24,6 +24,26 @@ class Admin::SettingsController < ApplicationController
     )
   end
 
+  def exchange_return_audit
+    rows = Logic::ExchangeReturnAudit.new(
+      current_user: current_user,
+      current_context: current_context,
+      status_filter: sanitized_exchange_return_status_filter
+    ).call
+
+    render Views::Admin::Settings::ExchangeReturnAudit.new(rows:)
+  end
+
+  def card_exchange_projection_audit
+    rows = Logic::CardExchangeProjectionAudit.new(
+      current_user: current_user,
+      current_context: current_context,
+      status_filter: sanitized_card_projection_status_filter
+    ).call
+
+    render Views::Admin::Settings::CardExchangeProjectionAudit.new(rows:)
+  end
+
   def apply_exchange_audit
     middle_overrides = sanitized_middle_overrides
     receiver_overrides = sanitized_receiver_overrides
@@ -91,6 +111,20 @@ class Admin::SettingsController < ApplicationController
     return if raw_connected_user_id.blank?
 
     raw_connected_user_id.to_i
+  end
+
+  def sanitized_exchange_return_status_filter
+    raw_status_filter = params[:status_filter].to_s
+    return "pending" if raw_status_filter.blank?
+
+    %w[paid pending].include?(raw_status_filter) ? raw_status_filter : "pending"
+  end
+
+  def sanitized_card_projection_status_filter
+    raw_status_filter = params[:status_filter].to_s
+    return "pending" if raw_status_filter.blank?
+
+    %w[paid pending].include?(raw_status_filter) ? raw_status_filter : "pending"
   end
 
   def sanitize_override_hash(raw_overrides)

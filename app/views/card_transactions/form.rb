@@ -28,6 +28,7 @@ class Views::CardTransactions::Form < Views::Base
   end
 
   def which_target_to_autofocus(card_transaction)
+    return :time                 if params[:next_autofocus] == "time"
     return :date                 if card_transaction.duplicate && params[:commit] != "Update"
     return :description          if params[:commit] != "Update"
     return :category_transaction if card_transaction.category_transactions.empty?
@@ -72,8 +73,10 @@ class Views::CardTransactions::Form < Views::Base
           user_card_date:
         )
         render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
-        render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
-        render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
+        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+          render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
+          render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
+        end
         render Views::Transactions::FormActions.new(
           transaction: card_transaction,
           destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction) : nil,
@@ -105,13 +108,13 @@ class Views::CardTransactions::Form < Views::Base
   end
 
   def historical_correction_confirmation_submit_for(transaction, param_key)
-    return unless transaction.historical_correction_confirmation_prompt?
+    return unless transaction.persisted?
 
     {
       field_id: "#{param_key}_historical_correction_confirmation",
       name: "#{param_key}[historical_correction_confirmation]",
-      current_value: true,
-      value: true,
+      value: "1",
+      checked: ActiveModel::Type::Boolean.new.cast(transaction.historical_correction_confirmation),
       label: I18n.t("actions.confirm_historical_change")
     }
   end

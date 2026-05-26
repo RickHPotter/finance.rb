@@ -45,6 +45,7 @@ module HasAdvancePayments
   end
 
   def prevent_locked_advance_cash_transaction_destruction
+    return if context_destroying?
     return unless advance_cash_transaction.present? && advance_cash_transaction.paid_history?
     return if respond_to?(:confirmed_destroy_with_history?, true) && confirmed_destroy_with_history?
 
@@ -63,6 +64,10 @@ module HasAdvancePayments
   #
   def create_advance_cash_transaction
     self.advance_cash_transaction = CashTransaction.create(advance_cash_transaction_params)
+  end
+
+  def context_destroying?
+    respond_to?(:context) && context&.destroying_for_removal?
   end
 
   # @note This is a method that is called before_update.

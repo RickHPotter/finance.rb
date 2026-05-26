@@ -4,6 +4,7 @@ class Entity < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
+  include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -16,14 +17,33 @@ class Entity < ApplicationRecord
 
   # @validations ..............................................................
   validates :entity_name, presence: true, uniqueness: { scope: :user_id }
+  validates :built_in, inclusion: { in: [ true, false ] }
+  validate :prevent_deactivation_when_built_in
 
   # @callbacks ................................................................
+  before_validation :set_built_in
+  before_destroy :prevent_destroy_when_built_in
+
   # @scopes ...................................................................
+  scope :built_in, -> { where(built_in: true) }
   scope :that_are_users, -> { where.not(entity_user_id: nil) }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  def built_in?
+    !!built_in
+  end
+
+  def name
+    return attributes["entity_name"] unless built_in?
+
+    attribute_key = attributes["entity_name"].parameterize(separator: "_")
+    return model_attribute(self, attribute_key).upcase if I18n.exists?("activerecord.attributes.entity.#{attribute_key}")
+
+    attributes["entity_name"]
+  end
+
   def update_card_transactions_count_and_total
     update_columns(card_transactions_count: card_transactions.count, card_transactions_total: card_transactions.sum(:price))
   end
@@ -33,6 +53,27 @@ class Entity < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
+  protected
+
+  def set_built_in
+    self.built_in ||= false
+  end
+
+  def prevent_deactivation_when_built_in
+    return unless built_in?
+    return unless will_save_change_to_active?
+    return if active?
+
+    errors.add(:active, :cannot_deactivate_built_in)
+  end
+
+  def prevent_destroy_when_built_in
+    return unless built_in?
+
+    errors.add(:base, :cannot_destroy_built_in)
+    throw :abort
+  end
+
   # @private_instance_methods .................................................
 end
 
@@ -44,6 +85,7 @@ end
 #  id                      :bigint           not null, primary key
 #  active                  :boolean          default(TRUE), not null
 #  avatar_name             :string           default("people/0.png"), not null
+#  built_in                :boolean          default(FALSE), not null
 #  card_transactions_count :integer          default(0), not null
 #  card_transactions_total :integer          default(0), not null
 #  cash_transactions_count :integer          default(0), not null

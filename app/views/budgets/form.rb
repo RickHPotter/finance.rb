@@ -158,78 +158,42 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           end
         end
 
-        div(class: "flex items-center justify-center gap-2 mb-3 mx-auto") do
-          div(class: "w-full lg:w-1/2 mb-2") do
+        div(class: "mb-3 grid grid-cols-1 gap-2 mx-auto sm:grid-cols-3") do
+          div(class: "w-full mb-2") do
+            bold_label(form, :inclusive)
+            div(class: "mb-3") do
+              form.checkbox :inclusive,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.inclusive,
+                            data: { dynamic_description_target: :inclusive, action: "change->dynamic-description#updateDescription" }
+            end
+          end
+
+          div(class: "w-full mb-2") do
             bold_label(form, :first_installment_only)
             div(class: "mb-3") do
-              form.checkbox :first_installment_only, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.first_installment_only
+              form.checkbox :first_installment_only,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.first_installment_only
             end
           end
 
-          div(class: "w-full lg:w-1/2 mb-2") do
+          div(class: "w-full mb-2") do
             bold_label(form, :active)
             div(class: "mb-3") do
-              form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: budget.new_record? || budget.active
+              form.checkbox :active,
+                            class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                            checked: budget.new_record? || budget.active
             end
           end
         end
 
-        div(id: "categories_nested", class: "flex gap-2 overflow-x-auto pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data_nested_form_target: "template") do
-            form.fields_for :budget_categories, BudgetCategory.new, child_index: "NEW_RECORD" do |budget_category_fields|
-              render CategoryFields.new(form: budget_category_fields)
-            end
-          end
-
-          budget_categories_association = budget.budget_categories.includes(:category) if budget.budget_categories.count > 1
-          form.fields_for :budget_categories, budget_categories_association do |budget_category_fields|
-            render CategoryFields.new(form: budget_category_fields)
-          end
-
-          div(data_nested_form_target: "target")
-
-          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addCategory, action: "nested-form#add" })
+        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+          render Views::Budgets::FormCategoriesSection.new(form:, budget:)
+          render Views::Budgets::FormEntitiesSection.new(form:, budget:)
         end
 
-        div(id: "entities_nested", class: "flex gap-2 overflow-x-auto pb-3",
-            data: { controller: "nested-form", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-          template(data_nested_form_target: "template") do
-            form.fields_for :budget_entities, BudgetEntity.new, child_index: "NEW_RECORD" do |budget_entity_fields|
-              render EntityFields.new(form: budget_entity_fields)
-            end
-          end
-
-          budget_entities_association = budget.budget_entities.includes(:entity) if budget.budget_entities.count > 1
-          form.fields_for :budget_entities, budget_entities_association do |budget_entity_fields|
-            render EntityFields.new(form: budget_entity_fields)
-          end
-
-          div(data_nested_form_target: "target")
-
-          button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addEntity, action: "nested-form#add" })
-        end
-
-        div(class: "grid grid-cols-1 lg:flex items-center justify-center gap-2 mx-auto") do
-          Button(type: :submit, variant: :purple) { action_model(:submit, budget) }
-
-          if budget.persisted?
-            LinkWithConfirmation(
-              id: budget.id,
-              text: action_model(:destroy, budget),
-              link_params: {
-                href: budget_path(budget),
-                id: "delete_budget_#{budget.id}",
-                variant: :destructive,
-                data: { turbo_method: :delete }
-              }
-            )
-
-            card_transactions_sheet
-            cash_transactions_sheet
-            exchange_return_cash_transactions_sheet
-          end
-        end
+        render_actions_row
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
@@ -242,6 +206,48 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     end.to_json
   end
 
+  def render_actions_row
+    if budget.persisted?
+      persisted_actions_row
+    else
+      new_record_actions_row
+    end
+  end
+
+  def persisted_actions_row
+    div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
+
+      Button(
+        link: duplicate_budget_path(budget),
+        class: "min-w-64 #{duplicate_button_class}",
+        data: { turbo_frame: "_top" }
+      ) do
+        action_message(:duplicate)
+      end
+
+      LinkWithConfirmation(
+        id: budget.id,
+        text: action_message(:destroy),
+        link_params: {
+          href: budget_path(budget),
+          id: "delete_budget_#{budget.id}",
+          variant: :outline,
+          class: "min-w-64 #{destroy_button_class}",
+          data: { turbo_method: :delete }
+        }
+      )
+
+      list_menu
+    end
+  end
+
+  def new_record_actions_row
+    div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
+    end
+  end
+
   def entities_json
     current_user.entities.to_h do |c|
       [ c.id, asset_path("avatars/#{c.avatar_name}") ]
@@ -249,10 +255,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def card_transactions_sheet
+    card_transactions_sheet_with_trigger("w-full", action_model(:index, CardTransaction, 2))
+  end
+
+  def card_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, CardTransaction, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -299,10 +309,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def cash_transactions_sheet
+    cash_transactions_sheet_with_trigger("w-full", action_model(:index, CashTransaction, 2))
+  end
+
+  def cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, CashTransaction, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -347,10 +361,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def exchange_return_cash_transactions_sheet
+    exchange_return_cash_transactions_sheet_with_trigger("w-full", action_model(:index, Exchange, 2))
+  end
+
+  def exchange_return_cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "w-full") do
-          action_model(:index, Exchange, 2)
+        Button(type: :button, variant: :ghost, class: trigger_class) do
+          label
         end
       end
 
@@ -415,5 +433,25 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     return [ 0 ] if exchange_return_cash_installments.empty?
 
     exchange_return_cash_installments
+  end
+
+  def list_menu
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+      PopoverTrigger(class: "flex") do
+        Button(type: :button, class: "min-w-64") { "List" }
+      end
+
+      PopoverContent(class: "z-60 opacity-100! min-w-64 p-1") do
+        div(class: "flex flex-col gap-1") do
+          card_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CardTransaction, 2))
+          cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CashTransaction, 2))
+          exchange_return_cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, Exchange, 2))
+        end
+      end
+    end
+  end
+
+  def sheet_menu_item_button_class
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
   end
 end

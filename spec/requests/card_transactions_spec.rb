@@ -71,11 +71,37 @@ RSpec.describe "CardTransactions", type: :request do
       get new_card_transaction_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="datetime-input"')
+      expect(response.body).to include('data-controller="nested-form installment-lock installments-display"')
+      expect(response.body).to include('data-controller="nested-form form-collection-carousel"')
       expect(response.body).to include('id="card_transaction_date"')
       expect(response.body).to include('id="card_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the card-specific form skeleton on edit" do
+      user_card_one
+      existing_card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Existing card transaction",
+        price: -12_345,
+        date: Date.new(2026, 4, 2),
+        month: 4,
+        year: 2026
+      )
+
+      get edit_card_transaction_path(existing_card_transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
+      expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -127,6 +153,24 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-sign="+"')
       expect(response.body).to include("price-range-from-ct-price")
       expect(response.body).to include("price-range-to-price")
+    end
+
+    it "keeps the exchange bound type filter selected when filtering exchange rows" do
+      user_card_one
+
+      get card_transactions_path(
+        user_card_id: user_card_one.id,
+        exchange_bound_type: "card_bound",
+        card_transaction: { category_id: [ exchange_category.id ] }
+      )
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.items.exchange_bound_type", value: I18n.t("filters.exchange_bound_type.card_bound")))
+      expect(response.body).to include('name="exchange_bound_type"')
+      expect(response.body).to include('id="exchange_bound_type"')
+      expect(response.body).to include('form="search_form"')
+      expect(response.body).to include('data-controller="request-submit"')
+      expect(response.body).to include('data-request-submit-form-id-value="search_form"')
     end
 
     it "renders a filter summary with a reset link that keeps the explicit card scope" do
@@ -412,6 +456,22 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_card_transaction.id}"/)
       expect(response.body).to include('name="continue_chain" value="1"')
       expect(response.body).to include("checked")
+    end
+
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post card_transactions_path,
+             params: card_transaction.params.deep_merge(card_transaction: { description: "" }),
+             headers: turbo_stream_headers
+      end.not_to change(CardTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_createda", model: CardTransaction.model_name.human))
+      expect(response.body).to include(CardTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
     it "finishes a chain without saving the current card transaction form" do
@@ -1216,6 +1276,20 @@ RSpec.describe "CardTransactions", type: :request do
       expect(other_subscription.reload.price).to eq(-20_000)
     end
 
+    it "shows generic and detailed failure notifications when update validation fails" do
+      card_transaction.use_base(@existing_card_transaction, card_transaction_options: { description: "" })
+
+      put(card_transaction_path(@existing_card_transaction), params: card_transaction.params, headers: turbo_stream_headers)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updateda", model: CardTransaction.model_name.human))
+      expect(response.body).to include(CardTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
     it "returns unprocessable_entity when a paid-history rewrite is blocked" do
       locked_transaction = create_card_transaction_with_paid_history
       second_installment = locked_transaction.card_installments.find_by!(number: 2)
@@ -1392,6 +1466,34 @@ RSpec.describe "CardTransactions", type: :request do
       expect(movable_transaction.reload.card_installments.first.cash_transaction).to eq(original_cash_transaction)
       expect(movable_transaction.card_installments.first.month).to eq(original_month)
       expect(movable_transaction.card_installments.first.year).to eq(original_year)
+    end
+
+    it "allows changing a future unpaid installment amount when its date resolves to an older paid invoice cycle" do
+      user_card_one.update!(due_date_day: 14, days_until_due_date: 7)
+      transaction = create_card_transaction_with_history(
+        description: "Future amount correction",
+        installments: [
+          { number: 1, price: -1000, date: Time.zone.local(2026, 2, 14, 12), month: 4, year: 2026, paid: true },
+          { number: 2, price: -1000, date: Time.zone.local(2026, 3, 14, 12), month: 5, year: 2026, paid: false },
+          { number: 3, price: -1000, date: Time.zone.local(2026, 4, 14, 12), month: 6, year: 2026, paid: false }
+        ]
+      )
+      paid_invoice = transaction.card_installments.find_by!(number: 1).cash_transaction
+      future_installment = transaction.card_installments.find_by!(number: 2)
+      future_invoice = future_installment.cash_transaction
+      future_invoice.cash_installments.update_all(paid: false)
+      future_invoice.update_column(:paid, false)
+      params = Params::CardTransactions.new
+      params.use_base(transaction, card_transaction_options: { price: -3003 })
+      params.card_installments.detect { |installment| installment[:id] == future_installment.id }[:price] = -1003
+
+      put card_transaction_path(transaction), params: params.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(future_installment.reload.price).to eq(-1003)
+      expect(future_installment.cash_transaction).to eq(future_invoice)
+      expect(future_invoice.reload.paid_history?).to be(false)
+      expect(paid_invoice.reload.paid_history?).to be(true)
     end
 
     it "preserves paid installment state in actionable update messages when standalone mirrored exchanges are restructured" do
@@ -1641,7 +1743,7 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "supports the canonical sort and direction params for month-year rows" do
-      create(
+      alpha = create(
         :card_transaction,
         user:,
         context: user.main_context,
@@ -1650,7 +1752,10 @@ RSpec.describe "CardTransactions", type: :request do
         price: -4_500,
         date: Date.new(2026, 3, 1),
         month: 3,
-        year: 2026
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 3, 1), month: 3, year: 2026, price: -4_500)
+        ]
       )
       create(
         :card_transaction,
@@ -1661,12 +1766,18 @@ RSpec.describe "CardTransactions", type: :request do
         price: -4_500,
         date: Date.new(2026, 3, 2),
         month: 3,
-        year: 2026
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 3, 2), month: 3, year: 2026, price: -4_500)
+        ]
       )
+
+      first_installment = alpha.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
 
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         sort: "description",
         direction: "asc",
         card_transaction: { user_card_id: user_card_one.id }
@@ -1677,7 +1788,7 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "keeps the month-year response free of duplicated sort controls" do
-      create(
+      transaction = create(
         :card_transaction,
         user:,
         context: user.main_context,
@@ -1689,9 +1800,12 @@ RSpec.describe "CardTransactions", type: :request do
         year: 2026
       )
 
+      first_installment = transaction.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
+
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         sort: "installment_date",
         direction: "asc",
         card_transaction: { user_card_id: user_card_one.id }
@@ -1705,14 +1819,14 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "keeps supporting legacy order_by while the new sort contract is rolling out" do
-      create(
+      late = create(
         :card_transaction,
         user:,
         context: user.main_context,
         user_card: user_card_one,
         description: "Late transaction",
         price: -2_500,
-        date: Date.new(2026, 3, 3),
+        date: Date.new(2026, 3, 7),
         month: 3,
         year: 2026
       )
@@ -1723,20 +1837,190 @@ RSpec.describe "CardTransactions", type: :request do
         user_card: user_card_one,
         description: "Early transaction",
         price: -2_500,
-        date: Date.new(2026, 3, 2),
+        date: Date.new(2026, 3, 6),
         month: 3,
         year: 2026
       )
 
+      first_installment = late.card_installments.first
+      month_year = format("%<year>04d%<month>02d", year: first_installment.year, month: first_installment.month)
+
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
-        month_year: "202603",
+        month_year:,
         order_by: "transaction_date",
         card_transaction: { user_card_id: user_card_one.id }
       }
 
       expect(response).to have_http_status(:ok)
       expect(response.body.index("Early transaction")).to be < response.body.index("Late transaction")
+    end
+
+    it "renders Analyse links while keeping description links pointed at edit" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Analysable card row",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+        ]
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202604",
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(card_transaction_path(transaction))
+      expect(response.body).to include(edit_card_transaction_path(transaction))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_card_transaction_#{transaction.id}")
+
+      expect(description_link["href"]).to eq(edit_card_transaction_path(transaction))
+    end
+
+    it "filters exchange rows by bound type" do
+      card_bound_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card-bound exchange row",
+        date: Date.new(2026, 3, 10),
+        month: 4,
+        year: 2026,
+        price: -2_000,
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [],
+        card_installments: [ build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026, price: -2_000) ]
+      )
+      payer_card_bound = create(
+        :entity_transaction,
+        transactable: card_bound_transaction,
+        entity: entity_one,
+        is_payer: true,
+        price: -2_000,
+        price_to_be_returned: -2_000
+      )
+      create(
+        :exchange,
+        entity_transaction: payer_card_bound,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+
+      standalone_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Standalone exchange row",
+        date: Date.new(2026, 3, 11),
+        month: 4,
+        year: 2026,
+        price: -2_500,
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [],
+        card_installments: [ build(:card_installment, number: 1, date: Date.new(2026, 4, 11), month: 4, year: 2026, price: -2_500) ]
+      )
+      payer_standalone = create(
+        :entity_transaction,
+        transactable: standalone_transaction,
+        entity: entity_two,
+        is_payer: true,
+        price: -2_500,
+        price_to_be_returned: -2_500
+      )
+      create(
+        :exchange,
+        entity_transaction: payer_standalone,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_500,
+        date: Date.new(2026, 4, 11),
+        month: 4,
+        year: 2026
+      )
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year: "202604",
+        exchange_bound_type: "card_bound",
+        card_transaction: {
+          user_card_id: user_card_one.id,
+          category_id: [ exchange_category.id ]
+        }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Card-bound exchange row")
+      expect(response.body).not_to include("Standalone exchange row")
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard with installments, allocations, invoices, links, and actions" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        subscription:,
+        description: "Card dashboard details",
+        comment: "Dashboard card comment",
+        price: -12_000,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026, price: -6_000, paid: true),
+          build(:card_installment, number: 2, date: Date.new(2026, 5, 10), month: 5, year: 2026, price: -6_000, paid: false)
+        ],
+        category_transactions: [ build(:category_transaction, category: exchange_category, transactable: nil) ],
+        entity_transactions: [
+          build(
+            :entity_transaction,
+            entity: entity_one,
+            transactable: nil,
+            price: -12_000,
+            price_to_be_returned: -12_000,
+            exchanges: [
+              build(:exchange, price: -12_000, exchange_type: :monetary, date: Date.new(2026, 4, 10), month: 4, year: 2026)
+            ]
+          )
+        ]
+      )
+
+      get card_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Card dashboard details")
+      expect(response.body).to include("Dashboard card comment")
+      expect(response.body).to include("Installments and Invoices")
+      expect(response.body).not_to include(I18n.t("dashboards.sections.allocations"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.exchanges"))
+      expect(response.body).to include(I18n.t("dashboards.status.partial"))
+      expect(response.body).to include(exchange_category.name)
+      expect(response.body).to include(entity_one.entity_name)
+      expect(response.body).to include(subscription.description)
+      expect(response.body).to include(edit_card_transaction_path(transaction))
+      expect(response.body).to include(duplicate_card_transaction_path(transaction))
+      expect(response.body).to include("border-orange-500")
+      expect(response.body).to include(cash_transaction_path(transaction.card_installments.first.cash_transaction))
+      expect(response.body).to include("user_card_id")
+      expect(response.body).to include(user_card_one.id.to_s)
     end
   end
 
@@ -1918,6 +2202,9 @@ RSpec.describe "CardTransactions", type: :request do
 
       switch_to_context!(derived_context)
 
+      get card_transaction_path(main_card_transaction)
+      expect(response).to have_http_status(:not_found)
+
       get edit_card_transaction_path(main_card_transaction)
       expect(response).to have_http_status(:not_found)
 
@@ -1973,7 +2260,9 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect(advanced_card_transaction.categories.pluck(:category_name)).to include("CARD ADVANCE")
       expect(advanced_card_transaction.price).to eq(200)
+      expect(advanced_card_transaction.description).to eq(advanced_card_transaction.card_advance_description)
       expect(advanced_card_transaction.advance_cash_transaction).to be_present
+      expect(advanced_card_transaction.advance_cash_transaction.description).to eq(advanced_card_transaction.card_advance_description)
       expect(advanced_card_transaction.advance_cash_transaction.price).to eq(-200)
     end
 

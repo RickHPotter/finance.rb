@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Context < ApplicationRecord
+  attr_reader :destroying_for_removal
+
   belongs_to :user
   belongs_to :source_context, class_name: "Context", optional: true
 
@@ -18,6 +20,7 @@ class Context < ApplicationRecord
   validates :main, inclusion: { in: [ true, false ] }
 
   before_validation :assign_scenario_key
+  before_destroy :mark_destroying_for_removal, prepend: true
 
   scope :main, -> { where(main: true) }
   scope :derived, -> { where(main: false) }
@@ -32,7 +35,19 @@ class Context < ApplicationRecord
     archived_at.present?
   end
 
+  def removable?
+    derived? && archived? && derived_contexts.none?
+  end
+
+  def destroying_for_removal?
+    destroying_for_removal
+  end
+
   private
+
+  def mark_destroying_for_removal
+    @destroying_for_removal = true
+  end
 
   def assign_scenario_key
     if main?

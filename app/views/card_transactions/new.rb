@@ -9,9 +9,11 @@ class Views::CardTransactions::New < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "bg-white p-4 shadow-md rounded-lg") do
-        span(class: badge_class) { badge_text }
-
+      render Views::Shared::FormShell.new(
+        badge_text:,
+        badge_class:,
+        skeleton_view: Views::CardTransactions::FormSubmissionSkeleton
+      ) do
         render Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction, chain_context: @chain_context)
       end
     end
@@ -30,10 +32,8 @@ class Views::CardTransactions::New < Views::Base
   end
 
   def badge_class
-    base = "rounded-sm border border-1 px-3 shadow-md"
-    return "#{base} border-orange-400 bg-orange-200" if @card_transaction.duplicate
-    return "#{base} border-cyan-500 bg-cyan-200" if @chain_context&.dig(:record_ids)&.any?
+    return form_badge_class(:duplicate) if @card_transaction.duplicate
 
-    "#{base} border-sky-400 bg-sky-200"
+    form_badge_class(:new)
   end
 end

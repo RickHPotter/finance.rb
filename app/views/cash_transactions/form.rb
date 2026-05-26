@@ -61,8 +61,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           entities: @entities
         )
         render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
-        render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+          render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
+          render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
+        end
 
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
@@ -116,13 +118,13 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def historical_correction_confirmation_submit_for(transaction, param_key)
-    return unless transaction.historical_correction_confirmation_prompt?
+    return unless transaction.persisted?
 
     {
       field_id: "#{param_key}_historical_correction_confirmation",
       name: "#{param_key}[historical_correction_confirmation]",
-      current_value: true,
-      value: true,
+      value: "1",
+      checked: ActiveModel::Type::Boolean.new.cast(transaction.historical_correction_confirmation),
       label: I18n.t("actions.confirm_historical_change")
     }
   end

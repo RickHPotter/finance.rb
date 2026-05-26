@@ -87,11 +87,10 @@ module Components
             data: action_data
           ) do
             span { action[:label] }
-            span(class: "text-xs") { "v" }
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 min-w-44 p-1") do
+        PopoverContent(class: "z-50 opacity-100! min-w-44 p-1") do
           div(class: "flex flex-col gap-1") do
             action[:menu_items].each do |item|
               button(

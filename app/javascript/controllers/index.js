@@ -4,17 +4,17 @@
 
 import { application } from "./application"
 
-import AutosaveController from "./autosave_controller"
-application.register("autosave", AutosaveController)
-
 import AutofocusController from "./autofocus_controller"
 application.register("autofocus", AutofocusController)
 
-import BlinkingPlaceholderController from "./blinking_placeholder_controller"
-application.register("blinking-placeholder", BlinkingPlaceholderController)
+import AutosaveController from "./autosave_controller"
+application.register("autosave", AutosaveController)
 
 import BalancesMobileController from "./balances_mobile_controller"
 application.register("balances-mobile", BalancesMobileController)
+
+import BlinkingPlaceholderController from "./blinking_placeholder_controller"
+application.register("blinking-placeholder", BlinkingPlaceholderController)
 
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
@@ -52,17 +52,32 @@ application.register("exchange", ExchangeController)
 import ExchangeLockController from "./exchange_lock_controller"
 application.register("exchange-lock", ExchangeLockController)
 
+import ExchangeStateSheetController from "./exchange_state_sheet_controller"
+application.register("exchange-state-sheet", ExchangeStateSheetController)
+
+import FormCollectionCarouselController from "./form_collection_carousel_controller"
+application.register("form-collection-carousel", FormCollectionCarouselController)
+
+import FormLoadingController from "./form_loading_controller"
+application.register("form-loading", FormLoadingController)
+
 import HistoryNavController from "./history_nav_controller"
 application.register("history-nav", HistoryNavController)
 
 import IconPickerController from "./icon_picker_controller"
 application.register("icon-picker", IconPickerController)
 
+import InputSelectController from "./input_select_controller"
+application.register("input-select", InputSelectController)
+
 import InstallmentLockController from "./installment_lock_controller"
 application.register("installment-lock", InstallmentLockController)
 
-import InputSelectController from "./input_select_controller"
-application.register("input-select", InputSelectController)
+import InstallmentsDisplayController from "./installments_display_controller"
+application.register("installments-display", InstallmentsDisplayController)
+
+import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
+application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
 
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
@@ -88,6 +103,9 @@ application.register("notification", NotificationController)
 import PartialPayMultipleController from "./partial_pay_multiple_controller"
 application.register("partial-pay-multiple", PartialPayMultipleController)
 
+import PieBreakdownChartController from "./pie_breakdown_chart_controller"
+application.register("pie-breakdown-chart", PieBreakdownChartController)
+
 import PriceMaskController from "./price_mask_controller"
 application.register("price-mask", PriceMaskController)
 
@@ -103,11 +121,20 @@ application.register("pwa-installation", PwaInstallationController)
 import ReactiveFormController from "./reactive_form_controller"
 application.register("reactive-form", ReactiveFormController)
 
+import ReferenceYearCarouselController from "./reference_year_carousel_controller"
+application.register("reference-year-carousel", ReferenceYearCarouselController)
+
+import RequestSubmitController from "./request_submit_controller"
+application.register("request-submit", RequestSubmitController)
+
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)
 
 import RubyUi__CalendarInputController from "./ruby_ui/calendar_input_controller"
 application.register("ruby-ui--calendar-input", RubyUi__CalendarInputController)
+
+import RubyUi__CarouselController from "./ruby_ui/carousel_controller"
+application.register("ruby-ui--carousel", RubyUi__CarouselController)
 
 import RubyUi__ComboboxController from "./ruby_ui/combobox_controller"
 application.register("ruby-ui--combobox", RubyUi__ComboboxController)
@@ -121,8 +148,14 @@ application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
 import RubyUi__SheetController from "./ruby_ui/sheet_controller"
 application.register("ruby-ui--sheet", RubyUi__SheetController)
 
+import RubyUi__TimePickerController from "./ruby_ui/time_picker_controller"
+application.register("ruby-ui--time-picker", RubyUi__TimePickerController)
+
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
+
+import ShowSectionCardController from "./show_section_card_controller"
+application.register("show-section-card", ShowSectionCardController)
 
 import SubscriptionTransactionsController from "./subscription_transactions_controller"
 application.register("subscription-transactions", SubscriptionTransactionsController)

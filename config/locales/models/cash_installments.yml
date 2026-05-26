@@ -19,6 +19,7 @@ en:
         self: Cash Installment
         count: Count
         id: ID
+        number: Number
         date: Date
         reference: Reference
         price: Price
@@ -62,6 +63,7 @@ pt-BR:
         self: Parcela
         count: Quantidade
         id: ID
+        number: Número
         date: Data
         reference: Referência
         price: Preço

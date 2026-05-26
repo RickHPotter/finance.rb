@@ -73,6 +73,31 @@ RSpec.describe "Subscriptions", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders destroy action only for subscriptions without linked transactions" do
+      destroyable_subscription = create(:subscription, user:, context: user.main_context)
+      locked_subscription = create(:subscription, user:, context: user.main_context)
+      create(:cash_transaction, user:, user_bank_account:, subscription: locked_subscription)
+
+      get subscriptions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("delete_subscription_#{destroyable_subscription.id}")
+      expect(response.body).to include("linkWithConfirmDialog_#{destroyable_subscription.id}")
+      expect(response.body).not_to include("delete_subscription_#{locked_subscription.id}")
+    end
+
+    it "renders category badges with their category colour" do
+      category.update!(colour: "#123456")
+      subscription = create(:subscription, user:, context: user.main_context)
+      subscription.categories << category
+
+      get subscriptions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("background: #123456")
+      expect(response.body).to include(category.name)
+    end
   end
 
   describe "[ #new ]" do
@@ -80,6 +105,8 @@ RSpec.describe "Subscriptions", type: :request do
       get new_subscription_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="subscription_form_submission_skeleton"')
       expect(response.body).to include("ruby-ui--combobox")
       expect(response.body).not_to include("hw-combobox")
     end
@@ -290,6 +317,8 @@ RSpec.describe "Subscriptions", type: :request do
       expect(subscription.card_transactions.reload.count).to eq(1)
       expect(subscription.card_transactions.first.date.to_date).to eq(Date.new(2026, 4, 20))
       expect(subscription.card_transactions.first.card_installments.first.price).to eq(-6100)
+      expect(subscription.card_transactions.first.card_installments.first.cash_transaction.price).to eq(-6100)
+      expect(subscription.card_transactions.first.card_installments.first.cash_transaction.cash_installments.first.price).to eq(-6100)
       expect(CardTransaction.exists?(card_transaction.id)).to be_falsey
       expect(subscription.price).to eq(-12_000)
     end
@@ -315,12 +344,90 @@ RSpec.describe "Subscriptions", type: :request do
       }, headers: turbo_stream_headers
 
       expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Subscription.model_name.human))
       expect(response.body).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
       expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.cash_transaction"))
       expect(response.body).to include('data-notification-sticky-value="true"')
       expect(subscription.reload.description).to eq("Netflix")
       expect(locked_transaction.reload.price).to eq(-4_900)
       expect(locked_transaction.cash_installments.first.price).to eq(-2_450)
+    end
+
+    it "updates subscription metadata on unchanged paid-history linked transactions without rewriting paid history" do
+      subscription = create(:subscription, user:, description: "Netflix", comment: "Family plan", status: :active)
+      subscription.categories << category
+      subscription.entities << entity
+      locked_transaction = create_subscription_cash_transaction_with_paid_history(subscription:)
+
+      patch subscription_path(subscription), params: {
+        subscription: {
+          description: "Netflix Premium",
+          comment: "Shared subscription note",
+          status: :active,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => {
+              id: locked_transaction.id,
+              date: locked_transaction.date,
+              price: locked_transaction.price,
+              user_bank_account_id: user_bank_account.id
+            }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(subscription.reload.description).to eq("Netflix Premium")
+      expect(subscription.comment).to eq("Shared subscription note")
+      expect(locked_transaction.reload.description).to eq("Netflix Premium")
+      expect(locked_transaction.comment).to eq("Family plan\nNetflix")
+      expect(locked_transaction.price).to eq(-4_900)
+      expect(locked_transaction.cash_installments.first.price).to eq(-2_450)
+    end
+
+    it "updates a subscription with linked cash transactions that have no account" do
+      subscription = create(:subscription, user:, description: "Bill", comment: "Family plan", status: :active)
+      subscription.categories << category
+      subscription.entities << entity
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: nil,
+        subscription:,
+        description: subscription.description,
+        comment: subscription.comment,
+        date: Date.new(2026, 3, 14),
+        price: -4_900
+      )
+
+      patch subscription_path(subscription), params: {
+        subscription: {
+          description: "Bill updated",
+          comment: "Updated note",
+          status: :active,
+          user_id: user.id,
+          category_id: category.id,
+          entity_id: entity.id,
+          cash_transactions_attributes: {
+            "0" => {
+              id: transaction.id,
+              date: transaction.date,
+              price: transaction.price,
+              user_bank_account_id: nil
+            }
+          }
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(subscription.reload.description).to eq("Bill updated")
+      expect(subscription.comment).to eq("Updated note")
+      expect(transaction.reload.description).to eq("Bill updated")
+      expect(transaction.comment).to eq("Family plan\nBill")
+      expect(transaction.user_bank_account_id).to be_nil
     end
 
     it "returns unprocessable_content when a linked paid-history card transaction would be rewritten" do
@@ -344,6 +451,7 @@ RSpec.describe "Subscriptions", type: :request do
       }, headers: turbo_stream_headers
 
       expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Subscription.model_name.human))
       expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.paid_history_locked"))
       expect(response.body).to include(I18n.t("notification.history_workarounds.paid_history_locked.card_transaction"))
       expect(subscription.reload.description).to eq("Netflix")

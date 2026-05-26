@@ -20,6 +20,7 @@ module IndexState
       to_installments_number
       from_date
       to_date
+      exchange_bound_type
     ].freeze
     SEARCH_FILTER_KEYS = [
       :search_term,
@@ -27,6 +28,7 @@ module IndexState
       :paid,
       :pending,
       :paid_state,
+      :exchange_bound_type,
       :skip_budgets,
       :force_mobile,
       :sort,
@@ -108,7 +110,7 @@ module IndexState
         pending: source_context[:pending]
       )
 
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :skip_budgets).merge(
+      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets).merge(
         compact_filter_context,
         user_card: nil,
         **paid_filters,
@@ -220,7 +222,7 @@ module IndexState
         pending: source_context[:pending]
       )
 
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :skip_budgets, :force_mobile).merge(
+      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type, :skip_budgets, :force_mobile).merge(
         **paid_filters,
         sort: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).first,
         direction: self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction]).last

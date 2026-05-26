@@ -68,7 +68,7 @@ class Views::Lalas::CardTransactions::MonthYear < Views::Base
           mobile:
         )
 
-        div(class: "bg-white rounded-lg border-1 border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-11",
             rows: [

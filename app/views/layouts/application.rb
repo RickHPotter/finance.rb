@@ -8,11 +8,13 @@ class Views::Layouts::Application < Views::Base
   register_output_helper :javascript_tag
 
   def view_template(&)
+    tab_title = Rails.env.production? ? I18n.t("pages.title") : "#{I18n.t('pages.title')} - #{Rails.env.first(3).upcase}"
+
     doctype
 
     html do
       head do
-        title { I18n.t("pages.title") }
+        title { tab_title }
         meta name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
         meta name: "theme-color", content: theme_colour
         meta name: "mobile-web-app-capable", content: "yes"
@@ -32,8 +34,10 @@ class Views::Layouts::Application < Views::Base
       end
 
       body(class: body_class, data: { controller: ( "letitsnow" if rails_view_context&.current_context&.derived?) }) do
-        ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-[1420px] mx-auto w-full") do
-          turbo_frame_tag :notification do
+        ShellContainer(tag: :main, class: "flex flex-1 flex-col antialiased max-w-auto max-w-355 mx-auto w-full") do
+          turbo_frame_tag :notification,
+                          class: "fixed inset-x-0 bottom-0 z-50 flex flex-col gap-3 px-4 py-6 pointer-events-none
+                                  sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-0 sm:w-full sm:max-w-md sm:items-end sm:p-6 sm:pt-16".squish do
             render partial "shared/flash"
           end
 
@@ -45,7 +49,7 @@ class Views::Layouts::Application < Views::Base
                 end
               end
 
-              PageCard(class: "mx-1 flex min-h-0 flex-1 flex-col break-words rounded-lg bg-white shadow-md shadow-red-50") do
+              PageCard(class: "mx-1 flex min-h-0 flex-1 flex-col wrap-break-words rounded-lg bg-white shadow-md shadow-red-50") do
                 div class: "flex min-h-0 flex-1 flex-col p-1 md:p-2 lg:p-3" do
                   div class: "hidden xl:block", data: { controller: "history-nav" } do
                     FloatingNavButton(side: :left, title: "Back", target: :back, action: "click->history-nav#back") do
@@ -112,7 +116,7 @@ class Views::Layouts::Application < Views::Base
     current_user_is_rikki = rails_view_context&.current_user&.email == "luisfla55@gmail.com"
 
     if homolog?
-      base_class << "bg-gradient-to-r"
+      base_class << "bg-linear-to-r"
 
       base_class << if current_user_is_rikki
                       "from-red-700 via-zinc-950 to-zinc-950"

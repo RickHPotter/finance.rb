@@ -40,11 +40,36 @@ RSpec.describe "CashTransactions", type: :request do
       get new_cash_transaction_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="datetime-input"')
+      expect(response.body).to include('data-controller="nested-form installment-lock installments-display"')
+      expect(response.body).to include('data-controller="nested-form form-collection-carousel"')
       expect(response.body).to include('id="cash_transaction_date"')
       expect(response.body).to include('id="cash_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+    end
+
+    it "renders the cash-specific form skeleton on edit" do
+      existing_cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Existing cash transaction",
+        price: 12_345,
+        date: Date.new(2026, 4, 2),
+        month: 4,
+        year: 2026
+      )
+
+      get edit_cash_transaction_path(existing_cash_transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
+      expect(response.body).to include('name="cash_transaction[historical_correction_confirmation]"')
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -119,6 +144,43 @@ RSpec.describe "CashTransactions", type: :request do
       expect(paid_state_chip.text).to end_with("x")
     end
 
+    it "keeps the exchange bound type filter selected for exchange return filters" do
+      get cash_transactions_path, params: {
+        exchange_bound_type: "card_bound",
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("filters.summary.items.exchange_bound_type", value: I18n.t("filters.exchange_bound_type.card_bound")))
+      expect(response.body).to include('name="exchange_bound_type"')
+      expect(response.body).to include('id="exchange_bound_type"')
+      expect(response.body).to include('form="search_form"')
+      expect(response.body).to include('data-controller="request-submit"')
+      expect(response.body).to include('data-request-submit-form-id-value="search_form"')
+    end
+
+    it "shows the exchange bound type filter for exchange return and not for exchange" do
+      get cash_transactions_path, params: {
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('id="exchange_bound_type"')
+
+      get cash_transactions_path, params: {
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('id="exchange_bound_type"')
+    end
+
     it "does not cap the transfer bulk action date" do
       get cash_transactions_path
 
@@ -145,6 +207,83 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(pay_multiple_date["data-controller"]).to include("autofocus")
       expect(transfer_reference["data-controller"]).to include("autofocus")
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard with installments, exchanges, links, and actions" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription:,
+        description: "Cash dashboard details",
+        comment: "Dashboard comment",
+        price: 12_000,
+        date: Date.new(2026, 4, 15),
+        month: 4,
+        year: 2026,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 4, 15), month: 4, year: 2026, price: 6_000, balance: 6_000, paid: true),
+          build(:cash_installment, number: 2, date: Date.new(2026, 5, 15), month: 5, year: 2026, price: 6_000, balance: 12_000, paid: false)
+        ]
+      )
+      create(:category_transaction, transactable: transaction, category:)
+      entity_transaction = create(:entity_transaction, transactable: transaction, entity:, price: 0, price_to_be_returned: 6_000, is_payer: true)
+      create(:exchange, entity_transaction:, cash_transaction: transaction, number: 1, date: Date.new(2026, 4, 15), month: 4, year: 2026, price: 6_000,
+                        bound_type: :standalone)
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Cash dashboard details")
+      expect(response.body).to include("Dashboard comment")
+      expect(response.body).to include(I18n.t("dashboards.sections.installments"))
+      expect(response.body).to include(I18n.t("dashboards.sections.summary"))
+      expect(response.body).to include(I18n.t("dashboards.card_transactions.exchanges"))
+      expect(response.body).to include(I18n.t("dashboards.status.partial"))
+      expect(response.body).to include(category.name)
+      expect(response.body).to include(entity.entity_name)
+      expect(response.body).to include(subscription.description)
+      expect(response.body).to include(edit_cash_transaction_path(transaction))
+      expect(response.body).to include(duplicate_cash_transaction_path(transaction))
+      expect(response.body).to include("border-orange-500")
+      expect(response.body).to include("cashInstallmentModal_#{transaction.cash_installments.second.id}")
+      expect(response.body).to include(user_bank_account.user_bank_account_name)
+    end
+
+    it "does not render broken reference links to transactions outside the current context" do
+      foreign_user = create(:user, :random)
+      foreign_bank = create(:bank, :random)
+      foreign_account = create(:user_bank_account, :random, user: foreign_user, bank: foreign_bank)
+      foreign_transaction = create(
+        :cash_transaction,
+        user: foreign_user,
+        context: foreign_user.main_context,
+        user_bank_account: foreign_account,
+        description: "Foreign reference transaction",
+        price: -8_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026
+      )
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Local borrow return",
+        price: 8_000,
+        date: Date.new(2026, 4, 11),
+        month: 4,
+        year: 2026,
+        reference_transactable: foreign_transaction
+      )
+
+      get cash_transaction_path(transaction)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include(cash_transaction_path(foreign_transaction))
     end
   end
 
@@ -213,7 +352,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "merges subscription categories and entities into a paid-history cash transaction" do
       leisure = create(:category, user:, category_name: "LEISURE")
       nous = create(:entity, user:, entity_name: "NOUS")
-      moi = create(:entity, user:, entity_name: "MOI")
+      moi = user.built_in_entity
       subscription = create(:subscription, user:, description: "Club", comment: "Shared")
       subscription.categories << leisure
       subscription.entities << nous
@@ -238,7 +377,39 @@ RSpec.describe "CashTransactions", type: :request do
       expect(transaction.categories.pluck(:category_name)).to contain_exactly("LEISURE", "SUBSCRIPTION")
       expect(transaction.entities.pluck(:entity_name)).to contain_exactly("MOI", "NOUS")
       expect(transaction.description).to eq("Club")
-      expect(transaction.comment).to eq("Shared")
+      expect(transaction.comment).to eq("Barbecue at Aunt's\nCinema")
+    end
+
+    it "keeps the installment reference month when attaching a cash transaction with stale parent month data" do
+      subscription = create(:subscription, user:, description: "Reference-safe subscription")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "April installment",
+        price: 8_000,
+        date: Time.zone.local(2026, 4, 12),
+        month: 12,
+        year: 2026
+      )
+      installment = transaction.cash_installments.first
+      installment.update_columns(
+        date: Time.zone.local(2026, 4, 12, 14, 59),
+        month: 4,
+        year: 2026
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+      expect(installment.reload.attributes.values_at("month", "year", "date")).to eq([ 4, 2026, Time.zone.local(2026, 4, 12, 14, 59) ])
     end
   end
 
@@ -463,6 +634,68 @@ RSpec.describe "CashTransactions", type: :request do
       expect(created_cash_transaction.categories).to include(category)
       expect(created_cash_transaction.entities).to include(entity)
       expect(subscription.reload.price).to eq(20_000)
+    end
+
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post cash_transactions_path,
+             params: cash_transaction.params.deep_merge(cash_transaction: { description: "" }),
+             headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_createda", model: CashTransaction.model_name.human))
+      expect(response.body).to include(CashTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
+    it "ignores submitted exchanges_count and persists the real exchange counter cache" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      receiver = create(:user, :random)
+      receiver_entity = create(:entity, user:, entity_name: "RECEIVER", entity_user: receiver)
+      create(:entity, user: receiver, entity_name: "ME", entity_user: user)
+
+      post cash_transactions_path, params: {
+        cash_transaction: {
+          description: "Duplicated exchange cash transaction",
+          price: 2_000,
+          date: Date.new(2026, 4, 27),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          category_transactions_attributes: [
+            { category_id: exchange_category.id }
+          ],
+          cash_installments_attributes: [
+            { number: 1, date: Date.new(2026, 4, 27), month: 4, year: 2026, price: 2_000, paid: false }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: receiver_entity.id,
+              is_payer: true,
+              price: -2_000,
+              price_to_be_returned: -2_000,
+              exchanges_count: 1,
+              exchanges_attributes: [
+                { number: 1, exchange_type: "monetary", bound_type: "standalone", price: -2_000, date: Date.new(2026, 4, 28), month: 4, year: 2026 }
+              ]
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:success)
+
+      created_cash_transaction = user.cash_transactions.where(description: "Duplicated exchange cash transaction",
+                                                              user_bank_account_id: user_bank_account.id).order(:id).last
+      entity_transaction = created_cash_transaction.entity_transactions.find_by!(entity_id: receiver_entity.id)
+
+      expect(entity_transaction.exchanges.count).to eq(1)
+      expect(entity_transaction.exchanges_count).to eq(1)
     end
 
     it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
@@ -1069,6 +1302,20 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
       expect(response.body).not_to include(I18n.t("notification.not_updateda", model: CashTransaction.model_name.human))
       expect(@existing_cash_transaction.reload.description).to eq(original_description)
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      cash_transaction.use_base(@existing_cash_transaction, cash_transaction_options: { description: "" })
+
+      put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("notification.not_updateda", model: CashTransaction.model_name.human))
+      expect(response.body).to include(CashTransaction.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
     it "marks the source message as applied when updating from a message" do
@@ -2037,6 +2284,9 @@ RSpec.describe "CashTransactions", type: :request do
       ).call
 
       switch_to_context!(derived_context)
+
+      get cash_transaction_path(main_cash_transaction)
+      expect(response).to have_http_status(:not_found)
 
       get edit_cash_transaction_path(main_cash_transaction)
       expect(response).to have_http_status(:not_found)
@@ -3346,6 +3596,75 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
     end
 
+    it "renders row actions in the menu while keeping description links pointed at edit" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Analysable cash row",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      installment = transaction.cash_installments.first
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(cash_transaction_path(transaction))
+      expect(response.body).to include(edit_cash_transaction_path(transaction))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(duplicate_cash_transaction_path(transaction))
+      expect(response.body).to include("delete_cash_transaction_#{transaction.id}")
+      expect(response.body).to include("linkWithConfirmDialog_cash_transaction_menu_destroy_#{transaction.id}")
+      expect(response.body).not_to include("data-turbo-confirm")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_cash_transaction_#{transaction.id}")
+      description_column = description_link.parent
+      action_button = document.at_css("#cash_installment_actions_#{installment.id}")
+      pay_action = document.at_css("button[data-modal-toggle='cashInstallmentModal_#{installment.id}']")
+
+      expect(description_link["href"]).to eq(edit_cash_transaction_path(transaction))
+      expect(description_column["class"]).to include("col-span-4")
+      expect(description_column.text).not_to include(I18n.t("actions.analyse"))
+      expect(action_button).to be_present
+      expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
+    end
+
+    it "does not render row-menu destroy for investment-derived cash rows" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Investment",
+        description: "Investment cash row",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: true)
+        ]
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(cash_transaction_path(transaction))
+      expect(response.body).not_to include("delete_cash_transaction_#{transaction.id}")
+    end
+
     it "renders the pay modal with autofocus on the payment date input" do
       transaction = create(
         :cash_transaction,
@@ -3497,6 +3816,112 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include("edit_cash_transaction_#{pending_transaction.id}")
       expect(response.body).not_to include("edit_cash_transaction_#{paid_transaction.id}")
+    end
+
+    it "filters exchange return cash rows by exchange bound type" do
+      card_bound_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:, card: create(:card, :random, bank: bank)),
+        description: "Card-bound mirrored return source",
+        date: Date.new(2026, 3, 20),
+        month: 4,
+        year: 2026,
+        price: -2_000
+      )
+      card_bound_source.category_transactions.destroy_all
+      card_bound_source.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      payer_card_bound = card_bound_source.entity_transactions.first
+      payer_card_bound.update!(price: -2_000, price_to_be_returned: -2_000, is_payer: true, exchanges_count: 1)
+      card_bound_exchange = create(
+        :exchange,
+        entity_transaction: payer_card_bound,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_000,
+        date: Date.new(2026, 4, 20),
+        month: 4,
+        year: 2026
+      )
+      card_bound_return = card_bound_exchange.cash_transaction.reload
+
+      standalone_source = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Standalone mirrored return source",
+        date: Date.new(2026, 4, 21),
+        month: 4,
+        year: 2026,
+        price: -2_500
+      )
+      standalone_source.category_transactions.destroy_all
+      standalone_source.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      standalone_entity = standalone_source.entity_transactions.first&.entity || create(:entity, :random, user:)
+      payer_standalone = standalone_source.entity_transactions.first || create(
+        :entity_transaction,
+        transactable: standalone_source,
+        entity: standalone_entity,
+        is_payer: true,
+        price: -2_500,
+        price_to_be_returned: -2_500
+      )
+      payer_standalone.update!(entity: standalone_entity, is_payer: true, price: -2_500, price_to_be_returned: -2_500)
+      standalone_exchange = create(
+        :exchange,
+        entity_transaction: payer_standalone,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_500,
+        date: Date.new(2026, 4, 21),
+        month: 4,
+        year: 2026
+      )
+      standalone_return = standalone_exchange.cash_transaction.reload
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202604",
+        exchange_bound_type: "card_bound",
+        cash_transaction: {
+          category_id: [ user.built_in_category("EXCHANGE RETURN").id ]
+        }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(card_bound_return.description)
+      expect(response.body).not_to include(standalone_return.description)
+    end
+
+    it "does not duplicate a cash row when categories and entities create join fanout" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: user_bank_account,
+        description: "Fanout cash row",
+        date: Date.new(2026, 4, 18),
+        month: 4,
+        year: 2026,
+        price: 1_719
+      )
+
+      extra_category = create(:category, :random, user:)
+      extra_entity = create(:entity, :random, user:)
+
+      transaction.category_transactions.create!(category: extra_category)
+      transaction.entity_transactions.create!(entity: extra_entity, price: 0, price_to_be_returned: 0)
+
+      get month_year_cash_transactions_path, params: {
+        month_year: "202604",
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body.scan("edit_cash_transaction_#{transaction.id}").size).to eq(1)
     end
 
     it "sorts cash rows by price descending" do

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base
+class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper
@@ -16,6 +16,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
               :from_date, :to_date,
+              :exchange_bound_type,
               :paid, :pending, :paid_state,
               :sort, :direction,
               :user_bank_account_id, :categories, :entities,
@@ -40,6 +41,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @to_installments_count = index_context[:to_installments_count]
     @from_date = index_context[:from_date]
     @to_date = index_context[:to_date]
+    @exchange_bound_type = index_context[:exchange_bound_type]
     @paid = index_context[:paid]
     @pending = index_context[:pending]
     @paid_state = index_context[:paid_state]
@@ -85,68 +87,72 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
           end
         end
 
-        unless mobile
-          div(class: "flex items-center gap-2") do
-            Sheet(id: "advanced_filter") do
-              SheetTrigger do
-                Button(type: :button, icon: true, class: "scale-105") do
-                  cached_icon(:filter)
-                end
+        div(class: "flex shrink-0 items-center gap-2") do
+          Sheet(id: "advanced_filter") do
+            SheetTrigger do
+              Button(type: :button, icon: true, class: "scale-105") do
+                cached_icon(:filter)
+              end
+            end
+
+            SheetContent(
+              side: :middle,
+              class: "w-4/5 lg:w-1/2",
+              data: { action: "input->reactive-form#markChanged change->reactive-form#markChanged close->reactive-form#submitIfChanged" }
+            ) do
+              SheetHeader do
+                SheetTitle { pluralise_model(CashTransaction, 2) }
+                SheetDescription { I18n.t(:advanced_filter) }
               end
 
-              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-                SheetHeader do
-                  SheetTitle { pluralise_model(CashTransaction, 2) }
-                  SheetDescription { I18n.t(:advanced_filter) }
-                end
-
-                SheetMiddle do
-                  if mobile
-                    div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
-                      render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
-                    end
+              SheetMiddle do
+                if mobile
+                  div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                    render Views::Categories::Combobox.new(name: "cash_transaction[category_id][]", categories:, selected_category_ids:)
+                    render Views::Entities::Combobox.new(name: "cash_transaction[entity_id][]", entities:, selected_entity_ids:)
                   end
-
-                  render Views::CashTransactions::PaidStateFilter.new(current_state: paid_state || "all")
-
-                  PriceRangeFields(
-                    form:,
-                    object: CashTransaction,
-                    from_field: :from_ct_price,
-                    to_field: :to_ct_price,
-                    from_value: from_ct_price,
-                    to_value: to_ct_price,
-                    subject_label_key: :self
-                  )
-
-                  PriceRangeFields(
-                    form:,
-                    object: CashTransaction,
-                    from_field: :from_price,
-                    to_field: :to_price,
-                    from_value: from_price,
-                    to_value: to_price,
-                    subject_label_key: :cash_installment
-                  )
-
-                  InstallmentsCountRangeFields(
-                    form:,
-                    from_field: :from_installments_count,
-                    to_field: :to_installments_count,
-                    from_value: from_installments_count,
-                    to_value: to_installments_count,
-                    subject_label_key: :cash_installment
-                  )
-
-                  DateRangeFields(
-                    form:,
-                    from_field: :from_date,
-                    to_field: :to_date,
-                    from_value: from_date,
-                    to_value: to_date
-                  )
                 end
+
+                render Views::CashTransactions::PaidStateFilter.new(current_state: paid_state || "all")
+
+                PriceRangeFields(
+                  form:,
+                  object: CashTransaction,
+                  from_field: :from_ct_price,
+                  to_field: :to_ct_price,
+                  from_value: from_ct_price,
+                  to_value: to_ct_price,
+                  subject_label_key: :self
+                )
+
+                PriceRangeFields(
+                  form:,
+                  object: CashTransaction,
+                  from_field: :from_price,
+                  to_field: :to_price,
+                  from_value: from_price,
+                  to_value: to_price,
+                  subject_label_key: :cash_installment
+                )
+
+                InstallmentsCountRangeFields(
+                  form:,
+                  from_field: :from_installments_count,
+                  to_field: :to_installments_count,
+                  from_value: from_installments_count,
+                  to_value: to_installments_count,
+                  subject_label_key: :cash_installment
+                )
+
+                DateRangeFields(
+                  form:,
+                  from_field: :from_date,
+                  to_field: :to_date,
+                  from_value: from_date,
+                  to_value: to_date
+                )
+
+                render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
               end
             end
           end
@@ -175,8 +181,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_cash_transaction_path(format: :turbo_stream),
                 id: "new_cash_transaction",
-                class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
-                        text-black hover:text-white font-thin items-center gap-2",
+                class: index_new_button_class,
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           span { action_message(:newa) }
           span { pluralise_model(CashTransaction, 1) }
@@ -190,6 +195,10 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   def selected_category_ids = Array(category_id).map(&:to_s)
 
   def selected_entity_ids = Array(entity_id).map(&:to_s)
+
+  def show_exchange_bound_type_filter?
+    exchange_bound_type.present? || selected_category_ids.include?(current_user.built_in_category("EXCHANGE RETURN").id.to_s)
+  end
 
   def filter_summary = @filter_summary ||= IndexState::FilterSummary.new(surface: :cash_transactions, index_context:).to_h
 

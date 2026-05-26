@@ -16,7 +16,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
-              :sort, :direction,
+              :exchange_bound_type, :sort, :direction,
               :user_card, :categories, :entities,
               :count_by_month_year,
               :mobile
@@ -37,6 +37,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
     @to_price = index_context[:to_price]
     @from_installments_count = index_context[:from_installments_count]
     @to_installments_count = index_context[:to_installments_count]
+    @exchange_bound_type = index_context[:exchange_bound_type]
     @sort = index_context[:sort]
     @direction = index_context[:direction]
     @user_card = index_context[:user_card]
@@ -77,58 +78,58 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
           end
         end
 
-        unless mobile
-          div(class: "flex items-center gap-2") do
-            Sheet(id: "advanced_filter") do
-              SheetTrigger do
-                Button(type: :button, icon: true, class: "scale-105") do
-                  cached_icon(:filter)
-                end
+        div(class: "flex shrink-0 items-center gap-2") do
+          Sheet(id: "advanced_filter") do
+            SheetTrigger do
+              Button(type: :button, icon: true, class: "scale-105") do
+                cached_icon(:filter)
+              end
+            end
+
+            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+              SheetHeader do
+                SheetTitle { pluralise_model(CardTransaction, 2) }
+                SheetDescription { I18n.t(:advanced_filter) }
               end
 
-              SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
-                SheetHeader do
-                  SheetTitle { pluralise_model(CardTransaction, 2) }
-                  SheetDescription { I18n.t(:advanced_filter) }
-                end
-
-                SheetMiddle do
-                  if mobile
-                    div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
-                      render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
-                      render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
-                    end
+              SheetMiddle do
+                if mobile
+                  div class: "grid grid-cols-1 gap-y-2 mb-2 w-full" do
+                    render Views::Categories::Combobox.new(name: "card_transaction[category_id][]", categories:, selected_category_ids:)
+                    render Views::Entities::Combobox.new(name: "card_transaction[entity_id][]", entities:, selected_entity_ids:)
                   end
-
-                  PriceRangeFields(
-                    form:,
-                    object: CardTransaction,
-                    from_field: :from_ct_price,
-                    to_field: :to_ct_price,
-                    from_value: from_ct_price,
-                    to_value: to_ct_price,
-                    subject_label_key: :self
-                  )
-
-                  PriceRangeFields(
-                    form:,
-                    object: CardTransaction,
-                    from_field: :from_price,
-                    to_field: :to_price,
-                    from_value: from_price,
-                    to_value: to_price,
-                    subject_label_key: :card_installment
-                  )
-
-                  InstallmentsCountRangeFields(
-                    form:,
-                    from_field: :from_installments_count,
-                    to_field: :to_installments_count,
-                    from_value: from_installments_count,
-                    to_value: to_installments_count,
-                    subject_label_key: :card_installment
-                  )
                 end
+
+                PriceRangeFields(
+                  form:,
+                  object: CardTransaction,
+                  from_field: :from_ct_price,
+                  to_field: :to_ct_price,
+                  from_value: from_ct_price,
+                  to_value: to_ct_price,
+                  subject_label_key: :self
+                )
+
+                PriceRangeFields(
+                  form:,
+                  object: CardTransaction,
+                  from_field: :from_price,
+                  to_field: :to_price,
+                  from_value: from_price,
+                  to_value: to_price,
+                  subject_label_key: :card_installment
+                )
+
+                InstallmentsCountRangeFields(
+                  form:,
+                  from_field: :from_installments_count,
+                  to_field: :to_installments_count,
+                  from_value: from_installments_count,
+                  to_value: to_installments_count,
+                  subject_label_key: :card_installment
+                )
+
+                render Views::Shared::ExchangeBoundTypeFilter.new(current_state: exchange_bound_type, form_id: "search_form") if show_exchange_bound_type_filter?
               end
             end
           end
@@ -157,8 +158,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
         link_to new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream),
                 id: "new_card_transaction",
-                class: "hidden md:flex py-2 px-3 rounded-sm shadow-sm border border-purple-600 bg-transparent hover:bg-purple-600 transition-colors
-                        text-black hover:text-white font-thin items-center gap-2",
+                class: index_new_button_class,
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           span { action_message(:newa) }
           span { pluralise_model(CardTransaction, 1) }
@@ -176,6 +176,10 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
 
   def selected_entity_ids
     Array(entity_id).map(&:to_s)
+  end
+
+  def show_exchange_bound_type_filter?
+    exchange_bound_type.present? || selected_category_ids.include?(current_user.built_in_category("EXCHANGE").id.to_s)
   end
 
   def filter_summary

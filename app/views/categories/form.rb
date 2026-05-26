@@ -43,17 +43,20 @@ class Views::Categories::Form < Views::Base
           form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: category.new_record? || category.active
         end
 
-        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, category) } }
+        div(class: "flex w-full flex-col gap-3") do
+          div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(category))}") { action_message(:submit) }
 
-        if category.persisted? && category.built_in == false
-          div(class: "w-full") do
-            Button(
-              id: "delete_category_#{category.id}",
-              type: :submit,
-              variant: :destructive,
-              link: category_path(category),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) { action_model(:destroy, category) }
+            if category.persisted? && category.built_in == false
+              Button(
+                id: "delete_category_#{category.id}",
+                type: :submit,
+                variant: :outline,
+                class: "w-64 #{destroy_button_class}",
+                link: category_path(category),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+              ) { action_message(:destroy) }
+            end
           end
         end
 

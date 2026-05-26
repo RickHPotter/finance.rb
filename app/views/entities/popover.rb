@@ -3,6 +3,7 @@
 class Views::Entities::Popover < Views::Base
   include Phlex::Rails::Helpers::AssetPath
   include Phlex::Rails::Helpers::ImageTag
+  include Phlex::Rails::Helpers::LinkTo
 
   attr_reader :items, :mobile, :target_ids, :trigger_label, :variant
 
@@ -39,10 +40,10 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 mr-2") do
-          div(class: "flex flex-wrap justify-end gap-1 min-w-36") do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+          div(class: mobile_multi_entity_list_class) do
             items.each do |item|
-              render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6 mb-1", name_class: mobile_name_class)
+              render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6", name_class: multi_entity_name_class)
             end
           end
         end
@@ -52,9 +53,9 @@ class Views::Entities::Popover < Views::Base
 
   def render_desktop
     if items.one?
-      render_item(items.first, wrapper_class: desktop_single_button_class, avatar_class: "size-5", name_class: "entity_entity_name")
+      render_item(items.first, wrapper_class: desktop_single_button_class, avatar_class: "size-5", name_class: desktop_name_class)
     else
-      Popover(options: { placement: "left" }, class: "flex items-center justify-center") do
+      Popover(options: { placement: "bottom-end" }, class: "relative z-60 flex items-center justify-center overflow-visible") do
         PopoverTrigger(class: "w-full") do
           button(type: :button, class: desktop_trigger_button_class) do
             render_avatar_stack(items, avatar_class: "size-5", limit: 2)
@@ -62,10 +63,10 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 mr-2") do
-          div(class: "flex flex-col gap-2 min-w-36") do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+          div(class: desktop_multi_entity_list_class) do
             items.each do |item|
-              render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: "entity_entity_name")
+              render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: multi_entity_name_class)
             end
           end
         end
@@ -74,7 +75,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def render_item(item, wrapper_class:, avatar_class:, name_class:)
-    if item[:href].present?
+    if item[:href].present? && item[:name_href].blank? && item[:info_component].blank?
       Link(href: item[:href], size: :xs, class: wrapper_class, data: item[:data] || {}) do
         render_item_content(item, avatar_class:, name_class:)
       end
@@ -87,8 +88,26 @@ class Views::Entities::Popover < Views::Base
 
   def render_item_content(item, avatar_class:, name_class:)
     image_tag asset_path("avatars/#{item[:avatar_name]}"), class: "bg-white rounded-full #{avatar_class}"
-    span(class: name_class) { item[:name] }
-    span(class: item[:info_class]) { item[:info_text] } if item[:info_class].present? && item[:info_text].present?
+    render_item_name(item, name_class)
+    render_item_info(item)
+  end
+
+  def render_item_name(item, name_class)
+    if item[:name_href].present?
+      link_to item[:name_href], class: "#{name_class} ", data: item[:name_data] || item[:data] || {} do
+        item[:name]
+      end
+    else
+      span(class: name_class) { item[:name] }
+    end
+  end
+
+  def render_item_info(item)
+    if item[:info_component].present?
+      div(class: item[:info_class]) { render item[:info_component] }
+    elsif item[:info_class].present? && item[:info_text].present?
+      span(class: item[:info_class]) { item[:info_text] }
+    end
   end
 
   def render_avatar_stack(items, avatar_class:, limit:)
@@ -113,7 +132,7 @@ class Views::Entities::Popover < Views::Base
   end
 
   def mobile_item_wrapper_class
-    "flex flex-col items-center w-16 text-center text-inherit"
+    "flex items-center gap-2 whitespace-nowrap text-left text-inherit"
   end
 
   def mobile_single_item_wrapper_class
@@ -123,11 +142,31 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_item_wrapper_class
-    "flex items-center gap-2 text-xs text-inherit"
+    "flex items-center gap-2 whitespace-nowrap text-xs text-inherit"
   end
 
   def mobile_name_class
-    "entity_entity_name truncate block max-w-full leading-tight"
+    "entity_entity_name text-xs truncate block max-w-full leading-tight"
+  end
+
+  def desktop_name_class
+    "entity_entity_name text-xs leading-tight"
+  end
+
+  def multi_entity_name_class
+    "entity_entity_name leading-tight"
+  end
+
+  def mobile_multi_entity_list_class
+    "flex min-w-56 max-w-none flex-col items-start gap-2"
+  end
+
+  def desktop_multi_entity_list_class
+    "flex min-w-56 max-w-none flex-col items-start gap-2"
+  end
+
+  def multi_entity_popover_content_class(offset_class)
+    "z-50 !opacity-100 #{offset_class} w-max max-w-none"
   end
 
   def mobile_trigger_button_class

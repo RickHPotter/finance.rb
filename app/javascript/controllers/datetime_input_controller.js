@@ -6,6 +6,8 @@ export default class extends Controller {
 
   connect() {
     this.handleFormSubmit = this.handleFormSubmit.bind(this)
+    this.skipSubmitOnNextSync = false
+    this.pendingQuietValue = null
     this.syncVisibleFromHidden()
     this.updateWeekdayLabel()
     this.hiddenInputTarget.form?.addEventListener("submit", this.handleFormSubmit)
@@ -16,6 +18,8 @@ export default class extends Controller {
   }
 
   formatTimeInput() {
+    if (!this.hasTimeInputTarget) return
+
     const digits = this.timeInputTarget.value.replace(/\D/g, "").slice(0, 4)
 
     if (digits.length <= 2) {
@@ -30,23 +34,28 @@ export default class extends Controller {
     this.clearValidity()
   }
 
-  sync() {
+  sync({ dispatch = true } = {}) {
     const nextDate = this.currentDateValue()
     if (!nextDate) {
       this.clearValidity()
-      this.hiddenInputTarget.value = ""
+      if (dispatch) {
+        this.hiddenInputTarget.value = ""
+        this.pendingQuietValue = null
+      } else {
+        this.pendingQuietValue = ""
+      }
       this.updateWeekdayLabel()
       return
     }
 
-    const parsedTime = this.parseTime(this.timeInputTarget.value, this.currentTimeValue())
+    const parsedTime = this.parseTime(this.currentTimeInputValue(), this.currentTimeValue())
     if (!parsedTime) {
       this.setInvalidTime()
       return
     }
 
     this.clearValidity()
-    this.timeInputTarget.value = parsedTime
+    if (this.hasTimeInputTarget) this.timeInputTarget.value = parsedTime
     this.updateWeekdayLabel()
 
     const nextValue = `${nextDate}T${parsedTime}`
@@ -56,19 +65,61 @@ export default class extends Controller {
       return
     }
 
-    if (this.hiddenInputTarget.value === nextValue) return
+    if (!dispatch) {
+      this.pendingQuietValue = nextValue
+      return
+    }
+
+    const pendingChanged = this.pendingQuietValue !== null && this.pendingQuietValue === nextValue && this.hiddenInputTarget.value !== nextValue
+    if (this.hiddenInputTarget.value === nextValue && !pendingChanged) return
 
     this.clearDateValidity()
     this.hiddenInputTarget.value = nextValue
+    this.pendingQuietValue = null
+    if (!dispatch) return
+
+    if (this.skipSubmitOnNextSync) {
+      this.skipSubmitOnNextSync = false
+      return
+    }
+
     this.hiddenInputTarget.dispatchEvent(new Event("input", { bubbles: true }))
     this.hiddenInputTarget.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
-  handleKeydown(event) {
+  syncQuiet() {
+    this.sync({ dispatch: false })
+  }
+
+  commit() {
+    this.sync({ dispatch: true })
+  }
+
+  handleDateKeydown(event) {
     if (event.key !== "Enter") return
 
     event.preventDefault()
-    this.sync()
+    this.commit()
+
+    if (this.dateInputTarget.validationMessage) return
+
+    this.hiddenInputTarget.form?.requestSubmit()
+  }
+
+  handleKeydown(event) {
+    if (event.key === "Tab") {
+      this.skipSubmitOnNextSync = true
+      return
+    }
+
+    if (event.key !== "Enter") return
+
+    event.preventDefault()
+    this.commit()
+
+    if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) return
+
+    this.hiddenInputTarget.form?.requestSubmit()
   }
 
   syncVisibleFromHidden() {
@@ -80,8 +131,10 @@ export default class extends Controller {
 
     const [datePart, timePart] = value.split("T")
     this.dateInputTarget.value = datePart || ""
-    this.timeInputTarget.value = timePart ? timePart.slice(0, 5) : ""
-    this.formatTimeInput()
+    if (this.hasTimeInputTarget) {
+      this.timeInputTarget.value = timePart ? timePart.slice(0, 5) : ""
+      this.formatTimeInput()
+    }
     this.updateWeekdayLabel()
   }
 
@@ -91,6 +144,10 @@ export default class extends Controller {
 
   currentTimeValue() {
     return this.hiddenInputTarget.value.split("T")[1]?.slice(0, 5) || "00:00"
+  }
+
+  currentTimeInputValue() {
+    return this.hasTimeInputTarget ? this.timeInputTarget.value : ""
   }
 
   parseTime(value, fallback) {
@@ -138,11 +195,15 @@ export default class extends Controller {
   }
 
   setInvalidTime() {
+    if (!this.hasTimeInputTarget) return
+
     this.timeInputTarget.setCustomValidity(this.invalidTimeMessageValue)
     this.timeInputTarget.reportValidity()
   }
 
   clearValidity() {
+    if (!this.hasTimeInputTarget) return
+
     this.timeInputTarget.setCustomValidity("")
   }
 
@@ -177,10 +238,16 @@ export default class extends Controller {
   }
 
   handleFormSubmit(event) {
-    this.sync()
-    if (this.dateInputTarget.validationMessage || this.timeInputTarget.validationMessage) {
+    this.commit()
+    if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) {
       event.preventDefault()
     }
+  }
+
+  timeValidationMessagePresent() {
+    if (!this.hasTimeInputTarget) return false
+
+    this.timeInputTarget.validationMessage
   }
 
   withinAllowedRange(nextValue) {

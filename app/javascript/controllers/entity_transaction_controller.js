@@ -68,7 +68,7 @@ export default class extends Controller {
 
       if (shouldBeDisabled) {
         this.exchangesCountInputTarget.value = 0
-        this.delExchangeTargets.forEach((element) => element.click())
+        this.activeExchangeWrappers().forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
         this.exchangesCountInputTarget.classList.add("opacity-50")
       } else {
         this.exchangesCountInputTarget.classList.remove("opacity-50")
@@ -209,9 +209,9 @@ export default class extends Controller {
 
     await this._updateExchangesFields(exchangesCount)
 
-    const visibleExchanges = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
-    const lockedExchanges = visibleExchanges.filter(e => e.dataset.locked === "true")
-    const unlockedExchanges = visibleExchanges.filter(e => e.dataset.locked !== "true")
+    const activeExchanges   = this.activeExchangeWrappers()
+    const lockedExchanges   = activeExchanges.filter((element) => element.dataset.locked === "true")
+    const unlockedExchanges = activeExchanges.filter((element) => element.dataset.locked !== "true")
 
     let lockedPrice = 0
     lockedExchanges.forEach(exchange => {
@@ -237,27 +237,23 @@ export default class extends Controller {
   }
 
   async _updateExchangesFields(newExchangesCount) {
-    const allExchanges          = this.priceExchangeInputTargets
-    const allExchangesCount     = allExchanges.length
-    const visibleExchanges      = allExchanges.filter((element) => element.checkVisibility())
-    const visibleExchangesCount = visibleExchanges.length
+    const activeWrappers        = this.activeExchangeWrappers()
+    const hiddenWrappers        = this.hiddenExchangeWrappers()
+    const visibleExchangesCount = activeWrappers.length
 
-    const shouldRemoveExchanges    = newExchangesCount < visibleExchangesCount
-    const shouldAddExchanges       = newExchangesCount > visibleExchangesCount
-    const canUpdateHiddenExchanges = allExchangesCount > visibleExchangesCount
+    const shouldRemoveExchanges = newExchangesCount < visibleExchangesCount
+    const shouldAddExchanges    = newExchangesCount > visibleExchangesCount
 
     if (visibleExchangesCount === newExchangesCount) { return }
 
     if (shouldRemoveExchanges) {
-      const exchangesDeleteButtonsToBeClicked = this.delExchangeTargets.slice(newExchangesCount)
-
-      exchangesDeleteButtonsToBeClicked.forEach((element) => element.click())
+      activeWrappers.slice(newExchangesCount).forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
     }
 
     if (!shouldAddExchanges) { return }
 
     let railsDueDate
-    const currentVisibleExchanges = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
+    const currentVisibleExchanges = this.activeExchangeWrappers()
 
     if (visibleExchangesCount > 0) {
         const lastExchange = currentVisibleExchanges[visibleExchangesCount - 1]
@@ -268,16 +264,11 @@ export default class extends Controller {
         railsDueDate = this._getDueDate()
     }
 
-    if (canUpdateHiddenExchanges) {
-      const sliced = this.exchangeWrapperTargets.slice(visibleExchangesCount, newExchangesCount)
+    const reusableHiddenWrappers = hiddenWrappers.slice(0, newExchangesCount - visibleExchangesCount)
 
-      sliced.forEach(element => {
-        element.style.display = "block"
-        element.querySelector("input[name*='_destroy']").value = "false"
-      })
-    }
+    reusableHiddenWrappers.forEach((element) => this.activateExchangeWrapper(element))
 
-    const numberOfNewExchangesToAdd = newExchangesCount - allExchangesCount
+    const numberOfNewExchangesToAdd = newExchangesCount - visibleExchangesCount - reusableHiddenWrappers.length
     for (let i = 0; i < numberOfNewExchangesToAdd; i++) {
       await new Promise((resolve) => setTimeout(resolve, 50))
       this.addExchangeTarget.click()
@@ -286,8 +277,36 @@ export default class extends Controller {
     this._updateWrappers(railsDueDate, visibleExchangesCount)
   }
 
+  activeExchangeWrappers() {
+    return this.exchangeWrapperTargets.filter((element) => this.exchangeWrapperActive(element))
+  }
+
+  hiddenExchangeWrappers() {
+    return this.exchangeWrapperTargets.filter((element) => !this.exchangeWrapperActive(element))
+  }
+
+  exchangeWrapperActive(element) {
+    return this.exchangeDestroyInput(element)?.value !== "true"
+  }
+
+  exchangeDestroyInput(element) {
+    return element.querySelector("input[name*='_destroy']")
+  }
+
+  activateExchangeWrapper(element) {
+    const destroyInput = this.exchangeDestroyInput(element)
+    if (destroyInput) destroyInput.value = "false"
+    element.style.display = "block"
+  }
+
+  deactivateExchangeWrapper(element) {
+    const destroyInput = this.exchangeDestroyInput(element)
+    if (destroyInput) destroyInput.value = "true"
+    element.style.display = "none"
+  }
+
   _updateWrappers(startingRailsDate, startingNumber = 0) {
-    const visibleExchangesWrappers = this.exchangeWrapperTargets.filter((element) => element.style.display !== "none")
+    const visibleExchangesWrappers = this.activeExchangeWrappers()
     if (visibleExchangesWrappers.length === 0) { return }
 
     let proposedDate

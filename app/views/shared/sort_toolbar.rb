@@ -61,7 +61,7 @@ class Views::Shared::SortToolbar < Views::Base
   end
 
   def sort_badge_class(field)
-    base = "rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide"
+    base = "rounded px-1.5 py-0.5 text-2xs font-bold tracking-wide"
     state = active_sort?(field) ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"
 
     "#{base} #{state}"

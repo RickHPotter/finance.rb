@@ -12,7 +12,7 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :category_id, :entity_id, :paid, :pending,
               :user_bank_account_id, :categories, :entities,
-              :count_by_month_year
+              :count_by_month_year, :external_route_params, :internal_route_params
 
   def initialize(index_context: {})
     @index_context = index_context
@@ -27,10 +27,12 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
     @pending = index_context[:pending]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @external_route_params = index_context[:external_route_params]
+    @internal_route_params = index_context[:internal_route_params]
   end
 
   def view_template
-    form_with url: lalas_cash_transactions_path,
+    form_with url: cash_transactions_path,
               id: :search_form,
               method: :get,
               class: "w-full",
@@ -78,5 +80,14 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
 
       form.submit :search, class: :hidden
     end
+  end
+
+  private
+
+  def cash_transactions_path
+    return internal_cash_transactions_path(**internal_route_params) if internal_route_params.present?
+    return external_cash_transactions_path(**external_route_params) if external_route_params.present?
+
+    lalas_cash_transactions_path
   end
 end

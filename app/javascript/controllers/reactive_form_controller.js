@@ -35,6 +35,7 @@ export default class extends Controller {
 
   connect() {
     this.debounceTimeout = null
+    this.advancedFilterChanged = false
     this.quickJumpOverlay = null
     this.quickJumpArmed = false
     this.boundHandleDocumentKeydown = this.handleDocumentKeydown.bind(this)
@@ -111,7 +112,25 @@ export default class extends Controller {
   requestSubmit({ target }) {
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
-    if (hasValue) { target.form.requestSubmit(this.updateButtonTarget) }
+    if (hasValue) {
+      this.setNextAutofocus(target)
+      target.form.requestSubmit(this.updateButtonTarget)
+    }
+  }
+
+  setNextAutofocus(target) {
+    if (!target.dataset.nextAutofocus) { return }
+
+    let input = target.form.querySelector("input[name='next_autofocus']")
+
+    if (!input) {
+      input = document.createElement("input")
+      input.type = "hidden"
+      input.name = "next_autofocus"
+      target.form.appendChild(input)
+    }
+
+    input.value = target.dataset.nextAutofocus
   }
 
   updateFullPrice() {
@@ -163,7 +182,7 @@ export default class extends Controller {
     if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.now() }
 
     const railsDueDate = this._getDueDate()
-    this._updateWrappers(railsDueDate)
+    this._updateWrappers(railsDueDate, { preserveLocked: true })
   }
 
   async updateInstallmentsPrices({ target }) {
@@ -176,32 +195,37 @@ export default class extends Controller {
   updateExchangeWhenDuplicating({ target }) {
     if (this.operationType !== "duplicate") { return }
 
-    const exchangeCategoryId = this.element.querySelector("#exchange_category_id").value
-    const selectedCategories = Array.from(document.querySelectorAll(".categories_category_id"))
+    const exchangeCategoryInput = this.element.querySelector("#exchange_category_id")
+    if (!exchangeCategoryInput) { return }
+
+    const exchangeCategoryId = exchangeCategoryInput.value
+    const selectedCategories = Array.from(this.element.querySelectorAll(".categories_category_id"))
     const exchangeCategory   = selectedCategories.find((element) => element.value === exchangeCategoryId)
     if (!exchangeCategory) { return }
 
-    const entityTransactionWrappers = this.element.querySelectorAll("[data-controller='entity-transaction']")
+    const entityTransactionWrappers = this.element.querySelectorAll("[data-reactive-form-target='entityWrapper']")
 
     entityTransactionWrappers.forEach((wrapper) => {
       if (wrapper.style.display === "none") { return }
       if (wrapper.querySelector("input[name*='[_destroy]']")?.value === "true") { return }
       if (!wrapper.querySelector(".entities_entity_id")?.value) { return }
 
-      const price             = wrapper.querySelector("[data-entity-transaction-target='priceInput']")
-      const priceToBeReturned = wrapper.querySelector("[data-entity-transaction-target='priceToBeReturnedInput']")
-      const exchangesCount    = wrapper.querySelector("[data-entity-transaction-target='exchangesCountInput']")
+      const formIndex         = wrapper.dataset.entityTransactionFormIndex
+      const price             = document.getElementById(`entity_transaction_price_${formIndex}`)
+      const priceToBeReturned = document.getElementById(`entity_transaction_price_to_be_returned_${formIndex}`)
+      const exchangesCount    = document.getElementById(`entity_transaction_exchanges_count_${formIndex}`)
+      if (!price || !priceToBeReturned || !exchangesCount) { return }
 
-      if (parseInt(_removeMask(price.value)) === 0) { return }
-      if (parseInt(_removeMask(priceToBeReturned.value)) === 0) { return }
+      const transactionPrice  = this.priceInputTarget.value
+      const installmentsCount = this.installmentsCountInputTarget.value
 
-      price.value = this.priceInputTarget.value
-      price.dispatchEvent(new Event("input"))
-
-      priceToBeReturned.value = this.priceInputTarget.value
+      priceToBeReturned.value = transactionPrice
       priceToBeReturned.dispatchEvent(new Event("input"))
 
-      exchangesCount.value = this.installmentsCountInputTarget.value
+      price.value = transactionPrice
+      price.dispatchEvent(new Event("input"))
+
+      exchangesCount.value = installmentsCount
       exchangesCount.dispatchEvent(new Event("input"))
     })
   }
@@ -350,15 +374,43 @@ export default class extends Controller {
     this.element.requestSubmit()
   }
 
+  submitIfChanged() {
+    if (!this.advancedFilterChanged) return
+
+    this.syncPaidStateFromActiveButton()
+    this.advancedFilterChanged = false
+    this.element.requestSubmit()
+  }
+
+  markChanged() {
+    this.advancedFilterChanged = true
+  }
+
   applyPaidState(event) {
     event.preventDefault()
 
     const { target } = event
+    const value = target.dataset.paidStateValue
+    if (!value || !this.applyPaidStateValue(target)) return
+
+    this.syncPaidStateButtons(target, value)
+    this.advancedFilterChanged = false
+    this.element.requestSubmit()
+  }
+
+  syncPaidStateFromActiveButton() {
+    const activeButton = this.element.querySelector("[data-paid-state-value][aria-pressed='true']")
+    if (!activeButton) return
+
+    this.applyPaidStateValue(activeButton)
+  }
+
+  applyPaidStateValue(target) {
     const paidStateInput = this.findFormInput(target.dataset.paidStateInputId)
     const paidInput = this.findFormInput(target.dataset.paidInputId)
     const pendingInput = this.findFormInput(target.dataset.pendingInputId)
     const value = target.dataset.paidStateValue
-    if (!paidStateInput || !paidInput || !pendingInput || !value) return
+    if (!paidStateInput || !paidInput || !pendingInput || !value) return false
 
     paidStateInput.value = value
 
@@ -376,8 +428,7 @@ export default class extends Controller {
         pendingInput.value = "true"
     }
 
-    this.syncPaidStateButtons(target, value)
-    this.element.requestSubmit()
+    return true
   }
 
   findFormInput(inputId) {
@@ -415,6 +466,10 @@ export default class extends Controller {
     return new RailsDate(this.element.querySelector(".installment_date").value)
   }
 
+  transactionDateInput() {
+    return this.element.querySelector(".transaction-date")
+  }
+
   _updateWrappers(startingRailsDate, { preserveLocked = false } = {}) {
     const visibleInstallmentsWrappers = this.installmentWrapperTargets.filter((element) => element.style.display !== "none")
     const firstVisibleInstallment = visibleInstallmentsWrappers[0]
@@ -430,7 +485,7 @@ export default class extends Controller {
       startingRailsDate.setMonth(railsDate.month)
     }
 
-    let proposedDate = new RailsDate(document.querySelector(".transaction-date").value)
+    let proposedDate = new RailsDate(this.transactionDateInput().value)
 
     visibleInstallmentsWrappers.forEach((target, index) => {
       const locked = preserveLocked && target.dataset.locked === "true"
@@ -459,6 +514,8 @@ export default class extends Controller {
       startingRailsDate.monthsForwards(1)
       proposedDate.monthsForwards(1)
     })
+
+    this.element.dispatchEvent(new CustomEvent("installments:layout-changed", { bubbles: true }))
   }
 
   // FIXME: this way will be a legacy and will serve as a user_card setting

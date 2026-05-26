@@ -62,7 +62,7 @@ class Views::Contexts::Index < Views::Base
 
   def render_context_card(context, root:)
     if root
-      div(class: "rounded-3xl border border-sky-300 bg-gradient-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm") do
+      div(class: "rounded-lg border border-sky-300 bg-linear-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm") do
         render_context_card_content(context, root:)
       end
       return
@@ -71,7 +71,7 @@ class Views::Contexts::Index < Views::Base
     link_to(
       context_path(context),
       class: [
-        "block rounded-3xl border p-4 transition",
+        "block rounded-lg border p-4 transition",
         if context.archived?
           "border-stone-300 bg-stone-100 opacity-80"
         else
@@ -86,20 +86,20 @@ class Views::Contexts::Index < Views::Base
 
   def render_context_card_content(context, root:)
     div(class: "flex items-start justify-between gap-3") do
-      div(class: "min-w-0") do
-        p(class: "text-xs font-semibold uppercase tracking-[0.2em] #{root ? 'text-sky-700' : 'text-stone-500'}") do
+      div(class: "min-w-0 flex-1 text-left") do
+        p(class: "text-left text-xs font-semibold uppercase tracking-[0.2em] #{root ? 'text-sky-700' : 'text-stone-500'}") do
           root ? I18n.t("contexts.index.main_label") : I18n.t("contexts.index.derived_label")
         end
-        h2(class: "mt-1 truncate text-lg font-semibold text-stone-900") { context.name }
-        p(class: "mt-2 text-sm text-stone-600") { context.description.presence || I18n.t("contexts.index.no_description") }
+        h2(class: "mt-1 text-left text-lg font-semibold text-stone-900 wrap-break-word") { context.name }
+        p(class: "mt-2 text-left text-sm text-stone-600 wrap-break-word") { context.description.presence || I18n.t("contexts.index.no_description") }
       end
 
       if current_context == context
-        span(class: "inline-flex rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+        span(class: "inline-flex rounded-full bg-emerald-500 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.18em] text-white") do
           I18n.t("contexts.index.current")
         end
       elsif context.archived?
-        span(class: "inline-flex rounded-full bg-stone-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white") do
+        span(class: "inline-flex rounded-full bg-stone-500 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.18em] text-white") do
           I18n.t("contexts.index.archived")
         end
       end

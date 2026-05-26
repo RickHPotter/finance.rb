@@ -50,22 +50,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @public_instance_methods ..................................................
 
   def self.duplicate(id)
-    existing_cash_transaction = find(id)
+    existing_cash_transaction = includes(:cash_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
 
     cash_transaction = existing_cash_transaction.dup
     cash_transaction.duplicate = true
-    cash_transaction.cash_installments = existing_cash_transaction.cash_installments.map do |installment|
-      installment.dup.tap do |duplicate_installment|
-        duplicate_installment.paid = false
-      end
-    end
+    cash_transaction.cash_installments = duplicated_cash_installments_for(existing_cash_transaction)
     cash_transaction.category_transactions = existing_cash_transaction.category_transactions.map(&:dup)
-
-    existing_cash_transaction.entity_transactions.each do |entity_transaction|
-      new_entity_transaction = entity_transaction.dup
-      new_entity_transaction.exchanges = entity_transaction.exchanges.map(&:dup)
-      cash_transaction.entity_transactions.push(new_entity_transaction)
-    end
+    cash_transaction.entity_transactions = duplicated_entity_transactions_for(existing_cash_transaction)
 
     cash_transaction
   end
@@ -155,6 +146,29 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     counterpart_shared_return_transaction.present?
   end
 
+  def failed_return?
+    persisted? && categories.pluck(:category_name).include?("FAILED LEND/BORROW RETURN")
+  end
+
+  def return_failure_reportable?
+    (exchange_return? || borrow_return?) && cash_installments.where(paid: false).where.not(price: 0).exists?
+  end
+
+  def report_payment_failure!
+    failed_category = user.built_in_category("FAILED LEND/BORROW RETURN")
+    categories << failed_category unless categories.exists?(failed_category.id)
+    cash_installments.where(paid: false).where.not(price: 0).find_each do |installment|
+      installment.update!(starting_price: installment.price, price: 0)
+    end
+  end
+
+  def clear_failed_return_if_recovered!
+    return unless failed_return?
+    return if cash_installments.where(paid: false, price: 0).exists?
+
+    category_transactions.joins(:category).where(categories: { category_name: "FAILED LEND/BORROW RETURN" }).destroy_all
+  end
+
   def counterpart_shared_return_transaction
     return @counterpart_shared_return_transaction if defined?(@counterpart_shared_return_transaction) && @counterpart_shared_return_transaction.present?
 
@@ -232,7 +246,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def can_be_destroyed?
-    return false if card_payment? || card_advance? || exchange_return? || linked_borrow_return?
+    return false if card_payment? || card_advance? || exchange_return? || investment? || linked_borrow_return?
 
     persisted?
   end
@@ -255,10 +269,17 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     end
   end
 
-  def sync_exchange_projection_back_to_source! # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+  def sync_exchange_projection_back_to_source! # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
     return unless exchange_return?
 
-    payer_entity_transaction = exchanges.includes(:entity_transaction).first&.entity_transaction
+    payer_entity_transactions = exchanges.includes(:entity_transaction)
+                                         .map(&:entity_transaction)
+                                         .compact
+                                         .select(&:is_payer?)
+                                         .uniq
+    return unless payer_entity_transactions.one?
+
+    payer_entity_transaction = payer_entity_transactions.first
     return if payer_entity_transaction.blank?
 
     desired_rows = cash_installments.order(:number, :date).map do |installment|
@@ -320,7 +341,58 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   private
 
+  def self.duplicated_cash_installments_for(transaction)
+    ordered_cash_installments_for_duplicate(transaction).map do |installment|
+      installment.dup.tap do |duplicate_installment|
+        duplicate_installment.paid = false
+      end
+    end
+  end
+
+  def self.duplicated_entity_transactions_for(transaction)
+    ordered_entity_transactions_for_duplicate(transaction).map do |entity_transaction|
+      entity_transaction.dup.tap do |duplicate_entity_transaction|
+        duplicate_entity_transaction.exchanges = duplicated_exchanges_for(entity_transaction)
+        duplicate_entity_transaction.exchanges_count = duplicate_entity_transaction.exchanges.size
+      end
+    end
+  end
+
+  def self.duplicated_exchanges_for(entity_transaction)
+    ordered_exchanges_for_duplicate(entity_transaction).each_with_index.map do |exchange, index|
+      exchange.dup.tap do |duplicate_exchange|
+        duplicate_exchange.number = index + 1
+      end
+    end
+  end
+
+  def self.ordered_cash_installments_for_duplicate(transaction)
+    transaction.cash_installments.sort_by do |installment|
+      [ installment.number.to_i, installment.year.to_i, installment.month.to_i, installment.date || Time.zone.at(0), installment.id.to_i ]
+    end
+  end
+
+  def self.ordered_entity_transactions_for_duplicate(transaction)
+    transaction.entity_transactions.sort_by do |entity_transaction|
+      [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+    end
+  end
+
+  def self.ordered_exchanges_for_duplicate(entity_transaction)
+    entity_transaction.exchanges.sort_by do |exchange|
+      [ exchange.number.to_i, exchange.year.to_i, exchange.month.to_i, exchange.date || Time.zone.at(0), exchange.id.to_i ]
+    end
+  end
+
+  private_class_method :duplicated_cash_installments_for,
+                       :duplicated_entity_transactions_for,
+                       :duplicated_exchanges_for,
+                       :ordered_cash_installments_for_duplicate,
+                       :ordered_entity_transactions_for_duplicate,
+                       :ordered_exchanges_for_duplicate
+
   def prevent_linked_borrow_return_destruction
+    return if context_destroying?
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -329,6 +401,10 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def linked_borrow_return?
     borrow_return? && reference_transactable.present?
+  end
+
+  def context_destroying?
+    context&.destroying_for_removal?
   end
 
   def assign_default_context
@@ -438,10 +514,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
     cash_installments.first&.update_columns(
       price:,
-      starting_price: price,
-      date:,
-      month:,
-      year:
+      starting_price: price
     )
   end
 

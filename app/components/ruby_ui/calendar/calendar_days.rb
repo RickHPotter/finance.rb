@@ -92,7 +92,8 @@ module RubyUI
       template(data: { ruby_ui__calendar_target: target }) do
         td(
           class:
-                "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected])]:rounded-md",
+                "relative flex justify-center p-0 text-center text-sm focus-within:relative focus-within:z-20 " \
+                "[&:has([aria-selected])]:bg-accent [&:has([aria-selected])]:rounded-md",
           role: "presentation",
           &
         )

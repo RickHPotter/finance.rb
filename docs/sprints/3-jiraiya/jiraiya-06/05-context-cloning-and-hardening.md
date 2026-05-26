@@ -44,8 +44,14 @@ At the end of these slices:
 - switching contexts no longer allows a stale transaction form to save into the
   wrong scenario
 
-## Boundary
+## Later Follow-Through
 
-This slice still does not define final archive/destroy semantics for contexts.
-Derived-context removal remains a product decision because scenarios can be shared
-across users through `scenario_key`.
+Archive semantics were completed later in the runtime hardening pass, and archived
+contexts can now be removed safely under a conservative rule:
+
+- only derived contexts
+- only when archived
+- only when they are leaf nodes with no child contexts
+
+This avoids silently deleting active scenarios or reparenting a subtree during a
+destructive action.

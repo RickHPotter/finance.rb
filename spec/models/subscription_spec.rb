@@ -176,6 +176,40 @@ RSpec.describe Subscription, type: :model do
         expect(card_transaction.card_installments.first.starting_price).to eq(-1_100)
       end
 
+      it "preserves existing comments and appends the original description when attaching a cash transaction" do
+        subscription = create(:subscription, description: "Gym", comment: "Subscription note")
+        transaction = create(
+          :cash_transaction,
+          user: subscription.user,
+          context: subscription.context,
+          user_bank_account: create(:user_bank_account, :random, user: subscription.user),
+          description: "Old cash description",
+          comment: "Existing cash comment"
+        )
+
+        subscription.attach_transactions!([ transaction ])
+
+        expect(transaction.reload.description).to eq("Gym")
+        expect(transaction.comment).to eq("Existing cash comment\nOld cash description")
+      end
+
+      it "appends the original description when attaching a card transaction without a comment" do
+        subscription = create(:subscription, description: "Streaming", comment: "Subscription note")
+        transaction = create(
+          :card_transaction,
+          user: subscription.user,
+          context: subscription.context,
+          user_card: create(:user_card, :random, user: subscription.user),
+          description: "Old card description",
+          comment: nil
+        )
+
+        subscription.attach_transactions!([ transaction ])
+
+        expect(transaction.reload.description).to eq("Streaming")
+        expect(transaction.comment).to eq("Old card description")
+      end
+
       it "raises when trying to destroy a subscription with linked transactions" do
         subscription = create(:subscription)
         create(:cash_transaction, user: subscription.user, user_bank_account: create(:user_bank_account, :random, user: subscription.user), subscription:)

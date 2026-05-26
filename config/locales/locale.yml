@@ -72,10 +72,12 @@ en:
     newa: "New"
     create: "Create"
     edit: "Edit"
+    analyse: "Analyse"
     duplicate: "Duplicate"
     update: "Update"
     destroy: "Destroy"
     merge: "Merge"
+    report_payment_failure: "Report Payment Failure"
     confirm_historical_change: "Confirm Historical Change"
     all: "All"
     alla: "All"
@@ -95,6 +97,55 @@ en:
     finish_chain_without_save: "Finish chain without saving"
     add_to_subscription: "Add to Subscription"
     partial_pay: "Partial Pay"
+  cash_transactions:
+    payment_failure:
+      reported: "Payment failure reported."
+      unavailable: "Payment failure can only be reported for unpaid lend/borrow returns."
+  dashboards:
+    empty: "Nothing to display yet."
+    sections:
+      summary: "Summary"
+      installments: "Installments"
+      allocations: "Allocations"
+      links: "Links and references"
+    status:
+      partial: "Partial"
+    cash_transactions:
+      placeholder: "Dashboard foundation ready. Slice 2 will add installments, allocations, links, and history."
+      reference: "Reference"
+      reference_descendants:
+        one: "1 linked return or derived transaction"
+        other: "%{count} linked returns or derived transactions"
+      borrow_return: "Borrow Return"
+    card_transactions:
+      placeholder: "Dashboard foundation ready. A later slice will add billing-cycle, invoice, exchange, and history details."
+      invoice: "Invoice cash links"
+      exchanges: "Exchanges"
+      reference: "Reference"
+      reference_descendants:
+        one: "1 linked card or cash transaction"
+        other: "%{count} linked card or cash transactions"
+      advance_cash_transaction: "Advance cash transaction"
+    budgets:
+      placeholder: "Dashboard foundation ready. A later slice will add budget consumption, matching transactions, and remaining value details."
+      consumed: "Consumed"
+      consumption: "Budget consumption"
+      definition: "Budget definition"
+      source: "Source"
+      boolean:
+        "yes": "Yes"
+        "no": "No"
+      status:
+        available: "Available"
+        exact: "Fully used"
+        exceeded: "Exceeded"
+      rules:
+        inclusive:
+          enabled: "Inclusive matching"
+          disabled: "Any matching allocation"
+        first_installment_only:
+          enabled: "First installment only"
+          disabled: "All installments"
 
   navigation:
     previous: "Previous"
@@ -131,6 +182,7 @@ en:
         transaction_price: "Transaction amount (%{value})"
         installment_price: "Installment amount (%{value})"
         installments_count: "Installments (%{value})"
+        exchange_bound_type: "Exchange: %{value}"
         date_range: "Date range (%{value})"
         paid_state: "Status: %{value}"
         account: "Account (%{count})"
@@ -139,6 +191,11 @@ en:
       all: "All"
       paid: "Paid"
       pending: "Pending"
+    exchange_bound_type:
+      label: "Exchange"
+      all: "All"
+      card_bound: "Card Bound"
+      standalone: "Standalone"
   sorting:
     badge:
       idle: "SORT"
@@ -244,10 +301,12 @@ pt-BR:
     newa: "Nova"
     create: "Criar"
     edit: "Editar"
+    analyse: "Analisar"
     duplicate: "Duplicar"
     update: "Atualizar"
     destroy: "Deletar"
     merge: "Mesclar"
+    report_payment_failure: "Reportar Falha no Pagamento"
     confirm_historical_change: "Confirmar Correção Histórica"
     all: "Todos os"
     alla: "Todas as"
@@ -267,6 +326,55 @@ pt-BR:
     finish_chain_without_save: "Finalizar cadeia sem salvar"
     add_to_subscription: "Adicionar à Assinatura"
     partial_pay: "Pagar Parcial"
+  cash_transactions:
+    payment_failure:
+      reported: "Falha no pagamento reportada."
+      unavailable: "A falha no pagamento só pode ser reportada para retornos de empréstimo pendentes."
+  dashboards:
+    empty: "Nada para exibir ainda."
+    sections:
+      summary: "Resumo"
+      installments: "Parcelas"
+      allocations: "Alocações"
+      links: "Vínculos e referências"
+    status:
+      partial: "Parcial"
+    cash_transactions:
+      placeholder: "Base do painel pronta. A Slice 2 adicionará parcelas, alocações, vínculos e histórico."
+      reference: "Referência"
+      reference_descendants:
+        one: "1 devolução ou movimentação derivada vinculada"
+        other: "%{count} devoluções ou movimentações derivadas vinculadas"
+      borrow_return: "Retorno de Empréstimo"
+    card_transactions:
+      placeholder: "Base do painel pronta. Uma próxima slice adicionará detalhes de ciclo, fatura, trocas e histórico."
+      invoice: "Vínculos da fatura"
+      exchanges: "Trocas"
+      reference: "Referência"
+      reference_descendants:
+        one: "1 transação de cartão ou movimentação vinculada"
+        other: "%{count} transações de cartão ou movimentações vinculadas"
+      advance_cash_transaction: "Movimentação de antecipação"
+    budgets:
+      placeholder: "Base do painel pronta. Uma próxima slice adicionará consumo do orçamento, movimentações relacionadas e valor restante."
+      consumed: "Consumido"
+      consumption: "Consumo do orçamento"
+      definition: "Definição do orçamento"
+      source: "Origem"
+      boolean:
+        "yes": "Sim"
+        "no": "Não"
+      status:
+        available: "Disponível"
+        exact: "Totalmente usado"
+        exceeded: "Excedido"
+      rules:
+        inclusive:
+          enabled: "Combinação inclusiva"
+          disabled: "Qualquer alocação correspondente"
+        first_installment_only:
+          enabled: "Apenas primeira parcela"
+          disabled: "Todas as parcelas"
 
   navigation:
     previous: "Anterior"
@@ -303,6 +411,7 @@ pt-BR:
         transaction_price: "Valor da Movimentação (%{value})"
         installment_price: "Valor da Parcela (%{value})"
         installments_count: "Parcelas (%{value})"
+        exchange_bound_type: "Troca: %{value}"
         date_range: "Período (%{value})"
         paid_state: "Estado: %{value}"
         account: "Conta (%{count})"
@@ -311,6 +420,11 @@ pt-BR:
       all: "Todos"
       paid: "Pago"
       pending: "Pendente"
+    exchange_bound_type:
+      label: "Troca"
+      all: "Todos"
+      card_bound: "Cartão"
+      standalone: "Avulso"
   sorting:
     badge:
       idle: "ORD."

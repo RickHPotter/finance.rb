@@ -30,6 +30,8 @@ en:
         starting_price: Original Price
         paid: Paid
         not_paid: Not Paid
+        subscription_id: Subscription
+        advance_cash_transaction_id: Advance Cash Transaction
         user_card_id: Card
         month: Month
         year: Year
@@ -89,6 +91,8 @@ pt-BR:
         starting_price: Preço Inicial
         paid: Pago
         not_paid: Pendente
+        subscription_id: Assinatura
+        advance_cash_transaction_id: Movimentação de Antecipação
         user_card_id: Cartão
         month: Mês
         year: Ano

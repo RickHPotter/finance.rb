@@ -4,16 +4,14 @@ class UserCardsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_user_card, only: %i[edit update destroy reference_date]
+  before_action :set_user_card, only: %i[show edit update destroy reference_date]
   before_action :set_cards, :set_user_cards, :set_entities, :set_categories, only: %i[new create edit update]
   before_action :set_basic_tabs
 
   def index
-    params[:include_inactive] ||= "false"
-    conditions = { active: [ true, !JSON.parse(params[:include_inactive]) ] }
-
-    @user_cards = Logic::UserCards.find_by(current_user, conditions)
-    render Views::UserCards::Index.new(user_cards: @user_cards, mobile: @mobile)
+    build_index_context
+    @user_cards = user_cards_scope
+    render Views::UserCards::Index.new(user_cards: @user_cards, index_context: @index_context, mobile: @mobile)
   end
 
   def new
@@ -25,6 +23,10 @@ class UserCardsController < ApplicationController
     @user_card = Logic::UserCards.create(user_card_params)
 
     handle_save
+  end
+
+  def show
+    render Views::UserCards::Show.new(user_card: @user_card)
   end
 
   def edit
@@ -62,6 +64,36 @@ class UserCardsController < ApplicationController
 
   private
 
+  def build_index_context
+    @index_context = {
+      search_term: search_params[:search_term],
+      status: Array(filter_params[:status]).compact_blank
+    }
+  end
+
+  def user_cards_scope
+    build_index_context if @index_context.blank?
+
+    scope = current_user.user_cards.includes(:card).left_outer_joins(:card)
+    scope = scope.where(active: status_values) if @index_context[:status].present?
+
+    if @index_context[:search_term].present?
+      search_term = "%#{@index_context[:search_term].strip}%"
+      scope = scope.where("user_card_name ILIKE :search OR cards.card_name ILIKE :search", search: search_term)
+    end
+
+    scope.distinct.order(active: :desc, user_card_name: :asc)
+  end
+
+  def status_values
+    @index_context[:status].filter_map do |status|
+      case status
+      when "active" then true
+      when "inactive" then false
+      end
+    end.uniq
+  end
+
   def set_basic_tabs
     set_tabs(active_menu: :data, active_sub_menu: :user_card)
   end
@@ -84,5 +116,15 @@ class UserCardsController < ApplicationController
       :user_card_name, :due_date_day, :days_until_due_date, :min_spend, :credit_limit, :active, :user_id, :card_id,
       :current_closing_date, :current_due_date
     )
+  end
+
+  def search_params
+    params.permit(:search_term)
+  end
+
+  def filter_params
+    return {} if params[:user_card].blank?
+
+    params.require(:user_card).permit(status: [])
   end
 end

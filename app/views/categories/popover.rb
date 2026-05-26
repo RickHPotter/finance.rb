@@ -4,7 +4,7 @@ class Views::Categories::Popover < Views::Base
   attr_reader :items, :mobile, :target_ids, :trigger_label, :variant
 
   def initialize(items:, mobile:, target_ids:, trigger_label:, variant: :cash)
-    @items = items
+    @items = ordered_items(items)
     @mobile = mobile
     @target_ids = target_ids
     @trigger_label = trigger_label
@@ -21,6 +21,16 @@ class Views::Categories::Popover < Views::Base
 
   private
 
+  def ordered_items(items)
+    items.sort_by do |item|
+      item[:name].to_s == failed_return_category_name ? 0 : 1
+    end
+  end
+
+  def failed_return_category_name
+    @failed_return_category_name ||= Category.new(built_in: true, category_name: "FAILED LEND/BORROW RETURN").name
+  end
+
   def render_mobile
     if items.one?
       render_pill(items.first, class: mobile_pill_class)
@@ -33,7 +43,7 @@ class Views::Categories::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100") do
+        PopoverContent(class: "z-50 opacity-100!") do
           div(class: "flex max-w-56 flex-wrap justify-start gap-1") do
             items.each do |item|
               render_pill(item, class: mobile_pill_class)
@@ -56,7 +66,7 @@ class Views::Categories::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: "z-50 !opacity-100 ml-2") do
+        PopoverContent(class: "z-50 opacity-100! ml-2") do
           div(class: "flex min-w-36 flex-col gap-2") do
             items.drop(1).each do |item|
               render_pill(item, class: desktop_pill_class)
@@ -78,6 +88,9 @@ class Views::Categories::Popover < Views::Base
   end
 
   def desktop_container_class
+    return "col-span-2 py-2 flex items-center justify-center gap-2" if variant == :subscription
+    return "flex items-center justify-center gap-2" if variant == :subscription_compact
+
     "col-span-3 py-2 flex items-center justify-center gap-2"
   end
 
@@ -90,7 +103,7 @@ class Views::Categories::Popover < Views::Base
   end
 
   def base_pill_class(size_class)
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black #{size_class}"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black #{size_class}"
   end
 
   def mobile_trigger_button_class
@@ -108,10 +121,10 @@ class Views::Categories::Popover < Views::Base
   end
 
   def mobile_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-xs"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs"
   end
 
   def desktop_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border-1 border-black text-sm"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm"
   end
 end

@@ -38,12 +38,10 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
-        subscription.categories.map(&:name).join(", ").presence || "-"
+        render_desktop_categories
       end
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
-        subscription.entities.map(&:entity_name).join(", ").presence || "-"
-      end
+      render_desktop_entities
 
       div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800") do
         subscription.transactions_count
@@ -56,12 +54,18 @@ class Views::Subscriptions::Subscription < Views::Base
       end
 
       div(class: "col-span-1 flex items-center justify-center px-2 py-3") do
-        link_to(
-          edit_subscription_path(subscription),
-          id: "edit_subscription_#{subscription.id}",
-          class: "mx-1 rounded-4xl bg-sky-200 text-blue-600 hover:text-blue-800",
-          data: { turbo_frame: "_top" }
-        ) { cached_icon(:pencil) }
+        div(class: "flex items-center justify-end gap-1") do
+          link_to(
+            edit_subscription_path(subscription),
+            id: "edit_subscription_#{subscription.id}",
+            class: action_button_class,
+            title: action_message(:edit),
+            aria: { label: action_message(:edit) },
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) { cached_icon(:pencil) }
+
+          render_destroy_action if subscription.can_be_destroyed?
+        end
       end
     end
   end
@@ -119,6 +123,30 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+  end
+
+  def render_destroy_action
+    LinkWithConfirmation(
+      id: subscription.id,
+      icon: :destroy,
+      link_params: {
+        href: subscription_path(subscription),
+        size: :xs,
+        id: "delete_subscription_#{subscription.id}",
+        class: destructive_action_button_class,
+        data: { turbo_method: :delete }
+      }
+    )
+  end
+
   def render_mobile_categories
     mobile_metric_card(icon: :category, label: model_attribute(Subscription, :category_id)) do
       render Views::Categories::Popover.new(
@@ -129,6 +157,18 @@ class Views::Subscriptions::Subscription < Views::Base
         variant: :subscription
       )
     end
+  end
+
+  def render_desktop_categories
+    return plain "-" if subscription.categories.empty?
+
+    render Views::Categories::Popover.new(
+      items: subscription_category_popover_items,
+      mobile: false,
+      target_ids: subscription.categories.map(&:id),
+      trigger_label: "",
+      variant: :subscription_compact
+    )
   end
 
   def render_mobile_entities
@@ -143,11 +183,25 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def render_desktop_entities
+    if subscription.entities.any?
+      render Views::Entities::Popover.new(
+        items: subscription_entity_popover_items,
+        mobile: false,
+        target_ids: subscription.entities.map(&:id),
+        trigger_label: pluralise_model(Entity, subscription.entities.count).upcase,
+        variant: :subscription
+      )
+    else
+      blank_allocation_cell
+    end
+  end
+
   def subscription_category_popover_items
     subscription.categories.map do |category|
       {
         name: category.name,
-        style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+        style: category_badge_style(category)
       }
     end
   end
@@ -161,6 +215,10 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def blank_allocation_cell
+    div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") { "-" }
+  end
+
   def status_badge
     colour = case subscription.status
              when "active" then "bg-emerald-100 text-emerald-800"
@@ -171,5 +229,11 @@ class Views::Subscriptions::Subscription < Views::Base
     span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
       subscription.status.humanize
     end
+  end
+
+  def category_badge_style(category)
+    colour = category.hex_colour || "#000000"
+
+    "background: #{colour}; #{auto_text_color(colour)}"
   end
 end

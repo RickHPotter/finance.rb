@@ -32,9 +32,9 @@ module CashTransactable
   end
 
   def prevent_paid_cash_transaction_destroy
+    return if context_destroying?
     return unless current_cash_transaction_paid_history?
-    return if transactable.respond_to?(:confirmed_destroy_with_history?, true) &&
-              transactable.send(:confirmed_destroy_with_history?)
+    return if confirmed_destroy_with_history?
 
     errors.add(:base, :destroy_locked_after_payment)
     throw(:abort)
@@ -216,6 +216,20 @@ module CashTransactable
     return false unless protect_paid_cash_transaction_projection?
 
     cash_transaction&.paid_history?
+  end
+
+  def context_destroying?
+    return context.destroying_for_removal? if respond_to?(:context) && context.present?
+    return false unless respond_to?(:transactable)
+
+    transactable.respond_to?(:context_destroying?, true) && transactable.send(:context_destroying?)
+  end
+
+  def confirmed_destroy_with_history?
+    return false unless respond_to?(:transactable)
+
+    transactable.respond_to?(:confirmed_destroy_with_history?, true) &&
+      transactable.send(:confirmed_destroy_with_history?)
   end
 
   def target_cash_transaction_paid_history?

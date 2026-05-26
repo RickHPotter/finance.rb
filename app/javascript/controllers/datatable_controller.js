@@ -124,6 +124,7 @@ export default class extends Controller {
   }
 
   toggleCardSelection(event) {
+    if (!this.mobileStandalonePwaEnabled()) return
     if (event.target.closest("a, button, input, label, summary, details")) return
 
     if (event.shiftKey || this.shiftPressed) {
@@ -207,6 +208,13 @@ export default class extends Controller {
     row.classList.toggle("z-10", selected)
 
     row.classList.toggle("!animate-none", selected)
+
+    const rowBackground = row.querySelector("[data-row-background]")
+    if (!rowBackground) return
+
+    rowBackground.classList.toggle("ring-2", selected)
+    rowBackground.classList.toggle("ring-inset", selected)
+    rowBackground.classList.toggle("ring-blue-600", selected)
   }
 
   togglePageSelection() {
@@ -409,5 +417,12 @@ export default class extends Controller {
 
   toggleDirection(direction) {
     return direction === "desc" ? "asc" : "desc"
+  }
+
+  mobileStandalonePwaEnabled() {
+    const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true
+    const mobileViewport = window.matchMedia?.("(max-width: 767px)")?.matches
+
+    return Boolean(standalone && mobileViewport)
   }
 }

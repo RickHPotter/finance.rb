@@ -77,7 +77,7 @@ class Views::CardTransactions::MonthYear < Views::Base
           end
         end
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-12",
             rows: [
@@ -86,7 +86,7 @@ class Views::CardTransactions::MonthYear < Views::Base
                 { class: "col-span-3 flex justify-center", label: model_attribute(CardTransaction, :categories), align: :center },
                 { class: "col-span-2 flex justify-center", label: model_attribute(CardTransaction, :entities), align: :center },
                 { class: "flex items-end justify-end", label: model_attribute(CardTransaction, :price), align: :right },
-                { class: "flex items-end justify-end", label: I18n.t(:datatable_actions), align: :right }
+                { class: "flex justify-center", label: I18n.t(:datatable_actions) }
               ]
             ]
           )
@@ -100,7 +100,7 @@ class Views::CardTransactions::MonthYear < Views::Base
           div(class: "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-10 text-end") { "#{model_attribute(CardTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-11 text-end", id: :totalAmount, data: { price: total_amount }) do
+            span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

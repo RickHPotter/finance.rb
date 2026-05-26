@@ -1,0 +1,47 @@
+en:
+  payment_reminder_mailer:
+    daily_digest:
+      subject: "30/Fev payment reminder - %{date}"
+      preview_title: "Your 30/Fev payment reminder"
+      kicker: "Payment control"
+      heading: "%{first_name}, these installments need attention"
+      summary:
+        one: "There is 1 unpaid installment across overdue, today, and tomorrow, totaling %{amount}."
+        other: "There are %{count} unpaid installments across overdue, today, and tomorrow, totaling %{amount}."
+      installment_count: "Installment %{number}/%{count}"
+      empty_section: "Nothing here."
+      footer_note: "This reminder was generated automatically by 30/Fev to help you keep your payment schedule under control."
+      sections:
+        overdue:
+          title: "High Alert: overdue"
+          subtitle: "Unpaid installments before today. These should be reviewed first."
+        due_today:
+          title: "Warning: due today"
+          subtitle: "Installments scheduled for today."
+        due_tomorrow:
+          title: "Warning: due tomorrow"
+          subtitle: "Installments coming next, so you can prepare before they become overdue."
+
+pt-BR:
+  payment_reminder_mailer:
+    daily_digest:
+      subject: "Lembrete de pagamentos 30/Fev - %{date}"
+      preview_title: "Seu lembrete de pagamentos do 30/Fev"
+      kicker: "Controle de pagamentos"
+      heading: "%{first_name}, estas parcelas precisam de atencao"
+      summary:
+        one: "Existe 1 parcela em aberto entre atrasadas, hoje e amanha, totalizando %{amount}."
+        other: "Existem %{count} parcelas em aberto entre atrasadas, hoje e amanha, totalizando %{amount}."
+      installment_count: "Parcela %{number}/%{count}"
+      empty_section: "Nada por aqui."
+      footer_note: "Este lembrete foi gerado automaticamente pelo 30/Fev para ajudar voce a manter seus pagamentos sob controle."
+      sections:
+        overdue:
+          title: "Alerta alto: atrasadas"
+          subtitle: "Parcelas em aberto antes de hoje. Revise estas primeiro."
+        due_today:
+          title: "Aviso: vencem hoje"
+          subtitle: "Parcelas programadas para hoje."
+        due_tomorrow:
+          title: "Aviso: vencem amanha"
+          subtitle: "Parcelas que estao chegando, para voce se preparar antes de atrasarem."

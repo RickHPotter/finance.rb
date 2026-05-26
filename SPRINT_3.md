@@ -77,6 +77,12 @@ too visible to ignore.
     status, and pause/finish state.
 - Extra:
   - [HOMOLOG](https://homolog.30fev.com) deploy.
+  - Linked subscription transactions now receive metadata updates without rewriting
+    paid history; when a subscription description changes, the previous transaction
+    description is appended to the transaction comment instead of replacing an
+    existing comment.
+  - Subscription form failures now show the generic create/update failure plus
+    concrete validation or history-lock details as separate stacked notifications.
 
 ### JIRAIYA-03/fe-01: Rethink datatables, filters, and ordering
 
@@ -167,6 +173,24 @@ too visible to ignore.
   - chain flows support both “save and finish” and “finish without saving”
   - card/cash transaction forms now use a split date/time input with 24-hour-friendly
     time entry
+  - mobile cash/card transaction forms now replace native date/time fields with a
+    RubyUI calendar plus a compact clock picker; date changes update installment
+    dates, while card date changes still intentionally refresh the form so card
+    reference calculations remain correct
+  - after a card date refresh, focus is handed to the time control instead of falling
+    back to date, category, or entity; on mobile this means the clock hour input is
+    selected
+  - investment forms now use the same RubyUI calendar on mobile in date-only mode,
+    with the calendar taking the full date slot and no clock rendered
+  - transaction and investment form submission skeletons were updated so mobile
+    loading states match the RubyUI calendar/clock controls instead of the old
+    compact native inputs
+  - form failure feedback was standardized across subscription, cash/card
+    transaction, budget, and investment forms: the generic create/update failure
+    appears first, concrete validation or history-lock details stack after it, and
+    generic `is invalid` noise is suppressed
+  - the shared notification frame now owns fixed positioning so multiple flash cards
+    stack with spacing instead of rendering on top of each other
   - payment and transfer modals now use the same shared split date/time control,
     including localized weekday feedback and max-datetime validation with shared
     flash feedback
@@ -221,6 +245,15 @@ too visible to ignore.
     notifications, and stale-form submission after context switching.
   - Query-path and recalculation benchmarking was added so context runtime behavior
     could be compared against `main_context` before rollout.
+  - Due-payment reminders were further hardened operationally:
+    - reminder selection is explicitly `main_context`-only
+    - unpaid reminders are split into overdue, due today, and due tomorrow buckets
+    - email digest is now the reliable fallback surface when mobile PWA push delivery
+      is inconsistent, especially on iPhone
+    - push now sends one high-urgency overdue summary plus per-installment due-today
+      pushes
+    - reminder delivery now iterates all users while preserving the `main_context`
+      boundary for each user
 
 ### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 
@@ -234,6 +267,31 @@ too visible to ignore.
     history around the record.
 - Extra:
   - Reuse existing Phlex and `ruby_ui` patterns instead of treating these as isolated pages.
+
+- Locked direction:
+  - Dashboards are reached through a dedicated `Analyse` action in month-year rows.
+  - Description links keep opening `edit`.
+  - Dashboards are full-page V1 screens, not modals or sheets.
+  - Dashboards may include existing action buttons such as edit, duplicate, pay, and
+    destroy, but must keep existing safety rules intact.
+  - Implementation starts with `CashTransaction`.
+
+- References:
+  - [detail dashboard planning](docs/sprints/3-jiraiya/jiraiya-07/01-detail-dashboard-planning.md)
+  - The original scope was cash/card/budget, but the dashboard pattern has since
+    expanded into:
+    - `user_bank_accounts#show`
+    - `user_cards#show`
+    - `categories#show`
+    - `entities#show`
+  - `user_bank_accounts#show` and `user_cards#show` now include interactive
+    category-first and entity-first breakdown dashboards with strict `ONLY ...`
+    grouping semantics for mixed allocations.
+  - `user_cards#show` also includes a read-only reference section with a year
+    carousel so only up to 12 references are visible per selected year.
+  - `categories#show` and `entities#show` now use pie-chart breakdowns, including a
+    shared combobox-style multi-source filter that mixes bank accounts and cards in
+    one selector.
 
 ### JIRAIYA-08/fe-04: Refine conversations and create a first assistant flow
 

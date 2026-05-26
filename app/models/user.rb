@@ -63,7 +63,17 @@ class User < ApplicationRecord
   # @return [Category].
   #
   def built_in_category(category_name)
-    categories.find_by(built_in: true, category_name:)
+    category = categories.find_or_create_by(category_name:) { |record| record.built_in = true }
+    category.update!(built_in: true) unless category.built_in?
+
+    category
+  end
+
+  def built_in_entity(entity_name = nil)
+    scope = entities.where(built_in: true)
+    return scope.first if entity_name.nil?
+
+    scope.find_by(entity_name:)
   end
 
   # Helper method to return the custom `category` instances of given `user`.
@@ -105,8 +115,11 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "SUBSCRIPTION"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
-      Category.new(built_in: true, category_name: "BORROW RETURN")
+      Category.new(built_in: true, category_name: "BORROW RETURN"),
+      Category.new(built_in: true, category_name: "FAILED LEND/BORROW RETURN")
     )
+
+    entities.push(Entity.new(built_in: true, entity_name: "MOI"))
   end
 
   # TODO: make more visible to the user that they need to confirm their email

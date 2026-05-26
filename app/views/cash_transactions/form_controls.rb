@@ -79,9 +79,11 @@ class Views::CashTransactions::FormControls < Views::Base
         value: cash_transaction.date,
         id: :cash_transaction_date,
         hidden_data: {
-          reactive_form_target: :dateInput,
-          action: "change->reactive-form#updateInstallmentsDates"
-        }
+          reactive_form_target: :dateInput
+        },
+        date_actions: "change->reactive-form#updateInstallmentsDates",
+        time_actions: "change->reactive-form#updateInstallmentsDates",
+        calendar: mobile?
       )
     end
   end

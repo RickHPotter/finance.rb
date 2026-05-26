@@ -3,5 +3,5 @@
 
   <%= turbo_stream.replace(:center_container, Views::Entities::Index.new(entities: @entities, mobile: @mobile)) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyed_because_has_transactionsa, Entity) }) %>
+  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: @entity.errors.full_messages.to_sentence.presence || notification_model(:not_destroyed_because_has_transactionsa, Entity) }) %>
 <% end %>

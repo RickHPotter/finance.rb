@@ -4,7 +4,9 @@
 
   <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updated, Investment) }) %>
+  <% failure_notifications_for(@investment, :not_updated, Investment).each_with_index do |alert, index| %>
+    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
+  <% end %>
 
   <%= turbo_stream.replace(:center_container, Views::Investments::Edit.new(current_user:, investment: @investment)) %>
 <% end %>

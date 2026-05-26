@@ -3,7 +3,7 @@
 class BudgetsController < ApplicationController
   include TabsConcern
 
-  before_action :set_budget, only: %i[edit update destroy]
+  before_action :set_budget, only: %i[show edit update destroy]
   before_action :set_budget_tabs
 
   def index
@@ -26,6 +26,10 @@ class BudgetsController < ApplicationController
     render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:)
   end
 
+  def show
+    render Views::Budgets::Show.new(budget: @budget)
+  end
+
   def new
     @budget = current_context.budgets.new(user: current_user)
 
@@ -45,6 +49,15 @@ class BudgetsController < ApplicationController
     respond_to do |format|
       format.html { render Views::Budgets::Edit.new(current_user:, budget: @budget) }
       format.turbo_stream
+    end
+  end
+
+  def duplicate
+    @budget = current_context.budgets.duplicate(params[:id])
+
+    respond_to do |format|
+      format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
+      format.turbo_stream { render Views::Budgets::New.new(current_user:, budget: @budget) }
     end
   end
 

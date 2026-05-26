@@ -44,6 +44,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   end
 
   def prevent_locked_projection_destruction
+    return if transactable.respond_to?(:context_destroying?, true) && transactable.send(:context_destroying?)
     return unless cash_transaction&.paid_history?
     return if transactable.respond_to?(:confirmed_destroy_with_history?, true) &&
               transactable.send(:confirmed_destroy_with_history?)

@@ -31,9 +31,20 @@ class Views::UserCards::UserCard < Views::Base
       class: "grid grid-cols-9 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
       data: { id: user_card.id, datatable_target: :row }
     ) do
-      div(class: "col-span-2 px-1 flex items-center mx-auto font-lekton font-semibold") { span(class: "px-4 whitespace-nowrap") { brand_and_name } }
+      div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
+        link_to user_card_path(user_card),
+                id: "show_user_card_#{user_card.id}",
+                class: "px-4 whitespace-nowrap hover:underline",
+                data: { turbo_frame: "_top", turbo_prefetch: false } do
+          brand_and_name
+        end
+      end
 
-      div(class: "jump_to_card_transactions px-1 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
+      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+        status_badge
+      end
+
+      div(class: "jump_to_card_transactions px-2 py-3 flex items-center justify-center mx-auto font-anonymous font-semibold whitespace-nowrap ml-auto") do
         if user_card.card_transactions_count.positive?
           link_to(
             user_card.card_transactions_count,
@@ -46,27 +57,47 @@ class Views::UserCards::UserCard < Views::Base
         end
       end
 
-      div(class: "flex items-center justify-center text-lg whitespace-nowrap ml-auto") { span { from_cent_based_to_float(user_card.card_transactions_total, "R$") } }
-      div(class: "flex items-center justify-center text-lg whitespace-nowrap ml-auto pr-2 border-r border-black") do
+      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto") do
+        span do
+          from_cent_based_to_float(user_card.card_transactions_total, "R$")
+        end
+      end
+
+      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto pr-2 border-r border-black") do
         span(class: "current_closing_date") { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter) }
       end
-      div(class: "flex items-center justify-center text-lg whitespace-nowrap mr-auto") do
+
+      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap mr-auto") do
         span(class: "current_due_date") do
           I18n.l(Date.current.change(day: user_card.due_date_day), format: :shorter)
         end
       end
-      div(class: "flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto") { span { from_cent_based_to_float(user_card.min_spend, "R$") } }
-      div(class: "flex items-center justify-center font-lekton text-lg whitespace-nowrap ml-auto") { span { from_cent_based_to_float(user_card.credit_limit, "R$") } }
 
-      div(class: "flex items-center justify-center") do
-        div(class: "flex items-center justify-center px-2 my-1 rounded-md") do
+      div(class: "flex items-center justify-center px-2 py-3 font-lekton text-lg whitespace-nowrap ml-auto") do
+        span do
+          from_cent_based_to_float(user_card.credit_limit, "R$")
+        end
+      end
+
+      div(class: "flex items-center justify-center px-2 py-3") do
+        div(class: "flex items-center justify-end gap-1") do
           link_to(edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
-                                                  class: "text-blue-600 hover:text-blue-800 mx-2 bg-sky-200 rounded-4xl",
-                                                  data: { turbo_frame: "_top" }) { cached_icon(:pencil) }
+                                                  class: action_button_class,
+                                                  title: action_message(:edit),
+                                                  aria: { label: action_message(:edit) },
+                                                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
-          link_to(user_card_path(user_card), id: "delete_user_card_#{user_card.id}",
-                                             class: "text-red-600 hover:text-red-800 mx-2 bg-rose-200 rounded-4xl",
-                                             data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }) { cached_icon(:destroy) }
+          LinkWithConfirmation(
+            id: user_card.id,
+            icon: :destroy,
+            link_params: {
+              href: user_card_path(user_card),
+              size: :xs,
+              id: "delete_user_card_#{user_card.id}",
+              class: destructive_action_button_class,
+              data: { turbo_method: :delete }
+            }
+          )
         end
       end
     end
@@ -76,17 +107,16 @@ class Views::UserCards::UserCard < Views::Base
     brand_name = user_card.card.card_name
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
-    div(class: "rounded-lg shadow-sm overflow-hidden my-3 bg-slate-100", data: { id: user_card.id, datatable_target: :row }) do
-      div(class: "p-4 bg-gradient-to-r from-blue-500 to-blue-700") do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: user_card.id, datatable_target: :row }) do
+      div(class: "p-4 bg-linear-to-r from-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :credit_card
-            link_to(brand_and_name, edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
-                                                                    class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                                    data: { turbo_frame: "_top" })
+            link_to(brand_and_name, user_card_path(user_card), id: "show_user_card_#{user_card.id}",
+                                                               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                               data: { turbo_frame: "_top", turbo_prefetch: false })
           end
-
-          link_to(card_transactions_path(user_card_id: user_card.id), data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:jump_to) }
+          status_badge
         end
       end
 
@@ -134,7 +164,39 @@ class Views::UserCards::UserCard < Views::Base
             div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day), format: :short) } }
           end
         end
+
+        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3") do
+          Button(
+            link: card_transactions_path(user_card_id: user_card.id),
+            variant: :outline,
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            data: { turbo_frame: "_top", turbo_prefetch: false }
+          ) do
+            span(class: "inline-flex items-center gap-2") do
+              cached_icon(:jump_to)
+              plain pluralise_model(CardTransaction, 2)
+            end
+          end
+        end
       end
+    end
+  end
+
+  def action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+  end
+
+  def destructive_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+  end
+
+  def status_badge
+    colour = user_card.active? ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
+
+    span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
+      model_attribute(UserCard, "statuses.#{user_card.active? ? :active : :inactive}")
     end
   end
 end

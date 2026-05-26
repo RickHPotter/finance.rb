@@ -45,7 +45,7 @@ class Views::CashTransactions::MonthYear < Views::Base
       fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-12",
             rows: [
@@ -69,7 +69,7 @@ class Views::CashTransactions::MonthYear < Views::Base
           div(class: "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
             span(class: "py-3 col-span-10 text-end") { "#{model_attribute(CashTransaction, :total_amount)}:" }
 
-            span(class: "py-3 col-start-11 text-end", id: :totalAmount, data: { price: total_amount }) do
+            span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
               from_cent_based_to_float(total_amount, "R$")
             end
           end

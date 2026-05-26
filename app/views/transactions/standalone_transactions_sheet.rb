@@ -57,7 +57,7 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
                     title: transaction.comment,
                     data: { turbo_frame: "_top", turbo_prefetch: false }
 
-            span(class: "flex-shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if transaction.installments_count == 1}") do
+            span(class: "shrink p-1 rounded-sm bg-white text-black border border-black #{'opacity-40' if transaction.installments_count == 1}") do
               pretty_installments(1, transaction.installments_count)
             end
           end

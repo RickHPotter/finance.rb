@@ -65,7 +65,7 @@ class Views::Balances::Index < Views::Base
                   span(class: "flex justify-center items-center gap-2 text-sm font-medium mx-auto rounded-sm py-3") do
                     button(
                       type: :button,
-                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-2 py-1",
+                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border border-purple-500 px-2 py-1",
                       data: { action: "click->monthly-balance#prevMonth" }
                     ) do
                       "←"
@@ -82,7 +82,7 @@ class Views::Balances::Index < Views::Base
 
                     button(
                       type: :button,
-                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border-1 border-purple-500 px-2 py-1",
+                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border border-purple-500 px-2 py-1",
                       data: { action: "click->monthly-balance#nextMonth" }
                     ) do
                       "→"

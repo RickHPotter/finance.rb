@@ -85,13 +85,13 @@ module Views
               div do
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-red-300 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  class: "p-1.5 rounded-md bg-red-300 text-black hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
                   data: { exchange_lock_target: :lockBtn, action: "click->exchange-lock#lock" }
                 ) { cached_icon :unlocked_padlock }
 
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-green-100 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  class: "p-1.5 rounded-md bg-green-100 text-black hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
                   data: { exchange_lock_target: :unlockBtn, action: "click->exchange-lock#unlock" }
                 ) { cached_icon :locked_padlock }
               end

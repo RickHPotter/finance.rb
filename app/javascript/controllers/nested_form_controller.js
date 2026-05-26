@@ -8,6 +8,17 @@ export default class extends NestedForm {
     super.connect()
   }
 
+  add(e) {
+    e.preventDefault()
+
+    const content = this.templateTarget.innerHTML.replace(/NEW_RECORD/g, new Date().getTime().toString())
+    const insertPosition = this.targetTarget.dataset.nestedFormInsert || "beforebegin"
+    this.targetTarget.insertAdjacentHTML(insertPosition, content)
+
+    const event = new CustomEvent("rails-nested-form:add", { bubbles: true })
+    this.element.dispatchEvent(event)
+  }
+
   addChildNested(e) {
     e.preventDefault()
 

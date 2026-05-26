@@ -3,7 +3,7 @@
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_cash_transaction, only: %i[edit update destroy]
+  before_action :set_cash_transaction, only: %i[show edit update destroy]
   before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
   before_action :set_cash_tabs
 
@@ -31,7 +31,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
-  def show; end
+  def show
+    render Views::CashTransactions::Show.new(cash_transaction: @cash_transaction)
+  end
 
   def new
     user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
@@ -46,7 +48,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def edit
-    @cash_transaction = current_context.cash_transactions.find(params[:id])
+    @cash_transaction = current_context.cash_transactions
+                                       .includes(
+                                         :cash_installments,
+                                         :categories,
+                                         category_transactions: :category,
+                                         entity_transactions: %i[entity exchanges]
+                                       )
+                                       .find(params[:id])
     handle_params
 
     respond_to do |format|
@@ -73,6 +82,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
+    @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
     @cash_transaction.update_installments if params[:commit] == "Update"
 
@@ -102,6 +112,17 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @chain_context = current_chain_context(mode: "duplicate")
 
     render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context)
+  end
+
+  def report_payment_failure
+    @cash_transaction = current_context.cash_transactions.includes(:cash_installments, :categories).find(params[:id])
+    return handle_payment_failure_unavailable unless @cash_transaction.return_failure_reportable?
+
+    min_date = failed_return_recalculation_start
+    @cash_transaction.report_payment_failure!
+    recalculate_balances_from(min_date)
+
+    render_payment_failure_success
   end
 
   def add_to_subscription # rubocop:disable Metrics/AbcSize
@@ -735,6 +756,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_count
         from_installments_number
         to_installments_number
+        exchange_bound_type
         from_date
         to_date
         paid
@@ -763,7 +785,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :exchanges_count, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )
@@ -837,6 +859,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       to_price: search_cash_transaction_params[:to_price],
       from_installments_count: search_cash_transaction_params[:from_installments_count],
       to_installments_count: search_cash_transaction_params[:to_installments_count],
+      exchange_bound_type: search_cash_transaction_params[:exchange_bound_type],
       from_installments_number: search_cash_transaction_params[:from_installments_number],
       to_installments_number: search_cash_transaction_params[:to_installments_number],
       from_date: search_cash_transaction_params[:from_date],
@@ -922,6 +945,40 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
           turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
           turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message })
         ], status: :unprocessable_content
+      end
+    end
+  end
+
+  def handle_payment_failure_unavailable
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: I18n.t("cash_transactions.payment_failure.unavailable") })
+        ], status: :unprocessable_content
+      end
+    end
+  end
+
+  def failed_return_recalculation_start
+    @cash_transaction.cash_installments.where(paid: false).minimum(:date) || @cash_transaction.date
+  end
+
+  def recalculate_balances_from(date)
+    Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: date.year, month: date.month).call
+  end
+
+  def render_payment_failure_success
+    build_index_context_from_selection? || build_index_context(current_context.cash_installments)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)),
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("cash_transactions.payment_failure.reported") })
+        ]
       end
     end
   end

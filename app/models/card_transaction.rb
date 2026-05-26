@@ -38,23 +38,13 @@ class CardTransaction < ApplicationRecord
   # @scopes ...................................................................
   # @class_methods ............................................................
   def self.duplicate(id)
-    existing_card_transaction = find(id)
+    existing_card_transaction = includes(:card_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
 
     card_transaction = existing_card_transaction.dup
     card_transaction.duplicate = true
-    card_transaction.card_installments = existing_card_transaction.card_installments.map do |installment|
-      installment.dup.tap do |duplicate_installment|
-        duplicate_installment.cash_transaction_id = nil
-        duplicate_installment.paid = false
-      end
-    end
+    card_transaction.card_installments = duplicated_card_installments_for(existing_card_transaction)
     card_transaction.category_transactions = existing_card_transaction.category_transactions.map(&:dup)
-
-    existing_card_transaction.entity_transactions.each do |et|
-      new_entity_transaction = et.dup
-      new_entity_transaction.exchanges = et.exchanges.map(&:dup)
-      card_transaction.entity_transactions.push(new_entity_transaction)
-    end
+    card_transaction.entity_transactions = duplicated_entity_transactions_for(existing_card_transaction)
 
     card_transaction
   end
@@ -162,6 +152,57 @@ class CardTransaction < ApplicationRecord
 
   private
 
+  def self.duplicated_card_installments_for(transaction)
+    ordered_card_installments_for_duplicate(transaction).map do |installment|
+      installment.dup.tap do |duplicate_installment|
+        duplicate_installment.cash_transaction_id = nil
+        duplicate_installment.paid = false
+      end
+    end
+  end
+
+  def self.duplicated_entity_transactions_for(transaction)
+    ordered_entity_transactions_for_duplicate(transaction).map do |entity_transaction|
+      entity_transaction.dup.tap do |duplicate_entity_transaction|
+        duplicate_entity_transaction.exchanges = duplicated_exchanges_for(entity_transaction)
+        duplicate_entity_transaction.exchanges_count = duplicate_entity_transaction.exchanges.size
+      end
+    end
+  end
+
+  def self.duplicated_exchanges_for(entity_transaction)
+    ordered_exchanges_for_duplicate(entity_transaction).each_with_index.map do |exchange, index|
+      exchange.dup.tap do |duplicate_exchange|
+        duplicate_exchange.number = index + 1
+      end
+    end
+  end
+
+  def self.ordered_card_installments_for_duplicate(transaction)
+    transaction.card_installments.sort_by do |installment|
+      [ installment.number.to_i, installment.year.to_i, installment.month.to_i, installment.date || Time.zone.at(0), installment.id.to_i ]
+    end
+  end
+
+  def self.ordered_entity_transactions_for_duplicate(transaction)
+    transaction.entity_transactions.sort_by do |entity_transaction|
+      [ entity_transaction.entity&.entity_name.to_s, entity_transaction.id.to_i ]
+    end
+  end
+
+  def self.ordered_exchanges_for_duplicate(entity_transaction)
+    entity_transaction.exchanges.sort_by do |exchange|
+      [ exchange.number.to_i, exchange.year.to_i, exchange.month.to_i, exchange.date || Time.zone.at(0), exchange.id.to_i ]
+    end
+  end
+
+  private_class_method :duplicated_card_installments_for,
+                       :duplicated_entity_transactions_for,
+                       :duplicated_exchanges_for,
+                       :ordered_card_installments_for_duplicate,
+                       :ordered_entity_transactions_for_duplicate,
+                       :ordered_exchanges_for_duplicate
+
   def assign_default_context
     self.context ||= user&.ensure_main_context!
   end
@@ -185,13 +226,19 @@ class CardTransaction < ApplicationRecord
   def sync_subscription_installment
     return if subscription_id.blank? || card_installments_count != 1
 
-    card_installments.first&.update_columns(
+    installment = card_installments.first
+    return if installment.blank?
+
+    attributes = {
       price:,
       starting_price: price,
       date:,
       month:,
       year:
-    )
+    }
+    return if attributes.all? { |attribute, value| installment.public_send(attribute) == value }
+
+    installment.update!(attributes)
   end
 
   def update_month_year

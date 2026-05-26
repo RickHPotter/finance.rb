@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_03_165007) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -200,6 +200,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_03_165007) do
   create_table "entities", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.string "avatar_name", default: "people/0.png", null: false
+    t.boolean "built_in", default: false, null: false
     t.integer "card_transactions_count", default: 0, null: false
     t.integer "card_transactions_total", default: 0, null: false
     t.integer "cash_transactions_count", default: 0, null: false

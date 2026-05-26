@@ -21,6 +21,33 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders a duplicate action that uses the duplicate route" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get month_year_investments_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        investment: { user_bank_account_id: user_bank_account.id }
+      }
+
+      expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      duplicate_link = document.at_css("#duplicate_investment_#{investment.id}")
+
+      expect(duplicate_link).to be_present
+      expect(duplicate_link["href"]).to eq(duplicate_investment_path(investment))
+      expect(duplicate_link["href"]).not_to include("next_day")
+    end
   end
 
   describe "[ #new ]" do
@@ -28,6 +55,8 @@ RSpec.describe "Investments", type: :request do
       get new_investment_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="investment_form_submission_skeleton"')
       expect(response.body).to include("ruby-ui--combobox")
       expect(response.body).to include('id="investment_form"')
       expect(response.body).to include('data-controller="reactive-form price-mask"')
@@ -46,9 +75,14 @@ RSpec.describe "Investments", type: :request do
       }
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="next_day"')
       expect(response.body).to include('id="transaction_price"')
       expect(response.body).to include('data-controller="input-select autofocus"')
       expect(response.body).to include('data-autofocus-select-value="true"')
+      expect(response.body).to include('data-datetime-input-target="weekdayLabel"')
+      expect(response.body).not_to include('id="investment_date_time_input"')
     end
   end
 
@@ -73,6 +107,32 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include("Duplicating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
       expect(response.body).to include('data-controller="input-select autofocus"')
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css("#investment_date")["value"]).to eq("2026-03-14T00:00")
+      expect(document.at_css("#investment_date_time_input")).to be_nil
+    end
+
+    it "renders destroy on the persisted edit form" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Editable investment",
+        price: 2000,
+        date: Date.new(2026, 3, 14),
+        month: 3,
+        year: 2026
+      )
+
+      get edit_investment_path(investment)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("delete_investment_#{investment.id}")
+      expect(response.body).to include(I18n.t("actions.destroy"))
     end
   end
 
@@ -105,6 +165,89 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include("checked")
       expect(response.body).to match(/name="investment\[user_bank_account_id\]"[^>]*value="#{user_bank_account.id}"[^>]*checked/)
       expect(response.body).to match(/name="investment\[investment_type_id\]"[^>]*value="#{investment_type.id}"[^>]*checked/)
+    end
+
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "",
+            price: 1234,
+            date: Date.new(2026, 3, 14),
+            month: 3,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Investment, :count)
+
+      expect(response.body).to include(I18n.t("notification.not_created", model: Investment.model_name.human))
+      expect(response.body).to include(Investment.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
+    it "continues a next_day duplicate chain from the newly created investment date" do
+      create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Seed investment",
+        price: 1000,
+        date: Date.new(2026, 3, 23),
+        month: 3,
+        year: 2026
+      )
+
+      get new_investment_path, params: {
+        investment: {
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        },
+        next_day: true
+      }
+
+      expect(response).to have_http_status(:success)
+      initial_document = Nokogiri::HTML.fragment(response.body)
+
+      expect(initial_document.at_css("#investment_date")["value"]).to eq("2026-03-24T00:00")
+
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "Duplicated next day",
+            price: 1234,
+            date: Date.new(2026, 3, 24),
+            month: 3,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id,
+            duplicate: true
+          },
+          next_day: true,
+          chain_mode: "duplicate",
+          continue_chain: "1"
+        }, headers: turbo_stream_headers
+      end.to change(Investment, :count).by(1)
+
+      created_investment = Investment.order(:id).last
+
+      expect(created_investment.date.to_date).to eq(Date.new(2026, 3, 24))
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Chain Duplicating")
+
+      next_document = Nokogiri::HTML.fragment(response.body)
+
+      expect(next_document.at_css("#investment_date")["value"]).to eq("2026-03-25T00:00")
+      expect(response.body).to match(/name="chain_mode"[^>]*value="duplicate"/)
+      expect(response.body).to include('name="next_day"')
     end
 
     it "finishes a chain without saving the current investment form" do
@@ -189,6 +332,30 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).not_to include("investment%5Bid%5D")
       expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
       expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+    end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      investment = create(:investment, user:, user_bank_account:, investment_type:)
+
+      patch investment_path(investment), params: {
+        investment: {
+          description: "",
+          price: investment.price,
+          date: investment.date,
+          month: investment.month,
+          year: investment.year,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Investment.model_name.human))
+      expect(response.body).to include(Investment.human_attribute_name(:description))
+      expect(response.body).to include("can&#39;t be blank")
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
   end
 

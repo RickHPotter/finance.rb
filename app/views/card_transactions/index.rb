@@ -37,6 +37,7 @@ class Views::CardTransactions::Index < Views::Base
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
+                                                                               :exchange_bound_type,
                                                                                :user_card, :active_month_years, :sort, :direction, :order_by))
 
               BulkActionBar(

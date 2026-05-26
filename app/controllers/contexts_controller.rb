@@ -30,6 +30,21 @@ class ContextsController < ApplicationController
     redirect_to context_path(context)
   end
 
+  def destroy
+    context = current_user.contexts.find(params[:id])
+    invalid_destroy_response = invalid_destroy_response_for(context)
+    return invalid_destroy_response if invalid_destroy_response
+
+    Logic::ContextPurgeService.new(context:, user: current_user).call
+    session[:current_context_id] = current_user.main_context.id if current_context == context
+
+    redirect_to contexts_path, notice: t("contexts.destroy.success")
+  rescue Logic::ContextPurgeService::CrossContextDependencyError
+    redirect_to context_path(context), alert: t("contexts.destroy.cross_context_dependencies")
+  rescue Logic::ContextPurgeService::InvariantViolation
+    redirect_to context_path(context), alert: t("contexts.destroy.main_context_guard_failed")
+  end
+
   def dismiss
     render inline: helpers.turbo_frame_tag(:context_overlay), layout: false
   end
@@ -106,5 +121,13 @@ class ContextsController < ApplicationController
     rescue URI::InvalidURIError, ActionController::RoutingError, NoMethodError
       {}
     end
+  end
+
+  def invalid_destroy_response_for(context)
+    return redirect_to(contexts_path, alert: t("contexts.destroy.main_forbidden")) if context.main?
+    return redirect_to(context_path(context), alert: t("contexts.destroy.archive_required")) unless context.archived?
+    return redirect_to(context_path(context), alert: t("contexts.destroy.has_children")) if context.derived_contexts.exists?
+
+    nil
   end
 end

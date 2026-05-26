@@ -27,7 +27,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_cards, except: :show do
+  resources :user_cards do
     member do
       get :reference_date
     end
@@ -40,10 +40,10 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :user_bank_accounts, except: :show
-  resources :categories, except: :show
-  resources :entities, except: :show
-  resources :contexts, only: %i[index show new create] do
+  resources :user_bank_accounts
+  resources :categories
+  resources :entities
+  resources :contexts, only: %i[index show new create destroy] do
     collection do
       get :dismiss
     end
@@ -64,7 +64,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :card_transactions, except: :show do
+  resources :card_transactions do
     member do
       get :duplicate
     end
@@ -77,9 +77,10 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :cash_transactions, except: :show do
+  resources :cash_transactions do
     member do
       get :duplicate
+      patch :report_payment_failure
     end
 
     collection do
@@ -100,7 +101,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :budgets, except: :show do
+  resources :budgets do
+    member do
+      get :duplicate
+    end
+
     collection do
       get :month_year
     end
@@ -140,11 +145,49 @@ Rails.application.routes.draw do
 
     resource :settings, only: [] do
       get :exchange_audit
+      get :exchange_return_audit
+      get :card_exchange_projection_audit
       patch :apply_exchange_audit
     end
   end
 
   namespace :lalas do
+    root "cash_transactions#index"
+
+    resources :card_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+
+    resources :cash_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+  end
+
+  scope "/internal/:entity_slug", as: :internal, module: :lalas do
+    root "cash_transactions#index"
+
+    resources :card_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+
+    resources :cash_transactions, only: %i[index] do
+      collection do
+        get :month_year
+        get :search
+      end
+    end
+  end
+
+  scope "/:user_slug/external/:entity_slug", as: :external, module: :lalas do
     root "cash_transactions#index"
 
     resources :card_transactions, only: %i[index] do

@@ -27,6 +27,7 @@ class Views::Entities::Form < Views::Base
             class: outdoor_input_class,
             autofocus: true,
             autocomplete: :off,
+            value: entity.entity_name,
             data: { controller: "blinking-placeholder", text: model_attribute(entity, :entity_name) }
           )
         end
@@ -38,20 +39,26 @@ class Views::Entities::Form < Views::Base
         bold_label(form, :active)
 
         div(class: "pb-3") do
-          form.checkbox :active, class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500", checked: entity.new_record? || entity.active
+          form.checkbox :active,
+                        class: "rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500",
+                        checked: entity.new_record? || entity.active,
+                        disabled: entity.persisted? && entity.built_in?
         end
 
-        div(class: "w-full") { Button(type: :submit, variant: :purple) { action_model(:submit, entity) } }
+        div(class: "flex w-full flex-col gap-3") do
+          div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
+            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(entity))}") { action_message(:submit) }
 
-        if entity.persisted?
-          div(class: "w-full") do
-            Button(
-              id: "delete_entity_#{entity.id}",
-              type: :submit,
-              variant: :destructive,
-              link: entity_path(entity),
-              data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
-            ) { action_model(:destroy, entity) }
+            if entity.persisted? && !entity.built_in?
+              Button(
+                id: "delete_entity_#{entity.id}",
+                type: :submit,
+                variant: :outline,
+                class: "w-64 #{destroy_button_class}",
+                link: entity_path(entity),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+              ) { action_message(:destroy) }
+            end
           end
         end
 
@@ -61,18 +68,35 @@ class Views::Entities::Form < Views::Base
 
     div(class: "text-xs font-thin text-slate-300 pt-2") do
       div do
-        span { model_attribute(entity, :person_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/vitaly-gorbachev", title: "people icons") { "Vitaly Gorbachev - Flaticon" }
+        span { model_attribute(entity, :person_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/vitaly-gorbachev", title: "people icons") do
+          "#{model_attribute(entity, :person_icons_credits)} - Flaticon"
+        end
       end
 
       div do
-        span { model_attribute(entity, :dog_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs icons") { "Maxim Kulikov - Flaticon" }
+        span { model_attribute(entity, :dog_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/maxim-kulikov", title: "dogs and cats icons") do
+          "#{model_attribute(entity, :dog_icons_credits)} - Flaticon"
+        end
       end
 
       div do
-        span { model_attribute(entity, :country_icons_credits) }
-        a(class: "underline", href: "https://www.flaticon.com/authors/freepik", title: "coutries icons") { "Freepik - Flaticon" }
+        span { model_attribute(entity, :bzzrincantation_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/bzzrincantation", title: "people, entities and animals icons") do
+          "#{model_attribute(entity, :bzzrincantation_icons_credits)} - Flaticon"
+        end
+      end
+
+      div do
+        span { model_attribute(entity, :country_icons_credit_text) }
+        whitespace
+        a(class: "underline", href: "https://www.flaticon.com/authors/freepik", title: "coutries icons") do
+          "#{model_attribute(entity, :country_icons_credits)} - Flaticon"
+        end
       end
     end
   end

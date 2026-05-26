@@ -107,7 +107,7 @@ class Views::Shared::Tabs < Views::Base
 
     state_classes = default_tab ? "bg-sky-500 text-white shadow-sm shadow-sky-950/50" : "bg-slate-900/80 text-slate-300 ring-1 ring-slate-700/70"
 
-    "relative z-30 mb-0 flex min-h-8 items-center justify-center gap-1 rounded-2xl border-0 px-2 py-1 text-[10px]
+    "relative z-30 mb-0 flex min-h-8 items-center justify-center gap-1 rounded-2xl border-0 px-2 py-1 text-2xs
       font-medium transition-all duration-200 #{state_classes}".squish
   end
 
@@ -120,6 +120,6 @@ class Views::Shared::Tabs < Views::Base
   def tabs_label_classes
     return "ml-1 pointer-events-none text-slate-100 text-xs md:text-md font-light md:font-bold text-nowrap" unless mobile
 
-    "pointer-events-none text-slate-100 text-[10px] font-medium text-nowrap"
+    "pointer-events-none text-slate-100 text-2xs font-medium text-nowrap"
   end
 end

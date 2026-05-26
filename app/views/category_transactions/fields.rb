@@ -23,7 +23,7 @@ module Views
           div(class: "flex my-1") do
             span(class: "flex items-center text-sm font-medium text-black") do
               div(
-                class: "category_container flex items-center justify-center px-2 py-1 rounded-sm border-1 border-black text-sm",
+                class: "category_container flex min-h-12 items-center justify-center px-2 py-1 rounded-sm border border-black text-sm",
                 style: "background: #{colour}"
               ) do
                 span(class: "categories_category_name text-nowrap") { category_transaction&.category&.name }
@@ -43,6 +43,7 @@ module Views
           end
 
           form.hidden_field :category_id, class: :categories_category_id
+          form.hidden_field :id if category_transaction.persisted?
           form.hidden_field :_destroy
         end
       end

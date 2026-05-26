@@ -21,15 +21,15 @@ module Views
         positive = transactable.price.to_i.positive?
         sign = positive ? "-" : "+"
 
-        if entity_transaction.exchanges.empty? || entity_transaction.exchanges.first&.standalone?
-          :standalone
-        else
-          :card_bound
-        end => default_bound_type
+        default_bound_type = submitted_bound_type || inferred_bound_type
 
-        SheetContent(side: :top, class: "max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto", data: { controller: "price-mask" }) do
+        SheetContent(
+          side: :middle,
+          class: "max-h-[90vh] max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto rounded-xl border border-slate-300 text-black overflow-hidden flex flex-col",
+          data: { controller: "price-mask entity-transaction" }
+        ) do
           SheetHeader do
-            SheetTitle(class: "entities_entity_name") { entity_transaction&.entity&.entity_name }
+            SheetTitle(class: "entities_entity_name text-black") { entity_transaction&.entity&.entity_name }
             SheetDescription { "" }
           end
 
@@ -102,7 +102,7 @@ module Views
 
                   div(class: "m-auto") do
                     Button(
-                      class: "bg-gray-100 rounded-sm", disabled: !entity_transaction.is_payer,
+                      class: "bg-gray-100 text-black rounded-sm", disabled: !entity_transaction.is_payer,
                       data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
                     ) do
                       cached_icon(:equals)
@@ -120,7 +120,7 @@ module Views
                       for: "entity_transaction_standalone_#{form.index}",
                       class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
                               text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
-                              has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
+                              has-checked:border-blue-600 has-checked:bg-blue-100 has-checked:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :standalone,
                                        checked: default_bound_type == :standalone,
@@ -135,7 +135,7 @@ module Views
                       for: "entity_transaction_card_bound_#{form.index}",
                       class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
                               text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
-                              has-[:checked]:border-blue-600 has-[:checked]:bg-blue-100 has-[:checked]:text-blue-700"
+                              has-checked:border-blue-600 has-checked:bg-blue-100 has-checked:text-blue-700"
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :card_bound,
                                        checked: default_bound_type == :card_bound,
@@ -161,7 +161,15 @@ module Views
                 end
               end
 
-              exchanges_association = entity_transaction.exchanges.includes(:cash_transaction).order(:number) if entity_transaction.exchanges.count > 1
+              exchanges_association =
+                if entity_transaction.exchanges_count.to_i.positive?
+                  if entity_transaction.persisted?
+                    entity_transaction.exchanges.includes(:cash_transaction).order(:number)
+                  else
+                    entity_transaction.exchanges.sort_by(&:number)
+                  end
+                end
+
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
                 render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)
               end
@@ -177,24 +185,49 @@ module Views
       def render_helper_popover(target:, icon:)
         Popover(class: "m-auto") do
           PopoverTrigger(class: "w-full") do
-            Button(class: "bg-gray-100 rounded-sm") do
+            Button(class: "bg-gray-100 text-black rounded-sm") do
               cached_icon(icon)
             end
           end
 
           PopoverContent(class: "w-40") do
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
               model_attribute(Exchange, :full_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
               model_attribute(Exchange, :half_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2", data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
+            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+                   data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
               model_attribute(Exchange, :third_price)
             end
           end
+        end
+      end
+
+      private
+
+      def rails_view_context
+        context[:rails_view_context]
+      end
+
+      def params
+        rails_view_context.params
+      end
+
+      def submitted_bound_type
+        rails_view_context.params["bound_type_#{form.index}"]&.presence_in(%w[standalone card_bound])&.to_sym
+      end
+
+      def inferred_bound_type
+        if entity_transaction.exchanges_count.to_i.zero? || entity_transaction.exchanges.first&.standalone?
+          :standalone
+        else
+          :card_bound
         end
       end
     end

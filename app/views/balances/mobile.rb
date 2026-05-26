@@ -16,7 +16,7 @@ class Views::Balances::Mobile < Views::Base
 
           link_to(
             legacy_balances_path,
-            class: "inline-flex items-center rounded-full border border-stone-200 px-3 py-1 text-[10px] " \
+            class: "inline-flex items-center rounded-full border border-stone-200 px-3 py-1 text-2xs " \
                    "font-semibold uppercase tracking-[0.16em] text-stone-600 transition hover:border-stone-400 hover:text-stone-900",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) { "Legacy" }
@@ -51,7 +51,7 @@ class Views::Balances::Mobile < Views::Base
 
   def render_metric_card(label, target_name)
     div(class: "rounded-3xl border border-stone-200 bg-stone-50 px-3 py-1 shadow-sm") do
-      p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
       p(
         class: "mt-2 text-md font-semibold text-stone-900 transition-colors md:mt-1 md:text-base",
         data: { balances_mobile_target: target_name }
@@ -60,10 +60,10 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_trend_card
-    div(class: "rounded-[28px] border border-stone-200 bg-gradient-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm") do
+    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm") do
       div(class: "flex items-center justify-between gap-3") do
         div do
-          p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.trend") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.trend") }
           p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.trend_subtitle") }
         end
       end
@@ -89,7 +89,7 @@ class Views::Balances::Mobile < Views::Base
 
       div(class: "mt-4 rounded-3xl border border-stone-200 bg-white p-3") do
         div do
-          p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.extremes") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.extremes") }
           p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.extremes_subtitle") }
         end
 
@@ -109,10 +109,10 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_breakdown_card
-    div(class: "rounded-[28px] border border-stone-200 bg-gradient-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm") do
+    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm") do
       div(class: "flex items-center justify-between gap-3") do
         div do
-          p(class: "text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.breakdown") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.breakdown") }
           p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.breakdown_subtitle") }
         end
 
@@ -137,7 +137,7 @@ class Views::Balances::Mobile < Views::Base
   def render_range_button(label, value, selected: false)
     button(
       type: :button,
-      class: "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition " \
+      class: "inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] transition " \
              "#{selected ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white text-stone-600'}",
       data: { balances_mobile_target: "rangeButton", range: value, action: "click->balances-mobile#changeRange" }
     ) { label }
@@ -146,14 +146,16 @@ class Views::Balances::Mobile < Views::Base
   def render_preset_button(label, value, selected: false)
     button(
       type: :button,
-      class: "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition " \
+      class: "inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] transition " \
              "#{selected ? 'border-sky-700 bg-sky-700 text-white' : 'border-stone-200 bg-white text-stone-600'}",
       data: { balances_mobile_target: "presetButton", preset: value, action: "click->balances-mobile#changePreset" }
     ) { label }
   end
 
   def render_scenario_badge
-    div(class: "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-[10px] font-semibold uppercase") do
+    return if current_context.main?
+
+    div(class: "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-2xs font-semibold uppercase") do
       plain(Context.model_name.human)
       plain(": ")
       plain(current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name)

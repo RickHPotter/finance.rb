@@ -3,7 +3,7 @@
 class CardTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_card_transaction, only: %i[edit update destroy]
+  before_action :set_card_transaction, only: %i[show edit update destroy]
   before_action :set_card_tabs, except: :index
 
   def index
@@ -44,7 +44,9 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
-  def show; end
+  def show
+    render Views::CardTransactions::Show.new(card_transaction: @card_transaction)
+  end
 
   def new
     @card_transaction = current_context.card_transactions.new(
@@ -99,6 +101,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def update
     @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
     @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
+    @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
     @card_transaction.build_month_year if @card_transaction.user_card_id
     prune_exchange_entity_transactions_without_exchanges!
 
@@ -158,6 +161,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       normalize_failed_card_transaction_save! unless saved
 
       if saved
+        notify_shared_return_counterpart_updates!
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
         handle_chain_save_success
       else
@@ -173,9 +177,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def pay_in_advance
-    description = model_attribute(CardTransaction, :card_advance_description)
-
-    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params.merge(description:), context: current_context)
+    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params, context: current_context)
+    @card_transaction.description = @card_transaction.card_advance_description
     @card_transaction.card_installments.first.assign_attributes(@card_transaction.slice(:year, :month))
     @card_transaction.save
 
@@ -265,6 +268,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     index
     @index_context[:user_card] = @card_transaction.user_card
     apply_chain_index_context(record_ids: created_record_ids)
+  end
+
+  def notify_shared_return_counterpart_updates!
+    mirrored_shared_return_transactions.each do |cash_transaction|
+      Logic::SharedReturnStructureUpdateMessageService.new(transaction: cash_transaction).call
+    end
+  end
+
+  def mirrored_shared_return_transactions
+    @card_transaction.entity_transactions
+                     .includes(exchanges: :cash_transaction)
+                     .flat_map(&:exchanges)
+                     .filter_map(&:cash_transaction)
+                     .select(&:shared_return_flow?)
+                     .uniq(&:id)
   end
 
   def handle_chain_finish_without_save
@@ -372,6 +390,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
         to_installments_count
         from_installments_number
         to_installments_number
+        exchange_bound_type
         month_year
         force_mobile
         sort

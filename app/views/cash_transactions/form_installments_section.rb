@@ -9,22 +9,13 @@ class Views::CashTransactions::FormInstallmentsSection < Views::Base
   end
 
   def view_template
-    div(class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
-        data: { controller: "nested-form installment-lock", nested_form_wrapper_selector_value: ".nested-form-wrapper" }) do
-      template(data_nested_form_target: "template") do
-        form.fields_for :cash_installments, CashInstallment.new, child_index: "NEW_RECORD" do |installment_fields|
-          render Views::Installments::Fields.new(form: installment_fields)
-        end
-      end
-
-      form.fields_for :cash_installments, ordered_cash_installments do |installment_fields|
-        render Views::Installments::Fields.new(form: installment_fields)
-      end
-
-      div(data_nested_form_target: "target")
-
-      button(type: :button, class: :hidden, tabindex: -1, data: { reactive_form_target: :addInstallment, action: "nested-form#add" })
-    end
+    render Views::Installments::Section.new(
+      form:,
+      association_name: :cash_installments,
+      installments: ordered_cash_installments,
+      record_class: CashInstallment,
+      mobile_layout: rails_view_context.instance_variable_get(:@mobile) || false
+    )
   end
 
   private

@@ -16,6 +16,7 @@
     "@stimulus-components/clipboard": "^5.0.0",
     "apexcharts": "^5.3.4",
     "chart.js": "^4.5.1",
+    "embla-carousel": "^8.6.0",
     "flowbite": "^4.0.1",
     "hotkeys-js": "4.0.3",
     "mustache": "^4.2.0",

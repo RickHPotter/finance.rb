@@ -35,7 +35,7 @@ module RubyUI
       {
         data_state: "open",
         class: [
-          "fixed pointer-events-auto z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in
+          "fixed pointer-events-auto z-[80] gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in
           data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           @side_classes
         ]
@@ -79,9 +79,10 @@ module RubyUI
         data_state: "open",
         data_action: "click->ruby-ui--sheet-content#close",
         class: if @no_blur
-                 ""
+                 "fixed pointer-events-auto inset-0 z-[80] bg-background/65 data-[state=open]:animate-in data-[state=closed]:animate-out " \
+                   "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
                else
-                 "fixed pointer-events-auto inset-0 z-50 bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out
+                 "fixed pointer-events-auto inset-0 z-[80] bg-background/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out
                   data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
                end
       )

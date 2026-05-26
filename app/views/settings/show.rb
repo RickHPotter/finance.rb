@@ -22,8 +22,10 @@ class Views::Settings::Show < Views::Base
 
         div(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm",
             data: { controller: "naming-tabs", naming_tabs_current_value: default_tab_name }) do
-          div(class: "flex flex-wrap gap-2 border-b border-slate-200 pb-3") do
+          div(class: "flex gap-2 overflow-x-auto border-b border-slate-200 pb-3") do
             tab_button(name: "exchange_audit", label: I18n.t("settings.tabs.exchange_audit")) if show_exchange_audit
+            tab_button(name: "exchange_return_audit", label: I18n.t("settings.tabs.exchange_return_audit")) if show_exchange_audit
+            tab_button(name: "card_exchange_projection_audit", label: I18n.t("settings.tabs.card_exchange_projection_audit")) if show_exchange_audit
             tab_button(name: "naming", label: I18n.t("settings.tabs.naming"))
           end
 
@@ -32,6 +34,18 @@ class Views::Settings::Show < Views::Base
               div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "exchange_audit" }) do
                 turbo_frame_tag :settings_exchange_audit_content, src: exchange_audit_admin_settings_path do
                   loading_state
+                end
+              end
+
+              div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "exchange_return_audit" }) do
+                turbo_frame_tag :settings_exchange_return_audit_content, src: exchange_return_audit_admin_settings_path do
+                  loading_state(I18n.t("settings.exchange_return_audit.loading"))
+                end
+              end
+
+              div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "card_exchange_projection_audit" }) do
+                turbo_frame_tag :settings_card_exchange_projection_audit_content, src: card_exchange_projection_audit_admin_settings_path do
+                  loading_state(I18n.t("settings.card_exchange_projection_audit.loading"))
                 end
               end
             end
@@ -52,14 +66,14 @@ class Views::Settings::Show < Views::Base
   def tab_button(name:, label:)
     button(
       type: :button,
-      class: "rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors",
+      class: "shrink-0 rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors",
       data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
     ) { label }
   end
 
-  def loading_state
+  def loading_state(text = I18n.t("settings.exchange_audit.loading"))
     div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500") do
-      I18n.t("settings.exchange_audit.loading")
+      text
     end
   end
 

@@ -157,6 +157,42 @@ RSpec.describe CardTransaction, type: :model do
       expect(duplicated_installment.paid).to be(false)
     end
 
+    it "duplicates installments and exchanges in stable number order" do
+      transaction = create(
+        :card_transaction,
+        user: user_card.user,
+        context: user_card.user.main_context,
+        user_card:,
+        description: "Ordered duplicate source",
+        price: -3000,
+        date: Date.new(2026, 4, 3),
+        month: 5,
+        year: 2026
+      )
+      stale_cash_transaction_ids = transaction.card_installments.pluck(:cash_transaction_id).compact
+      transaction.card_installments.delete_all
+      Installment.where(cash_transaction_id: stale_cash_transaction_ids).delete_all
+      CashTransaction.where(id: stale_cash_transaction_ids).delete_all
+      transaction.card_installments.create!(number: 2, price: -1000, date: Date.new(2026, 5, 3), month: 6, year: 2026, paid: false)
+      transaction.card_installments.create!(number: 1, price: -2000, date: Date.new(2026, 4, 3), month: 5, year: 2026, paid: false)
+
+      payer = transaction.entity_transactions.first || transaction.entity_transactions.create!(
+        entity: create(:entity, user: user_card.user),
+        is_payer: true,
+        price: -3000,
+        price_to_be_returned: -3000
+      )
+      payer.exchanges.destroy_all
+      payer.exchanges.create!(number: 2, exchange_type: :monetary, bound_type: :standalone, price: -1000, date: Date.new(2026, 5, 3), month: 5, year: 2026)
+      payer.exchanges.create!(number: 1, exchange_type: :monetary, bound_type: :standalone, price: -2000, date: Date.new(2026, 4, 3), month: 4, year: 2026)
+
+      duplicate = described_class.duplicate(transaction.id)
+
+      expect(duplicate.card_installments.map(&:number)).to eq([ 1, 2 ])
+      expect(duplicate.entity_transactions.first.exchanges.map(&:number)).to eq([ 1, 2 ])
+      expect(duplicate.entity_transactions.first.exchanges_count).to eq(2)
+    end
+
     it "defaults context to the user's main context" do
       transaction = described_class.new(
         user: card_transaction.user,
@@ -322,7 +358,7 @@ RSpec.describe CardTransaction, type: :model do
     it "allows allocation changes after paid history when the transaction is in the subscription flow" do
       user = create(:user)
       user_card = create(:user_card, user:)
-      original_entity = create(:entity, user:, entity_name: "MOI")
+      original_entity = user.built_in_entity
       replacement_entity = create(:entity, user:, entity_name: "NOUS")
       subscription_category = user.built_in_category("SUBSCRIPTION")
       transaction = create_card_transaction_with_history(

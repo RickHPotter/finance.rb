@@ -5,6 +5,7 @@ require "rails_helper"
 RSpec.describe "Budgets", type: :request do
   let(:user) { create(:user, :random) }
   let(:category) { create(:category, :random, user:) }
+  let(:entity) { create(:entity, :random, user:) }
   let(:bank) { create(:bank, :random) }
   let(:user_bank_account) { create(:user_bank_account, :random, user:, bank:) }
 
@@ -57,6 +58,30 @@ RSpec.describe "Budgets", type: :request do
         }, headers: turbo_stream_headers
       end.to change(Budget, :count).by(1)
     end
+
+    it "shows generic and detailed failure notifications when create validation fails" do
+      expect do
+        post budgets_path, params: {
+          budget: {
+            description: "Food Budget",
+            value: -10_000,
+            inclusive: false,
+            first_installment_only: false,
+            month_year: "2026-03",
+            active: true,
+            user_id: user.id,
+            budget_categories_attributes: [],
+            budget_entities_attributes: []
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Budget, :count)
+
+      expect(response.body).to include(I18n.t("notification.not_created", model: Budget.model_name.human))
+      expect(response.body).to include(I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
   end
 
   describe "[ #new ]" do
@@ -66,6 +91,9 @@ RSpec.describe "Budgets", type: :request do
       get new_budget_path
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("New")
+      expect(response.body).to include('data-controller="form-loading"')
+      expect(response.body).to include('id="budget_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
       expect(response.body).to include('data-controller="reactive-form price-mask dynamic-description"')
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
@@ -80,8 +108,105 @@ RSpec.describe "Budgets", type: :request do
       get edit_budget_path(budget)
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include("Editing")
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
       expect(response.body).to include('data-reactive-form-target="monthYearInput"')
+    end
+
+    it "renders a duplicated budget form without creating a new record" do
+      budget = create(
+        :budget,
+        user:,
+        description: "Duplicated budget",
+        month: 3,
+        year: 2026,
+        value: -10_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      expect { get duplicate_budget_path(budget) }.not_to change(Budget, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Duplicating")
+      expect(response.body).to include('id="budget_form_submission_skeleton"')
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders a context-scoped dashboard with summary, definition, consumption, and actions" do
+      cash_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Groceries for budget",
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -2_500,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -2_500, paid: true)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Budget dashboard details",
+        month: 3,
+        year: 2026,
+        value: -10_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      get budget_path(budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Budget dashboard details")
+      expect(response.body).to include("Groceries for budget")
+      expect(response.body).to include(I18n.t("dashboards.budgets.consumption"))
+      expect(response.body).to include(I18n.t("dashboards.budgets.definition"))
+      expect(response.body).to include(I18n.t("dashboards.sections.summary"))
+      expect(response.body).to include(edit_budget_path(budget))
+      expect(response.body).to include(duplicate_budget_path(budget))
+      expect(response.body).to include(cash_transaction_path(cash_transaction))
+      expect(response.body).to include("delete_budget_#{budget.id}")
+      expect(response.body).to include(category.name)
+    end
+
+    it "shows Available for expense budgets that still have room remaining" do
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Partially consumed budget",
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -25_787,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -25_787, paid: true)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Expense budget status",
+        month: 3,
+        year: 2026,
+        value: -60_000,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      get budget_path(budget)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("dashboards.budgets.status.available"))
+      expect(response.body).not_to include(I18n.t("dashboards.budgets.status.exceeded"))
     end
   end
 
@@ -106,6 +231,58 @@ RSpec.describe "Budgets", type: :request do
 
       expect(budget.reload.description).to eq("Updated Budget")
     end
+
+    it "shows generic and detailed failure notifications when update validation fails" do
+      budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+
+      patch budget_path(budget), params: {
+        budget: {
+          description: budget.description,
+          value: budget.value,
+          inclusive: budget.inclusive,
+          first_installment_only: budget.first_installment_only,
+          month: budget.month,
+          year: budget.year,
+          active: budget.active,
+          user_id: user.id,
+          budget_categories_attributes: budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id, _destroy: "1" } },
+          budget_entities_attributes: []
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response.body).to include(I18n.t("notification.not_updated", model: Budget.model_name.human))
+      expect(response.body).to include(I18n.t("activerecord.errors.models.budget.missing_categories_or_entities"))
+      expect(response.body).not_to include(">is invalid<")
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
+    it "keeps an existing single category while adding a new entity" do
+      budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+
+      expect do
+        patch budget_path(budget), params: {
+          budget: {
+            description: budget.description,
+            value: budget.value,
+            inclusive: budget.inclusive,
+            first_installment_only: budget.first_installment_only,
+            month: budget.month,
+            year: budget.year,
+            active: budget.active,
+            user_id: user.id,
+            budget_categories_attributes: budget.budget_categories.map { |bc| { id: bc.id, category_id: bc.category_id } },
+            budget_entities_attributes: [ { entity_id: entity.id } ]
+          }
+        }, headers: turbo_stream_headers
+      end.not_to raise_error
+
+      budget.reload
+      expect(budget.budget_categories.count).to eq(1)
+      expect(budget.budget_categories.first.category_id).to eq(category.id)
+      expect(budget.budget_entities.count).to eq(1)
+      expect(budget.budget_entities.first.entity_id).to eq(entity.id)
+    end
   end
 
   describe "[ #destroy ]" do
@@ -119,12 +296,31 @@ RSpec.describe "Budgets", type: :request do
   end
 
   describe "[ #month_year ]" do
-    it "renders successfully" do
-      create(:budget, user:, month: 3, year: 2026, budget_categories: [ build(:budget_category, category:) ])
+    it "renders Analyse links while keeping description links pointed at edit" do
+      budget = create(:budget, user:, month: 3, year: 2026, budget_categories: [ build(:budget_category, category:) ])
 
       get month_year_budgets_path, params: { month_year: "202603" }
 
       expect(response).to have_http_status(:success)
+      expect(response.body).to include(budget_path(budget))
+      expect(response.body).to include(edit_budget_path(budget))
+      expect(response.body).to include(I18n.t("actions.analyse"))
+      expect(response.body).to include(I18n.t("actions.duplicate"))
+      expect(response.body).to include(I18n.t("actions.destroy"))
+      expect(response.body).to include("delete_budget_#{budget.id}")
+      expect(response.body).to include("linkWithConfirmDialog_budget_menu_destroy_#{budget.id}")
+      expect(response.body).to include(duplicate_budget_path(budget))
+
+      document = Nokogiri::HTML.fragment(response.body)
+      description_link = document.at_css("#edit_budget_#{budget.id}")
+      analyse_link = document.at_css("#analyse_budget_#{budget.id}")
+      duplicate_link = document.at_css("#duplicate_budget_#{budget.id}")
+      action_button = document.at_css("#budget_actions_#{budget.id}")
+
+      expect(description_link["href"]).to eq(edit_budget_path(budget))
+      expect(analyse_link["href"]).to eq(budget_path(budget))
+      expect(duplicate_link["href"]).to eq(duplicate_budget_path(budget))
+      expect(action_button).to be_present
     end
   end
 
@@ -208,6 +404,9 @@ RSpec.describe "Budgets", type: :request do
       ).call
 
       switch_to_context!(derived_context)
+
+      get budget_path(main_budget)
+      expect(response).to have_http_status(:not_found)
 
       get edit_budget_path(main_budget)
       expect(response).to have_http_status(:not_found)
