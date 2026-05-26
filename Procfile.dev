@@ -1,4 +1,4 @@
-web: env RUBY_DEBUG_OPEN=true bin/rails server -p 3016
+web: env RUBY_DEBUG_OPEN=true bin/rails server
 jobs: bin/jobs start
 css: bin/rails tailwindcss:watch
 js: yarn build --watch

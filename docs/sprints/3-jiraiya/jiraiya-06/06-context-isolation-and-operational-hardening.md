@@ -156,8 +156,8 @@ What is true now:
   - no push for tomorrow-only reminders
 - email digest currently sends only when there is at least one overdue or due-today
   installment
-- the current rollout is intentionally limited to the first user in the system
-  while production behavior is still being validated
+- reminder delivery iterates all users, with each user's reminder selection limited
+  to that user's `main_context`
 
 Coverage that exists now:
 
@@ -165,7 +165,7 @@ Coverage that exists now:
   covers:
   - main-context-only reminder selection
   - email digest contents across overdue / today / tomorrow
-  - temporary first-user-only rollout
+  - multi-user reminder delivery
   - single overdue-summary push behavior
 
 ### What Is Stable Enough To Assume Next Session

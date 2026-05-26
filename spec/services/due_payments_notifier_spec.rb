@@ -100,7 +100,7 @@ RSpec.describe DuePaymentsNotifier do
       expect(body).not_to include("Derived reminder")
     end
 
-    it "temporarily sends reminders only to the first user" do
+    it "sends reminders to every user with due main-context installments" do
       first_user = create(:user, :random, locale: "en")
       second_user = create(:user, :random, locale: "en")
       today = Time.zone.today
@@ -118,9 +118,9 @@ RSpec.describe DuePaymentsNotifier do
 
       described_class.new.call
 
-      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([ [ first_user.email ] ])
-      expect(ActionMailer::Base.deliveries.last.html_part.body.encoded).to include("First user reminder")
-      expect(ActionMailer::Base.deliveries.last.html_part.body.encoded).not_to include("Second user reminder")
+      expect(ActionMailer::Base.deliveries.map(&:to)).to contain_exactly([ first_user.email ], [ second_user.email ])
+      expect(ActionMailer::Base.deliveries.find { |mail| mail.to == [ first_user.email ] }.html_part.body.encoded).to include("First user reminder")
+      expect(ActionMailer::Base.deliveries.find { |mail| mail.to == [ second_user.email ] }.html_part.body.encoded).to include("Second user reminder")
     end
 
     it "does not email when only tomorrow installments exist" do

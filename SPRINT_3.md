@@ -252,8 +252,8 @@ too visible to ignore.
       is inconsistent, especially on iPhone
     - push now sends one high-urgency overdue summary plus per-installment due-today
       pushes
-    - rollout is temporarily limited to `User.first` until reminder behavior is
-      validated in production
+    - reminder delivery now iterates all users while preserving the `main_context`
+      boundary for each user
 
 ### JIRAIYA-07/fe-03: Create detail dashboards for core finance models
 

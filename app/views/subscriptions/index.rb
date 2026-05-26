@@ -26,14 +26,7 @@ class Views::Subscriptions::Index < Views::Base
 
   def desktop_index
     div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
-      div(class: "mb-6 flex justify-end") do
-        link_to(
-          action_model(:newa, Subscription),
-          new_subscription_path,
-          class: index_new_button_class,
-          data: { turbo_frame: "_top" }
-        )
-      end
+      render_hero
 
       div(class: "min-w-full flex-1") do
         turbo_frame_tag :subscriptions do
@@ -74,6 +67,8 @@ class Views::Subscriptions::Index < Views::Base
 
   def mobile_index
     div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md w-full") do
+      render_hero
+
       div(class: "min-w-full flex-1") do
         turbo_frame_tag :subscriptions do
           div(class: "min-h-full", data: { controller: "datatable" }) do
@@ -100,6 +95,20 @@ class Views::Subscriptions::Index < Views::Base
           ) { cached_icon(:bigger_plus) }
         end
       end
+    end
+  end
+
+  def render_hero
+    div(class: "mb-6 flex items-start justify-between border-b border-stone-200 pb-3") do
+      h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Subscription, 2) }
+      next if mobile
+
+      link_to(
+        action_model(:newa, Subscription),
+        new_subscription_path,
+        class: index_new_button_class,
+        data: { turbo_frame: "_top" }
+      )
     end
   end
 end

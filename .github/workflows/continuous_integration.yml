@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
@@ -50,13 +50,11 @@ jobs:
       CAPYBARA_DRIVER: selenium_chrome_headless
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
-          bundler: default
           bundler-cache: true
 
       - name: Set up database schema

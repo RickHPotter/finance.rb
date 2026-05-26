@@ -17,7 +17,8 @@ class Views::UserCards::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white shadow-md") do
+      div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
+        render_hero
         mobile ? mobile_index : desktop_index
       end
     end
@@ -25,8 +26,11 @@ class Views::UserCards::Index < Views::Base
 
   private
 
-  def desktop_index
-    div(class: "mb-6 flex justify-end") do
+  def render_hero
+    div(class: "mb-6 flex items-start justify-between border-b border-stone-200 pb-3") do
+      h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, UserCard, 2) }
+      next if mobile
+
       link_to(
         action_model(:new, UserCard),
         new_user_card_path,
@@ -34,7 +38,9 @@ class Views::UserCards::Index < Views::Base
         data: { turbo_frame: "_top" }
       )
     end
+  end
 
+  def desktop_index
     div(class: "min-w-full") do
       turbo_frame_tag :user_cards do
         div(class: "min-h-full", data: { controller: "datatable" }) do
