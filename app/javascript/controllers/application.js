@@ -49,14 +49,16 @@ document.addEventListener("keyup", (e) => {
   // SCROLL TO LAST PAID
   if (key === "n") {
     e.preventDefault()
-    const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse)")
+    const paidTransactions = document.querySelectorAll("[data-datatable-target='row']:not(.animate-pulse):not([data-row-kind='budget'])")
     const lastPaidTransaction = paidTransactions[paidTransactions.length - 1]
 
     if (!lastPaidTransaction) { return }
 
+    const description = lastPaidTransaction.querySelector(".cash_transaction_description")
+
     lastPaidTransaction.scrollIntoView({ behavior: "smooth", block: "center" })
-    lastPaidTransaction.querySelector(".cash_transaction_description").classList.add("animate-bounce")
-    setTimeout(() => lastPaidTransaction.querySelector(".cash_transaction_description").classList.remove("animate-bounce"), 3000)
+    description?.classList.add("animate-bounce")
+    setTimeout(() => description?.classList.remove("animate-bounce"), 3000)
     return
   }
 

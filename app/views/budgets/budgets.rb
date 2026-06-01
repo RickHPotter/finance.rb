@@ -45,7 +45,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
 
       div(
         class: "rounded-lg shadow-sm overflow-visible bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
-        data: { id: budget.id, datatable_target: :row }
+        data: { id: budget.id, datatable_target: :row, row_kind: :budget }
       ) do
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
@@ -106,6 +106,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         data: {
           id: budget.id,
           datatable_target: :row,
+          row_kind: :budget,
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
         }
       ) do

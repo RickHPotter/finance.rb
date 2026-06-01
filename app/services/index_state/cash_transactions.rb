@@ -150,13 +150,25 @@ module IndexState
 
     def default_active_month_years_for(today_zn:)
       default_active_month_years =
-        cash_installments.where(paid: false, year: ..today_zn.year, month: ..today_zn.month)
-                         .group(:year, :month)
-                         .pluck(:year, :month)
-                         .map { |year, month| month_year_value(year, month) }
+        unpaid_installments_for_active_month_years(today_zn)
+        .group(:year, :month)
+        .pluck(:year, :month)
+        .map { |year, month| month_year_value(year, month) }
 
       default_active_month_years = [ today_zn.strftime("%Y%m").to_i ] if default_active_month_years.empty?
       default_active_month_years
+    end
+
+    def unpaid_installments_for_active_month_years(today_zn)
+      failed_zeroed_return_ids =
+        cash_installments
+        .joins(cash_transaction: :categories)
+        .where(paid: false, price: 0, categories: { category_name: "FAILED LEND/BORROW RETURN" })
+        .select(:id)
+
+      cash_installments
+        .where(paid: false, year: ..today_zn.year, month: ..today_zn.month)
+        .where.not(id: failed_zeroed_return_ids)
     end
 
     def months_for_all_month_years
