@@ -182,9 +182,10 @@ class Subscription < ApplicationRecord
     transaction.description = description
     transaction.comment = appended_original_description_comment(transaction.comment, original_description)
     transaction.historical_correction_confirmation = true if transaction.respond_to?(:historical_correction_confirmation=)
+    transaction.skip_subscription_installment_sync = true if transaction.respond_to?(:skip_subscription_installment_sync=)
 
-    transaction.categories = [ *transaction.categories, *categories, subscription_category ].compact.uniq(&:id)
-    transaction.entities = [ *transaction.entities, *entities ].compact.uniq(&:id)
+    transaction.category_ids = [ *transaction.category_ids, *category_ids, subscription_category&.id ].compact.uniq
+    transaction.entity_ids = [ *transaction.entity_ids, *entity_ids ].compact.uniq
 
     transaction.save!
   end
