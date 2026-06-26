@@ -9,8 +9,8 @@ class Views::CashTransactions::Index < Views::Base
   attr_reader :index_context, :current_user, :mobile
 
   def initialize(index_context: {}, mobile: false)
-    @index_context = index_context
-    @current_user = index_context[:current_user]
+    @index_context = index_context || {}
+    @current_user = @index_context[:current_user]
     @mobile = mobile
   end
 

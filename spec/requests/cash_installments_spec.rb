@@ -710,6 +710,248 @@ RSpec.describe "CashInstallments", type: :request do
       )
     end
 
+    it "replays receiver exchange rows instead of mirrored return installments for a cash-loan partial-pay correction" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_entity =
+        sender.entities.find_or_create_by!(entity_name: receiver.first_name.upcase) do |entity_record|
+          entity_record.entity_user = receiver
+        end
+      receiver_counterpart =
+        receiver.entities.find_or_create_by!(entity_name: sender.first_name.upcase) do |entity_record|
+          entity_record.entity_user = sender
+        end
+      sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
+      receiver_bank_account = create(:user_bank_account, user: receiver, bank: create(:bank, :random))
+
+      sender_exchange_description = "Cash loan replay source"
+      sender_exchange = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        description: sender_exchange_description,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: -20_000,
+        category_transactions_attributes: [
+          { category_id: sender.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender_entity.id,
+            is_payer: true,
+            price: 20_000,
+            price_to_be_returned: 20_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: 20_000, date: installment_date.next_day, month: 3, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: installment_date, month: 3, year: 2026, price: -20_000, paid: true }
+        ]
+      )
+      sender_return = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank_account,
+        reference_transactable: sender_exchange,
+        description: sender_exchange_description,
+        date: installment_date.next_day,
+        month: 3,
+        year: 2026,
+        price: 20_000,
+        category_transactions_attributes: [
+          { category_id: sender.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: sender_entity.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: installment_date.next_day, month: 3, year: 2026, price: 20_000, paid: false }
+        ]
+      )
+
+      receiver_exchange = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_return,
+        description: sender_exchange_description,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: -20_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: receiver_counterpart.id,
+            is_payer: true,
+            price: 20_000,
+            price_to_be_returned: 20_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: 20_000, date: installment_date, month: 3, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: installment_date, month: 3, year: 2026, price: -20_000, paid: false }
+        ]
+      )
+      create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: receiver_exchange,
+        description: sender_exchange_description,
+        date: installment_date,
+        month: 3,
+        year: 2026,
+        price: 20_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: installment_date, month: 3, year: 2026, price: 20_000, paid: false }
+        ]
+      )
+
+      sender_exchange_entity_transaction = sender_exchange.entity_transactions.first
+      sender_exchange_entity_transaction.exchanges.destroy_all
+      create(
+        :exchange,
+        entity_transaction: sender_exchange_entity_transaction,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: 10_000,
+        date: installment_date.next_day,
+        month: 3,
+        year: 2026
+      )
+      create(
+        :exchange,
+        entity_transaction: sender_exchange_entity_transaction,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 2,
+        price: 10_000,
+        date: installment_date.next_month,
+        month: 4,
+        year: 2026
+      )
+      sender_exchange_entity_transaction.update!(exchanges_count: 2)
+
+      sender_return.cash_installments.destroy_all
+      sender_return.cash_installments.create!(number: 1, date: installment_date.next_day, month: 3, year: 2026, price: 10_000, paid: true)
+      sender_return.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: 10_000, paid: false)
+      sender_return.update_columns(cash_installments_count: 2, price: 20_000, starting_price: 20_000)
+
+      service = Logic::SharedPaidStateSyncService.new(installment: sender_return.cash_installments.find_by!(number: 1))
+      reference_transactable = service.send(:structure_update_reference_transactable)
+      update_context = service.send(:counterpart_update_context, reference_transactable)
+      replay = service.send(:counterpart_update_replay, update_context)
+      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      message = conversation.messages.create!(
+        user: sender,
+        reference_transactable: reference_transactable,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_exchange.description }
+          },
+          replay:
+        }.to_json
+      )
+
+      expect(message).to be_present
+      expect(message.body).to eq("notification:update")
+      expect(message.local_reference_for(context: receiver.main_context)).to eq(receiver_exchange)
+      expect(replay[:cash_installments_attributes]).to be_nil
+      expect(replay.dig(:entity_transactions_attributes, 0, :exchanges_attributes)).to match(
+        [
+          a_hash_including(number: 1, price: 10_000),
+          a_hash_including(number: 2, price: 10_000)
+        ]
+      )
+    end
+
+    it "supersedes an open actionable update with a fresh merged update when later paid state changes the same family" do
+      sender = user
+      receiver = create(:user, :random)
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+      sender_transaction.cash_installments.destroy_all
+      sender_transaction.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -3_000, paid: true)
+      sender_transaction.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: -3_000, paid: false)
+      sender_transaction.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
+      receiver_transaction.cash_installments.destroy_all
+      receiver_transaction.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -3_000, paid: true)
+      receiver_transaction.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: -3_000, paid: false)
+      receiver_transaction.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      stale_update = conversation.messages.create!(
+        user: receiver,
+        reference_transactable: sender_transaction,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: sender.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_transaction.description }
+          },
+          replay: {
+            id: sender_transaction.id,
+            type: "CashTransaction",
+            description: receiver_transaction.description,
+            price: receiver_transaction.price,
+            date: receiver_transaction.date.iso8601,
+            cash_installments_attributes: [
+              { number: 1, price: -3_000, paid: true, date: receiver_transaction.cash_installments.find_by!(number: 1).date.iso8601, month: 3, year: 2026 },
+              { number: 2, price: -3_000, paid: false, date: receiver_transaction.cash_installments.find_by!(number: 2).date.iso8601, month: 4, year: 2026 }
+            ]
+          }
+        }.to_json
+      )
+
+      patch pay_cash_installment_path(sender_transaction.cash_installments.find_by!(number: 2)), params: {
+        cash_installment: {
+          date: installment_date.next_month.strftime("%Y-%m-%dT%H:%M"),
+          price: -3_000
+        }
+      }, headers: turbo_stream_headers
+
+      latest_message = conversation.messages.order(:id).last
+      replay = latest_message.replay_payload
+
+      expect(response).to have_http_status(:ok)
+      expect(latest_message.body).to eq("notification:update")
+      expect(latest_message.id).not_to eq(stale_update.id)
+      expect(stale_update.reload.superseded_by).to eq(latest_message)
+      expect(replay.fetch("cash_installments_attributes")).to include(
+        a_hash_including("number" => 1, "paid" => true),
+        a_hash_including("number" => 2, "paid" => true)
+      )
+    end
+
     it "reflects paid state on card-bound exchanges without rewriting their own dates" do
       card_transaction = create(
         :card_transaction,

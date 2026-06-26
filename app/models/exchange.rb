@@ -10,7 +10,7 @@ class Exchange < ApplicationRecord
   include ExchangeCashTransactable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :locked
+  attr_accessor :locked, :replay_paid_state
 
   # @relationships ............................................................
   belongs_to :entity_transaction, counter_cache: true
@@ -39,6 +39,12 @@ class Exchange < ApplicationRecord
     mirrored_cash_installment&.paid? || false
   end
 
+  def effective_paid_state
+    return ActiveModel::Type::Boolean.new.cast(replay_paid_state) unless replay_paid_state.nil?
+
+    mirrored_paid? || shared_exchange_mirrored_paid?
+  end
+
   def mirrored_cash_installments_match?
     return true if non_monetary? || cash_transaction.blank?
     return true if card_bound?
@@ -47,6 +53,25 @@ class Exchange < ApplicationRecord
     installment_rows = cash_transaction.cash_installments.map { |record| [ record.number, record.date.to_date, record.price ] }.sort
 
     exchange_rows == installment_rows
+  end
+
+  def shared_exchange_mirrored_paid?
+    return false if entity_transaction.blank? # transactable is delegated to entity_transaction
+    return false if transactable.blank?
+
+    counterpart_transactable = transactable.reference_transactable
+    return false if counterpart_transactable.blank?
+
+    # FIXME: this is the path for loan EXCHANGE, but not sure for reimbursement, any input?
+    counterpart_transactable = counterpart_transactable.reference_transactable if counterpart_transactable.exchange_return?
+
+    counterpart_entity_transaction = counterpart_transactable.entity_transactions.joins(:entity).find_by(entity: { entity_user_id: user.id })
+    return false if counterpart_entity_transaction.blank?
+
+    counterpart_exchange = counterpart_entity_transaction.exchanges.find_by(number:)
+    return false if counterpart_exchange.blank?
+
+    counterpart_exchange.mirrored_paid?
   end
 
   # @protected_instance_methods ...............................................

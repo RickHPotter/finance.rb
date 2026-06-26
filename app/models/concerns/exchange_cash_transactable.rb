@@ -266,6 +266,13 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       return rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
     end
 
+    if projection_exchange_paid_state_available?(exchanges)
+      cash_transaction.cash_installments.delete_all
+      return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
+
+      return rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:, paid_by_exchange: true)
+    end
+
     if cash_transaction.cash_installments.where(paid: true).exists?
       return rebuild_standalone_projection_installments_preserving_paid!(cash_transaction:, exchanges:) if standalone? && editable_unpaid_projection_change?
       return rebuild_card_bound_projection_installments_preserving_paid!(cash_transaction:, exchanges:, projection_date:) if card_bound?
@@ -279,7 +286,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
   end
 
-  def rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:, paid_by_date: false)
+  def rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:, paid_by_date: false, paid_by_exchange: false)
     installments_count = exchanges.count
     exchanges.sort_by do |exchange|
       [ exchange.date, exchange.number, exchange.persisted? ? 0 : 1, exchange.id || Float::INFINITY ]
@@ -292,7 +299,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
         price: exchange.price,
         starting_price: exchange.price,
         cash_installments_count: installments_count,
-        paid: paid_by_date ? (exchange.date.present? && Time.zone.today >= exchange.date) : false
+        paid: projected_exchange_paid_state(exchange, paid_by_date:, paid_by_exchange:)
       )
     end
   end
@@ -381,10 +388,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def projection_exchanges(excluding: nil) # rubocop:disable Metrics/AbcSize
-    persisted_siblings = entity_transaction.exchanges.where.not(id: [ excluding&.id, id ].compact).to_a
-    in_memory_exchanges = entity_transaction.exchanges.to_a
-    candidate_exchanges = (persisted_siblings + in_memory_exchanges).uniq { |exchange| exchange.id || exchange.object_id }
+  def projection_exchanges(excluding: nil)
+    candidate_exchanges = merge_entity_transaction_exchange_candidates(excluding:)
     candidate_exchanges.reject! do |exchange|
       (exchange.id.present? && exchange.id == id) || exchange.equal?(self)
     end
@@ -397,12 +402,11 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     candidate_exchanges.select(&:monetary?).select { |exchange| same_projection_bucket?(exchange) }
   end
 
-  def synchronized_projection_exchanges(cash_transaction:, excluding: nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+  def synchronized_projection_exchanges(cash_transaction:, excluding: nil)
     return projection_exchanges(excluding:) if standalone?
 
-    in_memory_exchanges = entity_transaction.exchanges.to_a
-    persisted_projection_exchanges = cash_transaction.present? ? Exchange.where(cash_transaction_id: cash_transaction.id).where.not(id: excluding&.id).to_a : []
-    candidate_exchanges = (in_memory_exchanges + persisted_projection_exchanges).uniq { |exchange| exchange.id || exchange.object_id }
+    in_memory_exchanges = in_memory_entity_transaction_exchanges
+    candidate_exchanges = merge_projection_exchange_candidates(in_memory_exchanges:, cash_transaction:, excluding:)
     if !(excluding.present? && excluding == self) && candidate_exchanges.none? { |exchange| exchange.equal?(self) || (exchange.id.present? && exchange.id == id) }
       candidate_exchanges << self
     end
@@ -412,6 +416,17 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     end
 
     candidate_exchanges.select(&:monetary?).select { |exchange| same_projection_group?(exchange, cash_transaction:) }
+  end
+
+  def projection_exchange_paid_state_available?(exchanges)
+    exchanges.any? { |exchange| !exchange.replay_paid_state.nil? }
+  end
+
+  def projected_exchange_paid_state(exchange, paid_by_date:, paid_by_exchange:)
+    return ActiveModel::Type::Boolean.new.cast(exchange.replay_paid_state) if paid_by_exchange && !exchange.replay_paid_state.nil?
+    return exchange.date.present? && Time.zone.today >= exchange.date if paid_by_date
+
+    false
   end
 
   def delete_projection_cash_transaction(cash_transaction)
@@ -647,5 +662,30 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     exchanges.sort_by do |exchange|
       [ exchange.date, exchange.number, exchange.persisted? ? 0 : 1, exchange.id || Float::INFINITY ]
     end
+  end
+
+  def in_memory_entity_transaction_exchanges
+    entity_transaction.exchanges.to_a.uniq { |exchange| exchange.id || exchange.object_id }
+  end
+
+  def merge_entity_transaction_exchange_candidates(excluding:)
+    in_memory_exchanges = in_memory_entity_transaction_exchanges
+    in_memory_exchange_ids = in_memory_exchanges.filter_map(&:id).to_set
+    persisted_siblings = entity_transaction.exchanges.where.not(id: [ excluding&.id, id ].compact).to_a.reject do |exchange|
+      in_memory_exchange_ids.include?(exchange.id)
+    end
+
+    in_memory_exchanges + persisted_siblings
+  end
+
+  def merge_projection_exchange_candidates(in_memory_exchanges:, cash_transaction:, excluding:)
+    return in_memory_exchanges if cash_transaction.blank?
+
+    in_memory_exchange_ids = in_memory_exchanges.filter_map(&:id).to_set
+    persisted_projection_exchanges = Exchange.where(cash_transaction_id: cash_transaction.id).where.not(id: excluding&.id).to_a.reject do |exchange|
+      in_memory_exchange_ids.include?(exchange.id)
+    end
+
+    in_memory_exchanges + persisted_projection_exchanges
   end
 end

@@ -162,13 +162,7 @@ module Views
               end
 
               exchanges_association =
-                if entity_transaction.exchanges_count.to_i.positive?
-                  if entity_transaction.persisted?
-                    entity_transaction.exchanges.includes(:cash_transaction).order(:number)
-                  else
-                    entity_transaction.exchanges.sort_by(&:number)
-                  end
-                end
+                (entity_transaction.exchanges.reject(&:marked_for_destruction?).sort_by(&:number) if entity_transaction.exchanges_count.to_i.positive?)
 
               form.fields_for :exchanges, exchanges_association do |exchange_fields|
                 render ::Views::Exchanges::Fields.new(form: exchange_fields, bound_type: default_bound_type)

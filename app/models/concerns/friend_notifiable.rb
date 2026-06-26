@@ -186,9 +186,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
       installment.slice(:number, :date, :month, :year, :paid).merge(price: installment.price * -1)
     end
 
-    exchanges_attributes = exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
-    end
+    exchanges_attributes = cash_loan_exchange_attributes(exchanges)
 
     installments_price = cash_installments_attributes.pluck(:price).sum
     exchanges_price = exchanges_attributes.pluck(:price).sum
@@ -216,6 +214,12 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
         }
       ]
     }
+  end
+
+  def cash_loan_exchange_attributes(exchanges)
+    exchanges.map do |exchange|
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: exchange.mirrored_paid?)
+    end
   end
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)

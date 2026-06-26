@@ -3,6 +3,8 @@
 module Views
   module Exchanges
     class Fields < Views::Base
+      include Phlex::Rails::Helpers::HiddenFieldTag
+
       attr_reader :form, :exchange, :bound_type
 
       include CacheHelper
@@ -30,6 +32,7 @@ module Views
           form.hidden_field :exchange_type, value: :monetary
           form.hidden_field :month, class: :exchange_month
           form.hidden_field :year, class: :exchange_year
+          hidden_field_tag "#{form.object_name}[paid]", exchange.effective_paid_state
           form.hidden_field :_destroy, class: :exchange_destroy
 
           div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
@@ -44,7 +47,8 @@ module Views
                 exchange.number
               end
 
-              div(class: "w-3 h-3 rounded-full #{exchange.mirrored_paid? ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
+              paid = exchange.effective_paid_state
+              div(class: "w-3 h-3 rounded-full #{paid ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
 
               span(
                 class: "exchange_month_year text-gray-900",
@@ -103,7 +107,7 @@ module Views
       end
 
       def locked?
-        exchange.mirrored_paid?
+        exchange.effective_paid_state
       end
     end
   end

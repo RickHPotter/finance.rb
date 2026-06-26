@@ -60,8 +60,8 @@ class Views::Transactions::FormEntitiesSection < Views::Base
   private
 
   def entity_transactions_association
-    association = transaction.entity_transactions.includes(:entity, :exchanges)
-    association if association.exists?
+    association = transaction.entity_transactions.reject(&:marked_for_destruction?)
+    association if association.present?
   end
 
   def render_item(entity_transaction_fields)

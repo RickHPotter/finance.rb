@@ -3052,6 +3052,353 @@ RSpec.describe "CashTransactions", type: :request do
       expect(reference_id_input["value"]).to eq(sender_return.id.to_s)
     end
 
+    it "renders replayed exchange rows from an actionable update on a persisted receiver exchange" do
+      receiver = create(:user, :random)
+      sender_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: user.first_name.upcase, entity_user: user)
+      sender_bank_account = create(:user_bank_account, :random, user:)
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver)
+
+      sender_exchange = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Actionable exchange replay source",
+        date: Time.zone.local(2026, 6, 26, 13, 48, 0),
+        month: 6,
+        year: 2026,
+        price: -70_000,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender_entity.id,
+            is_payer: true,
+            price: 70_000,
+            price_to_be_returned: 70_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: 70_000, date: Time.zone.local(2026, 6, 27, 13, 48, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -70_000, date: Time.zone.local(2026, 6, 26, 13, 48, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      sender_return = sender_exchange.first_reference_descendant
+
+      receiver_exchange = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_return,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 26, 13, 48, 0),
+        month: 6,
+        year: 2026,
+        price: 70_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: receiver_counterpart.id,
+            is_payer: true,
+            price: -70_000,
+            price_to_be_returned: -70_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -70_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 70_000, date: Time.zone.local(2026, 6, 26, 13, 48, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+
+      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      update_message = conversation.messages.create!(
+        user: user,
+        reference_transactable: sender_exchange,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_exchange.description }
+          },
+          replay: {
+            id: sender_exchange.id,
+            type: "CashTransaction",
+            description: receiver_exchange.description,
+            price: receiver_exchange.price,
+            date: receiver_exchange.date.iso8601,
+            month: receiver_exchange.month,
+            year: receiver_exchange.year,
+            category_ids: [ receiver.built_in_category("EXCHANGE").id ],
+            cash_installments_attributes: [
+              { number: 1, date: receiver_exchange.cash_installments.first.date.iso8601, month: 6, year: 2026, price: 70_000, paid: true }
+            ],
+            entity_transactions_attributes: [
+              {
+                id: receiver_exchange.entity_transactions.first.id,
+                entity_id: receiver_counterpart.id,
+                is_payer: true,
+                price: -70_000,
+                price_to_be_returned: -70_000,
+                exchanges_count: 3,
+                exchanges_attributes: [
+                  { number: 1, date: Time.zone.local(2026, 6, 26, 13, 48, 0).iso8601, month: 6, year: 2026, price: -20_000 },
+                  { number: 2, date: Time.zone.local(2026, 6, 27, 13, 48, 0).iso8601, month: 6, year: 2026, price: -25_000 },
+                  { number: 3, date: Time.zone.local(2026, 7, 27, 13, 48, 0).iso8601, month: 7, year: 2026, price: -25_000 }
+                ]
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      sign_out user
+      sign_in receiver
+
+      get edit_cash_transaction_path(receiver_exchange, cash_transaction: { source_message_id: update_message.id }), headers: turbo_stream_headers
+      document = Nokogiri::HTML.fragment(response.body)
+      rendered_exchange_numbers = document.css("input.exchange_number").reject do |input|
+        input["name"].to_s.include?("NEW_NESTED_RECORD")
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(rendered_exchange_numbers.count).to eq(3)
+      expect(rendered_exchange_numbers.map { |input| input["value"] }).to eq(%w[1 2 3])
+    end
+
+    it "applies replayed exchange rows onto the receiver exchange when correcting a shared loan exchange" do
+      receiver = create(:user, :random)
+      sender_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: user.first_name.upcase, entity_user: user)
+      sender_bank_account = create(:user_bank_account, :random, user:)
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver)
+
+      sender_exchange = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Receiver exchange paid replay source",
+        date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+        month: 6,
+        year: 2026,
+        price: -20_000,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender_entity.id,
+            is_payer: true,
+            price: 20_000,
+            price_to_be_returned: 20_000,
+            exchanges_count: 2,
+            exchanges_attributes: [
+              { number: 1, price: 12_000, date: Time.zone.local(2026, 6, 26, 15, 0, 0), month: 6, year: 2026 },
+              { number: 2, price: 8_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 26, 12, 0, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      sender_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        reference_transactable: sender_exchange,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+        month: 6,
+        year: 2026,
+        price: 20_000,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: sender_entity.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 12_000, date: Time.zone.local(2026, 6, 26, 15, 0, 0), month: 6, year: 2026, paid: true },
+          { number: 2, price: 8_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026, paid: false }
+        ]
+      )
+      sender_exchange.entity_transactions.first.exchanges.update_all(cash_transaction_id: sender_return.id)
+
+      receiver_exchange = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_return,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+        month: 6,
+        year: 2026,
+        price: 20_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: receiver_counterpart.id,
+            is_payer: true,
+            price: -20_000,
+            price_to_be_returned: -20_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 20_000, date: Time.zone.local(2026, 6, 26, 12, 0, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      receiver_return = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: receiver_exchange,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+        month: 6,
+        year: 2026,
+        price: -20_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026, paid: false }
+        ]
+      )
+      receiver_exchange.entity_transactions.first.exchanges.update_all(cash_transaction_id: receiver_return.id)
+
+      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      update_message = conversation.messages.create!(
+        user: user,
+        reference_transactable: sender_exchange,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_exchange.description }
+          },
+          replay: {
+            id: sender_exchange.id,
+            type: "CashTransaction",
+            intent: "loan",
+            description: receiver_exchange.description,
+            price: receiver_exchange.price,
+            date: receiver_exchange.date.iso8601,
+            month: receiver_exchange.month,
+            year: receiver_exchange.year,
+            category_ids: [ receiver.built_in_category("EXCHANGE").id ],
+            entity_ids: [ receiver_counterpart.id ],
+            entity_transactions_attributes: [
+              {
+                id: receiver_exchange.entity_transactions.first.id,
+                entity_id: receiver_counterpart.id,
+                is_payer: true,
+                price: -20_000,
+                price_to_be_returned: -20_000,
+                exchanges_count: 2,
+                exchanges_attributes: [
+                  { id: receiver_exchange.entity_transactions.first.exchanges.first.id, number: 1, date: Time.zone.local(2026, 6, 26, 15, 0, 0).iso8601, month: 6,
+                    year: 2026, price: -12_000, paid: true },
+                  { number: 2, date: Time.zone.local(2026, 6, 27, 0, 0, 0).iso8601, month: 6, year: 2026, price: -8_000, paid: false }
+                ]
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      sign_out user
+      sign_in receiver
+
+      put cash_transaction_path(receiver_exchange), params: {
+        cash_transaction: {
+          description: receiver_exchange.description,
+          price: 20_000,
+          date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+          month: 6,
+          year: 2026,
+          user_id: receiver.id,
+          user_bank_account_id: receiver_bank_account.id,
+          reference_transactable_type: "CashTransaction",
+          reference_transactable_id: sender_exchange.id,
+          source_message_id: update_message.id,
+          category_transactions_attributes: receiver_exchange.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          entity_transactions_attributes: [
+            {
+              id: receiver_exchange.entity_transactions.first.id,
+              entity_id: receiver_counterpart.id,
+              is_payer: true,
+              price: -20_000,
+              price_to_be_returned: -20_000,
+              exchanges_count: 2,
+              exchanges_attributes: [
+                {
+                  id: receiver_exchange.entity_transactions.first.exchanges.first.id,
+                  number: 1,
+                  date: Time.zone.local(2026, 6, 26, 15, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -12_000,
+                  paid: true
+                },
+                {
+                  number: 2,
+                  date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -8_000,
+                  paid: false
+                }
+              ]
+            }
+          ],
+          cash_installments_attributes: [
+            {
+              id: receiver_exchange.cash_installments.first.id,
+              number: 1,
+              date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+              month: 6,
+              year: 2026,
+              price: 20_000,
+              paid: true
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(receiver_exchange.reload.entity_transactions.first.exchanges.order(:number).pluck(:price)).to eq([ -12_000, -8_000 ])
+    end
+
     it "preserves the sender shared-return parent and does not emit an echo update when applying a receiver-originated structural correction" do
       receiver = create(:user, :random)
       sender_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
