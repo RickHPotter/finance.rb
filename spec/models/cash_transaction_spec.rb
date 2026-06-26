@@ -121,6 +121,28 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.context).to eq(subject.user.main_context)
     end
 
+    it "clears subscription_id when the subscription category is removed" do
+      user = create(:user)
+      subscription = create(:subscription, user:, context: user.main_context)
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, :random, user:),
+        subscription:
+      )
+      transaction.category_transactions.destroy_all
+      transaction.categories = [ user.built_in_category("SUBSCRIPTION") ]
+      transaction.save!(validate: false)
+
+      transaction.categories = [ replacement_category ]
+      transaction.save!
+
+      expect(transaction.reload.subscription_id).to be_nil
+      expect(transaction.categories.pluck(:category_name)).to contain_exactly("TRANSPORT")
+    end
+
     it "recognises exchange return cash transactions by category" do
       exchange_return = subject.user.built_in_category("EXCHANGE RETURN")
       subject.categories << exchange_return
