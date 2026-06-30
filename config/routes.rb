@@ -81,6 +81,7 @@ Rails.application.routes.draw do
     member do
       get :duplicate
       patch :report_payment_failure
+      patch :fix_exchange_projection
     end
 
     collection do

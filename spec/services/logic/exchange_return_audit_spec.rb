@@ -34,7 +34,10 @@ RSpec.describe Logic::ExchangeReturnAudit do
         user:,
         context: user.main_context,
         price: -8_000,
-        user_card:
+        user_card:,
+        card_installments: [
+          build(:card_installment, number: 1, price: -8_000, date: Time.zone.parse("2026-05-10 12:00:00"), month: 5, year: 2026)
+        ]
       )
       matching_entity_transaction = matching_card.entity_transactions.first
       matching_entity_transaction.update_columns(entity_id: entity.id, is_payer: true, price: 8_000, price_to_be_returned: 8_000, exchanges_count: 1)
@@ -135,7 +138,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       expect(rows.first[:price]).to eq(85_014)
       expect(rows.first[:installments_sum]).to eq(85_014)
       expect(rows.first[:exchange_rows_sum]).to eq(85_014)
-      expect(rows.first[:issues]).to contain_exactly("stale_linked_source_rows")
+      expect(rows.first[:issues]).to include("stale_linked_source_rows")
       expect(rows.first[:linked_source_rows]).to contain_exactly(
         hash_including(
           entity_transaction_id: stale_entity_transaction.id,
@@ -375,6 +378,235 @@ RSpec.describe Logic::ExchangeReturnAudit do
 
       expect(default_rows.map { |row| row[:id] }).to eq([ pending_transaction.id ])
       expect(paid_rows.map { |row| row[:id] }).to eq([ paid_transaction.id ])
+    end
+
+    it "flags assistant replay payloads that differ from the resolved local shared return" do
+      sender = create(:user, :random)
+      receiver = create(:user, :random)
+      source_transaction = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        description: "Financiamento Citroen C3",
+        date: Time.zone.parse("2026-04-23 13:37:00"),
+        month: 4,
+        year: 2026,
+        price: -6_379_968
+      )
+      local_transaction = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: create(:user_bank_account, :random, user: receiver),
+        reference_transactable: source_transaction,
+        description: "Financiamento Citroen C3",
+        date: Time.zone.parse("2026-04-23 13:37:00"),
+        month: 4,
+        year: 2026,
+        price: -6_379_968,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: -6_379_968, date: Time.zone.parse("2026-04-23 13:37:00"), month: 4, year: 2026)
+        ]
+      )
+      local_transaction.categories = [ receiver.built_in_category("BORROW RETURN") ]
+      local_transaction.save!
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      message = conversation.messages.create!(
+        user: sender,
+        reference_transactable: source_transaction,
+        body: "notification:update",
+        headers: {
+          id: source_transaction.id,
+          type: "CashTransaction",
+          intent: "reimbursement",
+          description: "Financiamento Citroen C3",
+          date: Time.zone.parse("2026-04-23 13:37:00"),
+          month: 4,
+          year: 2026,
+          price: -3_189_984,
+          paid: false,
+          cash_installments_attributes: [
+            {
+              number: 1,
+              date: Time.zone.parse("2026-04-23 13:37:00"),
+              month: 4,
+              year: 2026,
+              price: -3_189_984,
+              paid: false
+            }
+          ]
+        }.to_json
+      )
+
+      rows = described_class.new(current_user: receiver, current_context: receiver.main_context).call
+
+      expect(rows.map { |row| row[:id] }).to eq([ local_transaction.id ])
+      expect(rows.first[:issues]).to contain_exactly("message_replay_payload_mismatch")
+      expect(rows.first[:message_replay_rows]).to contain_exactly(
+        hash_including(
+          message_id: message.id,
+          conversation_id: conversation.id,
+          intent: "reimbursement",
+          diffs: hash_including(
+            "price" => { local: -6_379_968, payload: -3_189_984 },
+            "cash_installments_attributes" => [
+              {
+                number: 1,
+                diffs: {
+                  "price" => { local: -6_379_968, payload: -3_189_984 }
+                }
+              }
+            ]
+          )
+        )
+      )
+    end
+
+    it "flags card-bound exchange returns whose exchange rows no longer match the current card bill bucket" do
+      user = create(:user, :random)
+      entity = create(:entity, user:, entity_name: "LALA")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      bank_account = create(:user_bank_account, :random, user:)
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+
+      source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Merged bill source",
+        price: -10_000,
+        date: Time.zone.parse("2026-06-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -10_000, date: Time.zone.parse("2026-06-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      payer = source_card.entity_transactions.first
+      payer.update_columns(entity_id: entity.id, is_payer: true, price: 10_000, price_to_be_returned: 10_000, exchanges_count: 1)
+
+      exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        cash_transaction_type: "Exchange",
+        description: "[ 07/2026 ] MOI - PP",
+        date: Time.zone.parse("2026-07-05 12:00:00"),
+        month: 7,
+        year: 2026,
+        price: 10_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 10_000, date: Time.zone.parse("2026-07-05 12:00:00"), month: 7, year: 2026)
+        ]
+      )
+      exchange_return.categories = [ exchange_return_category ]
+      exchange_return.save!
+
+      Exchange.insert({
+                        entity_transaction_id: payer.id,
+                        cash_transaction_id: exchange_return.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 10_000,
+                        starting_price: 10_000,
+                        date: Time.zone.parse("2026-07-05 12:00:00"),
+                        month: 7,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+      exchange = Exchange.find_by!(entity_transaction: payer, cash_transaction: exchange_return, bound_type: "card_bound", number: 1)
+
+      target_source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Target bill source",
+        price: -5_000,
+        date: Time.zone.parse("2026-07-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-07-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_payer = target_source_card.entity_transactions.first
+      target_payer.update_columns(entity_id: entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000, exchanges_count: 1)
+
+      target_exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] MOI - PP",
+        date: Time.zone.parse("2026-08-05 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 5_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 5_000, date: Time.zone.parse("2026-08-05 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_exchange_return.categories = [ exchange_return_category ]
+      target_exchange_return.save!
+      Exchange.insert({
+                        entity_transaction_id: target_payer.id,
+                        cash_transaction_id: target_exchange_return.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 5_000,
+                        starting_price: 5_000,
+                        date: Time.zone.parse("2026-08-05 12:00:00"),
+                        month: 8,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      rows = described_class.new(current_user: user, current_context: user.main_context).call
+
+      row = rows.find { |entry| entry[:id] == exchange_return.id }
+      target_row = rows.find { |entry| entry[:id] == target_exchange_return.id }
+
+      expect(row[:issues]).to contain_exactly("card_bound_bill_projection_mismatch")
+      expect(row[:card_bound_projection_rows]).to contain_exactly(
+        hash_including(
+          exchange_id: exchange.id,
+          source_type: "CardTransaction",
+          source_id: source_card.id,
+          number: 1,
+          exchange_month: 7,
+          exchange_year: 2026,
+          expected_month: 8,
+          expected_year: 2026,
+          exchange_price: 10_000,
+          expected_price: 10_000,
+          issue_code: "card_bound_bill_bucket_mismatch"
+        )
+      )
+      expect(target_row[:issues]).to contain_exactly("card_bound_bill_projection_mismatch")
+      expect(target_row[:card_bound_projection_rows]).to contain_exactly(
+        hash_including(
+          exchange_id: exchange.id,
+          source_type: "CardTransaction",
+          source_id: source_card.id,
+          number: 1,
+          exchange_month: 7,
+          exchange_year: 2026,
+          expected_month: 8,
+          expected_year: 2026,
+          issue_code: "card_bound_bill_merge_target"
+        )
+      )
     end
   end
 end

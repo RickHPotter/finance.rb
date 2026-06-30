@@ -101,6 +101,19 @@ en:
     payment_failure:
       reported: "Payment failure reported."
       unavailable: "Payment failure can only be reported for unpaid lend/borrow returns."
+    exchange_projection:
+      title: "Card-bound projection exchanges"
+      transaction_price: "Transaction price"
+      exchanges_total: "Exchanges total"
+      difference: "Difference"
+      mismatch: "This projection total does not match its exchange rows."
+      fix_description: "Fix will resync this EXCHANGE RETURN from the card-bound exchanges currently attached to it."
+      fix: "Fix projection"
+      fixed: "Exchange projection fixed."
+      unavailable: "Exchange projection cannot be fixed for this transaction."
+      source: "Source"
+      entity: "Entity"
+      number: "Number"
   dashboards:
     empty: "Nothing to display yet."
     sections:
@@ -330,6 +343,19 @@ pt-BR:
     payment_failure:
       reported: "Falha no pagamento reportada."
       unavailable: "A falha no pagamento só pode ser reportada para retornos de empréstimo pendentes."
+    exchange_projection:
+      title: "Exchanges da projeção card-bound"
+      transaction_price: "Preço da transação"
+      exchanges_total: "Total das exchanges"
+      difference: "Diferença"
+      mismatch: "O total desta projeção não bate com suas exchange rows."
+      fix_description: "Corrigir vai ressincronizar este EXCHANGE RETURN a partir das exchanges card-bound atualmente vinculadas a ele."
+      fix: "Corrigir projeção"
+      fixed: "Projeção de exchange corrigida."
+      unavailable: "A projeção de exchange não pode ser corrigida para esta transação."
+      source: "Origem"
+      entity: "Entidade"
+      number: "Número"
   dashboards:
     empty: "Nada para exibir ainda."
     sections:

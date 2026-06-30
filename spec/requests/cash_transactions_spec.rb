@@ -285,6 +285,345 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include(cash_transaction_path(foreign_transaction))
     end
+
+    it "renders card-bound projection exchanges and can resync a mismatched projection total" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Projection source",
+        price: -5_000,
+        date: Time.zone.parse("2026-08-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-08-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      payer = source_card.entity_transactions.first
+      payer.update_columns(entity_id: entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000, exchanges_count: 1)
+      projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] LALA - CARD",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 6_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 6_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      projection.categories = [ exchange_return_category ]
+      projection.save!
+      Exchange.insert({
+                        entity_transaction_id: payer.id,
+                        cash_transaction_id: projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 5_000,
+                        starting_price: 5_000,
+                        date: Time.zone.parse("2026-08-10 12:00:00"),
+                        month: 8,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      get cash_transaction_path(projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.title"))
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+      expect(response.body).to include(card_transaction_path(source_card))
+
+      patch fix_exchange_projection_cash_transaction_path(projection)
+
+      expect(response).to redirect_to(cash_transaction_path(projection))
+      expect(projection.reload.price).to eq(5_000)
+      expect(projection.cash_installments.reload.sum(:price)).to eq(5_000)
+    end
+
+    it "shows the fix button when card-bound projection exchange buckets are stale even if totals match" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Merged bill source",
+        price: -5_000,
+        date: Time.zone.parse("2026-06-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-06-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      payer = source_card.entity_transactions.first
+      payer.update_columns(entity_id: entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000, exchanges_count: 1)
+      stale_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        description: "[ 07/2026 ] LALA - CARD",
+        date: Time.zone.parse("2026-07-10 12:00:00"),
+        month: 7,
+        year: 2026,
+        price: 5_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 5_000, date: Time.zone.parse("2026-07-10 12:00:00"), month: 7, year: 2026)
+        ]
+      )
+      stale_projection.categories = [ exchange_return_category ]
+      stale_projection.save!
+      Exchange.insert({
+                        entity_transaction_id: payer.id,
+                        cash_transaction_id: stale_projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 5_000,
+                        starting_price: 5_000,
+                        date: Time.zone.parse("2026-07-10 12:00:00"),
+                        month: 7,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+      target_source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Target bill source",
+        price: -3_000,
+        date: Time.zone.parse("2026-07-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Time.zone.parse("2026-07-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_payer = target_source_card.entity_transactions.first
+      target_payer.update_columns(entity_id: entity.id, is_payer: true, price: 3_000, price_to_be_returned: 3_000, exchanges_count: 1)
+      target_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 3_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 3_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_projection.categories = [ exchange_return_category ]
+      target_projection.save!
+      Exchange.insert({
+                        entity_transaction_id: target_payer.id,
+                        cash_transaction_id: target_projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 3_000,
+                        starting_price: 3_000,
+                        date: Time.zone.parse("2026-08-10 12:00:00"),
+                        month: 8,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      get cash_transaction_path(stale_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      patch fix_exchange_projection_cash_transaction_path(stale_projection)
+
+      expect(response).to redirect_to(cash_transaction_path(target_projection))
+      expect(CashTransaction.exists?(stale_projection.id)).to be(false)
+      expect(target_projection.reload.month).to eq(8)
+      expect(target_projection.price).to eq(8_000)
+      expect(target_projection.exchanges.reload.pluck(:month).uniq).to eq([ 8 ])
+      expect(target_projection.exchanges.count).to eq(2)
+    end
+
+    it "rehomes card-bound projection exchanges that are attached to the wrong cash transaction bucket" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      august_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "August source",
+        price: -5_000,
+        date: Time.zone.parse("2026-08-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-08-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      september_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "September source",
+        price: -7_000,
+        date: Time.zone.parse("2026-09-03 12:00:00"),
+        month: 9,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -7_000, date: Time.zone.parse("2026-09-03 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      october_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "October source",
+        price: -4_000,
+        date: Time.zone.parse("2026-10-03 12:00:00"),
+        month: 10,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -4_000, date: Time.zone.parse("2026-10-03 12:00:00"), month: 10, year: 2026)
+        ]
+      )
+      existing_september_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Existing September source",
+        price: -3_000,
+        date: Time.zone.parse("2026-09-04 12:00:00"),
+        month: 9,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Time.zone.parse("2026-09-04 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      [ august_source, september_source, october_source, existing_september_source ].each do |source|
+        source.entity_transactions.first.update_columns(
+          entity_id: entity.id,
+          is_payer: true,
+          price: source.price.abs,
+          price_to_be_returned: source.price.abs,
+          exchanges_count: 1
+        )
+      end
+      august_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 16_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 16_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      september_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 09/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-09-10 12:00:00"),
+        month: 9,
+        year: 2026,
+        price: 3_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 3_000, date: Time.zone.parse("2026-09-10 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      august_projection.categories = [ exchange_return_category ]
+      september_projection.categories = [ exchange_return_category ]
+      august_projection.save!
+      september_projection.save!
+
+      [
+        [ august_source, august_projection, 5_000, 8 ],
+        [ september_source, august_projection, 7_000, 9 ],
+        [ october_source, august_projection, 4_000, 10 ],
+        [ existing_september_source, september_projection, 3_000, 9 ]
+      ].each do |source, projection, price, month|
+        Exchange.insert({
+                          entity_transaction_id: source.entity_transactions.first.id,
+                          cash_transaction_id: projection.id,
+                          exchange_type: Exchange.exchange_types.fetch(:monetary),
+                          bound_type: "card_bound",
+                          number: 1,
+                          price:,
+                          starting_price: price,
+                          date: Time.zone.parse("2026-#{month.to_s.rjust(2, '0')}-10 12:00:00"),
+                          month:,
+                          year: 2026,
+                          exchanges_count: 1,
+                          created_at: Time.current,
+                          updated_at: Time.current
+                        })
+      end
+
+      get cash_transaction_path(august_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      get cash_transaction_path(september_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      patch fix_exchange_projection_cash_transaction_path(august_projection)
+
+      october_projection = CashTransaction.exchange_return.find_by!(
+        user_card:,
+        description: "[ 10/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        month: 10,
+        year: 2026
+      )
+
+      expect(response).to redirect_to(cash_transaction_path(august_projection))
+      expect(august_projection.reload.price).to eq(5_000)
+      expect(august_projection.exchanges.reload.pluck(:month).uniq).to eq([ 8 ])
+      expect(september_projection.reload.price).to eq(10_000)
+      expect(september_projection.exchanges.reload.pluck(:month).uniq).to eq([ 9 ])
+      expect(september_projection.exchanges.count).to eq(2)
+      expect(october_projection.price).to eq(4_000)
+      expect(october_projection.exchanges.reload.pluck(:month).uniq).to eq([ 10 ])
+    end
   end
 
   describe "[ #duplicate ]" do

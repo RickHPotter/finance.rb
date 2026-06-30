@@ -44,4 +44,3 @@ end
 #
 #  fk_rails_...  (category_id => categories.id)
 #
-#  fk_rails_...  (category_id => categories.id)

@@ -540,9 +540,9 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def same_projection_group?(exchange, cash_transaction:)
     return same_projection_bucket?(exchange) if standalone?
 
-    return true if cash_transaction.present? &&
-                   ((exchange.cash_transaction_id.present? && exchange.cash_transaction_id == cash_transaction.id) ||
-                    exchange.cash_transaction == cash_transaction)
+    return same_projection_bucket?(exchange) if cash_transaction.present? &&
+                                                ((exchange.cash_transaction_id.present? && exchange.cash_transaction_id == cash_transaction.id) ||
+                                                 exchange.cash_transaction == cash_transaction)
 
     same_projection_bucket?(exchange)
   end
@@ -576,7 +576,9 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       user_id: user.id,
       user_card_id: transactable.user_card_id,
       context_id: transactable.context_id,
-      cash_transaction_type: model_name.name
+      cash_transaction_type: model_name.name,
+      month:,
+      year:
     )
   end
 

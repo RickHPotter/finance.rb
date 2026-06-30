@@ -2,6 +2,7 @@
 
 class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::ButtonTo
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
@@ -23,6 +24,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         div(class: "mt-6 space-y-4") do
           summary_grid
           installments_section
+          card_bound_projection_exchanges_section
           exchanges_section
           links_section
         end
@@ -123,6 +125,40 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         end
       else
         empty_state
+      end
+    end
+  end
+
+  def card_bound_projection_exchanges_section
+    return unless card_bound_exchange_return?
+
+    section_card(I18n.t("cash_transactions.exchange_projection.title")) do
+      div(class: "space-y-4") do
+        card_bound_projection_summary
+        card_bound_projection_fix_action if card_bound_projection_fixable?
+
+        if projection_exchanges.present?
+          if mobile?
+            div(class: "space-y-2") do
+              projection_exchanges.each { |exchange| projection_exchange_mobile_card(exchange) }
+            end
+          else
+            div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+              div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
+                span(class: "col-span-1 text-center") { I18n.t("cash_transactions.exchange_projection.number") }
+                span(class: "col-span-3") { model_attribute(Exchange, :month_year) }
+                span(class: "col-span-3") { model_attribute(CardInstallment, :date) }
+                span(class: "col-span-2") { I18n.t("cash_transactions.exchange_projection.entity") }
+                span(class: "col-span-1 text-center") { I18n.t("cash_transactions.exchange_projection.source") }
+                span(class: "col-span-2 text-right") { model_attribute(Exchange, :price) }
+              end
+
+              projection_exchanges.each { |exchange| projection_exchange_row(exchange) }
+            end
+          end
+        else
+          empty_state
+        end
       end
     end
   end
@@ -436,6 +472,74 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     span(class: "col-span-2 text-right font-bold text-slate-950") { money(exchange.price) }
   end
 
+  def card_bound_projection_summary
+    div(class: "grid gap-3 sm:grid-cols-3") do
+      dashboard_stat(I18n.t("cash_transactions.exchange_projection.transaction_price"), money(cash_transaction.price), emphasis: true)
+      dashboard_stat(I18n.t("cash_transactions.exchange_projection.exchanges_total"), money(projection_exchanges_total), emphasis: true)
+      dashboard_stat(I18n.t("cash_transactions.exchange_projection.difference"), money(cash_transaction.price - projection_exchanges_total), emphasis: true)
+    end
+  end
+
+  def card_bound_projection_fix_action
+    div(class: "rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-left") do
+      p(class: "text-sm font-semibold text-orange-950") { I18n.t("cash_transactions.exchange_projection.mismatch") }
+      p(class: "mt-1 text-xs leading-5 text-orange-800") { I18n.t("cash_transactions.exchange_projection.fix_description") }
+
+      div(class: "mt-3") do
+        button_to(
+          I18n.t("cash_transactions.exchange_projection.fix"),
+          fix_exchange_projection_cash_transaction_path(cash_transaction),
+          method: :patch,
+          form: { data: { turbo: false } },
+          data: { turbo: false, turbo_prefetch: false },
+          class: "inline-flex items-center justify-center rounded-md border border-orange-500 bg-orange-100 px-4 py-2 text-sm font-bold text-orange-950 " \
+                 "shadow-sm transition hover:border-orange-400 hover:bg-orange-500 hover:text-white"
+        )
+      end
+    end
+  end
+
+  def projection_exchange_row(exchange)
+    div(class: "grid grid-cols-12 items-center border-t border-slate-200 bg-white px-4 py-3 text-sm") do
+      projection_exchange_row_content(exchange)
+    end
+  end
+
+  def projection_exchange_mobile_card(exchange)
+    div(class: "rounded-xl border border-slate-200 bg-white px-3 py-2") do
+      div(class: "grid grid-cols-3 items-start gap-2") do
+        compact_installment_stat(I18n.t("cash_transactions.exchange_projection.number"), exchange.number)
+        compact_installment_stat(model_attribute(Exchange, :month_year), exchange.month_year)
+        compact_installment_stat(model_attribute(Exchange, :price), money(exchange.price), emphasis: true)
+      end
+
+      div(class: "mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3") do
+        compact_installment_stat(model_attribute(CardInstallment, :date), localized_date(exchange.date))
+        compact_installment_stat(I18n.t("cash_transactions.exchange_projection.source"), projection_exchange_source_label(exchange))
+      end
+    end
+  end
+
+  def projection_exchange_row_content(exchange)
+    span(class: "col-span-1 text-center font-bold text-slate-950") { exchange.number }
+    span(class: "col-span-3 font-semibold text-slate-950") { exchange.month_year }
+    span(class: "col-span-3 text-slate-700") { localized_date(exchange.date) }
+    span(class: "col-span-2 truncate font-semibold text-slate-950") { exchange.entity_transaction&.entity&.entity_name || "-" }
+    span(class: "col-span-1 text-center font-semibold text-sky-800") do
+      projection_exchange_source_link(exchange)
+    end
+    span(class: "col-span-2 text-right font-bold text-slate-950") { money(exchange.price) }
+  end
+
+  def projection_exchange_source_link(exchange)
+    source = exchange.entity_transaction&.transactable
+    if source.is_a?(CardTransaction)
+      link_to "##{source.id}", card_transaction_path(source), class: "hover:underline", data: { turbo_frame: "_top", turbo_prefetch: false }
+    else
+      plain "-"
+    end
+  end
+
   def special_link_item
     return unless cash_transaction.card_payment? || cash_transaction.card_advance? || cash_transaction.investment?
 
@@ -472,6 +576,150 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     @exchange_entity_transactions ||= cash_transaction.entity_transactions.includes(:entity, exchanges: :cash_transaction).sort_by do |entity_transaction|
       [ exchange_payer_entity_transaction?(entity_transaction) ? 0 : 1, entity_transaction.entity.name ]
     end
+  end
+
+  def projection_exchanges
+    @projection_exchanges ||= cash_transaction.exchanges.includes(entity_transaction: :entity).select(&:card_bound?).select(&:monetary?).sort_by do |exchange|
+      [ exchange.year, exchange.month, exchange.number, exchange.date, exchange.id ]
+    end
+  end
+
+  def card_bound_exchange_return?
+    cash_transaction.exchange_return? && projection_exchanges.present?
+  end
+
+  def projection_exchanges_total
+    @projection_exchanges_total ||= projection_exchanges.sum(&:price)
+  end
+
+  def card_bound_projection_mismatch?
+    cash_transaction.price != projection_exchanges_total
+  end
+
+  def card_bound_projection_fixable?
+    card_bound_projection_mismatch? ||
+      stale_own_projection_exchanges.present? ||
+      out_of_bucket_projection_exchanges.present? ||
+      incoming_wrong_owner_projection_exchanges.present? ||
+      incoming_stale_projection_exchanges.present? ||
+      duplicate_card_bound_projection_transactions.many?
+  end
+
+  def out_of_bucket_projection_exchanges
+    @out_of_bucket_projection_exchanges ||= projection_exchanges.reject do |exchange|
+      exchange.month == cash_transaction.month && exchange.year == cash_transaction.year
+    end
+  end
+
+  def incoming_wrong_owner_projection_exchanges
+    @incoming_wrong_owner_projection_exchanges ||= begin
+      group_keys = projection_exchange_group_keys
+      if group_keys.empty?
+        []
+      else
+        Exchange.card_bound.monetary.joins(:cash_transaction)
+                .where(cash_transactions: { context_id: current_context.id })
+                .where.not(cash_transaction_id: cash_transaction.id)
+                .includes(entity_transaction: :entity)
+                .select { |exchange| incoming_wrong_owner_projection_exchange?(exchange, group_keys) }
+      end
+    end
+  end
+
+  def incoming_wrong_owner_projection_exchange?(exchange, group_keys)
+    source = exchange.entity_transaction&.transactable
+    return false unless source.is_a?(CardTransaction)
+    return false unless group_keys.include?([ source.user_card_id, exchange.entity_transaction.entity_id ])
+    return false unless exchange.month == cash_transaction.month && exchange.year == cash_transaction.year
+
+    source_installment = projection_source_installment(exchange)
+    source_installment.present? && source_installment.month == cash_transaction.month && source_installment.year == cash_transaction.year
+  end
+
+  def projection_exchange_group_keys
+    projection_exchanges.filter_map do |exchange|
+      source = exchange.entity_transaction&.transactable
+      [ source.user_card_id, exchange.entity_transaction.entity_id ] if source.is_a?(CardTransaction)
+    end.uniq
+  end
+
+  def stale_own_projection_exchanges
+    @stale_own_projection_exchanges ||= projection_exchanges.select { |exchange| stale_projection_exchange?(exchange) }
+  end
+
+  def incoming_stale_projection_exchanges
+    @incoming_stale_projection_exchanges ||= begin
+      user_card_ids = projection_exchange_user_card_ids
+      if user_card_ids.empty?
+        []
+      else
+        Exchange.card_bound.monetary.joins(:cash_transaction)
+                .where(cash_transactions: { context_id: current_context.id })
+                .where.not(cash_transaction_id: cash_transaction.id)
+                .includes(entity_transaction: :entity)
+                .select { |exchange| incoming_stale_projection_exchange?(exchange, user_card_ids) }
+      end
+    end
+  end
+
+  def incoming_stale_projection_exchange?(exchange, user_card_ids)
+    source = exchange.entity_transaction&.transactable
+    return false unless source.is_a?(CardTransaction)
+    return false unless user_card_ids.include?(source.user_card_id)
+
+    source_installment = projection_source_installment(exchange)
+    return false if source_installment.blank?
+    return false unless source_installment.month == cash_transaction.month && source_installment.year == cash_transaction.year
+
+    stale_projection_exchange?(exchange)
+  end
+
+  def stale_projection_exchange?(exchange)
+    source_installment = projection_source_installment(exchange)
+    return false if source_installment.blank?
+
+    exchange.month != source_installment.month || exchange.year != source_installment.year
+  end
+
+  def projection_source_installment(exchange)
+    source = exchange.entity_transaction&.transactable
+    return unless source.is_a?(CardTransaction)
+
+    source.card_installments.find_by(number: exchange.number)
+  end
+
+  def projection_exchange_user_card_ids
+    projection_exchanges.filter_map do |exchange|
+      source = exchange.entity_transaction&.transactable
+      source.user_card_id if source.is_a?(CardTransaction)
+    end.uniq
+  end
+
+  def duplicate_card_bound_projection_transactions
+    @duplicate_card_bound_projection_transactions ||= begin
+      user_card_ids = projection_exchange_user_card_ids
+      if user_card_ids.empty?
+        current_context.cash_transactions.where(id: cash_transaction.id)
+      else
+        duplicate_ids = current_context.cash_transactions
+                                       .exchange_return
+                                       .where(
+                                         user_id: cash_transaction.user_id,
+                                         user_card_id: user_card_ids,
+                                         cash_transaction_type: cash_transaction.cash_transaction_type,
+                                         description: cash_transaction.description,
+                                         month: cash_transaction.month,
+                                         year: cash_transaction.year
+                                       )
+                                       .pluck(:id)
+        current_context.cash_transactions.where(id: [ cash_transaction.id, *duplicate_ids ].uniq)
+      end
+    end
+  end
+
+  def projection_exchange_source_label(exchange)
+    source = exchange.entity_transaction&.transactable
+    source.is_a?(CardTransaction) ? "##{source.id}" : "-"
   end
 
   def exchange_payer_entity_transaction?(entity_transaction)
