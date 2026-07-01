@@ -1178,6 +1178,104 @@ RSpec.describe "CardTransactions", type: :request do
       expect(may_return.cash_installments.order(:number).pluck(:price)).to eq([ -6_000 ])
     end
 
+    it "notifies the counterpart to destroy their shared return when an exchange card transaction stops being exchange" do
+      gigi = create(:user, first_name: "Gigi", email: "gigi@example.com")
+      gigi_bank_account = create(:user_bank_account, user: gigi, bank: create(:bank, :random))
+      rikki_entity_for_gigi = create(:entity, user:, entity_name: "GIGI", entity_user: gigi)
+      gigi_entity_for_rikki = create(:entity, user: gigi, entity_name: "RIKKI", entity_user: user)
+
+      create_params = Params::CardTransactions.new(
+        card_transaction: {
+          price: -6_000,
+          date: Time.zone.local(2026, 3, 20, 10, 0, 0),
+          month: 4,
+          year: 2026,
+          user_id: user.id,
+          user_card_id: user_card_one.id
+        },
+        card_installments: { count: 1 },
+        category_transactions: [ { category_id: exchange_category.id } ],
+        entity_transactions: [ {
+          entity_id: rikki_entity_for_gigi.id,
+          price: -6_000,
+          price_to_be_returned: -6_000,
+          exchanges_attributes: [ { price: -6_000, exchange_type: :monetary, date: Time.zone.local(2026, 3, 20, 10, 0, 0), month: 4, year: 2026 } ]
+        } ]
+      )
+
+      post card_transactions_path, params: create_params.params, headers: turbo_stream_headers
+
+      created_card_transaction = CardTransaction.last
+      shared_exchange_return = created_card_transaction.entity_transactions.first.exchanges.first.cash_transaction.reload
+      gigi_exchange = create(
+        :cash_transaction,
+        user: gigi,
+        context: gigi.main_context,
+        user_bank_account: gigi_bank_account,
+        reference_transactable: shared_exchange_return,
+        description: "Rikki paid for Gigi",
+        price: -6_000,
+        date: Date.new(2026, 3, 20),
+        month: 4,
+        year: 2026,
+        category_transactions_attributes: [ { category_id: gigi.built_in_category("EXCHANGE").id } ],
+        entity_transactions_attributes: [ { entity_id: gigi_entity_for_rikki.id, is_payer: true, price: 6_000, price_to_be_returned: 6_000 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 4, year: 2026, price: -6_000 } ]
+      )
+      gigi_exchange_return = create(
+        :cash_transaction,
+        user: gigi,
+        context: gigi.main_context,
+        user_bank_account: gigi_bank_account,
+        reference_transactable: gigi_exchange,
+        description: "Gigi return for Rikki",
+        price: 6_000,
+        date: Date.new(2026, 4, 10),
+        month: 4,
+        year: 2026,
+        category_transactions_attributes: [ { category_id: gigi.built_in_category("EXCHANGE RETURN").id } ],
+        entity_transactions_attributes: [ { entity_id: gigi_entity_for_rikki.id, is_payer: false, price: 0, price_to_be_returned: 0 } ],
+        cash_installments_attributes: [ { number: 1, date: Date.new(2026, 4, 10), month: 4, year: 2026, price: 6_000 } ]
+      )
+
+      category_transaction = created_card_transaction.category_transactions.find_by!(category: exchange_category)
+      entity_transaction = created_card_transaction.entity_transactions.find_by!(entity: rikki_entity_for_gigi)
+      exchange = entity_transaction.exchanges.first
+      installment = created_card_transaction.card_installments.first
+
+      patch card_transaction_path(created_card_transaction), params: {
+        card_transaction: {
+          price: created_card_transaction.price,
+          date: created_card_transaction.date,
+          month: created_card_transaction.month,
+          year: created_card_transaction.year,
+          user_id: user.id,
+          user_card_id: user_card_one.id,
+          category_transactions_attributes: [ { id: category_transaction.id, category_id: exchange_category.id, _destroy: "1" } ],
+          card_installments_attributes: [ installment.slice(:id, :number, :date, :month, :year, :price) ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: rikki_entity_for_gigi.id,
+              price: entity_transaction.price,
+              price_to_be_returned: entity_transaction.price_to_be_returned,
+              _destroy: "1",
+              exchanges_attributes: [ { id: exchange.id, _destroy: "1" } ]
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      conversation = Conversation.find_or_create_assistant_between!(user, gigi)
+      destroy_message = conversation.messages.where(body: "notification:destroy").order(:id).last
+
+      expect(destroy_message).to be_present
+      expect(destroy_message.reference_transactable).to eq(gigi_exchange_return)
+      expect(destroy_message).to be_transaction_destroy_notification_message
+      expect(destroy_message.local_reference_for(context: gigi.main_context)).to eq(gigi_exchange_return)
+      expect(CashTransaction.exists?(shared_exchange_return.id)).to be(false)
+    end
+
     it "creates a past-dated EXCHANGE card transaction with an unpaid card-bound exchange return in the same bucket" do
       card_transaction.date = Time.zone.local(2026, 3, 15, 10, 0, 0)
       card_transaction.month = 4

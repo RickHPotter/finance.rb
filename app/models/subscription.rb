@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Subscription < ApplicationRecord
+class Subscription < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @extends ..................................................................
   self.table_name = "finance_subscriptions"
 
@@ -184,10 +184,19 @@ class Subscription < ApplicationRecord
     transaction.historical_correction_confirmation = true if transaction.respond_to?(:historical_correction_confirmation=)
     transaction.skip_subscription_installment_sync = true if transaction.respond_to?(:skip_subscription_installment_sync=)
 
-    transaction.category_ids = [ *transaction.category_ids, *category_ids, subscription_category&.id ].compact.uniq
+    attach_missing_subscription_categories(transaction, subscription_category)
     transaction.entity_ids = [ *transaction.entity_ids, *entity_ids ].compact.uniq
 
     transaction.save!
+  end
+
+  def attach_missing_subscription_categories(transaction, subscription_category)
+    existing_category_ids = transaction.category_transactions.reject(&:marked_for_destruction?).filter_map(&:category_id).map(&:to_i)
+    desired_category_ids = [ *category_ids, subscription_category&.id ].compact.map(&:to_i).uniq
+
+    (desired_category_ids - existing_category_ids).each do |category_id|
+      transaction.category_transactions.build(category_id:)
+    end
   end
 
   def appended_original_description_comment(current_comment, original_description)
