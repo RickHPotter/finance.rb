@@ -25,7 +25,7 @@ module Views
 
         SheetContent(
           side: :middle,
-          class: "max-h-[90vh] max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto rounded-xl border border-slate-300 text-black overflow-hidden flex flex-col",
+          class: "h-[94vh] w-[96vw] max-w-6xl mx-auto rounded-xl border border-slate-300 text-black overflow-hidden flex flex-col",
           data: { controller: "price-mask entity-transaction" }
         ) do
           SheetHeader do
@@ -33,7 +33,7 @@ module Views
             SheetDescription { "" }
           end
 
-          SheetMiddle do
+          SheetMiddle(class: "min-h-0 flex-1 overflow-y-auto") do
             div(class: "grid grid-cols-1 lg:grid-cols-2 justify-center gap-3 pb-3") do
               div do
                 bold_label(form, :price, "entity_transaction_price_#{form.index}")
@@ -152,7 +152,7 @@ module Views
 
             div(
               id: "exchanges_nested",
-              class: "overflow-y-auto max-h-[calc(100vh-22rem)] pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 sm:max-h-[calc(100vh-12rem)]",
+              class: "pt-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 pb-3",
               data: { controller: "nested-form exchange-lock", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
             ) do
               template(data_nested_form_target: "template") do

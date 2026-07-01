@@ -46,6 +46,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def prevent_locked_projection_destruction
     return if transactable.respond_to?(:context_destroying?, true) && transactable.send(:context_destroying?)
     return unless cash_transaction&.paid_history?
+    return if editable_unpaid_projection_destruction?
     return if transactable.respond_to?(:confirmed_destroy_with_history?, true) &&
               transactable.send(:confirmed_destroy_with_history?)
 
@@ -129,7 +130,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     if remaining_exchanges.empty?
       _destroy_cash_transaction
     else
-      sync_projection_cash_transaction!(cash_transaction:, exchanges: remaining_exchanges)
+      sync_projection_cash_transaction!(cash_transaction:, exchanges: remaining_exchanges, removed_exchange: self)
     end
   end
 
@@ -146,7 +147,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     if sibling_exchanges.empty?
       _destroy_cash_transaction
     else
-      sync_projection_cash_transaction!(cash_transaction:, exchanges: sibling_exchanges)
+      sync_projection_cash_transaction!(cash_transaction:, exchanges: sibling_exchanges, removed_exchange: self)
     end
   end
 
@@ -222,11 +223,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     delete_projection_cash_transaction(CashTransaction.find_by(id: destroyed_projection_cash_transaction_id))
   end
 
-  def sync_projection_cash_transaction!(cash_transaction:, exchanges: projection_exchanges, allow_initial_paid_projection_rebuild: false)
+  def sync_projection_cash_transaction!(cash_transaction:, exchanges: projection_exchanges, allow_initial_paid_projection_rebuild: false, removed_exchange: nil)
     return _destroy_cash_transaction if exchanges.empty?
 
-    previous_projection_price = cash_transaction.price
-    projection_price = projection_cash_transaction_price(cash_transaction:, exchanges:, current_projection_price: previous_projection_price)
+    projection_price = projection_cash_transaction_price(cash_transaction:, exchanges:, removed_exchange:)
     return _destroy_cash_transaction if projection_price.zero?
 
     projection_date = projection_cash_transaction_date(exchanges)
@@ -327,8 +327,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def rebuild_card_bound_projection_installments_preserving_paid!(cash_transaction:, exchanges:, projection_date: nil)
     paid_installments = cash_transaction.cash_installments.order(:number).select(&:paid?)
-    remaining_price = cash_transaction.cash_installments.where(paid: false).sum(:price) +
-                      card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)
+    remaining_price = cash_transaction.price - paid_installments.sum(&:price)
     installments_count = paid_installments.count + (remaining_price.zero? ? 0 : 1)
 
     cash_transaction.cash_installments.where(paid: false).delete_all
@@ -458,16 +457,26 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     paid_installments.present?
   end
 
+  def editable_unpaid_projection_destruction?
+    paid_installments_count = cash_transaction.cash_installments.where(paid: true).count
+    return false if paid_installments_count.zero?
+
+    sorted_exchanges = sort_projection_exchanges(Exchange.where(cash_transaction_id: cash_transaction.id).to_a)
+    exchange_index = sorted_exchanges.find_index { |exchange| exchange.equal?(self) || (exchange.id.present? && exchange.id == id) }
+
+    exchange_index.present? && exchange_index >= paid_installments_count
+  end
+
   def projection_cash_transaction_without_paid_history?(cash_transaction)
     return true if cash_transaction.blank?
 
     cash_transaction.cash_installments.where(paid: true).none?
   end
 
-  def projection_cash_transaction_price(cash_transaction:, exchanges:, current_projection_price: cash_transaction.price)
-    return exchanges.sum(&:price) unless card_bound? && cash_transaction.cash_installments.where(paid: true).exists?
+  def projection_cash_transaction_price(cash_transaction:, exchanges:, current_projection_price: cash_transaction.price, removed_exchange: nil)
+    return exchanges.sum(&:price) unless cash_transaction.cash_installments.where(paid: true).exists?
 
-    current_projection_price + card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)
+    current_projection_price + card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:) - removed_exchange&.price.to_i
   end
 
   def card_bound_projection_new_exchange_delta(cash_transaction:, exchanges:)

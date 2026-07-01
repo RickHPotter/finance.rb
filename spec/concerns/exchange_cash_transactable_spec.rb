@@ -147,6 +147,62 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         validate(exchangable_card_transaction, 180, 1)
       end
 
+      it "allows deleting unpaid tail exchanges from a paid-history shared projection" do
+        projection = shared_projection_cash_transaction(exchangable_card_transaction)
+        entity_transaction = exchangable_card_transaction.entity_transactions.first
+
+        projection.cash_installments.delete_all
+        entity_transaction.exchanges.delete_all
+        14.times do |index|
+          number = index + 1
+          date = Time.zone.local(2026, 1, 4) + index.months
+          exchange = entity_transaction.exchanges.create!(
+            cash_transaction: projection,
+            exchange_type: :monetary,
+            bound_type: :standalone,
+            number:,
+            date:,
+            month: date.month,
+            year: date.year,
+            price: 8_771,
+            starting_price: 8_771,
+            exchanges_count: 14
+          )
+          projection.cash_installments.create!(
+            number:,
+            date: exchange.date,
+            month: exchange.month,
+            year: exchange.year,
+            price: exchange.price,
+            starting_price: exchange.price,
+            cash_installments_count: 14,
+            paid: number <= 7
+          )
+        end
+        projection.update_columns(price: 122_794, starting_price: 122_794, cash_installments_count: 14, paid: false)
+
+        expect { entity_transaction.exchanges.find_by!(number: 10).destroy! }.not_to raise_error
+        expect { entity_transaction.exchanges.find_by!(number: 7).destroy! }.to raise_error(ActiveRecord::RecordNotDestroyed)
+        expect(projection.reload.price).to eq(114_023)
+        expect(projection.cash_installments.order(:number).pluck(:number, :price, :paid)).to eq(
+          [
+            [ 1, 8_771, true ],
+            [ 2, 8_771, true ],
+            [ 3, 8_771, true ],
+            [ 4, 8_771, true ],
+            [ 5, 8_771, true ],
+            [ 6, 8_771, true ],
+            [ 7, 8_771, true ],
+            [ 8, 8_771, false ],
+            [ 9, 8_771, false ],
+            [ 10, 8_771, false ],
+            [ 11, 8_771, false ],
+            [ 12, 8_771, false ],
+            [ 13, 8_771, false ]
+          ]
+        )
+      end
+
       it "restores a missing standalone mirrored EXCHANGE RETURN reference on sync" do
         shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
         shared_cash_transaction.update_columns(reference_transactable_type: nil, reference_transactable_id: nil)
