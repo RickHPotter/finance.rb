@@ -309,6 +309,76 @@ RSpec.describe "UserCards", type: :request do
       expect(main_exchange.reload.date.to_date).to eq(Date.new(2026, 3, 20))
       expect(derived_exchange.reload.date.to_date).to eq(Date.new(2026, 3, 20))
     end
+
+    it "keeps unpaid exchange return projections in their existing reference bucket when card cycle defaults change" do
+      user_card = create(:user_card, user:, card:, due_date_day: 10, days_until_due_date: 9)
+      create(
+        :reference,
+        context: user.main_context,
+        user_card:,
+        month: 6,
+        year: 2026,
+        reference_date: Date.new(2026, 6, 10),
+        reference_closing_date: Date.new(2026, 6, 1)
+      )
+      create(
+        :reference,
+        context: user.main_context,
+        user_card:,
+        month: 7,
+        year: 2026,
+        reference_date: Date.new(2026, 7, 10),
+        reference_closing_date: Date.new(2026, 7, 1)
+      )
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "June exchange source",
+        date: Date.new(2026, 6, 1),
+        month: 6,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      entity_transaction = card_transaction.entity_transactions.first
+      entity_transaction.update!(price: -1000, price_to_be_returned: -1000, is_payer: true, exchanges_count: 1)
+      exchange = create(
+        :exchange,
+        entity_transaction:,
+        bound_type: :card_bound,
+        exchange_type: :monetary,
+        number: 1,
+        month: 6,
+        year: 2026,
+        date: Time.zone.local(2026, 6, 10).end_of_day,
+        price: -1000
+      )
+      exchange_return = exchange.cash_transaction
+      exchange_return.cash_installments.first.update!(paid: false)
+      exchange_return.update_column(:paid, false)
+
+      patch user_card_path(user_card), params: {
+        user_card: {
+          user_card_name: user_card.user_card_name,
+          min_spend: user_card.min_spend,
+          credit_limit: user_card.credit_limit,
+          active: user_card.active,
+          card_id: card.id,
+          user_id: user.id,
+          current_closing_date: Date.new(2026, 7, 2),
+          current_due_date: Date.new(2026, 7, 10)
+        }
+      }, headers: turbo_stream_headers
+
+      expect(exchange_return.reload.description).to include("[ 06/2026 ]")
+      expect(exchange_return.month).to eq(6)
+      expect(exchange_return.year).to eq(2026)
+      expect(exchange_return.date.to_date).to eq(Date.new(2026, 6, 10))
+      expect(exchange_return.cash_installments.first.month).to eq(6)
+      expect(exchange.reload.month).to eq(6)
+    end
   end
 
   describe "[ #destroy ]" do

@@ -124,19 +124,20 @@ class UserCard < ApplicationRecord
 
   def update_unpaid_exchange_installments(context)
     unpaid_exchange_installments(context:).find_each do |cash_installment|
-      new_reference_date = calculate_new_reference_date_for(cash_installment.month, cash_installment.year, context)
+      reference = references.find_by(context:, month: cash_installment.month, year: cash_installment.year)
+      next if reference.blank?
+
+      reference_date = reference.reference_date.end_of_day
       cash_transaction = cash_installment.cash_transaction
       exchanges = cash_transaction.exchanges.card_bound
 
       next if exchanges.empty?
 
       ApplicationRecord.transaction do
-        adjusted_reference_date = new_reference_date.end_of_day
-
-        cash_installment.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
-        cash_transaction.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
+        cash_installment.update_columns(date: reference_date)
+        cash_transaction.update_columns(date: reference_date)
         exchanges.each do |exchange|
-          exchange.update_columns(date: adjusted_reference_date, month: new_reference_date.month, year: new_reference_date.year)
+          exchange.update_columns(date: reference_date)
         end
       end
     end

@@ -78,6 +78,45 @@ RSpec.describe Reference, type: :model do
 
       expect(described_class.find_by_month_year(RefMonthYear.new(3, 2026))).to eq(subject)
     end
+
+    it "moves an unpaid card payment and installment to the reference date end of day" do
+      card_payment_category = user_card.user.built_in_category("CARD PAYMENT")
+      card_payment = create(
+        :cash_transaction,
+        user: user_card.user,
+        context: user_card.user.main_context,
+        user_card:,
+        cash_transaction_type: "CardInstallment",
+        description: "CARD PAYMENT [ TEST - JUL <26> ]",
+        date: Time.zone.local(2026, 7, 10).beginning_of_day,
+        month: 7,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      card_payment.categories = [ card_payment_category ]
+      card_payment.cash_installments.first.update!(date: Time.zone.local(2026, 7, 10).beginning_of_day, month: 7, year: 2026, paid: false)
+      card_transaction = create(
+        :card_transaction,
+        user: user_card.user,
+        context: user_card.user.main_context,
+        user_card:,
+        date: Date.new(2026, 7, 1),
+        month: 7,
+        year: 2026,
+        price: -1000,
+        paid: false
+      )
+      card_transaction.card_installments.first.update!(cash_transaction: card_payment, month: 7, year: 2026)
+      reference = create(:reference, user_card:, context: user_card.user.main_context, month: 7, year: 2026, reference_date: Date.new(2026, 7, 10))
+
+      reference.update!(reference_date: Date.new(2026, 7, 11))
+
+      expected_reference_time = Time.zone.local(2026, 7, 11, 23, 59, 59, 999_999)
+
+      expect(card_payment.reload.date).to eq(expected_reference_time)
+      expect(card_payment.cash_installments.first.reload.date).to eq(expected_reference_time)
+    end
   end
 end
 

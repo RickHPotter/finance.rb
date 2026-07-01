@@ -50,13 +50,13 @@ class Reference < ApplicationRecord
                                   end
   end
 
-  def set_card_payment_date # rubocop:disable Metrics/AbcSize
+  def set_card_payment_date
     card_payment = user_card.unpaid_invoices(context:).find_by(month:, year:)
     return if card_payment.nil?
 
     min_date = [ card_payment.cash_installments.first.date, reference_date ].compact_blank.min
 
-    new_reference_date = card_payment.date.change(year: reference_date.year, month: reference_date.month, day: reference_date.day)
+    new_reference_date = reference_date.end_of_day
 
     card_payment.update_columns(date: new_reference_date)
     card_payment.cash_installments.first.update_columns(date: new_reference_date)
