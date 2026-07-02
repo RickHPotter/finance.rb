@@ -109,6 +109,8 @@ Rails.application.routes.draw do
 
     collection do
       get :month_year
+      patch :bulk_update
+      delete :bulk_destroy
     end
   end
 

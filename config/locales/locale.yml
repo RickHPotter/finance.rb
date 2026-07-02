@@ -239,6 +239,20 @@ en:
       pay: "Some selected transactions cannot be paid."
       transfer: "Some selected transactions cannot be transferred."
       subscription: "Some selected transactions cannot be added to a subscription."
+    budgets:
+      exclusivity: "Exclusivity"
+      exclusivity_title: "Change how selected budgets match their categories and entities."
+      installments: "Installments"
+      installments_title: "Change which installments selected budgets consider."
+      make_inclusive: "Make Inclusive"
+      make_inclusive_title: "Require selected budgets to match category and entity together."
+      make_exclusive: "Make Exclusive"
+      make_exclusive_title: "Allow selected budgets to match either category or entity."
+      first_installment_only: "Consider Only First Installments"
+      first_installment_only_title: "Count only first installments in selected budgets."
+      all_installments: "Consider All Installments"
+      all_installments_title: "Count every installment in selected budgets."
+      destroy_title: "Destroy selected budgets."
 
 pt-BR:
   confirmation:
@@ -481,3 +495,17 @@ pt-BR:
       pay: "Algumas transações selecionadas não podem ser pagas."
       transfer: "Algumas transações selecionadas não podem ser transferidas."
       subscription: "Algumas transações selecionadas não podem ser adicionadas a uma assinatura."
+    budgets:
+      exclusivity: "Exclusividade"
+      exclusivity_title: "Altera como os orçamentos selecionados combinam categorias e entidades."
+      installments: "Parcelas"
+      installments_title: "Altera quais parcelas os orçamentos selecionados consideram."
+      make_inclusive: "Tornar Inclusivo"
+      make_inclusive_title: "Exige que os orçamentos selecionados combinem categoria e entidade juntas."
+      make_exclusive: "Tornar Exclusivo"
+      make_exclusive_title: "Permite que os orçamentos selecionados combinem categoria ou entidade."
+      first_installment_only: "Considerar Apenas 1ª Parcela"
+      first_installment_only_title: "Conta apenas primeiras parcelas nos orçamentos selecionados."
+      all_installments: "Considerar Todas as Parcelas"
+      all_installments_title: "Conta todas as parcelas nos orçamentos selecionados."
+      destroy_title: "Destrói os orçamentos selecionados."

@@ -16,6 +16,9 @@ application.register("balances-mobile", BalancesMobileController)
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
+import BudgetValueHelperController from "./budget_value_helper_controller"
+application.register("budget-value-helper", BudgetValueHelperController)
+
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 

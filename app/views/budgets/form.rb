@@ -28,7 +28,12 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         model: budget,
         id: "form",
         class: "contents text-black",
-        data: { controller: "reactive-form price-mask dynamic-description", reactive_form_quick_jump_value: true, action: "submit->price-mask#removeMasks" }
+        data: {
+          controller: "reactive-form price-mask dynamic-description budget-value-helper",
+          reactive_form_quick_jump_value: true,
+          budget_value_helper_consumed_value: consumed_value_for_helper,
+          action: "submit->price-mask#removeMasks"
+        }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
@@ -43,8 +48,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             data: { controller: "blinking-placeholder", text: model_attribute(budget, :description), dynamic_description_target: :description }
         end
 
-        div(class: "lg:flex lg:gap-2 w-full mb-3") do
-          div(id: "budget_category_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
+        div(class: "grid grid-cols-1 gap-2 w-full mb-3 lg:grid-cols-12") do
+          div(id: "budget_category_combobox", class: "combobox-shell w-full lg:col-span-3 mb-3 plus-icon", data: { reactive_form_target: :categoryCombobox }) do
             bold_label(form, :categories)
             render Views::Shared::SingleSelectCombobox.new(
               name: :budget_category,
@@ -57,7 +62,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             )
           end
 
-          div(id: "budget_entity_combobox", class: "combobox-shell w-full lg:w-1/4 mb-3 user-icon", data: { reactive_form_target: :entityCombobox }) do
+          div(id: "budget_entity_combobox", class: "combobox-shell w-full lg:col-span-3 mb-3 user-icon", data: { reactive_form_target: :entityCombobox }) do
             bold_label(form, :entities)
             render Views::Shared::SingleSelectCombobox.new(
               name: :budget_entity,
@@ -70,7 +75,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             )
           end
 
-          div(class: "w-full lg:w-1/4 mb-2") do
+          div(class: "w-full lg:col-span-2 mb-2") do
             bold_label(form, :month_year)
 
             if budget.new_record?
@@ -124,24 +129,24 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             end
           end
 
-          div(class: "w-full lg:w-1/4") do
+          div(class: "w-full lg:col-span-4") do
             positive = budget.value.to_i.positive?
             sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
             sign = positive ? "+" : "-"
 
-            bold_label(form, :value)
-
-            div(class: "flex-1 flex gap-x-1 mb-3 lg:mb-0") do
+            div(class: "flex-1 grid grid-cols-12 gap-x-1 mb-3 lg:mb-0") do
               Button(
                 type: :button,
                 size: :lg,
-                class: "w-1/6 #{sign_bg_colour} border border-black lg:hidden",
+                class: "col-span-2 self-end #{sign_bg_colour} border border-black lg:hidden",
                 tabindex: -1,
                 title: action_message(:toggle_sign),
                 data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
               ) { sign }
 
-              div(class: "w-5/6 lg:w-full") do
+              div(class: "col-span-10 lg:col-span-5") do
+                bold_label(form, :value)
+
                 TextField \
                   form, :value,
                   inputmode: :numeric,
@@ -151,8 +156,30 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
                   data: { controller: "input-select",
                           dynamic_description_target: :value,
                           reactive_form_target: :priceInput,
-                          price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask input->dynamic-description#updateDescription",
+                          budget_value_helper_target: :value,
+                          price_mask_target: :input,
+                          action: [
+                            "click->input-select#select",
+                            "input->price-mask#applyMask",
+                            "input->dynamic-description#updateDescription",
+                            "input->budget-value-helper#updateRemaining"
+                          ].join(" "),
                           sign: }
+              end
+
+              render_value_adjustment_modal
+
+              div(class: "col-span-12 lg:col-span-5 mt-1 lg:mt-0") do
+                div(class: "truncate") { bold_label(form, :remaining_value) }
+
+                TextField \
+                  form, :remaining_value,
+                  inputmode: :numeric,
+                  svg: :money,
+                  class: "font-graduate bg-slate-100 text-slate-700",
+                  value: budget.remaining_value || budget.value || -10_000,
+                  disabled: true,
+                  data: { budget_value_helper_target: :remaining, price_mask_target: :input }
               end
             end
           end
@@ -204,6 +231,98 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     current_user.categories.to_h do |c|
       [ c.id, c.hex_colour ]
     end.to_json
+  end
+
+  def render_value_adjustment_modal
+    modal_id = "budget_value_adjustment_modal"
+
+    div(class: "col-span-12 lg:col-span-2 mt-1 lg:mt-0 self-end") do
+      span(class: "invisible font-poetsen-one text-medium font-bold text-gray-500") { "" }
+
+      Button(
+        type: :button,
+        size: :lg,
+        class: "h-10 w-full min-w-12 px-2 border border-black bg-white text-black hover:bg-slate-100",
+        data: { modal_target: modal_id, modal_toggle: modal_id }
+      ) do
+        cached_icon(:calculator)
+      end
+    end
+
+    ModalShell(
+      id: modal_id,
+      title: model_attribute(budget, :value),
+      options: { content_class: "w-[calc(100vw-2rem)] max-w-md text-black" }
+    ) do
+      div(class: "space-y-4", data: { budget_value_helper_target: :modal }) do
+        div(class: "flex gap-1") do
+          Button(
+            type: :button,
+            size: :lg,
+            class: "w-14 bg-green-300 border border-black sm:hidden",
+            data: { budget_value_helper_target: :signToggle, action: "click->budget-value-helper#toggleAdjustmentSign" }
+          ) { "+" }
+
+          div(class: "relative w-full") do
+            div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+              cached_icon(:money)
+            end
+
+            input(
+              type: :text,
+              inputmode: :numeric,
+              class: "#{input_class} dynamic-price font-graduate",
+              value: 0,
+              data: {
+                budget_value_helper_target: :adjustment,
+                price_mask_target: :input,
+                action: "click->input-select#select input->price-mask#applyMask input->budget-value-helper#clampAdjustment",
+                sign: "+"
+              }
+            )
+          end
+        end
+
+        div(class: "grid grid-cols-4 gap-2") do
+          [ -500, -1_000, -5_000, -10_000 ].each do |amount|
+            button(
+              type: :button,
+              class: "rounded border border-slate-300 bg-slate-100 px-2 py-2 text-sm font-bold text-slate-900 hover:bg-slate-200",
+              data: {
+                action: "click->budget-value-helper#incrementAdjustment",
+                budget_value_helper_adjustment_param: amount
+              }
+            ) do
+              "-#{amount.abs / 100}"
+            end
+          end
+        end
+
+        div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
+          button(
+            type: :button,
+            class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+            data: { action: "click->budget-value-helper#applyAdjustment", modal_hide: modal_id }
+          ) do
+            I18n.t("confirmation.confirm")
+          end
+
+          button(
+            type: :button,
+            class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            data: { modal_hide: modal_id }
+          ) do
+            I18n.t("confirmation.cancel")
+          end
+        end
+      end
+    end
+  end
+
+  def consumed_value_for_helper
+    return 0 unless budget.persisted?
+
+    budget.value.to_i - budget.remaining_value.to_i
   end
 
   def render_actions_row
@@ -436,12 +555,12 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   end
 
   def list_menu
-    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
         Button(type: :button, class: "min-w-64") { "List" }
       end
 
-      PopoverContent(class: "z-60 opacity-100! min-w-64 p-1") do
+      PopoverContent(class: "z-40 opacity-100! min-w-64 p-1") do
         div(class: "flex flex-col gap-1") do
           card_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CardTransaction, 2))
           cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CashTransaction, 2))

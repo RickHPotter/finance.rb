@@ -38,6 +38,21 @@ RSpec.describe "Budgets", type: :request do
 
       expect(chips).to be_empty
     end
+
+    it "renders budget bulk action controls" do
+      get budgets_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-bulk-selection-kind="budget"')
+      expect(response.body).to include('data-bulk-ids-kind="budget"')
+      expect(response.body).to include('data-bulk-form-id="bulk_budget_make_inclusive_form"')
+      expect(response.body).to include('name="return_to"')
+      expect(response.body).to include('value="/budgets"')
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_inclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_exclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.first_installment_only"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.all_installments"))
+    end
   end
 
   describe "[ #create ]" do
@@ -95,8 +110,11 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="budget_form_submission_skeleton"')
       expect(response.body).to include('data-controller="ruby-ui--combobox"')
-      expect(response.body).to include('data-controller="reactive-form price-mask dynamic-description"')
+      expect(response.body).to include('data-controller="reactive-form price-mask dynamic-description budget-value-helper"')
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
+      expect(response.body).to include('data-budget-value-helper-target="value"')
+      expect(response.body).to include('data-budget-value-helper-target="adjustment"')
+      expect(response.body).to include('data-budget-value-helper-target="remaining"')
       expect(response.body).to include('data-reactive-form-target="monthYearCombobox"')
       expect(response.body).to include('data-reactive-form-target="priceInput"')
       expect(response.body).not_to include("hw-combobox")
@@ -295,6 +313,55 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
+  describe "[ bulk actions ]" do
+    it "updates selected budget matching and installment flags" do
+      second_category = create(:category, :random, user:)
+      first_budget = create(:budget, user:, inclusive: false, first_installment_only: false, budget_categories: [ build(:budget_category, category:) ])
+      second_budget = create(:budget, user:, inclusive: false, first_installment_only: false,
+                                      budget_categories: [ build(:budget_category, category: second_category) ])
+
+      patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "make_inclusive" }, headers: turbo_stream_headers
+      expect(response).to have_http_status(:success)
+      expect(first_budget.reload).to be_inclusive
+      expect(second_budget.reload).to be_inclusive
+
+      patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "make_exclusive" }, headers: turbo_stream_headers
+      expect(first_budget.reload).not_to be_inclusive
+      expect(second_budget.reload).not_to be_inclusive
+
+      patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "first_installment_only" },
+                                      headers: turbo_stream_headers
+      expect(first_budget.reload).to be_first_installment_only
+      expect(second_budget.reload).to be_first_installment_only
+
+      patch bulk_update_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(","), bulk_action: "all_installments" }, headers: turbo_stream_headers
+      expect(first_budget.reload).not_to be_first_installment_only
+      expect(second_budget.reload).not_to be_first_installment_only
+    end
+
+    it "redirects back to the originating index path when return_to is provided" do
+      budget = create(:budget, user:, inclusive: false, budget_categories: [ build(:budget_category, category:) ])
+
+      patch bulk_update_budgets_path,
+            params: { ids: budget.id.to_s, bulk_action: "make_inclusive", return_to: cash_transactions_path },
+            headers: turbo_stream_headers
+
+      expect(response).to redirect_to(cash_transactions_path)
+      expect(response).to have_http_status(:see_other)
+      expect(budget.reload).to be_inclusive
+    end
+
+    it "destroys selected budgets" do
+      second_category = create(:category, :random, user:)
+      first_budget = create(:budget, user:, budget_categories: [ build(:budget_category, category:) ])
+      second_budget = create(:budget, user:, budget_categories: [ build(:budget_category, category: second_category) ])
+
+      expect do
+        delete bulk_destroy_budgets_path, params: { ids: [ first_budget.id, second_budget.id ].join(",") }, headers: turbo_stream_headers
+      end.to change(Budget, :count).by(-2)
+    end
+  end
+
   describe "[ #month_year ]" do
     it "renders Analyse links while keeping description links pointed at edit" do
       budget = create(:budget, user:, month: 3, year: 2026, budget_categories: [ build(:budget_category, category:) ])
@@ -310,6 +377,7 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include("linkWithConfirmDialog_budget_menu_destroy_#{budget.id}")
       expect(response.body).to include(duplicate_budget_path(budget))
+      expect(response.body).to include('data-bulk-selection-kind="budget"')
 
       document = Nokogiri::HTML.fragment(response.body)
       description_link = document.at_css("#edit_budget_#{budget.id}")

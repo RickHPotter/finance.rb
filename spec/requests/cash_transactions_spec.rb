@@ -79,6 +79,21 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
 
+    it "renders budget bulk action controls on the index" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-bulk-selection-kind="budget"')
+      expect(response.body).to include('data-bulk-ids-kind="budget"')
+      expect(response.body).to include('data-bulk-form-id="bulk_budget_make_inclusive_form"')
+      expect(response.body).to include('name="return_to"')
+      expect(response.body).to include('value="/cash_transactions"')
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_inclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_exclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.first_installment_only"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.all_installments"))
+    end
+
     it "uses canonical sort fields on the index form" do
       get cash_transactions_path
 

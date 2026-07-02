@@ -164,13 +164,22 @@ export default class extends Controller {
     partialPayController?.loadSelection(selectionData)
   }
 
+  submitBulkAction(event) {
+    this.prepareBulkAction(event)
+
+    const formId = event.currentTarget.dataset.bulkFormId
+    if (!formId) return
+
+    document.getElementById(formId)?.requestSubmit()
+  }
+
   syncBulkBars() {
     const selected = this.selectedCheckboxes()
     const selectedCount = selected.length
     const totalCents = selected.reduce((sum, checkbox) => sum + this.priceFromCheckbox(checkbox), 0)
     const hint = this.syncActionButtons(selected)
 
-    this.syncBulkBarVisibility(selectedCount)
+    this.syncBulkBarVisibility(selected)
 
     this.selectedCountTargets.forEach((target) => {
       target.textContent = selectedCount
@@ -218,7 +227,10 @@ export default class extends Controller {
   }
 
   togglePageSelection() {
-    const visibleCheckboxes = this.visibleCheckboxes()
+    const selected = this.selectedCheckboxes()
+    const visible = this.visibleCheckboxes()
+    const activeKind = selected[0] ? this.selectionKind(selected[0]) : this.selectionKind(visible[0])
+    const visibleCheckboxes = visible.filter((checkbox) => this.selectionKind(checkbox) === activeKind)
     if (visibleCheckboxes.length === 0) return
 
     const shouldSelect = visibleCheckboxes.some((checkbox) => !checkbox.checked)
@@ -233,6 +245,12 @@ export default class extends Controller {
   }
 
   applySelection(checkbox, checked, { shiftKey = false } = {}) {
+    if (checked && !this.selectionKindAllowed(checkbox)) {
+      checkbox.checked = false
+      this.showSelectionWarning(this.mixedSelectionMessage(checkbox))
+      return
+    }
+
     const visibleCheckboxes = this.visibleCheckboxes()
     const currentIndex = visibleCheckboxes.indexOf(checkbox)
     const anchorIndex = visibleCheckboxes.indexOf(this.lastSelectedCheckbox)
@@ -256,6 +274,40 @@ export default class extends Controller {
 
   visibleCheckboxes() {
     return this.checkboxTargets.filter((checkbox) => this.rowVisible(checkbox.closest("[data-datatable-target='row']")))
+  }
+
+  selectionKindAllowed(checkbox) {
+    const selectedKinds = new Set(this.selectedCheckboxes().map((selected) => this.selectionKind(selected)))
+    selectedKinds.delete(this.selectionKind(checkbox))
+
+    return selectedKinds.size === 0
+  }
+
+  selectionKind(checkbox) {
+    return checkbox.dataset.bulkSelectionKind || "installment"
+  }
+
+  barSelectionKind(bar) {
+    return bar.dataset.bulkSelectionKind || "installment"
+  }
+
+  mixedSelectionMessage(checkbox) {
+    const kind = this.selectionKind(checkbox)
+    if (kind === "budget") return "Deselect transactions before selecting budgets."
+
+    return "Deselect budgets before selecting transactions."
+  }
+
+  showSelectionWarning(message) {
+    const toast = document.createElement("div")
+    toast.className = "fixed bottom-28 left-1/2 z-[70] -translate-x-1/2 rounded-lg border border-amber-300 bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-950 shadow-xl"
+    toast.textContent = message
+    document.body.appendChild(toast)
+
+    setTimeout(() => {
+      toast.classList.add("opacity-0", "transition-opacity", "duration-300")
+      setTimeout(() => toast.remove(), 300)
+    }, 2200)
   }
 
   rowVisible(row) {
@@ -282,12 +334,15 @@ export default class extends Controller {
     this.bulkActionButtonTargets.forEach((button) => {
       const baseDisabled = this.datasetBoolean(button.dataset.bulkBaseDisabled)
       const actionName = button.dataset.bulkActionName
+      const actionSelectionKind = button.dataset.bulkSelectionKind || "installment"
       let disabled = baseDisabled
       let reason = ""
 
       if (baseDisabled) {
         reason = button.dataset.bulkBaseDisabledReason || ""
       } else if (actionName && selected.length === 0) {
+        disabled = true
+      } else if (actionName && !this.selectedKindMatches(actionSelectionKind, selected)) {
         disabled = true
       } else if (actionName && !this.selectionEligibleFor(actionName, selected)) {
         disabled = true
@@ -314,6 +369,10 @@ export default class extends Controller {
       default:
         return true
     }
+  }
+
+  selectedKindMatches(kind, selected) {
+    return selected.every((checkbox) => this.selectionKind(checkbox) === kind)
   }
 
   priceFromCheckbox(checkbox) {
@@ -351,19 +410,24 @@ export default class extends Controller {
     return ["1", "true", "yes", "on"].includes(String(value || "").toLowerCase())
   }
 
-  syncBulkBarVisibility(selectedCount) {
-    if (selectedCount > 0) {
-      this.showBulkBars()
+  syncBulkBarVisibility(selected) {
+    if (selected.length > 0) {
+      this.showBulkBars(this.selectionKind(selected[0]))
     } else {
       this.scheduleBulkBarsHide()
     }
   }
 
-  showBulkBars() {
+  showBulkBars(selectionKind) {
     clearTimeout(this.hideBarTimeout)
     clearTimeout(this.hideBarTransitionTimeout)
 
-    this.bulkBarTargets.forEach((bar) => {
+    this.bulkBars().forEach((bar) => {
+      if (this.barSelectionKind(bar) !== selectionKind) {
+        this.hideBulkBar(bar)
+        return
+      }
+
       bar.classList.remove("hidden")
 
       requestAnimationFrame(() => {
@@ -372,17 +436,22 @@ export default class extends Controller {
     })
   }
 
+  hideBulkBar(bar) {
+    bar.classList.add("opacity-0", "pointer-events-none")
+    bar.classList.add("hidden")
+  }
+
   scheduleBulkBarsHide() {
     clearTimeout(this.hideBarTimeout)
     clearTimeout(this.hideBarTransitionTimeout)
 
     this.hideBarTimeout = setTimeout(() => {
-      this.bulkBarTargets.forEach((bar) => {
+      this.bulkBars().forEach((bar) => {
         bar.classList.add("opacity-0", "pointer-events-none")
       })
 
       this.hideBarTransitionTimeout = setTimeout(() => {
-        this.bulkBarTargets.forEach((bar) => {
+        this.bulkBars().forEach((bar) => {
           bar.classList.add("hidden")
         })
       }, 300)
@@ -424,5 +493,9 @@ export default class extends Controller {
     const mobileViewport = window.matchMedia?.("(max-width: 767px)")?.matches
 
     return Boolean(standalone && mobileViewport)
+  }
+
+  bulkBars() {
+    return Array.from(this.element.querySelectorAll("[data-datatable-target~='bulkBar']"))
   }
 }
