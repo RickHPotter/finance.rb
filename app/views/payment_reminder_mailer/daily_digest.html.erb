@@ -1,7 +1,7 @@
 <% content_for :title, t("payment_reminder_mailer.daily_digest.preview_title") %>
 
 <% total_count = @installments.values.sum(&:size) %>
-<% total_amount = @installments.values.flatten.sum(&:price).abs %>
+<% total_amount = @installments.values.flatten.sum(&:price) %>
 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse: collapse; background: #f8fafc;">
   <tr>

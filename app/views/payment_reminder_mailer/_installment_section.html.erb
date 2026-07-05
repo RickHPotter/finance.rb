@@ -25,10 +25,20 @@
                       <%= transaction.user_bank_account.user_bank_account_name %>
                     <% end %>
                   </p>
+                  <% if transaction.categories.any? %>
+                    <p style="margin: 2px 0 0; color: #64748b !important; font-size: 13px; line-height: 1.5;">
+                      <%= transaction.categories.map(&:category_name).join(", ") %>
+                    </p>
+                  <% end %>
+                  <% if transaction.entity_bundle.present? %>
+                    <p style="margin: 2px 0 0; color: #64748b !important; font-size: 13px; line-height: 1.5;">
+                      <%= transaction.entity_bundle %>
+                    </p>
+                  <% end %>
                 </td>
                 <td width="140" class="installment-price-cell" style="width: 140px; vertical-align: top; text-align: right;">
                   <span style="display: inline-block; white-space: nowrap; border-radius: 999px; background: <%= palette[:bg] %>; padding: 8px 12px; color: <%= palette[:text] %> !important; font-size: 14px; font-weight: 900;">
-                    <%= number_to_currency(installment.price.abs / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %>
+                    <%= number_to_currency(installment.price / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %>
                   </span>
                 </td>
               </tr>

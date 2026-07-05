@@ -264,7 +264,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           ) { "+" }
 
           div(class: "relative w-full") do
-            div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+            div(class: "absolute inset-y-0 inset-s-0 flex items-center ps-3.5 pointer-events-none z-1") do
               cached_icon(:money)
             end
 
