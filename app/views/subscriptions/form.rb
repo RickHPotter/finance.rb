@@ -25,7 +25,7 @@ class Views::Subscriptions::Form < Views::Base
     turbo_frame_tag dom_id(subscription) do
       div(class: "flex h-full min-h-full flex-col",
           data: { controller: "subscription-transactions", subscription_transactions_locale_value: current_user.locale || I18n.locale }) do
-        form_with(model: subscription, id: :form, class: "contents text-black",
+        form_with(model: subscription, id: :form, class: "contents text-black dark:text-slate-100",
                   data: { action: "input->subscription-transactions#recalculatePrice" }) do |form|
           div(class: "flex flex-1 flex-col") do
             form.hidden_field :user_id, value: current_user.id
@@ -108,15 +108,15 @@ class Views::Subscriptions::Form < Views::Base
     section(class: "flex flex-1 flex-col") do
       div(class: "mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between") do
         div(class: "flex items-center gap-3") do
-          h3(class: "text-lg font-semibold text-slate-900") do
+          h3(class: "text-lg font-semibold text-slate-900 dark:text-slate-100") do
             model_attribute(Subscription, :transactions_count).upcase
           end
 
-          span(class: "rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600") do
+          span(class: "rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300") do
             subscription.transactions_count
           end
 
-          span(class: "rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600") do
+          span(class: "rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300") do
             span(data: { subscription_transactions_target: "totalPriceDisplay" }) do
               from_cent_based_to_float(subscription.price, "R$")
             end
@@ -136,14 +136,14 @@ class Views::Subscriptions::Form < Views::Base
 
           button(
             type: :button,
-            class: "py-2 px-3 rounded-sm border border-sky-900 bg-blue-600 hover:bg-blue-800 transition-colors text-white shadow-lg font-thin",
+            class: new_transaction_button_class,
             data: { action: "subscription-transactions#openCustomModal" }
           ) { action_message(:new) }
         end
       end
 
       div(
-        class: "min-h-56 max-h-56 flex-1 space-y-2 overflow-y-auto border border-slate-200 bg-white/80 p-3 shadow-inner",
+        class: transactions_list_class,
         style: "scrollbar-width: thin; scrollbar-color: #94a3b8 #e2e8f0;",
         data: {
           controller: "nested-form",
@@ -186,7 +186,19 @@ class Views::Subscriptions::Form < Views::Base
   def next_transaction_button_class
     "rounded-sm border border-emerald-800 bg-emerald-600 px-3 py-2
      font-thin text-white shadow-lg transition-colors hover:bg-emerald-700
-     disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+     disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none
+     dark:border-emerald-500 dark:bg-emerald-700/80 dark:hover:bg-emerald-600
+     dark:disabled:border-slate-700 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
+  end
+
+  def new_transaction_button_class
+    "rounded-sm border border-sky-900 bg-blue-600 px-3 py-2 font-thin text-white shadow-lg transition-colors hover:bg-blue-800 " \
+      "dark:border-sky-500 dark:bg-sky-700/80 dark:hover:bg-sky-600"
+  end
+
+  def transactions_list_class
+    "min-h-56 max-h-56 flex-1 space-y-2 overflow-y-auto border border-slate-200 bg-white/80 p-3 shadow-inner " \
+      "dark:border-slate-700 dark:bg-slate-900/70"
   end
 
   def subscription_modal_user_card_options

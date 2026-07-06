@@ -13,7 +13,7 @@ class Views::Shared::FilterSummary < Views::Base
     return unless summary[:active]
 
     fieldset(class: container_class) do
-      legend(class: "text-xs font-bold uppercase tracking-[0.20em] text-sky-900") { I18n.t("filters.summary.active") }
+      legend(class: "text-xs font-bold uppercase tracking-[0.20em] text-sky-900 dark:text-sky-200") { I18n.t("filters.summary.active") }
 
       div(class: "grid gap-3 lg:grid-cols-[auto,1fr] lg:items-start") do
         div(class: "flex flex-wrap justify-center items-center gap-2") do
@@ -28,19 +28,20 @@ class Views::Shared::FilterSummary < Views::Base
   private
 
   def container_class
-    "rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700"
+    "rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
   end
 
   def render_filter(item)
     link_to(
       remove_filter_path(item),
       class: "inline-flex items-center gap-2 rounded-sm ring px-2 py-1 text-xs transition-colors ring-slate-400 bg-white text-slate-700
-              hover:ring-slate-600 hover:bg-slate-50",
+              hover:ring-slate-600 hover:bg-slate-50 dark:ring-slate-700 dark:bg-slate-800 dark:text-slate-300
+              dark:hover:ring-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-100",
       title: item[:label],
       aria: { label: "#{I18n.t('filters.summary.clear')}: #{item[:label]}" }
     ) do
       span(class: "text-xs md:text-sm") { item[:label] }
-      span(class: "rounded bg-slate-200 px-1 text-2xs font-semibold leading-4 text-slate-600") { "x" }
+      span(class: "rounded bg-slate-200 px-1 text-2xs font-semibold leading-4 text-slate-600 dark:bg-slate-700 dark:text-slate-200") { "x" }
     end
   end
 

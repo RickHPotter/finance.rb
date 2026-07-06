@@ -21,7 +21,8 @@ module RubyUI
     def time_column(label:, target:, decrement:, increment:, autofocus: false)
       div(class: "grid min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-1") do
         button(type: :button, class: button_class, data: { action: "ruby-ui--time-picker##{decrement}" }) { "-" }
-        div(class: "flex min-w-0 flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1 py-1") do
+        div(class: "flex min-w-0 flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1 py-1 " \
+                   "dark:border-slate-700 dark:bg-slate-800") do
           span(class: "text-2xs font-black uppercase tracking-[0.18em] text-slate-400") { label }
           input(
             type: "text",
@@ -30,7 +31,8 @@ module RubyUI
             maxlength: 2,
             autofocus:,
             class: "h-8 w-full rounded-sm border-0 bg-transparent p-0 text-center font-graduate text-xl font-black text-slate-950 " \
-                   "outline-hidden focus:bg-white focus:ring-1 focus:ring-slate-300",
+                   "outline-hidden focus:bg-white focus:ring-1 focus:ring-slate-300 dark:font-mono dark:text-slate-100 dark:focus:bg-slate-900 " \
+                   "dark:focus:ring-sky-500/60",
             data: {
               controller: ("autofocus" if autofocus),
               autofocus_select_value: autofocus,
@@ -46,12 +48,13 @@ module RubyUI
 
     def button_class
       "inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white text-base font-black text-slate-700 " \
-        "shadow-sm transition hover:bg-slate-100"
+        "shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 " \
+        "dark:hover:text-slate-100"
     end
 
     def default_attrs
       {
-        class: "flex h-full w-full flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-sm",
+        class: "flex h-full w-full flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900",
         data: {
           controller: "ruby-ui--time-picker",
           ruby_ui__time_picker_input_id_value: @input_id,

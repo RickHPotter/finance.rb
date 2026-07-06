@@ -10,7 +10,7 @@
          data-transition-enter-to="opacity-100 translate-x-0"
          data-transition-leave-from="opacity-100 translate-x-0"
          data-transition-leave-to="opacity-0 translate-x-6">
-      <div class="max-w-sm w-full bg-white pointer-events-auto rounded-lg shadow-xs overflow-hidden p-4">
+      <div class="max-w-sm w-full bg-white pointer-events-auto rounded-lg shadow-xs overflow-hidden p-4 dark:border dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:shadow-black/40">
         <div class="flex items-start">
           <% if notice %>
             <%= render_icon :check %>
@@ -19,11 +19,11 @@
           <% end %>
 
           <div class="ml-3 w-0 flex-1 pt-0.5">
-            <%= content_tag :p, notice ? t("notification.notice") : t("notification.alert"), class: "text-sm font-medium text-gray-900" %>
-            <%= content_tag :p, notice || alert_message, id: "notification-content", class: "mt-1 text-sm text-gray-500" %>
+            <%= content_tag :p, notice ? t("notification.notice") : t("notification.alert"), class: "text-sm font-medium text-gray-900 dark:text-slate-100" %>
+            <%= content_tag :p, notice || alert_message, id: "notification-content", class: "mt-1 text-sm text-gray-500 dark:text-slate-400" %>
 
             <% if alert_payload&.dig(:workaround).present? %>
-              <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
                 <p class="font-semibold"><%= alert_payload[:workaround_label] %></p>
                 <p class="mt-1"><%= alert_payload[:workaround] %></p>
               </div>
@@ -35,13 +35,13 @@
                               alert_payload[:action][:href],
                               method: alert_payload[:action][:method],
                               form: { data: { turbo_stream: true } },
-                              class: "inline-flex items-center rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200" %>
+                              class: "inline-flex items-center rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200 dark:border-amber-500/60 dark:bg-amber-900/60 dark:text-amber-100 dark:hover:bg-amber-800" %>
               </div>
             <% end %>
           </div>
 
           <div class="ml-4 flex shrink-0">
-            <button id="notification-close" data-action="notification#hide" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+            <button id="notification-close" data-action="notification#hide" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:bg-slate-950 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-offset-slate-950">
               <% content_tag :span, t("navigation.close"), class: "sr-only" %>
               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>

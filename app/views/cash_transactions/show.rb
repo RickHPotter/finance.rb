@@ -18,7 +18,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     render_pay_modal
 
     turbo_frame_tag :center_container do
-      div(class: "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-6") do
+      div(class: show_shell_class) do
         dashboard_header
 
         div(class: "mt-6 space-y-4") do
@@ -35,9 +35,9 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   private
 
   def dashboard_header
-    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
+    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 dark:border-slate-700 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0 text-left") do
-        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { cash_transaction.description }
+        h1(class: "text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 sm:text-4xl") { cash_transaction.description }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
@@ -45,7 +45,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           special_badges
         end
 
-        p(class: "mt-3 max-w-3xl text-sm leading-6 text-slate-600") { cash_transaction.comment } if cash_transaction.comment.present?
+        p(class: "mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400") { cash_transaction.comment } if cash_transaction.comment.present?
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
@@ -66,7 +66,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_stat(model_attribute(CashTransaction, :user_bank_account_id), account_name)
       end
 
-      div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 xl:grid-cols-2") do
+      div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 xl:grid-cols-2") do
         allocation_group(model_attribute(CashTransaction, :categories), categories.map(&:name))
         allocation_group(model_attribute(CashTransaction, :entities), entities.map(&:name))
       end
@@ -82,7 +82,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           end
         end
       else
-        div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+        div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
           div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
             span(class: "col-span-1 text-center") { model_attribute(CashInstallment, :number) }
             span(class: "col-span-3") { model_attribute(CashTransaction, :month) }
@@ -143,7 +143,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
               projection_exchanges.each { |exchange| projection_exchange_mobile_card(exchange) }
             end
           else
-            div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+            div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
               div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
                 span(class: "col-span-1 text-center") { I18n.t("cash_transactions.exchange_projection.number") }
                 span(class: "col-span-3") { model_attribute(Exchange, :month_year) }
@@ -164,12 +164,12 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def section_card(title, &)
-    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:rounded-3xl sm:p-4",
+    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/70 sm:rounded-3xl sm:p-4",
             data: { controller: "show-section-card", show_section_card_open_value: true }) do
       button(type: :button, class: "flex w-full items-center justify-between gap-3 text-left",
              data: { action: "show-section-card#toggle", show_section_card_target: "button" }) do
-        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500") { title }
-        span(class: "text-lg font-semibold leading-none text-slate-500", data: { show_section_card_target: "icon" }) { "−" }
+        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400") { title }
+        span(class: "text-lg font-semibold leading-none text-slate-500 dark:text-slate-400", data: { show_section_card_target: "icon" }) { "−" }
       end
 
       div(class: "mt-4", data: { show_section_card_target: "content" }, &)
@@ -177,9 +177,9 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_stat(label, value, emphasis: false)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950 dark:text-slate-100") { value.to_s }
     end
   end
 
@@ -231,8 +231,8 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def allocation_group(label, names)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
 
       if names.empty?
         p(class: "mt-2 text-sm text-slate-500") { I18n.t("dashboards.empty") }
@@ -248,7 +248,10 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
             end
           else
             entities.each do |entity|
-              div(class: "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black", title: entity.entity_name) do
+              div(
+                class: entity_chip_class,
+                title: entity.entity_name
+              ) do
                 image_tag(asset_path("avatars/#{entity.avatar_name}"), class: "h-6 w-6 rounded-full") if entity.avatar_name.present?
                 span(class: "break-words") { entity.entity_name }
               end
@@ -303,7 +306,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_action_class(variant)
-    default = "border-slate-300 text-slate-700 hover:bg-slate-100"
+    default = "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
     return default if %i[primary outline].include?(variant)
 
     case variant
@@ -334,10 +337,10 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def link_item(label, value, href)
-    link_to href, class: "block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-400",
+    link_to href, class: link_card_class,
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
-      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "mt-1 truncate text-sm font-bold text-slate-950") { value }
+      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "mt-1 truncate text-sm font-bold text-slate-950 dark:text-slate-100") { value }
     end
   end
 
@@ -351,13 +354,33 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def descendants_link_item
     return if reference_descendants.empty?
 
-    p(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700") do
+    p(class: empty_link_card_class) do
       I18n.t("dashboards.cash_transactions.reference_descendants", count: reference_descendants.count)
     end
   end
 
+  def show_shell_class
+    "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm " \
+      "dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-none sm:rounded-3xl sm:p-6"
+  end
+
+  def entity_chip_class
+    "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black " \
+      "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+  end
+
+  def link_card_class
+    "block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-400 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-500"
+  end
+
+  def empty_link_card_class
+    "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+  end
+
   def exchange_entity_transaction_card(entity_transaction)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:px-4") do
+    div(class: "rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900 sm:px-4") do
       if mobile?
         div(class: "space-y-2") do
           div(class: "flex min-w-0 items-center gap-2") do
@@ -365,7 +388,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
               image_tag(asset_path("avatars/#{entity_transaction.entity.avatar_name}"),
                         class: "h-8 w-8 rounded-full")
             end
-            span(class: "break-words text-sm font-bold text-slate-950") { entity_transaction.entity.entity_name }
+            span(class: "break-words text-sm font-bold text-slate-950 dark:text-slate-100") { entity_transaction.entity.entity_name }
           end
 
           div(class: "flex flex-wrap items-center gap-2") do

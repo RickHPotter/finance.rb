@@ -25,13 +25,13 @@ class Views::Budgets::MonthYear < Views::Base
 
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4 dark:border-slate-700") do
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         if budgets.present?
           render Views::Budgets::Budgets.new(mobile:, budgets:)
         else
-          div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+          div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-700 dark:text-slate-100") { I18n.t(:rows_not_found) }
         end
       end
     end
@@ -39,10 +39,10 @@ class Views::Budgets::MonthYear < Views::Base
 
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 dark:border-slate-700") do
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-12",
             rows: [
@@ -59,10 +59,10 @@ class Views::Budgets::MonthYear < Views::Base
           if budgets.present?
             render Views::Budgets::Budgets.new(mobile:, budgets:)
           else
-            div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
+            div(class: "py-2 text-lg dark:text-slate-100") { I18n.t(:rows_not_found) }
           end
 
-          div(class: "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
+          div(class: total_row_class) do
             span(class: "py-3 col-span-10 text-end") { "#{model_attribute(Budget, :total_amount)}:" }
 
             span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
@@ -72,5 +72,12 @@ class Views::Budgets::MonthYear < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def total_row_class
+    "grid grid-cols-12 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
   end
 end

@@ -11,7 +11,8 @@ class Views::Shared::FormShell < Views::Base
 
   def view_template(&)
     div(
-      class: "relative rounded-lg bg-white p-4 shadow-md",
+      class: "relative rounded-lg border border-transparent bg-white p-4 text-black shadow-md dark:border-slate-800 dark:bg-slate-900 " \
+             "dark:text-slate-100 dark:shadow-2xl dark:ring-1 dark:ring-slate-700",
       data: {
         controller: "form-loading",
         form_loading_preview_value: skeleton_preview?.to_s,
@@ -26,7 +27,7 @@ class Views::Shared::FormShell < Views::Base
       end
 
       div(
-        class: "absolute inset-0 z-10 hidden rounded-lg bg-white/95 p-4",
+        class: "absolute inset-0 z-10 hidden rounded-lg bg-white/95 p-4 dark:bg-slate-900/95 dark:backdrop-blur-md",
         data: { form_loading_target: "skeleton" },
         aria: { hidden: true }
       ) do
@@ -46,7 +47,8 @@ class Views::Shared::FormShell < Views::Base
 
     button(
       type: :button,
-      class: "absolute right-3 top-3 z-20 rounded-sm border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-100",
+      class: "absolute right-3 top-3 z-20 rounded-sm border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 " \
+             "shadow-sm hover:bg-slate-100 dark:rounded-md dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
       data: { action: "form-loading#togglePreview" }
     ) { "Toggle skeleton" }
   end

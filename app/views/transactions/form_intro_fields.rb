@@ -16,7 +16,7 @@ class Views::Transactions::FormIntroFields < Views::Base
   end
 
   def view_template
-    div(class: "w-full mb-6") do
+    div(class: "mb-6 w-full") do
       form.text_field :description,
                       class: description_class,
                       autofocus: autofocus_target == :description,
@@ -24,13 +24,21 @@ class Views::Transactions::FormIntroFields < Views::Base
                       data: { controller: "blinking-placeholder", text: model_attribute(transaction, :description) }
     end
 
-    div(class: "w-full mb-6") do
+    div(class: "mb-6 w-full text-gray-500 dark:text-slate-500") do
       cached_icon :quote
       form.text_area \
         :comment,
-        class: "text-gray-500 p-4 ps-9 w-full border border-gray-400 shadow-lg rounded-lg focus:ring-transparent focus:outline-none",
+        class: comment_input_class,
         disabled: comment_disabled,
         data: { controller: "text-area-autogrow blinking-placeholder", text: model_attribute(transaction, :comment_placeholder) }
     end
+  end
+
+  private
+
+  def comment_input_class
+    "w-full rounded-lg border border-gray-400 bg-white p-4 ps-9 text-gray-500 shadow-lg focus:ring-transparent focus:outline-none " \
+      "dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:italic dark:placeholder:text-slate-500 " \
+      "dark:focus:border-sky-500/50 dark:focus:ring-2 dark:focus:ring-sky-500/60 dark:disabled:cursor-not-allowed dark:disabled:opacity-40"
   end
 end

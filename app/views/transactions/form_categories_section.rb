@@ -11,7 +11,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   def view_template
     div(
       id: "categories_nested",
-      class: "border-y py-2 md:border-r md:pr-2",
+      class: "border-y py-2 md:border-r md:pr-2 dark:border-slate-700/50",
       data: {
         controller: "nested-form form-collection-carousel",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
@@ -27,7 +27,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         Button(
           type: :button,
           variant: :outline,
-          class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
+          class: carousel_button_class,
           data: {
             form_collection_carousel_target: "prevButton",
             action: "click->form-collection-carousel#scrollPrev"
@@ -45,7 +45,7 @@ class Views::Transactions::FormCategoriesSection < Views::Base
         Button(
           type: :button,
           variant: :outline,
-          class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
+          class: carousel_button_class,
           data: {
             form_collection_carousel_target: "nextButton",
             action: "click->form-collection-carousel#scrollNext"
@@ -58,6 +58,11 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   end
 
   private
+
+  def carousel_button_class
+    "h-full min-h-12 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/70 dark:hover:text-slate-100"
+  end
 
   def category_transactions_association
     association = transaction.category_transactions.includes(:category)

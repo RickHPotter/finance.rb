@@ -81,17 +81,20 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
             if budget.new_record?
               div(data: { reactive_form_target: :monthYearCombobox }) do
                 Combobox term: model_attribute(budget, :month_years) do
-                  ComboboxTrigger(placeholder: model_attribute(budget, :month_year))
+                  ComboboxTrigger(
+                    placeholder: model_attribute(budget, :month_year),
+                    class: ref_month_year_trigger_class
+                  )
 
-                  ComboboxPopover do
+                  ComboboxPopover(class: ref_month_year_popover_class) do
                     div(class: "my-1") do
-                      ComboboxSearchInput(placeholder: action_message(:type))
+                      ComboboxSearchInput(placeholder: action_message(:type), class: ref_month_year_search_class)
                     end
 
-                    ComboboxList do
+                    ComboboxList(class: "flex max-h-72 flex-col gap-1 overflow-y-auto p-1 text-foreground dark:text-slate-100") do
                       ComboboxEmptyState { I18n.t(:rows_not_found) }
 
-                      ComboboxItem(class: "mt-1") do
+                      ComboboxItem(class: "mt-1 dark:text-slate-100 dark:hover:bg-slate-800") do
                         ComboboxToggleAllCheckbox(name: "all", value: action_message(:all))
                         span { action_message(:select_all) }
                       end
@@ -106,7 +109,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
                             month = I18n.t("date.month_names")[month]
 
-                            ComboboxItem do
+                            ComboboxItem(class: "dark:text-slate-100 dark:hover:bg-slate-800") do
                               ComboboxCheckbox(name: "month_years[]", value:)
                               span { month }
                             end
@@ -242,7 +245,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
       Button(
         type: :button,
         size: :lg,
-        class: "h-10 w-full min-w-12 px-2 border border-black bg-white text-black hover:bg-slate-100",
+        class: calc_button_class,
         data: { modal_target: modal_id, modal_toggle: modal_id }
       ) do
         cached_icon(:calculator)
@@ -252,14 +255,14 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     ModalShell(
       id: modal_id,
       title: model_attribute(budget, :value),
-      options: { content_class: "w-[calc(100vw-2rem)] max-w-md text-black" }
+      options: { content_class: "w-[calc(100vw-2rem)] max-w-md text-black dark:text-slate-100" }
     ) do
       div(class: "space-y-4", data: { budget_value_helper_target: :modal }) do
         div(class: "flex gap-1") do
           Button(
             type: :button,
             size: :lg,
-            class: "w-14 bg-green-300 border border-black sm:hidden",
+            class: "w-14 bg-green-300 border border-black text-black dark:border-green-500 dark:bg-green-700/80 dark:text-white sm:hidden",
             data: { budget_value_helper_target: :signToggle, action: "click->budget-value-helper#toggleAdjustmentSign" }
           ) { "+" }
 
@@ -287,7 +290,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
           [ -500, -1_000, -5_000, -10_000 ].each do |amount|
             button(
               type: :button,
-              class: "rounded border border-slate-300 bg-slate-100 px-2 py-2 text-sm font-bold text-slate-900 hover:bg-slate-200",
+              class: adjustment_shortcut_button_class,
               data: {
                 action: "click->budget-value-helper#incrementAdjustment",
                 budget_value_helper_adjustment_param: amount
@@ -301,7 +304,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
           button(
             type: :button,
-            class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_confirm_button_class(:green),
             data: { action: "click->budget-value-helper#applyAdjustment", modal_hide: modal_id }
           ) do
             I18n.t("confirmation.confirm")
@@ -309,7 +312,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
           button(
             type: :button,
-            class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_cancel_button_class,
             data: { modal_hide: modal_id }
           ) do
             I18n.t("confirmation.cancel")
@@ -323,6 +326,31 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     return 0 unless budget.persisted?
 
     budget.value.to_i - budget.remaining_value.to_i
+  end
+
+  def ref_month_year_trigger_class
+    "flex h-10 w-full items-center justify-between overflow-hidden whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 " \
+      "text-sm text-slate-900 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-ring " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/70 dark:focus-visible:ring-sky-500/60"
+  end
+
+  def ref_month_year_popover_class
+    "absolute inset-auto m-0 rounded-lg border bg-background shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+  end
+
+  def ref_month_year_search_class
+    "flex h-10 w-full rounded-md border-none bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground " \
+      "dark:text-slate-100 dark:placeholder:text-slate-500"
+  end
+
+  def calc_button_class
+    "h-10 w-full min-w-12 border border-black bg-white px-2 text-black hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 " \
+      "dark:text-slate-200 dark:hover:bg-slate-800"
+  end
+
+  def adjustment_shortcut_button_class
+    "rounded border border-slate-300 bg-slate-100 px-2 py-2 text-sm font-bold text-slate-900 hover:bg-slate-200 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
   end
 
   def render_actions_row
@@ -380,7 +408,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def card_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, variant: :ghost, class: trigger_class) do
+        Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
           label
         end
       end
@@ -434,7 +462,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, variant: :ghost, class: trigger_class) do
+        Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
           label
         end
       end
@@ -486,7 +514,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def exchange_return_cash_transactions_sheet_with_trigger(trigger_class, label)
     Sheet do
       SheetTrigger do
-        Button(type: :button, variant: :ghost, class: trigger_class) do
+        Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
           label
         end
       end
@@ -557,7 +585,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def list_menu
     Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
-        Button(type: :button, class: "min-w-64") { "List" }
+        Button(type: :button, class: submit_row_ghost_button_class) { "List" }
       end
 
       PopoverContent(class: "z-40 opacity-100! min-w-64 p-1") do
@@ -572,5 +600,13 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def sheet_menu_item_button_class
     "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+  end
+
+  def submit_row_ghost_button_class
+    secondary_submit_row_button_class("min-w-64")
+  end
+
+  def budget_sheet_trigger_button_class(trigger_class)
+    "#{trigger_class} dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
   end
 end

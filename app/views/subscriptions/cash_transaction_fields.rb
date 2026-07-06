@@ -14,7 +14,7 @@ class Views::Subscriptions::CashTransactionFields < Views::Base
 
   def view_template
     div(
-      class: "nested-form-wrapper rounded-lg border border-emerald-200 bg-emerald-50 p-2 #{'hidden' if cash_transaction.marked_for_destruction?}",
+      class: wrapper_class,
       data: {
         new_record: cash_transaction.new_record?,
         transaction_type: :cash,
@@ -29,13 +29,15 @@ class Views::Subscriptions::CashTransactionFields < Views::Base
 
       div(class: "flex items-start justify-between gap-3") do
         div(class: "min-w-0 flex-1") do
-          p(class: "text-xs font-semibold uppercase tracking-wide text-emerald-700", data: { role: "ref-month-year-display" }) { ref_month_year }
-          p(class: "text-sm font-semibold text-slate-900", data: { role: "date-display" }) { formatted_date }
+          p(class: "text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300", data: { role: "ref-month-year-display" }) do
+            ref_month_year
+          end
+          p(class: "text-sm font-semibold text-slate-900 dark:text-slate-100", data: { role: "date-display" }) { formatted_date }
         end
 
         div(class: "min-w-0 flex-1") do
-          p(class: "truncate text-sm text-slate-600", data: { role: "account-display" }) { account_name }
-          p(class: "text-sm font-semibold text-slate-800", data: { role: "price-display" }) { formatted_price }
+          p(class: "truncate text-sm text-slate-600 dark:text-slate-300", data: { role: "account-display" }) { account_name }
+          p(class: "text-sm font-semibold text-slate-800 dark:text-slate-100", data: { role: "price-display" }) { formatted_price }
         end
 
         div(class: "flex items-center gap-1") do
@@ -64,9 +66,17 @@ class Views::Subscriptions::CashTransactionFields < Views::Base
 
   private
 
+  def wrapper_class
+    [
+      "nested-form-wrapper rounded-lg border border-emerald-200 bg-emerald-50 p-2 dark:border-emerald-500/40 dark:bg-emerald-950/30",
+      ("hidden" if cash_transaction.marked_for_destruction?)
+    ].compact.join(" ")
+  end
+
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
-      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def destructive_action_button_class

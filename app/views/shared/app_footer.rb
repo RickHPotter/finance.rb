@@ -16,6 +16,7 @@ class Views::Shared::AppFooter < Views::Base
       end
 
       context_switcher(class: "flex justify-center mb-2")
+      theme_toggle(class: "flex justify-center mb-2")
 
       button(data: { controller: "push", action: "push#subscribe" }, class: "pt-16 mb-2 text-xs flex mx-auto") { "🔔" }
 
@@ -78,6 +79,25 @@ class Views::Shared::AppFooter < Views::Base
     end
   end
 
+  def theme_toggle(class:)
+    div(class:) do
+      button(
+        id: "theme_toggle",
+        type: "button",
+        title: "Switch theme",
+        class: "rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 transition-colors hover:border-red-300 hover:text-red-600 " \
+               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-400 dark:hover:text-emerald-300",
+        data: {
+          controller: "theme",
+          action: "click->theme#toggle"
+        },
+        aria: { pressed: "false" }
+      ) do
+        "Light"
+      end
+    end
+  end
+
   def action_links
     div(class: "flex gap-2") do
       FooterLink(href: donation_static_path, class: "flex items-center gap-2 p-2", data: { turbo_frame: "_top", turbo_prefetch: false }) do
@@ -115,7 +135,10 @@ class Views::Shared::AppFooter < Views::Base
     if active
       classes.push(%w[border-red-400 bg-red-500 text-white])
     else
-      classes.push("border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600")
+      classes.push(
+        "border-gray-300", "bg-white", "text-gray-700", "hover:border-red-300", "hover:text-red-600",
+        "dark:border-slate-700", "dark:bg-slate-950", "dark:text-slate-200", "dark:hover:border-emerald-400", "dark:hover:text-emerald-300"
+      )
     end
 
     classes.join(" ")

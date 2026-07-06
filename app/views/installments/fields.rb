@@ -17,8 +17,9 @@ module Views
         readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
 
         div(
-          class: "nested-form-wrapper bg-white border rounded-xl p-1 shadow-sm space-y-1 transition hover:shadow-md
-                  #{locked? ? 'border-green-300' : 'border-red-300'} #{'hidden' if installment.marked_for_destruction?}",
+          class: "nested-form-wrapper space-y-1 rounded-xl border bg-white p-1 shadow-sm transition hover:shadow-md dark:rounded-lg dark:bg-slate-800
+                  dark:hover:bg-slate-700/50 #{locked? ? 'border-green-300 dark:border-green-400/70' : 'border-red-300 dark:border-slate-700'}
+                  #{'hidden' if installment.marked_for_destruction?}",
           data: {
             new_record: installment.new_record?,
             reactive_form_target: "installmentWrapper",
@@ -26,10 +27,10 @@ module Views
             locked: locked?.to_s
           }
         ) do
-          div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
+          div(class: header_class) do
             button(
               type: :button,
-              class: "text-md rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
+              class: "text-md rounded-md px-1 text-gray-700 transition hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-100",
               data: { action: "click->reactive-form#prevMonth" }
             ) { "←" }
 
@@ -37,24 +38,25 @@ module Views
               data = {}
               data = { action: "click->reactive-form#togglePaid" } if installment.installment_type == "CashInstallment"
 
-              span(class: "installment_number_display text-gray-300") do
+              span(class: "installment_number_display text-gray-300 dark:font-mono dark:text-slate-600") do
                 installment.number
               end
 
               button(
                 type: :button,
-                class: "installment_paid_colour w-3 h-3 rounded-full  #{installment.paid ? 'bg-green-400' : 'bg-orange-600'} border border-white shadow-sm",
+                class: paid_dot_class,
                 data:
               )
 
-              span(class: "installment_month_year text-gray-900", data: { reactive_form_target: :monthYearInstallment }) do
+              span(class: "installment_month_year text-gray-900 dark:font-mono dark:text-xs dark:uppercase dark:tracking-wide dark:text-slate-400",
+                   data: { reactive_form_target: :monthYearInstallment }) do
                 installment.month_year if installment.month
               end
             end
 
             button(
               type: :button,
-              class: "text-md rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
+              class: "text-md rounded-md px-1 text-gray-700 transition hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-100",
               data: { action: "click->reactive-form#nextMonth" }
             ) { "→" }
           end
@@ -65,7 +67,7 @@ module Views
               id: :installment_date,
               type: "datetime-local",
               value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
-              class: "installment_date w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+              class: installment_input_class("installment_date"),
               data: { reactive_form_target: :dateInput, action: "input->reactive-form#setPaidIfPastCurrentDay" }
 
             positive = installment.price.to_i.positive?
@@ -75,8 +77,7 @@ module Views
               form.text_field \
                 :price,
                 inputmode: :numeric,
-                class: "sign-based price-input
-                        w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+                class: installment_input_class("sign-based price-input"),
                 readonly:,
                 data: {
                   controller: "input-select",
@@ -90,13 +91,13 @@ module Views
               div do
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-red-300 hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  class: lock_button_class(hidden: locked?, locked: false),
                   data: { installment_lock_target: :lockBtn, action: "click->installment-lock#lock" }
                 ) { cached_icon :unlocked_padlock }
 
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-green-100 hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  class: lock_button_class(hidden: !locked?, locked: true),
                   data: { installment_lock_target: :unlockBtn, action: "click->installment-lock#unlock" }
                 ) { cached_icon :locked_padlock }
               end
@@ -117,6 +118,30 @@ module Views
 
       def locked?
         installment&.paid? || false
+      end
+
+      def installment_input_class(prefix)
+        "#{prefix} w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 dark:rounded-md dark:border-slate-700 " \
+          "dark:bg-slate-800 dark:font-mono dark:text-slate-100 dark:focus:border-sky-500/50 dark:focus:ring-2 dark:focus:ring-sky-500/60 " \
+          "dark:focus:outline-none"
+      end
+
+      def header_class
+        "text-md flex items-center justify-between rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 font-medium " \
+          "dark:border-slate-700 dark:bg-slate-900"
+      end
+
+      def paid_dot_class
+        "installment_paid_colour h-3 w-3 rounded-full #{installment.paid ? 'bg-green-400' : 'bg-orange-600'} border border-white shadow-sm " \
+          "dark:border-slate-900"
+      end
+
+      def lock_button_class(hidden:, locked:)
+        base = "rounded-md border border-gray-300 p-1.5 text-black dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+               "dark:hover:bg-slate-700 dark:hover:text-slate-100"
+        colour = locked ? "bg-green-100 hover:bg-green-200" : "bg-red-300 hover:bg-red-200"
+
+        "#{base} #{colour} #{'hidden' if hidden}"
       end
     end
   end

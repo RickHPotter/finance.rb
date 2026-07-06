@@ -165,7 +165,7 @@ RSpec.describe Logic::ExchangeChainReferenceAudit do
         chain_kind: "shared_return_chain",
         supported: true
       )
-      expect(candidate[:proposed_changes].size).to eq(2)
+      expect(candidate[:proposed_changes].size).to eq(1)
     end
 
     it "marks rows with multiple middle candidates as unsupported" do

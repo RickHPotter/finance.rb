@@ -45,7 +45,7 @@ class Views::CardTransactions::Form < Views::Base
       form_with(
         model: card_transaction,
         id: :transaction_form,
-        class: "contents text-black",
+        class: "contents text-slate-100",
         data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks", operation_type: card_transaction.operation_type }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
@@ -73,7 +73,7 @@ class Views::CardTransactions::Form < Views::Base
           user_card_date:
         )
         render Views::CardTransactions::FormInstallmentsSection.new(form:, card_transaction:)
-        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+        div(class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0") do
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: card_transaction)
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: card_transaction)
         end

@@ -31,12 +31,11 @@ document.addEventListener("keyup", (e) => {
     return
   }
 
-  // SET THEME
-  // if (key === "t") {
-  //   e.preventDefault()
-  //   document.getElementById("theme_toggle")?.click()
-  //   return
-  // }
+  if (key === "t") {
+    e.preventDefault()
+    document.getElementById("theme_toggle")?.click()
+    return
+  }
 
   // SCROLL TO TOP
   if (key === "t") {

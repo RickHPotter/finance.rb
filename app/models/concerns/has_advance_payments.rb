@@ -63,7 +63,7 @@ module HasAdvancePayments
   # @return [void].
   #
   def create_advance_cash_transaction
-    self.advance_cash_transaction = CashTransaction.create(advance_cash_transaction_params)
+    self.advance_cash_transaction = CashTransaction.create!(advance_cash_transaction_params)
   end
 
   def context_destroying?

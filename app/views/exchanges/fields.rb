@@ -17,8 +17,8 @@ module Views
 
       def view_template
         div(
-          class: "nested-exchange-wrapper bg-white border rounded-xl p-3 shadow-sm space-y-1 transition hover:shadow-md
-                  #{locked? ? 'border-green-300' : 'border-red-300'}",
+          class: "nested-exchange-wrapper rounded-xl border bg-white p-3 shadow-sm space-y-1 transition hover:shadow-md dark:bg-slate-900/70 " \
+                 "dark:shadow-none #{exchange_border_class}",
           data: {
             new_record: exchange.new_record?,
             entity_transaction_target: "exchangeWrapper",
@@ -35,15 +35,18 @@ module Views
           hidden_field_tag "#{form.object_name}[paid]", exchange.effective_paid_state
           form.hidden_field :_destroy, class: :exchange_destroy
 
-          div(class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1") do
+          div(
+            class: "flex justify-between items-center text-md font-medium bg-gray-100 border border-gray-200 rounded-lg px-2 py-1 " \
+                   "dark:border-slate-700 dark:bg-slate-800"
+          ) do
             button(
               type: :button,
-              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition dark:text-slate-400 dark:hover:text-slate-100",
               data: { action: "click->entity-transaction#prevMonth", entity_transaction_target: :button }
             ) { "←" }
 
             div(class: "flex items-center gap-2") do
-              span(class: "exchange_number_display text-gray-300") do
+              span(class: "exchange_number_display text-gray-300 dark:font-mono dark:text-slate-600") do
                 exchange.number
               end
 
@@ -51,14 +54,14 @@ module Views
               div(class: "w-3 h-3 rounded-full #{paid ? 'bg-green-400' : 'bg-orange-500'} border border-white shadow-sm")
 
               span(
-                class: "exchange_month_year text-gray-900",
+                class: "exchange_month_year text-gray-900 dark:font-mono dark:text-xs dark:uppercase dark:tracking-wide dark:text-slate-300",
                 data: { entity_transaction_target: :monthYearExchange }
               ) { exchange.month_year if exchange.month }
             end
 
             button(
               type: :button,
-              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition",
+              class: "text-base font-bold rounded-md px-1 text-gray-700 hover:text-gray-900 transition dark:text-slate-400 dark:hover:text-slate-100",
               data: { action: "click->entity-transaction#nextMonth", entity_transaction_target: :button }
             ) { "→" }
           end
@@ -69,7 +72,7 @@ module Views
               id: :exchange_date,
               type: "datetime-local",
               value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
-              class: "exchange_date w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+              class: exchange_input_class("exchange_date"),
               readonly: bound_type == :card_bound,
               data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
 
@@ -77,7 +80,7 @@ module Views
               form.text_field \
                 :price,
                 inputmode: :numeric,
-                class: "dynamic-price sign-based price-input w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2",
+                class: exchange_input_class("dynamic-price sign-based price-input"),
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
@@ -89,13 +92,15 @@ module Views
               div do
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-red-300 text-black hover:bg-gray-100 border border-gray-300 #{'hidden' if locked?}",
+                  class: "p-1.5 rounded-md bg-red-300 text-black hover:bg-gray-100 border border-gray-300 " \
+                         "dark:border-red-500/50 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30 #{'hidden' if locked?}",
                   data: { exchange_lock_target: :lockBtn, action: "click->exchange-lock#lock" }
                 ) { cached_icon :unlocked_padlock }
 
                 button(
                   type: "button",
-                  class: "p-1.5 rounded-md bg-green-100 text-black hover:bg-gray-100 border border-gray-300 #{'hidden' unless locked?}",
+                  class: "p-1.5 rounded-md bg-green-100 text-black hover:bg-gray-100 border border-gray-300 " \
+                         "dark:border-emerald-500/50 dark:bg-emerald-500/20 dark:text-emerald-200 dark:hover:bg-emerald-500/30 #{'hidden' unless locked?}",
                   data: { exchange_lock_target: :unlockBtn, action: "click->exchange-lock#unlock" }
                 ) { cached_icon :locked_padlock }
               end
@@ -108,6 +113,16 @@ module Views
 
       def locked?
         exchange.effective_paid_state
+      end
+
+      def exchange_border_class
+        locked? ? "border-green-300 dark:border-emerald-500/40" : "border-red-300 dark:border-red-500/40"
+      end
+
+      def exchange_input_class(extra_classes)
+        "#{extra_classes} w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 " \
+          "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/50 " \
+          "dark:focus:ring-2 dark:focus:ring-sky-500/60"
       end
     end
   end

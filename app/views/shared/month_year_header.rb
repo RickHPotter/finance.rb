@@ -29,22 +29,22 @@ class Views::Shared::MonthYearHeader < Views::Base
   private
 
   def header_class
-    mobile ? "pb-2 pt-6 text-slate-800 flex gap-2 relative" : "pb-2 pt-4 text-slate-800 flex gap-2 relative"
+    mobile ? "pb-2 pt-6 text-slate-800 dark:text-slate-100 flex gap-2 relative" : "pb-2 pt-4 text-slate-800 dark:text-slate-100 flex gap-2 relative"
   end
 
   def label_class
     if mobile
-      "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg"
+      "text-sm bg-blue-200 text-blue-900 border border-blue-600 py-1 px-2 rounded-lg dark:border-sky-500 dark:bg-slate-900 dark:text-sky-200"
     else
-      "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg"
+      "text-sm bg-blue-200 text-blue-900 border border-blue-600 px-4 py-2 rounded-lg dark:border-sky-500 dark:bg-slate-900 dark:text-sky-200"
     end
   end
 
   def total_class
     if mobile
-      "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg"
+      "text-sm bg-red-200 text-red-900 border border-red-600 py-1 px-2 rounded-lg dark:border-red-500 dark:bg-slate-900 dark:text-red-200"
     else
-      "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg"
+      "text-sm bg-red-200 text-red-900 border border-red-600 px-4 py-2 rounded-lg dark:border-red-500 dark:bg-slate-900 dark:text-red-200"
     end
   end
 end

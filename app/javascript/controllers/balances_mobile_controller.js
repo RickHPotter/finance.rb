@@ -80,8 +80,8 @@ export default class extends Controller {
     this.presetButtonTargets.forEach((button) => {
       const selected = button.dataset.preset === this.preset
       button.className = selected ?
-        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-sky-700 bg-sky-700 text-white" :
-        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-200 bg-white text-stone-600"
+        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-sky-700 bg-sky-700 text-white dark:border-sky-500 dark:bg-sky-700 dark:text-white" :
+        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-200 bg-white text-stone-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
     })
 
     this.renderTrend()
@@ -92,8 +92,8 @@ export default class extends Controller {
     this.rangeButtonTargets.forEach((button) => {
       const selected = button.dataset.range === this.range
       button.className = selected ?
-        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-900 bg-stone-900 text-white" :
-        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-200 bg-white text-stone-600"
+        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-900 bg-stone-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950" :
+        "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition border-stone-200 bg-white text-stone-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
     })
 
     this.renderTrend()
@@ -310,13 +310,13 @@ export default class extends Controller {
     this.legendTarget.innerHTML = ""
     sorted.forEach((item) => {
       const row = document.createElement("div")
-      row.className = "flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm"
+      row.className = "flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
       row.innerHTML = `
         <div class="flex items-center gap-2 min-w-0">
           <span class="inline-flex size-3 rounded-full shrink-0" style="background:${item.color || "#a8a29e"}"></span>
-          <span class="truncate text-stone-700">${item.category_name}</span>
+          <span class="truncate text-stone-700 dark:text-slate-300">${item.category_name}</span>
         </div>
-        <span class="shrink-0 font-semibold text-stone-900">${this.currency(item.price)}</span>
+        <span class="shrink-0 font-semibold text-stone-900 dark:text-slate-100">${this.currency(item.price)}</span>
       `
       this.legendTarget.appendChild(row)
     })

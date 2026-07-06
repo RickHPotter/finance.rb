@@ -26,7 +26,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         render_budget(budget)
       end
     elsif show_rows_not_found
-      div(class: "text-lg") { I18n.t(:rows_not_found) }
+      div(class: "text-lg dark:text-slate-100") { I18n.t(:rows_not_found) }
     end
   end
 
@@ -44,7 +44,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-visible bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
+        class: "rounded-lg shadow-sm overflow-visible bg-indigo-800 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
         data: { id: budget.id, datatable_target: :row, row_kind: :budget }
       ) do
         render_budget_checkbox(budget, mobile: true)
@@ -89,7 +89,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 bg-indigo-900 text-zinc-50 hover:opacity-80 transition-all",
+        class: "grid grid-cols-12 bg-indigo-800 text-zinc-50 hover:opacity-80 transition-all",
         draggable: true,
         data: {
           id: budget.id,
@@ -238,7 +238,8 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         span(
           class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
               peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
-              peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
+              peer-focus:ring-2 peer-focus:ring-blue-300 dark:border-slate-500 dark:bg-slate-900 dark:peer-checked:border-sky-500
+              dark:peer-checked:bg-sky-600 dark:peer-focus:ring-sky-500/50 size-4"
         ) do
           span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
         end
@@ -269,7 +270,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
   end
 
   def render_action_menu(budget)
-    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
         button(
           type: :button,
@@ -282,7 +283,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         end
       end
 
-      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
+      PopoverContent(class: "z-40 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:analyse), budget_path(budget), id: "analyse_budget_#{budget.id}")
           action_menu_link(action_message(:duplicate), duplicate_budget_path(budget), id: "duplicate_budget_#{budget.id}")
@@ -318,10 +319,12 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
   end
 
   def action_menu_item_class
-    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 " \
+      "hover:no-underline dark:text-slate-200 dark:hover:bg-slate-800"
   end
 
   def action_button_class
-    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white " \
+      "dark:bg-slate-900/90 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 end

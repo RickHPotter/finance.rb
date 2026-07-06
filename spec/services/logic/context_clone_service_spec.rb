@@ -164,13 +164,23 @@ RSpec.describe Logic::ContextCloneService do
         user_card:,
         description: "Advance origin",
         date: Date.new(2026, 3, 25),
-        price: -20_000
+        price: -20_000,
+        category_transactions: [
+          build(:category_transaction, category: user.built_in_category("CARD ADVANCE"), transactable: nil)
+        ],
+        entity_transactions: [
+          build(
+            :entity_transaction,
+            entity: user.entities.find_or_create_by!(entity_name: user_card.user_card_name),
+            transactable: nil,
+            is_payer: false,
+            price: 0,
+            price_to_be_returned: 0
+          )
+        ]
       )
-      advance_card_transaction.category_transactions.destroy_all
-      advance_card_transaction.entity_transactions.destroy_all
-      advance_card_transaction.categories = [ user.built_in_category("CARD ADVANCE") ]
-      advance_card_transaction.entities = [ user.entities.find_or_create_by!(entity_name: user_card.user_card_name) ]
-      advance_card_transaction.save!
+      advance_cash_transaction = CashTransaction.create!(advance_card_transaction.send(:advance_cash_transaction_params))
+      advance_card_transaction.update_column(:advance_cash_transaction_id, advance_cash_transaction.id)
 
       exchange_return_cash_transaction = create(
         :cash_transaction,

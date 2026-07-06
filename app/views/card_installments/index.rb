@@ -239,7 +239,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-slate-300 bg-white text-slate-800 " \
-      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white [&_svg]:size-4 " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-white"
   end
 
   def destructive_action_button_class
@@ -247,11 +248,13 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def action_menu_button_class
-    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4 " \
+      "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-700 dark:hover:text-white"
   end
 
   def action_menu_item_class
-    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline " \
+      "dark:text-slate-200 dark:hover:bg-slate-800"
   end
 
   def render_description_link(card_transaction, class:)
@@ -374,7 +377,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         unless mobile
           span(
-            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all dark:border-slate-500 dark:bg-slate-900
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
                 peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
           ) do

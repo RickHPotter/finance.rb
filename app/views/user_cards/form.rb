@@ -25,7 +25,7 @@ class Views::UserCards::Form < Views::Base
         model: user_card,
         url: form_url,
         id: :form,
-        class: "contents text-black",
+        class: "contents text-black dark:text-slate-100",
         data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
@@ -109,9 +109,9 @@ class Views::UserCards::Form < Views::Base
 
         if user_card.persisted? && unpaid_references.any?
           div(class: "w-full mt-8 mb-8") do
-            h3(class: "text-lg font-bold mb-4") { pluralise_model(Reference, 2) }
+            h3(class: "text-lg font-bold mb-4 text-slate-900 dark:text-slate-100") { pluralise_model(Reference, 2) }
 
-            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+            div(class: "rounded-lg border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden") do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-5",
                 rows: [
@@ -126,20 +126,26 @@ class Views::UserCards::Form < Views::Base
               )
 
               unpaid_references.each_with_index do |reference, index|
-                row_class = index.even? ? "bg-gray-100" : "bg-gray-200"
+                row_class = index.even? ? "bg-gray-100 dark:bg-slate-900" : "bg-gray-200 dark:bg-slate-800/80"
+                row_theme_class = [
+                  "border-b border-slate-200 dark:border-slate-700",
+                  row_class,
+                  "hover:bg-white dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100"
+                ].join(" ")
 
-                div(class: "grid grid-cols-5 gap-2 border-b border-slate-200 #{row_class} hover:bg-white") do
+                div(class: "grid grid-cols-5 gap-2 #{row_theme_class}") do
                   div(class: "px-1 flex items-center justify-center mx-auto") { reference.year }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.t("date.month_names")[reference.month] }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_closing_date, format: :short) }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_date, format: :short) }
                   div(class: "flex items-center justify-center") do
-                    link_to(edit_user_card_reference_path(user_card, reference), class: "text-blue-600 hover:text-blue-800 mx-2", data: { turbo_frame: "_top" }) do
+                    link_to(edit_user_card_reference_path(user_card, reference),
+                            class: "text-blue-600 hover:text-blue-800 dark:text-cyan-300 dark:hover:text-cyan-200 mx-2", data: { turbo_frame: "_top" }) do
                       cached_icon(:pencil)
                     end
                     link_to(
                       merge_user_card_references_path(user_card, id: reference.id),
-                      class: "text-gray-700 hover:text-gray-800 mx-2",
+                      class: "text-gray-700 hover:text-gray-800 dark:text-slate-300 dark:hover:text-slate-100 mx-2",
                       data: { turbo_frame: "_top" }
                     ) do
                       cached_icon(:uturn_right)

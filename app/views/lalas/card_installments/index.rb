@@ -36,7 +36,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
   def render_mobile_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none",
         style: "background-clip: padding-box; #{style}",
         data: { id: card_installment.id, datatable_target: :row }
       ) do
@@ -47,7 +47,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
                 card_transaction.description
               end
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+              span(class: installment_count_class(card_transaction.card_installments_count == 1)) do
                 pretty_installments(card_installment.number, card_installment.card_installments_count)
               end
             end
@@ -64,7 +64,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
               card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs") do
+                span(class: category_chip_class("text-xs")) do
                   category.name
                 end
               end
@@ -80,7 +80,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
   def render_card_installment(card_installment, card_transaction, style)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "grid grid-cols-11 hover:opacity-80",
+        class: "grid grid-cols-11 hover:opacity-80 dark:text-slate-100",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: card_installment.id,
@@ -98,7 +98,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             card_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if card_transaction.card_installments_count == 1}") do
+          span(class: installment_count_class(card_transaction.card_installments_count == 1)) do
             pretty_installments(card_installment.number, card_installment.card_installments_count)
           end
         end
@@ -111,11 +111,11 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             first_one = card_transaction.categories.first
             remaining = card_transaction.categories[1..]
 
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
+            span(class: category_chip_class) do
               first_one.name
             end
 
-            Popover(options: { placement: "right" }, class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
+            Popover(options: { placement: "right" }, class: category_chip_class) do
               PopoverTrigger(class: "w-full") do
                 button(class: "text-xs") do
                   "+#{card_transaction.categories.count - 1}"
@@ -124,7 +124,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
 
               PopoverContent(class: "z-50 opacity-100! ml-2") do
                 remaining.each do |category|
-                  span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
+                  span(class: category_chip_class) do
                     category.name
                   end
                 end
@@ -132,7 +132,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
             end
           else
             card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-              span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm") do
+              span(class: category_chip_class) do
                 category.name
               end
             end
@@ -188,5 +188,18 @@ class Views::Lalas::CardInstallments::Index < Views::Base
     info += "[#{from_cent_based_to_float(entity_transaction.price_to_be_returned, 'R$')}]" if entity_transaction.exchanges_count.positive?
     info += " (#{entity_transaction.exchanges_count})" if entity_transaction.exchanges_count > 1
     info
+  end
+
+  def installment_count_class(single_installment)
+    [
+      "p-1 rounded-sm bg-white text-black border border-black shrink-0",
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+      ("opacity-40" if single_installment)
+    ].compact.join(" ")
+  end
+
+  def category_chip_class(text_size = "text-sm")
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black #{text_size} " \
+      "dark:border-slate-600 dark:text-slate-100"
   end
 end

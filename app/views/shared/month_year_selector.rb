@@ -27,18 +27,25 @@ class Views::Shared::MonthYearSelector < Views::Base
             div(class: "flex items-center gap-4") do
               button(
                 type: :button,
-                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors
+                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 text-slate-900 hover:bg-gray-100 transition-colors
+                             dark:ring-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white
                              #{'opacity-10 pointer-events-none' if year == years.first}",
                 data: { action: "click->month-year-selector#prevYear", year: }
               ) do
                 "←"
               end
 
-              span(class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-zinc-200 p-1") { year }
+              span(
+                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-zinc-200 p-1 text-slate-900 " \
+                       "dark:ring-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              ) do
+                year
+              end
 
               button(
                 type: :button,
-                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors
+                class: "text-lg font-bold rounded-sm shadow-sm ring-1 ring-purple-600 p-1 text-slate-900 hover:bg-gray-100 transition-colors
+                             dark:ring-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white
                              #{'opacity-10 pointer-events-none' if year == years.last}",
                 data: { action: "click->month-year-selector#nextYear", year: }
               ) do
@@ -47,7 +54,8 @@ class Views::Shared::MonthYearSelector < Views::Base
 
               button(
                 type: :button,
-                class: "text-lg rounded-sm shadow-sm ring-1 ring-purple-600 p-1 hover:bg-gray-100 transition-colors",
+                class: "text-lg rounded-sm shadow-sm ring-1 ring-purple-600 p-1 text-slate-900 hover:bg-gray-100 transition-colors " \
+                       "dark:ring-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white",
                 data: { action: "click->month-year-selector#selectAll" }
               ) do
                 action_message(:select_all)
@@ -78,7 +86,8 @@ class Views::Shared::MonthYearSelector < Views::Base
 
               button(
                 type: :button,
-                class: "relative p-1 rounded-lg bg-background shadow-sm hover:bg-blue-100 transition-colors",
+                class: "relative p-1 rounded-lg border border-transparent shadow-sm hover:bg-blue-100 transition-colors " \
+                       "dark:border-slate-800 dark:hover:bg-slate-800 ",
                 title: count,
                 data: {
                   month_year_selector_target: "monthYear",

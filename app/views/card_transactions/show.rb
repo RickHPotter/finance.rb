@@ -17,7 +17,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     render_pay_in_advance_modal
 
     turbo_frame_tag :center_container do
-      div(class: "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-6") do
+      div(class: show_shell_class) do
         dashboard_header
 
         div(class: "mt-6 space-y-4") do
@@ -33,9 +33,9 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   private
 
   def dashboard_header
-    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
+    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 dark:border-slate-700 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0 text-left") do
-        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { card_transaction.description }
+        h1(class: "text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 sm:text-4xl") { card_transaction.description }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
@@ -43,7 +43,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           special_badges
         end
 
-        p(class: "mt-3 max-w-3xl text-sm leading-6 text-slate-600") { card_transaction.comment } if card_transaction.comment.present?
+        p(class: "mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400") { card_transaction.comment } if card_transaction.comment.present?
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
@@ -64,7 +64,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_stat(model_attribute(CardTransaction, :user_card_id), card_name)
       end
 
-      div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 xl:grid-cols-2") do
+      div(class: "mt-4 grid gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 xl:grid-cols-2") do
         allocation_group(model_attribute(CardTransaction, :categories), categories.map(&:name))
         allocation_group(model_attribute(CardTransaction, :entities), entities.map(&:name))
       end
@@ -81,7 +81,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         end
       else
         div(class: "grid gap-4 xl:grid-cols-2 xl:items-start") do
-          div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+          div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
             div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
               span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :number) }
               span(class: "col-span-3") { model_attribute(CardTransaction, :reference_month_year) }
@@ -96,7 +96,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
           end
 
           if invoice_cash_transactions.present?
-            div(class: "overflow-hidden rounded-2xl border border-slate-200") do
+            div(class: "overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700") do
               div(class: "grid grid-cols-12 bg-slate-950 px-4 py-3 text-2xs font-bold uppercase tracking-[0.18em] text-white") do
                 span(class: "col-span-2 text-center") { model_attribute(CardInstallment, :number) }
                 span(class: "col-span-3") { model_attribute(CardTransaction, :reference_month_year) }
@@ -152,12 +152,12 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def section_card(title, &)
-    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:rounded-3xl sm:p-4",
+    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/70 sm:rounded-3xl sm:p-4",
             data: { controller: "show-section-card", show_section_card_open_value: true }) do
       button(type: :button, class: "flex w-full items-center justify-between gap-3 text-left",
              data: { action: "show-section-card#toggle", show_section_card_target: "button" }) do
-        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500") { title }
-        span(class: "text-lg font-semibold leading-none text-slate-500", data: { show_section_card_target: "icon" }) { "−" }
+        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400") { title }
+        span(class: "text-lg font-semibold leading-none text-slate-500 dark:text-slate-400", data: { show_section_card_target: "icon" }) { "−" }
       end
 
       div(class: "mt-4", data: { show_section_card_target: "content" }, &)
@@ -165,19 +165,19 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_stat(label, value, emphasis: false)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950 dark:text-slate-100") { value.to_s }
     end
   end
 
   def installment_row(installment)
     div(class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm #{installment_row_class(installment)}") do
       span(class: "col-span-2 text-center") { pretty_installments(installment.number, installment.card_installments_count) }
-      span(class: "col-span-3 font-semibold text-slate-950") { installment.month_year }
-      span(class: "col-span-3 text-slate-700") { localized_date(installment.date) }
+      span(class: "col-span-3 font-semibold text-slate-950 dark:text-slate-100") { installment.month_year }
+      span(class: "col-span-3 text-slate-700 dark:text-slate-300") { localized_date(installment.date) }
       span(class: "col-span-2 flex justify-center") { installment_status_badge(installment) }
-      span(class: "col-span-2 text-right font-bold text-slate-950") { money(installment.price) }
+      span(class: "col-span-2 text-right font-bold text-slate-950 dark:text-slate-100") { money(installment.price) }
     end
   end
 
@@ -188,8 +188,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def allocation_group(label, names)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
 
       if names.empty?
         p(class: "mt-2 text-sm text-slate-500") { I18n.t("dashboards.empty") }
@@ -205,7 +205,10 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
             end
           else
             entities.each do |entity|
-              div(class: "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black", title: entity.entity_name) do
+              div(
+                class: entity_chip_class,
+                title: entity.entity_name
+              ) do
                 image_tag(asset_path("avatars/#{entity.avatar_name}"), class: "h-6 w-6 rounded-full") if entity.avatar_name.present?
                 span(class: "break-words") { entity.entity_name }
               end
@@ -260,7 +263,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_action_class(variant)
-    default = "border-slate-300 text-slate-700 hover:bg-slate-100"
+    default = "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
     return default if %i[primary outline].include?(variant)
 
     case variant
@@ -291,10 +294,10 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def link_item(label, value, href)
-    link_to href, class: "block rounded-2xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-400 sm:px-4",
+    link_to href, class: link_card_class,
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
-      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "mt-1 wrap-break-word text-sm font-bold text-slate-950") { value }
+      p(class: "text-2xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "mt-1 wrap-break-word text-sm font-bold text-slate-950 dark:text-slate-100") { value }
     end
   end
 
@@ -303,8 +306,23 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     link_item(exchange.exchange_type.to_s.humanize, "#{money(exchange.price)} - #{localized_date(exchange.date)}", href)
   end
 
+  def show_shell_class
+    "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm " \
+      "dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-none sm:rounded-3xl sm:p-6"
+  end
+
+  def entity_chip_class
+    "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black " \
+      "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+  end
+
+  def link_card_class
+    "block rounded-2xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-400 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-500 sm:px-4"
+  end
+
   def exchange_entity_transaction_card(entity_transaction)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:px-4") do
+    div(class: "rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900 sm:px-4") do
       if mobile?
         div(class: "space-y-2") do
           div(class: "flex min-w-0 items-center gap-2") do
@@ -458,15 +476,19 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def invoice_link_item(cash_transaction)
     link_to cash_transaction_path(cash_transaction),
-            class: "block rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-3 transition hover:border-sky-500 hover:bg-sky-100",
+            class: "block rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-3 transition hover:border-sky-500 hover:bg-sky-100 " \
+                   "dark:border-sky-500/40 dark:bg-slate-900 dark:hover:border-sky-400 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
       div(class: "flex") do
-        span(class: "mt-1 truncate text-sm font-bold text-slate-950") { cash_transaction.description }
+        span(class: "mt-1 truncate text-sm font-bold text-slate-950 dark:text-slate-100") { cash_transaction.description }
       end
 
-      div(class: "mt-3 flex items-center justify-between border-t border-sky-200 pt-2 text-2xs font-bold uppercase tracking-[0.16em] text-sky-800") do
+      meta_class = "mt-3 flex items-center justify-between border-t border-sky-200 pt-2 text-2xs font-bold uppercase tracking-[0.16em] " \
+                   "text-sky-800 dark:border-sky-500/30 dark:text-sky-300"
+
+      div(class: meta_class) do
         span { localized_date(cash_transaction.date) }
-        p(class: "text-sm font-black text-sky-900") { money(cash_transaction.price) }
+        p(class: "text-sm font-black text-sky-900 dark:text-sky-200") { money(cash_transaction.price) }
       end
     end
   end
@@ -476,26 +498,29 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
             class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm transition #{invoice_row_class(cash_transaction)}",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
       span(class: "col-span-2 text-center") { pretty_installments(number, total_count) }
-      span(class: "col-span-3 font-semibold text-slate-950") { cash_transaction.month_year }
-      span(class: "col-span-3 text-slate-700") { localized_date(cash_transaction.date) }
+      span(class: "col-span-3 font-semibold text-slate-950 dark:text-slate-100") { cash_transaction.month_year }
+      span(class: "col-span-3 text-slate-700 dark:text-slate-300") { localized_date(cash_transaction.date) }
       span(class: "col-span-2 flex justify-center") { invoice_status_badge(cash_transaction) }
-      span(class: "col-span-2 text-right font-bold text-slate-950") { money(cash_transaction.price) }
+      span(class: "col-span-2 text-right font-bold text-slate-950 dark:text-slate-100") { money(cash_transaction.price) }
     end
   end
 
   def combined_mobile_installment_content(installment, cash_transaction)
     div(class: "p-3") do
       div(class: "flex items-center justify-between gap-3") do
-        p(class: "inline-flex rounded-md border border-slate-300 bg-white/85 px-2 py-1 text-2xs font-black uppercase tracking-[0.16em] text-slate-700") do
+        installment_number_class = "inline-flex rounded-md border border-slate-300 bg-white/85 px-2 py-1 text-2xs font-black uppercase " \
+                                   "tracking-[0.16em] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+
+        p(class: installment_number_class) do
           pretty_installments(installment.number, installment.card_installments_count)
         end
 
         installment_status_badge(installment)
 
-        p(class: "text-sm font-bold text-slate-950") { installment.month_year }
+        p(class: "text-sm font-bold text-slate-950 dark:text-slate-100") { installment.month_year }
       end
 
-      hr(class: "my-3 border-slate-300")
+      hr(class: "my-3 border-slate-300 dark:border-slate-700")
 
       div(class: "grid grid-cols-2 gap-3") do
         div(class: "rounded-lg border border-inherit px-3 py-2 text-left") do
@@ -507,7 +532,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
         if cash_transaction.present?
           link_to cash_transaction_path(cash_transaction),
-                  class: "block shadow-md rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-right transition hover:border-sky-500 hover:bg-sky-100",
+                  class: "block shadow-md rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-right transition hover:border-sky-500 hover:bg-sky-100 " \
+                         "dark:border-sky-500/40 dark:bg-slate-900 dark:shadow-none dark:hover:border-sky-400 dark:hover:bg-slate-800",
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
             compact_invoice_stat(model_attribute(CashTransaction, :date), localized_date(cash_transaction.date))
             div(class: "mt-2") do
@@ -515,7 +541,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
             end
           end
         else
-          div(class: "rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-right") do
+          div(class: "rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-right dark:border-slate-700 dark:bg-slate-900") do
             compact_invoice_stat(model_attribute(CashTransaction, :date), "-")
             div(class: "mt-2") do
               compact_invoice_stat(model_attribute(CashTransaction, :price), "-", emphasis: true)
@@ -528,8 +554,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def compact_invoice_stat(label, value, emphasis: false)
     div do
-      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-sky-700") { label }
-      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950") { value }
+      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300") { label }
+      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950 dark:text-slate-100") { value }
     end
   end
 
@@ -688,14 +714,18 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def installment_row_class(installment)
     if installment.paid?
-      "border-emerald-200 bg-emerald-50 text-emerald-950"
+      "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-100"
     else
-      "border-rose-200 bg-rose-50 text-rose-950"
+      "border-rose-200 bg-rose-50 text-rose-950 dark:border-rose-500/40 dark:bg-rose-950/30 dark:text-rose-100"
     end
   end
 
   def installment_mobile_card_class(installment)
-    installment.paid? ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"
+    if installment.paid?
+      "border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-950/30"
+    else
+      "border-rose-200 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-950/30"
+    end
   end
 
   def installment_status_badge(installment)
@@ -710,9 +740,11 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def invoice_row_class(cash_transaction)
     if cash_transaction.paid?
-      "border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100"
+      "border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100 " \
+        "dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-100 dark:hover:bg-emerald-950/50"
     else
-      "border-rose-200 bg-rose-50 text-rose-950 hover:bg-rose-100"
+      "border-rose-200 bg-rose-50 text-rose-950 hover:bg-rose-100 " \
+        "dark:border-rose-500/40 dark:bg-rose-950/30 dark:text-rose-100 dark:hover:bg-rose-950/50"
     end
   end
 
@@ -728,8 +760,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def compact_installment_stat(label, value, emphasis: false)
     div do
-      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950") { value }
+      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950 dark:text-slate-100") { value }
     end
   end
 
@@ -738,7 +770,10 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def empty_state_card
-    div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500") do
+    empty_state_class = "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500 " \
+                        "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+
+    div(class: empty_state_class) do
       I18n.t("dashboards.empty")
     end
   end

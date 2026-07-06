@@ -29,7 +29,7 @@ module Views
           data: { controller: "price-mask entity-transaction" }
         ) do
           SheetHeader do
-            SheetTitle(class: "entities_entity_name text-black") { entity_transaction&.entity&.entity_name }
+            SheetTitle(class: "entities_entity_name text-black dark:text-white") { entity_transaction&.entity&.entity_name }
             SheetDescription { "" }
           end
 
@@ -102,7 +102,8 @@ module Views
 
                   div(class: "m-auto") do
                     Button(
-                      class: "bg-gray-100 text-black rounded-sm", disabled: !entity_transaction.is_payer,
+                      class: modal_icon_button_class,
+                      disabled: !entity_transaction.is_payer,
                       data: { entity_transaction_target: :exchangesCountEqualsButton, action: "entity-transaction#copyTransactionInstallmentsCount" }
                     ) do
                       cached_icon(:equals)
@@ -118,9 +119,7 @@ module Views
                   div(class: "flex justify-start gap-1") do
                     label(
                       for: "entity_transaction_standalone_#{form.index}",
-                      class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
-                              text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
-                              has-checked:border-blue-600 has-checked:bg-blue-100 has-checked:text-blue-700"
+                      class: bound_type_label_class
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :standalone,
                                        checked: default_bound_type == :standalone,
@@ -133,9 +132,7 @@ module Views
 
                     label(
                       for: "entity_transaction_card_bound_#{form.index}",
-                      class: "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200
-                              text-sm font-medium border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50
-                              has-checked:border-blue-600 has-checked:bg-blue-100 has-checked:text-blue-700"
+                      class: bound_type_label_class
                     ) do
                       radio_button_tag("bound_type_#{form.index}", :card_bound,
                                        checked: default_bound_type == :card_bound,
@@ -179,23 +176,23 @@ module Views
       def render_helper_popover(target:, icon:)
         Popover(class: "m-auto") do
           PopoverTrigger(class: "w-full") do
-            Button(class: "bg-gray-100 text-black rounded-sm") do
+            Button(class: modal_icon_button_class) do
               cached_icon(icon)
             end
           end
 
           PopoverContent(class: "w-40") do
-            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+            Button(variant: :ghost, class: price_helper_button_class,
                    data: { action: "entity-transaction#fillPrice", divider: 1, target: }) do
               model_attribute(Exchange, :full_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+            Button(variant: :ghost, class: price_helper_button_class,
                    data: { action: "entity-transaction#fillPrice", divider: 2, target: }) do
               model_attribute(Exchange, :half_price)
             end
 
-            Button(variant: :ghost, class: "w-full justify-start pl-2 text-black hover:text-black",
+            Button(variant: :ghost, class: price_helper_button_class,
                    data: { action: "entity-transaction#fillPrice", divider: 3, target: }) do
               model_attribute(Exchange, :third_price)
             end
@@ -204,6 +201,23 @@ module Views
       end
 
       private
+
+      def modal_icon_button_class
+        "rounded-sm border border-transparent bg-gray-100 text-black hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 " \
+          "dark:hover:bg-slate-700 dark:hover:text-slate-100"
+      end
+
+      def price_helper_button_class
+        "w-full justify-start pl-2 text-black hover:text-black dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:text-white"
+      end
+
+      def bound_type_label_class
+        "flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none transition-all duration-200 text-sm font-medium " \
+          "border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50 has-checked:border-blue-600 has-checked:bg-blue-100 " \
+          "has-checked:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500/60 " \
+          "dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:has-checked:border-sky-500 dark:has-checked:bg-sky-500/15 " \
+          "dark:has-checked:text-sky-200"
+      end
 
       def rails_view_context
         context[:rails_view_context]

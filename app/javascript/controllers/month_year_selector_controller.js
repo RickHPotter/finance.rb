@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-const active_bg = [ "bg-blue-200", "text-blue-800" ]
-const inactive_bg = [ "bg-slate-100", "text-gray-800" ]
+const active_bg = [ "bg-blue-200", "text-blue-900", "dark:bg-sky-900", "dark:text-sky-100" ]
+const inactive_bg = [ "bg-slate-100", "text-slate-900", "dark:bg-slate-900", "dark:text-slate-200" ]
 
 export default class extends Controller {
   static targets = ["monthYearContainer", "monthYear", "monthYears", "defaultYear"]
@@ -71,7 +71,7 @@ export default class extends Controller {
       if (this.activeMonths.has(month)) return
 
       this.activeMonths.add(month)
-      button.dataset.active = ""
+      button.dataset.active = "true"
       button.classList.remove(...inactive_bg)
       button.classList.add(...active_bg)
       changed = true
@@ -91,7 +91,7 @@ export default class extends Controller {
       delete button.dataset.active
     } else {
       this._addMonthYearContainer(button, month)
-      button.dataset.active = ""
+      button.dataset.active = "true"
     }
   }
 

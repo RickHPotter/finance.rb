@@ -22,7 +22,8 @@ class Views::CashTransactions::Index < Views::Base
         div class: "min-w-full" do
           turbo_frame_tag :cash_transactions do
             div class: "min-h-screen", data: { controller: "datatable", datatable_locale_value: I18n.locale } do
-              div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm" do
+              div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between rounded-lg border border-transparent " \
+                         "bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:shadow-none" do
                 render IndexSearchForm.new(url: cash_transactions_path, index_context:, mobile:)
               end
 

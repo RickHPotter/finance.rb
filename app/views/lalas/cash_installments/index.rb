@@ -37,7 +37,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
       icon = choose_icon(cash_installment)
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2",
+        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none",
         style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row }
       ) do
@@ -48,7 +48,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
                 cash_transaction.description
               end
 
-              span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_transaction.cash_installments_count == 1}") do
+              span(class: installment_count_class(cash_transaction.cash_installments_count == 1)) do
                 pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
               end
             end
@@ -56,7 +56,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
           div(class: "flex items-center justify-between py-2") do
             div(class: "text-xs text-start flex-1 flex items-center") do
-              button(class: "hover:bg-white hover:text-money hover:rounded-full hover:scale-160 transition-all duration-200") do
+              button(class: paid_icon_hover_class("hover:rounded-full")) do
                 cached_icon(icon)
               end
 
@@ -93,7 +93,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
       icon = choose_icon(cash_installment)
 
       div(
-        class: "grid grid-cols-12 hover:opacity-80",
+        class: "grid grid-cols-12 hover:opacity-80 dark:text-slate-100",
         style: "background-clip: padding-box; #{style}",
         draggable: true,
         data: { id: cash_installment.id,
@@ -111,7 +111,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
             cash_transaction.description
           end
 
-          span(class: "p-1 rounded-sm bg-white text-black border border-black shrink-0 #{'opacity-40' if cash_installment.cash_installments_count == 1}") do
+          span(class: installment_count_class(cash_installment.cash_installments_count == 1)) do
             pretty_installments(cash_installment.number, cash_installment.cash_installments_count)
           end
         end
@@ -132,7 +132,7 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         end
 
         div(class: "py-2 px-2 font-lekton font-bold whitespace-nowrap ml-auto") do
-          span(class: "flex items-center justify-center gap-2 hover:bg-white hover:text-money hover:rounded-sm hover:scale-160") do
+          span(class: "flex items-center justify-center gap-2 #{paid_icon_hover_class('hover:rounded-sm')}") do
             cached_icon(icon)
             span { cash_installment.paid ? "Sim" : "Não" }
           end
@@ -182,5 +182,18 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         avatar_name: entity.avatar_name
       }
     end
+  end
+
+  def installment_count_class(single_installment)
+    [
+      "p-1 rounded-sm bg-white text-black border border-black shrink-0",
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+      ("opacity-40" if single_installment)
+    ].compact.join(" ")
+  end
+
+  def paid_icon_hover_class(radius_class)
+    "hover:bg-white hover:text-money #{radius_class} hover:scale-160 transition-all duration-200 " \
+      "dark:hover:bg-slate-900 dark:hover:text-emerald-300"
   end
 end

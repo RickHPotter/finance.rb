@@ -2,7 +2,7 @@
 
 class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   def view_template
-    div(class: "space-y-5", id: "card_transaction_form_submission_skeleton") do
+    div(class: "space-y-5 dark:[&_*]:border-slate-700/50 dark:[&_.animate-pulse]:bg-slate-700", id: "card_transaction_form_submission_skeleton") do
       # hint badge
       div(class: "flex justify-center") do
         Skeleton(class: "h-7 w-28 rounded-sm")
@@ -51,8 +51,8 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
       render_installments_skeleton
 
       div(class: "mb-2 grid grid-cols-1 gap-2 items-stretch md:grid-cols-2 md:gap-0") do
-        render_collection_section_skeleton(border_class: "border-y border-purple-100 py-2 md:border-r md:pr-2")
-        render_collection_section_skeleton(border_class: "border-y border-purple-100 py-2 md:border-l md:pl-2")
+        render_collection_section_skeleton(border_class: "border-y border-purple-100 dark:border-slate-700/50 py-2 md:border-r md:pr-2")
+        render_collection_section_skeleton(border_class: "border-y border-purple-100 dark:border-slate-700/50 py-2 md:border-l md:pl-2")
       end
 
       div(class: "space-y-3") do
@@ -90,7 +90,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   end
 
   def render_calendar_skeleton
-    div(class: "rounded-md border border-slate-200 bg-white p-3 shadow-sm") do
+    div(class: "rounded-md border border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900 p-3 shadow-sm") do
       div(class: "mb-3 flex items-center justify-between") do
         Skeleton(class: "h-7 w-7 rounded-md")
         Skeleton(class: "h-5 w-20 rounded-sm")
@@ -106,7 +106,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   end
 
   def render_clock_skeleton
-    div(class: "flex h-full flex-col gap-1 rounded-md border border-slate-200 bg-white p-2 shadow-sm") do
+    div(class: "flex h-full flex-col gap-1 rounded-md border border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900 p-2 shadow-sm") do
       2.times do
         div(class: "grid min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-1") do
           Skeleton(class: "h-7 w-full rounded-md")
@@ -118,7 +118,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
   end
 
   def render_installments_skeleton
-    div(class: "space-y-2 border-t border-purple-100 py-1") do
+    div(class: "space-y-2 border-t border-purple-100 dark:border-slate-700/50 py-1") do
       div(class: "grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-3") do
         # prev carousel and reduce
         div(class: "grid grid-rows-2 gap-3") do
@@ -130,7 +130,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
           div(class: "flex -ml-2") do
             4.times do
               div(class: "min-w-0 shrink-0 grow-0 basis-full pl-3 md:basis-1/2 lg:basis-1/3 xl:basis-1/4") do
-                div(class: "space-y-3 rounded-lg border border-purple-100 p-3") do
+                div(class: "space-y-3 rounded-lg border border-purple-100 dark:border-slate-700/50 dark:bg-slate-800 p-3") do
                   div(class: "flex justify-between gap-3") do
                     # prev
                     Skeleton(class: "h-5 w-4 rounded-sm")
@@ -166,19 +166,19 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
     div(class: border_class) do
       div(class: "grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-stretch gap-2") do
         # prev carousel
-        Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100")
+        Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100 dark:bg-slate-700")
 
         div(class: "overflow-hidden") do
           div(class: "flex gap-2") do
             2.times do |index|
               width = %w[w-36 w-44 w-40][index]
-              Skeleton(class: "h-12 #{width} shrink-0 rounded-sm bg-purple-100")
+              Skeleton(class: "h-12 #{width} shrink-0 rounded-sm bg-purple-100 dark:bg-slate-700")
             end
           end
         end
 
         # next carousel
-        Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100")
+        Skeleton(class: "h-full min-h-12 w-full rounded-lg bg-purple-100 dark:bg-slate-700")
       end
     end
   end

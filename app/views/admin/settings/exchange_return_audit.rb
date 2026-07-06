@@ -11,11 +11,11 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
 
   def view_template
     turbo_frame_tag :settings_exchange_return_audit_content do
-      div(class: "space-y-4 text-left text-black") do
-        div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
-          h2(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_return_audit.title") }
-          p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_return_audit.description") }
-          p(class: "mt-2 text-xs font-semibold uppercase tracking-wide text-stone-600") do
+      div(class: "space-y-4 text-left text-black dark:text-slate-100") do
+        div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+          h2(class: "text-lg font-bold text-slate-900 dark:text-slate-100") { I18n.t("settings.exchange_return_audit.title") }
+          p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_return_audit.description") }
+          p(class: "mt-2 text-xs font-semibold uppercase tracking-wide text-stone-600 dark:text-slate-400") do
             plain "#{I18n.t('settings.exchange_return_audit.context')}: "
             plain(rows.first&.dig(:context, :name) || "-")
           end
@@ -36,13 +36,16 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   private
 
   def empty_state
-    div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500") do
+    empty_class = "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 " \
+                  "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400"
+
+    div(class: empty_class) do
       I18n.t("settings.exchange_return_audit.empty")
     end
   end
 
   def summary_card
-    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
       div(class: "grid gap-3 md:grid-cols-4") do
         summary_stat(I18n.t("settings.exchange_return_audit.summary.rows"), rows.count)
         summary_stat(
@@ -70,7 +73,7 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
 
   def filter_button(name)
     active = current_status_filter == name
-    button_classes = active ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-700"
+    button_classes = active ? "bg-slate-900 text-white dark:bg-sky-500" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 
     form(action: exchange_return_audit_admin_settings_path, method: "get") do
       input(type: "hidden", name: "status_filter", value: name)
@@ -82,17 +85,17 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def audit_card(row)
-    div(class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm") do
-      div(class: "flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3") do
+    div(class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      div(class: "flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
         div(class: "space-y-1") do
           div(class: "flex flex-wrap items-center gap-2") do
-            h3(class: "text-base font-bold text-slate-900") { "##{row[:id]} · #{row[:description]}" }
+            h3(class: "text-base font-bold text-slate-900 dark:text-slate-100") { "##{row[:id]} · #{row[:description]}" }
             a(href: cash_transaction_path(row[:id]), class: "text-xs font-semibold text-sky-700 hover:underline", data: { turbo_frame: "_top" }) do
               I18n.t("settings.exchange_return_audit.open")
             end
           end
 
-          p(class: "text-xs text-slate-600") do
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
             plain "#{I18n.t('settings.exchange_return_audit.date')}: #{I18n.l(row[:date], format: :short)}"
             plain " · "
             plain "#{I18n.t('settings.exchange_return_audit.month_year')}: #{row[:month_year]}"
@@ -149,14 +152,14 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def stale_row(source_row)
-    div(class: "rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-amber-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{source_row[:transactable_type]} ##{source_row[:transactable_id]}"
             plain " · #{source_row[:description]}" if source_row[:description].present?
           end
-          p(class: "text-xs text-slate-600") { "EntityTransaction ##{source_row[:entity_transaction_id]}" }
+          p(class: "text-xs text-slate-600 dark:text-slate-400") { "EntityTransaction ##{source_row[:entity_transaction_id]}" }
         end
 
         div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
@@ -179,19 +182,26 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def metric(label, value, small: false, number: false)
-    div(class: "rounded-xl border border-slate-200 bg-white px-3 py-3") do
-      p(class: small ? "text-[11px] font-semibold uppercase tracking-wide text-slate-500" : "text-xs font-semibold uppercase tracking-wide text-slate-500") { label }
-      p(class: small ? "mt-1 text-base font-bold text-slate-900" : "mt-2 text-lg font-bold text-slate-900") do
+    div(class: "rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: metric_label_class(small)) do
+        label
+      end
+      p(class: small ? "mt-1 text-base font-bold text-slate-900 dark:text-slate-100" : "mt-2 text-lg font-bold text-slate-900 dark:text-slate-100") do
         plain(number ? value.to_s : from_cent_based_to_float(value, "R$"))
       end
     end
   end
 
   def summary_stat(label, value)
-    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3") do
-      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500") { label }
-      p(class: "mt-2 text-lg font-bold text-slate-900") { value.to_s }
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { label }
+      p(class: "mt-2 text-lg font-bold text-slate-900 dark:text-slate-100") { value.to_s }
     end
+  end
+
+  def metric_label_class(small)
+    size_class = small ? "text-[11px]" : "text-xs"
+    "#{size_class} font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
   end
 
   def meta_chip(text, classes)
@@ -199,14 +209,14 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def allocation_issue_row(allocation_row)
-    div(class: "rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-rose-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{allocation_row[:transactable_type]} ##{allocation_row[:transactable_id]}"
             plain " · #{allocation_row[:description]}" if allocation_row[:description].present?
           end
-          p(class: "text-xs text-slate-600") { I18n.t("settings.exchange_return_audit.issue_codes.#{allocation_row[:issue_code]}") }
+          p(class: "text-xs text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_return_audit.issue_codes.#{allocation_row[:issue_code]}") }
         end
 
         div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
@@ -252,14 +262,14 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def card_bound_projection_row(row)
-    div(class: "rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-orange-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{row[:source_type]} ##{row[:source_id]}"
             plain " · #{row[:source_description]}" if row[:source_description].present?
           end
-          p(class: "text-xs text-slate-600") do
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
             plain "Exchange ##{row[:exchange_id]}"
             plain " · #{row[:entity_name]}" if row[:entity_name].present?
             plain " · #{I18n.t("settings.exchange_return_audit.issue_codes.#{row[:issue_code]}")}"
@@ -284,14 +294,14 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disabl
   end
 
   def replay_row(message_row)
-    div(class: "rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-violet-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{I18n.t('settings.exchange_return_audit.message_replay_rows.message')} ##{message_row[:message_id]}"
             plain " · #{message_row[:preview]}" if message_row[:preview].present?
           end
-          p(class: "text-xs text-slate-600") do
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
             plain "#{I18n.t('settings.exchange_return_audit.message_replay_rows.conversation')} ##{message_row[:conversation_id]}"
             plain " · #{I18n.t('settings.exchange_return_audit.message_replay_rows.intent')}: #{message_row[:intent]}" if message_row[:intent].present?
           end

@@ -3,6 +3,7 @@
 module Components
   class LinkWithConfirmation < Base
     include CacheHelper
+    include ComponentsHelper
 
     attr_reader :id, :link_params, :icon, :text
 
@@ -38,15 +39,15 @@ module Components
         tabindex: "-1",
         data: confirm_data
       ) do
-        div(class: "bg-white p-6 rounded-lg shadow-lg") do
+        div(class: "bg-white p-6 rounded-lg shadow-lg dark:border dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:shadow-black/40") do
           div(class: "flex") do
-            h1(class: "text-2xl mb-4 flex-1 text-start text-gray-900") do
+            h1(class: "text-2xl mb-4 flex-1 text-start text-gray-900 dark:text-slate-100") do
               I18n.t("confirmation.sure")
             end
 
             button(
               type: :button,
-              class: "text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center",
+              class: modal_close_button_class,
               data: { modal_hide: modal_id }
             ) do
               cached_icon(:little_x)
@@ -62,7 +63,12 @@ module Components
               I18n.t("confirmation.confirm")
             end
 
-            Button(type: :button, variant: :outline, class: "font-bold py-2 px-4 rounded text-gray-900", data: { modal_hide: modal_id }) do
+            Button(
+              type: :button,
+              variant: :outline,
+              class: "font-bold py-2 px-4 rounded text-gray-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
+              data: { modal_hide: modal_id }
+            ) do
               I18n.t("confirmation.cancel")
             end
           end

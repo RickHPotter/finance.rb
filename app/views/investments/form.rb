@@ -36,13 +36,13 @@ class Views::Investments::Form < Views::Base
       form_with(
         model: investment,
         id: :investment_form,
-        class: "contents text-black",
+        class: "contents text-slate-100",
         data: { controller: "reactive-form price-mask", reactive_form_quick_jump_value: true, action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate
 
-        div(class: "w-full mb-6") do
+        div(class: "mb-6 w-full") do
           form.text_field :description,
                           class: outdoor_input_class,
                           autocomplete: :off,
@@ -50,7 +50,7 @@ class Views::Investments::Form < Views::Base
                           data: description_data(autofocus_target)
         end
 
-        div(class: "lg:flex lg:gap-2 w-full pb-3") do
+        div(class: "w-full pb-3 lg:flex lg:gap-2") do
           div(id: "investment_user_bank_account_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
             render Views::Shared::SingleSelectCombobox.new(
               name: "investment[user_bank_account_id]",
@@ -89,7 +89,7 @@ class Views::Investments::Form < Views::Base
               inputmode: :numeric,
               svg: :money,
               id: :transaction_price,
-              class: "font-graduate",
+              class: "font-graduate dark:font-mono",
               data: price_data(autofocus_target)
           end
         end
@@ -110,11 +110,12 @@ class Views::Investments::Form < Views::Base
               Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(investment))}") { action_message(:submit) }
 
               unless investment.persisted?
-                Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain", value: "1") do
+                Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain", value: "1") do
                   action_message(:finish_chain)
                 end
 
-                Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain_without_save", value: "1") do
+                Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain_without_save",
+                       value: "1") do
                   action_message(:finish_chain_without_save)
                 end
               end
@@ -193,5 +194,9 @@ class Views::Investments::Form < Views::Base
 
   def chain_checked?
     chain_context&.dig(:checked) || false
+  end
+
+  def secondary_action_button_class
+    secondary_submit_row_button_class
   end
 end

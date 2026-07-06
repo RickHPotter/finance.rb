@@ -28,7 +28,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
     turbo_frame_tag dom_id cash_transaction do
       form_with model: cash_transaction,
                 id: :transaction_form,
-                class: "contents text-black",
+                class: "contents text-slate-100",
                 data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
@@ -61,7 +61,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
           entities: @entities
         )
         render Views::CashTransactions::FormInstallmentsSection.new(form:, cash_transaction:)
-        div(class: "mb-3 grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 md:gap-0") do
+        div(class: "mb-3 grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-0") do
           render Views::Transactions::FormCategoriesSection.new(form:, transaction: cash_transaction)
           render Views::Transactions::FormEntitiesSection.new(form:, transaction: cash_transaction)
         end
@@ -88,7 +88,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             Link(
               href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
               variant: :outline,
-              class: "flex flex-col items-center text-center text-inherit",
+              class: "flex flex-col items-center text-center text-inherit #{submit_row_ghost_button_class}",
               data: { turbo_frame: "_top", turbo_prefetch: "false" }
             ) do
               action_model(:index, CardTransaction, 2)
@@ -170,7 +170,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   def card_transactions_sheet
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "min-w-64") do
+        Button(type: :button, class: submit_row_ghost_button_class) do
           action_model(:index, CardTransaction, 2)
         end
       end
@@ -197,7 +197,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
   def cash_transactions_sheet
     Sheet do
       SheetTrigger do
-        Button(type: :button, class: "min-w-64") do
+        Button(type: :button, class: submit_row_ghost_button_class) do
           action_model(:index, CashTransaction, 2)
         end
       end
@@ -280,5 +280,9 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         :card_installments
       ]
     ).call
+  end
+
+  def submit_row_ghost_button_class
+    secondary_submit_row_button_class("min-w-64")
   end
 end

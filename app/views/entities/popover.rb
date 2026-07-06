@@ -188,7 +188,13 @@ class Views::Entities::Popover < Views::Base
   end
 
   def desktop_single_button_class
-    "inline-flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-inherit"
+    if variant == :subscription
+      return "inline-flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black dark:border-white/70 dark:text-white"
+    end
+
+    return "inline-flex items-center gap-2 rounded-md border border-white px-2 py-1 text-xs text-white" if variant == :budget
+
+    "inline-flex items-center gap-2 rounded-md border border-black px-2 py-1 text-xs text-black dark:text-black"
   end
 
   def desktop_trigger_button_class

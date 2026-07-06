@@ -23,10 +23,21 @@ export default class extends Controller {
       tab.classList.toggle("text-white", active)
       tab.classList.toggle("bg-gray-200", !active)
       tab.classList.toggle("text-gray-700", !active)
+      tab.classList.toggle("dark:bg-slate-800", !active)
+      tab.classList.toggle("dark:text-slate-200", !active)
     })
 
     this.panelTargets.forEach((panel) => {
-      panel.classList.toggle("hidden", panel.dataset.namingTabsName !== name)
+      const active = panel.dataset.namingTabsName === name
+      panel.classList.toggle("hidden", !active)
+      if (active) this.loadPanel(panel)
     })
+  }
+
+  loadPanel(panel) {
+    const frame = panel.querySelector("turbo-frame[data-naming-tabs-lazy-src]")
+    if (!frame || frame.getAttribute("src")) return
+
+    frame.setAttribute("src", frame.dataset.namingTabsLazySrc)
   }
 }

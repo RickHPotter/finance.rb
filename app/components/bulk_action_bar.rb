@@ -19,16 +19,19 @@ module Components
                 md:-translate-x-1/2 z-50 transition-opacity duration-300 opacity-0 pointer-events-none".squish,
         data: { datatable_target: :bulkBar, bulk_selection_kind: selection_kind }
       ) do
-        div(class: "pointer-events-auto rounded-2xl border border-slate-300 bg-white/95 backdrop-blur shadow-2xl px-5 py-4 md:px-6 md:py-4") do
+        div(
+          class: "pointer-events-auto rounded-2xl border border-slate-300 bg-white/95 backdrop-blur shadow-2xl px-5 py-4 md:px-6 md:py-4 " \
+                 "dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-slate-950"
+        ) do
           div(class: "flex flex-col gap-3") do
             div(class: "flex flex-col md:flex-row md:items-center md:justify-center gap-3 md:gap-6") do
-              div(class: "text-base font-semibold text-slate-800 whitespace-nowrap text-center md:text-left") do
+              div(class: "text-base font-semibold text-slate-800 whitespace-nowrap text-center md:text-left dark:text-slate-100") do
                 span(data: { datatable_target: :selectedCount }) { "0" }
                 plain " "
                 plain selected_label
               end
 
-              div(class: "text-sm font-medium text-slate-600 whitespace-nowrap text-center md:text-left") do
+              div(class: "text-sm font-medium text-slate-600 whitespace-nowrap text-center md:text-left dark:text-slate-300") do
                 plain "#{I18n.t('bulk_actions.total_selected')}: "
                 span(data: { datatable_target: :selectedTotal }) { "R$0.00" }
               end
@@ -69,7 +72,7 @@ module Components
               end
             end
 
-            p(class: "min-h-5 text-center text-xs text-slate-500 md:text-left", data: { datatable_target: :selectionHint }) do
+            p(class: "min-h-5 text-center text-xs text-slate-500 md:text-left dark:text-slate-400", data: { datatable_target: :selectionHint }) do
               ""
             end
           end
@@ -100,7 +103,8 @@ module Components
               button(
                 type: :button,
                 title: item[:title],
-                class: "w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100",
+                class: "w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 " \
+                       "dark:text-slate-200 dark:hover:bg-slate-800",
                 data: item_data.merge(action: [ item_data[:action], "click->ruby-ui--popover#close" ].compact.join(" "))
               ) do
                 item[:label]

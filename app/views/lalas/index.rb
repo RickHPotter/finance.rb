@@ -11,7 +11,7 @@ class Views::Lalas::Index < Views::Base
         end
       end
 
-      div(class: "mx-1 wrap-break-word bg-white shadow-md shadow-red-50 rounded-lg") do
+      div(class: "mx-1 wrap-break-word bg-white shadow-md shadow-red-50 rounded-lg dark:border dark:border-slate-800 dark:bg-slate-900 dark:shadow-none") do
         div(class: "p-1 md:p-2 lg:p-3") do
           div(class: "hidden relative", data: { controller: "price-sum" }) do
             div(
@@ -24,7 +24,7 @@ class Views::Lalas::Index < Views::Base
             end
           end
 
-          div(class: "text-center text-black pt-2") do
+          div(class: "text-center text-black pt-2 dark:text-slate-100") do
             turbo_frame_tag :center_container
           end
         end

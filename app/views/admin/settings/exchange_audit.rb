@@ -17,12 +17,12 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
   def view_template
     turbo_frame_tag :settings_exchange_audit_content do
-      div(class: "space-y-4 text-left text-black", data: { controller: "naming-tabs", naming_tabs_current_value: "pending" }) do
+      div(class: "space-y-4 text-left text-black dark:text-slate-100", data: { controller: "naming-tabs", naming_tabs_current_value: "pending" }) do
         render_apply_result if apply_result.present?
 
-        div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
-          h2(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_audit.title") }
-          p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_audit.description") }
+        div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+          h2(class: "text-lg font-bold text-slate-900 dark:text-slate-100") { I18n.t("settings.exchange_audit.title") }
+          p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_audit.description") }
         end
 
         render_connection_scope
@@ -49,9 +49,9 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   def render_connection_scope
     return if connections.blank?
 
-    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
-      h3(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { I18n.t("settings.exchange_audit.connection_scope.title") }
-      p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_audit.connection_scope.description") }
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      h3(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700 dark:text-slate-300") { I18n.t("settings.exchange_audit.connection_scope.title") }
+      p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_audit.connection_scope.description") }
 
       div(class: "mt-3 flex flex-wrap gap-2") do
         connections.each do |connection|
@@ -73,11 +73,13 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   def render_connection_summary
     connection = selected_connection
 
-    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
       div(class: "flex flex-wrap items-start justify-between gap-3") do
         div(class: "space-y-1") do
-          h3(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_audit.connection_summary.title", name: connection.dig(:user, :first_name)) }
-          p(class: "text-sm text-slate-600") { connection.dig(:user, :email) }
+          h3(class: "text-lg font-bold text-slate-900 dark:text-slate-100") do
+            I18n.t("settings.exchange_audit.connection_summary.title", name: connection.dig(:user, :first_name))
+          end
+          p(class: "text-sm text-slate-600 dark:text-slate-400") { connection.dig(:user, :email) }
         end
 
         meta_chip(I18n.t("settings.exchange_audit.filters.#{connection[:status]}"), status_chip_class(connection))
@@ -126,7 +128,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   def filter_button(name:, count:)
     button(
       type: :button,
-      class: "rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors",
+      class: "rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors dark:bg-slate-800 dark:text-slate-200",
       data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
     ) do
       plain I18n.t("settings.exchange_audit.filters.#{name}")
@@ -135,7 +137,10 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def empty_state
-    div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500") do
+    empty_class = "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 " \
+                  "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400"
+
+    div(class: empty_class) do
       I18n.t("settings.exchange_audit.empty")
     end
   end
@@ -153,14 +158,14 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def trio_card(row)
-    div(class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm") do
-      div(class: "flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3") do
+    div(class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      div(class: "flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
         div(class: "space-y-1") do
-          div(class: "text-sm font-semibold text-slate-900") do
+          div(class: "text-sm font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{I18n.t('settings.exchange_audit.message')} ##{row.dig(:message, :id)}"
             plain " · ##{row.dig(:message, :conversation_id)}"
           end
-          p(class: "text-xs text-slate-600") { row.dig(:message, :body) }
+          p(class: "text-xs text-slate-600 dark:text-slate-400") { row.dig(:message, :body) }
         end
 
         div(class: "flex flex-wrap items-center gap-2 text-xs font-semibold") do
@@ -232,34 +237,42 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def user_meta(label, user)
-    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { label }
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { label }
       if user.present?
-        p(class: "mt-1 text-sm font-semibold text-slate-900") { "#{user[:first_name]} ##{user[:id]}" }
-        p(class: "text-xs text-slate-600") { user[:email] }
+        p(class: "mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100") { "#{user[:first_name]} ##{user[:id]}" }
+        p(class: "text-xs text-slate-600 dark:text-slate-400") { user[:email] }
       else
-        p(class: "mt-1 text-sm text-slate-500") { I18n.t("settings.exchange_audit.missing") }
+        p(class: "mt-1 text-sm text-slate-500 dark:text-slate-400") { I18n.t("settings.exchange_audit.missing") }
       end
     end
   end
 
   def transaction_card(transaction, title: nil, count: nil)
-    div(class: "rounded-xl border border-slate-200 bg-white p-3") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { title } if title.present?
+    div(class: "rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { title } if title.present?
 
       if transaction.blank?
-        p(class: "mt-1 text-sm text-slate-500") { I18n.t("settings.exchange_audit.missing") }
+        p(class: "mt-1 text-sm text-slate-500 dark:text-slate-400") { I18n.t("settings.exchange_audit.missing") }
       else
-        p(class: "text-sm font-semibold text-slate-900") { "#{transaction[:type]} ##{transaction[:id]}" }
-        p(class: "mt-1 text-sm text-slate-700") { transaction[:description] }
-        p(class: "mt-2 text-xs text-slate-600") { "#{I18n.t('settings.exchange_audit.date')}: #{formatted_time(transaction[:date])}" }
-        p(class: "text-xs text-slate-600") { "#{I18n.t('settings.exchange_audit.price')}: #{from_cent_based_to_float(transaction[:price], 'R$')}" }
-        p(class: "text-xs text-slate-600") { "#{I18n.t('settings.exchange_audit.context')}: ##{transaction[:context_id]} · #{transaction[:month_year]}" }
-        p(class: "text-xs text-slate-600") { "#{I18n.t('settings.exchange_audit.categories')}: #{format_list(transaction[:category_names])}" }
-        p(class: "text-xs text-slate-600") { "#{I18n.t('settings.exchange_audit.entities')}: #{format_list(transaction[:entity_names])}" }
+        p(class: "text-sm font-semibold text-slate-900 dark:text-slate-100") { "#{transaction[:type]} ##{transaction[:id]}" }
+        p(class: "mt-1 text-sm text-slate-700 dark:text-slate-300") { transaction[:description] }
+        p(class: "mt-2 text-xs text-slate-600 dark:text-slate-400") { "#{I18n.t('settings.exchange_audit.date')}: #{formatted_time(transaction[:date])}" }
+        p(class: "text-xs text-slate-600 dark:text-slate-400") do
+          "#{I18n.t('settings.exchange_audit.price')}: #{from_cent_based_to_float(transaction[:price], 'R$')}"
+        end
+        p(class: "text-xs text-slate-600 dark:text-slate-400") do
+          "#{I18n.t('settings.exchange_audit.context')}: ##{transaction[:context_id]} · #{transaction[:month_year]}"
+        end
+        p(class: "text-xs text-slate-600 dark:text-slate-400") { "#{I18n.t('settings.exchange_audit.categories')}: #{format_list(transaction[:category_names])}" }
+        p(class: "text-xs text-slate-600 dark:text-slate-400") { "#{I18n.t('settings.exchange_audit.entities')}: #{format_list(transaction[:entity_names])}" }
         div(class: "mt-2 space-y-1 text-xs") do
-          p(class: "text-slate-600") { "#{I18n.t('settings.exchange_audit.current_reference')}: #{reference_label(transaction[:current_reference])}" }
-          p(class: "text-slate-600") { "#{I18n.t('settings.exchange_audit.expected_reference')}: #{reference_label(transaction[:expected_reference])}" }
+          p(class: "text-slate-600 dark:text-slate-400") do
+            "#{I18n.t('settings.exchange_audit.current_reference')}: #{reference_label(transaction[:current_reference])}"
+          end
+          p(class: "text-slate-600 dark:text-slate-400") do
+            "#{I18n.t('settings.exchange_audit.expected_reference')}: #{reference_label(transaction[:expected_reference])}"
+          end
           meta_chip(I18n.t("settings.exchange_audit.reference_statuses.#{transaction[:reference_status]}"),
                     reference_status_chip_class(transaction[:reference_status]))
         end
@@ -269,9 +282,9 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def middle_candidate_selector(row)
-    div(class: "rounded-xl border border-indigo-200 bg-indigo-50 p-3") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-indigo-700") { I18n.t("settings.exchange_audit.middle_selection.title") }
-      p(class: "mt-1 text-xs text-indigo-900") { I18n.t("settings.exchange_audit.middle_selection.description") }
+    div(class: "rounded-xl border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-500/40 dark:bg-indigo-950/30") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200") { I18n.t("settings.exchange_audit.middle_selection.title") }
+      p(class: "mt-1 text-xs text-indigo-900 dark:text-indigo-100") { I18n.t("settings.exchange_audit.middle_selection.description") }
 
       form(action: exchange_audit_admin_settings_path, method: "get", class: "mt-3 space-y-3") do
         preserved_connected_user_scope
@@ -280,7 +293,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
         select(
           name: "middle_overrides[#{row.dig(:source, :id)}]",
-          class: "w-full rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm text-slate-900"
+          class: audit_select_class("indigo")
         ) do
           row[:middle_candidates].each do |candidate|
             option(value: candidate[:id], selected: candidate[:id] == selected_middle_candidate_id(row)) do
@@ -315,7 +328,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
           ) { I18n.t("settings.exchange_audit.apply_button") }
         end
       elsif candidate[:unsupported_reason].present?
-        p(class: "text-xs font-semibold text-rose-900") do
+        p(class: "text-xs font-semibold text-rose-900 dark:text-rose-300") do
           I18n.t("settings.exchange_audit.apply_unavailable", reason: issue_label(candidate[:unsupported_reason]))
         end
       end
@@ -323,9 +336,9 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def receiver_candidate_selector(row)
-    div(class: "rounded-xl border border-sky-200 bg-sky-50 p-3") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-sky-700") { I18n.t("settings.exchange_audit.receiver_selection.title") }
-      p(class: "mt-1 text-xs text-sky-900") { I18n.t("settings.exchange_audit.receiver_selection.description") }
+    div(class: "rounded-xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-500/40 dark:bg-sky-950/30") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-200") { I18n.t("settings.exchange_audit.receiver_selection.title") }
+      p(class: "mt-1 text-xs text-sky-900 dark:text-sky-100") { I18n.t("settings.exchange_audit.receiver_selection.description") }
 
       form(action: exchange_audit_admin_settings_path, method: "get", class: "mt-3 space-y-3") do
         preserved_connected_user_scope
@@ -334,7 +347,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
         select(
           name: "receiver_overrides[#{row.dig(:source, :id)}]",
-          class: "w-full rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm text-slate-900"
+          class: audit_select_class("sky")
         ) do
           row[:receiver_candidates].each do |candidate|
             option(value: candidate[:id], selected: candidate[:id] == selected_receiver_candidate_id(row)) do
@@ -353,6 +366,12 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
   def meta_chip(text, classes)
     span(class: "rounded-full px-2 py-1 #{classes}") { text }
+  end
+
+  def audit_select_class(colour)
+    border_class = colour == "indigo" ? "border-indigo-300 dark:border-indigo-500/50" : "border-sky-300 dark:border-sky-500/50"
+
+    "w-full rounded-lg border #{border_class} bg-white px-3 py-2 text-sm text-slate-900 dark:bg-slate-900 dark:text-slate-100"
   end
 
   def scenario_label(row)
@@ -383,7 +402,7 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
 
     return "#{base} bg-indigo-600 text-white hover:bg-indigo-700" if selected
 
-    "#{base} bg-slate-200 text-slate-700 hover:bg-slate-300"
+    "#{base} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
   end
 
   def connection_button_label(connection)
@@ -497,16 +516,16 @@ class Views::Admin::Settings::ExchangeAudit < Views::Base # rubocop:disable Metr
   end
 
   def summary_stat(label, value)
-    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { label }
-      p(class: "mt-1 text-sm font-semibold text-slate-900") { value.to_s }
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { label }
+      p(class: "mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100") { value.to_s }
     end
   end
 
   def mapping_card(title:, values:)
-    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3") do
-      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500") { title }
-      p(class: "mt-1 text-sm text-slate-900") { format_list(values) }
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { title }
+      p(class: "mt-1 text-sm text-slate-900 dark:text-slate-100") { format_list(values) }
     end
   end
 end

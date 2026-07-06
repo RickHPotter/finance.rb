@@ -9,7 +9,7 @@ class Views::Shared::TableHeader < Views::Base
   end
 
   def view_template
-    div(class: "rounded-t-lg border-b border-slate-400 bg-slate-200") do
+    div(class: "rounded-t-lg border-b border-slate-400 bg-slate-200 dark:border-slate-700 dark:bg-slate-800") do
       rows.each_with_index do |cells, index|
         div(class: row_class(index)) do
           cells.each do |cell|
@@ -27,7 +27,7 @@ class Views::Shared::TableHeader < Views::Base
   def row_class(index)
     divider = index < rows.size - 1 ? "border-b border-slate-300" : ""
 
-    "#{grid_class} gap-x-3 px-3 py-3 text-black font-graduate #{divider}".squish
+    "#{grid_class} gap-x-3 px-3 py-3 text-black font-graduate dark:text-slate-100 #{divider}".squish
   end
 
   def render_label(cell)
@@ -44,6 +44,6 @@ class Views::Shared::TableHeader < Views::Base
       else ""
       end
 
-    "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 #{alignment}".squish
+    "block text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 dark:text-slate-300 #{alignment}".squish
   end
 end

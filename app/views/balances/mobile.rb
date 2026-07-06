@@ -7,17 +7,16 @@ class Views::Balances::Mobile < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50") do
-        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+      div(class: mobile_shell_class) do
+        div(class: mobile_header_class) do
           div(class: "flex flex-col items-start") do
-            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { I18n.t("balances.title") }
+            h1(class: mobile_title_class) { I18n.t("balances.title") }
             render_scenario_badge
           end
 
           link_to(
             legacy_balances_path,
-            class: "inline-flex items-center rounded-full border border-stone-200 px-3 py-1 text-2xs " \
-                   "font-semibold uppercase tracking-[0.16em] text-stone-600 transition hover:border-stone-400 hover:text-stone-900",
+            class: legacy_button_class,
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) { "Legacy" }
         end
@@ -50,21 +49,21 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_metric_card(label, target_name)
-    div(class: "rounded-3xl border border-stone-200 bg-stone-50 px-3 py-1 shadow-sm") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
+    div(class: "rounded-3xl border border-stone-200 bg-stone-50 px-3 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400") { label }
       p(
-        class: "mt-2 text-md font-semibold text-stone-900 transition-colors md:mt-1 md:text-base",
+        class: "mt-2 text-md font-semibold text-stone-900 transition-colors md:mt-1 md:text-base dark:text-slate-100",
         data: { balances_mobile_target: target_name }
       ) { "--" }
     end
   end
 
   def render_trend_card
-    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm") do
+    div(class: trend_card_class) do
       div(class: "flex items-center justify-between gap-3") do
         div do
-          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.trend") }
-          p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.trend_subtitle") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400") { I18n.t("balances.mobile.trend") }
+          p(class: "mt-1 text-sm font-medium text-stone-800 dark:text-slate-200") { I18n.t("balances.mobile.trend_subtitle") }
         end
       end
 
@@ -81,16 +80,16 @@ class Views::Balances::Mobile < Views::Base
         render_range_button(I18n.t("balances.all"), "all")
       end
 
-      div(class: "mt-4 rounded-3xl border border-stone-200 bg-white p-3") do
+      div(class: chart_panel_class) do
         div(class: "h-64") do
           canvas(data: { balances_mobile_target: "trendCanvas" })
         end
       end
 
-      div(class: "mt-4 rounded-3xl border border-stone-200 bg-white p-3") do
+      div(class: chart_panel_class) do
         div do
-          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.extremes") }
-          p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.extremes_subtitle") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400") { I18n.t("balances.mobile.extremes") }
+          p(class: "mt-1 text-sm font-medium text-stone-800 dark:text-slate-200") { I18n.t("balances.mobile.extremes_subtitle") }
         end
 
         div(class: "mt-4") do
@@ -109,22 +108,22 @@ class Views::Balances::Mobile < Views::Base
   end
 
   def render_breakdown_card
-    div(class: "rounded-[28px] border border-stone-200 bg-linear-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm") do
+    div(class: breakdown_card_class) do
       div(class: "flex items-center justify-between gap-3") do
         div do
-          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500") { I18n.t("balances.mobile.breakdown") }
-          p(class: "mt-1 text-sm font-medium text-stone-800") { I18n.t("balances.mobile.breakdown_subtitle") }
+          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400") { I18n.t("balances.mobile.breakdown") }
+          p(class: "mt-1 text-sm font-medium text-stone-800 dark:text-slate-200") { I18n.t("balances.mobile.breakdown_subtitle") }
         end
 
         input(
           type: :month,
           value: Time.zone.today.strftime("%Y-%m"),
-          class: "rounded-2xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700",
+          class: month_input_class,
           data: { balances_mobile_target: "monthInput", action: "change->balances-mobile#changeMonth" }
         )
       end
 
-      div(class: "mt-4 rounded-3xl border border-stone-200 bg-white p-3") do
+      div(class: chart_panel_class) do
         div(class: "h-72") do
           canvas(data: { balances_mobile_target: "breakdownCanvas" })
         end
@@ -137,8 +136,7 @@ class Views::Balances::Mobile < Views::Base
   def render_range_button(label, value, selected: false)
     button(
       type: :button,
-      class: "inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] transition " \
-             "#{selected ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white text-stone-600'}",
+      class: pill_button_class(selected:, active_class: "border-stone-900 bg-stone-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950"),
       data: { balances_mobile_target: "rangeButton", range: value, action: "click->balances-mobile#changeRange" }
     ) { label }
   end
@@ -146,10 +144,53 @@ class Views::Balances::Mobile < Views::Base
   def render_preset_button(label, value, selected: false)
     button(
       type: :button,
-      class: "inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] transition " \
-             "#{selected ? 'border-sky-700 bg-sky-700 text-white' : 'border-stone-200 bg-white text-stone-600'}",
+      class: pill_button_class(selected:, active_class: "border-sky-700 bg-sky-700 text-white dark:border-sky-500 dark:bg-sky-700 dark:text-white"),
       data: { balances_mobile_target: "presetButton", preset: value, action: "click->balances-mobile#changePreset" }
     ) { label }
+  end
+
+  def mobile_shell_class
+    "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50 dark:border dark:border-slate-800 dark:bg-slate-900 " \
+      "dark:text-slate-100 dark:shadow-none"
+  end
+
+  def mobile_header_class
+    "flex items-start justify-between border-b border-stone-200 px-4 py-3 dark:border-slate-700"
+  end
+
+  def mobile_title_class
+    "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700 dark:text-slate-300"
+  end
+
+  def legacy_button_class
+    "inline-flex items-center rounded-full border border-stone-200 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] " \
+      "text-stone-600 transition hover:border-stone-400 hover:text-stone-900 dark:border-slate-700 dark:text-slate-300 " \
+      "dark:hover:border-slate-500 dark:hover:text-slate-100"
+  end
+
+  def chart_panel_class
+    "mt-4 rounded-3xl border border-stone-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950"
+  end
+
+  def trend_card_class
+    "rounded-[28px] border border-stone-200 bg-linear-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm " \
+      "dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:shadow-none"
+  end
+
+  def breakdown_card_class
+    "rounded-[28px] border border-stone-200 bg-linear-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm " \
+      "dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:shadow-none"
+  end
+
+  def month_input_class
+    "rounded-2xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+  end
+
+  def pill_button_class(selected:, active_class:)
+    base = "inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] transition"
+    inactive = "border-stone-200 bg-white text-stone-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+
+    "#{base} #{selected ? active_class : inactive}"
   end
 
   def render_scenario_badge

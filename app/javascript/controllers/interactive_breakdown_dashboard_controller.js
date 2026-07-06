@@ -20,10 +20,13 @@ export default class extends Controller {
     this.selectedGroupIds = new Set()
     this.selectedSecondaryIds = new Set()
     this.chart = null
+    this.themeObserver = new MutationObserver(() => this.renderChart())
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
     this.renderCurrentPrimary()
   }
 
   disconnect() {
+    this.themeObserver?.disconnect()
     this.destroyChart()
   }
 
@@ -157,7 +160,7 @@ export default class extends Controller {
         const avatar = document.createElement("img")
         avatar.src = avatarPath
         avatar.alt = item.name
-        avatar.className = "h-6 w-6 rounded-full border-2 border-white bg-white"
+        avatar.className = "h-6 w-6 rounded-full border-2 border-white bg-white dark:border-slate-900 dark:bg-slate-900"
         stack.appendChild(avatar)
       })
       button.appendChild(stack)
@@ -178,7 +181,7 @@ export default class extends Controller {
       stack.className = "flex -space-x-1"
       item.swatchHexes.slice(0, 3).forEach((hex) => {
         const swatch = document.createElement("span")
-        swatch.className = "inline-flex h-5 w-5 rounded-full border-2 border-white shadow-xs"
+        swatch.className = "inline-flex h-5 w-5 rounded-full border-2 border-white shadow-xs dark:border-slate-900"
         swatch.style.backgroundColor = hex
         stack.appendChild(swatch)
       })
@@ -216,6 +219,8 @@ export default class extends Controller {
   }
 
   chartOptions(labels, datasets) {
+    const theme = this.chartTheme()
+
     return {
       type: "bar",
       data: { labels, datasets },
@@ -236,12 +241,17 @@ export default class extends Controller {
             labels: {
               boxWidth: 12,
               boxHeight: 12,
-              color: "#0f172a",
+              color: theme.legend,
               usePointStyle: true,
               pointStyle: "circle"
             }
           },
           tooltip: {
+            backgroundColor: theme.tooltipBackground,
+            borderColor: theme.tooltipBorder,
+            borderWidth: 1,
+            bodyColor: theme.tooltipText,
+            titleColor: theme.tooltipText,
             callbacks: {
               label: (context) => `${context.dataset.label}: ${this.formatCurrencyFromFloat(context.parsed.y)}`,
               title: (items) => {
@@ -254,17 +264,22 @@ export default class extends Controller {
         scales: {
           x: {
             ticks: {
-              color: "#64748b",
+              color: theme.ticks,
               maxRotation: 0
             },
-            grid: { display: false }
+            grid: {
+              color: theme.grid,
+              display: false
+            },
+            border: { color: theme.axis }
           },
           y: {
             ticks: {
-              color: "#64748b",
+              color: theme.ticks,
               callback: (value) => this.formatCurrencyFromFloat(value)
             },
-            grid: { color: "rgba(148, 163, 184, 0.18)" }
+            grid: { color: theme.grid },
+            border: { color: theme.axis }
           }
         }
       },
@@ -284,7 +299,7 @@ export default class extends Controller {
           if (!chartArea) return
 
           ctx.save()
-          ctx.fillStyle = "#ffffff"
+          ctx.fillStyle = theme.background
           ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top)
           ctx.restore()
         }
@@ -353,7 +368,9 @@ export default class extends Controller {
     button.textContent = label
     button.className = [
       "inline-flex min-h-11 items-center justify-center rounded-sm border px-3 py-2 text-sm font-semibold shadow-sm transition",
-      active ? "border-sky-500 bg-sky-100 text-sky-900" : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-100"
+      active
+        ? "border-sky-500 bg-sky-100 text-sky-900 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
+        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
     ].join(" ")
     button.addEventListener("click", handler)
     return button
@@ -362,22 +379,56 @@ export default class extends Controller {
   filterButtonClass(selected) {
     return [
       "inline-flex min-h-11 items-center justify-center rounded-sm border px-3 py-2 text-sm font-semibold shadow-sm transition",
-      selected ? "border-sky-500 bg-sky-50 text-sky-950" : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+      selected
+        ? "border-sky-500 bg-sky-50 text-sky-950 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
+        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
     ].join(" ")
   }
 
   secondaryButtonClass(selected) {
     return [
       "inline-flex min-h-12 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm shadow-sm transition",
-      selected ? "border-sky-500 bg-sky-50 text-sky-950" : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+      selected
+        ? "border-sky-500 bg-sky-50 text-sky-950 dark:border-sky-500/70 dark:bg-sky-950/50 dark:text-sky-100"
+        : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
     ].join(" ")
   }
 
   secondaryTotalClass(selected) {
     return [
       "ml-auto rounded-full px-2 py-1 text-2xs font-black uppercase tracking-[0.16em]",
-      selected ? "bg-sky-200 text-sky-950" : "bg-slate-200 text-slate-700"
+      selected ? "bg-sky-200 text-sky-950 dark:bg-sky-900 dark:text-sky-100" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
     ].join(" ")
+  }
+
+  chartTheme() {
+    if (!this.darkMode) {
+      return {
+        axis: "rgba(148, 163, 184, 0.35)",
+        background: "#ffffff",
+        grid: "rgba(148, 163, 184, 0.18)",
+        legend: "#0f172a",
+        ticks: "#64748b",
+        tooltipBackground: "rgba(255, 255, 255, 0.96)",
+        tooltipBorder: "rgba(148, 163, 184, 0.35)",
+        tooltipText: "#0f172a"
+      }
+    }
+
+    return {
+      axis: "rgba(71, 85, 105, 0.8)",
+      background: "#020617",
+      grid: "rgba(71, 85, 105, 0.45)",
+      legend: "#e2e8f0",
+      ticks: "#94a3b8",
+      tooltipBackground: "rgba(15, 23, 42, 0.96)",
+      tooltipBorder: "rgba(71, 85, 105, 0.9)",
+      tooltipText: "#f8fafc"
+    }
+  }
+
+  get darkMode() {
+    return document.documentElement.classList.contains("dark")
   }
 
   formatCurrency(cents) {

@@ -81,7 +81,7 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
         div(class: "flex shrink-0 items-center gap-2") do
           Sheet(id: "advanced_filter") do
             SheetTrigger do
-              Button(type: :button, icon: true, class: "scale-105") do
+              Button(type: :button, icon: true, class: advanced_filter_button_class) do
                 cached_icon(:filter)
               end
             end
@@ -169,6 +169,10 @@ class Views::CardTransactions::IndexSearchForm < Views::Base
   end
 
   private
+
+  def advanced_filter_button_class
+    "scale-105 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"
+  end
 
   def selected_category_ids
     Array(category_id).map(&:to_s)

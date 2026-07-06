@@ -25,12 +25,12 @@ class Views::Shared::AddToSubscriptionModal < Views::Base
         hidden_field_tag :index_context_json, index_context.except(:available_subscriptions).to_json
 
         div(class: "mx-auto pb-4 text-center") do
-          label(for: :subscription_id, class: "font-poetsen-one text-medium font-bold text-gray-500") do
+          label(for: :subscription_id, class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") do
             I18n.t("bulk_actions.choose_subscription")
           end
 
           div(class: "relative w-full") do
-            select_tag(:subscription_id, class: "border rounded w-full py-2") do
+            select_tag(:subscription_id, class: input_class_without_icon) do
               options_for_select(subscription_options)
             end
           end
@@ -38,11 +38,11 @@ class Views::Shared::AddToSubscriptionModal < Views::Base
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
           form.submit I18n.t("confirmation.confirm"),
-                      class: "bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded",
+                      class: modal_confirm_button_class(:purple),
                       data: { modal_hide: modal_id }
 
           button(
-            class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_cancel_button_class,
             type: :button,
             data: { modal_hide: modal_id }
           ) do

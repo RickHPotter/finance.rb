@@ -103,7 +103,7 @@ class Views::Categories::Popover < Views::Base
   end
 
   def base_pill_class(size_class)
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black #{size_class}"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-black dark:text-black #{size_class}"
   end
 
   def mobile_trigger_button_class
@@ -121,10 +121,10 @@ class Views::Categories::Popover < Views::Base
   end
 
   def mobile_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs text-black dark:text-black"
   end
 
   def desktop_counter_class
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm"
+    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-sm text-black dark:text-black"
   end
 end

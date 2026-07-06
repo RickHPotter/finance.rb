@@ -36,11 +36,11 @@ class Views::CashTransactions::PayMultipleModal < Views::Base
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
           form.submit I18n.t("confirmation.confirm"),
-                      class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+                      class: modal_confirm_button_class(:green),
                       data: { modal_hide: modal_id }
 
           button(
-            class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_cancel_button_class,
             type: :button,
             data: { modal_hide: modal_id }
           ) do
