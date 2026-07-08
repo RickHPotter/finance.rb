@@ -82,6 +82,6 @@ class Views::Settings::Show < Views::Base
   end
 
   def default_tab_name
-    show_exchange_audit ? "exchange_audit" : "naming"
+    ""
   end
 end

@@ -8,7 +8,7 @@ import { _removeMask, _applyMask } from "../utils/mask.js"
 export default class extends Controller {
   static targets = [
     "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
-    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange"
+    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput"
   ]
 
   async connect() {
@@ -118,9 +118,86 @@ export default class extends Controller {
     const priceToBeReturned = parseInt(_removeMask(this.priceToBeReturnedInputTarget.value))
     const price = parseInt(_removeMask(this.priceInputTarget.value))
 
-    if (Math.abs(priceToBeReturned) > Math.abs(price)) { this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString()) }
+    if (Math.abs(priceToBeReturned) > Math.abs(price) && !this.loanReturnPercentageIsActive()) {
+      this.priceInputTarget.value = this._applyMask(priceToBeReturned.toString())
+    }
     this._addBorderToPriceInputs(totalPrice)
     await this._updateExchangesPrices()
+  }
+
+  async applyLoanReturnPercentage() {
+    if (!this.hasLoanReturnPercentageInputTarget) { return }
+
+    const percentage = this.loanReturnPercentage()
+    if (percentage === null) { return }
+
+    const transactionCents = Math.abs(this.transactionTotalCents())
+    if (!transactionCents) { return }
+
+    const sign = this.entityPriceSign()
+    const entityCents = Math.round(transactionCents * (percentage / 100)) * sign
+
+    this.priceInputTarget.value = this._applyMask(entityCents.toString())
+    this.priceToBeReturnedInputTarget.value = this._applyMask(entityCents.toString())
+
+    await this.updatePrice()
+    await this.toggleExchanges({ target: this.priceToBeReturnedInputTarget })
+  }
+
+  async resetLoanReturnPercentage() {
+    if (!this.hasLoanReturnPercentageInputTarget) { return }
+
+    this.loanReturnPercentageInputTarget.value = this.loanReturnPercentageInputTarget.dataset.originalValue || "100.0"
+    await this.applyLoanReturnPercentage()
+  }
+
+  async matchLoanReturnPercentage() {
+    if (!this.hasLoanReturnPercentageInputTarget) { return }
+
+    const entityCents = Math.abs(parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value)))
+    const transactionCents = Math.abs(this.transactionTotalCents())
+    if (!entityCents || !transactionCents) { return }
+
+    const percentage = ((entityCents / transactionCents) * 100).toFixed(4)
+    this.loanReturnPercentageInputTarget.value = this.trimTrailingZeroes(percentage)
+
+    await this.applyLoanReturnPercentage()
+  }
+
+  loanReturnPercentage() {
+    const value = this.loanReturnPercentageInputTarget.value.toString().replace(",", ".")
+    if (!value.trim()) { return null }
+
+    const percentage = Number(value)
+    return Number.isFinite(percentage) ? percentage : null
+  }
+
+  loanReturnPercentageIsActive() {
+    if (!this.hasLoanReturnPercentageInputTarget) { return false }
+
+    return (this.loanReturnPercentage() || 100) !== 100
+  }
+
+  entityPriceSign() {
+    const priceToBeReturnedCents = parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value))
+    if (priceToBeReturnedCents !== 0 && !Number.isNaN(priceToBeReturnedCents)) {
+      return priceToBeReturnedCents < 0 ? -1 : 1
+    }
+
+    const priceCents = parseInt(this._removeMask(this.priceInputTarget.value))
+    if (priceCents !== 0 && !Number.isNaN(priceCents)) {
+      return priceCents < 0 ? -1 : 1
+    }
+
+    return this.transactionTotalCents() < 0 ? -1 : 1
+  }
+
+  transactionTotalCents() {
+    return parseInt(this._removeMask(document.querySelector("#transaction_price").value)) * - 1
+  }
+
+  trimTrailingZeroes(value) {
+    return value.toString().replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "")
   }
 
   _addBorderToPriceInputs(totalPrice) {

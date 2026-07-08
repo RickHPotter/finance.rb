@@ -1021,6 +1021,7 @@ RSpec.describe "CashTransactions", type: :request do
           year: 2026,
           user_id: user.id,
           user_bank_account_id: user_bank_account.id,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: exchange_category.id }
           ],
@@ -1050,6 +1051,47 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(entity_transaction.exchanges.count).to eq(1)
       expect(entity_transaction.exchanges_count).to eq(1)
+    end
+
+    it "rejects exchange cash transaction creation until the notification intent is selected" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      receiver = create(:user, :random)
+      receiver_entity = create(:entity, user:, entity_name: "RECEIVER", entity_user: receiver)
+      create(:entity, user: receiver, entity_name: "ME", entity_user: user)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Exchange without intent",
+            price: 2_000,
+            date: Date.new(2026, 4, 27),
+            month: 4,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [
+              { category_id: exchange_category.id }
+            ],
+            cash_installments_attributes: [
+              { number: 1, date: Date.new(2026, 4, 27), month: 4, year: 2026, price: 2_000, paid: false }
+            ],
+            entity_transactions_attributes: [
+              {
+                entity_id: receiver_entity.id,
+                is_payer: true,
+                price: -2_000,
+                price_to_be_returned: -2_000,
+                exchanges_attributes: [
+                  { number: 1, exchange_type: "monetary", bound_type: "standalone", price: -2_000, date: Date.new(2026, 4, 28), month: 4, year: 2026 }
+                ]
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(CashTransaction.human_attribute_name(:friend_notification_intent))
     end
 
     it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
@@ -1097,7 +1139,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
     end
 
-    it "defaults pure exchange notifications to loan intent" do
+    it "passes loan intent through to pure exchange notifications" do
       other_user = create(:user, :random)
       create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
       other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
@@ -1115,6 +1157,7 @@ RSpec.describe "CashTransactions", type: :request do
           { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
         ]
       } ]
+      cash_transaction.friend_notification_intent = "loan"
 
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
 
@@ -2541,6 +2584,7 @@ RSpec.describe "CashTransactions", type: :request do
           date: Date.new(2026, 3, 24),
           month: 3,
           year: 2026,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: sender.built_in_category("EXCHANGE").id }
           ],
@@ -3423,6 +3467,7 @@ RSpec.describe "CashTransactions", type: :request do
         month: 6,
         year: 2026,
         price: -70_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: user.built_in_category("EXCHANGE").id }
         ],
@@ -3455,6 +3500,7 @@ RSpec.describe "CashTransactions", type: :request do
         month: 6,
         year: 2026,
         price: 70_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: receiver.built_in_category("EXCHANGE").id }
         ],
@@ -3550,6 +3596,7 @@ RSpec.describe "CashTransactions", type: :request do
         month: 6,
         year: 2026,
         price: -20_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: user.built_in_category("EXCHANGE").id }
         ],
@@ -3605,6 +3652,7 @@ RSpec.describe "CashTransactions", type: :request do
         month: 6,
         year: 2026,
         price: 20_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: receiver.built_in_category("EXCHANGE").id }
         ],

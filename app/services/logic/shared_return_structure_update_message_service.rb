@@ -125,6 +125,7 @@ module Logic
           is_payer: entity_transaction.is_payer,
           price: entity_transaction.price,
           price_to_be_returned: entity_transaction.price_to_be_returned,
+          loan_return_percentage: entity_transaction.loan_return_percentage,
           exchanges_count: entity_transaction.exchanges_count,
           exchanges_attributes: []
         }
@@ -149,7 +150,7 @@ module Logic
     end
 
     def notification_reference_family
-      transaction.send(:notification_reference_family)
+      transaction.notification_message_reference_family
     end
 
     def reference_scope_for(references)

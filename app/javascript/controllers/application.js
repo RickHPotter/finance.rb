@@ -37,8 +37,7 @@ document.addEventListener("keyup", (e) => {
     return
   }
 
-  // SCROLL TO TOP
-  if (key === "t") {
+  if (key === "p") {
     e.preventDefault()
     document.querySelector("#tabs").scrollIntoView({ behavior: "smooth", block: "center" })
 

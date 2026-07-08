@@ -126,6 +126,7 @@ module Params
           entity_id: entity_transaction.entity_id,
           price: entity_transaction.price,
           price_to_be_returned: is_payer_option ? entity_transaction.price_to_be_returned : 0,
+          loan_return_percentage: entity_transaction.loan_return_percentage,
           exchanges_attributes: exchanges
         }
       end

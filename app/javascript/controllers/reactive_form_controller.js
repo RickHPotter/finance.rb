@@ -691,12 +691,7 @@ export default class extends Controller {
     this.exchangeIntentWrapperTarget.classList.toggle("hidden", !hasExchangeCategory)
 
     if (!hasExchangeCategory) {
-      this.exchangeIntentInputTarget.value = "loan"
-      return
-    }
-
-    if (!this.exchangeIntentInputTarget.value) {
-      this.exchangeIntentInputTarget.value = "loan"
+      this.exchangeIntentInputTarget.value = ""
     }
   }
 

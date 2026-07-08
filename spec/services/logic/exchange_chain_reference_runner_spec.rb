@@ -143,6 +143,7 @@ RSpec.describe Logic::ExchangeChainReferenceRunner do
         month: 3,
         year: 2026,
         price: -2_000,
+        friend_notification_intent: "reimbursement",
         category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
         entity_transactions_attributes: [ { entity_id: sender_entity.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 18), month: 3, year: 2026, price: -2_000, paid: false } ]

@@ -75,7 +75,7 @@ module Logic
     end
 
     def notification_reference_family
-      [ *transaction.send(:notification_reference_family), counterpart_transaction ].compact
+      [ *transaction.notification_message_reference_family, counterpart_transaction ].compact
     end
 
     def reference_scope_for(references)

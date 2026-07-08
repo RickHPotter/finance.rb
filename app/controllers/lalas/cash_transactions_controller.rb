@@ -94,7 +94,7 @@ class Lalas::CashTransactionsController < LalasController
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price _destroy] }
       ]
     )

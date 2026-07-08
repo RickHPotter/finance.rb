@@ -194,6 +194,7 @@ RSpec.describe "CashInstallments", type: :request do
       month: 3,
       year: 2026,
       price: -2_000,
+      friend_notification_intent: "reimbursement",
       category_transactions_attributes: [
         { category_id: sender.built_in_category("EXCHANGE").id }
       ],
@@ -735,6 +736,7 @@ RSpec.describe "CashInstallments", type: :request do
         month: 3,
         year: 2026,
         price: -20_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: sender.built_in_category("EXCHANGE").id }
         ],
@@ -787,6 +789,7 @@ RSpec.describe "CashInstallments", type: :request do
         month: 3,
         year: 2026,
         price: -20_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: receiver.built_in_category("EXCHANGE").id }
         ],

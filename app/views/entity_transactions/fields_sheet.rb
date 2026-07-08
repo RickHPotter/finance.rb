@@ -2,7 +2,7 @@
 
 module Views
   module EntityTransactions
-    class FieldsSheet < Components::Base
+    class FieldsSheet < Components::Base # rubocop:disable Metrics/ClassLength
       include Phlex::Rails::Helpers::RadioButtonTag
 
       include ComponentsHelper
@@ -108,6 +108,42 @@ module Views
                     ) do
                       cached_icon(:equals)
                     end
+                  end
+                end
+              end
+
+              div do
+                field_id = "entity_transaction_loan_return_percentage_#{form.index}"
+                bold_label(form, :loan_return_percentage, field_id)
+
+                div(class: "flex gap-1 justify-between") do
+                  div(class: "flex-1") do
+                    TextField \
+                      form, :loan_return_percentage, type: :number, svg: :number, min: 0, step: "0.0001", id: field_id, class: "font-graduate",
+                                                     data: {
+                                                       controller: "input-select",
+                                                       entity_transaction_target: :loanReturnPercentageInput,
+                                                       original_value: entity_transaction.loan_return_percentage,
+                                                       action: "click->input-select#select input->entity-transaction#applyLoanReturnPercentage"
+                                                     }
+                  end
+
+                  Button(
+                    type: :button,
+                    class: modal_icon_button_class,
+                    title: I18n.t("helpers.submit.reset", default: "Reset"),
+                    data: { action: "entity-transaction#resetLoanReturnPercentage" }
+                  ) do
+                    cached_icon(:refresh)
+                  end
+
+                  Button(
+                    type: :button,
+                    class: modal_icon_button_class,
+                    title: I18n.t("activerecord.attributes.entity_transaction.loan_return_percentage"),
+                    data: { action: "entity-transaction#matchLoanReturnPercentage" }
+                  ) do
+                    cached_icon(:calculator)
                   end
                 end
               end

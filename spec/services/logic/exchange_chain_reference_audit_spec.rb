@@ -34,6 +34,7 @@ RSpec.describe Logic::ExchangeChainReferenceAudit do
         user: sender,
         context: sender.main_context,
         user_bank_account: sender_bank_account,
+        friend_notification_intent: "reimbursement",
         description: "Reimbursement source",
         date: Date.new(2026, 3, 18),
         month: 3,

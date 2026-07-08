@@ -285,6 +285,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
           month: 6,
           year: 2026,
           price: 2_302,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: exchange_category.id }
           ],

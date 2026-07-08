@@ -49,10 +49,10 @@ class Views::Admin::Settings::CardExchangeProjectionAudit < Views::Base
       div(class: "grid gap-3 md:grid-cols-3") do
         summary_stat(I18n.t("settings.card_exchange_projection_audit.summary.rows"), rows.count)
         summary_stat(I18n.t("settings.card_exchange_projection_audit.summary.shape_mismatches"), rows.count do |row|
-          row[:issues].include?("projection_shape_mismatch") || row[:issues].include?("source_allocation_mismatch")
+          row.fetch(:warnings, []).include?("projection_shape_mismatch") || row[:issues].include?("source_allocation_mismatch")
         end)
         summary_stat(I18n.t("settings.card_exchange_projection_audit.summary.duplicate_buckets"), rows.count do |row|
-          row[:issues].include?("duplicate_projection_buckets")
+          row.fetch(:warnings, []).include?("duplicate_projection_buckets")
         end)
       end
     end
@@ -102,6 +102,9 @@ class Views::Admin::Settings::CardExchangeProjectionAudit < Views::Base
         div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
           row[:issues].each do |issue|
             meta_chip(I18n.t("settings.card_exchange_projection_audit.issue_codes.#{issue}"), issue_chip_class(issue))
+          end
+          row.fetch(:warnings, []).each do |warning|
+            meta_chip(I18n.t("settings.card_exchange_projection_audit.issue_codes.#{warning}"), warning_chip_class)
           end
         end
       end
@@ -202,6 +205,10 @@ class Views::Admin::Settings::CardExchangeProjectionAudit < Views::Base
     return "bg-rose-100 text-rose-800" if issue.include?("mismatch")
 
     "bg-amber-100 text-amber-900"
+  end
+
+  def warning_chip_class
+    "bg-sky-100 text-sky-900"
   end
 
   def current_status_filter

@@ -301,6 +301,7 @@ module Logic
         is_payer: target_entity_transaction&.is_payer.nil? ? source_entity_transaction.is_payer : target_entity_transaction.is_payer,
         price: source_entity_transaction.price * source_sign_multiplier,
         price_to_be_returned: source_entity_transaction.price_to_be_returned * source_sign_multiplier,
+        loan_return_percentage: source_entity_transaction.loan_return_percentage,
         exchanges_count: source_entity_transaction.exchanges_count,
         exchanges_attributes: serialize_counterpart_exchanges(target_entity_transaction, source_entity_transaction, source_sign_multiplier)
       }
@@ -410,7 +411,7 @@ module Logic
         receiver,
         scenario_key: installment.cash_transaction.context.scenario_key
       )
-      reference_family = installment.cash_transaction.send(:notification_reference_family)
+      reference_family = installment.cash_transaction.notification_message_reference_family
 
       conversation.messages
                   .merge(reference_scope_for(reference_family))
@@ -430,7 +431,7 @@ module Logic
     end
 
     def supersede_previous_messages(conversation, new_message)
-      reference_family = installment.cash_transaction.send(:notification_reference_family)
+      reference_family = installment.cash_transaction.notification_message_reference_family
       previous_messages = conversation.messages
                                       .merge(reference_scope_for(reference_family))
                                       .where(superseded_by_id: nil)

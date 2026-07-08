@@ -155,7 +155,10 @@ class Views::CashTransactions::FormControls < Views::Base
           [ model_attribute(cash_transaction, "friend_notification_intents.loan"), "loan" ],
           [ model_attribute(cash_transaction, "friend_notification_intents.reimbursement"), "reimbursement" ]
         ],
-        { selected: cash_transaction.effective_friend_notification_intent.presence || "loan" },
+        {
+          include_blank: true,
+          selected: cash_transaction.effective_friend_notification_intent.presence || params.dig(:cash_transaction, :friend_notification_intent).presence
+        },
         class: input_class_without_icon,
         data: { reactive_form_target: :exchangeIntentInput }
       )

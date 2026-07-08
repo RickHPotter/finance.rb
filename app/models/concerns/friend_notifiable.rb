@@ -13,6 +13,19 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     after_destroy -> { notify_friends(:destroy) }
   end
 
+  def notification_message_reference_family
+    family_root =
+      if respond_to?(:reference_root_transaction)
+        reference_root_transaction.presence || self
+      else
+        self
+      end
+
+    return [ family_root ].compact unless family_root.is_a?(CashTransaction) || family_root.is_a?(CardTransaction)
+
+    CashTransaction.reference_family_for(family_root)
+  end
+
   # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
 
@@ -273,19 +286,6 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
                                     .where.not(id: new_message.id)
 
     previous_messages.update_all(superseded_by_id: new_message.id)
-  end
-
-  def notification_message_reference_family
-    family_root =
-      if respond_to?(:reference_root_transaction)
-        reference_root_transaction.presence || self
-      else
-        self
-      end
-
-    return [ family_root ].compact unless family_root.is_a?(CashTransaction) || family_root.is_a?(CardTransaction)
-
-    CashTransaction.reference_family_for(family_root)
   end
 
   def reference_scope_for(references)

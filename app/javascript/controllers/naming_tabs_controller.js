@@ -5,6 +5,8 @@ export default class extends Controller {
   static values = { current: String }
 
   connect() {
+    if (this.hasCurrentValue && this.currentValue === "") return
+
     const initial = this.currentValue || this.tabTargets[0]?.dataset.namingTabsName
     if (initial) this.show(initial)
   }

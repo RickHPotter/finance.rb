@@ -330,10 +330,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def assign_message_context
     @cash_transaction.assign_attributes(
-      effective_cash_transaction_params.slice(
-        :source_message_id,
-        :friend_notification_intent
-      )
+      message_context_attributes
     )
 
     counterpart_reference = canonical_message_reference_transactable
@@ -356,10 +353,21 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
+  def message_context_attributes
+    attributes = effective_cash_transaction_params.slice(:source_message_id, :friend_notification_intent)
+    attributes[:friend_notification_intent] = effective_message_intent if attributes[:friend_notification_intent].blank? && source_message.present?
+
+    return attributes if read_request?
+    return attributes if effective_category_names.include?("EXCHANGE")
+
+    attributes.except(:friend_notification_intent)
+  end
+
   def assignable_cash_transaction_params
     params = sanitized_cash_transaction_params_for_assignment(
       deduplicated_cash_transaction_params(effective_cash_transaction_params).except(:source_message_id)
     )
+    params = strip_non_exchange_friend_notification_intent(params)
     counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       return params.merge(reference_transactable_type: counterpart_reference.class.name,
@@ -368,6 +376,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return params unless preserve_existing_reference_transactable?
 
     params.except(:reference_transactable_type, :reference_transactable_id)
+  end
+
+  def strip_non_exchange_friend_notification_intent(params)
+    return params if effective_category_names.include?("EXCHANGE")
+
+    params.except(:friend_notification_intent)
   end
 
   def preserve_existing_reference_transactable?
@@ -438,8 +452,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def effective_message_intent
     effective_cash_transaction_params[:friend_notification_intent].presence ||
-      source_message.replay_payload&.fetch("intent", nil).presence ||
-      source_message.reference_transactable.try(:effective_friend_notification_intent)
+      source_message&.replay_payload&.fetch("intent", nil).presence ||
+      source_message&.reference_transactable.try(:effective_friend_notification_intent)
   end
 
   def source_message_id
@@ -845,7 +859,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }
       ]
     )
@@ -863,7 +877,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def should_hydrate_from_source_message?
-    source_message.present? && request.get? && cash_transaction_params.keys == [ "source_message_id" ]
+    source_message.present? && read_request? && cash_transaction_params.keys == [ "source_message_id" ]
+  end
+
+  def read_request?
+    request.get? || request.head?
   end
 
   def replay_cash_transaction_params_from_source

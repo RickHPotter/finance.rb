@@ -1218,6 +1218,7 @@ RSpec.describe "CardTransactions", type: :request do
         date: Date.new(2026, 3, 20),
         month: 4,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: gigi.built_in_category("EXCHANGE").id } ],
         entity_transactions_attributes: [ { entity_id: gigi_entity_for_rikki.id, is_payer: true, price: 6_000, price_to_be_returned: 6_000 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 20), month: 4, year: 2026, price: -6_000 } ]
@@ -1917,6 +1918,8 @@ RSpec.describe "CardTransactions", type: :request do
     end
 
     it "keeps supporting legacy order_by while the new sort contract is rolling out" do
+      user_card_one.update!(due_date_day: 20, days_until_due_date: 5)
+
       late = create(
         :card_transaction,
         user:,

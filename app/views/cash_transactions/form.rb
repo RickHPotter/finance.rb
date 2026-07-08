@@ -36,8 +36,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
                           value: reference_transactable_type_value
         form.hidden_field :reference_transactable_id,
                           value: reference_transactable_id_value
-        form.hidden_field :friend_notification_intent,
-                          value: cash_transaction.effective_friend_notification_intent || params.dig(:cash_transaction, :friend_notification_intent)
+        if hidden_friend_notification_intent_value.present?
+          form.hidden_field :friend_notification_intent,
+                            value: hidden_friend_notification_intent_value
+        end
         form.hidden_field :source_message_id,
                           value: cash_transaction.source_message_id
 
@@ -284,5 +286,17 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
   def submit_row_ghost_button_class
     secondary_submit_row_button_class("min-w-64")
+  end
+
+  def hidden_friend_notification_intent_value
+    return params.dig(:cash_transaction, :friend_notification_intent).presence || cash_transaction.effective_friend_notification_intent if source_message_context?
+
+    return cash_transaction.effective_friend_notification_intent if cash_transaction.persisted?
+
+    nil
+  end
+
+  def source_message_context?
+    cash_transaction.source_message_id.present? || params.dig(:cash_transaction, :source_message_id).present?
   end
 end
