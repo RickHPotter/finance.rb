@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_12_122000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -344,6 +344,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
     t.index ["user_id"], name: "index_messages_on_user_id"
   end
 
+  create_table "piggy_banks", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "return_cash_transaction_id"
+    t.datetime "return_date", null: false
+    t.integer "return_price", null: false
+    t.bigint "source_cash_transaction_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["return_cash_transaction_id"], name: "index_piggy_banks_on_return_cash_transaction_id"
+    t.index ["source_cash_transaction_id"], name: "index_piggy_banks_on_source_cash_transaction_id", unique: true
+    t.check_constraint "return_price > 0", name: "piggy_banks_return_price_positive"
+  end
+
   create_table "references", force: :cascade do |t|
     t.bigint "context_id", null: false
     t.datetime "created_at", null: false
@@ -465,6 +477,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "messages", column: "superseded_by_id"
   add_foreign_key "messages", "users"
+  add_foreign_key "piggy_banks", "cash_transactions", column: "return_cash_transaction_id"
+  add_foreign_key "piggy_banks", "cash_transactions", column: "source_cash_transaction_id"
   add_foreign_key "references", "contexts"
   add_foreign_key "references", "user_cards"
   add_foreign_key "subscriptions", "users"

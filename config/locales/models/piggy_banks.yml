@@ -1,0 +1,61 @@
+en:
+  piggy_banks:
+    attach_return: Attach to Existing
+    create_new_return: Create a new return
+    create_return: Create New Return
+    linked_return: Linked Piggy Bank Return
+    return_mode: Return destination
+    select_return: Select an open return
+    source: Piggy Bank Source
+  activerecord:
+    models:
+      piggy_bank:
+        one: Piggy Bank
+        other: Piggy Banks
+    attributes:
+      piggy_bank:
+        return_date: Return Date
+        return_price: Return Price
+        return_cash_transaction_id: Existing Return
+    errors:
+      models:
+        piggy_bank:
+          attributes:
+            base:
+              paid_history_locked: "Paid Piggy Bank return history cannot be deleted."
+            return_cash_transaction:
+              closed: "is already fully settled and cannot receive another contribution"
+              entity_mismatch: "must use the same bank entity as the Piggy Bank contribution"
+            return_price:
+              insufficient_for_paid_history: "cannot reduce the grouped return below its paid amount"
+
+pt-BR:
+  piggy_banks:
+    attach_return: Vincular a Existente
+    create_new_return: Criar um novo retorno
+    create_return: Criar Novo Retorno
+    linked_return: Retorno do Cofrinho Vinculado
+    return_mode: Destino do retorno
+    select_return: Selecione um retorno aberto
+    source: Cofrinho de Origem
+  activerecord:
+    models:
+      piggy_bank:
+        one: Cofrinho
+        other: Cofrinhos
+    attributes:
+      piggy_bank:
+        return_date: Data do Retorno
+        return_price: Valor do Retorno
+        return_cash_transaction_id: Retorno Existente
+    errors:
+      models:
+        piggy_bank:
+          attributes:
+            base:
+              paid_history_locked: "O histórico pago do Retorno do Cofrinho não pode ser apagado."
+            return_cash_transaction:
+              closed: "já está totalmente liquidado e não pode receber outra contribuição"
+              entity_mismatch: "deve usar a mesma entidade bancária da contribuição do Cofrinho"
+            return_price:
+              insufficient_for_paid_history: "não pode reduzir o retorno agrupado abaixo do valor já pago"

@@ -14,6 +14,7 @@ class CardTransaction < ApplicationRecord
   include HasAdvancePayments
   include Budgetable
   include FriendNotifiable
+  include PiggyBankCategorizable
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation, :skip_subscription_installment_sync
