@@ -79,6 +79,21 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("actions.add_to_subscription"))
     end
 
+    it "renders budget bulk action controls on the index" do
+      get cash_transactions_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('data-bulk-selection-kind="budget"')
+      expect(response.body).to include('data-bulk-ids-kind="budget"')
+      expect(response.body).to include('data-bulk-form-id="bulk_budget_make_inclusive_form"')
+      expect(response.body).to include('name="return_to"')
+      expect(response.body).to include('value="/cash_transactions"')
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_inclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.make_exclusive"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.first_installment_only"))
+      expect(response.body).to include(I18n.t("bulk_actions.budgets.all_installments"))
+    end
+
     it "uses canonical sort fields on the index form" do
       get cash_transactions_path
 
@@ -284,6 +299,345 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).not_to include(cash_transaction_path(foreign_transaction))
+    end
+
+    it "renders card-bound projection exchanges and can resync a mismatched projection total" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Projection source",
+        price: -5_000,
+        date: Time.zone.parse("2026-08-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-08-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      payer = source_card.entity_transactions.first
+      payer.update_columns(entity_id: entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000, exchanges_count: 1)
+      projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] LALA - CARD",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 6_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 6_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      projection.categories = [ exchange_return_category ]
+      projection.save!
+      Exchange.insert({
+                        entity_transaction_id: payer.id,
+                        cash_transaction_id: projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 5_000,
+                        starting_price: 5_000,
+                        date: Time.zone.parse("2026-08-10 12:00:00"),
+                        month: 8,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      get cash_transaction_path(projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.title"))
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+      expect(response.body).to include(card_transaction_path(source_card))
+
+      patch fix_exchange_projection_cash_transaction_path(projection)
+
+      expect(response).to redirect_to(cash_transaction_path(projection))
+      expect(projection.reload.price).to eq(5_000)
+      expect(projection.cash_installments.reload.sum(:price)).to eq(5_000)
+    end
+
+    it "shows the fix button when card-bound projection exchange buckets are stale even if totals match" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Merged bill source",
+        price: -5_000,
+        date: Time.zone.parse("2026-06-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-06-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      payer = source_card.entity_transactions.first
+      payer.update_columns(entity_id: entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000, exchanges_count: 1)
+      stale_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        cash_transaction_type: "Exchange",
+        description: "[ 07/2026 ] LALA - CARD",
+        date: Time.zone.parse("2026-07-10 12:00:00"),
+        month: 7,
+        year: 2026,
+        price: 5_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 5_000, date: Time.zone.parse("2026-07-10 12:00:00"), month: 7, year: 2026)
+        ]
+      )
+      stale_projection.categories = [ exchange_return_category ]
+      stale_projection.save!
+      Exchange.insert({
+                        entity_transaction_id: payer.id,
+                        cash_transaction_id: stale_projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 5_000,
+                        starting_price: 5_000,
+                        date: Time.zone.parse("2026-07-10 12:00:00"),
+                        month: 7,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+      target_source_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Target bill source",
+        price: -3_000,
+        date: Time.zone.parse("2026-07-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Time.zone.parse("2026-07-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_payer = target_source_card.entity_transactions.first
+      target_payer.update_columns(entity_id: entity.id, is_payer: true, price: 3_000, price_to_be_returned: 3_000, exchanges_count: 1)
+      target_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 3_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 3_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      target_projection.categories = [ exchange_return_category ]
+      target_projection.save!
+      Exchange.insert({
+                        entity_transaction_id: target_payer.id,
+                        cash_transaction_id: target_projection.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 3_000,
+                        starting_price: 3_000,
+                        date: Time.zone.parse("2026-08-10 12:00:00"),
+                        month: 8,
+                        year: 2026,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      get cash_transaction_path(stale_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      patch fix_exchange_projection_cash_transaction_path(stale_projection)
+
+      expect(response).to redirect_to(cash_transaction_path(target_projection))
+      expect(CashTransaction.exists?(stale_projection.id)).to be(false)
+      expect(target_projection.reload.month).to eq(8)
+      expect(target_projection.price).to eq(8_000)
+      expect(target_projection.exchanges.reload.pluck(:month).uniq).to eq([ 8 ])
+      expect(target_projection.exchanges.count).to eq(2)
+    end
+
+    it "rehomes card-bound projection exchanges that are attached to the wrong cash transaction bucket" do
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      august_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "August source",
+        price: -5_000,
+        date: Time.zone.parse("2026-08-03 12:00:00"),
+        month: 8,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -5_000, date: Time.zone.parse("2026-08-03 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      september_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "September source",
+        price: -7_000,
+        date: Time.zone.parse("2026-09-03 12:00:00"),
+        month: 9,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -7_000, date: Time.zone.parse("2026-09-03 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      october_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "October source",
+        price: -4_000,
+        date: Time.zone.parse("2026-10-03 12:00:00"),
+        month: 10,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -4_000, date: Time.zone.parse("2026-10-03 12:00:00"), month: 10, year: 2026)
+        ]
+      )
+      existing_september_source = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "Existing September source",
+        price: -3_000,
+        date: Time.zone.parse("2026-09-04 12:00:00"),
+        month: 9,
+        year: 2026,
+        card_installments: [
+          build(:card_installment, number: 1, price: -3_000, date: Time.zone.parse("2026-09-04 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      [ august_source, september_source, october_source, existing_september_source ].each do |source|
+        source.entity_transactions.first.update_columns(
+          entity_id: entity.id,
+          is_payer: true,
+          price: source.price.abs,
+          price_to_be_returned: source.price.abs,
+          exchanges_count: 1
+        )
+      end
+      august_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 08/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-08-10 12:00:00"),
+        month: 8,
+        year: 2026,
+        price: 16_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 16_000, date: Time.zone.parse("2026-08-10 12:00:00"), month: 8, year: 2026)
+        ]
+      )
+      september_projection = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        user_card:,
+        cash_transaction_type: "Exchange",
+        description: "[ 09/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        date: Time.zone.parse("2026-09-10 12:00:00"),
+        month: 9,
+        year: 2026,
+        price: 3_000,
+        cash_installments: [
+          build(:cash_installment, number: 1, price: 3_000, date: Time.zone.parse("2026-09-10 12:00:00"), month: 9, year: 2026)
+        ]
+      )
+      august_projection.categories = [ exchange_return_category ]
+      september_projection.categories = [ exchange_return_category ]
+      august_projection.save!
+      september_projection.save!
+
+      [
+        [ august_source, august_projection, 5_000, 8 ],
+        [ september_source, august_projection, 7_000, 9 ],
+        [ october_source, august_projection, 4_000, 10 ],
+        [ existing_september_source, september_projection, 3_000, 9 ]
+      ].each do |source, projection, price, month|
+        Exchange.insert({
+                          entity_transaction_id: source.entity_transactions.first.id,
+                          cash_transaction_id: projection.id,
+                          exchange_type: Exchange.exchange_types.fetch(:monetary),
+                          bound_type: "card_bound",
+                          number: 1,
+                          price:,
+                          starting_price: price,
+                          date: Time.zone.parse("2026-#{month.to_s.rjust(2, '0')}-10 12:00:00"),
+                          month:,
+                          year: 2026,
+                          exchanges_count: 1,
+                          created_at: Time.current,
+                          updated_at: Time.current
+                        })
+      end
+
+      get cash_transaction_path(august_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      get cash_transaction_path(september_projection)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
+
+      patch fix_exchange_projection_cash_transaction_path(august_projection)
+
+      october_projection = CashTransaction.exchange_return.find_by!(
+        user_card:,
+        description: "[ 10/2026 ] #{entity.entity_name} - #{user_card.user_card_name}",
+        month: 10,
+        year: 2026
+      )
+
+      expect(response).to redirect_to(cash_transaction_path(august_projection))
+      expect(august_projection.reload.price).to eq(5_000)
+      expect(august_projection.exchanges.reload.pluck(:month).uniq).to eq([ 8 ])
+      expect(september_projection.reload.price).to eq(10_000)
+      expect(september_projection.exchanges.reload.pluck(:month).uniq).to eq([ 9 ])
+      expect(september_projection.exchanges.count).to eq(2)
+      expect(october_projection.price).to eq(4_000)
+      expect(october_projection.exchanges.reload.pluck(:month).uniq).to eq([ 10 ])
     end
   end
 
@@ -667,6 +1021,7 @@ RSpec.describe "CashTransactions", type: :request do
           year: 2026,
           user_id: user.id,
           user_bank_account_id: user_bank_account.id,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: exchange_category.id }
           ],
@@ -696,6 +1051,47 @@ RSpec.describe "CashTransactions", type: :request do
 
       expect(entity_transaction.exchanges.count).to eq(1)
       expect(entity_transaction.exchanges_count).to eq(1)
+    end
+
+    it "rejects exchange cash transaction creation until the notification intent is selected" do
+      exchange_category = user.built_in_category("EXCHANGE")
+      receiver = create(:user, :random)
+      receiver_entity = create(:entity, user:, entity_name: "RECEIVER", entity_user: receiver)
+      create(:entity, user: receiver, entity_name: "ME", entity_user: user)
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Exchange without intent",
+            price: 2_000,
+            date: Date.new(2026, 4, 27),
+            month: 4,
+            year: 2026,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            category_transactions_attributes: [
+              { category_id: exchange_category.id }
+            ],
+            cash_installments_attributes: [
+              { number: 1, date: Date.new(2026, 4, 27), month: 4, year: 2026, price: 2_000, paid: false }
+            ],
+            entity_transactions_attributes: [
+              {
+                entity_id: receiver_entity.id,
+                is_payer: true,
+                price: -2_000,
+                price_to_be_returned: -2_000,
+                exchanges_attributes: [
+                  { number: 1, exchange_type: "monetary", bound_type: "standalone", price: -2_000, date: Date.new(2026, 4, 28), month: 4, year: 2026 }
+                ]
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(CashTransaction.human_attribute_name(:friend_notification_intent))
     end
 
     it "passes reimbursement intent through to exchange notifications with the correct payload shape" do
@@ -743,7 +1139,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
     end
 
-    it "defaults pure exchange notifications to loan intent" do
+    it "passes loan intent through to pure exchange notifications" do
       other_user = create(:user, :random)
       create(:entity, user:, entity_name: "OTHER USER", entity_user: other_user)
       other_user_entity = create(:entity, user: other_user, entity_name: "ME", entity_user: user)
@@ -761,6 +1157,7 @@ RSpec.describe "CashTransactions", type: :request do
           { price: -20_000, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year }
         ]
       } ]
+      cash_transaction.friend_notification_intent = "loan"
 
       post cash_transactions_path, params: cash_transaction.params, headers: turbo_stream_headers
 
@@ -2187,6 +2584,7 @@ RSpec.describe "CashTransactions", type: :request do
           date: Date.new(2026, 3, 24),
           month: 3,
           year: 2026,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: sender.built_in_category("EXCHANGE").id }
           ],
@@ -3050,6 +3448,357 @@ RSpec.describe "CashTransactions", type: :request do
       expect(reference_type_input["value"]).to eq("CashTransaction")
       expect(reference_id_input).to be_present
       expect(reference_id_input["value"]).to eq(sender_return.id.to_s)
+    end
+
+    it "renders replayed exchange rows from an actionable update on a persisted receiver exchange" do
+      receiver = create(:user, :random)
+      sender_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: user.first_name.upcase, entity_user: user)
+      sender_bank_account = create(:user_bank_account, :random, user:)
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver)
+
+      sender_exchange = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Actionable exchange replay source",
+        date: Time.zone.local(2026, 6, 26, 13, 48, 0),
+        month: 6,
+        year: 2026,
+        price: -70_000,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender_entity.id,
+            is_payer: true,
+            price: 70_000,
+            price_to_be_returned: 70_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: 70_000, date: Time.zone.local(2026, 6, 27, 13, 48, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -70_000, date: Time.zone.local(2026, 6, 26, 13, 48, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      sender_return = sender_exchange.first_reference_descendant
+
+      receiver_exchange = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_return,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 26, 13, 48, 0),
+        month: 6,
+        year: 2026,
+        price: 70_000,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: receiver_counterpart.id,
+            is_payer: true,
+            price: -70_000,
+            price_to_be_returned: -70_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -70_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 70_000, date: Time.zone.local(2026, 6, 26, 13, 48, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+
+      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      update_message = conversation.messages.create!(
+        user: user,
+        reference_transactable: sender_exchange,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_exchange.description }
+          },
+          replay: {
+            id: sender_exchange.id,
+            type: "CashTransaction",
+            description: receiver_exchange.description,
+            price: receiver_exchange.price,
+            date: receiver_exchange.date.iso8601,
+            month: receiver_exchange.month,
+            year: receiver_exchange.year,
+            category_ids: [ receiver.built_in_category("EXCHANGE").id ],
+            cash_installments_attributes: [
+              { number: 1, date: receiver_exchange.cash_installments.first.date.iso8601, month: 6, year: 2026, price: 70_000, paid: true }
+            ],
+            entity_transactions_attributes: [
+              {
+                id: receiver_exchange.entity_transactions.first.id,
+                entity_id: receiver_counterpart.id,
+                is_payer: true,
+                price: -70_000,
+                price_to_be_returned: -70_000,
+                exchanges_count: 3,
+                exchanges_attributes: [
+                  { number: 1, date: Time.zone.local(2026, 6, 26, 13, 48, 0).iso8601, month: 6, year: 2026, price: -20_000 },
+                  { number: 2, date: Time.zone.local(2026, 6, 27, 13, 48, 0).iso8601, month: 6, year: 2026, price: -25_000 },
+                  { number: 3, date: Time.zone.local(2026, 7, 27, 13, 48, 0).iso8601, month: 7, year: 2026, price: -25_000 }
+                ]
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      sign_out user
+      sign_in receiver
+
+      get edit_cash_transaction_path(receiver_exchange, cash_transaction: { source_message_id: update_message.id }), headers: turbo_stream_headers
+      document = Nokogiri::HTML.fragment(response.body)
+      rendered_exchange_numbers = document.css("input.exchange_number").reject do |input|
+        input["name"].to_s.include?("NEW_NESTED_RECORD")
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(rendered_exchange_numbers.count).to eq(3)
+      expect(rendered_exchange_numbers.map { |input| input["value"] }).to eq(%w[1 2 3])
+    end
+
+    it "applies replayed exchange rows onto the receiver exchange when correcting a shared loan exchange" do
+      receiver = create(:user, :random)
+      sender_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)
+      receiver_counterpart = create(:entity, user: receiver, entity_name: user.first_name.upcase, entity_user: user)
+      sender_bank_account = create(:user_bank_account, :random, user:)
+      receiver_bank_account = create(:user_bank_account, :random, user: receiver)
+
+      sender_exchange = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        description: "Receiver exchange paid replay source",
+        date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+        month: 6,
+        year: 2026,
+        price: -20_000,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender_entity.id,
+            is_payer: true,
+            price: 20_000,
+            price_to_be_returned: 20_000,
+            exchanges_count: 2,
+            exchanges_attributes: [
+              { number: 1, price: 12_000, date: Time.zone.local(2026, 6, 26, 15, 0, 0), month: 6, year: 2026 },
+              { number: 2, price: 8_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 26, 12, 0, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      sender_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: sender_bank_account,
+        reference_transactable: sender_exchange,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+        month: 6,
+        year: 2026,
+        price: 20_000,
+        category_transactions_attributes: [
+          { category_id: user.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: sender_entity.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 12_000, date: Time.zone.local(2026, 6, 26, 15, 0, 0), month: 6, year: 2026, paid: true },
+          { number: 2, price: 8_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026, paid: false }
+        ]
+      )
+      sender_exchange.entity_transactions.first.exchanges.update_all(cash_transaction_id: sender_return.id)
+
+      receiver_exchange = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: sender_return,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+        month: 6,
+        year: 2026,
+        price: 20_000,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE").id }
+        ],
+        entity_transactions_attributes: [
+          {
+            entity_id: receiver_counterpart.id,
+            is_payer: true,
+            price: -20_000,
+            price_to_be_returned: -20_000,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026 }
+            ]
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: 20_000, date: Time.zone.local(2026, 6, 26, 12, 0, 0), month: 6, year: 2026, paid: true }
+        ]
+      )
+      receiver_return = create(
+        :cash_transaction,
+        user: receiver,
+        context: receiver.main_context,
+        user_bank_account: receiver_bank_account,
+        reference_transactable: receiver_exchange,
+        description: sender_exchange.description,
+        date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+        month: 6,
+        year: 2026,
+        price: -20_000,
+        category_transactions_attributes: [
+          { category_id: receiver.built_in_category("EXCHANGE RETURN").id }
+        ],
+        entity_transactions_attributes: [
+          { entity_id: receiver_counterpart.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        ],
+        cash_installments_attributes: [
+          { number: 1, price: -20_000, date: Time.zone.local(2026, 6, 27, 0, 0, 0), month: 6, year: 2026, paid: false }
+        ]
+      )
+      receiver_exchange.entity_transactions.first.exchanges.update_all(cash_transaction_id: receiver_return.id)
+
+      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      update_message = conversation.messages.create!(
+        user: user,
+        reference_transactable: sender_exchange,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            receiver_first_name: receiver.first_name,
+            transaction_type: "CashTransaction",
+            details: { description: receiver_exchange.description }
+          },
+          replay: {
+            id: sender_exchange.id,
+            type: "CashTransaction",
+            intent: "loan",
+            description: receiver_exchange.description,
+            price: receiver_exchange.price,
+            date: receiver_exchange.date.iso8601,
+            month: receiver_exchange.month,
+            year: receiver_exchange.year,
+            category_ids: [ receiver.built_in_category("EXCHANGE").id ],
+            entity_ids: [ receiver_counterpart.id ],
+            entity_transactions_attributes: [
+              {
+                id: receiver_exchange.entity_transactions.first.id,
+                entity_id: receiver_counterpart.id,
+                is_payer: true,
+                price: -20_000,
+                price_to_be_returned: -20_000,
+                exchanges_count: 2,
+                exchanges_attributes: [
+                  { id: receiver_exchange.entity_transactions.first.exchanges.first.id, number: 1, date: Time.zone.local(2026, 6, 26, 15, 0, 0).iso8601, month: 6,
+                    year: 2026, price: -12_000, paid: true },
+                  { number: 2, date: Time.zone.local(2026, 6, 27, 0, 0, 0).iso8601, month: 6, year: 2026, price: -8_000, paid: false }
+                ]
+              }
+            ]
+          }
+        }.to_json
+      )
+
+      sign_out user
+      sign_in receiver
+
+      put cash_transaction_path(receiver_exchange), params: {
+        cash_transaction: {
+          description: receiver_exchange.description,
+          price: 20_000,
+          date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+          month: 6,
+          year: 2026,
+          user_id: receiver.id,
+          user_bank_account_id: receiver_bank_account.id,
+          reference_transactable_type: "CashTransaction",
+          reference_transactable_id: sender_exchange.id,
+          source_message_id: update_message.id,
+          category_transactions_attributes: receiver_exchange.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          entity_transactions_attributes: [
+            {
+              id: receiver_exchange.entity_transactions.first.id,
+              entity_id: receiver_counterpart.id,
+              is_payer: true,
+              price: -20_000,
+              price_to_be_returned: -20_000,
+              exchanges_count: 2,
+              exchanges_attributes: [
+                {
+                  id: receiver_exchange.entity_transactions.first.exchanges.first.id,
+                  number: 1,
+                  date: Time.zone.local(2026, 6, 26, 15, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -12_000,
+                  paid: true
+                },
+                {
+                  number: 2,
+                  date: Time.zone.local(2026, 6, 27, 0, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -8_000,
+                  paid: false
+                }
+              ]
+            }
+          ],
+          cash_installments_attributes: [
+            {
+              id: receiver_exchange.cash_installments.first.id,
+              number: 1,
+              date: Time.zone.local(2026, 6, 26, 12, 0, 0),
+              month: 6,
+              year: 2026,
+              price: 20_000,
+              paid: true
+            }
+          ]
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(receiver_exchange.reload.entity_transactions.first.exchanges.order(:number).pluck(:price)).to eq([ -12_000, -8_000 ])
     end
 
     it "preserves the sender shared-return parent and does not emit an echo update when applying a receiver-originated structural correction" do

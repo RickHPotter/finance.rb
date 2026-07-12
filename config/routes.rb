@@ -81,6 +81,7 @@ Rails.application.routes.draw do
     member do
       get :duplicate
       patch :report_payment_failure
+      patch :fix_exchange_projection
     end
 
     collection do
@@ -108,6 +109,8 @@ Rails.application.routes.draw do
 
     collection do
       get :month_year
+      patch :bulk_update
+      delete :bulk_destroy
     end
   end
 
@@ -145,9 +148,14 @@ Rails.application.routes.draw do
 
     resource :settings, only: [] do
       get :exchange_audit
+      get :exchange_return_audit_misplaced_loans
       get :exchange_return_audit
+      get :exchange_return_audit_issue_bucket
       get :card_exchange_projection_audit
       patch :apply_exchange_audit
+      patch :convert_exchange_audit_loan_intent
+      patch :convert_misplaced_loan
+      patch :mark_exchange_return_source_as_fee
     end
   end
 

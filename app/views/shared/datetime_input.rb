@@ -48,7 +48,7 @@ class Views::Shared::DatetimeInput < Views::Base
       div(class: datetime_layout_class) do
         div(class: date_container_class) do
           div(class: calendar ? "hidden" : "relative") do
-            div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+            div(class: "pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white") do
               cached_icon :calendar
             end
 
@@ -59,7 +59,7 @@ class Views::Shared::DatetimeInput < Views::Base
               disabled:,
               autofocus: autofocus,
               aria: { label: I18n.t("datetime_input.date") },
-              class: "#{input_class} datetime-input-date font-graduate",
+              class: "#{input_class} datetime-input-date font-graduate dark:font-mono",
               data: {
                 datetime_input_target: "dateInput",
                 controller: date_input_controllers,
@@ -76,7 +76,7 @@ class Views::Shared::DatetimeInput < Views::Base
 
           unless calendar
             p(
-              class: "mt-0.5 min-h-4 px-1 text-2xs leading-4 font-graduate text-muted-foreground",
+              class: "mt-0.5 min-h-4 px-1 font-graduate text-2xs leading-4 text-muted-foreground dark:font-mono dark:text-slate-500",
               data: { datetime_input_target: "weekdayLabel" }
             )
           end
@@ -85,7 +85,7 @@ class Views::Shared::DatetimeInput < Views::Base
             Calendar(
               input_id: "##{id}_date_input",
               selected_date: date_value,
-              class: "w-full rounded-md border border-slate-200 bg-white p-3 shadow-sm"
+              class: "w-full rounded-md border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             )
           end
         end
@@ -93,7 +93,7 @@ class Views::Shared::DatetimeInput < Views::Base
         if show_time
           div(class: calendar ? "w-full" : "w-28 shrink-0") do
             div(class: calendar ? "hidden" : "relative") do
-              div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+              div(class: "pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white") do
                 cached_icon :clock
               end
 
@@ -108,7 +108,7 @@ class Views::Shared::DatetimeInput < Views::Base
                 placeholder: "20:20",
                 maxlength: 5,
                 aria: { label: I18n.t("datetime_input.time") },
-                class: "#{input_class} text-center font-graduate",
+                class: "#{input_class} text-center font-graduate dark:font-mono",
                 data: {
                   controller: time_input_controllers,
                   autofocus_select_value: visible_time_autofocus?,

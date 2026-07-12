@@ -19,7 +19,7 @@ gem "stimulus-rails"
 gem "tailwindcss-rails"
 gem "turbo-rails"
 
-gem "image_processing", "~> 1.2"
+gem "image_processing"
 
 # UI
 gem "phlex-rails"

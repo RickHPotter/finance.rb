@@ -12,7 +12,7 @@ class Views::Shared::SortToolbar < Views::Base
 
   def view_template
     fieldset(class: container_class) do
-      legend(class: "text-xs font-bold uppercase tracking-[0.20em] text-sky-900") { title }
+      legend(class: "text-xs font-bold uppercase tracking-[0.20em] text-sky-900 dark:text-sky-200") { title }
 
       div(class: "grid gap-3 lg:grid-cols-[auto,1fr] lg:items-start") do
         div(class: "flex flex-wrap justify-center items-center gap-2") do
@@ -45,16 +45,17 @@ class Views::Shared::SortToolbar < Views::Base
   end
 
   def container_class
-    "rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700"
+    "rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
   end
 
   def sort_button_class(field)
     base = "inline-flex items-center gap-2 rounded-sm ring px-2 py-1 text-xs transition-colors"
     state =
       if active_sort?(field)
-        "ring-blue-700 bg-blue-100 text-blue-900"
+        "ring-blue-700 bg-blue-100 text-blue-900 dark:ring-sky-500 dark:bg-sky-500/15 dark:text-sky-200"
       else
-        "ring-slate-400 bg-white text-slate-700 hover:ring-slate-600 hover:bg-slate-50"
+        "ring-slate-400 bg-white text-slate-700 hover:ring-slate-600 hover:bg-slate-50 dark:ring-slate-700 dark:bg-slate-800 " \
+          "dark:text-slate-300 dark:hover:ring-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-100"
       end
 
     "#{base} #{state}"
@@ -62,7 +63,7 @@ class Views::Shared::SortToolbar < Views::Base
 
   def sort_badge_class(field)
     base = "rounded px-1.5 py-0.5 text-2xs font-bold tracking-wide"
-    state = active_sort?(field) ? "bg-blue-700 text-white" : "bg-slate-200 text-slate-700"
+    state = active_sort?(field) ? "bg-blue-700 text-white dark:bg-sky-500 dark:text-slate-950" : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
 
     "#{base} #{state}"
   end

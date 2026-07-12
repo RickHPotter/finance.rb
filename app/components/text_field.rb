@@ -18,7 +18,7 @@ module Components
 
     def view_template
       div(class: "relative w-full") do
-        div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1") do
+        div(class: "absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none z-1 text-slate-800 dark:text-slate-400") do
           cached_icon options[:svg] if options[:svg]
         end
 

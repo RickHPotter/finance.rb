@@ -16,7 +16,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-6") do
+      div(class: show_shell_class) do
         dashboard_header
 
         div(class: "mt-6 space-y-4") do
@@ -33,9 +33,9 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   private
 
   def dashboard_header
-    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-start lg:justify-between") do
+    div(class: "flex flex-col gap-5 border-b border-slate-200 pb-5 dark:border-slate-700 lg:flex-row lg:items-start lg:justify-between") do
       div(class: "min-w-0 text-left") do
-        h1(class: "text-3xl font-black tracking-tight text-slate-950 sm:text-4xl") { user_bank_account.user_bank_account_name }
+        h1(class: "text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 sm:text-4xl") { user_bank_account.user_bank_account_name }
         render_scenario_badge
 
         div(class: "mt-3 flex flex-wrap items-center gap-2") do
@@ -88,7 +88,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     section_card(model_attribute(CashTransaction, :entities), open: false) do
       if entity_breakdowns.present?
         allocation_breakdown_grid(entity_breakdowns) do |entry|
-          div(class: "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black",
+          div(class: entity_chip_class,
               title: entry[:record].name) do
             image_tag(asset_path("avatars/#{entry[:record].avatar_name}"), class: "h-6 w-6 rounded-full") if entry[:record].avatar_name.present?
             span(class: "wrap-break-word") { entry[:record].name }
@@ -132,14 +132,15 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
         ) do
           div(class: "w-full") do
             div(class: "w-full") do
-              label(for: select[:id], class: "mb-2 block text-center font-poetsen-one text-medium font-bold text-gray-500") do
+              label(for: select[:id], class: "mb-2 block text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") do
                 select[:label]
               end
 
               select(
                 id: select[:id],
                 class: "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm " \
-                       "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400",
+                       "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400 dark:border-slate-700 " \
+                       "dark:bg-slate-800 dark:text-slate-100 dark:focus:border-sky-500/50 dark:focus:ring-sky-500/60",
                 data: {
                   interactive_breakdown_dashboard_target: "primarySelect",
                   action: "change->interactive-breakdown-dashboard#changePrimary"
@@ -153,7 +154,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
           end
 
           div(class: "space-y-2") do
-            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { groups_label }
+            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") { groups_label }
             div(class: "space-y-2") do
               div(
                 class: "flex flex-wrap gap-2",
@@ -167,7 +168,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
           end
 
           div(class: "space-y-2 pb-2 sm:pb-3") do
-            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500") { secondary_label }
+            p(class: "text-center font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400") { secondary_label }
             div(class: "space-y-2") do
               div(
                 class: "flex flex-wrap gap-2",
@@ -180,7 +181,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
             end
           end
 
-          div(class: "mt-5 rounded-2xl border border-slate-200 bg-white p-3 sm:mt-6") do
+          div(class: "mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 sm:mt-6") do
             div(class: "h-80") do
               canvas(
                 class: "h-full w-full",
@@ -200,12 +201,12 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def section_card(title, open: true, &)
-    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:rounded-3xl sm:p-4",
+    section(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/70 sm:rounded-3xl sm:p-4",
             data: { controller: "show-section-card", show_section_card_open_value: open.to_s }) do
       button(type: :button, class: "flex w-full items-center justify-between gap-3 text-left",
              data: { action: "show-section-card#toggle", show_section_card_target: "button" }) do
-        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500") { title }
-        span(class: "text-lg font-semibold leading-none text-slate-500", data: { show_section_card_target: "icon" }) { "−" }
+        h2(class: "text-xs font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400") { title }
+        span(class: "text-lg font-semibold leading-none text-slate-500 dark:text-slate-400", data: { show_section_card_target: "icon" }) { "−" }
       end
 
       div(class: "mt-4", data: { show_section_card_target: "content" }, &)
@@ -213,9 +214,9 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_stat(label, value, emphasis: false)
-    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
-      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950") { value.to_s }
+    div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "#{emphasis ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'} mt-2 font-bold text-slate-950 dark:text-slate-100") { value.to_s }
     end
   end
 
@@ -242,7 +243,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def dashboard_action_class(variant)
-    default = "border-slate-300 text-slate-700 hover:bg-slate-100"
+    default = "border-slate-300 text-slate-700 hover:bg-slate-100 dark:!border-slate-700 dark:!bg-slate-900 dark:!text-slate-300 dark:hover:!bg-slate-800"
     return default if %i[primary outline].include?(variant)
 
     case variant
@@ -261,7 +262,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   def allocation_breakdown_grid(entries, &)
     div(class: "grid gap-3 lg:grid-cols-3") do
       entries.each do |entry|
-        div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3") do
+        div(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
           div(class: "flex items-start justify-between gap-3") do
             div(class: "min-w-0 flex-1") { yield entry }
 
@@ -287,9 +288,24 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def bank_badge
-    span(class: "rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-700") do
+    span(class: neutral_badge_class) do
       user_bank_account.bank&.bank_name || "-"
     end
+  end
+
+  def show_shell_class
+    "min-h-[calc(100svh-12rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm " \
+      "dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-none sm:rounded-3xl sm:p-6"
+  end
+
+  def entity_chip_class
+    "flex min-h-12 items-center gap-2 rounded-lg border border-slate-400 bg-white px-2 py-1 text-sm text-black " \
+      "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+  end
+
+  def neutral_badge_class
+    "rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
   end
 
   def account_cash_transactions
@@ -346,8 +362,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def compact_stat(label, value, emphasis: false)
     div do
-      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500") { label }
-      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950") { value.to_s }
+      p(class: "text-2xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400") { label }
+      p(class: "#{emphasis ? 'text-sm' : 'text-xs'} mt-1 font-bold text-slate-950 dark:text-slate-100") { value.to_s }
     end
   end
 

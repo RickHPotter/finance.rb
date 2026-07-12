@@ -2,7 +2,7 @@
 
 class Views::Investments::FormSubmissionSkeleton < Views::Base
   def view_template
-    div(class: "space-y-5", id: "investment_form_submission_skeleton") do
+    div(class: "space-y-5 dark:[&_.animate-pulse]:bg-slate-700", id: "investment_form_submission_skeleton") do
       # hint badge
       div(class: "flex justify-center") do
         Skeleton(class: "h-7 w-28 rounded-sm")
@@ -66,7 +66,7 @@ class Views::Investments::FormSubmissionSkeleton < Views::Base
   end
 
   def render_calendar_skeleton
-    div(class: "rounded-md border border-slate-200 bg-white p-3 shadow-sm") do
+    div(class: "rounded-md border border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900 p-3 shadow-sm") do
       div(class: "mb-3 flex items-center justify-between") do
         Skeleton(class: "h-4 w-7 rounded-md")
         Skeleton(class: "h-4 w-20 rounded-sm")

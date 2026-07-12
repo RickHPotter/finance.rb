@@ -15,6 +15,7 @@ en:
         is_payer: Payer
         price: Price
         price_to_be_returned: Price to be returned
+        loan_return_percentage: Return %
         exchanges_count: Exchanges Count
         bound_type: Bound Type
         standalone: Standalone
@@ -39,6 +40,7 @@ pt-BR:
         is_payer: Pagante
         price: Valor
         price_to_be_returned: Valor a ser devolvido
+        loan_return_percentage: Retorno %
         exchanges_count: Quantidade de Trocas
         bound_type: Tipo de Vínculo
         standalone: Simples

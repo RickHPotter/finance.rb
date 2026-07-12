@@ -11,6 +11,7 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
   let(:exchange_category) { user.built_in_category("EXCHANGE") }
   let(:exchange_return_category) { user.built_in_category("EXCHANGE RETURN") }
   let(:entity) { create(:entity, :random, user:) }
+  let(:user_bank_account) { create(:user_bank_account, :random, user:) }
 
   let(:exchangable_card_transaction) do
     build(:card_transaction,
@@ -146,6 +147,62 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         validate(exchangable_card_transaction, 180, 1)
       end
 
+      it "allows deleting unpaid tail exchanges from a paid-history shared projection" do
+        projection = shared_projection_cash_transaction(exchangable_card_transaction)
+        entity_transaction = exchangable_card_transaction.entity_transactions.first
+
+        projection.cash_installments.delete_all
+        entity_transaction.exchanges.delete_all
+        14.times do |index|
+          number = index + 1
+          date = Time.zone.local(2026, 1, 4) + index.months
+          exchange = entity_transaction.exchanges.create!(
+            cash_transaction: projection,
+            exchange_type: :monetary,
+            bound_type: :standalone,
+            number:,
+            date:,
+            month: date.month,
+            year: date.year,
+            price: 8_771,
+            starting_price: 8_771,
+            exchanges_count: 14
+          )
+          projection.cash_installments.create!(
+            number:,
+            date: exchange.date,
+            month: exchange.month,
+            year: exchange.year,
+            price: exchange.price,
+            starting_price: exchange.price,
+            cash_installments_count: 14,
+            paid: number <= 7
+          )
+        end
+        projection.update_columns(price: 122_794, starting_price: 122_794, cash_installments_count: 14, paid: false)
+
+        expect { entity_transaction.exchanges.find_by!(number: 10).destroy! }.not_to raise_error
+        expect { entity_transaction.exchanges.find_by!(number: 7).destroy! }.to raise_error(ActiveRecord::RecordNotDestroyed)
+        expect(projection.reload.price).to eq(114_023)
+        expect(projection.cash_installments.order(:number).pluck(:number, :price, :paid)).to eq(
+          [
+            [ 1, 8_771, true ],
+            [ 2, 8_771, true ],
+            [ 3, 8_771, true ],
+            [ 4, 8_771, true ],
+            [ 5, 8_771, true ],
+            [ 6, 8_771, true ],
+            [ 7, 8_771, true ],
+            [ 8, 8_771, false ],
+            [ 9, 8_771, false ],
+            [ 10, 8_771, false ],
+            [ 11, 8_771, false ],
+            [ 12, 8_771, false ],
+            [ 13, 8_771, false ]
+          ]
+        )
+      end
+
       it "restores a missing standalone mirrored EXCHANGE RETURN reference on sync" do
         shared_cash_transaction = shared_projection_cash_transaction(exchangable_card_transaction)
         shared_cash_transaction.update_columns(reference_transactable_type: nil, reference_transactable_id: nil)
@@ -213,6 +270,193 @@ RSpec.describe ExchangeCashTransactable, type: :concern do
         expect(EntityTransaction.where(id: entity_transactions_ids)).to be_empty
         expect(Exchange.where(id: exchanges_ids)).to be_empty
         expect(CashTransaction.where(id: cash_transactions_ids)).to be_empty
+      end
+    end
+
+    context "( updating standalone exchange with replayed paid-state rows )" do
+      it "rebuilds the linked EXCHANGE RETURN projection from the in-memory sibling exchange set" do
+        exchange_transaction = create(
+          :cash_transaction,
+          user:,
+          context: user.main_context,
+          user_bank_account: user_bank_account,
+          description: "Projection replay sync",
+          date: Time.zone.local(2026, 6, 26, 0, 0, 0),
+          month: 6,
+          year: 2026,
+          price: 2_302,
+          friend_notification_intent: "loan",
+          category_transactions_attributes: [
+            { category_id: exchange_category.id }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: entity.id,
+              is_payer: true,
+              price: -2_302,
+              price_to_be_returned: -2_302,
+              exchanges_count: 3,
+              exchanges_attributes: [
+                { number: 1, price: -500, date: Time.zone.local(2026, 6, 26, 16, 0, 0), month: 6, year: 2026 },
+                { number: 2, price: -651, date: Time.zone.local(2026, 6, 27, 14, 0, 0), month: 6, year: 2026 },
+                { number: 3, price: -1_151, date: Time.zone.local(2026, 6, 28, 0, 0, 0), month: 6, year: 2026 }
+              ]
+            }
+          ],
+          cash_installments_attributes: [
+            { number: 1, price: 2_302, date: Time.zone.local(2026, 6, 26, 0, 0, 0), month: 6, year: 2026, paid: true }
+          ]
+        )
+
+        exchange_return = create(
+          :cash_transaction,
+          user:,
+          context: user.main_context,
+          user_bank_account: user_bank_account,
+          reference_transactable: exchange_transaction,
+          description: exchange_transaction.description,
+          date: Time.zone.local(2026, 6, 26, 16, 0, 0),
+          month: 6,
+          year: 2026,
+          price: -2_302,
+          category_transactions_attributes: [
+            { category_id: exchange_return_category.id }
+          ],
+          entity_transactions_attributes: [
+            { entity_id: entity.id, is_payer: false, price: 0, price_to_be_returned: 0 }
+          ],
+          cash_installments_attributes: [
+            { number: 1, price: -500, date: Time.zone.local(2026, 6, 26, 16, 0, 0), month: 6, year: 2026, paid: false },
+            { number: 2, price: -651, date: Time.zone.local(2026, 6, 27, 14, 0, 0), month: 6, year: 2026, paid: false },
+            { number: 3, price: -1_151, date: Time.zone.local(2026, 6, 28, 0, 0, 0), month: 6, year: 2026, paid: false }
+          ]
+        )
+        exchange_transaction.entity_transactions.first.exchanges.update_all(cash_transaction_id: exchange_return.id)
+
+        exchange_transaction.reload
+        entity_transaction = exchange_transaction.entity_transactions.first
+        exchanges = entity_transaction.exchanges.order(:number).to_a
+        assignable_attributes = {
+          description: exchange_transaction.description,
+          price: 2_302,
+          date: Time.zone.local(2026, 6, 26, 0, 0, 0),
+          month: 6,
+          year: 2026,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          reference_transactable_type: "CashTransaction",
+          reference_transactable_id: exchange_transaction.reference_transactable_id,
+          category_transactions_attributes: exchange_transaction.category_transactions.map { |ct| { id: ct.id, category_id: ct.category_id } },
+          cash_installments_attributes: [
+            {
+              id: exchange_transaction.cash_installments.first.id,
+              number: 1,
+              date: Time.zone.local(2026, 6, 26, 0, 0, 0),
+              month: 6,
+              year: 2026,
+              price: 2_302,
+              paid: true
+            }
+          ],
+          entity_transactions_attributes: [
+            {
+              id: entity_transaction.id,
+              entity_id: entity.id,
+              is_payer: true,
+              price: -2_302,
+              price_to_be_returned: -2_302,
+              exchanges_count: 5,
+              exchanges_attributes: [
+                {
+                  id: exchanges[0].id,
+                  number: 1,
+                  date: Time.zone.local(2026, 6, 26, 16, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -500,
+                  paid: true,
+                  bound_type: "standalone",
+                  exchange_type: "monetary"
+                },
+                {
+                  id: exchanges[1].id,
+                  number: 2,
+                  date: Time.zone.local(2026, 6, 26, 19, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -51,
+                  paid: true,
+                  bound_type: "standalone",
+                  exchange_type: "monetary"
+                },
+                {
+                  id: exchanges[2].id,
+                  number: 3,
+                  date: Time.zone.local(2026, 6, 26, 20, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -300,
+                  paid: true,
+                  bound_type: "standalone",
+                  exchange_type: "monetary"
+                },
+                {
+                  number: 4,
+                  date: Time.zone.local(2026, 6, 27, 14, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -300,
+                  paid: false,
+                  bound_type: "standalone",
+                  exchange_type: "monetary"
+                },
+                {
+                  number: 5,
+                  date: Time.zone.local(2026, 6, 28, 0, 0, 0),
+                  month: 6,
+                  year: 2026,
+                  price: -1_151,
+                  paid: false,
+                  bound_type: "standalone",
+                  exchange_type: "monetary"
+                }
+              ]
+            }
+          ]
+        }.with_indifferent_access
+
+        sanitized_attributes = assignable_attributes.deep_dup
+        sanitized_attributes[:entity_transactions_attributes].each do |entity_attributes|
+          entity_attributes[:exchanges_attributes].each do |exchange_attributes|
+            exchange_attributes.delete(:paid)
+          end
+        end
+
+        exchange_transaction.edit_phase = true
+        exchange_transaction.assign_attributes(sanitized_attributes)
+
+        assignable_attributes[:entity_transactions_attributes].each do |submitted_entity_attributes|
+          persisted_entity_transaction = exchange_transaction.entity_transactions.find { |record| record.id == submitted_entity_attributes[:id] }
+          submitted_entity_attributes[:exchanges_attributes].each do |submitted_exchange_attributes|
+            persisted_exchange = persisted_entity_transaction.exchanges.find do |record|
+              record.id == submitted_exchange_attributes[:id] || record.number == submitted_exchange_attributes[:number]
+            end
+            next if persisted_exchange.blank?
+
+            persisted_exchange.replay_paid_state = submitted_exchange_attributes[:paid]
+          end
+        end
+
+        expect(exchange_transaction.save).to be(true)
+        expect(exchange_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq(
+          [
+            [ -500, true ],
+            [ -51, true ],
+            [ -300, true ],
+            [ -300, false ],
+            [ -1_151, false ]
+          ]
+        )
       end
     end
   end

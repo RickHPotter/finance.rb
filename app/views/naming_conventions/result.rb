@@ -13,21 +13,21 @@ class Views::NamingConventions::Result < Views::Base
 
   def view_template
     turbo_frame_tag :naming_convention_content do
-      div(class: "w-[min(56rem,88vw)] text-black", data: { controller: "naming-tabs", naming_tabs_current_value: tab_names.first }) do
-        p(class: "text-sm text-gray-700") { summary_text }
+      div(class: "w-[min(56rem,88vw)] text-black dark:text-slate-100", data: { controller: "naming-tabs", naming_tabs_current_value: tab_names.first }) do
+        p(class: "text-sm text-gray-700 dark:text-slate-300") { summary_text }
 
         if changed_results.any?
           div(class: "mt-4 flex flex-wrap gap-2") do
             grouped_results.each_key do |name|
               button(
                 type: :button,
-                class: "rounded-full px-3 py-1 text-sm font-semibold transition-colors bg-gray-200 text-gray-700",
+                class: "rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-700 transition-colors dark:bg-slate-800 dark:text-slate-200",
                 data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
               ) { "#{convention_label(name)} (#{grouped_results[name].count})" }
             end
           end
 
-          div(class: "mt-4 h-[min(26rem,55vh)] overflow-hidden rounded-lg border border-gray-400 bg-gray-200") do
+          div(class: "mt-4 h-[min(26rem,55vh)] overflow-hidden rounded-lg border border-gray-400 bg-gray-200 dark:border-slate-700 dark:bg-slate-950") do
             grouped_results.each do |name, convention_results|
               div(class: "h-full overflow-y-auto hidden", data: { naming_tabs_target: "panel", naming_tabs_name: name }) do
                 name == :exchange_return ? render_exchange_return_results(convention_results) : render_standard_results(convention_results)
@@ -81,7 +81,7 @@ class Views::NamingConventions::Result < Views::Base
   end
 
   def render_standard_results(convention_results)
-    ul(class: "divide-y divide-gray-200") do
+    ul(class: "divide-y divide-gray-200 dark:divide-slate-800") do
       convention_results.each do |result|
         li(class: "px-4 py-3 text-sm") do
           render_result_diff(result)
@@ -95,21 +95,21 @@ class Views::NamingConventions::Result < Views::Base
       exchange_metadata = exchange_results.first[:metadata] || {}
       card_transaction = exchange_metadata[:card_transaction] || {}
 
-      div(class: "border-b border-gray-400 last:border-b-0") do
-        div(class: "sticky top-0 z-10 border-b border-gray-400 bg-white/95 px-4 py-3 backdrop-blur-sm") do
-          div(class: "text-sm font-semibold text-gray-900") do
+      div(class: "border-b border-gray-400 last:border-b-0 dark:border-slate-700") do
+        div(class: "sticky top-0 z-10 border-b border-gray-400 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95") do
+          div(class: "text-sm font-semibold text-gray-900 dark:text-slate-100") do
             plain "#{I18n.t('naming_conventions.group.card_transaction')} ##{card_transaction[:id] || '-'}"
             plain " · #{card_transaction[:description]}" if card_transaction[:description].present?
           end
 
-          div(class: "mt-1 text-xs text-gray-600") do
+          div(class: "mt-1 text-xs text-gray-600 dark:text-slate-400") do
             plain "#{I18n.t('naming_conventions.group.installments_count')}: #{card_transaction[:installments_count] || '-'}"
             plain " · #{I18n.t('naming_conventions.group.exchanges_count')}: #{card_transaction[:exchanges_count] || '-'}"
             plain " · #{I18n.t('naming_conventions.group.entity')}: #{card_transaction[:entity_name] || '-'}"
           end
         end
 
-        ul(class: "divide-y divide-gray-200") do
+        ul(class: "divide-y divide-gray-200 dark:divide-slate-800") do
           exchange_results.each do |result|
             li(class: "px-4 py-3 text-sm") do
               render_result_diff(result)
@@ -125,9 +125,9 @@ class Views::NamingConventions::Result < Views::Base
   end
 
   def render_result_diff(result)
-    div(class: "font-semibold text-gray-900") { record_label(result) }
-    div(class: "mt-1 text-red-700 line-through wrap-break-word") { result.dig(:previous_attributes, :description) }
-    div(class: "mt-1 text-green-700 wrap-break-word") { result.dig(:changes, :description) }
+    div(class: "font-semibold text-gray-900 dark:text-slate-100") { record_label(result) }
+    div(class: "mt-1 text-red-700 line-through wrap-break-word dark:text-red-300") { result.dig(:previous_attributes, :description) }
+    div(class: "mt-1 text-green-700 wrap-break-word dark:text-emerald-300") { result.dig(:changes, :description) }
   end
 
   def convention_label(name)

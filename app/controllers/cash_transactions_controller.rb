@@ -3,7 +3,7 @@
 class CashTransactionsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
-  before_action :set_cash_transaction, only: %i[show edit update destroy]
+  before_action :set_cash_transaction, only: %i[show edit update destroy fix_exchange_projection]
   before_action :ensure_submitted_context_matches_current_context!, only: %i[create update]
   before_action :set_cash_tabs
 
@@ -66,6 +66,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def create
     @cash_transaction = current_context.cash_transactions.new(assignable_cash_transaction_params.merge(user: current_user, imported: false))
+    apply_submitted_exchange_paid_states!
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
 
     if finish_chain_without_save_requested?
@@ -82,6 +83,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
+    apply_submitted_exchange_paid_states!
     @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
     @cash_transaction.build_month_year if @cash_transaction.user_bank_account_id
     @cash_transaction.update_installments if params[:commit] == "Update"
@@ -123,6 +125,21 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     recalculate_balances_from(min_date)
 
     render_payment_failure_success
+  end
+
+  def fix_exchange_projection
+    unless exchange_projection_fixable?
+      return redirect_to cash_transaction_path(@cash_transaction),
+                         alert: I18n.t("cash_transactions.exchange_projection.unavailable")
+    end
+
+    min_date = @cash_transaction.date
+    repair_exchange_projection!
+    recalculate_balances_from([ min_date, @cash_transaction.date ].compact.min)
+
+    redirect_to cash_transaction_path(@cash_transaction), notice: I18n.t("cash_transactions.exchange_projection.fixed")
+  rescue StandardError => e
+    redirect_to cash_transaction_path(@cash_transaction), alert: e.message
   end
 
   def add_to_subscription # rubocop:disable Metrics/AbcSize
@@ -184,28 +201,23 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @cash_transaction.category_transactions.build(category_id: new_category_id)
   end
 
-  def handle_entity_params # rubocop:disable Metrics/AbcSize
-    if effective_cash_transaction_params[:entity_id].present?
-      return if @cash_transaction.entity_transactions.pluck(:entity_id).include?(effective_cash_transaction_params[:entity_id].to_i)
+  def handle_entity_params
+    current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
 
-      @cash_transaction.entity_transactions.build(entity_id: effective_cash_transaction_params[:entity_id])
-    elsif effective_cash_transaction_params[:entity_transactions_attributes].present?
-      submitted_entity_transactions_attributes = normalized_nested_attributes(effective_cash_transaction_params[:entity_transactions_attributes])
-      current_entities = @cash_transaction.entity_transactions.pluck(:entity_id)
-      new_entities = submitted_entity_transactions_attributes.pluck(:entity_id).map(&:to_i)
-      if @cash_transaction.entity_transactions.one? && current_entities == new_entities # means it is persisted
-        @cash_transaction.entity_transactions.each do |entity_transaction|
-          entity_transactions_attributes = submitted_entity_transactions_attributes.find do |a|
-            a[:entity_id].to_i == entity_transaction.entity_id
-          end
+    entity_id = effective_cash_transaction_params[:entity_id]&.to_i
+    @cash_transaction.entity_transactions.build(entity_id:) if entity_id && current_entities.exclude?(entity_id)
 
-          entity_transaction.assign_attributes(entity_transactions_attributes.except(:exchanges_attributes))
-          synchronize_entity_transaction_exchanges(entity_transaction, entity_transactions_attributes[:exchanges_attributes])
-        end
-      else
-        @cash_transaction.entity_transactions.each(&:mark_for_destruction)
-        @cash_transaction.entity_transactions_attributes = submitted_entity_transactions_attributes
-      end
+    attributes = effective_cash_transaction_params[:entity_transactions_attributes]
+    return if attributes.blank?
+
+    submitted = normalized_nested_attributes(attributes)
+    new_entities = submitted.pluck(:entity_id).map(&:to_i)
+
+    if current_entities.one? && current_entities == new_entities
+      synchronize_single_entity_transaction(current_entities, submitted)
+    else
+      @cash_transaction.entity_transactions.each(&:mark_for_destruction)
+      @cash_transaction.entity_transactions_attributes = sanitize_entity_transaction_attributes(submitted)
     end
   end
 
@@ -217,7 +229,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       new_attributes = exchanges_attributes.find { |attrs| attrs[:number].to_i == exchange.number }
 
       if new_attributes.present?
-        exchange.assign_attributes(new_attributes)
+        assign_exchange_attributes(exchange, new_attributes)
       else
         exchange.mark_for_destruction
       end
@@ -226,8 +238,34 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     exchanges_attributes.each do |exchange_attributes|
       next if existing_exchanges_by_number.key?(exchange_attributes[:number].to_i)
 
-      entity_transaction.exchanges.build(exchange_attributes)
+      exchange = entity_transaction.exchanges.build(exchange_attributes.except(:paid))
+      exchange.replay_paid_state = cast_exchange_paid_state(exchange_attributes[:paid])
     end
+  end
+
+  def assign_exchange_attributes(exchange, attributes)
+    exchange.assign_attributes(attributes.except(:paid))
+    exchange.replay_paid_state = cast_exchange_paid_state(attributes[:paid])
+  end
+
+  def cast_exchange_paid_state(value)
+    return nil if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def synchronize_single_entity_transaction(current_entities, submitted)
+    entity_transaction = @cash_transaction.entity_transactions.find do |record|
+      current_entities.include?(record.entity_id)
+    end
+    submitted_entity_transaction = submitted.find do |record|
+      record[:entity_id].to_i == entity_transaction&.entity_id
+    end
+
+    return if entity_transaction.blank? || submitted_entity_transaction.blank?
+
+    entity_transaction.assign_attributes(submitted_entity_transaction.except(:exchanges_attributes))
+    synchronize_entity_transaction_exchanges(entity_transaction, submitted_entity_transaction[:exchanges_attributes])
   end
 
   def replaying_reference_transaction?
@@ -292,10 +330,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def assign_message_context
     @cash_transaction.assign_attributes(
-      effective_cash_transaction_params.slice(
-        :source_message_id,
-        :friend_notification_intent
-      )
+      message_context_attributes
     )
 
     counterpart_reference = canonical_message_reference_transactable
@@ -318,8 +353,21 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
+  def message_context_attributes
+    attributes = effective_cash_transaction_params.slice(:source_message_id, :friend_notification_intent)
+    attributes[:friend_notification_intent] = effective_message_intent if attributes[:friend_notification_intent].blank? && source_message.present?
+
+    return attributes if read_request?
+    return attributes if effective_category_names.include?("EXCHANGE")
+
+    attributes.except(:friend_notification_intent)
+  end
+
   def assignable_cash_transaction_params
-    params = deduplicated_cash_transaction_params(effective_cash_transaction_params).except(:source_message_id)
+    params = sanitized_cash_transaction_params_for_assignment(
+      deduplicated_cash_transaction_params(effective_cash_transaction_params).except(:source_message_id)
+    )
+    params = strip_non_exchange_friend_notification_intent(params)
     counterpart_reference = canonical_message_reference_transactable
     if counterpart_reference.present?
       return params.merge(reference_transactable_type: counterpart_reference.class.name,
@@ -328,6 +376,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return params unless preserve_existing_reference_transactable?
 
     params.except(:reference_transactable_type, :reference_transactable_id)
+  end
+
+  def strip_non_exchange_friend_notification_intent(params)
+    return params if effective_category_names.include?("EXCHANGE")
+
+    params.except(:friend_notification_intent)
   end
 
   def preserve_existing_reference_transactable?
@@ -398,8 +452,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def effective_message_intent
     effective_cash_transaction_params[:friend_notification_intent].presence ||
-      source_message.replay_payload&.fetch("intent", nil).presence ||
-      source_message.reference_transactable.try(:effective_friend_notification_intent)
+      source_message&.replay_payload&.fetch("intent", nil).presence ||
+      source_message&.reference_transactable.try(:effective_friend_notification_intent)
   end
 
   def source_message_id
@@ -451,9 +505,21 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def normalize_failed_cash_transaction_save!
-    return if @cash_transaction.errors.empty?
+    nested_error_messages = collect_nested_cash_transaction_error_messages
+    return if @cash_transaction.errors.empty? && nested_error_messages.empty?
 
-    @cash_transaction.errors.add(:base, :invalid)
+    nested_error_messages.each do |message|
+      @cash_transaction.errors.add(:base, message) unless @cash_transaction.errors[:base].include?(message)
+    end
+    @cash_transaction.errors.add(:base, :invalid) if @cash_transaction.errors.details[:base].exclude?(error: :invalid)
+  end
+
+  def collect_nested_cash_transaction_error_messages
+    nested_records = @cash_transaction.cash_installments.to_a +
+                     @cash_transaction.entity_transactions.to_a +
+                     @cash_transaction.entity_transactions.flat_map(&:exchanges)
+
+    nested_records.flat_map { |record| record.errors.full_messages }.compact_blank.uniq
   end
 
   def pending_shared_paid_state_notifications
@@ -531,6 +597,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     end
 
     index
+    ensure_index_context!
     @index_context[:user_bank_account_id] = []
     apply_chain_index_context(record_ids: created_record_ids)
   end
@@ -538,6 +605,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def handle_chain_finish_without_save
     @finished_chain_without_save = true
     index
+    ensure_index_context!
     @index_context[:user_bank_account_id] = []
     apply_chain_index_context(record_ids: current_chain_record_ids)
 
@@ -558,6 +626,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @index_context[:cash_installment_ids] = installment_ids
     @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
     @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
+  end
+
+  def ensure_index_context!
+    return if @index_context.present? && @index_context[:current_user].present?
+
+    build_index_context(current_context.cash_installments)
   end
 
   def next_cash_transaction_for_chain
@@ -785,8 +859,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
-        { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
+        { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }
       ]
     )
   end
@@ -803,7 +877,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def should_hydrate_from_source_message?
-    source_message.present? && request.get? && cash_transaction_params.keys == [ "source_message_id" ]
+    source_message.present? && read_request? && cash_transaction_params.keys == [ "source_message_id" ]
+  end
+
+  def read_request?
+    request.get? || request.head?
   end
 
   def replay_cash_transaction_params_from_source
@@ -916,6 +994,62 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     )
   end
 
+  def sanitized_cash_transaction_params_for_assignment(attributes)
+    sanitized = attributes.deep_dup
+    sanitized[:entity_transactions_attributes] = sanitize_entity_transaction_attributes(sanitized[:entity_transactions_attributes])
+
+    sanitized
+  end
+
+  def sanitize_entity_transaction_attributes(attributes)
+    normalized_nested_attributes(attributes).map do |entity_transaction_attributes|
+      entity_transaction_attributes = entity_transaction_attributes.with_indifferent_access
+      exchanges_attributes = normalized_nested_attributes(entity_transaction_attributes[:exchanges_attributes]).map do |exchange_attributes|
+        exchange_attributes.with_indifferent_access.except(:paid)
+      end
+
+      entity_transaction_attributes.merge(exchanges_attributes:)
+    end
+  end
+
+  def apply_submitted_exchange_paid_states!
+    submitted_entity_transactions = normalized_nested_attributes(effective_cash_transaction_params[:entity_transactions_attributes])
+
+    submitted_entity_transactions.each do |entity_transaction_attributes|
+      entity_transaction = find_submitted_entity_transaction(entity_transaction_attributes)
+      next if entity_transaction.blank?
+
+      normalized_nested_attributes(entity_transaction_attributes[:exchanges_attributes]).each do |exchange_attributes|
+        exchange = find_submitted_exchange(entity_transaction, exchange_attributes)
+        next if exchange.blank?
+
+        exchange.replay_paid_state = cast_exchange_paid_state(exchange_attributes[:paid])
+      end
+    end
+  end
+
+  def find_submitted_entity_transaction(attributes)
+    attributes = attributes.with_indifferent_access
+    submitted_id = attributes[:id].presence&.to_i
+    return @cash_transaction.entity_transactions.find { |record| record.id == submitted_id } if submitted_id.present?
+
+    submitted_entity_id = attributes[:entity_id].presence&.to_i
+    return if submitted_entity_id.blank?
+
+    @cash_transaction.entity_transactions.find { |record| record.entity_id == submitted_entity_id }
+  end
+
+  def find_submitted_exchange(entity_transaction, attributes)
+    attributes = attributes.with_indifferent_access
+    submitted_id = attributes[:id].presence&.to_i
+    return entity_transaction.exchanges.find { |record| record.id == submitted_id } if submitted_id.present?
+
+    submitted_number = attributes[:number].presence&.to_i
+    return if submitted_number.blank?
+
+    entity_transaction.exchanges.find { |record| record.number == submitted_number }
+  end
+
   def deduplicate_nested_attributes(attributes, key:)
     seen_values = {}
 
@@ -964,6 +1098,238 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def failed_return_recalculation_start
     @cash_transaction.cash_installments.where(paid: false).minimum(:date) || @cash_transaction.date
+  end
+
+  def repair_exchange_projection!
+    ActiveRecord::Base.transaction do
+      fix_stale_card_bound_projection_buckets! if stale_card_bound_projection_bucket_fixable?
+      move_out_of_bucket_projection_exchanges!
+      sync_current_projection_exchanges!
+      @duplicate_card_bound_projection_transactions = nil
+      @cash_transaction = merge_duplicate_card_bound_projection_transactions!
+      sync_current_projection_exchanges!
+    end
+  end
+
+  def move_out_of_bucket_projection_exchanges!
+    @out_of_bucket_card_bound_projection_exchanges = nil
+    @incoming_wrong_owner_card_bound_projection_exchanges = nil
+    rehomed_projection_transactions = rehome_out_of_bucket_card_bound_projection_exchanges!
+    @projection_exchanges = nil
+    @cash_transaction.reload
+    return unless projection_exchanges.empty? && rehomed_projection_transactions.present?
+
+    @cash_transaction.destroy!
+    @cash_transaction = rehomed_projection_transactions.first.reload
+    @projection_exchanges = nil
+  end
+
+  def sync_current_projection_exchanges!
+    @projection_exchanges = nil
+    projection_exchanges.first&.send(:sync_projection_cash_transaction!, cash_transaction: @cash_transaction, exchanges: projection_exchanges)
+    @cash_transaction.reload
+  end
+
+  def exchange_projection_fixable?
+    @cash_transaction.exchange_return? &&
+      projection_exchanges.present? &&
+      (@cash_transaction.price != projection_exchanges.sum(&:price) ||
+        stale_card_bound_projection_bucket_fixable? ||
+        out_of_bucket_card_bound_projection_exchanges.present? ||
+        incoming_wrong_owner_card_bound_projection_exchanges.present? ||
+        duplicate_card_bound_projection_transactions.present?)
+  end
+
+  def projection_exchanges
+    @projection_exchanges ||= @cash_transaction.exchanges.includes(entity_transaction: :entity).card_bound.monetary
+  end
+
+  def stale_card_bound_projection_bucket_fixable?
+    stale_own_card_bound_projection_exchanges.present? || incoming_stale_card_bound_projection_exchanges.present?
+  end
+
+  def merge_duplicate_card_bound_projection_transactions!
+    target = preferred_duplicate_card_bound_projection_transaction
+    return @cash_transaction if target.blank?
+
+    duplicate_card_bound_projection_transactions.where.not(id: target.id).find_each do |duplicate|
+      duplicate.exchanges.update_all(cash_transaction_id: target.id, updated_at: Time.current)
+      duplicate.destroy!
+    end
+
+    target.reload
+  end
+
+  def preferred_duplicate_card_bound_projection_transaction
+    duplicate_card_bound_projection_transactions.max_by do |transaction|
+      [
+        transaction.user_card_id.present? ? 1 : 0,
+        transaction.cash_installments.any? { |installment| !installment.paid? } ? 1 : 0,
+        transaction.exchanges.size,
+        transaction.cash_installments.any?(&:paid?) ? 1 : 0,
+        transaction.updated_at.to_i,
+        transaction.id
+      ]
+    end
+  end
+
+  def duplicate_card_bound_projection_transactions
+    @duplicate_card_bound_projection_transactions ||= begin
+      user_card_ids = projection_exchange_user_card_ids
+      if user_card_ids.empty?
+        current_context.cash_transactions.where(id: @cash_transaction.id)
+      else
+        duplicate_ids = current_context.cash_transactions
+                                       .exchange_return
+                                       .where(
+                                         user_id: current_user.id,
+                                         user_card_id: user_card_ids,
+                                         cash_transaction_type: @cash_transaction.cash_transaction_type,
+                                         description: @cash_transaction.description,
+                                         month: @cash_transaction.month,
+                                         year: @cash_transaction.year
+                                       )
+                                       .pluck(:id)
+        current_context.cash_transactions.where(id: [ @cash_transaction.id, *duplicate_ids ].uniq)
+                       .includes(:cash_installments, exchanges: { entity_transaction: :entity })
+      end
+    end
+  end
+
+  def fix_stale_card_bound_projection_buckets!
+    (stale_own_card_bound_projection_exchanges + incoming_stale_card_bound_projection_exchanges).uniq.each do |exchange|
+      source_installment = card_bound_projection_source_installment(exchange)
+      next if source_installment.blank?
+
+      exchange.update_columns(
+        month: source_installment.month,
+        year: source_installment.year,
+        date: card_bound_projection_reference_date(exchange, source_installment),
+        updated_at: Time.current
+      )
+    end
+  end
+
+  def rehome_out_of_bucket_card_bound_projection_exchanges!
+    rehomed_projection_transactions = []
+    (out_of_bucket_card_bound_projection_exchanges + incoming_wrong_owner_card_bound_projection_exchanges).uniq.each do |exchange|
+      exchange.update_columns(cash_transaction_id: nil, updated_at: Time.current)
+      exchange.reload
+      exchange.send(:create_cash_transaction)
+      exchange.save!
+      rehomed_projection_transactions << exchange.reload.cash_transaction if exchange.cash_transaction.present?
+    end
+    rehomed_projection_transactions.uniq
+  end
+
+  def out_of_bucket_card_bound_projection_exchanges
+    @out_of_bucket_card_bound_projection_exchanges ||= projection_exchanges.reject do |exchange|
+      exchange.month == @cash_transaction.month && exchange.year == @cash_transaction.year
+    end
+  end
+
+  def incoming_wrong_owner_card_bound_projection_exchanges
+    @incoming_wrong_owner_card_bound_projection_exchanges ||= begin
+      group_keys = projection_exchange_group_keys
+      if group_keys.empty?
+        []
+      else
+        Exchange.card_bound.monetary.joins(:cash_transaction)
+                .where(cash_transactions: { context_id: current_context.id })
+                .where.not(cash_transaction_id: @cash_transaction.id)
+                .includes(entity_transaction: :entity)
+                .select do |exchange|
+                  incoming_wrong_owner_card_bound_projection_exchange?(exchange, group_keys)
+                end
+      end
+    end
+  end
+
+  def incoming_wrong_owner_card_bound_projection_exchange?(exchange, group_keys)
+    source_transaction = exchange.entity_transaction&.transactable
+    return false unless source_transaction.is_a?(CardTransaction)
+    return false unless group_keys.include?([ source_transaction.user_card_id, exchange.entity_transaction.entity_id ])
+    return false unless exchange.month == @cash_transaction.month && exchange.year == @cash_transaction.year
+
+    source_installment = card_bound_projection_source_installment(exchange)
+    source_installment.present? && source_installment.month == @cash_transaction.month && source_installment.year == @cash_transaction.year
+  end
+
+  def projection_exchange_group_keys
+    projection_exchanges.filter_map do |exchange|
+      source_transaction = exchange.entity_transaction&.transactable
+      [ source_transaction.user_card_id, exchange.entity_transaction.entity_id ] if source_transaction.is_a?(CardTransaction)
+    end.uniq
+  end
+
+  def stale_own_card_bound_projection_exchanges
+    @stale_own_card_bound_projection_exchanges ||= projection_exchanges.select do |exchange|
+      stale_card_bound_projection_exchange?(exchange)
+    end
+  end
+
+  def incoming_stale_card_bound_projection_exchanges
+    @incoming_stale_card_bound_projection_exchanges ||= begin
+      user_card_ids = projection_exchange_user_card_ids
+      if user_card_ids.empty?
+        []
+      else
+        Exchange.card_bound.monetary.joins(:cash_transaction)
+                .where(cash_transactions: { context_id: current_context.id })
+                .where.not(cash_transaction_id: @cash_transaction.id)
+                .includes(entity_transaction: :entity)
+                .select do |exchange|
+                  incoming_stale_card_bound_projection_exchange?(exchange, user_card_ids)
+                end
+      end
+    end
+  end
+
+  def incoming_stale_card_bound_projection_exchange?(exchange, user_card_ids)
+    source_transaction = exchange.entity_transaction&.transactable
+    return false unless source_transaction.is_a?(CardTransaction)
+    return false unless user_card_ids.include?(source_transaction.user_card_id)
+
+    source_installment = card_bound_projection_source_installment(exchange)
+    return false if source_installment.blank?
+    return false unless source_installment.month == @cash_transaction.month && source_installment.year == @cash_transaction.year
+
+    stale_card_bound_projection_exchange?(exchange)
+  end
+
+  def stale_card_bound_projection_exchange?(exchange)
+    source_installment = card_bound_projection_source_installment(exchange)
+    return false if source_installment.blank?
+
+    exchange.month != source_installment.month || exchange.year != source_installment.year
+  end
+
+  def projection_exchange_user_card_ids
+    projection_exchanges.filter_map do |exchange|
+      source_transaction = exchange.entity_transaction&.transactable
+      source_transaction.user_card_id if source_transaction.is_a?(CardTransaction)
+    end.uniq
+  end
+
+  def card_bound_projection_source_installment(exchange)
+    source_transaction = exchange.entity_transaction&.transactable
+    return unless source_transaction.is_a?(CardTransaction)
+
+    source_transaction.card_installments.find_by(number: exchange.number)
+  end
+
+  def card_bound_projection_reference_date(exchange, source_installment)
+    source_transaction = exchange.entity_transaction&.transactable
+    reference = source_transaction.user_card.references.find_by(
+      context: source_transaction.context,
+      month: source_installment.month,
+      year: source_installment.year
+    )
+
+    return reference.reference_date.end_of_day if reference.present?
+
+    due_day = [ source_transaction.user_card.due_date_day, Time.days_in_month(source_installment.month, source_installment.year) ].min
+    Time.zone.local(source_installment.year, source_installment.month, due_day).end_of_day
   end
 
   def recalculate_balances_from(date)

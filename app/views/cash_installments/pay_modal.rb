@@ -28,16 +28,16 @@ class Views::CashInstallments::PayModal < Views::Base
 
     div(
       id: "cashInstallmentModal_#{cash_installment.id}",
-      class: "hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)]",
+      class: "hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] bg-black/30",
       tabindex: "-1"
     ) do
-      div(class: "bg-white p-6 rounded-lg shadow-lg") do
+      div(class: "bg-white p-6 rounded-lg shadow-lg dark:border dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:shadow-black/40") do
         div(class: "flex") do
           h1(class: "text-2xl mb-4 flex-1 text-start") { model_attribute(cash_installment, :confirm_payment) }
 
           button(
             type: :button,
-            class: "text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center",
+            class: modal_close_button_class,
             data: { modal_hide: "cashInstallmentModal_#{cash_installment.id}" }
           ) do
             cached_icon(:little_x)
@@ -91,11 +91,11 @@ class Views::CashInstallments::PayModal < Views::Base
 
           div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
             form.submit I18n.t("confirmation.confirm"),
-                        class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+                        class: modal_confirm_button_class(:green),
                         data: { modal_hide: "cashInstallmentModal_#{cash_installment.id}" }
 
             button(
-              class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+              class: modal_cancel_button_class,
               type: :button,
               data: { modal_hide: "cashInstallmentModal_#{cash_installment.id}" }
             ) do

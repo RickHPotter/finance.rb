@@ -54,14 +54,14 @@ class Views::Transactions::FormActions < Views::Base
   def render_top_control
     if confirmation_submit.present?
       label(class: "flex w-full items-center justify-center pt-1") do
-        span(class: "flex items-center gap-2 text-sm font-medium text-slate-700") do
+        span(class: "flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300") do
           input(
             type: "checkbox",
             name: confirmation_submit[:name],
             value: confirmation_submit[:value],
             checked: confirmation_submit[:checked],
             id: confirmation_submit[:field_id],
-            class: "h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+            class: "h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-800 dark:text-amber-400"
           )
           plain confirmation_submit[:label]
         end
@@ -83,7 +83,7 @@ class Views::Transactions::FormActions < Views::Base
     return unless transaction.new_record?
     return if transaction.persisted?
 
-    Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain", value: "1") do
+    Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain", value: "1") do
       I18n.t("actions.finish_chain")
     end
   end
@@ -92,7 +92,7 @@ class Views::Transactions::FormActions < Views::Base
     return unless transaction.new_record?
     return if transaction.persisted?
 
-    Button(type: :submit, variant: :outline, class: "w-64", name: "finish_chain_without_save", value: "1") do
+    Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain_without_save", value: "1") do
       I18n.t("actions.finish_chain_without_save")
     end
   end
@@ -107,5 +107,9 @@ class Views::Transactions::FormActions < Views::Base
 
   def chain_checked?
     chain_context&.dig(:checked) || false
+  end
+
+  def secondary_action_button_class
+    secondary_submit_row_button_class
   end
 end

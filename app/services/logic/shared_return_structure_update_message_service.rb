@@ -21,12 +21,13 @@ module Logic
 
       return true if Message.exists?(conversation:, body: "notification:update", headers:, reference_transactable:)
 
-      conversation.messages.create!(
+      message = conversation.messages.create!(
         user: transaction.user,
         reference_transactable:,
         body: "notification:update",
         headers:
       )
+      supersede_previous_messages(conversation, message)
 
       true
     end
@@ -124,6 +125,7 @@ module Logic
           is_payer: entity_transaction.is_payer,
           price: entity_transaction.price,
           price_to_be_returned: entity_transaction.price_to_be_returned,
+          loan_return_percentage: entity_transaction.loan_return_percentage,
           exchanges_count: entity_transaction.exchanges_count,
           exchanges_attributes: []
         }
@@ -136,6 +138,30 @@ module Logic
 
     def first_desired_installment
       desired_installments.first
+    end
+
+    def supersede_previous_messages(conversation, new_message)
+      previous_messages = conversation.messages
+                                      .merge(reference_scope_for(notification_reference_family))
+                                      .where(superseded_by_id: nil)
+                                      .where.not(id: new_message.id)
+
+      previous_messages.update_all(superseded_by_id: new_message.id)
+    end
+
+    def notification_reference_family
+      transaction.notification_message_reference_family
+    end
+
+    def reference_scope_for(references)
+      grouped_references = references.compact.uniq { |reference| [ reference.class.name, reference.id ] }.group_by(&:class)
+
+      grouped_references.values.map do |group|
+        Message.where(
+          reference_transactable_type: group.first.class.name,
+          reference_transactable_id: group.map(&:id)
+        )
+      end.reduce(Message.none, &:or)
     end
   end
 end

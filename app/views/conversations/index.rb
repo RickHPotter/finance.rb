@@ -19,15 +19,15 @@ class Views::Conversations::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50") do
-        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+      div(class: compact_crud_shell_class) do
+        div(class: compact_crud_header_class) do
           div(class: "flex flex-col items-start") do
-            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Conversation, 2) }
+            h1(class: compact_crud_title_class) { action_model(:index, Conversation, 2) }
             render_scenario_badge
           end
         end
 
-        div(class: "border-b border-stone-100 px-3 py-3 md:px-4") do
+        div(class: compact_crud_panel_class) do
           div(class: "flex flex-wrap gap-2") do
             render_filter_badge("all")
             render_filter_badge("unread")
@@ -68,12 +68,14 @@ class Views::Conversations::Index < Views::Base
   def filter_badge_class(filter, selected)
     base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition"
 
-    return "#{base_class} border-stone-900 bg-stone-900 text-white" if selected && filter == "all"
+    return "#{base_class} border-stone-900 bg-stone-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950" if selected && filter == "all"
     return "#{base_class} border-red-600 bg-red-600 text-white" if selected && filter == "unread"
-    return "#{base_class} border-stone-900 bg-stone-900 text-white" if selected && filter == "human"
-    return "#{base_class} border-amber-500 bg-amber-500 text-stone-950" if selected && filter == "assistant"
+    return "#{base_class} border-stone-900 bg-stone-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950" if selected && filter == "human"
+    if selected && filter == "assistant"
+      return "#{base_class} border-amber-500 bg-amber-500 text-stone-950 dark:border-amber-400 dark:bg-amber-500 dark:text-stone-950"
+    end
 
-    "#{base_class} border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900"
+    "#{base_class} #{inactive_badge_class}"
   end
 
   def render_conversation_card(conversation)
@@ -90,7 +92,7 @@ class Views::Conversations::Index < Views::Base
           image_tag asset_path("avatars/#{conversation_avatar_name(conversation)}"), class: conversation_avatar_class(conversation)
 
           div(class: "min-w-0") do
-            p(class: "text-sm font-semibold text-stone-900") { conversation.title_for(current_user) }
+            p(class: "text-sm font-semibold text-stone-900 dark:text-slate-100") { conversation.title_for(current_user) }
           end
         end
 
@@ -99,7 +101,7 @@ class Views::Conversations::Index < Views::Base
         end
       end
 
-      p(class: "mt-3 line-clamp-2 text-sm text-stone-600") { latest_message_preview(latest_message) }
+      p(class: "mt-3 line-clamp-2 text-sm text-stone-600 dark:text-slate-300") { latest_message_preview(latest_message) }
     end
   end
 
@@ -107,9 +109,9 @@ class Views::Conversations::Index < Views::Base
     base_class = "block rounded-lg border px-4 py-3 transition"
 
     if conversation.assistant?
-      "#{base_class} border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100"
+      "#{base_class} border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
     else
-      "#{base_class} border-stone-200 bg-stone-50 hover:border-red-300 hover:bg-red-50"
+      "#{base_class} #{human_conversation_card_class}"
     end
   end
 
@@ -119,10 +121,20 @@ class Views::Conversations::Index < Views::Base
     counterpart_entities[conversation.friend_for(current_user)&.id]&.avatar_name || "people/0.png"
   end
 
+  def inactive_badge_class
+    "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900 dark:border-slate-700 dark:bg-slate-900 " \
+      "dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100"
+  end
+
+  def human_conversation_card_class
+    "border-stone-200 bg-stone-50 hover:border-red-300 hover:bg-red-50 dark:border-slate-700 dark:bg-slate-800 " \
+      "dark:hover:border-red-500/50 dark:hover:bg-red-950/30"
+  end
+
   def conversation_avatar_class(conversation)
     ring_class = conversation.assistant? ? "ring-amber-200" : "ring-stone-200"
 
-    "size-11 rounded-full bg-white object-cover ring-2 #{ring_class}"
+    "size-11 rounded-full bg-white object-cover ring-2 #{ring_class} dark:ring-slate-600"
   end
 
   def counterpart_entities

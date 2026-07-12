@@ -18,13 +18,14 @@ class Views::Transactions::ChainControls < Views::Base
     end
 
     div(class: "flex w-full items-center justify-center pt-1") do
-      label(class: "flex items-center gap-2 text-sm font-medium text-slate-700") do
+      label(class: "flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300") do
         input(
           type: "checkbox",
           name: "continue_chain",
           value: "1",
           checked: checked,
-          class: "h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          class: "h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 " \
+                 "dark:text-sky-500 dark:focus:ring-sky-500/60"
         )
         plain chain_label
       end

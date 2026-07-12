@@ -26,7 +26,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         render_budget(budget)
       end
     elsif show_rows_not_found
-      div(class: "text-lg") { I18n.t(:rows_not_found) }
+      div(class: "text-lg dark:text-slate-100") { I18n.t(:rows_not_found) }
     end
   end
 
@@ -44,41 +44,29 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-visible bg-indigo-900 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
-        data: { id: budget.id, datatable_target: :row }
+        class: "rounded-lg shadow-sm overflow-visible bg-indigo-800 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
+        data: { id: budget.id, datatable_target: :row, row_kind: :budget }
       ) do
+        render_budget_checkbox(budget, mobile: true)
+
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
-              link_to budget.description,
+              link_to "#{pluralise_model(budget, 1).upcase}: #{from_cent_based_to_float(budget.value, 'R$')}",
                       edit_budget_path(budget),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top" }
 
-              span(class: "shrink-0 p-1 rounded-sm bg-white border border-black text-black") do
-                from_cent_based_to_float(budget.value, "R$")
-              end
+              render_rule_chips(budget)
             end
           end
 
           div(class: "flex items-center justify-between py-2") do
-            div(class: "text-xs text-start flex-1") do
-              span(class: "flex items-center justify-start gap-2 rounded-sm") do
-                render_action_menu(budget)
+            div(class: "text-xs text-start flex-1 flex items-center") do
+              render_action_menu(budget)
 
-                case budget.remaining_value <=> budget.value
-                when -1
-                  :x_circle
-                when 0
-                  :warning_octagon
-                when 1
-                  :check_square
-                end => icon
-
-                cached_icon icon
-                span(class: "rounded-xs text-xs mr-auto") { I18n.l(budget.date, format: "%B %Y") }
-              end
+              span(class: "whitespace-nowrap pl-2") { I18n.l(budget.date, format: "%B %Y") }
             end
 
             div(class: "whitespace-nowrap") do
@@ -86,7 +74,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
             end
           end
 
-          div(class: "flex items-center justify-between gap-2") do
+          div(class: "flex flex-wrap items-center gap-1") do
             render_mobile_categories(budget)
 
             render_mobile_entities(budget)
@@ -101,30 +89,35 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 bg-indigo-900 text-zinc-50 hover:opacity-80 transition-all",
+        class: "grid grid-cols-12 bg-indigo-800 text-zinc-50 hover:opacity-80 transition-all",
         draggable: true,
         data: {
           id: budget.id,
           datatable_target: :row,
+          row_kind: :budget,
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
         }
       ) do
-        div(class: "flex items-center justify-center gap-1 rounded-sm px-2") do
-          render_action_menu(budget)
-
+        render_budget_checkbox(budget) do
           month, year = I18n.l(budget.date, format: "%B %Y").split
-          div(class: "grid grid-cols-1 mr-auto") do
-            span(class: "rounded-xs text-xs mr-auto") { month }
-            span(class: "rounded-xs text-xs mr-auto") { year }
+          div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do
+            render_action_menu(budget)
+
+            div(class: "grid grid-cols-1 mr-auto") do
+              span(class: "rounded-xs text-xs mr-auto") { month }
+              span(class: "rounded-xs text-xs mr-auto") { year }
+            end
           end
         end
 
-        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2  underline underline-offset-[3px]") do
+        div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           link_to "#{pluralise_model(budget, 1).upcase}: #{from_cent_based_to_float(budget.value, 'R$')}",
                   edit_budget_path(budget),
                   id: "edit_budget_#{budget.id}",
-                  class: "flex-1 truncate text-md",
+                  class: "flex-1 truncate text-md underline underline-offset-[3px]",
                   data: { turbo_frame: "_top" }
+
+          render_rule_chips(budget)
         end
 
         render_desktop_categories(budget)
@@ -209,8 +202,75 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
     end
   end
 
+  def render_budget_actions(budget, mobile: false)
+    div(class: "flex items-center gap-1 relative px-2 #{'pt-2' if mobile}") do
+      render_budget_checkbox_input(budget, mobile:)
+      render_action_menu(budget)
+    end
+  end
+
+  def render_budget_checkbox(budget, mobile: false)
+    div(class: "flex items-center gap-1 relative px-2 #{'pt-2' if mobile}") do
+      render_budget_checkbox_input(budget, mobile:)
+
+      yield if block_given?
+    end
+  end
+
+  def render_budget_checkbox_input(budget, mobile: false)
+    label(class: "group inline-flex cursor-pointer items-center justify-center") do
+      input(
+        type: :checkbox,
+        value: budget.id,
+        class: "peer sr-only",
+        aria: { label: budget.description },
+        data: {
+          datatable_target: :checkbox,
+          action: "mousedown->datatable#preventRangeSelection click->datatable#toggleSelection",
+          bulk_price_cents: budget.remaining_value,
+          bulk_record_id: budget.id,
+          bulk_label: budget.description,
+          bulk_selection_kind: "budget"
+        }
+      )
+
+      unless mobile
+        span(
+          class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+              peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
+              peer-focus:ring-2 peer-focus:ring-blue-300 dark:border-slate-500 dark:bg-slate-900 dark:peer-checked:border-sky-500
+              dark:peer-checked:bg-sky-600 dark:peer-focus:ring-sky-500/50 size-4"
+        ) do
+          span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
+        end
+      end
+    end
+  end
+
+  def render_rule_chips(budget, wrapper_class: nil)
+    div(class: "flex shrink-0 items-center gap-1 #{wrapper_class}") do
+      rule_chip(:inclusive, budget.inclusive?)
+      rule_chip(:first_installment_only, budget.first_installment_only?)
+    end
+  end
+
+  def rule_chip(rule, enabled)
+    span(
+      class: "max-w-full truncate rounded-sm border border-white/40 bg-white/10 px-1 py-0.5 text-2xs font-semibold uppercase text-white/90",
+      title: I18n.t("dashboards.budgets.rules.#{rule}.#{enabled ? 'enabled' : 'disabled'}")
+    ) do
+      rule_chip_acronym(rule, enabled)
+    end
+  end
+
+  def rule_chip_acronym(rule, enabled)
+    return enabled ? "INC" : "EXC" if rule == :inclusive
+
+    enabled ? "1/N" : "N/N"
+  end
+
   def render_action_menu(budget)
-    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 flex-shrink-0") do
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
         button(
           type: :button,
@@ -223,7 +283,7 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
         end
       end
 
-      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
+      PopoverContent(class: "z-40 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:analyse), budget_path(budget), id: "analyse_budget_#{budget.id}")
           action_menu_link(action_message(:duplicate), duplicate_budget_path(budget), id: "duplicate_budget_#{budget.id}")
@@ -259,10 +319,12 @@ class Views::Budgets::Budgets < Views::Base # rubocop:disable Metrics/ClassLengt
   end
 
   def action_menu_item_class
-    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 " \
+      "hover:no-underline dark:text-slate-200 dark:hover:bg-slate-800"
   end
 
   def action_button_class
-    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white " \
+      "dark:bg-slate-900/90 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 end

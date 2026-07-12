@@ -2,7 +2,7 @@
   "name": "finance.rb",
   "private": true,
   "devDependencies": {
-    "esbuild": "0.28.0"
+    "esbuild": "0.28.1"
   },
   "scripts": {
     "build": "esbuild app/javascript/*.* --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets"
@@ -18,7 +18,7 @@
     "chart.js": "^4.5.1",
     "embla-carousel": "^8.6.0",
     "flowbite": "^4.0.1",
-    "hotkeys-js": "4.0.3",
+    "hotkeys-js": "4.0.4",
     "mustache": "^4.2.0",
     "stimulus-notification": "^2.2.0",
     "stimulus-rails-autosave": "^5.1.0",

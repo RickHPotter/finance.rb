@@ -142,9 +142,12 @@ module Logic
     end
 
     def receiver_context_for(receiver, scenario_key)
-      return receiver.ensure_main_context! if scenario_key.blank?
+      cache_key = [ receiver.id, scenario_key.presence ]
+      return receiver_context_cache[cache_key] if receiver_context_cache.key?(cache_key)
 
-      receiver.contexts.find_by(scenario_key:)
+      return receiver_context_cache[cache_key] = receiver.ensure_main_context! if scenario_key.blank?
+
+      receiver_context_cache[cache_key] = receiver.contexts.find_by(scenario_key:)
     end
 
     def source_transaction_for(reference_transactable, visited = [])
@@ -178,11 +181,15 @@ module Logic
     end
 
     def linked_to_receiver?(transaction, receiver)
-      transaction.entity_transactions.joins(:entity).where(entities: { entity_user_id: receiver.id }).exists?
+      cache_key = [ transaction.class.name, transaction.id, receiver.id ]
+      linked_receiver_cache.fetch(cache_key) do
+        linked_receiver_cache[cache_key] = transaction.entity_transactions.joins(:entity).where(entities: { entity_user_id: receiver.id }).exists?
+      end
     end
 
     def exchange_intent_for(message, source_transaction, receiver_context: nil)
       message.replay_payload&.fetch("intent", nil).presence ||
+        source_transaction.try(:friend_notification_intent).presence ||
         inferred_exchange_intent_for(source_transaction, receiver_context:) ||
         historical_exchange_intent_for(source_transaction)
     end
@@ -267,10 +274,16 @@ module Logic
     end
 
     def receiver_family_descendants_for(source_transaction, receiver_context:)
-      receiver_ids = receiver_context.cash_transactions.pluck(:id)
+      receiver_ids = receiver_context_cash_transaction_ids_for(receiver_context)
 
       CashTransaction.reference_descendants_for(source_transaction).select do |candidate|
         receiver_ids.include?(candidate.id)
+      end
+    end
+
+    def receiver_context_cash_transaction_ids_for(receiver_context)
+      receiver_context_cash_transaction_ids_cache.fetch(receiver_context.id) do
+        receiver_context_cash_transaction_ids_cache[receiver_context.id] = receiver_context.cash_transactions.pluck(:id)
       end
     end
 
@@ -361,13 +374,17 @@ module Logic
     def shared_return_candidates_for(transaction)
       return [] if transaction.blank?
 
-      CashTransaction.includes(:categories, :cash_installments, :entities, :reference_transactable)
-                     .joins(exchanges: :entity_transaction)
-                     .where(entity_transactions: { transactable_type: transaction.class.name, transactable_id: transaction.id })
-                     .where(exchanges: { exchange_type: Exchange.exchange_types.fetch(:monetary) })
-                     .distinct
-                     .select(&:exchange_return?)
-                     .sort_by { |candidate| [ candidate.created_at || Time.at(0), candidate.id || 0 ] }
+      cache_key = [ transaction.class.name, transaction.id ]
+      shared_return_candidates_cache.fetch(cache_key) do
+        shared_return_candidates_cache[cache_key] = CashTransaction.includes(:categories, :cash_installments, :entities, :reference_transactable)
+                                                                   .joins(exchanges: :entity_transaction)
+                                                                   .where(entity_transactions: { transactable_type: transaction.class.name,
+                                                                                                 transactable_id: transaction.id })
+                                                                   .where(exchanges: { exchange_type: Exchange.exchange_types.fetch(:monetary) })
+                                                                   .distinct
+                                                                   .select(&:exchange_return?)
+                                                                   .sort_by { |candidate| [ candidate.created_at || Time.at(0), candidate.id || 0 ] }
+      end
     end
 
     def load_reference_transactable_for(transaction)
@@ -517,7 +534,10 @@ module Logic
     end
 
     def category_names_for(transaction)
-      transaction.categories.to_a.map(&:category_name)
+      cache_key = [ transaction.class.name, transaction.id ]
+      category_names_cache.fetch(cache_key) do
+        category_names_cache[cache_key] = transaction.categories.to_a.map(&:category_name)
+      end
     end
 
     def reference_status_for(current_reference:, expected_reference:)
@@ -580,6 +600,26 @@ module Logic
           action: node[:expected_reference].present? ? "set_reference" : "clear_reference"
         }
       end
+    end
+
+    def category_names_cache
+      @category_names_cache ||= {}
+    end
+
+    def linked_receiver_cache
+      @linked_receiver_cache ||= {}
+    end
+
+    def receiver_context_cache
+      @receiver_context_cache ||= {}
+    end
+
+    def receiver_context_cash_transaction_ids_cache
+      @receiver_context_cash_transaction_ids_cache ||= {}
+    end
+
+    def shared_return_candidates_cache
+      @shared_return_candidates_cache ||= {}
     end
   end
 end

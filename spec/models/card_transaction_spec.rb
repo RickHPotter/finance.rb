@@ -157,6 +157,28 @@ RSpec.describe CardTransaction, type: :model do
       expect(duplicated_installment.paid).to be(false)
     end
 
+    it "clears subscription_id when the subscription category is removed" do
+      user = create(:user)
+      subscription = create(:subscription, user:, context: user.main_context)
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: create(:user_card, :random, user:),
+        subscription:
+      )
+      transaction.category_transactions.destroy_all
+      transaction.categories = [ user.built_in_category("SUBSCRIPTION") ]
+      transaction.save!(validate: false)
+
+      transaction.categories = [ replacement_category ]
+      transaction.save!
+
+      expect(transaction.reload.subscription_id).to be_nil
+      expect(transaction.categories.pluck(:category_name)).to contain_exactly("TRANSPORT")
+    end
+
     it "duplicates installments and exchanges in stable number order" do
       transaction = create(
         :card_transaction,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_25_000000) do
     t.datetime "created_at", null: false
     t.datetime "date", null: false
     t.string "description", null: false
+    t.string "friend_notification_intent"
     t.boolean "imported", default: false
     t.bigint "investment_type_id"
     t.integer "month", null: false
@@ -220,6 +221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_25_000000) do
     t.bigint "entity_id", null: false
     t.integer "exchanges_count", default: 0, null: false
     t.boolean "is_payer", default: false, null: false
+    t.decimal "loan_return_percentage", precision: 10, scale: 4, default: "100.0", null: false
     t.integer "price", default: 0, null: false
     t.integer "price_to_be_returned", default: 0, null: false
     t.integer "status", default: 0, null: false

@@ -1,60 +1,154 @@
 # frozen_string_literal: true
 
-class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
+class Views::Admin::Settings::ExchangeReturnAudit < Views::Base # rubocop:disable Metrics/ClassLength
   include TranslateHelper
 
-  attr_reader :rows
+  ISSUE_BUCKETS = %w[
+    installments_total_mismatch
+    exchange_rows_total_mismatch
+    stale_linked_source_rows
+    source_allocation_mismatch
+    message_replay_payload_mismatch
+    card_bound_bill_projection_mismatch
+  ].freeze
 
-  def initialize(rows:)
+  attr_reader :bucket_issue, :frame_id, :row, :rows
+
+  def initialize(rows: nil, row: nil, frame_id: :settings_exchange_return_audit_content, bucket_issue: nil)
     @rows = rows
+    @row = row
+    @frame_id = frame_id
+    @bucket_issue = bucket_issue
   end
 
   def view_template
-    turbo_frame_tag :settings_exchange_return_audit_content do
-      div(class: "space-y-4 text-left text-black") do
-        div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
-          h2(class: "text-lg font-bold text-slate-900") { I18n.t("settings.exchange_return_audit.title") }
-          p(class: "mt-1 text-sm text-slate-600") { I18n.t("settings.exchange_return_audit.description") }
-          p(class: "mt-2 text-xs font-semibold uppercase tracking-wide text-stone-600") do
-            plain "#{I18n.t('settings.exchange_return_audit.context')}: "
-            plain(rows.first&.dig(:context, :name) || "-")
-          end
-        end
+    return audit_card(row) if row.present?
 
-        if rows.empty?
-          render_filter_bar
-          empty_state
-        else
-          summary_card
-          render_filter_bar
-          div(class: "space-y-4") { rows.each { |row| audit_card(row) } }
-        end
+    turbo_frame_tag frame_id do
+      div(class: "space-y-4 text-left text-black dark:text-slate-100") do
+        header
+        render_issue_buckets
+
+        render_bucket_rows unless shell?
       end
     end
   end
 
   private
 
+  def shell?
+    rows.nil?
+  end
+
+  def header
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      h3(class: "text-base font-bold text-slate-900 dark:text-slate-100") { header_title }
+      p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { header_description }
+      return if shell?
+      return if bucket_issue.present?
+
+      p(class: "mt-2 text-xs font-semibold uppercase tracking-wide text-stone-600 dark:text-slate-400") do
+        plain "#{I18n.t('settings.exchange_return_audit.context')}: "
+        plain(rows.first&.dig(:context, :name) || "-")
+      end
+    end
+  end
+
+  def header_title
+    return I18n.t("settings.exchange_return_audit.title") if bucket_issue.blank?
+
+    I18n.t("settings.exchange_return_audit.issue_codes.#{bucket_issue}")
+  end
+
+  def header_description
+    return I18n.t("settings.exchange_return_audit.description") if shell?
+
+    I18n.t("settings.exchange_return_audit.bucket_descriptions.#{bucket_issue}", default: I18n.t("settings.exchange_return_audit.bucket_description"))
+  end
+
   def empty_state
-    div(class: "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500") do
+    empty_class = "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 " \
+                  "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400"
+
+    div(class: empty_class) do
       I18n.t("settings.exchange_return_audit.empty")
     end
   end
 
-  def summary_card
-    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm") do
-      div(class: "grid gap-3 md:grid-cols-3") do
+  def render_bucket_rows
+    if rows.empty?
+      empty_state
+    else
+      bucket_summary
+      div(class: "space-y-4") { rows.each { |row| audit_card(row) } }
+    end
+  end
+
+  def bucket_summary
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      div(class: "grid gap-3 md:grid-cols-2") do
         summary_stat(I18n.t("settings.exchange_return_audit.summary.rows"), rows.count)
-        summary_stat(
-          I18n.t("settings.exchange_return_audit.summary.installment_mismatches"),
-          rows.count { |row| row[:issues].include?("installments_total_mismatch") }
-        )
-        summary_stat(
-          I18n.t("settings.exchange_return_audit.summary.stale_source_rows"),
-          rows.count { |row| row[:issues].include?("stale_linked_source_rows") || row[:issues].include?("source_allocation_mismatch") }
-        )
+        summary_stat(I18n.t("settings.exchange_return_audit.status_label"), I18n.t("settings.exchange_return_audit.filters.pending"))
       end
     end
+  end
+
+  def render_issue_buckets
+    return unless shell?
+
+    div(class: "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30",
+        data: { controller: "naming-tabs", naming_tabs_current_value: "" }) do
+      h3(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700 dark:text-slate-300") { I18n.t("settings.exchange_audit.issue_buckets.title") }
+      p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_audit.issue_buckets.description") }
+
+      div(class: "mt-3 flex flex-wrap gap-2") do
+        issue_bucket_button(name: "misplaced_loans")
+        ISSUE_BUCKETS.each { |issue_code| issue_bucket_button(name: issue_code) }
+      end
+
+      div(class: "mt-4 hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "misplaced_loans" }) do
+        turbo_frame_tag :settings_exchange_return_audit_misplaced_loans_content,
+                        data: { naming_tabs_lazy_src: exchange_return_audit_misplaced_loans_admin_settings_path } do
+          loading_state(I18n.t("settings.exchange_audit.issue_buckets.misplaced_loans.loading"))
+        end
+      end
+
+      ISSUE_BUCKETS.each do |issue_code|
+        div(class: "mt-4 hidden", data: { naming_tabs_target: "panel", naming_tabs_name: issue_code }) do
+          turbo_frame_tag "settings_exchange_return_audit_#{issue_code}_content",
+                          data: { naming_tabs_lazy_src: exchange_return_audit_issue_bucket_admin_settings_path(issue_code:) } do
+            loading_state(I18n.t("settings.exchange_return_audit.loading"))
+          end
+        end
+      end
+    end
+  end
+
+  def issue_bucket_button(name:)
+    button(
+      type: :button,
+      class: "rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 transition-colors dark:bg-slate-800 dark:text-slate-200",
+      data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
+    ) do
+      issue_bucket_label(name)
+    end
+  end
+
+  def issue_bucket_label(name)
+    return I18n.t("settings.exchange_audit.issue_buckets.misplaced_loans.button") if name == "misplaced_loans"
+
+    I18n.t("settings.exchange_return_audit.issue_codes.#{name}")
+  end
+
+  def loading_state(text)
+    div(class: empty_panel_class) do
+      text
+    end
+  end
+
+  def empty_panel_class
+    "rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 " \
+      "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400"
   end
 
   def render_filter_bar
@@ -66,7 +160,7 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
 
   def filter_button(name)
     active = current_status_filter == name
-    button_classes = active ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-700"
+    button_classes = active ? "bg-slate-900 text-white dark:bg-sky-500" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
 
     form(action: exchange_return_audit_admin_settings_path, method: "get") do
       input(type: "hidden", name: "status_filter", value: name)
@@ -78,17 +172,18 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
   end
 
   def audit_card(row)
-    div(class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm") do
-      div(class: "flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3") do
+    div(id: exchange_return_audit_row_dom_id(row[:id]),
+        class: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
+      div(class: "flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900") do
         div(class: "space-y-1") do
           div(class: "flex flex-wrap items-center gap-2") do
-            h3(class: "text-base font-bold text-slate-900") { "##{row[:id]} · #{row[:description]}" }
+            h3(class: "text-base font-bold text-slate-900 dark:text-slate-100") { "##{row[:id]} · #{row[:description]}" }
             a(href: cash_transaction_path(row[:id]), class: "text-xs font-semibold text-sky-700 hover:underline", data: { turbo_frame: "_top" }) do
               I18n.t("settings.exchange_return_audit.open")
             end
           end
 
-          p(class: "text-xs text-slate-600") do
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
             plain "#{I18n.t('settings.exchange_return_audit.date')}: #{I18n.l(row[:date], format: :short)}"
             plain " · "
             plain "#{I18n.t('settings.exchange_return_audit.month_year')}: #{row[:month_year]}"
@@ -113,47 +208,52 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
         metric(I18n.t("settings.exchange_return_audit.metrics.source_rows"), row[:linked_source_rows].count, number: true)
       end
 
-      return if row[:linked_source_rows].empty?
+      replay_rows(row[:message_replay_rows]) if row[:message_replay_rows].present?
+      card_bound_projection_rows(row[:card_bound_projection_rows]) if row[:card_bound_projection_rows].present?
 
-      div(class: "border-t border-amber-200 bg-amber-50 px-4 py-3") do
-        h4(class: "text-xs font-semibold uppercase tracking-wide text-amber-900") { I18n.t("settings.exchange_return_audit.stale_rows.title") }
-        p(class: "mt-1 text-xs text-amber-800") { I18n.t("settings.exchange_return_audit.stale_rows.description") }
+      if row[:linked_source_rows].present?
+        div(class: "border-t border-amber-200 bg-amber-50 px-4 py-3") do
+          h4(class: "text-xs font-semibold uppercase tracking-wide text-amber-900") { I18n.t("settings.exchange_return_audit.stale_rows.title") }
+          p(class: "mt-1 text-xs text-amber-800") { I18n.t("settings.exchange_return_audit.stale_rows.description") }
 
-        div(class: "mt-3 space-y-2") do
-          row[:linked_source_rows].each do |source_row|
-            stale_row(source_row)
+          div(class: "mt-3 space-y-2") do
+            row[:linked_source_rows].each do |source_row|
+              stale_row(source_row)
+            end
           end
         end
       end
-    end
 
-    return if row[:source_allocation_rows].empty?
+      if row[:source_allocation_rows].present?
+        div(class: "border-t border-rose-200 bg-rose-50 px-4 py-3") do
+          h4(class: "text-xs font-semibold uppercase tracking-wide text-rose-900") { I18n.t("settings.exchange_return_audit.allocation_rows.title") }
+          p(class: "mt-1 text-xs text-rose-800") { I18n.t("settings.exchange_return_audit.allocation_rows.description") }
 
-    div(class: "border-t border-rose-200 bg-rose-50 px-4 py-3") do
-      h4(class: "text-xs font-semibold uppercase tracking-wide text-rose-900") { I18n.t("settings.exchange_return_audit.allocation_rows.title") }
-      p(class: "mt-1 text-xs text-rose-800") { I18n.t("settings.exchange_return_audit.allocation_rows.description") }
-
-      div(class: "mt-3 space-y-2") do
-        row[:source_allocation_rows].each do |allocation_row|
-          allocation_issue_row(allocation_row)
+          div(class: "mt-3 space-y-2") do
+            row[:source_allocation_rows].each do |allocation_row|
+              allocation_issue_row(allocation_row)
+            end
+          end
         end
       end
     end
   end
 
   def stale_row(source_row)
-    div(class: "rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-amber-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{source_row[:transactable_type]} ##{source_row[:transactable_id]}"
             plain " · #{source_row[:description]}" if source_row[:description].present?
           end
-          p(class: "text-xs text-slate-600") { "EntityTransaction ##{source_row[:entity_transaction_id]}" }
+          p(class: "text-xs text-slate-600 dark:text-slate-400") { "EntityTransaction ##{source_row[:entity_transaction_id]}" }
         end
 
         div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
           meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.aggregate')}: #{from_cent_based_to_float(source_row[:aggregate_total], 'R$')}",
+                    "bg-slate-200 text-slate-700")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.principal')}: #{from_cent_based_to_float(source_row[:principal_total], 'R$')}",
                     "bg-slate-200 text-slate-700")
           meta_chip(
             "#{I18n.t('settings.exchange_return_audit.stale_rows.aggregate_exchange_total')}: #{from_cent_based_to_float(source_row[:aggregate_exchange_total],
@@ -166,25 +266,115 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
           )
           meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.delta')}: #{from_cent_based_to_float(source_row[:delta], 'R$')}",
                     "bg-amber-100 text-amber-900")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.return_percentage')}: #{format_percentage(source_row[:loan_return_percentage])}",
+                    "bg-slate-200 text-slate-700")
+          if source_row[:calculated_price].present?
+            meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.corrected_value')}: #{from_cent_based_to_float(source_row[:calculated_price], 'R$')}",
+                      "bg-sky-100 text-sky-900")
+          end
         end
+      end
+      source_row_actions(source_row)
+    end
+  end
+
+  def source_row_actions(source_row)
+    return unless source_row_actions_available?(source_row)
+
+    div(class: "mt-3 border-t border-sky-200 pt-3 text-sm text-sky-950 dark:border-sky-500/40 dark:text-sky-100") do
+      strong(class: "font-semibold") { "#{I18n.t('settings.exchange_return_audit.actions')}: " }
+      div(class: "mt-2 flex flex-wrap gap-2") do
+        match_return_percentage_link(source_row) if match_return_percentage_available?(source_row)
+        apply_return_percentage_link(source_row) if apply_return_percentage_available?(source_row)
       end
     end
   end
 
+  def source_row_actions_available?(source_row)
+    match_return_percentage_available?(source_row) || apply_return_percentage_available?(source_row)
+  end
+
+  def match_return_percentage_link(source_row)
+    a(
+      href: mark_exchange_return_source_as_fee_admin_settings_path(
+        entity_transaction_id: source_row[:entity_transaction_id],
+        status_filter: current_status_filter,
+        issue_code: bucket_issue || "source_allocation_mismatch",
+        loan_return_percentage: matched_return_percentage(source_row)
+      ),
+      class: "rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-sky-800",
+      data: { turbo_method: :patch }
+    ) do
+      I18n.t(
+        "settings.exchange_return_audit.stale_rows.match_return_percentage",
+        percentage: format_percentage(matched_return_percentage(source_row)),
+        value: from_cent_based_to_float(source_row[:current_return_price], "R$")
+      )
+    end
+  end
+
+  def apply_return_percentage_link(source_row)
+    a(
+      href: mark_exchange_return_source_as_fee_admin_settings_path(
+        entity_transaction_id: source_row[:entity_transaction_id],
+        status_filter: current_status_filter,
+        issue_code: bucket_issue || "source_allocation_mismatch",
+        loan_return_percentage: source_row[:calculated_loan_return_percentage],
+        price: source_row[:calculated_price],
+        price_to_be_returned: source_row[:calculated_price]
+      ),
+      class: "rounded-lg bg-amber-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-amber-800",
+      data: { turbo_method: :patch }
+    ) do
+      I18n.t(
+        "settings.exchange_return_audit.stale_rows.apply_corrected_value",
+        value: from_cent_based_to_float(source_row[:calculated_price], "R$"),
+        percentage: format_percentage(source_row[:calculated_loan_return_percentage])
+      )
+    end
+  end
+
+  def apply_return_percentage_available?(source_row)
+    source_row[:friend_notification_intent] == "loan" &&
+      source_row[:calculated_loan_return_percentage].to_d.positive? &&
+      source_row[:calculated_price].to_i != source_row.fetch(:current_price, source_row[:principal_total]).to_i
+  end
+
+  def match_return_percentage_available?(source_row)
+    %w[loan reimbursement].include?(source_row[:friend_notification_intent]) &&
+      matched_return_percentage(source_row).to_d.positive? &&
+      matched_return_percentage(source_row).to_d != source_row[:loan_return_percentage].to_d
+  end
+
+  def matched_return_percentage(source_row)
+    source_row[:matched_loan_return_percentage] || source_row[:calculated_loan_return_percentage]
+  end
+
+  def format_percentage(value)
+    "#{value.to_d.to_s('F')}%"
+  end
+
   def metric(label, value, small: false, number: false)
-    div(class: "rounded-xl border border-slate-200 bg-white px-3 py-3") do
-      p(class: small ? "text-[11px] font-semibold uppercase tracking-wide text-slate-500" : "text-xs font-semibold uppercase tracking-wide text-slate-500") { label }
-      p(class: small ? "mt-1 text-base font-bold text-slate-900" : "mt-2 text-lg font-bold text-slate-900") do
+    div(class: "rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: metric_label_class(small)) do
+        label
+      end
+      p(class: small ? "mt-1 text-base font-bold text-slate-900 dark:text-slate-100" : "mt-2 text-lg font-bold text-slate-900 dark:text-slate-100") do
         plain(number ? value.to_s : from_cent_based_to_float(value, "R$"))
       end
     end
   end
 
   def summary_stat(label, value)
-    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3") do
-      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500") { label }
-      p(class: "mt-2 text-lg font-bold text-slate-900") { value.to_s }
+    div(class: "rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900") do
+      p(class: "text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400") { label }
+      p(class: "mt-2 text-lg font-bold text-slate-900 dark:text-slate-100") { value.to_s }
     end
+  end
+
+  def metric_label_class(small)
+    size_class = small ? "text-[11px]" : "text-xs"
+    "#{size_class} font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
   end
 
   def meta_chip(text, classes)
@@ -192,14 +382,14 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
   end
 
   def allocation_issue_row(allocation_row)
-    div(class: "rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-800") do
+    div(class: "rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-rose-500/40 dark:bg-slate-900 dark:text-slate-200") do
       div(class: "flex flex-wrap items-start justify-between gap-2") do
         div(class: "space-y-1") do
-          p(class: "font-semibold text-slate-900") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
             plain "#{allocation_row[:transactable_type]} ##{allocation_row[:transactable_id]}"
             plain " · #{allocation_row[:description]}" if allocation_row[:description].present?
           end
-          p(class: "text-xs text-slate-600") { I18n.t("settings.exchange_return_audit.issue_codes.#{allocation_row[:issue_code]}") }
+          p(class: "text-xs text-slate-600 dark:text-slate-400") { I18n.t("settings.exchange_return_audit.issue_codes.#{allocation_row[:issue_code]}") }
         end
 
         div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
@@ -213,18 +403,134 @@ class Views::Admin::Settings::ExchangeReturnAudit < Views::Base
           )
           meta_chip("#{I18n.t('settings.exchange_return_audit.allocation_rows.missing_amount')}: #{from_cent_based_to_float(allocation_row[:missing_amount], 'R$')}",
                     "bg-rose-100 text-rose-900")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.current_value')}: #{from_cent_based_to_float(allocation_row[:current_price], 'R$')}",
+                    "bg-slate-200 text-slate-700")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.return_percentage')}: #{format_percentage(allocation_row[:loan_return_percentage])}",
+                    "bg-slate-200 text-slate-700")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.stale_rows.corrected_value')}: #{from_cent_based_to_float(allocation_row[:calculated_price], 'R$')}",
+                    "bg-sky-100 text-sky-900")
+        end
+      end
+      source_row_actions(allocation_row)
+    end
+  end
+
+  def replay_rows(message_replay_rows)
+    div(class: "border-t border-violet-200 bg-violet-50 px-4 py-3") do
+      h4(class: "text-xs font-semibold uppercase tracking-wide text-violet-900") { I18n.t("settings.exchange_return_audit.message_replay_rows.title") }
+      p(class: "mt-1 text-xs text-violet-800") { I18n.t("settings.exchange_return_audit.message_replay_rows.description") }
+
+      div(class: "mt-3 space-y-2") do
+        message_replay_rows.each do |message_row|
+          replay_row(message_row)
         end
       end
     end
   end
 
+  def card_bound_projection_rows(rows)
+    div(class: "border-t border-orange-200 bg-orange-50 px-4 py-3") do
+      h4(class: "text-xs font-semibold uppercase tracking-wide text-orange-900") { I18n.t("settings.exchange_return_audit.card_bound_projection_rows.title") }
+      p(class: "mt-1 text-xs text-orange-800") { I18n.t("settings.exchange_return_audit.card_bound_projection_rows.description") }
+
+      div(class: "mt-3 space-y-2") do
+        rows.each do |row|
+          card_bound_projection_row(row)
+        end
+      end
+    end
+  end
+
+  def card_bound_projection_row(row)
+    div(class: "rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-orange-500/40 dark:bg-slate-900 dark:text-slate-200") do
+      div(class: "flex flex-wrap items-start justify-between gap-2") do
+        div(class: "space-y-1") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
+            plain "#{row[:source_type]} ##{row[:source_id]}"
+            plain " · #{row[:source_description]}" if row[:source_description].present?
+          end
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
+            plain "Exchange ##{row[:exchange_id]}"
+            plain " · #{row[:entity_name]}" if row[:entity_name].present?
+            plain " · #{I18n.t("settings.exchange_return_audit.issue_codes.#{row[:issue_code]}")}"
+          end
+        end
+
+        div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
+          meta_chip("#{I18n.t('settings.exchange_return_audit.card_bound_projection_rows.number')}: #{row[:number]}", "bg-slate-200 text-slate-700")
+          meta_chip(card_bound_projection_bucket_text(:exchange_bucket, row[:exchange_month], row[:exchange_year]), "bg-orange-100 text-orange-900")
+          meta_chip(card_bound_projection_bucket_text(:expected_bucket, row[:expected_month], row[:expected_year]), "bg-slate-200 text-slate-700")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.card_bound_projection_rows.exchange_price')}: #{from_cent_based_to_float(row[:exchange_price], 'R$')}",
+                    "bg-orange-100 text-orange-900")
+          meta_chip("#{I18n.t('settings.exchange_return_audit.card_bound_projection_rows.expected_price')}: #{from_cent_based_to_float(row[:expected_price], 'R$')}",
+                    "bg-slate-200 text-slate-700")
+        end
+      end
+    end
+  end
+
+  def card_bound_projection_bucket_text(key, month, year)
+    "#{I18n.t("settings.exchange_return_audit.card_bound_projection_rows.#{key}")}: #{format_bucket(month, year)}"
+  end
+
+  def replay_row(message_row)
+    div(class: "rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-violet-500/40 dark:bg-slate-900 dark:text-slate-200") do
+      div(class: "flex flex-wrap items-start justify-between gap-2") do
+        div(class: "space-y-1") do
+          p(class: "font-semibold text-slate-900 dark:text-slate-100") do
+            plain "#{I18n.t('settings.exchange_return_audit.message_replay_rows.message')} ##{message_row[:message_id]}"
+            plain " · #{message_row[:preview]}" if message_row[:preview].present?
+          end
+          p(class: "text-xs text-slate-600 dark:text-slate-400") do
+            plain "#{I18n.t('settings.exchange_return_audit.message_replay_rows.conversation')} ##{message_row[:conversation_id]}"
+            plain " · #{I18n.t('settings.exchange_return_audit.message_replay_rows.intent')}: #{message_row[:intent]}" if message_row[:intent].present?
+          end
+        end
+
+        div(class: "flex flex-wrap gap-2 text-xs font-semibold") do
+          message_row[:diffs].each do |attribute, diff|
+            replay_diff_chip(attribute, diff)
+          end
+        end
+      end
+    end
+  end
+
+  def replay_diff_chip(attribute, diff)
+    if attribute == "cash_installments_attributes"
+      count = diff.count
+      meta_chip("#{I18n.t('settings.exchange_return_audit.message_replay_rows.installments')}: #{count}", "bg-violet-100 text-violet-900")
+    else
+      meta_chip("#{attribute}: #{format_replay_value(diff[:local])} / #{format_replay_value(diff[:payload])}", "bg-violet-100 text-violet-900")
+    end
+  end
+
+  def format_replay_value(value)
+    return from_cent_based_to_float(value, "R$") if value.is_a?(Integer)
+    return I18n.l(value, format: :short) if value.respond_to?(:strftime)
+
+    value.to_s
+  end
+
+  def format_bucket(month, year)
+    return "-" if month.blank? || year.blank?
+
+    "#{month.to_s.rjust(2, '0')}/#{year}"
+  end
+
   def issue_chip_class(issue)
+    return "bg-violet-100 text-violet-900" if issue == "message_replay_payload_mismatch"
+    return "bg-orange-100 text-orange-900" if issue == "card_bound_bill_projection_mismatch"
     return "bg-rose-100 text-rose-800" if issue.include?("mismatch")
 
     "bg-amber-100 text-amber-900"
   end
 
   def current_status_filter
-    rows.first&.fetch(:status_filter, "pending") || "pending"
+    rows&.first&.fetch(:status_filter, "pending") || row&.fetch(:status_filter, "pending") || "pending"
+  end
+
+  def exchange_return_audit_row_dom_id(id)
+    "exchange_return_audit_row_#{id}"
   end
 end

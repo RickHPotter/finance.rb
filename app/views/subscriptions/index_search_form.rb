@@ -53,12 +53,12 @@ class Views::Subscriptions::IndexSearchForm < Views::Base
         if mobile
           Sheet(id: "advanced_filter") do
             SheetTrigger do
-              Button(type: :button, icon: true, class: "scale-105") do
+              Button(type: :button, icon: true, class: resource_mobile_filter_button_class) do
                 cached_icon(:filter)
               end
             end
 
-            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+            SheetContent(side: :middle, class: resource_mobile_filter_sheet_class, data: { action: "close->reactive-form#submit" }) do
               SheetHeader do
                 SheetTitle { pluralise_model(Subscription, 2) }
                 SheetDescription { I18n.t(:advanced_filter) }

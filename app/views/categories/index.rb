@@ -17,7 +17,7 @@ class Views::Categories::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
+      div(class: resource_index_shell_class) do
         render_hero
         mobile ? mobile_index : desktop_index
       end
@@ -27,8 +27,8 @@ class Views::Categories::Index < Views::Base
   private
 
   def render_hero
-    div(class: "mb-6 flex items-start justify-between border-b border-stone-200 pb-3") do
-      h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Category, 2) }
+    div(class: resource_index_hero_class) do
+      h1(class: resource_index_title_class) { action_model(:index, Category, 2) }
       next if mobile
 
       link_to(
@@ -47,7 +47,7 @@ class Views::Categories::Index < Views::Base
           render Views::Categories::IndexSearchForm.new(index_context:, mobile: false)
 
           div(class: "my-4", data: { datatable_target: "table" }) do
-            div(class: "rounded-lg border border-slate-300 shadow-sm overflow-hidden") do
+            div(class: resource_table_shell_class) do
               render Views::Shared::TableHeader.new(
                 grid_class: "grid grid-cols-8",
                 rows: [
@@ -74,7 +74,7 @@ class Views::Categories::Index < Views::Base
                   render Views::Categories::Category.new(category: record, mobile: false)
                 end
               else
-                div(class: "border-b border-slate-200 py-2 my-2 text-lg bg-white") { I18n.t(:rows_not_found) }
+                div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
               end
             end
           end
@@ -88,7 +88,7 @@ class Views::Categories::Index < Views::Base
       div(class: "min-w-full") do
         turbo_frame_tag :categories do
           div(class: "min-h-full", data: { controller: "datatable" }) do
-            div(class: "mb-6 grid grid-cols-1 gap-2 rounded-lg bg-slate-50 p-3 shadow-sm") do
+            div(class: resource_mobile_filter_shell_class) do
               render Views::Categories::IndexSearchForm.new(index_context:, mobile: true)
             end
 
@@ -98,7 +98,7 @@ class Views::Categories::Index < Views::Base
                   render Views::Categories::Category.new(category: record, mobile: true)
                 end
               else
-                div(class: "border-b border-slate-200 py-2 my-2 text-lg bg-white") { I18n.t(:rows_not_found) }
+                div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
               end
             end
           end

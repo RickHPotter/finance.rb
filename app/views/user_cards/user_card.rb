@@ -28,7 +28,8 @@ class Views::UserCards::UserCard < Views::Base
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
     div(
-      class: "grid grid-cols-9 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
+      class: "grid grid-cols-9 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white " \
+             "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
       data: { id: user_card.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
@@ -40,7 +41,7 @@ class Views::UserCards::UserCard < Views::Base
         end
       end
 
-      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
         status_badge
       end
 
@@ -49,7 +50,7 @@ class Views::UserCards::UserCard < Views::Base
           link_to(
             user_card.card_transactions_count,
             card_transactions_path(user_card_id: user_card.id),
-            class: "text-indigo-600 hover:underline",
+            class: "text-indigo-600 hover:underline dark:text-sky-300",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
@@ -63,7 +64,7 @@ class Views::UserCards::UserCard < Views::Base
         end
       end
 
-      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto pr-2 border-r border-black") do
+      div(class: "flex items-center justify-center px-2 py-3 text-lg whitespace-nowrap ml-auto pr-2 border-r border-black dark:border-slate-700") do
         span(class: "current_closing_date") { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :shorter) }
       end
 
@@ -107,7 +108,8 @@ class Views::UserCards::UserCard < Views::Base
     brand_name = user_card.card.card_name
     brand_and_name = brand_name == user_card.user_card_name ? brand_name : "#{brand_name} - #{user_card.user_card_name}"
 
-    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: user_card.id, datatable_target: :row }) do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
+        data: { id: user_card.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -125,20 +127,20 @@ class Views::UserCards::UserCard < Views::Base
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :number
-              span(class: "text-sm font-medium text-slate-500") { pluralise_model(CardTransaction, 2) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { pluralise_model(CardTransaction, 2) }
             end
 
-            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800") { user_card.card_transactions_count } }
+            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { user_card.card_transactions_count } }
           end
 
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :money
-              span(class: "text-sm font-medium text-slate-500") { model_attribute(CardTransaction, :total_amount) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(CardTransaction, :total_amount) }
             end
 
             div(class: "flex items-center") do
-              span(class: "text-sm font-semibold text-slate-800 mr-auto") do
+              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") do
                 from_cent_based_to_float(user_card.card_transactions_total, "R$")
               end
             end
@@ -149,7 +151,7 @@ class Views::UserCards::UserCard < Views::Base
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :calendar
-              span(class: "text-sm font-medium text-slate-500") { model_attribute(UserCard, :current_closing_date) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_closing_date) }
             end
 
             div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day) - user_card.days_until_due_date, format: :short) } }
@@ -158,18 +160,18 @@ class Views::UserCards::UserCard < Views::Base
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :calendar
-              span(class: "text-sm font-medium text-slate-500") { model_attribute(UserCard, :current_due_date) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(UserCard, :current_due_date) }
             end
 
             div(class: "flex items-center") { span { I18n.l(Date.current.change(day: user_card.due_date_day), format: :short) } }
           end
         end
 
-        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3") do
+        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3 dark:border-slate-700") do
           Button(
             link: card_transactions_path(user_card_id: user_card.id),
             variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) do
             span(class: "inline-flex items-center gap-2") do
@@ -184,12 +186,14 @@ class Views::UserCards::UserCard < Views::Base
 
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
-      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def destructive_action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
-      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-red-300 dark:hover:border-red-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
   end
 
   def status_badge

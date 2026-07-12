@@ -140,6 +140,7 @@ RSpec.describe Logic::ExchangeTrioAudit do
         user: sender,
         context: sender.main_context,
         user_bank_account: sender_bank_account,
+        friend_notification_intent: "reimbursement",
         description: "Reimbursement source",
         date: Date.new(2026, 3, 18),
         month: 3,
@@ -310,6 +311,7 @@ RSpec.describe Logic::ExchangeTrioAudit do
         month: 3,
         year: 2026,
         price: 5_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: sender.built_in_category("EXCHANGE").id }
         ],
@@ -345,6 +347,7 @@ RSpec.describe Logic::ExchangeTrioAudit do
         month: 3,
         year: 2026,
         price: -5_000,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: receiver.built_in_category("EXCHANGE").id }
         ],

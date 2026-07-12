@@ -128,6 +128,31 @@ body::-webkit-scrollbar { /* WebKit */
   -webkit-appearance: none;
 }
 
+.dark .installment_date,
+.dark .exchange_date {
+  color: var(--color-slate-100);
+  color-scheme: dark;
+}
+
+.dark .installment_date::-webkit-datetime-edit,
+.dark .installment_date::-webkit-datetime-edit-fields-wrapper,
+.dark .installment_date::-webkit-datetime-edit-text,
+.dark .installment_date::-webkit-datetime-edit-month-field,
+.dark .installment_date::-webkit-datetime-edit-day-field,
+.dark .installment_date::-webkit-datetime-edit-year-field,
+.dark .installment_date::-webkit-datetime-edit-hour-field,
+.dark .installment_date::-webkit-datetime-edit-minute-field,
+.dark .exchange_date::-webkit-datetime-edit,
+.dark .exchange_date::-webkit-datetime-edit-fields-wrapper,
+.dark .exchange_date::-webkit-datetime-edit-text,
+.dark .exchange_date::-webkit-datetime-edit-month-field,
+.dark .exchange_date::-webkit-datetime-edit-day-field,
+.dark .exchange_date::-webkit-datetime-edit-year-field,
+.dark .exchange_date::-webkit-datetime-edit-hour-field,
+.dark .exchange_date::-webkit-datetime-edit-minute-field {
+  color: var(--color-slate-100);
+}
+
 .combobox-shell {
   @apply relative;
 

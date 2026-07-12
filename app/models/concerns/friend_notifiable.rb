@@ -13,6 +13,19 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
     after_destroy -> { notify_friends(:destroy) }
   end
 
+  def notification_message_reference_family
+    family_root =
+      if respond_to?(:reference_root_transaction)
+        reference_root_transaction.presence || self
+      else
+        self
+      end
+
+    return [ family_root ].compact unless family_root.is_a?(CashTransaction) || family_root.is_a?(CardTransaction)
+
+    CashTransaction.reference_family_for(family_root)
+  end
+
   # @public_class_methods .....................................................
   # @protected_instance_methods ...............................................
 
@@ -186,9 +199,7 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
       installment.slice(:number, :date, :month, :year, :paid).merge(price: installment.price * -1)
     end
 
-    exchanges_attributes = exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
-    end
+    exchanges_attributes = cash_loan_exchange_attributes(exchanges)
 
     installments_price = cash_installments_attributes.pluck(:price).sum
     exchanges_price = exchanges_attributes.pluck(:price).sum
@@ -216,6 +227,12 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
         }
       ]
     }
+  end
+
+  def cash_loan_exchange_attributes(exchanges)
+    exchanges.map do |exchange|
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: exchange.mirrored_paid?)
+    end
   end
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)
@@ -269,19 +286,6 @@ module FriendNotifiable # rubocop:disable Metrics/ModuleLength
                                     .where.not(id: new_message.id)
 
     previous_messages.update_all(superseded_by_id: new_message.id)
-  end
-
-  def notification_message_reference_family
-    family_root =
-      if respond_to?(:reference_root_transaction)
-        reference_root_transaction.presence || self
-      else
-        self
-      end
-
-    return [ family_root ].compact unless family_root.is_a?(CashTransaction) || family_root.is_a?(CardTransaction)
-
-    CashTransaction.reference_family_for(family_root)
   end
 
   def reference_scope_for(references)

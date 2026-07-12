@@ -74,6 +74,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def paid_projection_target_rewrite_attempted?
+    return false if editable_card_future_installment_projection?
     return card_paid_invoice_cycle_rewrite_attempted? if is_a?(CardTransaction)
 
     installments.any? do |installment|
@@ -85,6 +86,16 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
       target_cash_transaction.paid_history?
     end
+  end
+
+  def editable_card_future_installment_projection?
+    return false unless is_a?(CardTransaction)
+    return false unless changed_installments.present?
+    return false unless changed_installments.all?(&:persisted?)
+    return false unless changed_installments.all? { |installment| installment.changes.except("updated_at").keys.all? { |key| %w[date month year].include?(key) } }
+    return false unless changed_installments.none? { |installment| installment_previously_paid?(installment) }
+
+    can_edit_unpaid_future_installments?(editable_installment_dates)
   end
 
   def card_paid_invoice_cycle_rewrite_attempted?

@@ -17,13 +17,15 @@ class Views::Contexts::New < Views::Base
   def view_template
     turbo_frame_tag :context_overlay do
       div(class: "fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4") do
-        div(class: "w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-xl") do
+        div(class: modal_card_class) do
           div(class: "mb-5") do
             div(class: "min-w-0 text-left") do
               div(class: "flex justify-center") do
                 div(class: form_badge_class(:new)) { I18n.t("gerund.new") }
               end
-              p(class: "mt-3 text-left text-sm text-stone-500 wrap-break-words") { I18n.t("contexts.new.subtitle", source_name: source_context.name) }
+              p(class: "mt-3 text-left text-sm text-stone-500 wrap-break-words dark:text-slate-400") do
+                I18n.t("contexts.new.subtitle", source_name: source_context.name)
+              end
             end
           end
 
@@ -41,12 +43,12 @@ class Views::Contexts::New < Views::Base
             end
 
             div do
-              form.label :description, I18n.t("contexts.form.description"), class: "font-poetsen-one text-medium font-bold text-gray-500"
+              form.label :description, I18n.t("contexts.form.description"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
               form.text_area(
                 :description,
                 rows: 4,
                 class: "mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black shadow-sm " \
-                       "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
+                       "outline-hidden transition focus:border-sky-400 focus:ring-1 focus:ring-sky-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               )
             end
 
@@ -55,8 +57,7 @@ class Views::Contexts::New < Views::Base
 
               link_to(
                 dismiss_contexts_path,
-                class: "inline-flex min-w-40 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 " \
-                       "text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100",
+                class: cancel_link_class,
                 data: { turbo_frame: :context_overlay, turbo_prefetch: false }
               ) { I18n.t("contexts.form.cancel") }
             end
@@ -64,5 +65,18 @@ class Views::Contexts::New < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def modal_card_class
+    "w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-950 " \
+      "dark:text-slate-100 dark:shadow-black/40"
+  end
+
+  def cancel_link_class
+    "inline-flex min-w-40 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold " \
+      "text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 " \
+      "dark:text-slate-300 dark:hover:bg-slate-800"
   end
 end

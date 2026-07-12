@@ -21,7 +21,7 @@ export default class extends Controller {
 
   scrollTop(event) {
     event.preventDefault()
-    this.dispatchKey("t")
+    this.dispatchKey("p")
   }
 
   scrollBottom(event) {

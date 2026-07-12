@@ -9,7 +9,7 @@ class Views::CashTransactions::PaidStateFilter < Views::Base
 
   def view_template
     div(class: "mb-2 grid grid-cols-1 gap-y-2 w-full") do
-      span(class: "font-poetsen-one font-thin text-xs text-gray-500") { I18n.t("filters.paid_state.label") }
+      span(class: "font-poetsen-one font-thin text-xs text-gray-500 dark:text-slate-400") { I18n.t("filters.paid_state.label") }
 
       div(class: "grid grid-cols-3 gap-2") do
         render_option("all")
@@ -41,9 +41,10 @@ class Views::CashTransactions::PaidStateFilter < Views::Base
     base = "inline-flex cursor-pointer items-center justify-center rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition"
     state =
       if current_state == value
-        "border-blue-700 bg-blue-100 text-blue-900"
+        "border-blue-700 bg-blue-100 text-blue-900 dark:border-sky-500 dark:bg-sky-500/15 dark:text-sky-200"
       else
-        "border-slate-300 bg-white text-slate-600 hover:border-slate-500 hover:text-slate-900"
+        "border-slate-300 bg-white text-slate-600 hover:border-slate-500 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 " \
+          "dark:text-slate-300 dark:hover:border-sky-500/60 dark:hover:bg-slate-800 dark:hover:text-slate-100"
       end
 
     "#{base} #{state}"

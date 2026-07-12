@@ -21,7 +21,7 @@ class Views::Conversations::Show < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50 ring ring-stone-200") do
+      div(class: "#{compact_crud_shell_class} ring ring-stone-200 dark:ring-slate-800") do
         div(class: "flex h-[calc(100svh-16rem)] min-h-128 flex-col overflow-hidden rounded-lg sm:min-h-144", data: { controller: :chat }) do
           div(class: "border-b px-4 py-4 md:px-5 #{header_container_class} md:flex md:items-center md:justify-between md:gap-6") do
             div(class: "flex items-center gap-4 md:min-w-0 md:flex-1") do
@@ -31,8 +31,8 @@ class Views::Conversations::Show < Views::Base
               end
 
               div(class: "flex min-w-0 flex-1 flex-col items-start") do
-                h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg") { conversation.title_for(current_user) }
-                p(class: "mt-1 text-left text-2xs font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs") { subtitle_text }
+                h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg dark:text-slate-100") { conversation.title_for(current_user) }
+                p(class: "mt-1 text-left text-2xs font-medium uppercase tracking-[0.18em] text-stone-500 md:text-xs dark:text-slate-400") { subtitle_text }
                 render_scenario_badge
               end
             end
@@ -44,7 +44,7 @@ class Views::Conversations::Show < Views::Base
             end
           end
 
-          div(class: "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 md:px-4",
+          div(class: messages_container_class,
               id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
             turbo_stream_from conversation
             render Views::Messages::Index.new(messages:)
@@ -68,6 +68,11 @@ class Views::Conversations::Show < Views::Base
     current_user.entities.that_are_users.find_by(entity_user: conversation.friend_for(current_user))&.avatar_name || "people/0.png"
   end
 
+  def messages_container_class
+    "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 " \
+      "dark:bg-none dark:bg-slate-950 md:px-4"
+  end
+
   def conversation_avatar_class
     ring_class = conversation.assistant? ? "ring-amber-200" : "ring-slate-300"
 
@@ -76,17 +81,17 @@ class Views::Conversations::Show < Views::Base
 
   def header_container_class
     if conversation.assistant?
-      "bg-linear-to-r from-amber-50 via-amber-100 to-orange-50 border-amber-200"
+      "bg-linear-to-r from-amber-50 via-amber-100 to-orange-50 border-amber-200 dark:border-amber-500/40 dark:from-amber-950/60 dark:via-slate-900 dark:to-slate-900"
     else
-      "bg-linear-to-r from-stone-50 via-slate-100 to-stone-100 border-slate-200"
+      "bg-linear-to-r from-stone-50 via-slate-100 to-stone-100 border-slate-200 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800"
     end
   end
 
   def composer_container_class
     if conversation.assistant?
-      "bg-amber-50/80 border-amber-200"
+      "bg-amber-50/80 border-amber-200 dark:border-amber-500/40 dark:bg-amber-950/30"
     else
-      "bg-stone-50/90 border-stone-200"
+      "bg-stone-50/90 border-stone-200 dark:border-slate-700 dark:bg-slate-900"
     end
   end
 
@@ -118,7 +123,7 @@ class Views::Conversations::Show < Views::Base
         render_message_filter_badge("all")
       end
 
-      span(class: "hidden text-stone-400 md:inline") { "|" }
+      span(class: "hidden text-stone-400 dark:text-slate-600 md:inline") { "|" }
 
       div(class: "flex flex-wrap items-center gap-2") do
         render_message_side_badge("theirs")
@@ -155,9 +160,9 @@ class Views::Conversations::Show < Views::Base
   def message_filter_badge_class(selected)
     base_class = "inline-flex items-center rounded-full border px-3 py-1.5 text-2xs font-semibold uppercase tracking-[0.16em] transition"
 
-    return "#{base_class} border-stone-800 bg-stone-900 text-white" if selected
+    return "#{base_class} border-stone-800 bg-stone-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950" if selected
 
-    "#{base_class} border-stone-300 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900"
+    "#{base_class} #{inactive_badge_class(:strong)}"
   end
 
   def message_side_badge_class(side, selected)
@@ -166,7 +171,14 @@ class Views::Conversations::Show < Views::Base
     return "#{base_class} border-amber-600 bg-amber-500 text-white"     if selected && side == "theirs"
     return "#{base_class} border-emerald-600 bg-emerald-500 text-white" if selected && side == "mine"
 
-    "#{base_class} border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900"
+    "#{base_class} #{inactive_badge_class(:soft)}"
+  end
+
+  def inactive_badge_class(strength)
+    border = strength == :strong ? "border-stone-300" : "border-stone-200"
+
+    "#{border} bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900 dark:border-slate-700 dark:bg-slate-900 " \
+      "dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100"
   end
 
   def toggled_message_sides(side)

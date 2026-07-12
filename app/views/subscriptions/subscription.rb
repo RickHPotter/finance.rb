@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Subscriptions::Subscription < Views::Base
+class Views::Subscriptions::Subscription < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::DOMID
 
@@ -25,30 +25,30 @@ class Views::Subscriptions::Subscription < Views::Base
 
   def desktop_row
     div(
-      class: "grid grid-cols-12 gap-2 border-b border-slate-200 bg-gray-100 hover:bg-white",
+      class: desktop_row_class,
       data: { id: subscription.id, datatable_target: :row }
     ) do
       div(class: "col-span-3 px-3 py-3") do
-        p(class: "font-lekton text-base font-semibold text-slate-900") { subscription.description }
-        p(class: "truncate text-sm text-slate-500") { subscription.comment.presence }
+        p(class: "font-lekton text-base font-semibold text-slate-900 dark:text-slate-100") { subscription.description }
+        p(class: "truncate text-sm text-slate-500 dark:text-slate-400") { subscription.comment.presence }
       end
 
-      div(class: "col-span-1 flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+      div(class: "col-span-1 flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
         status_badge
       end
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") do
+      div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700 dark:text-slate-300") do
         render_desktop_categories
       end
 
       render_desktop_entities
 
-      div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800") do
+      div(class: "col-span-2 flex items-center justify-center px-2 py-3 font-anonymous text-md font-semibold text-slate-800 dark:text-slate-100") do
         subscription.transactions_count
       end
 
       div(class: "col-span-1 flex items-center justify-center px-2 py-3") do
-        span(class: "font-lekton text-lg font-semibold text-slate-900 whitespace-nowrap") do
+        span(class: "font-lekton text-lg font-semibold text-slate-900 whitespace-nowrap dark:text-slate-100") do
           from_cent_based_to_float(subscription.price, "R$")
         end
       end
@@ -71,21 +71,22 @@ class Views::Subscriptions::Subscription < Views::Base
   end
 
   def mobile_card
-    div(class: "relative my-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm", data: { id: subscription.id, datatable_target: :row }) do
+    div(class: "relative my-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+        data: { id: subscription.id, datatable_target: :row }) do
       div(class: "absolute right-3 top-3 z-10") do
         status_badge
       end
 
-      div(class: "border-b border-slate-200 bg-sky-50/70 px-4 py-5 text-center") do
+      div(class: "border-b border-slate-200 bg-sky-50/70 px-4 py-5 text-center dark:border-slate-700 dark:bg-slate-800/70") do
         link_to(
           subscription.description,
           edit_subscription_path(subscription),
           id: "edit_subscription_#{subscription.id}",
-          class: "block text-lg font-semibold text-slate-900 underline underline-offset-[3px]",
+          class: "block text-lg font-semibold text-slate-900 underline underline-offset-[3px] dark:text-slate-100",
           data: { turbo_frame: "_top" }
         )
 
-        p(class: "mt-2 text-sm text-slate-500") { subscription.comment } if subscription.comment.present?
+        p(class: "mt-2 text-sm text-slate-500 dark:text-slate-400") { subscription.comment } if subscription.comment.present?
       end
 
       div(class: "space-y-4 p-4") do
@@ -106,15 +107,15 @@ class Views::Subscriptions::Subscription < Views::Base
 
   def mobile_metric(icon:, label:, value:)
     mobile_metric_card(icon:, label:) do
-      div(class: "mt-1 text-sm font-semibold text-slate-800") do
+      div(class: "mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100") do
         value
       end
     end
   end
 
   def mobile_metric_card(icon:, label:)
-    div(class: "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2") do
-      div(class: "flex items-center gap-2 text-sm font-medium text-slate-500") do
+    div(class: "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800") do
+      div(class: "flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400") do
         cached_icon(icon)
         span { label }
       end
@@ -123,14 +124,21 @@ class Views::Subscriptions::Subscription < Views::Base
     end
   end
 
+  def desktop_row_class
+    "grid grid-cols-12 gap-2 border-b border-slate-200 bg-gray-100 hover:bg-white " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+  end
+
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
-      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def destructive_action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
-      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-red-300 dark:hover:border-red-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
   end
 
   def render_destroy_action
@@ -216,7 +224,7 @@ class Views::Subscriptions::Subscription < Views::Base
   end
 
   def blank_allocation_cell
-    div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700") { "-" }
+    div(class: "col-span-2 flex items-center justify-center px-2 py-3 text-center text-sm text-slate-700 dark:text-slate-300") { "-" }
   end
 
   def status_badge

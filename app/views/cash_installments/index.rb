@@ -52,7 +52,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
       div(class: "relative") do
         div(
-          class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold text-sm z-40 " \
+          class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold text-black text-sm z-40 " \
                  "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}"
         ) do
           from_cent_based_to_float(cash_installment.balance, "R$")
@@ -214,7 +214,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         button(
           type: :button,
           id: "cash_installment_actions_#{cash_installment.id}",
-          class: "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4",
+          class: action_menu_button_class,
           title: I18n.t("actions_column")
         ) do
           cached_icon(:ellipsis)
@@ -282,7 +282,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def action_menu_item_class
-    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline " \
+      "dark:text-slate-200 dark:hover:bg-slate-800"
+  end
+
+  def action_menu_button_class
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4 " \
+      "dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-700 dark:hover:text-white"
   end
 
   def display_price(cash_installment, cash_transaction)
@@ -426,7 +432,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         unless mobile
           span(
-            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all dark:border-slate-500 dark:bg-slate-900
                 peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
                 peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
           ) do

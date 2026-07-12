@@ -64,6 +64,7 @@ end
 #  comment                     :text
 #  date                        :datetime         not null
 #  description                 :string           not null
+#  friend_notification_intent  :string
 #  imported                    :boolean          default(FALSE)
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)

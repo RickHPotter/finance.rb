@@ -32,7 +32,7 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
           end
 
           div(class: "relative w-full") do
-            select_tag(:reference_date, class: "border rounded w-full py-1", data: { controller: "autofocus" }) do
+            select_tag(:reference_date, class: "#{input_class_without_icon} py-1", data: { controller: "autofocus" }) do
               options_for_select(options)
             end
           end
@@ -51,11 +51,11 @@ class Views::CashTransactions::TransferMultipleModal < Views::Base
 
         div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
           form.submit I18n.t("confirmation.confirm"),
-                      class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded",
+                      class: modal_confirm_button_class(:blue),
                       data: { modal_hide: modal_id }
 
           button(
-            class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_cancel_button_class,
             type: :button,
             data: { modal_hide: modal_id }
           ) do

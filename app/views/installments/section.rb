@@ -13,7 +13,7 @@ class Views::Installments::Section < Views::Base
 
   def view_template
     div(
-      class: "border-t py-2",
+      class: "border-t py-2 dark:border-slate-700/50",
       data: {
         controller: "nested-form installment-lock installments-display",
         nested_form_wrapper_selector_value: ".nested-form-wrapper"
@@ -46,7 +46,7 @@ class Views::Installments::Section < Views::Base
             Button(
               type: :button,
               variant: :outline,
-              class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-base",
+              class: carousel_button_class("text-base"),
               data: { action: "click->installments-display#toggle" }
             ) { "↑" }
           end
@@ -55,7 +55,7 @@ class Views::Installments::Section < Views::Base
             Button(
               type: :button,
               variant: :outline,
-              class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
+              class: carousel_button_class("text-sm"),
               data: {
                 installments_display_target: "prevButton",
                 action: "click->installments-display#scrollPrev"
@@ -82,7 +82,7 @@ class Views::Installments::Section < Views::Base
             Button(
               type: :button,
               variant: :outline,
-              class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-sm",
+              class: carousel_button_class("text-sm"),
               data: {
                 installments_display_target: "nextButton",
                 action: "click->installments-display#scrollNext"
@@ -94,7 +94,7 @@ class Views::Installments::Section < Views::Base
             Button(
               type: :button,
               variant: :outline,
-              class: "h-full min-h-12 w-full border border-slate-200 bg-slate-50 px-0 text-base",
+              class: carousel_button_class("text-base"),
               data: { action: "click->installments-display#toggle" }
             ) { "↓" }
           end
@@ -201,6 +201,14 @@ class Views::Installments::Section < Views::Base
   end
 
   def mobile_button_class
-    "h-6 w-full border border-slate-200 bg-slate-50 px-0 text-sm"
+    "h-6 w-full border border-slate-300 bg-white px-0 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 " \
+      "dark:hover:bg-slate-700/70 dark:hover:text-slate-100"
+  end
+
+  def carousel_button_class(size_class)
+    "h-full min-h-12 w-full border border-slate-300 bg-white px-0 #{size_class} text-slate-700 hover:bg-slate-100 hover:text-slate-950 " \
+      "dark:border-slate-700 dark:bg-slate-800 " \
+      "dark:text-slate-400 dark:hover:bg-slate-700/70 dark:hover:text-slate-100"
   end
 end

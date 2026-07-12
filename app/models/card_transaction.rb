@@ -16,7 +16,7 @@ class CardTransaction < ApplicationRecord
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation
+  attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation, :skip_subscription_installment_sync
 
   # @relationships ............................................................
   belongs_to :user
@@ -224,6 +224,7 @@ class CardTransaction < ApplicationRecord
   end
 
   def sync_subscription_installment
+    return if skip_subscription_installment_sync
     return if subscription_id.blank? || card_installments_count != 1
 
     installment = card_installments.first

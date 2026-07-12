@@ -99,6 +99,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def update
+    capture_shared_return_counterpart_destroy_notifications!
     @card_transaction.edit_phase = true if card_transaction_params[:card_installments_attributes].present?
     @card_transaction.assign_attributes(assignable_card_transaction_params.merge(imported: false))
     @card_transaction.historical_correction_confirmation = card_transaction_params[:historical_correction_confirmation]
@@ -271,8 +272,34 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def notify_shared_return_counterpart_updates!
+    notify_removed_shared_return_counterparts!
+
     mirrored_shared_return_transactions.each do |cash_transaction|
       Logic::SharedReturnStructureUpdateMessageService.new(transaction: cash_transaction).call
+    end
+  end
+
+  def capture_shared_return_counterpart_destroy_notifications!
+    @shared_return_counterpart_destroy_notifications = mirrored_shared_return_transactions.filter_map do |cash_transaction|
+      counterpart_transaction = cash_transaction.counterpart_shared_return_transaction
+      next if counterpart_transaction.blank?
+
+      {
+        transaction: cash_transaction,
+        counterpart_transaction:
+      }
+    end
+  end
+
+  def notify_removed_shared_return_counterparts!
+    notifications = @shared_return_counterpart_destroy_notifications || []
+    return if notifications.empty?
+
+    current_shared_return_ids = mirrored_shared_return_transactions.map(&:id)
+    notifications.each do |notification|
+      next if current_shared_return_ids.include?(notification[:transaction].id)
+
+      Logic::SharedReturnDestroyMessageService.new(**notification).call
     end
   end
 
@@ -410,7 +437,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       category_transactions_attributes: %i[id category_id _destroy],
       card_installments_attributes: %i[id number date month year price _destroy],
       entity_transactions_attributes: [
-        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :_destroy,
+        :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year _destroy] }
       ]
     )

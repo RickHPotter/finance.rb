@@ -19,7 +19,7 @@ class Views::Investments::Index < Views::Base
         div class: "min-w-full" do
           turbo_frame_tag :card_transactions do
             div class: "min-h-screen", data: { controller: "datatable" } do
-              div class: "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm" do
+              div class: index_search_shell_class do
                 render IndexSearchForm.new(index_context:, mobile:)
               end
 
@@ -31,5 +31,12 @@ class Views::Investments::Index < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def index_search_shell_class
+    "mb-8 flex sm:flex-row gap-4 items-start sm:items-center justify-between bg-white p-4 rounded-lg shadow-sm " \
+      "dark:border dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30"
   end
 end

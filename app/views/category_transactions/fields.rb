@@ -20,10 +20,11 @@ module Views
           class: "nested-form-wrapper #{'hidden' if category_transaction.marked_for_destruction?}",
           data: { new_record: category_transaction.new_record?, reactive_form_target: "categoryWrapper" }
         ) do
-          div(class: "flex my-1") do
+          div(class: "my-1 flex") do
             span(class: "flex items-center text-sm font-medium text-black") do
               div(
-                class: "category_container flex min-h-12 items-center justify-center px-2 py-1 rounded-sm border border-black text-sm",
+                class: "category_container flex min-h-12 items-center justify-center rounded-sm border border-black px-2 py-1 text-sm " \
+                       "text-black dark:rounded-md dark:border-slate-700 dark:text-black dark:shadow-sm dark:ring-1 dark:ring-slate-950/40",
                 style: "background: #{colour}"
               ) do
                 span(class: "categories_category_name text-nowrap") { category_transaction&.category&.name }
@@ -31,7 +32,8 @@ module Views
                 unless transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
                   button(
                     type: :button,
-                    class: "inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
+                    class: "ms-2 inline-flex items-center rounded-xs bg-transparent p-1 text-sm text-black hover:bg-gray-800 hover:text-gray-200 " \
+                           "dark:text-slate-950 dark:hover:bg-slate-950/40 dark:hover:text-slate-100",
                     aria_label: "Remove",
                     data: { action: "click->reactive-form#removeCategory" }
                   ) do

@@ -6,6 +6,7 @@ class Views::Balances::Index < Views::Base
 
   include CacheHelper
   include TranslateHelper
+  include ComponentsHelper
 
   def initialize(mobile:)
     @mobile = mobile
@@ -13,10 +14,10 @@ class Views::Balances::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md") do
-        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+      div(class: balance_shell_class) do
+        div(class: balance_header_class) do
           div(class: "flex flex-col items-start") do
-            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { I18n.t("balances.title") }
+            h1(class: balance_title_class) { I18n.t("balances.title") }
             render_scenario_badge
           end
         end
@@ -33,7 +34,7 @@ class Views::Balances::Index < Views::Base
               div(class: "flex gap-2 items-center m-2") do
                 select_tag(
                   nil,
-                  class: "border rounded w-full py-1",
+                  class: balance_select_class,
                   data: { action: "change->monthly-balance#rerender", monthly_balance_target: "chartType" }
                 ) do
                   options_for_select([
@@ -48,7 +49,7 @@ class Views::Balances::Index < Views::Base
 
                 select_tag(
                   nil,
-                  class: "border rounded w-full py-1",
+                  class: balance_select_class,
                   data: { action: "change->monthly-balance#render", monthly_balance_target: "preset" }
                 ) do
                   options_for_select([
@@ -65,7 +66,7 @@ class Views::Balances::Index < Views::Base
                   span(class: "flex justify-center items-center gap-2 text-sm font-medium mx-auto rounded-sm py-3") do
                     button(
                       type: :button,
-                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border border-purple-500 px-2 py-1",
+                      class: month_nav_button_class,
                       data: { action: "click->monthly-balance#prevMonth" }
                     ) do
                       "←"
@@ -82,7 +83,7 @@ class Views::Balances::Index < Views::Base
 
                     button(
                       type: :button,
-                      class: "text-lg font-bold rounded-sm shadow-sm bg-transparent border border-purple-500 px-2 py-1",
+                      class: month_nav_button_class,
                       data: { action: "click->monthly-balance#nextMonth" }
                     ) do
                       "→"
@@ -97,7 +98,7 @@ class Views::Balances::Index < Views::Base
                     div(data: { monthly_balance_target: "positiveTransactionsPieChart", title: I18n.t("balances.types_titles.positive_transactions_pie") })
                   end
 
-                  h1(class: "text-2xl font-bold text-gray-900 pt-3") do
+                  h1(class: "pt-3 text-2xl font-bold text-gray-900 dark:text-slate-100") do
                     I18n.t("balances.types_titles.period")
                   end
                 end
@@ -120,5 +121,28 @@ class Views::Balances::Index < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def balance_shell_class
+    "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md dark:border dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-none"
+  end
+
+  def balance_header_class
+    "flex items-start justify-between border-b border-stone-200 px-4 py-3 dark:border-slate-700"
+  end
+
+  def balance_title_class
+    "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700 dark:text-slate-300"
+  end
+
+  def balance_select_class
+    "#{input_class_without_icon} py-1"
+  end
+
+  def month_nav_button_class
+    "rounded-sm border border-purple-500 bg-transparent px-2 py-1 text-lg font-bold shadow-sm " \
+      "dark:border-purple-500 dark:text-purple-300 dark:hover:bg-slate-800"
   end
 end

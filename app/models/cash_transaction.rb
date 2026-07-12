@@ -15,7 +15,9 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include FriendNotifiable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :friend_notification_intent, :source_message_id, :historical_correction_confirmation
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :source_message_id, :historical_correction_confirmation
+
+  FRIEND_NOTIFICATION_INTENTS = %w[loan reimbursement].freeze
 
   # @relationships ............................................................
   belongs_to :user
@@ -32,6 +34,9 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @validations ..............................................................
   validates :context, presence: true
   validates :description, :cash_installments_count, presence: true
+  validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_nil: true
+  validate :friend_notification_intent_matches_exchange_category
+  validate :friend_notification_intent_present_for_exchange_category
 
   # @callbacks ................................................................
   before_validation :assign_default_context
@@ -148,6 +153,15 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def failed_return?
     persisted? && categories.pluck(:category_name).include?("FAILED LEND/BORROW RETURN")
+  end
+
+  def exchange_category?
+    exchange_category = user&.categories&.find_by(category_name: "EXCHANGE")
+    exchange_category_id = exchange_category&.id
+
+    category_transactions.reject(&:marked_for_destruction?).any? do |category_transaction|
+      category_transaction.category_id == exchange_category_id || category_transaction.category&.category_name == "EXCHANGE"
+    end
   end
 
   def return_failure_reportable?
@@ -336,6 +350,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     latest_friend_notification_intent
   end
 
+  def active_notification_messages
+    notification_messages_scope
+      .where(body: %w[notification:create notification:update])
+      .where(superseded_by_id: nil)
+      .where.not(headers: [ nil, "" ])
+  end
+
   # @protected_instance_methods ...............................................
   # @private_instance_methods .................................................
 
@@ -401,6 +422,18 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def linked_borrow_return?
     borrow_return? && reference_transactable.present?
+  end
+
+  def friend_notification_intent_matches_exchange_category
+    return unless !exchange_category? && friend_notification_intent.present?
+
+    errors.add(:friend_notification_intent, :invalid)
+  end
+
+  def friend_notification_intent_present_for_exchange_category
+    return unless exchange_category? && friend_notification_intent.blank?
+
+    errors.add(:friend_notification_intent, :blank)
   end
 
   def context_destroying?
@@ -566,6 +599,7 @@ end
 #  comment                     :text
 #  date                        :datetime         not null
 #  description                 :string           not null
+#  friend_notification_intent  :string
 #  imported                    :boolean          default(FALSE)
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)

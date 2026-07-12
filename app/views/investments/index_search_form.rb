@@ -62,12 +62,16 @@ class Views::Investments::IndexSearchForm < Views::Base
         if mobile
           Sheet(id: "advanced_filter") do
             SheetTrigger do
-              Button(type: :button, icon: true, class: "scale-105") do
+              Button(type: :button, icon: true, class: "scale-105 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800") do
                 cached_icon(:filter)
               end
             end
 
-            SheetContent(side: :middle, class: "w-4/5 lg:w-1/2", data: { action: "close->reactive-form#submit" }) do
+            SheetContent(
+              side: :middle,
+              class: "w-4/5 lg:w-1/2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+              data: { action: "close->reactive-form#submit" }
+            ) do
               SheetHeader do
                 SheetTitle { pluralise_model(Investment, 2) }
                 SheetDescription { I18n.t(:advanced_filter) }

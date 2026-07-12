@@ -25,7 +25,8 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
   def desktop_row
     div(
-      class: "grid grid-cols-7 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white",
+      class: "grid grid-cols-7 gap-2 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white " \
+             "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
       data: { id: user_bank_account.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
@@ -36,7 +37,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
         end
       end
 
-      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700") do
+      div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
         status_badge
       end
 
@@ -45,7 +46,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
           link_to(
             user_bank_account.cash_transactions_count,
             cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
-            class: "text-indigo-600 hover:underline",
+            class: "text-indigo-600 hover:underline dark:text-sky-300",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           )
         else
@@ -89,7 +90,8 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
   end
 
   def mobile_row
-    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3", data: { id: user_bank_account.id, datatable_target: :row }) do
+    div(class: "mx-2 rounded-lg bg-slate-100 shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100",
+        data: { id: user_bank_account.id, datatable_target: :row }) do
       div(class: "p-4 bg-linear-to-r from-blue-300 via-blue-500 to-blue-700") do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
@@ -112,29 +114,31 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :number
-              span(class: "text-sm font-medium text-slate-500") { pluralise_model(CashTransaction, 2) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { pluralise_model(CashTransaction, 2) }
             end
 
-            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800") { user_bank_account.cash_transactions_count } }
+            div(class: "flex items-center") { span(class: "text-sm font-semibold text-slate-800 dark:text-slate-100") { user_bank_account.cash_transactions_count } }
           end
 
           div(class: "space-y-1") do
             div(class: "flex items-center space-x-2") do
               cached_icon :money
-              span(class: "text-sm font-medium text-slate-500") { model_attribute(CashTransaction, :total_amount) }
+              span(class: "text-sm font-medium text-slate-500 dark:text-slate-400") { model_attribute(CashTransaction, :total_amount) }
             end
 
             div(class: "flex items-center") do
-              span(class: "text-sm font-semibold text-slate-800 mr-auto") { from_cent_based_to_float(user_bank_account.cash_transactions_total, "R$") }
+              span(class: "text-sm font-semibold text-slate-800 mr-auto dark:text-slate-100") do
+                from_cent_based_to_float(user_bank_account.cash_transactions_total, "R$")
+              end
             end
           end
         end
 
-        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3") do
+        div(class: "mt-4 flex justify-end border-t border-slate-200 pt-3 dark:border-slate-700") do
           Button(
             link: cash_transactions_path(cash_transaction: { user_bank_account_id: user_bank_account.id }, all_month_years: true),
             variant: :outline,
-            class: "border-slate-300 text-slate-700 hover:bg-slate-100",
+            class: "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false }
           ) do
             span(class: "inline-flex items-center gap-2") do
@@ -149,12 +153,14 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
-      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def destructive_action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-red-200 bg-white text-red-700 " \
-      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white [&_svg]:size-4 [&_svg]:!text-current"
+      "shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-red-300 dark:hover:border-red-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
   end
 
   def status_badge

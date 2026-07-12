@@ -59,9 +59,9 @@ class Logic::ExchangeAuditSelectionProjector
 
   def selected_middle_candidate_for(row)
     selected_middle_id = middle_overrides[row.dig(:source, :id)]
-    return row[:middle_candidates].find { |candidate| candidate[:id] == selected_middle_id } if selected_middle_id.present?
+    return middle_candidates_for(row).find { |candidate| candidate[:id] == selected_middle_id } if selected_middle_id.present?
 
-    inferred_middle_candidate_for(row) || row[:middle] || row[:middle_candidates].first
+    inferred_middle_candidate_for(row) || row[:middle] || middle_candidates_for(row).first
   end
 
   def selected_receiver_candidate_for(row, receiver_candidates)
@@ -72,7 +72,9 @@ class Logic::ExchangeAuditSelectionProjector
   end
 
   def projected_end_transactions(row, selected_middle, selected_receiver)
-    row[:end_transactions].each_with_index.map do |transaction, index|
+    end_transactions = end_transactions_for(row)
+
+    end_transactions.each_with_index.map do |transaction, index|
       transaction ||= selected_receiver if index.zero?
       next if transaction.blank?
 
@@ -80,7 +82,7 @@ class Logic::ExchangeAuditSelectionProjector
         if index.zero?
           serialize_reference(selected_middle)
         elsif row[:end_kind] == "loan_receiver_combo"
-          serialize_reference(row[:end_transactions].first)
+          serialize_reference(end_transactions.first)
         else
           transaction[:expected_reference]
         end
@@ -91,7 +93,7 @@ class Logic::ExchangeAuditSelectionProjector
 
   def project_receiver_candidates(row, selected_middle)
     expected_reference = serialize_reference(selected_middle)
-    receiver_candidates = row.fetch(:receiver_candidates, []).select do |candidate|
+    receiver_candidates = Array(row[:receiver_candidates]).select do |candidate|
       receiver_candidate_matches_middle?(candidate, selected_middle)
     end
 
@@ -103,7 +105,7 @@ class Logic::ExchangeAuditSelectionProjector
   def project_middle_candidates(row, selected_middle)
     expected_reference = serialize_reference(row[:source])
 
-    row[:middle_candidates].map do |candidate|
+    middle_candidates_for(row).map do |candidate|
       projected_candidate = project_transaction(candidate, expected_reference:)
       projected_candidate[:node_key] = selected_middle[:id] == candidate[:id] ? "middle" : "middle_candidate"
       projected_candidate
@@ -192,29 +194,30 @@ class Logic::ExchangeAuditSelectionProjector
   end
 
   def projected_transactions_for(row)
-    [ row[:source], row[:middle], *unselected_middle_candidates_for(row), *row[:end_transactions] ].compact
+    [ row[:source], row[:middle], *unselected_middle_candidates_for(row), *end_transactions_for(row) ].compact
   end
 
   def unselected_middle_candidates_for(row)
-    row[:middle_candidates].reject { |candidate| candidate[:id] == row.dig(:middle, :id) }
+    middle_candidates_for(row).reject { |candidate| candidate[:id] == row.dig(:middle, :id) }
   end
 
   def middle_issues_for(row)
     issues = []
-    issues << "missing_middle" if row[:middle_candidates].empty?
+    issues << "missing_middle" if middle_candidates_for(row).empty?
     issues.concat(reference_issues_for(row[:middle]))
     issues.concat(unselected_middle_candidates_for(row).flat_map { |candidate| reference_issues_for(candidate) })
     issues
   end
 
   def receiver_issues_for(row)
+    end_transactions = end_transactions_for(row)
     issues = []
-    issues << "missing_receiver_reference" if row[:end_transactions].first.blank?
-    issues.concat(reference_issues_for(row[:end_transactions].first))
+    issues << "missing_receiver_reference" if end_transactions.first.blank?
+    issues.concat(reference_issues_for(end_transactions.first))
     return issues unless row[:end_kind] == "loan_receiver_combo"
 
-    issues << "missing_receiver_exchange_return" if row[:end_transactions].second.blank?
-    issues.concat(reference_issues_for(row[:end_transactions].second))
+    issues << "missing_receiver_exchange_return" if end_transactions.second.blank?
+    issues.concat(reference_issues_for(end_transactions.second))
     issues
   end
 
@@ -222,11 +225,19 @@ class Logic::ExchangeAuditSelectionProjector
     receiver_id = row.dig(:receiver, :id)
     return if receiver_id.blank?
 
-    matching_candidates = row[:middle_candidates].select do |candidate|
+    matching_candidates = middle_candidates_for(row).select do |candidate|
       candidate.fetch(:entity_user_ids, []).include?(receiver_id)
     end
 
     matching_candidates.one? ? matching_candidates.first : nil
+  end
+
+  def middle_candidates_for(row)
+    Array(row[:middle_candidates])
+  end
+
+  def end_transactions_for(row)
+    Array(row[:end_transactions])
   end
 
   def receiver_candidate_matches_middle?(candidate, selected_middle)

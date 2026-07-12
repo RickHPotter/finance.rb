@@ -91,6 +91,8 @@ module Logic
     end
 
     def notify_counterpart_paid_state_change!
+      return create_counterpart_structure_update_message if open_actionable_update_exists?
+
       sender = installment.cash_transaction.user
       receiver = counterpart_installment.cash_transaction.user
       conversation = Conversation.find_or_create_assistant_between!(
@@ -123,12 +125,13 @@ module Logic
 
       return true if Message.exists?(conversation:, body: "notification:update", headers:, reference_transactable:)
 
-      conversation.messages.create!(
+      message = conversation.messages.create!(
         user: sender,
         reference_transactable:,
         body: "notification:update",
         headers:
       )
+      supersede_previous_messages(conversation, message)
 
       true
     end
@@ -164,10 +167,16 @@ module Logic
 
     def counterpart_update_context(reference_transactable)
       desired_installments = desired_counterpart_installments
+      counterpart_transaction = counterpart_installment.cash_transaction
+      replay_transaction = counterpart_replay_transaction(reference_transactable, counterpart_transaction)
+      entity_source_transaction = counterpart_replay_entity_source_transaction(reference_transactable, replay_transaction)
 
       {
         desired_installments:,
-        counterpart_transaction: counterpart_installment.cash_transaction,
+        counterpart_transaction:,
+        replay_transaction:,
+        entity_source_transaction:,
+        replay_cash_installments: replay_cash_installments(reference_transactable, replay_transaction, desired_installments),
         total_price: desired_installments.sum { |installment_attributes| installment_attributes[:price] },
         first_installment: desired_installments.first,
         reference_transactable:
@@ -193,22 +202,27 @@ module Logic
       }
     end
 
-    def counterpart_update_replay(update_context) # rubocop:disable Metrics/AbcSize
+    def counterpart_update_replay(update_context)
+      replay_transaction = update_context[:replay_transaction]
+
       {
         id: update_context[:reference_transactable].id,
         type: update_context[:reference_transactable].class.name,
         intent: installment.cash_transaction.try(:effective_friend_notification_intent),
-        description: update_context[:counterpart_transaction].description,
-        price: update_context[:total_price],
-        date: update_context[:first_installment][:date]&.iso8601,
-        month: update_context[:first_installment][:month],
-        year: update_context[:first_installment][:year],
-        category_ids: update_context[:counterpart_transaction].categories.ids,
-        entity_ids: update_context[:counterpart_transaction].entities.ids,
-        cash_installments_attributes: update_context[:desired_installments].map do |installment_attributes|
+        description: replay_transaction.description,
+        price: replay_transaction.price,
+        date: replay_transaction.date&.iso8601,
+        month: replay_transaction.month,
+        year: replay_transaction.year,
+        category_ids: replay_transaction.categories.ids,
+        entity_ids: replay_transaction.entities.ids,
+        cash_installments_attributes: update_context[:replay_cash_installments]&.map do |installment_attributes|
           installment_attributes.merge(date: installment_attributes[:date]&.iso8601)
         end,
-        entity_transactions_attributes: counterpart_entity_transactions_attributes(update_context[:counterpart_transaction])
+        entity_transactions_attributes: counterpart_entity_transactions_attributes(
+          replay_transaction,
+          source_transaction: update_context[:entity_source_transaction]
+        )
       }.compact_blank
     end
 
@@ -220,17 +234,92 @@ module Logic
         transaction
     end
 
-    def counterpart_entity_transactions_attributes(counterpart_transaction)
-      counterpart_transaction.entity_transactions.map do |entity_transaction|
+    def counterpart_entity_transactions_attributes(counterpart_transaction, source_transaction: counterpart_transaction)
+      target_entity_transactions = counterpart_transaction.entity_transactions.to_a
+      source_sign_multiplier = replay_sign_multiplier(counterpart_transaction, source_transaction)
+
+      source_transaction.entity_transactions.each_with_index.map do |entity_transaction, index|
+        serialize_counterpart_entity_transaction(
+          entity_transaction,
+          target_entity_transactions:,
+          index:,
+          source_sign_multiplier:
+        )
+      end
+    end
+
+    def counterpart_replay_transaction(reference_transactable, counterpart_transaction)
+      local_projection = counterpart_transaction.reference_transactable
+
+      return counterpart_transaction unless reference_transactable.is_a?(CashTransaction)
+      return counterpart_transaction unless local_projection.is_a?(CashTransaction)
+      return counterpart_transaction unless local_projection.user_id == counterpart_transaction.user_id
+      return counterpart_transaction if local_projection == counterpart_transaction
+      return counterpart_transaction if local_projection == reference_transactable
+
+      local_projection
+    end
+
+    def counterpart_replay_entity_source_transaction(reference_transactable, replay_transaction)
+      return reference_transactable if cash_root_exchange_projection?(reference_transactable, replay_transaction)
+
+      replay_transaction
+    end
+
+    def replay_cash_installments(reference_transactable, replay_transaction, desired_installments)
+      return if cash_root_exchange_projection?(reference_transactable, replay_transaction)
+
+      desired_installments if replay_transaction == counterpart_installment.cash_transaction
+    end
+
+    def cash_root_exchange_projection?(reference_transactable, replay_transaction)
+      installment.cash_transaction.try(:effective_friend_notification_intent) == "loan" &&
+        reference_transactable.is_a?(CashTransaction) &&
+        replay_transaction.is_a?(CashTransaction) &&
+        replay_transaction.user_id == counterpart_installment.cash_transaction.user_id &&
+        reference_transactable.user_id != replay_transaction.user_id &&
+        replay_transaction.categories.exists?(category_name: "EXCHANGE")
+    end
+
+    def replay_sign_multiplier(counterpart_transaction, source_transaction)
+      return 1 if counterpart_transaction == source_transaction
+
+      counterpart_transaction.price.to_i.positive? == source_transaction.price.to_i.positive? ? 1 : -1
+    end
+
+    def counterpart_entity_transaction_target(target_entity_transactions, source_entity_transaction, index)
+      target_entity_transactions.find { |entity_transaction| entity_transaction.is_payer == source_entity_transaction.is_payer } ||
+        target_entity_transactions[index]
+    end
+
+    def serialize_counterpart_entity_transaction(source_entity_transaction, target_entity_transactions:, index:, source_sign_multiplier:)
+      target_entity_transaction = counterpart_entity_transaction_target(target_entity_transactions, source_entity_transaction, index)
+
+      {
+        id: target_entity_transaction&.id || source_entity_transaction.id,
+        entity_id: target_entity_transaction&.entity_id || source_entity_transaction.entity_id,
+        is_payer: target_entity_transaction&.is_payer.nil? ? source_entity_transaction.is_payer : target_entity_transaction.is_payer,
+        price: source_entity_transaction.price * source_sign_multiplier,
+        price_to_be_returned: source_entity_transaction.price_to_be_returned * source_sign_multiplier,
+        loan_return_percentage: source_entity_transaction.loan_return_percentage,
+        exchanges_count: source_entity_transaction.exchanges_count,
+        exchanges_attributes: serialize_counterpart_exchanges(target_entity_transaction, source_entity_transaction, source_sign_multiplier)
+      }
+    end
+
+    def serialize_counterpart_exchanges(target_entity_transaction, source_entity_transaction, source_sign_multiplier)
+      target_exchanges_by_number = target_entity_transaction&.exchanges&.index_by(&:number) || {}
+
+      source_entity_transaction.exchanges.order(:number, :date).map do |exchange|
         {
-          id: entity_transaction.id,
-          entity_id: entity_transaction.entity_id,
-          is_payer: entity_transaction.is_payer,
-          price: entity_transaction.price,
-          price_to_be_returned: entity_transaction.price_to_be_returned,
-          exchanges_count: entity_transaction.exchanges_count,
-          exchanges_attributes: []
-        }
+          id: target_exchanges_by_number[exchange.number]&.id,
+          number: exchange.number,
+          date: exchange.date&.iso8601,
+          month: exchange.month,
+          year: exchange.year,
+          price: exchange.price * source_sign_multiplier,
+          paid: exchange.mirrored_paid?
+        }.compact
       end
     end
 
@@ -288,7 +377,7 @@ module Logic
     def desired_counterpart_installments
       sign = counterpart_installment.cash_transaction.price.negative? ? -1 : 1
 
-      installment.cash_transaction.cash_installments.order(:number, :date).map do |cash_installment|
+      structure_source_transaction.cash_installments.order(:number, :date).map do |cash_installment|
         {
           number: cash_installment.number,
           date: cash_installment.date,
@@ -298,6 +387,57 @@ module Logic
           paid: cash_installment.paid
         }
       end
+    end
+
+    def structure_source_transaction
+      transaction = installment.cash_transaction
+      return transaction unless transaction.respond_to?(:counterpart_shared_return_transaction)
+
+      counterpart_transaction = transaction.counterpart_shared_return_transaction
+      return transaction if counterpart_transaction.blank?
+
+      sender_shared_return_candidate = [ transaction, counterpart_transaction ].find do |candidate|
+        candidate.respond_to?(:exchange_return?) && candidate.exchange_return?
+      end
+
+      sender_shared_return_candidate || transaction
+    end
+
+    def open_actionable_update_exists?
+      sender = installment.cash_transaction.user
+      receiver = counterpart_installment.cash_transaction.user
+      conversation = Conversation.find_or_create_assistant_between!(
+        sender,
+        receiver,
+        scenario_key: installment.cash_transaction.context.scenario_key
+      )
+      reference_family = installment.cash_transaction.notification_message_reference_family
+
+      conversation.messages
+                  .merge(reference_scope_for(reference_family))
+                  .where(body: "notification:update", superseded_by_id: nil, applied_at: nil)
+                  .exists?
+    end
+
+    def reference_scope_for(references)
+      grouped_references = references.compact.uniq { |reference| [ reference.class.name, reference.id ] }.group_by(&:class)
+
+      grouped_references.values.map do |group|
+        Message.where(
+          reference_transactable_type: group.first.class.name,
+          reference_transactable_id: group.map(&:id)
+        )
+      end.reduce(Message.none, &:or)
+    end
+
+    def supersede_previous_messages(conversation, new_message)
+      reference_family = installment.cash_transaction.notification_message_reference_family
+      previous_messages = conversation.messages
+                                      .merge(reference_scope_for(reference_family))
+                                      .where(superseded_by_id: nil)
+                                      .where.not(id: new_message.id)
+
+      previous_messages.update_all(superseded_by_id: new_message.id)
     end
   end
 end

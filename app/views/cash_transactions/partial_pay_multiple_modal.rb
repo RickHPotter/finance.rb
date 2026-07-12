@@ -37,7 +37,7 @@ class Views::CashTransactions::PartialPayMultipleModal < Views::Base
         hidden_field_tag :index_context_json, index_context.except(:available_subscriptions).to_json
 
         div(class: "space-y-4") do
-          div(class: "rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700") do
+          div(class: "rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200") do
             div(class: "flex items-center justify-between gap-4") do
               span(class: "font-semibold") { I18n.t("bulk_actions.total_selected") }
               span(data: { partial_pay_multiple_target: "selectedTotal" }) { "R$0.00" }
@@ -101,11 +101,11 @@ class Views::CashTransactions::PartialPayMultipleModal < Views::Base
 
           div(class: "grid grid-cols-2 gap-4 justify-between text-md") do
             form.submit I18n.t("confirmation.confirm"),
-                        class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+                        class: modal_confirm_button_class(:green),
                         data: { modal_hide: modal_id, partial_pay_multiple_target: "submitButton" }
 
             button(
-              class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+              class: modal_cancel_button_class,
               type: :button,
               data: { modal_hide: modal_id }
             ) do

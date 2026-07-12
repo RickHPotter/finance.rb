@@ -42,13 +42,12 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :interval_months).downcase }
+          thin_label_text(model_attribute(Subscription, :interval_months).downcase)
 
           select_tag(
             :subscription_interval_months,
             id: :subscription_interval_months,
-            class: "w-full rounded-lg border border-slate-300 bg-white p-2
-                    disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400",
+            class: modal_select_class,
             data: { action: "change->subscription-transactions#syncDates", subscription_transactions_target: "intervalInput" }
           ) do
             options_for_select(
@@ -66,13 +65,13 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :price).downcase }
+          thin_label_text(model_attribute(Subscription, :price).downcase)
 
           div(class: "flex items-center gap-1") do
             Button(
               type: :button,
               size: :lg,
-              class: "w-1/6 border border-black bg-red-300 lg:hidden",
+              class: "w-1/6 border border-black bg-red-300 text-black dark:border-red-500 dark:bg-red-700/80 dark:text-white lg:hidden",
               tabindex: -1,
               title: action_message(:toggle_sign),
               data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
@@ -99,7 +98,7 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :start_month_year).downcase }
+          thin_label_text(model_attribute(Subscription, :start_month_year).downcase)
 
           TextFieldTag(
             :subscription_start_month_year,
@@ -116,7 +115,7 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :end_month_year).downcase }
+          thin_label_text(model_attribute(Subscription, :end_month_year).downcase)
 
           TextFieldTag(
             :subscription_end_month_year,
@@ -133,7 +132,7 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :date).downcase }
+          thin_label_text(model_attribute(CashTransaction, :date).downcase)
 
           TextFieldTag(
             :subscription_start_date,
@@ -147,7 +146,7 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(Subscription, :end_date).downcase }
+          thin_label_text(model_attribute(Subscription, :end_date).downcase)
 
           TextFieldTag(
             :subscription_end_date,
@@ -161,12 +160,12 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div(class: "md:col-span-2", data: { subscription_transactions_target: "cashAccountWrapper" }) do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CashTransaction, :user_bank_account_id).downcase }
+          thin_label_text(model_attribute(CashTransaction, :user_bank_account_id).downcase)
 
           select_tag(
             :subscription_cash_account,
             id: :subscription_cash_account,
-            class: "w-full border border-slate-300 rounded-lg p-2 bg-white",
+            class: modal_select_class,
             data: { subscription_transactions_target: "cashAccountInput" }
           ) do
             option(value: "") { model_attribute(CashTransaction, :user_bank_account_id) }
@@ -175,12 +174,12 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         end
 
         div(class: "md:col-span-2 hidden", data: { subscription_transactions_target: "cardWrapper" }) do
-          span(class: "font-poetsen-one font-thin text-gray-500") { model_attribute(CardTransaction, :user_card_id).downcase }
+          thin_label_text(model_attribute(CardTransaction, :user_card_id).downcase)
 
           select_tag(
             :subscription_card,
             id: :subscription_card,
-            class: "w-full border border-slate-300 rounded-lg p-2 bg-white",
+            class: modal_select_class,
             data: { action: "change->subscription-transactions#syncDates", subscription_transactions_target: "cardInput" }
           ) do
             option(value: "") { model_attribute(CardTransaction, :user_card_id) }
@@ -191,17 +190,29 @@ class Views::Subscriptions::AddTransactionModal < Views::Base
         div(class: "md:col-span-2 flex justify-end gap-2 pt-2") do
           button(
             type: :button,
-            class: "bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_confirm_button_class(:green),
             data: { action: "subscription-transactions#saveModalRows" }
           ) { I18n.t("confirmation.confirm") }
 
           button(
             type: :button,
-            class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+            class: modal_cancel_button_class,
             data: { action: "subscription-transactions#closeModal" }
           ) { I18n.t("confirmation.cancel") }
         end
       end
     end
+  end
+
+  private
+
+  def thin_label_text(text)
+    span(class: "font-poetsen-one font-thin text-gray-500 dark:text-slate-400") { text }
+  end
+
+  def modal_select_class
+    "w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-900 disabled:cursor-not-allowed disabled:border-slate-200 " \
+      "disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 " \
+      "dark:disabled:border-slate-700 dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
   end
 end

@@ -2,7 +2,7 @@
 
 class Views::Shared::FormSubmissionSkeleton < Views::Base
   def view_template
-    div(class: "space-y-6") do
+    div(class: "space-y-6 dark:[&_.animate-pulse]:bg-slate-700") do
       div(class: "space-y-3") do
         Skeleton(class: "h-5 w-32 rounded-sm")
         Skeleton(class: "h-12 w-full rounded-md")

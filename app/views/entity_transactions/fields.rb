@@ -24,17 +24,18 @@ module Views
               controller: "entity-transaction",
               entity_transaction_form_index: form.index
             }) do
-          div(class: "flex my-1") do
-            span(class: "flex items-center text-sm font-medium text-black") do
+          div(class: "my-1 flex") do
+            span(class: "flex items-center text-sm font-medium text-black dark:text-slate-100") do
               if transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
-                div(class: "flex min-h-12 items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm") do
+                div(class: entity_chip_class) do
                   div(class: "flex items-center gap-2 flex-1") do
                     content
                   end
                 end
               else
                 Sheet(
-                  class: "flex min-h-12 items-center px-2 py-1 rounded-lg border border-slate-400 text-black outline-none text-sm",
+                  class: "flex min-h-12 items-center rounded-lg border border-slate-400 px-2 py-1 text-sm text-black outline-none " \
+                         "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/50",
                   data: { ruby_ui__sheet_portal_value: true }
                 ) do
                   SheetTrigger(class: "flex items-center gap-2 flex-1") do
@@ -42,7 +43,7 @@ module Views
                   end
 
                   button(type: :button,
-                         class: "inline-flex items-center p-1 ms-2 text-sm bg-white text-black rounded-xs",
+                         class: remove_button_class,
                          aria_label: "Remove",
                          data: { action: "reactive-form#removeEntity entity-transaction#checkForExchangeCategory" }) do
                     cached_icon(:little_x)
@@ -66,6 +67,16 @@ module Views
         end
 
         span(class: "entities_entity_name text-nowrap") { entity_transaction.entity&.entity_name }
+      end
+
+      def entity_chip_class
+        "flex min-h-12 items-center rounded-lg border border-slate-400 px-2 py-1 text-sm text-black outline-none " \
+          "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+      end
+
+      def remove_button_class
+        "ms-2 inline-flex items-center rounded-xs bg-white p-1 text-sm text-black dark:bg-slate-900 dark:text-slate-300 " \
+          "dark:hover:bg-slate-700 dark:hover:text-slate-100"
       end
     end
   end

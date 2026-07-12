@@ -9,10 +9,13 @@ export default class extends Controller {
 
   connect() {
     this.chart = null
+    this.themeObserver = new MutationObserver(() => this.render())
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
     this.render()
   }
 
   disconnect() {
+    this.themeObserver?.disconnect()
     this.destroyChart()
   }
 
@@ -38,6 +41,7 @@ export default class extends Controller {
     const labels = entries.map((entry) => entry.name)
     const data = entries.map((entry) => entry.total / 100.0)
     const backgroundColor = entries.map((entry, index) => entry.colour || this.palette(index))
+    const theme = this.chartTheme()
 
     this.renderLegend(entries, backgroundColor)
 
@@ -49,7 +53,7 @@ export default class extends Controller {
         datasets: [{
           data,
           backgroundColor,
-          borderColor: "#ffffff",
+          borderColor: theme.sliceBorder,
           borderWidth: 2
         }]
       },
@@ -59,6 +63,11 @@ export default class extends Controller {
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: theme.tooltipBackground,
+            borderColor: theme.tooltipBorder,
+            borderWidth: 1,
+            bodyColor: theme.tooltipText,
+            titleColor: theme.tooltipText,
             callbacks: {
               label: (context) => `${context.label}: ${this.formatCurrencyFromFloat(context.parsed)}`
             }
@@ -72,7 +81,7 @@ export default class extends Controller {
           if (!chartArea) return
 
           ctx.save()
-          ctx.fillStyle = "#ffffff"
+          ctx.fillStyle = theme.background
           ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top)
           ctx.restore()
         }
@@ -107,7 +116,10 @@ export default class extends Controller {
   renderLegend(entries, colours) {
     entries.forEach((entry, index) => {
       const row = document.createElement("div")
-      row.className = "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+      row.className = [
+        "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2",
+        "dark:border-slate-700 dark:bg-slate-900"
+      ].join(" ")
 
       const left = document.createElement("div")
       left.className = "flex min-w-0 items-center gap-2"
@@ -118,12 +130,12 @@ export default class extends Controller {
       left.appendChild(dot)
 
       const name = document.createElement("span")
-      name.className = "truncate text-sm font-semibold text-slate-900"
+      name.className = "truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
       name.textContent = entry.name
       left.appendChild(name)
 
       const total = document.createElement("span")
-      total.className = "shrink-0 rounded-full bg-slate-100 px-2 py-1 text-2xs font-black uppercase tracking-[0.16em] text-slate-700"
+      total.className = "shrink-0 rounded-full bg-slate-100 px-2 py-1 text-2xs font-black uppercase tracking-[0.16em] text-slate-700 dark:bg-slate-800 dark:text-slate-300"
       total.textContent = this.formatCurrency(entry.total)
 
       row.appendChild(left)
@@ -145,6 +157,30 @@ export default class extends Controller {
 
   formatCurrencyFromFloat(value) {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0)
+  }
+
+  chartTheme() {
+    if (!this.darkMode) {
+      return {
+        background: "#ffffff",
+        sliceBorder: "#ffffff",
+        tooltipBackground: "rgba(255, 255, 255, 0.96)",
+        tooltipBorder: "rgba(148, 163, 184, 0.35)",
+        tooltipText: "#0f172a"
+      }
+    }
+
+    return {
+      background: "#020617",
+      sliceBorder: "#020617",
+      tooltipBackground: "rgba(15, 23, 42, 0.96)",
+      tooltipBorder: "rgba(71, 85, 105, 0.9)",
+      tooltipText: "#f8fafc"
+    }
+  }
+
+  get darkMode() {
+    return document.documentElement.classList.contains("dark")
   }
 
   palette(index) {

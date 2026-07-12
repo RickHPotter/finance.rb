@@ -174,7 +174,7 @@ function setupMobileScrollNav() {
 
   const onTopClick = (event) => {
     event.preventDefault()
-    dispatchKey("t")
+    dispatchKey("p")
   }
 
   const onBottomClick = (event) => {

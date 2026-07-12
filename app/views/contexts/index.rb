@@ -15,15 +15,15 @@ class Views::Contexts::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      div(class: "m-1 min-h-[calc(100svh-16rem)] rounded-lg bg-white shadow-md shadow-red-50") do
-        div(class: "flex items-start justify-between border-b border-stone-200 px-4 py-3") do
+      div(class: compact_crud_shell_class) do
+        div(class: compact_crud_header_class) do
           div(class: "flex flex-col items-start") do
-            h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Context, count: 2) }
+            h1(class: compact_crud_title_class) { action_model(:index, Context, count: 2) }
             render_scenario_badge
           end
         end
 
-        div(class: "border-b border-stone-100 px-3 py-3 md:px-4 space-y-6") do
+        div(class: "#{compact_crud_panel_class} space-y-6") do
           render_tree_node(main_context, root: true)
         end
       end
@@ -45,7 +45,7 @@ class Views::Contexts::Index < Views::Base
   def render_tree_node(context, root: false)
     return if context.nil?
 
-    div(class: root ? "space-y-4" : "ml-4 space-y-4 border-l border-stone-200 pl-4 md:ml-6 md:pl-6") do
+    div(class: root ? "space-y-4" : "ml-4 space-y-4 border-l border-stone-200 pl-4 dark:border-slate-700 md:ml-6 md:pl-6") do
       render_context_card(context, root:)
       render_create_child_button(context)
 
@@ -62,7 +62,7 @@ class Views::Contexts::Index < Views::Base
 
   def render_context_card(context, root:)
     if root
-      div(class: "rounded-lg border border-sky-300 bg-linear-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm") do
+      div(class: root_context_card_class) do
         render_context_card_content(context, root:)
       end
       return
@@ -73,9 +73,9 @@ class Views::Contexts::Index < Views::Base
       class: [
         "block rounded-lg border p-4 transition",
         if context.archived?
-          "border-stone-300 bg-stone-100 opacity-80"
+          "border-stone-300 bg-stone-100 opacity-80 dark:border-slate-700 dark:bg-slate-800"
         else
-          "border-stone-200 bg-stone-50 hover:border-sky-300 hover:bg-sky-50"
+          child_context_card_class
         end
       ].join(" "),
       data: { turbo_frame: :context_overlay, turbo_prefetch: false }
@@ -87,11 +87,13 @@ class Views::Contexts::Index < Views::Base
   def render_context_card_content(context, root:)
     div(class: "flex items-start justify-between gap-3") do
       div(class: "min-w-0 flex-1 text-left") do
-        p(class: "text-left text-xs font-semibold uppercase tracking-[0.2em] #{root ? 'text-sky-700' : 'text-stone-500'}") do
+        p(class: "text-left text-xs font-semibold uppercase tracking-[0.2em] #{root ? 'text-sky-700 dark:text-sky-300' : 'text-stone-500 dark:text-slate-400'}") do
           root ? I18n.t("contexts.index.main_label") : I18n.t("contexts.index.derived_label")
         end
-        h2(class: "mt-1 text-left text-lg font-semibold text-stone-900 wrap-break-word") { context.name }
-        p(class: "mt-2 text-left text-sm text-stone-600 wrap-break-word") { context.description.presence || I18n.t("contexts.index.no_description") }
+        h2(class: "mt-1 text-left text-lg font-semibold text-stone-900 wrap-break-word dark:text-slate-100") { context.name }
+        p(class: "mt-2 text-left text-sm text-stone-600 wrap-break-word dark:text-slate-300") do
+          context.description.presence || I18n.t("contexts.index.no_description")
+        end
       end
 
       if current_context == context
@@ -112,12 +114,27 @@ class Views::Contexts::Index < Views::Base
     div(class: "pl-2") do
       link_to(
         new_context_path(source_context_id: context.id),
-        class: "inline-flex size-9 items-center justify-center rounded-full border border-dashed border-sky-400 bg-white text-sky-600 transition hover:bg-sky-50",
+        class: create_child_button_class,
         title: I18n.t("contexts.index.create_child"),
         data: { turbo_frame: :context_overlay, turbo_prefetch: false }
       ) do
         "+"
       end
     end
+  end
+
+  def root_context_card_class
+    "rounded-lg border border-sky-300 bg-linear-to-br from-sky-100 via-white to-cyan-50 p-5 shadow-sm dark:border-sky-500/40 " \
+      "dark:from-sky-950/40 dark:via-slate-900 dark:to-slate-900 dark:shadow-none"
+  end
+
+  def child_context_card_class
+    "border-stone-200 bg-stone-50 hover:border-sky-300 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 " \
+      "dark:hover:border-sky-500/50 dark:hover:bg-sky-950/30"
+  end
+
+  def create_child_button_class
+    "inline-flex size-9 items-center justify-center rounded-full border border-dashed border-sky-400 bg-white text-sky-600 transition " \
+      "hover:bg-sky-50 dark:bg-slate-900 dark:text-sky-300 dark:hover:bg-slate-800"
   end
 end

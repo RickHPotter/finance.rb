@@ -25,7 +25,7 @@ class Views::Subscriptions::Index < Views::Base
   private
 
   def desktop_index
-    div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md") do
+    div(class: resource_index_shell_class) do
       render_hero
 
       div(class: "min-w-full flex-1") do
@@ -34,7 +34,7 @@ class Views::Subscriptions::Index < Views::Base
             render Views::Subscriptions::IndexSearchForm.new(index_context:, mobile: false)
 
             div(class: "my-4", data: { datatable_target: :table }) do
-              div(class: "overflow-hidden rounded-lg border border-slate-300 shadow-sm") do
+              div(class: resource_table_shell_class) do
                 render Views::Shared::TableHeader.new(
                   grid_class: "grid grid-cols-12",
                   rows: [
@@ -55,7 +55,7 @@ class Views::Subscriptions::Index < Views::Base
                     render Views::Subscriptions::Subscription.new(subscription:, mobile: false)
                   end
                 else
-                  div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
+                  div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
                 end
               end
             end
@@ -66,13 +66,13 @@ class Views::Subscriptions::Index < Views::Base
   end
 
   def mobile_index
-    div(class: "flex min-h-[calc(100svh-18rem)] flex-col rounded-lg bg-white p-4 shadow-md w-full") do
+    div(class: "#{resource_index_shell_class} w-full") do
       render_hero
 
       div(class: "min-w-full flex-1") do
         turbo_frame_tag :subscriptions do
           div(class: "min-h-full", data: { controller: "datatable" }) do
-            div(class: "mb-6 grid grid-cols-1 gap-2 rounded-lg bg-slate-50 p-3 shadow-sm") do
+            div(class: resource_mobile_filter_shell_class) do
               render Views::Subscriptions::IndexSearchForm.new(index_context:, mobile: true)
             end
 
@@ -82,7 +82,7 @@ class Views::Subscriptions::Index < Views::Base
                   render Views::Subscriptions::Subscription.new(subscription:, mobile: true)
                 end
               else
-                div(class: "border-b border-slate-200 py-2 my-2 text-lg bg-white") { I18n.t(:rows_not_found) }
+                div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
               end
             end
           end
@@ -99,8 +99,8 @@ class Views::Subscriptions::Index < Views::Base
   end
 
   def render_hero
-    div(class: "mb-6 flex items-start justify-between border-b border-stone-200 pb-3") do
-      h1(class: "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700") { action_model(:index, Subscription, 2) }
+    div(class: resource_index_hero_class) do
+      h1(class: resource_index_title_class) { action_model(:index, Subscription, 2) }
       next if mobile
 
       link_to(

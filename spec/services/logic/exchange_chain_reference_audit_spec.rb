@@ -34,6 +34,7 @@ RSpec.describe Logic::ExchangeChainReferenceAudit do
         user: sender,
         context: sender.main_context,
         user_bank_account: sender_bank_account,
+        friend_notification_intent: "reimbursement",
         description: "Reimbursement source",
         date: Date.new(2026, 3, 18),
         month: 3,
@@ -165,7 +166,7 @@ RSpec.describe Logic::ExchangeChainReferenceAudit do
         chain_kind: "shared_return_chain",
         supported: true
       )
-      expect(candidate[:proposed_changes].size).to eq(2)
+      expect(candidate[:proposed_changes].size).to eq(1)
     end
 
     it "marks rows with multiple middle candidates as unsupported" do

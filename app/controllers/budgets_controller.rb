@@ -74,6 +74,25 @@ class BudgetsController < ApplicationController
     respond_to(&:turbo_stream)
   end
 
+  def bulk_update
+    selected_budgets.update_all(bulk_budget_attributes.merge(updated_at: Time.current))
+    recalculate_selected_budget_balances
+    redirect_to_bulk_return_path(:updated) && return
+
+    build_index_context
+
+    render_bulk_success(:updated)
+  end
+
+  def bulk_destroy
+    selected_budgets.find_each(&:destroy)
+    redirect_to_bulk_return_path(:destroyed) && return
+
+    build_index_context
+
+    render_bulk_success(:destroyed)
+  end
+
   def handle_save
     if @budget.valid?
       load_based_on_save
@@ -137,5 +156,61 @@ class BudgetsController < ApplicationController
       budget_categories_attributes: %i[id category_id _destroy],
       budget_entities_attributes: %i[id entity_id _destroy]
     )
+  end
+
+  def selected_budgets
+    current_context.budgets.where(id: selected_budget_ids)
+  end
+
+  def selected_budget_ids
+    params[:ids].to_s.split(",").filter_map { |id| Integer(id, exception: false) }.uniq
+  end
+
+  def bulk_budget_attributes
+    case params[:bulk_action]
+    when "make_inclusive"
+      { inclusive: true }
+    when "make_exclusive"
+      { inclusive: false }
+    when "first_installment_only"
+      { first_installment_only: true }
+    when "all_installments"
+      { first_installment_only: false }
+    else
+      {}
+    end
+  end
+
+  def recalculate_selected_budget_balances
+    selected_budgets.find_each do |budget|
+      budget.set_remaining_value
+      budget.save!
+    end
+  end
+
+  def render_bulk_success(action)
+    render turbo_stream: [
+      turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(action, Budget) }),
+      turbo_stream.replace(:center_container, Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile))
+    ]
+  end
+
+  def redirect_to_bulk_return_path(action)
+    return false if bulk_return_path.blank?
+
+    redirect_to bulk_return_path, notice: notification_model(action, Budget), status: :see_other
+  end
+
+  def bulk_return_path
+    raw_return_path = params[:return_to].to_s
+    return nil if raw_return_path.blank?
+
+    uri = URI.parse(raw_return_path)
+    return nil if uri.host.present? || uri.scheme.present?
+    return nil unless [ budgets_path, cash_transactions_path ].include?(uri.path)
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
   end
 end

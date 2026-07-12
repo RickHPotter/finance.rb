@@ -121,12 +121,61 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.context).to eq(subject.user.main_context)
     end
 
+    it "clears subscription_id when the subscription category is removed" do
+      user = create(:user)
+      subscription = create(:subscription, user:, context: user.main_context)
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: create(:user_bank_account, :random, user:),
+        subscription:
+      )
+      transaction.category_transactions.destroy_all
+      transaction.categories = [ user.built_in_category("SUBSCRIPTION") ]
+      transaction.save!(validate: false)
+
+      transaction.categories = [ replacement_category ]
+      transaction.save!
+
+      expect(transaction.reload.subscription_id).to be_nil
+      expect(transaction.categories.pluck(:category_name)).to contain_exactly("TRANSPORT")
+    end
+
     it "recognises exchange return cash transactions by category" do
       exchange_return = subject.user.built_in_category("EXCHANGE RETURN")
       subject.categories << exchange_return
       subject.save
 
       expect(subject.exchange_return?).to be(true)
+    end
+
+    it "requires source exchange transactions to declare a friend notification intent" do
+      transaction = build(
+        :cash_transaction,
+        :random,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        category_transactions_attributes: [ { category_id: subject.user.built_in_category("EXCHANGE").id } ]
+      )
+
+      expect(transaction).not_to be_valid
+      expect(transaction.errors[:friend_notification_intent]).to be_present
+    end
+
+    it "rejects persisted friend notification intent outside source exchange transactions" do
+      transaction = build(
+        :cash_transaction,
+        :random,
+        user: subject.user,
+        context: subject.user.main_context,
+        user_bank_account: subject.user_bank_account,
+        friend_notification_intent: "loan"
+      )
+
+      expect(transaction).not_to be_valid
     end
 
     it "does not treat a local borrow return as a shared return flow without linkage or notification history" do
@@ -297,6 +346,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 18),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
         entity_transactions_attributes: [ { entity_id: sender_entity.id, is_payer: true, price: -2_000, price_to_be_returned: -2_000 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 18), month: 3, year: 2026, price: -2_000 } ]
@@ -369,6 +419,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: receiver.built_in_category("EXCHANGE").id } ],
         entity_transactions_attributes: [ { entity_id: receiver_entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 17), month: 3, year: 2026, price: -5_000, paid: false } ]
@@ -416,6 +467,7 @@ RSpec.describe CashTransaction, type: :model do
           date: Date.new(2026, 3, 17),
           month: 3,
           year: 2026,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
           entity_transactions_attributes: [ { entity_id: sender_entity.id, is_payer: true, price: -5_000, price_to_be_returned: -5_000 } ],
           cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 17), month: 3, year: 2026, price: -5_000, paid: false } ]
@@ -440,6 +492,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: receiver.built_in_category("EXCHANGE").id } ],
         entity_transactions_attributes: [ { entity_id: receiver_entity.id, is_payer: true, price: 5_000, price_to_be_returned: 5_000 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 17), month: 3, year: 2026, price: -5_000, paid: false } ]
@@ -1013,6 +1066,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1071,6 +1125,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1090,6 +1145,7 @@ RSpec.describe CashTransaction, type: :model do
           }
         ]
       )
+      transaction.update_columns(friend_notification_intent: nil)
 
       conversation.messages.create!(
         user: rikki,
@@ -1126,6 +1182,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1206,6 +1263,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1293,6 +1351,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1323,6 +1382,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions: [ build(:category_transaction, category: gigi.built_in_category("EXCHANGE")) ],
         cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Date.new(2026, 3, 17), month: 3, year: 2026) ]
       )
@@ -1363,6 +1423,7 @@ RSpec.describe CashTransaction, type: :model do
         date: Date.new(2026, 3, 17),
         month: 3,
         year: 2026,
+        friend_notification_intent: "loan",
         category_transactions_attributes: [
           { category_id: rikki.built_in_category("EXCHANGE").id }
         ],
@@ -1449,6 +1510,7 @@ RSpec.describe CashTransaction, type: :model do
           date: Date.new(2026, 3, 17),
           month: 3,
           year: 2026,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: rikki.built_in_category("EXCHANGE").id }
           ],
@@ -1514,6 +1576,7 @@ RSpec.describe CashTransaction, type: :model do
           date: Date.new(2026, 3, 17),
           month: 3,
           year: 2026,
+          friend_notification_intent: "loan",
           category_transactions_attributes: [
             { category_id: rikki.built_in_category("EXCHANGE").id }
           ],
@@ -1555,6 +1618,7 @@ end
 #  comment                     :text
 #  date                        :datetime         not null
 #  description                 :string           not null
+#  friend_notification_intent  :string
 #  imported                    :boolean          default(FALSE)
 #  month                       :integer          not null
 #  paid                        :boolean          default(FALSE)

@@ -148,7 +148,8 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
 
       expect(rows.map { |row| row[:id] }).to eq([ broken_card.id ])
       expect(rows.first[:payer_entity_transaction_ids]).to eq([ broken_entity_transaction.id ])
-      expect(rows.first[:issues]).to contain_exactly("source_allocation_mismatch", "projection_shape_mismatch", "duplicate_projection_buckets")
+      expect(rows.first[:issues]).to contain_exactly("source_allocation_mismatch")
+      expect(rows.first[:warnings]).to contain_exactly("projection_shape_mismatch", "duplicate_projection_buckets")
       expect(rows.first[:expected_rows].map { |entry| [ entry[:month], entry[:year], entry[:price] ] }).to eq([
                                                                                                                 [ 4, 2026, 6_717 ],
                                                                                                                 [ 5, 2026, 6_717 ]
@@ -413,6 +414,68 @@ RSpec.describe Logic::CardExchangeProjectionAudit do
                                                     has_moi_entity: false,
                                                     issue_code: "missing_moi_allocation"
                                                   })
+    end
+
+    it "does not flag source allocation when return percentage explains the payer amount" do
+      user = create(:user, :random)
+      entity = create(:entity, user:, entity_name: "VIH")
+      user_card = create(:user_card, :random, user:, card: create(:card, :random))
+      bank_account = create(:user_bank_account, user:)
+      exchange_return_category = user.built_in_category("EXCHANGE RETURN")
+
+      exchange_return = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account: bank_account,
+        cash_transaction_type: "Exchange",
+        description: "[ 07/2026 ] VIH - CARD",
+        price: 66_900,
+        cash_installments: [ build(:cash_installment, number: 1, price: 66_900) ]
+      )
+      exchange_return.categories = [ exchange_return_category ]
+      exchange_return.save!
+
+      card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        description: "FOGAO E PANELA",
+        price: -60_165,
+        card_installments: [ build(:card_installment, number: 1, price: -60_165, month: 7, year: 2026) ]
+      )
+      entity_transaction = card.entity_transactions.first
+      entity_transaction.update_columns(
+        entity_id: entity.id,
+        is_payer: true,
+        price: 66_900,
+        price_to_be_returned: 66_900,
+        loan_return_percentage: 111.1942,
+        exchanges_count: 1
+      )
+      Exchange.insert({
+                        entity_transaction_id: entity_transaction.id,
+                        cash_transaction_id: exchange_return.id,
+                        exchange_type: Exchange.exchange_types.fetch(:monetary),
+                        bound_type: "card_bound",
+                        number: 1,
+                        price: 66_900,
+                        starting_price: 66_900,
+                        date: exchange_return.date,
+                        month: exchange_return.month,
+                        year: exchange_return.year,
+                        exchanges_count: 1,
+                        created_at: Time.current,
+                        updated_at: Time.current
+                      })
+
+      rows = described_class.new(current_user: user, current_context: user.main_context).call
+      row = rows.find { |entry| entry[:id] == card.id }
+
+      expect(row[:issues]).to be_empty
+      expect(row[:allocation_issue]).to be_nil
+      expect(row[:warnings]).to contain_exactly("projection_shape_mismatch")
     end
 
     it "filters pending rows by default and can return paid rows explicitly" do

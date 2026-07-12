@@ -12,6 +12,7 @@ module HasSubscription
     belongs_to :subscription, optional: true, counter_cache: true
 
     # @callbacks ..............................................................
+    before_validation :clear_subscription_without_subscription_category
     before_destroy :remember_subscription_id, prepend: true
     after_commit :update_subscription_price_cache
   end
@@ -29,5 +30,28 @@ module HasSubscription
 
   def remember_subscription_id
     self.original_subscription_id = subscription_id
+  end
+
+  def clear_subscription_without_subscription_category
+    return if subscription_id.blank?
+    return unless subscription_category_link_removed?
+    return if will_save_change_to_subscription_id?
+
+    self.subscription = nil
+  end
+
+  def subscription_category_link_removed?
+    return false unless respond_to?(:category_transactions)
+    return false unless respond_to?(:original_categories)
+    return false if original_categories.blank?
+
+    subscription_category_id = user&.built_in_category("SUBSCRIPTION")&.id
+    return false if subscription_category_id.blank?
+
+    original_categories.include?(subscription_category_id) && !effective_category_ids.include?(subscription_category_id)
+  end
+
+  def effective_category_ids
+    category_transactions.reject(&:marked_for_destruction?).filter_map(&:category_id).uniq
   end
 end

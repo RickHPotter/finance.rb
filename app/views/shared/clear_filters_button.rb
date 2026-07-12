@@ -22,6 +22,7 @@ class Views::Shared::ClearFiltersButton < Views::Base
 
   def button_class
     "inline-flex h-10 items-center justify-center rounded-md border border-sky-400 bg-white px-4 py-2 text-[11px] " \
-      "font-semibold uppercase tracking-[0.14em] text-sky-800 transition hover:border-sky-600 hover:text-sky-950"
+      "font-semibold uppercase tracking-[0.14em] text-sky-800 transition hover:border-sky-600 hover:text-sky-950 " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-sky-500/60 dark:hover:bg-slate-700 dark:hover:text-slate-100"
   end
 end

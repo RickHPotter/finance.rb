@@ -14,6 +14,8 @@ RSpec.describe "Contexts", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Contexts")
       expect(response.body).to include('id="context_overlay"')
+      expect(response.body).to include('id="theme_toggle"')
+      expect(response.body).to include('data-controller="theme"')
     end
 
     it "renders nested contexts and create-child entrypoints for each node" do

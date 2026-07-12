@@ -31,13 +31,13 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
   def render_mobile_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4") do
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg px-2 mb-4 dark:border-slate-700") do
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         if investments.present?
           render_mobile_investments
         else
-          div(class: "border-b border-slate-200 py-2 my-2 text-lg") { I18n.t(:rows_not_found) }
+          div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-700 dark:text-slate-100") { I18n.t(:rows_not_found) }
         end
       end
     end
@@ -45,10 +45,10 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
   def render_month_year
     div(class: "mb-8", data: { datatable_target: :table }) do
-      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4") do
+      fieldset(class: "grid grid-cols-1 border border-slate-200 rounded-lg p-4 dark:border-slate-700") do
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
-        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible") do
+        div(class: "bg-white rounded-lg border border-slate-300 shadow-sm overflow-visible dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/30") do
           render Views::Shared::TableHeader.new(
             grid_class: "grid grid-cols-8",
             rows: [
@@ -65,10 +65,10 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
           if investments.present?
             render_investments
           else
-            div(class: "py-2 text-lg") { I18n.t(:rows_not_found) }
+            div(class: "py-2 text-lg dark:text-slate-100") { I18n.t(:rows_not_found) }
           end
 
-          div(class: "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate") do
+          div(class: total_row_class) do
             span(class: "py-3 col-span-5 text-end") { "#{model_attribute(Investment, :total_amount)}:" }
 
             span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
@@ -84,7 +84,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "rounded-lg shadow-sm overflow-visible bg-slate-200 my-2 hover:opacity-80 transition-all",
+          class: "rounded-lg shadow-sm overflow-visible bg-slate-200 my-2 text-black hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
@@ -135,7 +135,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-8 bg-linear-to-r hover:opacity-80 transition-all",
+          class: "grid grid-cols-8 bg-linear-to-r text-black hover:opacity-80 transition-all",
           style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
           data: { id: investment.id, datatable_target: :row }
         ) do
@@ -201,7 +201,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def render_action_menu(investment)
-    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-50 shrink-0") do
+    Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
         button(
           type: :button,
@@ -214,7 +214,7 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
         end
       end
 
-      PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
+      PopoverContent(class: "z-40 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:duplicate), duplicate_investment_path(investment))
           action_menu_destroy_link(investment)
@@ -249,7 +249,13 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
 
   def action_button_class
     "inline-flex size-6 items-center justify-center rounded-sm border border-slate-300 bg-white text-slate-800 " \
-      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+      "shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800 [&_svg]:size-4"
+  end
+
+  def total_row_class
+    "grid grid-cols-7 py-1 bg-slate-200 border-b border-slate-400 rounded-b-lg font-semibold text-black font-graduate " \
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
   end
 
   def render_duplicate_action(investment)
@@ -270,10 +276,12 @@ class Views::Investments::MonthYear < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def action_menu_button_class
-    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white [&_svg]:size-4"
+    "rounded-sm bg-white/90 p-0.5 text-slate-900 shadow-sm ring-1 ring-black/20 transition hover:bg-slate-900 hover:text-white " \
+      "dark:bg-slate-900/90 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-800 [&_svg]:size-4"
   end
 
   def action_menu_item_class
-    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 hover:no-underline"
+    "w-full justify-start rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 no-underline transition-colors hover:bg-slate-100 " \
+      "hover:no-underline dark:text-slate-200 dark:hover:bg-slate-800"
   end
 end

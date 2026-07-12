@@ -23,6 +23,14 @@ class Views::Layouts::Application < Views::Base
         csrf_meta_tags
         csp_meta_tag
 
+        javascript_tag(<<~JS)
+          (() => {
+            try {
+              document.documentElement.classList.toggle("dark", window.localStorage.getItem("finance.theme") === "dark");
+            } catch (_) {}
+          })();
+        JS
+
         link rel: "manifest", href: "/manifest.json"
         link rel: "icon", href: "/pwa_logos/128.png", type: "image/png"
         link rel: "apple-touch-icon", href: "/pwa_logos/512.png"
@@ -49,7 +57,7 @@ class Views::Layouts::Application < Views::Base
                 end
               end
 
-              PageCard(class: "mx-1 flex min-h-0 flex-1 flex-col wrap-break-words rounded-lg bg-white shadow-md shadow-red-50") do
+              PageCard do
                 div class: "flex min-h-0 flex-1 flex-col p-1 md:p-2 lg:p-3" do
                   div class: "hidden xl:block", data: { controller: "history-nav" } do
                     FloatingNavButton(side: :left, title: "Back", target: :back, action: "click->history-nav#back") do
@@ -71,7 +79,7 @@ class Views::Layouts::Application < Views::Base
 
                   render Views::Static::Calculator.new
 
-                  div(class: "flex min-h-0 flex-1 flex-col pt-2 text-center text-black", &)
+                  div(class: "flex min-h-0 flex-1 flex-col text-center text-black dark:text-slate-100", &)
                 end
               end
             end

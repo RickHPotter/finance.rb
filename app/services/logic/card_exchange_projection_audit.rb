@@ -34,7 +34,8 @@ class Logic::CardExchangeProjectionAudit
     row = base_row_for(card_transaction, payer_entity_transactions, expected_rows, actual_rows)
 
     row[:issues] = issues_for(row)
-    return if row[:issues].empty?
+    row[:warnings] = warnings_for(row)
+    return if row[:issues].empty? && row[:warnings].empty?
 
     row
   end
@@ -60,7 +61,8 @@ class Logic::CardExchangeProjectionAudit
       expected_rows:,
       actual_rows:,
       payer_entity_transaction_ids: payer_entity_transactions.map(&:id),
-      allocation_issue: allocation_issue_for(card_transaction)
+      allocation_issue: allocation_issue_for(card_transaction),
+      warnings: []
     }
   end
 
@@ -99,10 +101,12 @@ class Logic::CardExchangeProjectionAudit
 
   def allocation_issue_for(card_transaction)
     transaction_total = card_transaction.price.abs
-    allocation_total = card_transaction.entity_transactions.sum(&:price)
+    entity_transactions = card_transaction.entity_transactions.to_a
+    allocation_total = entity_transactions.sum(&:price)
     return if allocation_total == transaction_total
+    return if source_allocation_explained_by_return_percentages?(entity_transactions, transaction_total)
 
-    has_moi_entity = card_transaction.entity_transactions.joins(:entity).exists?(entities: { built_in: true })
+    has_moi_entity = entity_transactions.any? { |entity_transaction| entity_transaction.entity&.built_in? }
 
     {
       transactable_type: "CardTransaction",
@@ -110,7 +114,7 @@ class Logic::CardExchangeProjectionAudit
       description: card_transaction.description,
       transaction_total:,
       allocation_total:,
-      payer_total: card_transaction.entity_transactions.sum(&:price_to_be_returned),
+      payer_total: entity_transactions.sum(&:price_to_be_returned),
       missing_amount: transaction_total - allocation_total,
       has_moi_entity:,
       issue_code: !has_moi_entity && transaction_total > allocation_total ? "missing_moi_allocation" : "entity_allocation_mismatch"
@@ -121,13 +125,18 @@ class Logic::CardExchangeProjectionAudit
     issues = []
     issues << "source_allocation_mismatch" if row[:allocation_issue].present?
     issues << "payer_exchange_total_mismatch" if row[:actual_total] != row[:payer_declared_total]
-    return issues if missing_self_share_allocation?(row)
-    return issues if split_allocation_valid?(row)
-
-    issues << "projection_shape_mismatch" if row[:expected_total] != row[:actual_total] &&
-                                             row[:expected_rows].map { |entry| entry[:signature] }.sort != row[:actual_rows].map { |entry| entry[:signature] }.sort
-    issues << "duplicate_projection_buckets" if row[:expected_total] != row[:actual_total] && duplicate_buckets_in(row[:actual_rows]).present?
     issues
+  end
+
+  def warnings_for(row)
+    warnings = []
+    return warnings if missing_self_share_allocation?(row)
+    return warnings if split_allocation_valid?(row)
+
+    warnings << "projection_shape_mismatch" if row[:expected_total] != row[:actual_total] &&
+                                               row[:expected_rows].map { |entry| entry[:signature] }.sort != row[:actual_rows].map { |entry| entry[:signature] }.sort
+    warnings << "duplicate_projection_buckets" if row[:expected_total] != row[:actual_total] && duplicate_buckets_in(row[:actual_rows]).present?
+    warnings
   end
 
   def split_allocation_valid?(row)
@@ -140,6 +149,17 @@ class Logic::CardExchangeProjectionAudit
 
   def duplicate_buckets_in(rows)
     rows.group_by { |entry| [ entry[:month], entry[:year] ] }.select { |_bucket, entries| entries.size > 1 }
+  end
+
+  def source_allocation_explained_by_return_percentages?(entity_transactions, transaction_total)
+    implied_total = entity_transactions.select(&:is_payer?).sum do |entity_transaction|
+      percentage = entity_transaction.loan_return_percentage.to_d
+      return false unless percentage.positive?
+
+      ((entity_transaction.price_to_be_returned.to_i.abs.to_d * 100) / percentage).round
+    end
+
+    implied_total == transaction_total.to_i.abs
   end
 
   def signature_for(month:, year:, price:)

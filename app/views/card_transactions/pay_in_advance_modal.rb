@@ -30,13 +30,13 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
       class: "hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)]",
       tabindex: "-1"
     ) do
-      div(class: "bg-white p-6 rounded-lg shadow-lg") do
+      div(class: "bg-white p-6 rounded-lg shadow-lg dark:border dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:shadow-black/40") do
         div(class: "flex") do
-          h1(class: "text-2xl mb-4 flex-1 text-start") { model_attribute(CardTransaction, :confirm_payment) }
+          h1(class: "text-2xl mb-4 flex-1 text-start text-slate-900 dark:text-slate-100") { model_attribute(CardTransaction, :confirm_payment) }
 
           button(
             type: :button,
-            class: "text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center",
+            class: modal_close_button_class,
             data: { modal_hide: modal_id }
           ) do
             cached_icon(:little_x)
@@ -62,7 +62,7 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
               form, :date,
               type: "datetime-local",
               svg: :calendar,
-              class: "font-graduate",
+              class: "font-graduate dark:font-mono dark:[color-scheme:dark]",
               min: min_date,
               max: max_date,
               value: default_date,
@@ -76,7 +76,7 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
               form, :price,
               svg: :money,
               id: :transaction_price,
-              class: "font-graduate",
+              class: "font-graduate dark:font-mono",
               value: 1,
               data: { controller: "input-select", price_mask_target: :input, action: "click->input-select#select input->price-mask#applyMask", min: 1 }
           end
@@ -87,7 +87,7 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
                         data: { modal_hide: modal_id }
 
             button(
-              class: "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded",
+              class: cancel_button_class,
               type: :button,
               data: { modal_hide: modal_id }
             ) do
@@ -97,5 +97,12 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
         end
       end
     end
+  end
+
+  private
+
+  def cancel_button_class
+    "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded " \
+      "dark:border dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
   end
 end

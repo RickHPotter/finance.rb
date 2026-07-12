@@ -102,13 +102,13 @@ class Views::CardTransactions::FormControls < Views::Base
 
   def price_and_installments_controls
     positive = card_transaction.price.to_i.positive?
-    sign_bg_colour = positive ? "bg-green-300" : "bg-red-300"
+    sign_bg_colour = positive ? "bg-green-300 dark:bg-green-400 dark:text-slate-950" : "bg-red-300 dark:bg-red-400 dark:text-slate-950"
     sign = positive ? "+" : "-"
 
     div(class: "flex w-full lg:w-[24%] lg:flex-none gap-1 mb-3 lg:mb-0") do
       Button(
         size: :lg,
-        class: "w-1/12 #{sign_bg_colour} border border-black lg:hidden",
+        class: "w-1/12 #{sign_bg_colour} border border-black font-graduate dark:border-slate-700 dark:font-mono lg:hidden",
         tabindex: -1,
         title: action_message(:toggle_sign),
         data: { action: "click->price-mask#toggleSign", target: ".sign-based" }
@@ -120,7 +120,7 @@ class Views::CardTransactions::FormControls < Views::Base
           inputmode: :numeric,
           svg: :money,
           id: :transaction_price,
-          class: "sign-based font-graduate",
+          class: "sign-based font-graduate dark:font-mono",
           autocomplete: :off,
           data: {
             controller: "input-select",
@@ -138,7 +138,7 @@ class Views::CardTransactions::FormControls < Views::Base
 
       Button(
         size: :lg,
-        class: "w-1/12 border border-black",
+        class: calculate_button_class,
         tabindex: -1,
         title: action_message(:calculate_installments_price),
         data: { action: "click->reactive-form#updateFullPrice" }
@@ -151,7 +151,7 @@ class Views::CardTransactions::FormControls < Views::Base
           svg: :number,
           min: 1, max: 72,
           value: [ card_transaction.card_installments.size, card_transaction.card_installments_count, 1 ].max,
-          class: "font-graduate",
+          class: "font-graduate dark:font-mono",
           data: {
             controller: "input-select",
             reactive_form_target: :installmentsCountInput,
@@ -159,5 +159,10 @@ class Views::CardTransactions::FormControls < Views::Base
           }
       end
     end
+  end
+
+  def calculate_button_class
+    "w-1/12 border border-black bg-white text-slate-950 dark:border-slate-600 dark:bg-transparent dark:text-slate-400 " \
+      "dark:hover:bg-slate-800 dark:hover:text-slate-100"
   end
 end
