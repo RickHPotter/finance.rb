@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_122000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_14_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -313,6 +313,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_122000) do
     t.string "description"
     t.bigint "investment_type_id", null: false
     t.integer "month", null: false
+    t.bigint "piggy_bank_return_cash_transaction_id"
     t.integer "price", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_bank_account_id", null: false
@@ -321,6 +322,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_122000) do
     t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
     t.index ["context_id"], name: "index_investments_on_context_id"
     t.index ["investment_type_id"], name: "index_investments_on_investment_type_id"
+    t.index ["piggy_bank_return_cash_transaction_id"], name: "index_investments_on_piggy_bank_return_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
@@ -470,6 +472,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_122000) do
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"
+  add_foreign_key "investments", "cash_transactions", column: "piggy_bank_return_cash_transaction_id"
   add_foreign_key "investments", "contexts"
   add_foreign_key "investments", "investment_types"
   add_foreign_key "investments", "user_bank_accounts"

@@ -27,9 +27,11 @@ RSpec.describe "Settings", type: :request do
       expect(response.body).to include(I18n.t("settings.tabs.exchange_audit"))
       expect(response.body).to include(I18n.t("settings.tabs.exchange_return_audit"))
       expect(response.body).to include(I18n.t("settings.tabs.card_exchange_projection_audit"))
+      expect(response.body).to include(I18n.t("settings.tabs.piggy_bank_audit"))
       expect(response.body).to include(exchange_audit_admin_settings_path)
       expect(response.body).to include(exchange_return_audit_admin_settings_path)
       expect(response.body).to include(card_exchange_projection_audit_admin_settings_path)
+      expect(response.body).to include(piggy_bank_audit_admin_settings_path)
     end
   end
 
@@ -341,6 +343,26 @@ RSpec.describe "Settings", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include('name="status_filter" value="paid"')
+    end
+  end
+
+  describe "[ GET /admin/settings/piggy_bank_audit ]" do
+    before { sign_in user }
+
+    it "returns not found for non-admin users" do
+      get piggy_bank_audit_admin_settings_path
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "renders the read-only audit for admin users" do
+      user.update!(admin: true)
+
+      get piggy_bank_audit_admin_settings_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("settings.piggy_bank_audit.title"))
+      expect(response.body).to include(I18n.t("settings.piggy_bank_audit.empty"))
     end
   end
 

@@ -83,6 +83,8 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             cash_transactions_sheet if transactables_type.include?("CashTransaction")
           end
 
+          render Views::PiggyBanks::ContributionsSheet.new(return_cash_transaction: cash_transaction) if cash_transaction.generated_piggy_bank_return?
+
           if cash_transaction.card_payment?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
             default_year = card_.year

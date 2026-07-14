@@ -165,9 +165,17 @@ class PiggyBank < ApplicationRecord
     errors.add(:return_cash_transaction, :closed) unless return_group_open? || return_cash_transaction.piggy_bank_return_links.empty?
     errors.add(:return_cash_transaction, :entity_mismatch) unless return_group_entity_id == source_entity_id
 
-    grouped_price = return_cash_transaction.piggy_bank_return_links.where.not(id:).sum(:return_price) + return_price.to_i
-    paid_price = return_cash_transaction.cash_installments.where(paid: true).sum(:price)
-    errors.add(:return_price, :insufficient_for_paid_history) if grouped_price < paid_price
+    errors.add(:return_price, :insufficient_for_paid_history) if grouped_price_with_current_link < paid_return_price
+  end
+
+  def grouped_price_with_current_link
+    linked_principal = return_cash_transaction.piggy_bank_return_links.where.not(id:).sum(:return_price)
+    valuation_delta = return_cash_transaction.piggy_bank_investments.sum(:price)
+    linked_principal + valuation_delta + return_price.to_i
+  end
+
+  def paid_return_price
+    return_cash_transaction.cash_installments.where(paid: true).sum(:price)
   end
 
   def inherit_return_group_date
@@ -199,7 +207,7 @@ class PiggyBank < ApplicationRecord
   end
 
   def grouped_projection_prices(return_transaction, links:)
-    grouped_price = links.sum(:return_price)
+    grouped_price = links.sum(:return_price) + return_transaction.piggy_bank_investments.sum(:price)
     remaining_price = grouped_price - return_transaction.cash_installments.where(paid: true).sum(:price)
     return [ grouped_price, remaining_price ] if grouped_price.positive? && !remaining_price.negative?
 

@@ -10,6 +10,23 @@ RSpec.describe "Investments", type: :request do
 
   before { sign_in user }
 
+  def create_piggy_bank_return
+    source = build(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account:,
+      description: "Emergency reserve",
+      price: -5_000,
+      cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Time.zone.now) ],
+      category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+      entity_transactions: [ EntityTransaction.new(entity: create(:entity, :random, user:), price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank: PiggyBank.new(return_price: 5_000, return_date: 3.months.from_now)
+    )
+    source.save!
+    source.piggy_bank.return_cash_transaction
+  end
+
   def switch_to_context!(context)
     patch switch_context_path(context)
     expect(response).to redirect_to(root_path)
@@ -52,6 +69,8 @@ RSpec.describe "Investments", type: :request do
 
   describe "[ #new ]" do
     it "renders the ruby ui comboboxes" do
+      piggy_bank_return = create_piggy_bank_return
+
       get new_investment_path
 
       expect(response).to have_http_status(:success)
@@ -62,6 +81,9 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include('data-controller="reactive-form price-mask"')
       expect(response.body).to include('data-reactive-form-quick-jump-value="true"')
       expect(response.body).to include('data-reactive-form-target="investmentTypeCombobox"')
+      expect(response.body).to include('id="investment_piggy_bank_return_combobox"')
+      expect(response.body).to include("Emergency reserve")
+      expect(response.body).to include("value=\"#{piggy_bank_return.id}\"")
       expect(response.body).not_to include("hw-combobox")
     end
 
@@ -137,6 +159,30 @@ RSpec.describe "Investments", type: :request do
   end
 
   describe "[ #create ]" do
+    it "creates a signed valuation linked to a Piggy Bank return" do
+      piggy_bank_return = create_piggy_bank_return
+
+      expect do
+        post investments_path, params: {
+          investment: {
+            description: "Monthly profit",
+            price: 800,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            investment_type_id: investment_type.id,
+            piggy_bank_return_cash_transaction_id: piggy_bank_return.id
+          }
+        }
+      end.to change(Investment, :count).by(1)
+
+      expect(Investment.last.piggy_bank_return_cash_transaction).to eq(piggy_bank_return)
+      expect(Investment.last.cash_transaction).to be_nil
+      expect(piggy_bank_return.reload.price).to eq(5_800)
+    end
+
     it "continues a create chain with the created ids tracked in the next form" do
       expect do
         post investments_path, params: {

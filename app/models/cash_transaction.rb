@@ -34,6 +34,11 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   has_many :exchanges
   has_one :piggy_bank, foreign_key: :source_cash_transaction_id, dependent: :destroy, inverse_of: :source_cash_transaction
   has_many :piggy_bank_return_links, class_name: "PiggyBank", foreign_key: :return_cash_transaction_id, inverse_of: :return_cash_transaction
+  has_many :piggy_bank_investments,
+           class_name: "Investment",
+           foreign_key: :piggy_bank_return_cash_transaction_id,
+           inverse_of: :piggy_bank_return_cash_transaction,
+           dependent: :restrict_with_error
   accepts_nested_attributes_for :piggy_bank, allow_destroy: true
 
   # @validations ..............................................................

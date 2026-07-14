@@ -68,6 +68,12 @@ class Admin::SettingsController < ApplicationController # rubocop:disable Metric
     render Views::Admin::Settings::CardExchangeProjectionAudit.new(rows:)
   end
 
+  def piggy_bank_audit
+    rows = Logic::PiggyBankAudit.new(current_user:, current_context:).call
+
+    render Views::Admin::Settings::PiggyBankAudit.new(rows:)
+  end
+
   def mark_exchange_return_source_as_fee
     entity_transaction = exchange_return_source_entity_transaction
     issue_code = sanitized_exchange_return_issue_code

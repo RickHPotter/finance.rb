@@ -255,7 +255,7 @@ class InvestmentsController < ApplicationController
     ret_params[:price] = ret_params[:price].to_i if ret_params[:price].present?
 
     ret_params.permit(
-      :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id,
+      :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id, :piggy_bank_return_cash_transaction_id,
       user_bank_account_id: [], investment_type_id: [], id: []
     )
   end

@@ -152,6 +152,7 @@ Rails.application.routes.draw do
       get :exchange_return_audit
       get :exchange_return_audit_issue_bucket
       get :card_exchange_projection_audit
+      get :piggy_bank_audit
       patch :apply_exchange_audit
       patch :convert_exchange_audit_loan_intent
       patch :convert_misplaced_loan

@@ -35,6 +35,23 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
+  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000)
+    source = build(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account:,
+      description:,
+      price: -price,
+      cash_installments: [ build(:cash_installment, number: 1, price: -price, date: Time.zone.now) ],
+      category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+      entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank: PiggyBank.new(return_price: price, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
+    )
+    source.save!
+    source
+  end
+
   describe "[ #new ]" do
     it "renders RubyUI comboboxes and split datetime input for bank account, category, and entity selection" do
       get new_cash_transaction_path
@@ -74,6 +91,19 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="cash_transaction[historical_correction_confirmation]"')
+    end
+
+    it "lists every grouped contribution on a Piggy Bank return edit form" do
+      first_source = create_piggy_bank_source(description: "First reserve")
+      grouped_return = first_source.piggy_bank.return_cash_transaction
+      second_source = create_piggy_bank_source(description: "Second reserve", return_transaction: grouped_return, price: 2_000)
+
+      get edit_cash_transaction_path(grouped_return)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("piggy_banks.contributions", count: 2))
+      expect(response.body).to include("First reserve", "Second reserve")
+      expect(response.body).to include(edit_cash_transaction_path(first_source), edit_cash_transaction_path(second_source))
     end
 
     it "renders the bulk add to subscription action on the index" do

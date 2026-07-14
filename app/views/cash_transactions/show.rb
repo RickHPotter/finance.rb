@@ -353,16 +353,18 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def piggy_bank_link_item
-    linked_transaction =
-      if cash_transaction.piggy_bank.present?
-        cash_transaction.piggy_bank.return_cash_transaction
-      elsif cash_transaction.piggy_bank_return_links.present?
-        cash_transaction.piggy_bank_return_links.first.source_cash_transaction
-      end
-    return if linked_transaction.blank?
+    if cash_transaction.piggy_bank.present?
+      linked_return = cash_transaction.piggy_bank.return_cash_transaction
+      return if linked_return.blank?
 
-    label = cash_transaction.piggy_bank.present? ? I18n.t("piggy_banks.linked_return") : I18n.t("piggy_banks.source")
-    link_item(label, linked_transaction.description, cash_transaction_path(linked_transaction))
+      link_item(I18n.t("piggy_banks.linked_return"), linked_return.description, cash_transaction_path(linked_return))
+    elsif cash_transaction.piggy_bank_return_links.present?
+      link_item(
+        I18n.t("piggy_banks.sources"),
+        I18n.t("piggy_banks.contributions", count: cash_transaction.piggy_bank_return_links.size),
+        edit_cash_transaction_path(cash_transaction)
+      )
+    end
   end
 
   def descendants_link_item
@@ -798,7 +800,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def editable_cash_transaction
-    cash_transaction.piggy_bank_return_links.first&.source_cash_transaction || cash_transaction
+    cash_transaction
   end
 
   def exchange_bound_badge(exchange)
