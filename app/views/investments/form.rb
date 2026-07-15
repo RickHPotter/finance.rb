@@ -57,7 +57,8 @@ class Views::Investments::Form < Views::Base
             selected_value: investment.piggy_bank_return_cash_transaction_id,
             placeholder: model_attribute(investment, :piggy_bank_return_cash_transaction_id),
             include_blank: true,
-            disabled: investment.persisted?
+            disabled: investment.persisted?,
+            input_data: { action: "change->reactive-form#selectPiggyBankDefaults" }
           )
         end
 
@@ -172,8 +173,19 @@ class Views::Investments::Form < Views::Base
     open_returns.uniq.sort_by { |transaction| [ transaction.description.downcase, transaction.date, transaction.id ] }.map do |transaction|
       entity_name = transaction.entities.first&.entity_name
       label = [ transaction.description, entity_name, I18n.l(transaction.date, format: :short) ].compact_blank.join(" - ")
-      [ label, transaction.id ]
+      [
+        label,
+        transaction.id,
+        {
+          piggy_bank_user_bank_account_id: transaction.user_bank_account_id,
+          piggy_bank_investment_type_id: piggy_bank_investment_type_id
+        }
+      ]
     end
+  end
+
+  def piggy_bank_investment_type_id
+    @piggy_bank_investment_type_id ||= InvestmentType.find_by(investment_type_code: "outros_cofrinho")&.id
   end
 
   def description_data(autofocus_target)

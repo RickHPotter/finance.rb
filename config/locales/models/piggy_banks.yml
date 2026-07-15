@@ -7,6 +7,7 @@ en:
       one: 1 contribution
       other: "%{count} contributions"
     linked_return: Linked Piggy Bank Return
+    no_investments: No investments are linked to this return yet.
     return_mode: Return destination
     select_return: Select an open return
     source: Piggy Bank Source
@@ -54,6 +55,7 @@ pt-BR:
       one: 1 aporte
       other: "%{count} aportes"
     linked_return: Retorno do Cofrinho Vinculado
+    no_investments: Nenhum investimento está vinculado a este retorno ainda.
     return_mode: Destino do retorno
     select_return: Selecione um retorno aberto
     source: Cofrinho de Origem

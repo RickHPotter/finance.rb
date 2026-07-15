@@ -97,6 +97,19 @@ RSpec.describe "CashTransactions", type: :request do
       first_source = create_piggy_bank_source(description: "First reserve")
       grouped_return = first_source.piggy_bank.return_cash_transaction
       second_source = create_piggy_bank_source(description: "Second reserve", return_transaction: grouped_return, price: 2_000)
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type: create(:investment_type, :random),
+        piggy_bank_return_cash_transaction: grouped_return,
+        description: "July Piggy Bank profit",
+        price: 300,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
 
       get edit_cash_transaction_path(grouped_return)
 
@@ -104,6 +117,12 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("piggy_banks.contributions", count: 2))
       expect(response.body).to include("First reserve", "Second reserve")
       expect(response.body).to include(edit_cash_transaction_path(first_source), edit_cash_transaction_path(second_source))
+      expect(response.body).to include('id="piggy_bank_contributions_sheet_trigger"')
+      expect(response.body).to include('id="piggy_bank_investments_sheet_trigger"')
+      expect(response.body).to include('id="piggy_bank_cash_month_year_')
+      expect(response.body).to include('id="month_year_container_piggy_bank_investment_')
+      expect(response.body).to include("July Piggy Bank profit")
+      expect(response.body).to include(edit_investment_path(investment))
     end
 
     it "renders the bulk add to subscription action on the index" do

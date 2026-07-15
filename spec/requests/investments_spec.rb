@@ -70,6 +70,12 @@ RSpec.describe "Investments", type: :request do
   describe "[ #new ]" do
     it "renders the ruby ui comboboxes" do
       piggy_bank_return = create_piggy_bank_return
+      piggy_bank_investment_type = create(
+        :investment_type,
+        investment_type_code: "outros_cofrinho",
+        investment_type_name_fallback: "Outros - Cofrinho",
+        built_in: true
+      )
 
       get new_investment_path
 
@@ -85,6 +91,12 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).to include("Emergency reserve")
       expect(response.body).to include("value=\"#{piggy_bank_return.id}\"")
       expect(response.body).not_to include("hw-combobox")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      piggy_bank_option = document.at_css("input[name='investment[piggy_bank_return_cash_transaction_id]'][value='#{piggy_bank_return.id}']")
+      expect(piggy_bank_option["data-action"]).to include("change->reactive-form#selectPiggyBankDefaults")
+      expect(piggy_bank_option["data-piggy-bank-user-bank-account-id"]).to eq(piggy_bank_return.user_bank_account_id.to_s)
+      expect(piggy_bank_option["data-piggy-bank-investment-type-id"]).to eq(piggy_bank_investment_type.id.to_s)
     end
 
     it "focuses price when using next_day" do

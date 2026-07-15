@@ -123,6 +123,32 @@ export default class extends Controller {
     }
   }
 
+  selectPiggyBankDefaults({ target }) {
+    if (!target.checked) { return }
+
+    this.selectInvestmentComboboxValue(
+      "investment[user_bank_account_id]",
+      target.dataset.piggyBankUserBankAccountId
+    )
+    this.selectInvestmentComboboxValue(
+      "investment[investment_type_id]",
+      target.dataset.piggyBankInvestmentTypeId
+    )
+  }
+
+  selectInvestmentComboboxValue(name, value) {
+    if (!value) { return }
+
+    const input = Array.from(
+      this.element.querySelectorAll(`input[name='${name}']`)
+    ).find((candidate) => candidate.value === value)
+    if (!input || input.checked) { return }
+
+    input.checked = true
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new Event("change", { bubbles: true }))
+  }
+
   setNextAutofocus(target) {
     if (!target.dataset.nextAutofocus) { return }
 
