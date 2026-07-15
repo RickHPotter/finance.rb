@@ -12,11 +12,11 @@ module CashTransactable
     belongs_to :cash_transaction, optional: true
 
     # @callbacks ..............................................................
-    before_save :prevent_paid_cash_transaction_rewrite
-    before_save :attach_cash_transaction
-    after_save :fix_cash_transaction, :update_cash_transaction
-    before_destroy :prevent_paid_cash_transaction_destroy, prepend: true
-    after_destroy :update_or_destroy_cash_transaction
+    before_save :prevent_paid_cash_transaction_rewrite, unless: :skip_cash_transaction_projection?
+    before_save :attach_cash_transaction, unless: :skip_cash_transaction_projection?
+    after_save :fix_cash_transaction, :update_cash_transaction, unless: :skip_cash_transaction_projection?
+    before_destroy :prevent_paid_cash_transaction_destroy, prepend: true, unless: :skip_cash_transaction_projection?
+    after_destroy :update_or_destroy_cash_transaction, unless: :skip_cash_transaction_projection?
   end
 
   # @public_class_methods .....................................................
@@ -256,6 +256,10 @@ module CashTransactable
 
   def protect_paid_cash_transaction_projection?
     true
+  end
+
+  def skip_cash_transaction_projection?
+    false
   end
 
   def destroy_projection_cash_transaction(record)

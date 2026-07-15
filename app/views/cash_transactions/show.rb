@@ -49,7 +49,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
-        dashboard_action(action_message(:edit), edit_cash_transaction_path(cash_transaction), variant: :edit)
+        dashboard_action(action_message(:edit), edit_cash_transaction_path(editable_cash_transaction), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction), variant: :duplicate) if duplicate_allowed?
         pay_action_button
         destroy_action
@@ -108,6 +108,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
                     edit_subscription_path(cash_transaction.subscription))
         end
         reference_link_item
+        piggy_bank_link_item
         descendants_link_item
         special_link_item
         empty_links_state if dashboard_links_empty?
@@ -349,6 +350,21 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     return if reference.blank?
 
     link_item(I18n.t("dashboards.cash_transactions.reference"), reference.description, reference_path_for(reference))
+  end
+
+  def piggy_bank_link_item
+    if cash_transaction.piggy_bank.present?
+      linked_return = cash_transaction.piggy_bank.return_cash_transaction
+      return if linked_return.blank?
+
+      link_item(I18n.t("piggy_banks.linked_return"), linked_return.description, cash_transaction_path(linked_return))
+    elsif cash_transaction.piggy_bank_return_links.present?
+      link_item(
+        I18n.t("piggy_banks.sources"),
+        I18n.t("piggy_banks.contributions", count: cash_transaction.piggy_bank_return_links.size),
+        edit_cash_transaction_path(cash_transaction)
+      )
+    end
   end
 
   def descendants_link_item
@@ -778,7 +794,13 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       reference_descendants.empty? &&
       !cash_transaction.card_payment? &&
       !cash_transaction.card_advance? &&
-      !cash_transaction.investment?
+      !cash_transaction.investment? &&
+      cash_transaction.piggy_bank.blank? &&
+      cash_transaction.piggy_bank_return_links.blank?
+  end
+
+  def editable_cash_transaction
+    cash_transaction
   end
 
   def exchange_bound_badge(exchange)

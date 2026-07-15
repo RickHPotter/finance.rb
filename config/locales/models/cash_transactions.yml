@@ -17,6 +17,15 @@ en:
               month_boundary_history_correction_confirmation_required: "This paid transaction crosses a month boundary and requires explicit confirmation."
               destroy_locked_after_payment: "Transactions with paid history cannot be deleted."
               destroy_linked_shared_return: "Shared-return borrow transactions cannot be deleted while they are linked to their counterpart."
+              mixed_exchange_and_piggy_bank_categories: "Exchange and Piggy Bank categories cannot be combined."
+              mixed_piggy_bank_categories: "Piggy Bank and Piggy Bank Return cannot be combined."
+              mixed_exchange_categories: "Exchange and Exchange Return cannot be combined."
+              piggy_bank_cash_only: "Piggy Bank categories are available only for cash transactions."
+              piggy_bank_return_system_managed: "Piggy Bank Return transactions are managed from their Piggy Bank source."
+              piggy_bank_requires_one_entity: "A Piggy Bank transaction must have exactly one entity."
+              piggy_bank_paid_history_locked: "A Piggy Bank with paid return history cannot be changed or deleted."
+            price:
+              piggy_bank_source_negative: "must be negative for a Piggy Bank transaction"
     attributes:
       cash_transaction:
         self: Cash Transaction
@@ -82,6 +91,15 @@ pt-BR:
               month_boundary_history_correction_confirmation_required: "Esta movimentação paga cruza a virada do mês e exige confirmação explícita."
               destroy_locked_after_payment: "Movimentações com histórico pago não podem ser apagadas."
               destroy_linked_shared_return: "Transações de devolução vinculadas a um compartilhamento não podem ser apagadas enquanto estiverem ligadas à contraparte."
+              mixed_exchange_and_piggy_bank_categories: "Categorias de troca e cofrinho não podem ser combinadas."
+              mixed_piggy_bank_categories: "Cofrinho e Retorno do Cofrinho não podem ser combinados."
+              mixed_exchange_categories: "Troca e Retorno de Troca não podem ser combinados."
+              piggy_bank_cash_only: "Categorias de cofrinho estão disponíveis apenas para movimentações."
+              piggy_bank_return_system_managed: "Retornos do Cofrinho são gerenciados a partir do Cofrinho de origem."
+              piggy_bank_requires_one_entity: "Uma movimentação de Cofrinho deve ter exatamente uma entidade."
+              piggy_bank_paid_history_locked: "Um Cofrinho com histórico de retorno pago não pode ser alterado ou apagado."
+            price:
+              piggy_bank_source_negative: "deve ser negativo para uma movimentação de Cofrinho"
     attributes:
       cash_transaction:
         self: Movimentação

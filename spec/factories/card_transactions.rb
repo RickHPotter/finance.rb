@@ -15,7 +15,8 @@ FactoryBot.define do
 
     card_installments { build_list(:card_installment, 1, price:, number: 1) }
     category_transactions do
-      build_list(:category_transaction, 1, :random, category: random_custom_create(:category, reference: { user: }), transactable: nil)
+      category = create(:category, :random, user:)
+      build_list(:category_transaction, 1, :random, category:, transactable: nil)
     end
     entity_transactions do
       build_list(

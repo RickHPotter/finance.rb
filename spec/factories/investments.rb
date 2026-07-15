@@ -43,25 +43,27 @@ end
 # Table name: investments
 # Database name: primary
 #
-#  id                   :bigint           not null, primary key
-#  date                 :datetime         not null
-#  description          :string
-#  month                :integer          not null
-#  price                :integer          not null
-#  year                 :integer          not null
-#  created_at           :datetime         not null
-#  updated_at           :datetime         not null
-#  cash_transaction_id  :bigint           indexed
-#  context_id           :bigint           not null, indexed
-#  investment_type_id   :bigint           not null, indexed
-#  user_bank_account_id :bigint           not null, indexed
-#  user_id              :bigint           not null, indexed
+#  id                                    :bigint           not null, primary key
+#  date                                  :datetime         not null
+#  description                           :string
+#  month                                 :integer          not null
+#  price                                 :integer          not null
+#  year                                  :integer          not null
+#  created_at                            :datetime         not null
+#  updated_at                            :datetime         not null
+#  cash_transaction_id                   :bigint           indexed
+#  context_id                            :bigint           not null, indexed
+#  investment_type_id                    :bigint           not null, indexed
+#  piggy_bank_return_cash_transaction_id :bigint           indexed
+#  user_bank_account_id                  :bigint           not null, indexed
+#  user_id                               :bigint           not null, indexed
 #
 # Indexes
 #
 #  index_investments_on_cash_transaction_id   (cash_transaction_id)
 #  index_investments_on_context_id            (context_id)
 #  index_investments_on_investment_type_id    (investment_type_id)
+#  index_investments_on_piggy_bank_return_id  (piggy_bank_return_cash_transaction_id)
 #  index_investments_on_user_bank_account_id  (user_bank_account_id)
 #  index_investments_on_user_id               (user_id)
 #
@@ -70,6 +72,7 @@ end
 #  fk_rails_...  (cash_transaction_id => cash_transactions.id)
 #  fk_rails_...  (context_id => contexts.id)
 #  fk_rails_...  (investment_type_id => investment_types.id)
+#  fk_rails_...  (piggy_bank_return_cash_transaction_id => cash_transactions.id)
 #  fk_rails_...  (user_bank_account_id => user_bank_accounts.id)
 #  fk_rails_...  (user_id => users.id)
 #

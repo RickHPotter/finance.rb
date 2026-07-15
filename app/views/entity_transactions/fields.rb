@@ -38,7 +38,7 @@ module Views
                          "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700/50",
                   data: { ruby_ui__sheet_portal_value: true }
                 ) do
-                  SheetTrigger(class: "flex items-center gap-2 flex-1") do
+                  SheetTrigger(class: "flex items-center gap-2 flex-1", data: { action: "click->reactive-form#syncPiggyBankMode" }) do
                     content
                   end
 

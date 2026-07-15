@@ -405,11 +405,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     card_transactions_sheet_with_trigger("w-full", action_model(:index, CardTransaction, 2))
   end
 
-  def card_transactions_sheet_with_trigger(trigger_class, label)
+  def card_transactions_sheet_with_trigger(trigger_class, label, count: nil)
     Sheet do
       SheetTrigger do
         Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
-          label
+          sheet_trigger_label(label, count)
         end
       end
 
@@ -459,11 +459,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     cash_transactions_sheet_with_trigger("w-full", action_model(:index, CashTransaction, 2))
   end
 
-  def cash_transactions_sheet_with_trigger(trigger_class, label)
+  def cash_transactions_sheet_with_trigger(trigger_class, label, count: nil)
     Sheet do
       SheetTrigger do
         Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
-          label
+          sheet_trigger_label(label, count)
         end
       end
 
@@ -511,11 +511,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
     exchange_return_cash_transactions_sheet_with_trigger("w-full", action_model(:index, Exchange, 2))
   end
 
-  def exchange_return_cash_transactions_sheet_with_trigger(trigger_class, label)
+  def exchange_return_cash_transactions_sheet_with_trigger(trigger_class, label, count: nil)
     Sheet do
       SheetTrigger do
         Button(type: :button, variant: :ghost, class: budget_sheet_trigger_button_class(trigger_class)) do
-          label
+          sheet_trigger_label(label, count)
         end
       end
 
@@ -585,17 +585,82 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   def list_menu
     Popover(options: { trigger: "click", placement: "bottom-start" }, class: "relative z-40 shrink-0") do
       PopoverTrigger(class: "flex") do
-        Button(type: :button, class: submit_row_ghost_button_class) { "List" }
+        Button(type: :button, class: submit_row_ghost_button_class) { action_message(:index) }
       end
 
       PopoverContent(class: "z-40 opacity-100! min-w-64 p-1") do
         div(class: "flex flex-col gap-1") do
-          card_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CardTransaction, 2))
-          cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, CashTransaction, 2))
-          exchange_return_cash_transactions_sheet_with_trigger(sheet_menu_item_button_class, action_model(:index, Exchange, 2))
+          card_transactions_sheet_with_trigger(
+            sheet_menu_item_button_class,
+            pluralise_model(CardTransaction, 2),
+            count: card_transactions_sheet_count
+          )
+          cash_transactions_sheet_with_trigger(
+            sheet_menu_item_button_class,
+            pluralise_model(CashTransaction, 2),
+            count: cash_transactions_sheet_count
+          )
+          exchange_return_cash_transactions_sheet_with_trigger(
+            sheet_menu_item_button_class,
+            pluralise_model(Exchange, 2),
+            count: exchange_return_cash_transactions_sheet_count
+          )
         end
       end
     end
+  end
+
+  def sheet_trigger_label(label, count)
+    return label if count.nil?
+
+    div(class: "flex w-full items-center justify-between gap-3") do
+      span { label }
+      span(class: "rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700") { count }
+    end
+  end
+
+  def card_transactions_sheet_count
+    @card_transactions_sheet_count ||= Logic::CardInstallments.find_ref_month_year_by_params(
+      current_context,
+      budget_sheet_transaction_params,
+      budget_sheet_search_params
+    ).reorder(nil).distinct.count(:card_transaction_id)
+  end
+
+  def cash_transactions_sheet_count
+    @cash_transactions_sheet_count ||= begin
+      cash_installments, = Logic::CashTransactions.find_by_ref_month_year(
+        current_context,
+        budget_sheet_transaction_params,
+        budget_sheet_search_params.merge(skip_budgets: true)
+      )
+      cash_installments.reorder(nil).distinct.count(:cash_transaction_id)
+    end
+  end
+
+  def exchange_return_cash_transactions_sheet_count
+    @exchange_return_cash_transactions_sheet_count ||= current_context.cash_installments
+                                                                      .where(id: exchange_return_cash_installment_ids)
+                                                                      .distinct
+                                                                      .count(:cash_transaction_id)
+  end
+
+  def budget_sheet_transaction_params
+    {
+      category_id: budget.categories.ids,
+      entity_id: budget.entities.ids
+    }
+  end
+
+  def budget_sheet_search_params
+    installment_number = budget.first_installment_only ? 1 : nil
+
+    {
+      month_year: Date.new(budget.year, budget.month).strftime("%Y%m"),
+      search_term: "",
+      from_installments_number: installment_number,
+      to_installments_number: installment_number
+    }
   end
 
   def sheet_menu_item_button_class

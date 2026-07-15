@@ -50,6 +50,7 @@ export default class extends Controller {
     }
 
     this.syncExchangeIntentVisibility()
+    this.syncPiggyBankMode()
 
     if (this.hasPriceInstallmentInputTargets) {
       this._updateInstallmentsPrices()
@@ -90,6 +91,10 @@ export default class extends Controller {
     this.clearQuickJumpState()
   }
 
+  entityWrapperTargetConnected() {
+    queueMicrotask(() => this.syncPiggyBankMode())
+  }
+
   clear({ target }) {
     const input = document.getElementById(target.dataset.id)
     if (!input) { return }
@@ -116,6 +121,32 @@ export default class extends Controller {
       this.setNextAutofocus(target)
       target.form.requestSubmit(this.updateButtonTarget)
     }
+  }
+
+  selectPiggyBankDefaults({ target }) {
+    if (!target.checked) { return }
+
+    this.selectInvestmentComboboxValue(
+      "investment[user_bank_account_id]",
+      target.dataset.piggyBankUserBankAccountId
+    )
+    this.selectInvestmentComboboxValue(
+      "investment[investment_type_id]",
+      target.dataset.piggyBankInvestmentTypeId
+    )
+  }
+
+  selectInvestmentComboboxValue(name, value) {
+    if (!value) { return }
+
+    const input = Array.from(
+      this.element.querySelectorAll(`input[name='${name}']`)
+    ).find((candidate) => candidate.value === value)
+    if (!input || input.checked) { return }
+
+    input.checked = true
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   setNextAutofocus(target) {
@@ -278,6 +309,7 @@ export default class extends Controller {
     }
 
     this._insertCategory(selectedOption)
+    this.syncPiggyBankMode()
 
     this.resetComboboxSelection(combobox, selectedOption)
 
@@ -311,6 +343,103 @@ export default class extends Controller {
     wrapper.style.display = "none"
     wrapper.querySelector("input[name*='_destroy']").value = "true"
     this.syncExchangeIntentVisibility()
+    this.syncPiggyBankMode()
+  }
+
+  syncPiggyBankMode() {
+    const categoryId = this.element.querySelector("#piggy_bank_category_id")?.value
+    if (!categoryId) return
+
+    const active = Array.from(this.element.querySelectorAll(".categories_category_id")).some((input) => {
+      const wrapper = input.closest("[data-reactive-form-target='categoryWrapper']")
+      return input.value === categoryId && wrapper?.style.display !== "none" && wrapper?.querySelector("input[name*='_destroy']")?.value !== "true"
+    })
+
+    document.querySelectorAll("[data-piggy-bank-mode]").forEach((section) => {
+      const piggySection = section.dataset.piggyBankMode === "piggy"
+      const enabled = piggySection === active
+      section.classList.toggle("hidden", !enabled)
+      section.querySelectorAll("input, select, textarea, button").forEach((control) => { control.disabled = !enabled })
+    })
+
+    document.querySelectorAll("[data-entity-transaction-sheet]").forEach((sheet) => {
+      sheet.classList.toggle("h-[94vh]", !active)
+      sheet.classList.toggle("max-w-6xl", !active)
+      sheet.classList.toggle("h-auto", active)
+      sheet.classList.toggle("max-h-[80vh]", active)
+      sheet.classList.toggle("max-w-xl", active)
+    })
+
+    if (active) this.syncPiggyBankDefault()
+    if (active) this.syncPiggyBankAttachmentOptions()
+  }
+
+  syncPiggyBankDefault() {
+    if (!this.hasPriceInputTarget) return
+
+    const sourcePrice = Math.abs(parseInt(_removeMask(this.priceInputTarget.value || "0"), 10))
+    document.querySelectorAll("[data-piggy-bank-return-price]").forEach((input) => {
+      if (input.dataset.piggyBankDefaulted !== "true") return
+
+      input.value = _applyMask(sourcePrice.toString())
+    })
+  }
+
+  markPiggyBankReturnCustomized({ target }) {
+    target.dataset.piggyBankDefaulted = "false"
+  }
+
+  syncPiggyBankAttachment({ target }) {
+    const section = target.closest("[data-piggy-bank-mode='piggy']")
+    if (section) this.syncPiggyBankAttachmentSection(section)
+  }
+
+  syncPiggyBankAttachmentOptions() {
+    document.querySelectorAll("[data-piggy-bank-mode='piggy']").forEach((section) => {
+      const wrapper = this.entityWrapperTargets.find((candidate) => candidate.dataset.entityTransactionFormIndex === section.dataset.entityFormIndex)
+      const entityId = wrapper?.querySelector(".entities_entity_id")?.value
+      const selector = section.querySelector("[data-piggy-bank-return-selector]")
+      if (!selector) return
+
+      Array.from(selector.options).forEach((option) => {
+        if (!option.value) return
+
+        const compatible = option.dataset.entityId === entityId
+        option.hidden = !compatible
+        option.disabled = !compatible
+      })
+
+      if (selector.selectedOptions[0]?.disabled) selector.value = ""
+      this.syncPiggyBankAttachmentSection(section)
+    })
+  }
+
+  syncPiggyBankAttachmentSection(section) {
+    const attachMode = section.querySelector("[data-piggy-bank-attachment-mode][value='attach']")?.checked === true
+    const selectorWrapper = section.querySelector("[data-piggy-bank-return-selector-wrapper]")
+    const selector = section.querySelector("[data-piggy-bank-return-selector]")
+    selectorWrapper?.classList.toggle("hidden", !attachMode)
+    if (selector) selector.disabled = !attachMode
+
+    const selectedOption = attachMode ? selector?.selectedOptions[0] : null
+    this.syncPiggyBankReturnDate(section, selectedOption?.dataset.returnDate)
+  }
+
+  syncPiggyBankReturnDate(section, returnDate) {
+    const dateControls = section.querySelector("[data-piggy-bank-date-controls]")
+    if (!dateControls) return
+
+    const attached = isPresent(returnDate)
+    dateControls.classList.toggle("opacity-60", attached)
+    dateControls.querySelectorAll("input:not([type='hidden']), button").forEach((control) => { control.disabled = attached })
+    if (!attached) return
+
+    const hiddenInput = dateControls.querySelector("input[type='hidden']")
+    const dateInput = dateControls.querySelector("input[type='date']")
+    const timeInput = dateControls.querySelector("input[id$='_time_input']")
+    if (hiddenInput) hiddenInput.value = returnDate
+    if (dateInput) dateInput.value = returnDate.slice(0, 10)
+    if (timeInput) timeInput.value = returnDate.slice(11, 16)
   }
 
   // Entities
@@ -327,6 +456,7 @@ export default class extends Controller {
     }
 
     this._insertEntity(selectedOption)
+    this.syncPiggyBankMode()
 
     this.resetComboboxSelection(combobox, selectedOption)
 

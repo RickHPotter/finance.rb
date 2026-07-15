@@ -26,6 +26,7 @@ class Views::Settings::Show < Views::Base
             tab_button(name: "exchange_audit", label: I18n.t("settings.tabs.exchange_audit")) if show_exchange_audit
             tab_button(name: "exchange_return_audit", label: I18n.t("settings.tabs.exchange_return_audit")) if show_exchange_audit
             tab_button(name: "card_exchange_projection_audit", label: I18n.t("settings.tabs.card_exchange_projection_audit")) if show_exchange_audit
+            tab_button(name: "piggy_bank_audit", label: I18n.t("settings.tabs.piggy_bank_audit")) if show_exchange_audit
             tab_button(name: "naming", label: I18n.t("settings.tabs.naming"))
           end
 
@@ -47,6 +48,12 @@ class Views::Settings::Show < Views::Base
                 turbo_frame_tag :settings_card_exchange_projection_audit_content,
                                 data: { naming_tabs_lazy_src: card_exchange_projection_audit_admin_settings_path } do
                   loading_state(I18n.t("settings.card_exchange_projection_audit.loading"))
+                end
+              end
+
+              div(class: "hidden", data: { naming_tabs_target: "panel", naming_tabs_name: "piggy_bank_audit" }) do
+                turbo_frame_tag :settings_piggy_bank_audit_content, data: { naming_tabs_lazy_src: piggy_bank_audit_admin_settings_path } do
+                  loading_state(I18n.t("settings.piggy_bank_audit.loading"))
                 end
               end
             end

@@ -13,6 +13,7 @@ class CashInstallment < Installment
 
   # @validations ..............................................................
   validates :cash_installments_count, presence: true
+  validates :price, numericality: { greater_than: 0 }, if: :piggy_bank_return_installment?
   validate :ensure_shared_paid_state_can_sync, if: :will_sync_shared_paid_state?
 
   # @callbacks ................................................................
@@ -59,6 +60,10 @@ class CashInstallment < Installment
   # @private_instance_methods .................................................
 
   private
+
+  def piggy_bank_return_installment?
+    cash_transaction&.piggy_bank_return?
+  end
 
   def set_installment_type
     self.installment_type = :CashInstallment

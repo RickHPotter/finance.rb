@@ -625,6 +625,9 @@ Regression coverage:
 
 ### KAKASHI-12: Add user profiles, preferences, and friendships
 
+- Issues:
+  - [#56](https://github.com/RickHPotter/finance.rb/issues/56)
+
 Goal: make the user a first-class product record with server-backed preferences and an
 explicit friendship lifecycle that can safely support transaction exchange,
 conversations, and per-friend automation.
@@ -687,6 +690,9 @@ Coverage and safety:
 
 ### KAKASHI-13: Rebuild conversations around friendships
 
+- Issues:
+  - [#57](https://github.com/RickHPotter/finance.rb/issues/57)
+
 Goal: update conversation routing and lifecycle after explicit users, profiles, and
 friendships exist, so direct and actionable-message conversations have canonical URLs,
 participants, context scope, and permissions.
@@ -733,6 +739,9 @@ Coverage:
 
 ### KAKASHI-14: Guarantee readable category colours
 
+- Issues:
+  - [#58](https://github.com/RickHPotter/finance.rb/issues/58)
+
 Goal: guarantee that category text remains legible for every user-selected background
 colour across light mode, dark mode, chips, charts, forms, indexes, and dashboards.
 
@@ -768,6 +777,9 @@ Coverage:
   colour over the resolved background
 
 ### KAKASHI-15: Make Turbo navigation URL-correct
+
+- Issues:
+  - [#59](https://github.com/RickHPotter/finance.rb/issues/59)
 
 Goal: ensure the browser URL, history stack, rendered screen, and server resource always
 describe the same location after Turbo navigation and form submission.
@@ -810,6 +822,9 @@ Regression coverage:
   appears correct
 
 ### KAKASHI-16: Unlock and bulk-manage category and entity allocations
+
+- Issues:
+  - [#60](https://github.com/RickHPotter/finance.rb/issues/60)
 
 Goal: remove the blanket post-payment category/entity lock and provide safe, consistent
 single and bulk allocation tools for cash transactions, card transactions, and budgets.
@@ -861,6 +876,9 @@ Coverage:
 
 ### KAKASHI-17: Complete and harden resource dashboards
 
+- Issues:
+  - [#61](https://github.com/RickHPotter/finance.rb/issues/61)
+
 Goal: finish the resource `show` surface and correct list/drill-down actions so every
 dashboard explains the record and navigates to the exact related records it claims to
 list.
@@ -905,6 +923,9 @@ Coverage:
   result membership, empty relationships, generated records, and useful return paths
 
 ### KAKASHI-18: Improve selectors and merge categories or entities
+
+- Issues:
+  - [#62](https://github.com/RickHPotter/finance.rb/issues/62)
 
 Goal: make financial selectors rank the user's intended result predictably and provide
 transaction-safe category/entity consolidation directly from their indexes.
@@ -960,6 +981,9 @@ Coverage:
 
 ### KAKASHI-19: Harden internal and external entity ledgers
 
+- Issues:
+  - [#63](https://github.com/RickHPotter/finance.rb/issues/63)
+
 Goal: make the authenticated `/internal/:entity_slug` and public
 `/:user_slug/external/:entity_slug` ledgers secure, navigable, consistent with the main
 finance indexes, and maintainable without parallel route/view drift.
@@ -1012,7 +1036,7 @@ Coverage:
 ### KAKASHI-20: Audit spec quality and application performance
 
 - Issues:
-  - [#55](https://github.com/RickHPotter/finance.rb/issues/55)
+  - [#64](https://github.com/RickHPotter/finance.rb/issues/64)
 
 Goal: make the growing RSpec suite fast and predictable enough for daily use while
 using slow or hanging examples to identify application paths that perform unnecessary

@@ -14,6 +14,9 @@ en:
               paid_amount_correction_confirmation_required: "This paid amount correction requires explicit confirmation."
               same_cycle_history_correction_confirmation_required: "This paid card transaction keeps the same ref month/year and requires explicit confirmation."
               destroy_locked_after_payment: "Transactions with paid history cannot be deleted."
+              mixed_exchange_and_piggy_bank_categories: "Exchange and Piggy Bank categories cannot be combined."
+              mixed_piggy_bank_categories: "Piggy Bank and Piggy Bank Return cannot be combined."
+              piggy_bank_cash_only: "Piggy Bank categories are available only for cash transactions."
     attributes:
       card_transaction:
         self: Card Transaction
@@ -75,6 +78,9 @@ pt-BR:
               paid_amount_correction_confirmation_required: "Esta correção de valor em histórico já pago exige confirmação explícita."
               same_cycle_history_correction_confirmation_required: "Esta transação de cartão paga mantém o mesmo ref mês/ano e exige confirmação explícita."
               destroy_locked_after_payment: "Transações com histórico pago não podem ser apagadas."
+              mixed_exchange_and_piggy_bank_categories: "Categorias de troca e cofrinho não podem ser combinadas."
+              mixed_piggy_bank_categories: "Cofrinho e Retorno do Cofrinho não podem ser combinados."
+              piggy_bank_cash_only: "Categorias de cofrinho estão disponíveis apenas para movimentações."
     attributes:
       card_transaction:
         self: Transação

@@ -1,0 +1,95 @@
+en:
+  piggy_banks:
+    attach_return: Attach to Existing
+    create_new_return: Create a new return
+    create_return: Create New Return
+    contributions:
+      one: 1 contribution
+      other: "%{count} contributions"
+    linked_return: Linked Piggy Bank Return
+    no_investments: No investments are linked to this return yet.
+    return_mode: Return destination
+    select_return: Select an open return
+    source: Piggy Bank Source
+    sources: Piggy Bank Sources
+  activerecord:
+    models:
+      piggy_bank:
+        one: Piggy Bank
+        other: Piggy Banks
+    attributes:
+      piggy_bank:
+        return_date: Return Date
+        return_price: Return Price
+        return_cash_transaction_id: Existing Return
+      investment:
+        piggy_bank_return_cash_transaction_id: Piggy Bank Return
+    errors:
+      models:
+        piggy_bank:
+          attributes:
+            base:
+              paid_history_locked: "Paid Piggy Bank return history cannot be deleted."
+            return_cash_transaction:
+              closed: "is already fully settled and cannot receive another contribution"
+              entity_mismatch: "must use the same bank entity as the Piggy Bank contribution"
+            return_price:
+              insufficient_for_paid_history: "cannot reduce the grouped return below its paid amount"
+        investment:
+          attributes:
+            base:
+              piggy_bank_paid_history_locked: "cannot remove a valuation already required by paid Piggy Bank history"
+            piggy_bank_return_cash_transaction:
+              closed: "is fully settled and cannot receive another valuation"
+              immutable: "cannot be changed after the valuation is created"
+              invalid: "must be an open Piggy Bank return in the same context"
+            price:
+              piggy_bank_projection_non_positive: "would reduce the unpaid Piggy Bank return to zero or less"
+
+pt-BR:
+  piggy_banks:
+    attach_return: Vincular a Existente
+    create_new_return: Criar um novo retorno
+    create_return: Criar Novo Retorno
+    contributions:
+      one: 1 aporte
+      other: "%{count} aportes"
+    linked_return: Retorno do Cofrinho Vinculado
+    no_investments: Nenhum investimento está vinculado a este retorno ainda.
+    return_mode: Destino do retorno
+    select_return: Selecione um retorno aberto
+    source: Cofrinho de Origem
+    sources: Origens do Cofrinho
+  activerecord:
+    models:
+      piggy_bank:
+        one: Cofrinho
+        other: Cofrinhos
+    attributes:
+      piggy_bank:
+        return_date: Data do Retorno
+        return_price: Valor do Retorno
+        return_cash_transaction_id: Retorno Existente
+      investment:
+        piggy_bank_return_cash_transaction_id: Retorno do Cofrinho
+    errors:
+      models:
+        piggy_bank:
+          attributes:
+            base:
+              paid_history_locked: "O histórico pago do Retorno do Cofrinho não pode ser apagado."
+            return_cash_transaction:
+              closed: "já está totalmente liquidado e não pode receber outra contribuição"
+              entity_mismatch: "deve usar a mesma entidade bancária da contribuição do Cofrinho"
+            return_price:
+              insufficient_for_paid_history: "não pode reduzir o retorno agrupado abaixo do valor já pago"
+        investment:
+          attributes:
+            base:
+              piggy_bank_paid_history_locked: "não pode remover uma valorização já necessária para o histórico pago do Cofrinho"
+            piggy_bank_return_cash_transaction:
+              closed: "está totalmente liquidado e não pode receber outra valorização"
+              immutable: "não pode ser alterado depois que a valorização for criada"
+              invalid: "deve ser um Retorno do Cofrinho aberto no mesmo contexto"
+            price:
+              piggy_bank_projection_non_positive: "reduziria o Retorno do Cofrinho não pago a zero ou menos"

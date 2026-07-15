@@ -24,6 +24,19 @@ RSpec.describe Exchange, type: :model do
   end
 
   describe "[ business logic ]" do
+    it "preserves a persisted timestamp when the minute-only exchange form value is unchanged" do
+      exchange = create(:exchange)
+      precise_date = Time.zone.local(2026, 4, 24, 23, 59, 59) + 0.999_999
+      exchange.update_columns(date: precise_date)
+      exchange.reload
+      persisted_date = exchange.date
+
+      exchange.date = "2026-04-24T23:59"
+
+      expect(exchange.date).to eq(persisted_date)
+      expect(exchange).not_to be_changed
+    end
+
     it "treats paid mirrored return history as a locked projection" do
       user = create(:user)
       card_transaction = create(:card_transaction, user:, context: user.main_context, user_card: create(:user_card, user:))

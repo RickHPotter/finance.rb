@@ -34,6 +34,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
   def prevent_unsafe_paid_history_rewrites
     return unless persisted?
+    return if respond_to?(:piggy_bank_projection_write) && piggy_bank_projection_write
     return unless paid_history? || paid_projection_target_rewrite_attempted?
 
     add_allocation_history_error if allocation_changed_after_payment?

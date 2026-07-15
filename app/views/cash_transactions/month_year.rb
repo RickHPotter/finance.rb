@@ -3,7 +3,7 @@
 class Views::CashTransactions::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context
+  attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context, :frame_prefix
 
   def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {})
     @mobile = mobile
@@ -13,10 +13,11 @@ class Views::CashTransactions::MonthYear < Views::Base
     @budgets = budgets
     @total_amount = cash_installments.sum(&:price) + budgets.sum(&:remaining_value)
     @index_context = index_context
+    @frame_prefix = index_context.fetch(:frame_prefix, "month_year_container")
   end
 
   def view_template
-    turbo_frame_tag "month_year_container_#{month_year}" do
+    turbo_frame_tag "#{frame_prefix}_#{month_year}" do
       if mobile
         render_mobile_month_year
       else

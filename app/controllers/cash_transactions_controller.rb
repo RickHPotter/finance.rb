@@ -858,6 +858,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
+      piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price _destroy],
       entity_transactions_attributes: [
         :id, :entity_id, :is_payer, :price, :price_to_be_returned, :loan_return_percentage, :_destroy,
         { exchanges_attributes: %i[id number exchange_type bound_type price date month year paid _destroy] }

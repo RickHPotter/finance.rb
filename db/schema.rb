@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_14_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -313,6 +313,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
     t.string "description"
     t.bigint "investment_type_id", null: false
     t.integer "month", null: false
+    t.bigint "piggy_bank_return_cash_transaction_id"
     t.integer "price", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_bank_account_id", null: false
@@ -321,6 +322,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
     t.index ["cash_transaction_id"], name: "index_investments_on_cash_transaction_id"
     t.index ["context_id"], name: "index_investments_on_context_id"
     t.index ["investment_type_id"], name: "index_investments_on_investment_type_id"
+    t.index ["piggy_bank_return_cash_transaction_id"], name: "index_investments_on_piggy_bank_return_id"
     t.index ["user_bank_account_id"], name: "index_investments_on_user_bank_account_id"
     t.index ["user_id"], name: "index_investments_on_user_id"
   end
@@ -342,6 +344,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
     t.index ["reference_transactable_type", "reference_transactable_id"], name: "index_messages_on_reference_transactable"
     t.index ["superseded_by_id"], name: "index_messages_on_superseded_by_id"
     t.index ["user_id"], name: "index_messages_on_user_id"
+  end
+
+  create_table "piggy_banks", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "return_cash_transaction_id"
+    t.datetime "return_date", null: false
+    t.integer "return_price", null: false
+    t.bigint "source_cash_transaction_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["return_cash_transaction_id"], name: "index_piggy_banks_on_return_cash_transaction_id"
+    t.index ["source_cash_transaction_id"], name: "index_piggy_banks_on_source_cash_transaction_id", unique: true
+    t.check_constraint "return_price > 0", name: "piggy_banks_return_price_positive"
   end
 
   create_table "references", force: :cascade do |t|
@@ -458,6 +472,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
   add_foreign_key "installments", "card_transactions"
   add_foreign_key "installments", "cash_transactions"
   add_foreign_key "investments", "cash_transactions"
+  add_foreign_key "investments", "cash_transactions", column: "piggy_bank_return_cash_transaction_id"
   add_foreign_key "investments", "contexts"
   add_foreign_key "investments", "investment_types"
   add_foreign_key "investments", "user_bank_accounts"
@@ -465,6 +480,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_131000) do
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "messages", column: "superseded_by_id"
   add_foreign_key "messages", "users"
+  add_foreign_key "piggy_banks", "cash_transactions", column: "return_cash_transaction_id"
+  add_foreign_key "piggy_banks", "cash_transactions", column: "source_cash_transaction_id"
   add_foreign_key "references", "contexts"
   add_foreign_key "references", "user_cards"
   add_foreign_key "subscriptions", "users"

@@ -111,6 +111,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
     return unless projection_sync_relevant_change?
 
+    rehome_card_bound_exchange_before_sync! if card_bound_projection_bucket_changed?
+
     assign_projection_cash_transaction_to_siblings!
     sync_projection_cash_transaction!(cash_transaction:, exchanges: synchronized_projection_exchanges(cash_transaction:))
   end
@@ -437,6 +439,32 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def projection_sync_relevant_change?
     (changes.keys - %w[created_at updated_at exchanges_count]).present?
+  end
+
+  def card_bound_projection_bucket_changed?
+    card_bound? && cash_transaction.present? &&
+      (cash_transaction.month != month || cash_transaction.year != year)
+  end
+
+  def rehome_card_bound_exchange_before_sync!
+    previous_cash_transaction = cash_transaction
+    sync_remaining_card_bound_projection_exchanges!(previous_cash_transaction)
+
+    self.cash_transaction = nil
+    create_cash_transaction
+  end
+
+  def sync_remaining_card_bound_projection_exchanges!(previous_cash_transaction)
+    remaining_exchanges = Exchange.where(cash_transaction_id: previous_cash_transaction.id).where.not(id:).to_a.map do |exchange|
+      in_memory_entity_transaction_exchanges.find { |candidate| candidate.id == exchange.id } || exchange
+    end
+    return if remaining_exchanges.empty?
+
+    remaining_exchanges.first.send(
+      :sync_projection_cash_transaction!,
+      cash_transaction: previous_cash_transaction,
+      exchanges: remaining_exchanges
+    )
   end
 
   def editable_unpaid_projection_change?

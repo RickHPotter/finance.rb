@@ -35,6 +35,23 @@ RSpec.describe "CashTransactions", type: :request do
 
   before { sign_in user }
 
+  def create_piggy_bank_source(description:, return_transaction: nil, price: 5_000)
+    source = build(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account:,
+      description:,
+      price: -price,
+      cash_installments: [ build(:cash_installment, number: 1, price: -price, date: Time.zone.now) ],
+      category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+      entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank: PiggyBank.new(return_price: price, return_date: 3.months.from_now, return_cash_transaction: return_transaction)
+    )
+    source.save!
+    source
+  end
+
   describe "[ #new ]" do
     it "renders RubyUI comboboxes and split datetime input for bank account, category, and entity selection" do
       get new_cash_transaction_path
@@ -48,6 +65,10 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('data-controller="nested-form form-collection-carousel"')
       expect(response.body).to include('id="cash_transaction_date"')
       expect(response.body).to include('id="cash_transaction_date_time_input"')
+      expect(response.body).to include('id="piggy_bank_category_id"')
+      expect(response.body).to include('data-piggy-bank-mode="piggy"')
+      expect(response.body).to include("piggy_bank_return_mode_NEW_RECORD")
+      expect(response.body).to include("data-piggy-bank-return-selector")
       expect(response.body).not_to include("hw-combobox")
     end
 
@@ -70,6 +91,38 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="cash_transaction[historical_correction_confirmation]"')
+    end
+
+    it "lists every grouped contribution on a Piggy Bank return edit form" do
+      first_source = create_piggy_bank_source(description: "First reserve")
+      grouped_return = first_source.piggy_bank.return_cash_transaction
+      second_source = create_piggy_bank_source(description: "Second reserve", return_transaction: grouped_return, price: 2_000)
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type: create(:investment_type, :random),
+        piggy_bank_return_cash_transaction: grouped_return,
+        description: "July Piggy Bank profit",
+        price: 300,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get edit_cash_transaction_path(grouped_return)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("piggy_banks.contributions", count: 2))
+      expect(response.body).to include("First reserve", "Second reserve")
+      expect(response.body).to include(edit_cash_transaction_path(first_source), edit_cash_transaction_path(second_source))
+      expect(response.body).to include('id="piggy_bank_contributions_sheet_trigger"')
+      expect(response.body).to include('id="piggy_bank_investments_sheet_trigger"')
+      expect(response.body).to include('id="piggy_bank_cash_month_year_')
+      expect(response.body).to include('id="month_year_container_piggy_bank_investment_')
+      expect(response.body).to include("July Piggy Bank profit")
+      expect(response.body).to include(edit_investment_path(investment))
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -360,11 +413,14 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
       expect(response.body).to include(card_transaction_path(source_card))
 
+      projection.cash_installments.update_all(balance: nil, order_id: nil)
+
       patch fix_exchange_projection_cash_transaction_path(projection)
 
       expect(response).to redirect_to(cash_transaction_path(projection))
       expect(projection.reload.price).to eq(5_000)
       expect(projection.cash_installments.reload.sum(:price)).to eq(5_000)
+      expect(projection.cash_installments.first.balance).not_to be_nil
     end
 
     it "shows the fix button when card-bound projection exchange buckets are stale even if totals match" do
@@ -988,6 +1044,105 @@ RSpec.describe "CashTransactions", type: :request do
       expect(created_cash_transaction.categories).to include(category)
       expect(created_cash_transaction.entities).to include(entity)
       expect(subscription.reload.price).to eq(20_000)
+    end
+
+    it "creates a linked Piggy Bank return from nested source input" do
+      return_date = 3.months.from_now.change(sec: 0)
+      piggy_bank_category = user.built_in_category("PIGGY BANK")
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Emergency reserve",
+            price: -5_000,
+            date: Time.zone.now,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            cash_installments_attributes: [ { number: 1, date: Time.zone.now, price: -5_000, paid: true } ],
+            category_transactions_attributes: [ { category_id: piggy_bank_category.id } ],
+            entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+            piggy_bank_attributes: { return_date:, return_price: 5_000 }
+          }
+        }, headers: turbo_stream_headers
+      end.to change(PiggyBank, :count).by(1).and change(CashTransaction, :count).by(2)
+
+      source = CashTransaction.find_by!(description: "Emergency reserve", cash_transaction_type: nil)
+      generated_return = source.piggy_bank.return_cash_transaction
+      expect(generated_return).to have_attributes(price: 5_000, date: return_date, user_bank_account:)
+      expect(generated_return.categories.pluck(:category_name)).to eq([ "PIGGY BANK RETURN" ])
+      expect(generated_return.entities).to contain_exactly(entity)
+    end
+
+    it "rolls back a Piggy Bank source when its projected return is not positive" do
+      piggy_bank_category = user.built_in_category("PIGGY BANK")
+
+      expect do
+        post cash_transactions_path, params: {
+          cash_transaction: {
+            description: "Invalid reserve",
+            price: -5_000,
+            date: Time.zone.now,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            cash_installments_attributes: [ { number: 1, date: Time.zone.now, price: -5_000, paid: true } ],
+            category_transactions_attributes: [ { category_id: piggy_bank_category.id } ],
+            entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+            piggy_bank_attributes: { return_date: 3.months.from_now, return_price: 0 }
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(PiggyBank.count).to eq(0)
+    end
+
+    it "attaches a new Piggy Bank source to an open grouped return" do
+      piggy_bank_category = user.built_in_category("PIGGY BANK")
+      original_date = 3.months.from_now.change(sec: 0)
+      create_payload = lambda do |description:, price:, piggy_bank_attributes:|
+        {
+          cash_transaction: {
+            description:,
+            price:,
+            date: Time.zone.now,
+            user_id: user.id,
+            user_bank_account_id: user_bank_account.id,
+            cash_installments_attributes: [ { number: 1, date: Time.zone.now, price:, paid: true } ],
+            category_transactions_attributes: [ { category_id: piggy_bank_category.id } ],
+            entity_transactions_attributes: [ { entity_id: entity.id, price: 0, price_to_be_returned: 0 } ],
+            piggy_bank_attributes:
+          }
+        }
+      end
+
+      post cash_transactions_path,
+           params: create_payload.call(description: "Grouped reserve", price: -5_000, piggy_bank_attributes: { return_date: original_date, return_price: 5_000 }),
+           headers: turbo_stream_headers
+      grouped_return = CashTransaction.find_by!(description: "Grouped reserve", cash_transaction_type: "PiggyBank")
+
+      get new_cash_transaction_path
+      expect(response.body).to include("Grouped reserve")
+      expect(response.body).to include("data-entity-id=\"#{entity.id}\"")
+      expect(response.body).to include("data-return-date=\"#{grouped_return.date.iso8601}\"")
+
+      expect do
+        post cash_transactions_path,
+             params: create_payload.call(
+               description: "Monthly contribution",
+               price: -2_000,
+               piggy_bank_attributes: {
+                 return_cash_transaction_id: grouped_return.id,
+                 return_date: original_date + 1.month,
+                 return_price: 2_000
+               }
+             ),
+             headers: turbo_stream_headers
+      end.to change(PiggyBank, :count).by(1).and change(CashTransaction, :count).by(1)
+
+      expect(response).to have_http_status(:success)
+      expect(grouped_return.reload).to have_attributes(date: original_date, price: 7_000)
+      expect(grouped_return.piggy_bank_return_links.count).to eq(2)
+      expect(grouped_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 7_000, false ] ])
     end
 
     it "shows generic and detailed failure notifications when create validation fails" do

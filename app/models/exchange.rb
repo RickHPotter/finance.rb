@@ -45,6 +45,13 @@ class Exchange < ApplicationRecord
     mirrored_paid? || shared_exchange_mirrored_paid?
   end
 
+  # The exchange form submits datetime-local values with minute precision. Keep
+  # an existing timestamp intact when that value denotes the same minute, so a
+  # rendered paid exchange does not become dirty merely by submitting the form.
+  def date=(value)
+    super unless preserve_existing_timestamp_for_minute_value?(value)
+  end
+
   def mirrored_cash_installments_match?
     return true if non_monetary? || cash_transaction.blank?
     return true if card_bound?
@@ -78,6 +85,13 @@ class Exchange < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def preserve_existing_timestamp_for_minute_value?(value)
+    persisted? &&
+      value.is_a?(String) &&
+      value.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\z/) &&
+      date&.strftime("%Y-%m-%dT%H:%M") == value
+  end
 
   def sibling_exchanges_for_cash_transaction
     Exchange.where(cash_transaction_id:)

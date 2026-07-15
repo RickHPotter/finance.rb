@@ -26,6 +26,8 @@ en:
         borrow_return: Borrow Return
         failed_lend_borrow_return: Failed Lend/Borrow Return
         investment: Investment
+        piggy_bank: Piggy Bank
+        piggy_bank_return: Piggy Bank Return
         subscription: Subscription
 
 pt-BR:
@@ -56,4 +58,6 @@ pt-BR:
         borrow_return: Retorno Empréstimo
         failed_lend_borrow_return: Falha no Retorno de Empréstimo
         investment: Investimento
+        piggy_bank: Cofrinho
+        piggy_bank_return: Retorno do Cofrinho
         subscription: Assinatura

@@ -131,6 +131,44 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include('data-reactive-form-target="monthYearInput"')
     end
 
+    it "localizes the edit form list menu and shows transaction counts without repeating the action" do
+      user.update!(locale: :"pt-BR")
+      create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        price: -2_500,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -2_500)
+        ],
+        category_transactions: [ build(:category_transaction, category:) ]
+      )
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        month: 3,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category:) ]
+      )
+
+      get edit_budget_path(budget)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      list_button = document.css("button").find { |button| button.text.strip == I18n.t("actions.index") }
+      cash_label = I18n.t("activerecord.models.cash_transaction", count: 2)
+      cash_button = document.css("button").find { |button| button.css("span").first&.text&.strip == cash_label }
+
+      expect(response).to have_http_status(:success)
+      expect(list_button).to be_present
+      expect(cash_button.css("span").last.text).to eq("1")
+      expect(cash_button.text).not_to include(I18n.t("actions.index"))
+    end
+
     it "renders a duplicated budget form without creating a new record" do
       budget = create(
         :budget,

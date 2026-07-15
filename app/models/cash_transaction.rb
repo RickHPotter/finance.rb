@@ -13,9 +13,11 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include HasSubscription
   include Budgetable
   include FriendNotifiable
+  include PiggyBankCategorizable
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :source_message_id, :historical_correction_confirmation
+  attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :source_message_id, :historical_correction_confirmation,
+                :piggy_bank_projection_write
 
   FRIEND_NOTIFICATION_INTENTS = %w[loan reimbursement].freeze
 
@@ -30,6 +32,14 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   has_many :card_installments, dependent: :destroy
   has_many :investments, dependent: :destroy
   has_many :exchanges
+  has_one :piggy_bank, foreign_key: :source_cash_transaction_id, dependent: :destroy, inverse_of: :source_cash_transaction
+  has_many :piggy_bank_return_links, class_name: "PiggyBank", foreign_key: :return_cash_transaction_id, inverse_of: :return_cash_transaction
+  has_many :piggy_bank_investments,
+           class_name: "Investment",
+           foreign_key: :piggy_bank_return_cash_transaction_id,
+           inverse_of: :piggy_bank_return_cash_transaction,
+           dependent: :restrict_with_error
+  accepts_nested_attributes_for :piggy_bank, allow_destroy: true
 
   # @validations ..............................................................
   validates :context, presence: true
@@ -37,13 +47,18 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   validates :friend_notification_intent, inclusion: { in: FRIEND_NOTIFICATION_INTENTS }, allow_nil: true
   validate :friend_notification_intent_matches_exchange_category
   validate :friend_notification_intent_present_for_exchange_category
+  validate :validate_piggy_bank_source_contract
+  validate :prevent_paid_piggy_bank_rewrite, on: :update
 
   # @callbacks ................................................................
   before_validation :assign_default_context
+  before_validation :remove_piggy_bank_without_source_category
+  before_validation :derive_piggy_bank_entity_allocation
   before_validation :set_paid, on: :create
   before_destroy :prevent_linked_borrow_return_destruction, prepend: true
+  before_destroy :prevent_piggy_bank_destruction, prepend: true
   after_initialize :build_default_cash_installments
-  after_save :sync_subscription_installment, :set_min_date
+  after_save :sync_subscription_installment, :sync_piggy_bank_projection, :set_min_date
   after_commit :update_cash_balance, :update_associations_total
 
   # @scopes ...................................................................
@@ -51,17 +66,29 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   scope :card_payment, -> { where(cash_transaction_type: "CardInstallment") }
   scope :card_advance, -> { where(cash_transaction_type: "CardTransaction") }
   scope :exchange_return, -> { where(cash_transaction_type: "Exchange") }
+  scope :piggy_bank_return, -> { where(cash_transaction_type: "PiggyBank") }
 
   # @public_instance_methods ..................................................
 
+  def self.open_piggy_bank_returns_for(user:, context:, entity_id: nil)
+    scope = piggy_bank_return
+            .joins(:entities, :piggy_bank_return_links)
+            .where(user:, context:)
+            .includes(:cash_installments, piggy_bank_return_links: { source_cash_transaction: :cash_installments })
+            .distinct
+    scope = scope.where(entities: { id: entity_id }) if entity_id.present?
+    scope.select(&:piggy_bank_group_open?)
+  end
+
   def self.duplicate(id)
-    existing_cash_transaction = includes(:cash_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
+    existing_cash_transaction = includes(:piggy_bank, :cash_installments, :category_transactions, entity_transactions: %i[entity exchanges]).find(id)
 
     cash_transaction = existing_cash_transaction.dup
     cash_transaction.duplicate = true
     cash_transaction.cash_installments = duplicated_cash_installments_for(existing_cash_transaction)
     cash_transaction.category_transactions = existing_cash_transaction.category_transactions.map(&:dup)
     cash_transaction.entity_transactions = duplicated_entity_transactions_for(existing_cash_transaction)
+    cash_transaction.build_piggy_bank(existing_cash_transaction.piggy_bank.slice(:return_date, :return_price)) if existing_cash_transaction.piggy_bank.present?
 
     cash_transaction
   end
@@ -96,21 +123,24 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def can_be_updated?
+    return false if generated_piggy_bank_return?
+
     !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "INVESTMENT" ])
   end
 
   def can_be_deleted?
     return false if linked_borrow_return?
+    return false if generated_piggy_bank_return?
 
     !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD INSTALLMENT", "INVESTMENT", "EXCHANGE RETURN" ])
   end
 
   def bulk_transfer_eligible?
-    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+    !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
   end
 
   def bulk_subscription_eligible?
-    !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+    !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
   end
 
   def investment?
@@ -134,6 +164,20 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return true if destroyed? && original_categories.include?(user.categories.where(category_name: "EXCHANGE RETURN").first.id)
 
     cash_transaction_type == "Exchange"
+  end
+
+  def generated_piggy_bank_return?
+    piggy_bank_return? && (piggy_bank_return_links.present? || cash_transaction_type == "PiggyBank")
+  end
+
+  def piggy_bank_group_open?
+    return false unless generated_piggy_bank_return?
+
+    source_ids = piggy_bank_return_links.map(&:source_cash_transaction_id)
+    sources_paid = !CashInstallment.where(cash_transaction_id: source_ids, paid: false).exists?
+    return_paid = !cash_installments.where(paid: false).exists?
+
+    !sources_paid || !return_paid
   end
 
   def borrow_return?
@@ -260,7 +304,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def can_be_destroyed?
-    return false if card_payment? || card_advance? || exchange_return? || investment? || linked_borrow_return?
+    return false if card_payment? || card_advance? || exchange_return? || investment? || linked_borrow_return? || generated_piggy_bank_return?
 
     persisted?
   end
@@ -361,6 +405,66 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @private_instance_methods .................................................
 
   private
+
+  def validate_piggy_bank_source_contract
+    return unless piggy_bank_source?
+
+    errors.add(:price, :piggy_bank_source_negative) unless price.to_i.negative?
+    errors.add(:base, :piggy_bank_requires_one_entity) unless active_piggy_bank_entity_transactions.one?
+    errors.add(:piggy_bank, :blank) if piggy_bank.blank? || piggy_bank.marked_for_destruction?
+  end
+
+  def remove_piggy_bank_without_source_category
+    piggy_bank&.mark_for_destruction if piggy_bank.present? && !piggy_bank_source?
+  end
+
+  def derive_piggy_bank_entity_allocation
+    return unless piggy_bank_source?
+
+    active_piggy_bank_entity_transactions.each do |entity_transaction|
+      entity_transaction.assign_attributes(price: price.to_i.abs, price_to_be_returned: 0, is_payer: false)
+    end
+  end
+
+  def active_piggy_bank_entity_transactions
+    entity_transactions.reject(&:marked_for_destruction?).select { |entity_transaction| entity_transaction.entity_id.present? || entity_transaction.entity.present? }
+  end
+
+  def prevent_paid_piggy_bank_rewrite
+    return if piggy_bank.blank? || !piggy_bank.paid_history?
+
+    projection_changed = piggy_bank.changed? || piggy_bank.marked_for_destruction?
+    source_changed = will_save_change_to_price? || will_save_change_to_user_bank_account_id? || piggy_bank_allocation_changed?
+    errors.add(:base, :piggy_bank_paid_history_locked) if projection_changed || source_changed
+  end
+
+  def piggy_bank_allocation_changed?
+    original_category_ids = Array(original_categories).map(&:to_i).sort
+    original_entity_ids = Array(original_entities).map(&:to_i).sort
+    current_category_ids = category_transactions.reject(&:marked_for_destruction?).map(&:category_id).compact.sort
+    category_changed = original_category_ids.present? && original_category_ids != current_category_ids
+    entity_changed = original_entity_ids.present? && original_entity_ids != entity_transactions.reject(&:marked_for_destruction?).map(&:entity_id).compact.sort
+
+    category_changed || entity_changed
+  end
+
+  def sync_piggy_bank_projection
+    piggy_bank&.sync_return_projection! if piggy_bank&.persisted?
+  end
+
+  def prevent_piggy_bank_destruction
+    if piggy_bank.present?
+      return unless piggy_bank.paid_history?
+
+      errors.add(:base, :piggy_bank_paid_history_locked)
+      throw(:abort)
+    end
+
+    return if piggy_bank_return_links.blank? || piggy_bank_projection_write
+
+    errors.add(:base, cash_installments.any?(&:paid?) ? :piggy_bank_paid_history_locked : :piggy_bank_return_system_managed)
+    throw(:abort)
+  end
 
   def self.duplicated_cash_installments_for(transaction)
     ordered_cash_installments_for_duplicate(transaction).map do |installment|

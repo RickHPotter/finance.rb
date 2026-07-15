@@ -47,6 +47,7 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }
         hidden_field_tag :exchange_category_id,   exchange_category.id,   disabled: true, id: :exchange_category_id
         hidden_field_tag :exchange_category_name, exchange_category.name, disabled: true, id: :exchange_category_name
+        hidden_field_tag :piggy_bank_category_id, piggy_bank_category.id, disabled: true, id: "piggy_bank_category_id"
 
         render Views::Transactions::FormIntroFields.new(
           form:,
@@ -81,6 +82,8 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
             card_transactions_sheet if transactables_type.include?("CardTransaction")
             cash_transactions_sheet if transactables_type.include?("CashTransaction")
           end
+
+          render Views::PiggyBanks::ContributionsSheet.new(return_cash_transaction: cash_transaction) if cash_transaction.generated_piggy_bank_return?
 
           if cash_transaction.card_payment?
             card_ = cash_transaction.card_installments.first || CardTransaction.find_by(advance_cash_transaction: cash_transaction)
@@ -117,6 +120,10 @@ class Views::CashTransactions::Form < Views::Base # rubocop:disable Metrics/Clas
 
   def exchange_category
     current_user.built_in_category("EXCHANGE")
+  end
+
+  def piggy_bank_category
+    current_user.built_in_category("PIGGY BANK")
   end
 
   def historical_correction_confirmation_submit_for(transaction, param_key)

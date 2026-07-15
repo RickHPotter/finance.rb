@@ -81,7 +81,7 @@ class User < ApplicationRecord
   # @return [ActiveRecord::Relation].
   #
   def custom_categories
-    categories.where("built_in = false OR category_name IN ('INVESTMENT', 'BORROW RETURN')")
+    categories.where("built_in = false OR category_name IN ('INVESTMENT', 'BORROW RETURN', 'PIGGY BANK')")
   end
 
   def main_context
@@ -115,6 +115,8 @@ class User < ApplicationRecord
       Category.new(built_in: true, category_name: "SUBSCRIPTION"),
       Category.new(built_in: true, category_name: "EXCHANGE"),
       Category.new(built_in: true, category_name: "EXCHANGE RETURN"),
+      Category.new(built_in: true, category_name: "PIGGY BANK"),
+      Category.new(built_in: true, category_name: "PIGGY BANK RETURN"),
       Category.new(built_in: true, category_name: "BORROW RETURN"),
       Category.new(built_in: true, category_name: "FAILED LEND/BORROW RETURN")
     )

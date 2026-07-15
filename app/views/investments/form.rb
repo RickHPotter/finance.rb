@@ -50,6 +50,18 @@ class Views::Investments::Form < Views::Base
                           data: description_data(autofocus_target)
         end
 
+        div(id: "investment_piggy_bank_return_combobox", class: "combobox-shell mb-3 w-full piggy-bank-icon") do
+          render Views::Shared::SingleSelectCombobox.new(
+            name: "investment[piggy_bank_return_cash_transaction_id]",
+            options: piggy_bank_return_options,
+            selected_value: investment.piggy_bank_return_cash_transaction_id,
+            placeholder: model_attribute(investment, :piggy_bank_return_cash_transaction_id),
+            include_blank: true,
+            disabled: investment.persisted?,
+            input_data: { action: "change->reactive-form#selectPiggyBankDefaults" }
+          )
+        end
+
         div(class: "w-full pb-3 lg:flex lg:gap-2") do
           div(id: "investment_user_bank_account_combobox", class: "combobox-shell w-full lg:w-3/12 mb-3 lg:mb-0 wallet-icon") do
             render Views::Shared::SingleSelectCombobox.new(
@@ -151,6 +163,30 @@ class Views::Investments::Form < Views::Base
   end
 
   private
+
+  def piggy_bank_return_options
+    open_returns = CashTransaction.open_piggy_bank_returns_for(user: current_user, context: current_context)
+    if investment.piggy_bank_return_cash_transaction.present? && open_returns.exclude?(investment.piggy_bank_return_cash_transaction)
+      open_returns << investment.piggy_bank_return_cash_transaction
+    end
+
+    open_returns.uniq.sort_by { |transaction| [ transaction.description.downcase, transaction.date, transaction.id ] }.map do |transaction|
+      entity_name = transaction.entities.first&.entity_name
+      label = [ transaction.description, entity_name, I18n.l(transaction.date, format: :short) ].compact_blank.join(" - ")
+      [
+        label,
+        transaction.id,
+        {
+          piggy_bank_user_bank_account_id: transaction.user_bank_account_id,
+          piggy_bank_investment_type_id: piggy_bank_investment_type_id
+        }
+      ]
+    end
+  end
+
+  def piggy_bank_investment_type_id
+    @piggy_bank_investment_type_id ||= InvestmentType.find_by(investment_type_code: "outros_cofrinho")&.id
+  end
 
   def description_data(autofocus_target)
     data = { controller: "blinking-placeholder", text: model_attribute(investment, :description) }
