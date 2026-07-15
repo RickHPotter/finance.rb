@@ -120,6 +120,66 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
     end
   end
 
+  describe "piggy bank savings" do
+    it "groups realized and projected contributions, withdrawals, and signed valuations" do
+      entity = create(:entity, user:, entity_name: "RESERVE BANK")
+      first_source = create_piggy_bank_source(entity:, description: "Three-month reserve", price: -5_000, paid: true)
+      grouped_return = first_source.piggy_bank.return_cash_transaction
+      create_piggy_bank_source(entity:, description: "July contribution", price: -2_000, paid: false, return_transaction: grouped_return)
+      investment_type = create(:investment_type, :random)
+
+      create_valuation(grouped_return, investment_type:, price: 800)
+      create_valuation(grouped_return, investment_type:, price: -300)
+      foreign_source = create_piggy_bank_source(
+        entity:,
+        description: "Scenario reserve",
+        price: -9_000,
+        paid: true,
+        context: create(:context, user:)
+      )
+      create_valuation(foreign_source.piggy_bank.return_cash_transaction, investment_type:, price: 1_000)
+
+      expect(payload[:piggy_banks]).to include(
+        total_contributed: 50.0,
+        total_projected_contribution: 20.0,
+        total_withdrawn: 0.0,
+        total_projected_withdrawal: 75.0,
+        recognized_profit_loss: 5.0
+      )
+      expect(payload.dig(:piggy_banks, :groups)).to contain_exactly(
+        {
+          return_cash_transaction_id: grouped_return.id,
+          label: "Three-month reserve",
+          contributed: 50.0,
+          projected_contribution: 20.0,
+          withdrawn: 0.0,
+          projected_withdrawal: 75.0,
+          recognized_profit_loss: 5.0
+        }
+      )
+      expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
+      expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
+    end
+
+    it "preserves paid and projected withdrawal amounts after a partial-payment split" do
+      entity = create(:entity, user:, entity_name: "RESERVE BANK")
+      source = create_piggy_bank_source(entity:, description: "Partial reserve", price: -5_000, paid: true)
+      grouped_return = source.piggy_bank.return_cash_transaction
+      original_installment = grouped_return.cash_installments.first
+      original_installment.update!(date: Date.new(2026, 7, 10), month: 7, year: 2026, price: 1_000, paid: true)
+      Logic::Manipulation::CashInstallment.new(original_installment).split_installment(Date.new(2026, 7, 31), 4_000)
+
+      expect(payload[:piggy_banks]).to include(
+        total_contributed: 50.0,
+        total_projected_contribution: 0.0,
+        total_withdrawn: 10.0,
+        total_projected_withdrawal: 40.0,
+        recognized_profit_loss: 0.0
+      )
+      expect(payload.dig(:piggy_banks, :groups).first).to include(withdrawn: 10.0, projected_withdrawal: 40.0)
+    end
+  end
+
   def create_cash_transaction(price:, categories:, entities:, **options)
     transaction_context = options.fetch(:context, context)
     installment_month = options.fetch(:installment_month, 7)
@@ -182,6 +242,45 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       date: Date.new(2026, month, 10),
       month:,
       year: 2026
+    )
+  end
+
+  def create_piggy_bank_source(entity:, description:, price:, paid:, **options)
+    piggy_bank = PiggyBank.new(
+      return_price: price.abs,
+      return_date: Date.new(2026, 7, 31),
+      return_cash_transaction: options[:return_transaction]
+    )
+    create(
+      :cash_transaction,
+      user:,
+      context: options.fetch(:context, context),
+      user_bank_account: account,
+      description:,
+      date: Date.new(2026, 7, 10),
+      month: 7,
+      year: 2026,
+      price:,
+      cash_installments: [ build(:cash_installment, number: 1, price:, date: Date.new(2026, 7, 10), month: 7, year: 2026, paid:) ],
+      category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+      entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+      piggy_bank:
+    )
+  end
+
+  def create_valuation(grouped_return, investment_type:, price:)
+    create(
+      :investment,
+      user:,
+      context: grouped_return.context,
+      user_bank_account: account,
+      investment_type:,
+      description: "Recognized reserve result",
+      price:,
+      date: Date.new(2026, 7, 15),
+      month: 7,
+      year: 2026,
+      piggy_bank_return_cash_transaction: grouped_return
     )
   end
 end

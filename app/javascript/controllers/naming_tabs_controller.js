@@ -21,6 +21,8 @@ export default class extends Controller {
 
     this.tabTargets.forEach((tab) => {
       const active = tab.dataset.namingTabsName === name
+      tab.setAttribute("aria-selected", active.toString())
+      tab.tabIndex = active ? 0 : -1
       tab.classList.toggle("bg-sky-500", active)
       tab.classList.toggle("text-white", active)
       tab.classList.toggle("bg-gray-200", !active)
@@ -31,6 +33,7 @@ export default class extends Controller {
 
     this.panelTargets.forEach((panel) => {
       const active = panel.dataset.namingTabsName === name
+      panel.setAttribute("aria-hidden", (!active).toString())
       panel.classList.toggle("hidden", !active)
       if (active) this.loadPanel(panel)
     })

@@ -4,6 +4,7 @@ class Views::Balances::Mobile < Views::Base
   register_value_helper :current_context
 
   include Phlex::Rails::Helpers::LinkTo
+  include Views::Balances::AnalysisTabs
 
   def view_template
     turbo_frame_tag :center_container do
@@ -21,18 +22,31 @@ class Views::Balances::Mobile < Views::Base
           ) { "Legacy" }
         end
 
-        div(
-          class: "space-y-5 pt-2",
-          data: {
-            controller: "balances-mobile",
-            balances_mobile_summary_url_value: current_balance_json_balances_path(format: :json),
-            balances_mobile_trend_url_value: cash_balance_json_balances_path(format: :json),
-            balances_mobile_breakdown_url_value: transaction_balance_json_balances_path(format: :json)
-          }
-        ) do
-          render_summary_cards
-          render_trend_card
-          render_breakdown_card
+        div(class: "pt-2", data: { controller: "naming-tabs", naming_tabs_current_value: "overview" }) do
+          render_analysis_tabs
+
+          div(id: "balances_overview_panel", role: :tabpanel, data: { naming_tabs_target: "panel", naming_tabs_name: "overview" }) do
+            div(
+              class: "space-y-5",
+              data: {
+                controller: "balances-mobile",
+                balances_mobile_summary_url_value: current_balance_json_balances_path(format: :json),
+                balances_mobile_trend_url_value: cash_balance_json_balances_path(format: :json),
+                balances_mobile_breakdown_url_value: transaction_balance_json_balances_path(format: :json)
+              }
+            ) do
+              render_summary_cards
+              render_trend_card
+              render_breakdown_card
+            end
+          end
+
+          div(id: "balances_monthly_analysis_panel", role: :tabpanel, class: "hidden px-4 pb-4",
+              data: { naming_tabs_target: "panel", naming_tabs_name: "monthly_analysis" }) do
+            turbo_frame_tag :balances_monthly_analysis_content, data: { naming_tabs_lazy_src: monthly_analysis_balances_path } do
+              analysis_loading_state
+            end
+          end
         end
       end
     end

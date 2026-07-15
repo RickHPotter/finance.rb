@@ -21,6 +21,11 @@ en:
       three_months: 3 months
       one_year: 1 year
     monthly_analysis:
+      overview: Overview
+      title: Monthly Analysis
+      subtitle: Income, outcome, transfers, and Piggy Bank activity for one selected month.
+      loading: Loading monthly analysis...
+      preparing: Monthly controls and visualizations are being prepared.
       unassigned: Unassigned
       invalid_month: Month must use the YYYY-MM format.
     custom: Custom
@@ -64,6 +69,11 @@ pt-BR:
       three_months: 3 meses
       one_year: 1 ano
     monthly_analysis:
+      overview: Visão Geral
+      title: Análise Mensal
+      subtitle: Receitas, despesas, transferências e atividade de Cofrinhos em um mês selecionado.
+      loading: Carregando análise mensal...
+      preparing: Os controles e gráficos mensais estão sendo preparados.
       unassigned: Não atribuído
       invalid_month: O mês deve usar o formato AAAA-MM.
     custom: Personalizado
