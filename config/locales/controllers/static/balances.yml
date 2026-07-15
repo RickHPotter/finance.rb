@@ -20,6 +20,9 @@ en:
       six_months: 6 months
       three_months: 3 months
       one_year: 1 year
+    monthly_analysis:
+      unassigned: Unassigned
+      invalid_month: Month must use the YYYY-MM format.
     custom: Custom
     types:
       default: Default
@@ -60,6 +63,9 @@ pt-BR:
       six_months: 6 meses
       three_months: 3 meses
       one_year: 1 ano
+    monthly_analysis:
+      unassigned: Não atribuído
+      invalid_month: O mês deve usar o formato AAAA-MM.
     custom: Personalizado
     types:
       default: Padrão
