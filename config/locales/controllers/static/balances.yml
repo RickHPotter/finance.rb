@@ -25,7 +25,29 @@ en:
       title: Monthly Analysis
       subtitle: Income, outcome, transfers, and Piggy Bank activity for one selected month.
       loading: Loading monthly analysis...
-      preparing: Monthly controls and visualizations are being prepared.
+      empty: No financial activity was found for this month.
+      error: Monthly analysis could not be loaded.
+      retry: Retry
+      previous_month: Previous month
+      next_month: Next month
+      income: Income
+      outcome: Outcome
+      net: Net
+      income_by_category: Income by category
+      outcome_by_category: Outcome by category
+      income_by_entity: Income by entity
+      outcome_by_entity: Outcome by entity
+      transfers: Transfers
+      sent: Sent
+      received: Received
+      failed: Failed returns
+      piggy_banks: Piggy Banks
+      contributed: Contributed
+      projected_contribution: Projected contribution
+      withdrawn: Withdrawn
+      projected_withdrawal: Projected withdrawal
+      recognized_profit_loss: Recognized profit/loss
+      no_items: No activity
       unassigned: Unassigned
       invalid_month: Month must use the YYYY-MM format.
     custom: Custom
@@ -73,7 +95,29 @@ pt-BR:
       title: Análise Mensal
       subtitle: Receitas, despesas, transferências e atividade de Cofrinhos em um mês selecionado.
       loading: Carregando análise mensal...
-      preparing: Os controles e gráficos mensais estão sendo preparados.
+      empty: Nenhuma atividade financeira foi encontrada neste mês.
+      error: Não foi possível carregar a análise mensal.
+      retry: Tentar novamente
+      previous_month: Mês anterior
+      next_month: Próximo mês
+      income: Receitas
+      outcome: Despesas
+      net: Saldo
+      income_by_category: Receitas por categoria
+      outcome_by_category: Despesas por categoria
+      income_by_entity: Receitas por entidade
+      outcome_by_entity: Despesas por entidade
+      transfers: Transferências
+      sent: Enviado
+      received: Recebido
+      failed: Retornos falhos
+      piggy_banks: Cofrinhos
+      contributed: Contribuído
+      projected_contribution: Contribuição projetada
+      withdrawn: Retirado
+      projected_withdrawal: Retirada projetada
+      recognized_profit_loss: Lucro/prejuízo reconhecido
+      no_items: Nenhuma atividade
       unassigned: Não atribuído
       invalid_month: O mês deve usar o formato AAAA-MM.
     custom: Personalizado

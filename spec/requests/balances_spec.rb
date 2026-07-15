@@ -24,6 +24,7 @@ RSpec.describe "Balances", type: :request do
       analysis_frame = document.at_css("turbo-frame#balances_monthly_analysis_content")
       expect(analysis_frame["src"]).to be_nil
       expect(analysis_frame["data-naming-tabs-lazy-src"]).to eq(monthly_analysis_balances_path)
+      expect(response.body).not_to include("data-controller=\"balances-monthly-analysis\"")
     end
   end
 
@@ -35,6 +36,28 @@ RSpec.describe "Balances", type: :request do
       expect(response.body).to include('turbo-frame id="balances_monthly_analysis_content"')
       expect(response.body).to include(I18n.t("balances.monthly_analysis.title"))
       expect(response.body).to include(I18n.t("balances.monthly_analysis.subtitle"))
+
+      document = Nokogiri::HTML.fragment(response.body)
+      analysis = document.at_css('[data-controller="balances-monthly-analysis"]')
+      expect(analysis["data-balances-monthly-analysis-url-value"]).to eq(monthly_analysis_json_balances_path(format: :json))
+      expect(analysis["data-balances-monthly-analysis-locale-value"]).to eq("en")
+      expect(analysis["data-balances-monthly-analysis-currency-value"]).to eq("BRL")
+      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Retry")
+      expect(document.css("canvas[data-balances-monthly-analysis-target$='Canvas']").size).to eq(4)
+      expect(response.body).not_to include("apexcharts")
+    end
+
+    it "renders Portuguese configuration from the signed-in user" do
+      user.update!(locale: "pt-BR")
+
+      get monthly_analysis_balances_path
+
+      document = Nokogiri::HTML.fragment(response.body)
+      analysis = document.at_css('[data-controller="balances-monthly-analysis"]')
+      expect(response).to have_http_status(:ok)
+      expect(analysis["data-balances-monthly-analysis-locale-value"]).to eq("pt-BR")
+      expect(response.body).to include(I18n.t("balances.monthly_analysis.title", locale: "pt-BR"))
+      expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Tentar novamente")
     end
   end
 
@@ -57,6 +80,13 @@ RSpec.describe "Balances", type: :request do
 
     it "returns a localized unprocessable response for invalid month input" do
       get monthly_analysis_json_balances_path(format: :json), params: { month: "2026-13" }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("error" => I18n.t("balances.monthly_analysis.invalid_month"))
+    end
+
+    it "rejects a missing month without running a fallback query" do
+      get monthly_analysis_json_balances_path(format: :json)
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("error" => I18n.t("balances.monthly_analysis.invalid_month"))

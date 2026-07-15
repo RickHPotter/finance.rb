@@ -58,6 +58,22 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
+
+    it "orders equal bundle amounts deterministically and reconciles category and entity totals" do
+      alpha = create(:category, user:, category_name: "ALPHA")
+      zulu = create(:category, user:, category_name: "ZULU")
+      ana = create(:entity, user:, entity_name: "ANA")
+      bruno = create(:entity, user:, entity_name: "BRUNO")
+
+      create_cash_transaction(price: 1_001, categories: [ zulu ], entities: [ bruno ])
+      create_cash_transaction(price: 1_001, categories: [ alpha ], entities: [ ana ])
+
+      expect(payload.dig(:ordinary, :income, :categories).pluck(:label)).to eq(%w[ALPHA ZULU])
+      expect(payload.dig(:ordinary, :income, :categories).sum { |bundle| bundle[:amount] }).to eq(20.02)
+      expect(payload.dig(:ordinary, :income, :entities).sum { |bundle| bundle[:amount] }).to eq(20.02)
+      expect(payload.dig(:ordinary, :income, :total)).to eq(20.02)
+      expect(payload.dig(:ordinary, :net)).to eq(20.02)
+    end
   end
 
   describe "month validation" do
@@ -118,6 +134,23 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
+
+    it "keeps sent and received aggregates separate for the same entity" do
+      ana = create(:entity, user:, entity_name: "ANA")
+      sent_source = create_cash_transaction(price: -1_000, categories: [], entities: [])
+      received_source = create_cash_transaction(price: 400, categories: [], entities: [])
+      sent_allocation = attach_transfer(sent_source, entity: ana, category_name: "EXCHANGE", is_payer: true)
+      received_allocation = attach_transfer(received_source, entity: ana, category_name: "BORROW RETURN", is_payer: false)
+
+      create_exchange(sent_allocation, price: 1_000, number: 1)
+      create_exchange(received_allocation, price: 400, number: 1)
+
+      expect(payload[:transfers]).to include(total_sent: 10.0, total_received: 4.0)
+      expect(payload.dig(:transfers, :items)).to contain_exactly(
+        include(entity_id: ana.id, direction: "sent", amount: 10.0),
+        include(entity_id: ana.id, direction: "received", amount: 4.0)
+      )
+    end
   end
 
   describe "piggy bank savings" do
@@ -177,6 +210,51 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
         recognized_profit_loss: 0.0
       )
       expect(payload.dig(:piggy_banks, :groups).first).to include(withdrawn: 10.0, projected_withdrawal: 40.0)
+    end
+
+    it "keeps equal descriptions separated by return ID and excludes unrelated valuations" do
+      entity = create(:entity, user:, entity_name: "RESERVE BANK")
+      first = create_piggy_bank_source(entity:, description: "Reserve", price: -1_000, paid: true)
+      second = create_piggy_bank_source(entity:, description: "Reserve", price: -2_000, paid: true)
+      investment_type = create(:investment_type, :random)
+
+      create_valuation(first.piggy_bank.return_cash_transaction, investment_type:, price: 200)
+      create_valuation(second.piggy_bank.return_cash_transaction, investment_type:, price: -100)
+      create_valuation(first.piggy_bank.return_cash_transaction, investment_type:, price: 5_000, month: 8)
+      create(
+        :investment,
+        user:,
+        context:,
+        user_bank_account: account,
+        investment_type:,
+        description: "Legacy unlinked valuation",
+        price: 9_000,
+        date: Date.new(2026, 7, 15),
+        month: 7,
+        year: 2026
+      )
+
+      expect(payload[:piggy_banks]).to include(total_contributed: 30.0, recognized_profit_loss: 1.0)
+      expect(payload.dig(:piggy_banks, :groups).pluck(:return_cash_transaction_id)).to contain_exactly(
+        first.piggy_bank.return_cash_transaction_id,
+        second.piggy_bank.return_cash_transaction_id
+      )
+      expect(payload.dig(:piggy_banks, :groups).pluck(:label)).to eq(%w[Reserve Reserve])
+    end
+  end
+
+  describe "query behavior" do
+    it "keeps a densely allocated month within a bounded number of selected queries" do
+      categories = 3.times.map { |index| create(:category, user:, category_name: "CATEGORY #{index}") }
+      entities = 3.times.map { |index| create(:entity, user:, entity_name: "ENTITY #{index}") }
+      12.times do |index|
+        create_cash_transaction(price: 1_000 + index, categories:, entities:)
+      end
+
+      described_class.new(user:, context:, month: "2026-07").call
+      query_count = count_select_queries { described_class.new(user:, context:, month: "2026-07").call }
+
+      expect(query_count).to be <= 30
     end
   end
 
@@ -268,7 +346,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
     )
   end
 
-  def create_valuation(grouped_return, investment_type:, price:)
+  def create_valuation(grouped_return, investment_type:, price:, month: 7)
     create(
       :investment,
       user:,
@@ -277,10 +355,22 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       investment_type:,
       description: "Recognized reserve result",
       price:,
-      date: Date.new(2026, 7, 15),
-      month: 7,
+      date: Date.new(2026, month, 15),
+      month:,
       year: 2026,
       piggy_bank_return_cash_transaction: grouped_return
     )
+  end
+
+  def count_select_queries(&)
+    queries = []
+    subscriber = lambda do |_name, _started, _finished, _unique_id, data|
+      queries << data[:sql] if data[:sql].start_with?("SELECT") && !data[:cached]
+    end
+
+    ActiveRecord::Base.uncached do
+      ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record", &)
+    end
+    queries.size
   end
 end
