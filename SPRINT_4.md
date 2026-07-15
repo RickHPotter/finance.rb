@@ -173,8 +173,8 @@ References:
 
 Goal: add a lazy-loaded `Monthly Analysis` tab to `/balances` so one selected month
 can be understood through income, outcome, category allocation, entity allocation,
-and person-to-person transfers without changing the existing Overview or legacy
-balances page.
+person-to-person transfers, and Piggy Bank savings without changing the existing
+Overview or legacy balances page.
 
 Feature scope:
 
@@ -184,6 +184,8 @@ Feature scope:
 - scope all reads to `current_context`, including derived scenarios
 - attribute cash and card values by each installment's own reference month/year
 - exclude budgets and generated card-payment cash rows from ordinary movement
+- exclude aggregate Investment cash projections so unlinked legacy Investments do not
+  enter the analysis indirectly
 - build deterministic category and entity bundles so transactions with multiple
   allocations are counted once rather than duplicated
 - place rows without categories or entities in a localized `Unassigned` bucket
@@ -195,15 +197,27 @@ Feature scope:
   direction and each exchange's own month/year
 - show `FAILED LEND/BORROW RETURN` separately using the neglected installment's
   `starting_price`
+- exclude `PIGGY BANK` contributions and generated `PIGGY BANK RETURN` withdrawals
+  from ordinary income/outcome
+- add a separate Piggy Banks panel for paid/projected contributions and withdrawals,
+  plus signed profit/loss from explicitly linked Investments
+- keep unlinked legacy Investments outside the monthly analysis
 - render four responsive Chart.js horizontal-bar panels for income/outcome by category
-  and entity, plus an accessible Transfers panel
+  and entity, plus accessible Transfers and Piggy Banks panels
 - provide text legends and loading, error, retry, and empty states for narrow/mobile
   layouts and dark mode
 - keep `/balances/legacy` untouched as the only ApexCharts balances surface
 - expose the selected-month data through a focused finder and JSON route rather than
   extending the legacy balance payload
 - cover route rendering, context isolation, monthly attribution, allocation bundles,
-  transfer direction, and duplicate prevention
+  transfer direction, Piggy Bank attribution, partial-payment splits, and duplicate
+  prevention
+
+References:
+
+- [product and data contract](docs/sprints/4-kakashi/kakashi-06/01-product-and-data-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-06/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-06/03-decisions-and-test-matrix.md)
 
 ### KAKASHI-07: Consolidate remaining finance datetime controls
 
