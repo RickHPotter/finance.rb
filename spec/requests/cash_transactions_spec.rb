@@ -360,11 +360,14 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("cash_transactions.exchange_projection.fix"))
       expect(response.body).to include(card_transaction_path(source_card))
 
+      projection.cash_installments.update_all(balance: nil, order_id: nil)
+
       patch fix_exchange_projection_cash_transaction_path(projection)
 
       expect(response).to redirect_to(cash_transaction_path(projection))
       expect(projection.reload.price).to eq(5_000)
       expect(projection.cash_installments.reload.sum(:price)).to eq(5_000)
+      expect(projection.cash_installments.first.balance).not_to be_nil
     end
 
     it "shows the fix button when card-bound projection exchange buckets are stale even if totals match" do
