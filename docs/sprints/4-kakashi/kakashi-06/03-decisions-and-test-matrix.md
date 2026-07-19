@@ -96,8 +96,8 @@ panels rather than chart modes.
 
 ### D16. Which chart library is allowed?
 
-Decision: Chart.js only on modern `/balances`. `/balances/legacy` remains unchanged and
-continues to own the legacy ApexCharts behavior.
+Decision: Chart.js is the only chart library on `/balances`. The superseded legacy
+route, controller, view, JSON finder, and ApexCharts dependency are removed.
 
 ### D17. What is the money precision contract?
 
@@ -222,7 +222,6 @@ Reconciliation assertions:
 | switch active context | JSON contains only that context |
 | Portuguese user | Portuguese labels and locale formatting configuration |
 | English user | English labels and locale formatting configuration |
-| `GET /balances/legacy` | existing legacy surface still renders |
 
 ## Frontend and Manual Test Matrix
 

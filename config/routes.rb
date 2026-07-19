@@ -57,10 +57,8 @@ Rails.application.routes.draw do
 
   resources :balances, only: :index do
     collection do
-      get :legacy
       get :current_balance_json
       get :cash_balance_json
-      get :transaction_balance_json
       get :monthly_analysis, action: :monthly_analysis_json, constraints: ->(request) { request.format.json? }, as: :monthly_analysis_json
       get :monthly_analysis
     end

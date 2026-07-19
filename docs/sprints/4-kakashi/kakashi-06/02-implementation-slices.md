@@ -8,8 +8,7 @@ stash wholesale; both attempts contain useful ideas, but their code predates cur
 repository changes and each embeds rejected or incomplete behavior.
 
 Keep the existing Balance History functional after every slice. The new route may
-exist before the tab is linked, but `/balances` and `/balances/legacy` must remain
-stable throughout.
+exist before the tab is linked, but `/balances` must remain stable throughout.
 
 ## Slice 1: Ordinary Monthly Finder
 
@@ -147,10 +146,10 @@ Acceptance criteria:
 - initial `/balances` starts only the existing balance summary and trend requests
 - initial `/balances` does not request analysis HTML or JSON
 - first analysis activation loads its frame once
-- analysis HTML contains no ApexCharts dependency
+- analysis HTML contains only Chart.js-based charts
 - JSON is scoped to the active context
 - invalid month input never becomes an unbounded or current-month query
-- `/balances/legacy` is unchanged and remains reachable
+- the superseded `/balances/legacy` route and ApexCharts dependency are removed
 
 ## Slice 5: Monthly Controls and Visualization
 
@@ -218,7 +217,7 @@ Acceptance criteria:
 Acceptance criteria:
 
 - existing Balance History summary/trend behavior has no regression
-- legacy balances remains the only ApexCharts balances surface
+- Chart.js is the only remaining chart dependency on `/balances`
 - monthly finder queries remain bounded to one context and month
 - every test-matrix reconciliation assertion passes
 - mobile controls, long bundle labels, legends, and transfer rows do not overlap

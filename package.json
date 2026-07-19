@@ -14,7 +14,6 @@
     "@hotwired/stimulus": "^3.2.2",
     "@hotwired/turbo-rails": "^8.0.13",
     "@stimulus-components/clipboard": "^5.0.0",
-    "apexcharts": "^5.3.4",
     "chart.js": "^4.5.1",
     "embla-carousel": "^8.6.0",
     "flowbite": "^4.0.1",

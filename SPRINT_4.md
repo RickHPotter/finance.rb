@@ -206,7 +206,8 @@ Feature scope:
   and entity, plus accessible Transfers and Piggy Banks panels
 - provide text legends and loading, error, retry, and empty states for narrow/mobile
   layouts and dark mode
-- keep `/balances/legacy` untouched as the only ApexCharts balances surface
+- retire `/balances/legacy` and the ApexCharts dependency after the Chart.js balance
+  history and monthly-analysis surfaces replace it
 - expose the selected-month data through a focused finder and JSON route rather than
   extending the legacy balance payload
 - cover route rendering, context isolation, monthly attribution, allocation bundles,

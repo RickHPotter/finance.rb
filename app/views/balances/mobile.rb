@@ -3,7 +3,6 @@
 class Views::Balances::Mobile < Views::Base
   register_value_helper :current_context
 
-  include Phlex::Rails::Helpers::LinkTo
   include Views::Balances::AnalysisTabs
 
   def view_template
@@ -14,12 +13,6 @@ class Views::Balances::Mobile < Views::Base
             h1(class: mobile_title_class) { I18n.t("balances.title") }
             render_scenario_badge
           end
-
-          link_to(
-            legacy_balances_path,
-            class: legacy_button_class,
-            data: { turbo_frame: "_top", turbo_prefetch: false }
-          ) { "Legacy" }
         end
 
         div(class: "pt-2", data: { controller: "naming-tabs", naming_tabs_current_value: "overview" }) do
@@ -146,12 +139,6 @@ class Views::Balances::Mobile < Views::Base
 
   def mobile_title_class
     "text-sm font-semibold uppercase tracking-[0.2em] text-stone-700 dark:text-slate-300"
-  end
-
-  def legacy_button_class
-    "inline-flex items-center rounded-full border border-stone-200 px-3 py-1 text-2xs font-semibold uppercase tracking-[0.16em] " \
-      "text-stone-600 transition hover:border-stone-400 hover:text-stone-900 dark:border-slate-700 dark:text-slate-300 " \
-      "dark:hover:border-slate-500 dark:hover:text-slate-100"
   end
 
   def chart_panel_class

@@ -14,7 +14,6 @@ RSpec.describe "Balances", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t("balances.title"))
-      expect(response.body).to include("Legacy")
       expect(response.body).to include("Trend")
       expect(response.body).to include(I18n.t("balances.mobile.history"))
       expect(response.body).to include(I18n.t("balances.monthly_analysis.title"))
@@ -45,7 +44,6 @@ RSpec.describe "Balances", type: :request do
       expect(analysis["data-balances-monthly-analysis-currency-value"]).to eq("BRL")
       expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Retry")
       expect(document.css("canvas[data-balances-monthly-analysis-target$='Canvas']").size).to eq(4)
-      expect(response.body).not_to include("apexcharts")
     end
 
     it "renders Portuguese configuration from the signed-in user" do
@@ -106,12 +104,12 @@ RSpec.describe "Balances", type: :request do
     end
   end
 
-  describe "[ #legacy ]" do
-    it "renders the legacy balances route" do
-      get legacy_balances_path
-
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(I18n.t("balances.title"))
+  describe "retired routes" do
+    it "does not route the legacy balances surface or its breakdown endpoint" do
+      expect { Rails.application.routes.recognize_path("/balances/legacy", method: :get) }
+        .to raise_error(ActionController::RoutingError)
+      expect { Rails.application.routes.recognize_path("/balances/transaction_balance_json", method: :get) }
+        .to raise_error(ActionController::RoutingError)
     end
   end
 

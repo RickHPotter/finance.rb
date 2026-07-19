@@ -8,9 +8,8 @@ entity allocation, person-to-person transfers, and piggy-bank savings activity.
 
 The existing modern balances dashboard remains the default `Balance History` tab. Its
 summary, trend, and extremes behavior must remain stable. Its older selected-month
-category breakdown is removed because Monthly Analysis supersedes it.
-`/balances/legacy` remains untouched and continues to be the only ApexCharts balances
-surface.
+category breakdown is removed because Monthly Analysis supersedes it. The superseded
+`/balances/legacy` surface and ApexCharts dependency are removed.
 
 ## Source Decisions
 
@@ -37,9 +36,8 @@ third financial dimension rather than misclassifying principal as spending or in
 - renders balance trend and monthly extremes with Chart.js
 - scopes its finder calls through `current_context`
 
-KAKASHI-06 adds a sibling analysis surface. It does not extend the legacy-shaped
-`Logic::Finder::TransactionBalanceJson` payload because that finder includes budgets
-and can duplicate installment values through category joins.
+KAKASHI-06 adds a sibling analysis surface with a focused payload that excludes
+budgets and avoids duplicating installment values through category joins.
 
 ## Monthly Boundary
 
@@ -326,7 +324,7 @@ retain the selected month and allow a deliberate retry.
 
 ## Frontend Safety and Lifecycle
 
-- Use the existing Chart.js dependency; do not introduce ApexCharts.
+- Use Chart.js as the only chart dependency on `/balances`.
 - Keep tab/lazy-frame behavior separate from the monthly chart controller.
 - Destroy every Chart.js instance before replacing data and on Stimulus disconnect.
 - Abort or ignore stale requests when the user changes months quickly.
@@ -339,8 +337,6 @@ retain the selected month and allow a deliberate retry.
 
 ## Non-Goals
 
-- replacing or removing `/balances/legacy`
-- migrating the legacy ApexCharts controller
 - comparing several months in the new tab
 - export, drill-down, or arbitrary analysis filters
 - editing financial records from charts

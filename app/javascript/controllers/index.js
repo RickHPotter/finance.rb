@@ -94,9 +94,6 @@ application.register("mobile-scroll-nav", MobileScrollNavController)
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 
-import MonthlyBalanceController from "./monthly_balance_controller"
-application.register("monthly-balance", MonthlyBalanceController)
-
 import NamingTabsController from "./naming_tabs_controller"
 application.register("naming-tabs", NamingTabsController)
 
