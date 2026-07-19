@@ -138,6 +138,8 @@ RSpec.describe "CardTransactions", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       exchange_date = document.css("input.exchange_date").find { |input| input["value"] == "2026-04-20T16:45" }
       datetime_wrapper = exchange_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      exchange_wrapper = exchange_date.ancestors.find { |node| node["data-exchange-lock-target"] == "exchange" }
+      price_input = exchange_wrapper.at_css("[data-exchange-lock-target~='price']")
 
       expect(exchange_date["id"]).to eq("exchange_date_0_0")
       expect(exchange_date["type"]).to eq("hidden")
@@ -150,6 +152,9 @@ RSpec.describe "CardTransactions", type: :request do
       expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["value"]).to eq("16:45")
       expect(datetime_wrapper.at_css("input[type='datetime-local']")).to be_nil
       expect(document.css("input.exchange_date").map { |input| input["id"] }).to eq(document.css("input.exchange_date").map { |input| input["id"] }.uniq)
+      expect(price_input["readonly"]).to be_nil
+      expect(price_input["aria-readonly"]).to eq("false")
+      expect(price_input["name"]).to eq("card_transaction[entity_transactions_attributes][0][exchanges_attributes][0][price]")
     end
 
     it "renders the bulk add to subscription action on the index" do

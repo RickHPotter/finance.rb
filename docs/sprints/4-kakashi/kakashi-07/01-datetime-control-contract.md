@@ -139,6 +139,10 @@ Installment datetime editability follows the existing row lock:
 - the canonical hidden input remains enabled in both states
 - existing sequential lock/unlock behavior across surrounding installments applies to
   datetime controls as well as price controls
+- the visible price input follows the same dynamic lock state and remains submitted
+  while read-only
+- generated card-payment and card-advance installment prices remain permanently
+  read-only even when the surrounding row is unlocked
 
 ## Nested Exchange Contract
 
@@ -156,6 +160,14 @@ but keep the canonical input enabled. Previous/next reference-month actions must
 - fetch and apply the selected user-card reference date for card-bound rows
 - refresh the shared visible controls after the canonical value changes
 - preserve exchange-lock and paid-history behavior
+
+Exchange price editability follows the paid-history row lock independently from the
+date binding mode:
+
+- a locked exchange price is read-only and remains submitted
+- unlocking the row makes its price editable; relocking restores read-only mode
+- `card_bound` controls only the derived exchange date and does not permanently lock
+  the price
 
 ## Pay-In-Advance Contract
 

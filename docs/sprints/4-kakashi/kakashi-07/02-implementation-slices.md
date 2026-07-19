@@ -153,6 +153,26 @@ Acceptance criteria:
 - no changed financial parameter names or month/year behavior
 - no regression in paid-history guards or generated projections
 
+## Follow-up Slice: Align nested price inputs with row locks
+
+1. Render locked installment and exchange price inputs as read-only while keeping
+   their values enabled for nested submission.
+2. Update both lock controllers so sequential lock/unlock actions change price and
+   datetime editability together.
+3. Preserve permanent read-only behavior for generated card-payment and card-advance
+   installment prices.
+4. Keep exchange price editability independent from standalone/card-bound date mode.
+5. Add cash/card rendering coverage for locked, unlocked, generated, and card-bound
+   combinations.
+
+Acceptance criteria:
+
+- locked installment and exchange prices are read-only
+- unlocked ordinary prices are editable
+- generated installment prices never become editable through the lock control
+- unlocked card-bound exchange prices remain editable while their dates stay read-only
+- read-only prices retain their nested parameter names and are submitted
+
 ## Suggested Commit Boundaries
 
 1. `feat: extend shared datetime control contracts`
@@ -160,3 +180,4 @@ Acceptance criteria:
 3. `feat: migrate nested exchange datetime controls`
 4. `feat: migrate and validate card advance payment datetime`
 5. `spec: harden finance datetime control behavior`
+6. `fix: align nested price inputs with lock state`

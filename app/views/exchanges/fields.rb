@@ -86,6 +86,8 @@ module Views
                 :price,
                 inputmode: :numeric,
                 class: exchange_input_class("dynamic-price sign-based price-input"),
+                readonly: locked?,
+                aria: { readonly: locked? },
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
@@ -134,7 +136,8 @@ module Views
       def exchange_input_class(extra_classes)
         "#{extra_classes} w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 " \
           "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/50 " \
-          "dark:focus:ring-2 dark:focus:ring-sky-500/60"
+          "read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-500 read-only:opacity-70 dark:focus:ring-2 " \
+          "dark:focus:ring-sky-500/60 dark:read-only:bg-slate-950 dark:read-only:text-slate-500"
       end
     end
   end

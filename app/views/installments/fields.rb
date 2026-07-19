@@ -14,7 +14,8 @@ module Views
       end
 
       def view_template
-        price_readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
+        price_permanently_readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
+        price_readonly = locked? || price_permanently_readonly
 
         div(
           class: "nested-form-wrapper space-y-1 rounded-xl border bg-white p-1 shadow-sm transition hover:shadow-md dark:rounded-lg dark:bg-slate-800
@@ -82,11 +83,13 @@ module Views
                 inputmode: :numeric,
                 class: installment_input_class("sign-based price-input"),
                 readonly: price_readonly,
+                aria: { readonly: price_readonly },
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
                   reactive_form_target: :priceInstallmentInput,
                   installment_lock_target: :price,
+                  lock_permanent_readonly: price_permanently_readonly,
                   action: "click->input-select#select input->price-mask#applyMask",
                   sign:
                 }
@@ -132,7 +135,8 @@ module Views
       def installment_input_class(prefix)
         "#{prefix} w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 dark:rounded-md dark:border-slate-700 " \
           "dark:bg-slate-800 dark:font-mono dark:text-slate-100 dark:focus:border-sky-500/50 dark:focus:ring-2 dark:focus:ring-sky-500/60 " \
-          "dark:focus:outline-none"
+          "read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-500 read-only:opacity-70 dark:focus:outline-none " \
+          "dark:read-only:bg-slate-900 dark:read-only:text-slate-500"
       end
 
       def header_class

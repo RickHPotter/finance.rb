@@ -72,6 +72,14 @@ or cash records.
 Compact repeated rows use inline date and time controls on mobile and desktop. They do
 not embed the expanded calendar/clock layout used by main transaction forms.
 
+### D14. How do nested price inputs follow row locks?
+
+Installment and exchange prices are read-only while their row is locked and editable
+when the row is unlocked. Read-only values remain enabled for nested submission.
+Generated card-payment and card-advance installment prices are permanently read-only.
+Exchange binding mode affects only the date: an unlocked card-bound exchange keeps an
+editable price while its derived datetime remains read-only.
+
 ## Shared Control Test Matrix
 
 | Scenario | Expected result |
@@ -109,6 +117,9 @@ not embed the expanded calendar/clock layout used by main transaction forms.
 | user relocks row | date/time becomes read-only without changing value |
 | duplicate transaction | duplicated values render in hidden and visible controls |
 | validation failure | entered date/time survives rerender |
+| locked ordinary installment | price is read-only and remains submitted |
+| user unlocks ordinary installment | price becomes editable without losing value |
+| generated payment/advance installment | price remains read-only after unlock |
 
 ## Nested Exchange Test Matrix
 
@@ -124,6 +135,9 @@ not embed the expanded calendar/clock layout used by main transaction forms.
 | exchanges added/removed/regenerated | active rows retain correct values and numbering |
 | paid exchange structural rewrite | existing guard still rejects unsafe change |
 | failed validation | entered standalone and derived card-bound values rerender correctly |
+| locked exchange | price is read-only and remains submitted |
+| user unlocks exchange | price becomes editable without losing value |
+| unlocked card-bound exchange | price editable; derived date read-only |
 
 ## Pay-In-Advance Test Matrix
 

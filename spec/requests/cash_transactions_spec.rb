@@ -75,6 +75,8 @@ RSpec.describe "CashTransactions", type: :request do
       installment_dates = document.css("input.installment_date")
       active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      installment_wrapper = active_installment_date.ancestors.find { |node| node["data-installment-lock-target"] == "installment" }
+      price_input = installment_wrapper.at_css("[data-installment-lock-target~='price']")
 
       expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
       expect(active_installment_date["type"]).to eq("hidden")
@@ -84,6 +86,8 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
+      expect(price_input["readonly"]).to be_nil
+      expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
     end
 
     it "renders paid installment datetimes as read-only while keeping their canonical values enabled" do
@@ -97,6 +101,10 @@ RSpec.describe "CashTransactions", type: :request do
       unpaid_date = installment_dates.find { |input| input["value"].start_with?("2026-04-10") }
       paid_wrapper = paid_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
       unpaid_wrapper = unpaid_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      paid_installment_wrapper = paid_date.ancestors.find { |node| node["data-installment-lock-target"] == "installment" }
+      unpaid_installment_wrapper = unpaid_date.ancestors.find { |node| node["data-installment-lock-target"] == "installment" }
+      paid_price = paid_installment_wrapper.at_css("[data-installment-lock-target~='price']")
+      unpaid_price = unpaid_installment_wrapper.at_css("[data-installment-lock-target~='price']")
 
       expect(paid_date["disabled"]).to be_nil
       expect(paid_wrapper["data-datetime-input-readonly-value"]).to eq("")
@@ -105,6 +113,38 @@ RSpec.describe "CashTransactions", type: :request do
       expect(unpaid_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(unpaid_wrapper.at_css("input[type='date']")["disabled"]).to be_nil
       expect(unpaid_wrapper.at_css("input[id$='_time_input']")["disabled"]).to be_nil
+      expect(paid_price["readonly"]).to eq("readonly")
+      expect(paid_price["aria-readonly"]).to eq("true")
+      expect(paid_price["name"]).to be_present
+      expect(unpaid_price["readonly"]).to be_nil
+      expect(unpaid_price["aria-readonly"]).to eq("false")
+    end
+
+    it "keeps generated card-payment installment prices permanently read-only" do
+      generated_transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Generated card payment",
+        price: -4_200,
+        cash_transaction_type: "CardInstallment"
+      )
+      generated_transaction.categories = [ user.built_in_category("CARD PAYMENT") ]
+      generated_transaction.save!
+      source_card = create(:card_transaction, user:, context: user.main_context)
+      source_card.card_installments.first.update_column(:cash_transaction_id, generated_transaction.id)
+      generated_transaction.update_column(:user_card_id, source_card.user_card_id)
+
+      get edit_cash_transaction_path(generated_transaction)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      price_input = document.css("[data-installment-lock-target~='price']").find { |input| input["name"].exclude?("NEW_RECORD") }
+
+      expect(price_input["readonly"]).to eq("readonly")
+      expect(price_input["aria-readonly"]).to eq("true")
+      expect(price_input["data-lock-permanent-readonly"]).to eq("true")
+      expect(price_input["name"]).to eq("cash_transaction[cash_installments_attributes][0][price]")
     end
 
     it "renders standalone exchange datetimes as compact editable canonical controls" do
@@ -140,6 +180,8 @@ RSpec.describe "CashTransactions", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       exchange_date = document.css("input.exchange_date").find { |input| input["value"] == "2026-03-20T16:45" }
       datetime_wrapper = exchange_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      exchange_wrapper = exchange_date.ancestors.find { |node| node["data-exchange-lock-target"] == "exchange" }
+      price_input = exchange_wrapper.at_css("[data-exchange-lock-target~='price']")
 
       expect(exchange_date["id"]).to eq("exchange_date_0_0")
       expect(exchange_date["type"]).to eq("hidden")
@@ -151,6 +193,49 @@ RSpec.describe "CashTransactions", type: :request do
       expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["value"]).to eq("16:45")
       expect(datetime_wrapper.at_css("input[type='datetime-local']")).to be_nil
       expect(document.css("input.exchange_date").map { |input| input["id"] }).to eq(document.css("input.exchange_date").map { |input| input["id"] }.uniq)
+      expect(price_input["readonly"]).to be_nil
+      expect(price_input["aria-readonly"]).to eq("false")
+      expect(price_input["name"]).to eq("cash_transaction[entity_transactions_attributes][0][exchanges_attributes][0][price]")
+    end
+
+    it "renders paid exchange prices as read-only while keeping them enabled" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Paid exchange price",
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 10, 14, 30),
+        month: 3,
+        year: 2026
+      )
+      transaction.category_transactions.destroy_all
+      transaction.entity_transactions.destroy_all
+      transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = transaction.entity_transactions.create!(entity:, is_payer: true, price: -2_200, price_to_be_returned: -2_200, exchanges_count: 1)
+      exchange = create(
+        :exchange,
+        entity_transaction:,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 20, 16, 45),
+        month: 3,
+        year: 2026
+      )
+      exchange.cash_transaction.cash_installments.first.update!(paid: true)
+
+      get edit_cash_transaction_path(transaction)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      price_input = document.css("[data-exchange-lock-target~='price']").find { |input| input["name"].exclude?("NEW_NESTED_RECORD") }
+
+      expect(price_input["readonly"]).to eq("readonly")
+      expect(price_input["aria-readonly"]).to eq("true")
+      expect(price_input["disabled"]).to be_nil
+      expect(price_input["name"]).to be_present
     end
 
     it "renders the cash-specific form skeleton on edit" do
