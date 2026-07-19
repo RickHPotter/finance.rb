@@ -9,6 +9,7 @@ gem "rails", "~> 8.1"
 gem "activerecord-import"
 gem "bootsnap", require: false
 gem "jsbundling-rails"
+gem "paper_trail", "~> 17.0"
 gem "pg"
 gem "propshaft"
 gem "puma"

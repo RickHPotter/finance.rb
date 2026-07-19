@@ -2,6 +2,8 @@
 
 class Installment < ApplicationRecord
   # @extends ..................................................................
+  has_paper_trail on: []
+
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
