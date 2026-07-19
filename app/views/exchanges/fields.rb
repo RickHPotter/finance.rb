@@ -67,14 +67,19 @@ module Views
           end
 
           div(class: "flex-1 grid gap-1") do
-            form.text_field \
-              :date,
-              id: :exchange_date,
-              type: "datetime-local",
-              value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
-              class: exchange_input_class("exchange_date"),
-              readonly: bound_type == :card_bound,
-              data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: exchange.date || exchange.cash_transaction&.date,
+              id: exchange_date_id,
+              hidden_class: "exchange_date",
+              hidden_data: {
+                entity_transaction_target: :dateInput,
+                action: "change->entity-transaction#updateReferenceMonthYear"
+              },
+              compact: true,
+              readonly: bound_type == :card_bound
+            )
 
             div(class: "flex gap-1") do
               form.text_field \
@@ -113,6 +118,13 @@ module Views
 
       def locked?
         exchange.effective_paid_state
+      end
+
+      def exchange_date_id
+        parent_index = form.options[:parent_builder]&.index
+        nested_index = [ parent_index, form.index ].compact.join("_")
+
+        "exchange_date_#{nested_index}"
       end
 
       def exchange_border_class

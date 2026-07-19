@@ -118,6 +118,40 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
     end
 
+    it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card-bound exchange datetime",
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 10, 14, 30),
+        month: 4,
+        year: 2026
+      )
+      exchange = attach_locked_exchange_projection(transaction)
+      exchange.update_columns(bound_type: "card_bound", date: Time.zone.local(2026, 4, 20, 16, 45), month: 4, year: 2026)
+
+      get edit_card_transaction_path(transaction.reload)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      exchange_date = document.css("input.exchange_date").find { |input| input["value"] == "2026-04-20T16:45" }
+      datetime_wrapper = exchange_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(exchange_date["id"]).to eq("exchange_date_0_0")
+      expect(exchange_date["type"]).to eq("hidden")
+      expect(exchange_date["disabled"]).to be_nil
+      expect(exchange_date["name"]).to eq("card_transaction[entity_transactions_attributes][0][exchanges_attributes][0][date]")
+      expect(exchange_date["data-entity-transaction-target"]).to eq("dateInput")
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to eq("")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_date_input")["disabled"]).to eq("disabled")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["disabled"]).to eq("disabled")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["value"]).to eq("16:45")
+      expect(datetime_wrapper.at_css("input[type='datetime-local']")).to be_nil
+      expect(document.css("input.exchange_date").map { |input| input["id"] }).to eq(document.css("input.exchange_date").map { |input| input["id"] }.uniq)
+    end
+
     it "renders the bulk add to subscription action on the index" do
       user_card_one
 

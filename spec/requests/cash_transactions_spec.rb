@@ -107,6 +107,52 @@ RSpec.describe "CashTransactions", type: :request do
       expect(unpaid_wrapper.at_css("input[id$='_time_input']")["disabled"]).to be_nil
     end
 
+    it "renders standalone exchange datetimes as compact editable canonical controls" do
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Standalone exchange datetime",
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 10, 14, 30),
+        month: 3,
+        year: 2026
+      )
+      transaction.category_transactions.destroy_all
+      transaction.entity_transactions.destroy_all
+      transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
+      entity_transaction = transaction.entity_transactions.create!(entity:, is_payer: true, price: -2_200, price_to_be_returned: -2_200, exchanges_count: 1)
+      create(
+        :exchange,
+        entity_transaction:,
+        bound_type: :standalone,
+        exchange_type: :monetary,
+        number: 1,
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 20, 16, 45),
+        month: 3,
+        year: 2026
+      )
+
+      get edit_cash_transaction_path(transaction)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      exchange_date = document.css("input.exchange_date").find { |input| input["value"] == "2026-03-20T16:45" }
+      datetime_wrapper = exchange_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(exchange_date["id"]).to eq("exchange_date_0_0")
+      expect(exchange_date["type"]).to eq("hidden")
+      expect(exchange_date["name"]).to eq("cash_transaction[entity_transactions_attributes][0][exchanges_attributes][0][date]")
+      expect(exchange_date["data-entity-transaction-target"]).to eq("dateInput")
+      expect(exchange_date["data-action"]).to eq("change->entity-transaction#updateReferenceMonthYear")
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_date_input")["disabled"]).to be_nil
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["value"]).to eq("16:45")
+      expect(datetime_wrapper.at_css("input[type='datetime-local']")).to be_nil
+      expect(document.css("input.exchange_date").map { |input| input["id"] }).to eq(document.css("input.exchange_date").map { |input| input["id"] }.uniq)
+    end
+
     it "renders the cash-specific form skeleton on edit" do
       existing_cash_transaction = create(
         :cash_transaction,
