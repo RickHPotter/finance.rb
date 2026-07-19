@@ -56,6 +56,32 @@ RSpec.describe Logic::CardAdvancePaymentWindow, type: :service do
     expect(window).not_to be_cover(window.maximum + 1.minute)
   end
 
+  it "leaves either side unbounded when only one reference boundary exists" do
+    user_card.references.find_by!(context:, month: 6, year: 2026).destroy!
+    maximum_only_window = described_class.new(user_card:, context:, month: 7, year: 2026)
+
+    expect(maximum_only_window).to be_cover(Time.zone.local(2020, 1, 1))
+    expect(maximum_only_window).to be_cover(maximum_only_window.maximum)
+    expect(maximum_only_window).not_to be_cover(maximum_only_window.maximum + 1.minute)
+
+    user_card.references.find_by!(context:, month: 7, year: 2026).destroy!
+    create(
+      :reference,
+      user_card:,
+      context:,
+      month: 6,
+      year: 2026,
+      reference_date: Date.new(2026, 6, 20),
+      reference_closing_date: Date.new(2026, 6, 10),
+      skip_reference_closing_date_calculation: true
+    )
+    minimum_only_window = described_class.new(user_card:, context:, month: 7, year: 2026)
+
+    expect(minimum_only_window).not_to be_cover(minimum_only_window.minimum - 1.minute)
+    expect(minimum_only_window).to be_cover(minimum_only_window.minimum)
+    expect(minimum_only_window).to be_cover(Time.zone.local(2030, 1, 1))
+  end
+
   it "uses the current minute inside a complete window and otherwise defaults to its maximum" do
     inside = Time.zone.local(2026, 7, 1, 12, 34, 59)
 

@@ -2539,5 +2539,30 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include(I18n.t("card_advance.invalid_payment_window"))
       expect(response.body).to include('<turbo-stream action="update" target="notification">')
     end
+
+    it "rejects a payment immediately before the server-owned minimum boundary" do
+      attributes = valid_card_advance_attributes(context: user.main_context)
+      cycle_date = Date.new(attributes[:year], attributes[:month], 1)
+      previous_cycle = cycle_date.prev_month
+      previous_reference = create(
+        :reference,
+        user_card: user_card_one,
+        context: user.main_context,
+        month: previous_cycle.month,
+        year: previous_cycle.year,
+        reference_date: previous_cycle.end_of_month,
+        reference_closing_date: previous_cycle.change(day: 10),
+        skip_reference_closing_date_calculation: true
+      )
+      attributes[:date] = previous_reference.reference_closing_date.in_time_zone - 1.minute
+
+      expect do
+        post pay_in_advance_card_transactions_path, params: { card_transaction: attributes }, headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(0)
+         .and change(CashTransaction, :count).by(0)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("card_advance.invalid_payment_window"))
+    end
   end
 end
