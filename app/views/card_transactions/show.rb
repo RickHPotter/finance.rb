@@ -581,8 +581,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       month: card_transaction.month,
       year: card_transaction.year,
       user_card_id: card_transaction.user_card_id,
-      min_date: pay_in_advance_min_date,
-      max_date: pay_in_advance_max_date
+      payment_window: pay_in_advance_window
     )
   end
 
@@ -653,25 +652,20 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
     return false if card_transaction.card_advance_category?
     return false if invoice_cash_transactions.empty?
 
-    !invoice_cash_transactions.first.paid?
+    !invoice_cash_transactions.first.paid? && pay_in_advance_window.available?
   end
 
   def pay_in_advance_modal_id
     "cardTransactionModal_#{card_transaction.user_card_id}_#{card_transaction.month}_#{card_transaction.year}"
   end
 
-  def pay_in_advance_min_date
-    @pay_in_advance_min_date ||= begin
-      previous_reference = card_transaction.user_card.references.find_by_month_year(month_year_date - 1.month)&.reference_closing_date
-      previous_reference&.to_datetime&.strftime("%Y-%m-%dT%H:%M")
-    end
-  end
-
-  def pay_in_advance_max_date
-    @pay_in_advance_max_date ||= begin
-      current_reference = card_transaction.user_card.references.find_by_month_year(month_year_date)&.reference_date
-      current_reference&.to_datetime&.strftime("%Y-%m-%dT%H:%M")
-    end
+  def pay_in_advance_window
+    @pay_in_advance_window ||= Logic::CardAdvancePaymentWindow.new(
+      user_card: card_transaction.user_card,
+      context: card_transaction.context,
+      month: card_transaction.month,
+      year: card_transaction.year
+    )
   end
 
   def month_year_date

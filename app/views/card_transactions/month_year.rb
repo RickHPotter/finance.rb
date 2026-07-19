@@ -6,30 +6,22 @@ class Views::CardTransactions::MonthYear < Views::Base
 
   attr_reader :mobile, :month_year, :month_year_date, :month, :year, :user_card_id,
               :card_installments, :total_amount, :modal_id,
-              :min_date, :max_date
+              :payment_window
 
-  def initialize(mobile:, month_year:, user_card_id:, card_installments:)
+  def initialize(mobile:, month_year:, user_card:, card_installments:, current_context:)
     @mobile = mobile
     @month_year = month_year
     @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")
     @month = month_year_date.month
     @year = month_year_date.year
-    @user_card_id = user_card_id
+    @user_card_id = user_card&.id
     @card_installments = card_installments
     @total_amount = card_installments.sum(&:price)
     @modal_id = "cardTransactionModal_#{user_card_id}_#{month}_#{year}"
 
-    return unless user_card_id
+    return unless user_card
 
-    user_card = UserCard.find(user_card_id)
-    references = user_card.references
-    past_month_reference = references.find_by_month_year(month_year_date - 1.month)&.reference_closing_date
-    curr_month_reference = references.find_by_month_year(month_year_date)&.reference_date
-
-    return if past_month_reference.nil? && curr_month_reference.nil?
-
-    @min_date = past_month_reference&.to_datetime&.strftime("%Y-%m-%dT%H:%M")
-    @max_date = curr_month_reference&.to_datetime&.strftime("%Y-%m-%dT%H:%M")
+    @payment_window = Logic::CardAdvancePaymentWindow.new(user_card:, context: current_context, month:, year:)
   end
 
   def view_template
@@ -46,8 +38,8 @@ class Views::CardTransactions::MonthYear < Views::Base
     div(class: "mb-8", data: { datatable_target: :table }) do
       fieldset(class: "grid grid-cols-1 rounded-lg border border-slate-200 px-2 mb-4 dark:border-slate-800 dark:bg-slate-950/40") do
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%b %Y"), total_amount:, mobile:) do
-          if user_card_id && card_installments.any? && !card_installments.first.cash_transaction.paid?
-            render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, min_date:, max_date:)
+          if pay_in_advance_available?
+            render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, payment_window:)
 
             Button(size: :sm, class: "absolute right-0 bottom-4", data: { modal_target: modal_id, modal_toggle: modal_id }) do
               model_attribute(CardTransaction, :pay_in_advance)
@@ -68,8 +60,8 @@ class Views::CardTransactions::MonthYear < Views::Base
     div(class: "mb-8", data: { datatable_target: :table }) do
       fieldset(class: "grid grid-cols-1 rounded-lg border border-slate-200 p-4 dark:border-slate-800 dark:bg-slate-950/40") do
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%B %Y"), total_amount:, mobile:) do
-          if user_card_id && card_installments.any? && !card_installments.first.cash_transaction.paid?
-            render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, min_date:, max_date:)
+          if pay_in_advance_available?
+            render Views::CardTransactions::PayInAdvanceModal.new(month:, year:, user_card_id:, payment_window:)
 
             Button(class: "absolute right-0 bottom-4 dark:border-white", data: { modal_target: modal_id, modal_toggle: modal_id }) do
               model_attribute(CardTransaction, :pay_in_advance)
@@ -110,5 +102,9 @@ class Views::CardTransactions::MonthYear < Views::Base
         end
       end
     end
+  end
+
+  def pay_in_advance_available?
+    user_card_id.present? && card_installments.any? && !card_installments.first.cash_transaction.paid? && payment_window&.available?
   end
 end

@@ -221,6 +221,9 @@ en:
     invalid_time: "Enter a valid time in 24-hour format."
     invalid_min: "Choose a date and time on or after the earliest permitted moment."
     invalid_max: "Choose a payment date and time up to the end of today."
+  card_advance:
+    invalid_payment_window: "Choose a payment date and time within the advance-payment window for this card cycle."
+    not_created: "The card advance could not be created."
   bulk_actions:
     total_selected: "Selected total"
     choose_subscription: "Choose subscription"
@@ -478,6 +481,9 @@ pt-BR:
     invalid_time: "Digite um horario valido no formato 24 horas."
     invalid_min: "Escolha uma data e hora a partir do primeiro momento permitido."
     invalid_max: "Escolha uma data e hora de pagamento até o fim de hoje."
+  card_advance:
+    invalid_payment_window: "Escolha uma data e hora dentro do período de antecipação deste ciclo do cartão."
+    not_created: "A antecipação do cartão não pôde ser criada."
   bulk_actions:
     total_selected: "Total selecionado"
     choose_subscription: "Escolha a assinatura"
