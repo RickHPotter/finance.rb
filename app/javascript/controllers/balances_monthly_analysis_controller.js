@@ -183,8 +183,10 @@ export default class extends Controller {
           legend: { display: false },
           tooltip: {
             backgroundColor: theme.tooltipBackground,
-            bodyColor: theme.text,
-            titleColor: theme.text,
+            borderColor: theme.tooltipBorder,
+            borderWidth: 1,
+            bodyColor: theme.tooltipText,
+            titleColor: theme.tooltipText,
             callbacks: { label: (context) => this.formatCurrency(context.parsed.x) }
           }
         },
@@ -419,7 +421,9 @@ export default class extends Controller {
         text: "#e2e8f0",
         mutedText: "#94a3b8",
         grid: "rgba(100, 116, 139, 0.25)",
-        tooltipBackground: "rgba(15, 23, 42, 0.96)"
+        tooltipBackground: "rgba(15, 23, 42, 0.96)",
+        tooltipBorder: "rgba(100, 116, 139, 0.8)",
+        tooltipText: "#f8fafc"
       }
     }
 
@@ -427,7 +431,9 @@ export default class extends Controller {
       text: "#44403c",
       mutedText: "#78716c",
       grid: "rgba(120, 113, 108, 0.18)",
-      tooltipBackground: "rgba(28, 25, 23, 0.94)"
+      tooltipBackground: "rgba(255, 255, 255, 0.98)",
+      tooltipBorder: "rgba(120, 113, 108, 0.35)",
+      tooltipText: "#1c1917"
     }
   }
 

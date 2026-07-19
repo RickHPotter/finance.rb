@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 class Logic::Finder::MonthlyAnalysis::Transfers
-  MONETARY_CATEGORY_NAMES = [ "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN" ].freeze
+  SENT_EXCHANGE_CATEGORY_NAME = "EXCHANGE"
+  SENT_INSTALLMENT_CATEGORY_NAME = "BORROW RETURN"
+  RECEIVED_INSTALLMENT_CATEGORY_NAME = "EXCHANGE RETURN"
   FAILED_CATEGORY_NAME = "FAILED LEND/BORROW RETURN"
 
   def initialize(context:, month:)
@@ -23,52 +25,60 @@ class Logic::Finder::MonthlyAnalysis::Transfers
   private
 
   def transfer_items
-    accumulator = transfer_exchanges.each_with_object({}) do |exchange, result|
-      entity_transaction = exchange.entity_transaction
-      direction = entity_transaction.is_payer? ? "sent" : "received"
-      key = [ entity_transaction.entity_id, direction ]
-      result[key] ||= {
-        entity_id: entity_transaction.entity_id,
-        entity_label: entity_transaction.entity.name,
+    accumulator = {}
+    add_installment_transfers(accumulator, cash_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent")
+    add_installment_transfers(accumulator, card_transfer_installments(SENT_EXCHANGE_CATEGORY_NAME), "sent")
+    add_installment_transfers(accumulator, cash_transfer_installments(SENT_INSTALLMENT_CATEGORY_NAME), "sent")
+    add_installment_transfers(accumulator, cash_transfer_installments(RECEIVED_INSTALLMENT_CATEGORY_NAME), "received")
+
+    accumulator.values.sort_by { |item| [ -item[:amount], item[:entity_label], item[:direction], item[:entity_id].to_s ] }
+  end
+
+  def add_installment_transfers(accumulator, installments, direction)
+    installments.each do |installment|
+      bundle = entity_bundle(installment.transactable)
+      bundle[:key] = "entity:#{bundle[:id]}" if bundle[:id]
+      add_transfer_amount(
+        accumulator,
+        entity: bundle,
         direction:,
-        amount: 0
-      }
-      result[key][:amount] += exchange.price.to_i.abs
+        amount: installment.price
+      )
     end
-
-    accumulator.values.sort_by { |item| [ -item[:amount], item[:entity_label], item[:direction], item[:entity_id] ] }
   end
 
-  def transfer_exchanges
-    exchanges = transfer_exchanges_for("CashTransaction", transfer_cash_transaction_ids) +
-                transfer_exchanges_for("CardTransaction", transfer_card_transaction_ids)
-    exchanges.index_by(&:id).values
+  def add_transfer_amount(accumulator, entity:, direction:, amount:)
+    key = [ entity[:key], direction ]
+    accumulator[key] ||= { entity_id: entity[:id], entity_label: entity[:label], direction:, amount: 0 }
+    accumulator[key][:amount] += amount.to_i.abs
   end
 
-  def transfer_exchanges_for(transactable_type, transactable_ids)
-    return [] if transactable_ids.empty?
+  def failed_transaction_ids(relation)
+    relation.joins(:categories)
+            .where(categories: { category_name: FAILED_CATEGORY_NAME })
+            .select(:id)
+  end
 
-    Exchange.monetary
+  def cash_transfer_installments(category_name)
+    @context.cash_installments
             .where(year: @month.year, month: @month.month)
-            .joins(:entity_transaction)
-            .where(entity_transactions: { transactable_type:, transactable_id: transactable_ids })
-            .includes(entity_transaction: :entity)
+            .joins(cash_transaction: :categories)
+            .where(categories: { category_name: })
+            .where.not(cash_transaction_id: failed_transaction_ids(@context.cash_transactions))
+            .includes(cash_transaction: :entities)
+            .distinct
             .to_a
   end
 
-  def transfer_cash_transaction_ids
-    @transfer_cash_transaction_ids ||= transfer_transaction_ids(@context.cash_transactions)
-  end
-
-  def transfer_card_transaction_ids
-    @transfer_card_transaction_ids ||= transfer_transaction_ids(@context.card_transactions)
-  end
-
-  def transfer_transaction_ids(relation)
-    relation.joins(:categories)
-            .where(categories: { category_name: MONETARY_CATEGORY_NAMES })
+  def card_transfer_installments(category_name)
+    @context.card_installments
+            .where(year: @month.year, month: @month.month)
+            .joins(card_transaction: :categories)
+            .where(categories: { category_name: })
+            .where.not(card_transaction_id: failed_transaction_ids(@context.card_transactions))
+            .includes(card_transaction: :entities)
             .distinct
-            .ids
+            .to_a
   end
 
   def failed_transfer_items
@@ -101,10 +111,17 @@ class Logic::Finder::MonthlyAnalysis::Transfers
 
   def entity_bundle(transaction)
     entities = transaction.entities.sort_by { |entity| [ entity.entity_name, entity.id ] }
-    return { key: "entity:unassigned", label: I18n.t("balances.monthly_analysis.unassigned") } if entities.empty?
+    if entities.empty?
+      return {
+        key: "entity:unassigned",
+        id: nil,
+        label: I18n.t("balances.monthly_analysis.unassigned")
+      }
+    end
 
     {
       key: "entities:#{entities.pluck(:id).join('+')}",
+      id: entities.one? ? entities.first.id : nil,
       label: entities.map(&:name).join(" + ")
     }
   end

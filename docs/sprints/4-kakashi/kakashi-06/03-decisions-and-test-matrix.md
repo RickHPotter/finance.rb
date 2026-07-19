@@ -31,15 +31,16 @@ also excluded so unlinked legacy Investments cannot enter indirectly.
 
 ### D6. How are person-to-person transfers valued and dated?
 
-Decision: use each monetary `Exchange#price` and the exchange's own month/year. Parent
-installment price and `EntityTransaction#price_to_be_returned` are not transfer amount
-sources for this analysis.
+Decision: use each eligible cash/card installment's price and own month/year. The
+source and generated return are independent sides: a June `EXCHANGE` source is Sent
+in June, while its July `EXCHANGE RETURN` installment is Received in July.
 
 ### D7. How is transfer direction determined?
 
-Decision: preserve `EntityTransaction#is_payer`. Payer rows are `sent`; non-payer rows
-are `received`. Amounts are displayed as positive magnitudes with explicit direction,
-and sent/received totals are not netted.
+Decision: classify `EXCHANGE` and `BORROW RETURN` as `sent`, and `EXCHANGE RETURN` as
+`received`. `EntityTransaction#is_payer` does not determine dashboard direction.
+Amounts are displayed as positive magnitudes with explicit direction, and
+sent/received totals are not netted.
 
 ### D8. How are failed lend/borrow returns represented?
 
@@ -157,17 +158,16 @@ Reconciliation assertions:
 
 | Scenario | Expected result |
 | --- | --- |
-| monetary EXCHANGE row in selected exchange month | included once using exchange price |
-| monetary EXCHANGE RETURN row | included in Transfers, not ordinary income |
-| monetary BORROW RETURN row | included in Transfers, not ordinary income |
-| non-monetary exchange | excluded |
-| exchange month differs from parent installment month | exchange month wins |
-| payer entity transaction | direction `sent` |
-| non-payer entity transaction | direction `received` |
-| same entity has several sent exchanges | one entity/direction aggregate |
-| same entity has sent and received exchanges | two direction aggregates |
-| join path could repeat one exchange | exchange ID counted once |
-| eligible transaction ID set is empty | empty transfer query/result |
+| selected-month EXCHANGE cash/card installment | included once as Sent using installment price |
+| selected-month EXCHANGE RETURN cash installment | included once as Received, not ordinary income |
+| selected-month BORROW RETURN cash installment | included once as Sent, not ordinary income |
+| exchange schedule month differs from source installment month | source installment month wins for Sent |
+| source and return installments belong to different months | each side appears only in its own month |
+| payer flag conflicts with category direction | category direction wins |
+| same entity has several sent installments | one entity/direction aggregate |
+| same entity has sent and received installments | two direction aggregates |
+| category join could repeat one installment | installment counted once |
+| eligible installment set is empty | empty transfer result |
 | eligible parent belongs to another context | excluded |
 | failed return has current price zero | `starting_price` reported in failed section |
 | failed return has several entities | deterministic entity bundle |

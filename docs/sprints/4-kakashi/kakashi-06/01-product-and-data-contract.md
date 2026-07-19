@@ -49,7 +49,8 @@ The analysis covers exactly one calendar month at a time.
 - Previous, next, and month-picker controls replace the selected month.
 - Ordinary cash and card movement is attributed by each installment's own `month`
   and `year`, never only by its parent transaction.
-- Monetary transfers are attributed by each `Exchange` row's own `month` and `year`.
+- Normal transfers are attributed by each source or return installment's own `month`
+  and `year`.
 - Failed lend/borrow returns are attributed by the failed cash installment's own
   `month` and `year`.
 - Invalid or missing month input must return a controlled validation response; it
@@ -60,10 +61,8 @@ The analysis covers exactly one calendar month at a time.
 Every read must be scoped to `current_context`, including derived scenario contexts.
 
 The finder must begin from context-owned cash installments, card installments, cash
-transactions, and card transactions. A direct `Exchange` query is allowed only when
-its eligible parent transaction IDs have already been obtained from the current
-context. Empty eligible ID sets must produce empty transfer data rather than a broad
-query.
+transactions, and card transactions. Transfer data must be derived from those
+context-owned installments rather than from a broad `Exchange` query.
 
 ## Ordinary Movement
 
@@ -158,19 +157,20 @@ The UI groups the first three categories under the localized concept `Transfers`
 
 ## Monetary Transfers
 
-Normal transfers are calculated from monetary `Exchange` rows:
+Normal transfers are calculated from selected-month installments:
 
-- use `Exchange#price` as the amount source
-- include only `Exchange.monetary`
-- use the exchange row's month/year
-- preserve the associated entity as the counterparty
-- derive `sent` or `received` from `EntityTransaction#is_payer`
-- aggregate by stable entity ID and direction
-- count every eligible exchange ID once
+- `EXCHANGE` cash and card installments are `sent`
+- `BORROW RETURN` cash installments are `sent`
+- `EXCHANGE RETURN` cash installments are `received`
+- use each installment's `price`, `month`, and `year`
+- preserve the parent transaction's deterministic entity bundle as the counterparty
+- aggregate matching entity bundles by direction
 - show amounts as positive magnitudes while keeping direction explicit
 
-Do not use the parent installment price or `price_to_be_returned` for this panel. The
-exchange rows already describe the actual monetary allocations and their timing.
+Do not use `Exchange#month`, `Exchange#year`, `Exchange#price`,
+`EntityTransaction#is_payer`, or `price_to_be_returned` to place or classify this
+panel. A source transaction and its generated return may belong to different months;
+each side appears only in the month of its own installment.
 
 The panel reports separate totals for sent and received values. V1 does not net these
 directions into one number because netting would hide the actual flow between people.

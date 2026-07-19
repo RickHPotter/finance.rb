@@ -47,18 +47,18 @@ Acceptance criteria:
 
 ## Slice 2: Transfer and Failure Payload
 
-1. Identify context-owned cash/card transaction IDs carrying `EXCHANGE`,
-   `EXCHANGE RETURN`, or `BORROW RETURN`.
-2. Query only monetary exchanges belonging to those IDs and to the selected exchange
-   month/year.
-3. Deduplicate by exchange ID before aggregation.
-4. Aggregate by entity ID and payer/receiver direction.
+1. Load selected-month cash installments carrying `EXCHANGE`, `EXCHANGE RETURN`, or
+   `BORROW RETURN` from the current context.
+2. Load selected-month card installments carrying `EXCHANGE` from the current
+   context.
+3. Classify `EXCHANGE` and `BORROW RETURN` as sent and `EXCHANGE RETURN` as received.
+4. Aggregate by deterministic entity bundle and direction.
 5. Serialize separate sent and received totals without netting.
 6. Load `FAILED LEND/BORROW RETURN` cash installments from the selected context and
    month.
 7. Aggregate their absolute `starting_price` by deterministic entity bundle.
 8. Keep failed values separate from sent, received, income, and outcome totals.
-9. Return empty arrays/totals safely when no eligible transaction IDs exist.
+9. Return empty arrays/totals safely when no eligible installments exist.
 
 Primary touchpoints:
 
@@ -67,13 +67,14 @@ Primary touchpoints:
 
 Acceptance criteria:
 
-- each monetary exchange contributes once using `Exchange#price`
-- exchange month/year, not parent installment month/year, selects normal transfers
-- `is_payer` produces the expected sent/received direction
-- non-monetary exchanges are excluded
+- each eligible installment contributes once using its own price
+- source and return installment month/year independently select each side
+- category produces the expected sent/received direction
+- a June `EXCHANGE` source with a July `EXCHANGE RETURN` installment appears only in
+  July Received
 - failed returns use installment `starting_price`
 - a transfer parent never reappears in ordinary bundles
-- context isolation holds even though `Exchange` is not directly context-owned
+- context isolation holds through context-owned installments
 
 ## Slice 3: Piggy Bank Savings Payload
 
@@ -234,7 +235,7 @@ Recommended phases:
 3. preload parents and ordered allocations
 4. classify ordinary versus transfer sources
 5. build ordinary bundle accumulators in cents
-6. load and aggregate monetary exchanges
+6. load and aggregate transfer-classified installments
 7. load and aggregate failed installments
 8. load and aggregate Piggy Bank contribution/withdrawal/valuation sources
 9. sort with deterministic tie rules

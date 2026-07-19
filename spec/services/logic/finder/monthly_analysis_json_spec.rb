@@ -86,32 +86,45 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
   end
 
   describe "transfers" do
-    it "aggregates context-scoped monetary exchanges by their own month and direction" do
+    it "uses source exchanges for sent and generated return installments for received" do
       ana = create(:entity, user:, entity_name: "ANA")
       bruno = create(:entity, user:, entity_name: "BRUNO")
-      sent_source = create_cash_transaction(price: -5_000, categories: [], entities: [], installment_month: 8)
-      received_source = create_card_transaction(price: 1_250, categories: [], entities: [], installment_month: 8)
-      sent_allocation = attach_transfer(sent_source, entity: ana, category_name: "EXCHANGE", is_payer: true)
-      received_allocation = attach_transfer(received_source, entity: bruno, category_name: "EXCHANGE RETURN", is_payer: false)
+      sent_source = create_card_transaction(price: -5_000, categories: [], entities: [], parent_month: 8)
+      received_source = create_cash_transaction(price: 1_250, categories: [], entities: [], parent_month: 8)
+      sent_allocation = attach_transfer(sent_source, entity: ana, category_name: "EXCHANGE", is_payer: false)
+      attach_transfer(received_source, entity: bruno, category_name: "EXCHANGE RETURN", is_payer: true)
 
       create_exchange(sent_allocation, price: 3_000, number: 1)
       create_exchange(sent_allocation, price: 2_000, number: 2)
       create_exchange(sent_allocation, price: 9_000, number: 3, exchange_type: :non_monetary)
       create_exchange(sent_allocation, price: 7_000, number: 4, month: 8)
-      create_exchange(received_allocation, price: 1_250, number: 1)
 
       foreign_context = create(:context, user:)
       foreign_source = create_cash_transaction(price: -4_000, categories: [], entities: [], context: foreign_context, installment_month: 8)
-      foreign_allocation = attach_transfer(foreign_source, entity: ana, category_name: "EXCHANGE", is_payer: true)
+      foreign_allocation = attach_transfer(foreign_source, entity: ana, category_name: "EXCHANGE", is_payer: false)
       create_exchange(foreign_allocation, price: 4_000, number: 1)
 
-      expect(payload[:transfers]).to include(total_sent: 50.0, total_received: 12.5)
+      expect(payload[:transfers]).to include(total_sent: 50.0, total_received: 62.5)
       expect(payload.dig(:transfers, :items)).to contain_exactly(
         { entity_id: ana.id, entity_label: "ANA", direction: "sent", amount: 50.0 },
+        { entity_id: ana.id, entity_label: "ANA", direction: "received", amount: 50.0 },
         { entity_id: bruno.id, entity_label: "BRUNO", direction: "received", amount: 12.5 }
       )
       expect(payload.dig(:ordinary, :income, :total)).to eq(0.0)
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
+    end
+
+    it "attributes source and return sides independently by their installment months" do
+      itau = create(:entity, user:, entity_name: "ITAU")
+      june_source = create_cash_transaction(price: 50_000, categories: [], entities: [], installment_month: 6)
+      source_allocation = attach_transfer(june_source, entity: itau, category_name: "EXCHANGE", is_payer: false)
+
+      create_exchange(source_allocation, price: -198, number: 1)
+
+      expect(payload[:transfers]).to include(total_sent: 0.0, total_received: 1.98)
+      expect(payload.dig(:transfers, :items)).to contain_exactly(
+        { entity_id: itau.id, entity_label: "ITAU", direction: "received", amount: 1.98 }
+      )
     end
 
     it "reports failed returns from starting price without treating them as ordinary or monetary transfers" do
@@ -120,6 +133,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       failed_return.update_columns(price: 0)
       failed_return.cash_installments.first.update_columns(price: 0, starting_price: 7_500)
       create(:category_transaction, transactable: failed_return, category: user.built_in_category("FAILED LEND/BORROW RETURN"))
+      create(:category_transaction, transactable: failed_return, category: user.built_in_category("EXCHANGE RETURN"))
 
       expect(payload.dig(:transfers, :failed)).to contain_exactly(
         {
@@ -135,20 +149,21 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       expect(payload.dig(:ordinary, :outcome, :total)).to eq(0.0)
     end
 
-    it "keeps sent and received aggregates separate for the same entity" do
+    it "classifies transfer direction by category and uses cash installments for return flows" do
       ana = create(:entity, user:, entity_name: "ANA")
       sent_source = create_cash_transaction(price: -1_000, categories: [], entities: [])
-      received_source = create_cash_transaction(price: 400, categories: [], entities: [])
-      sent_allocation = attach_transfer(sent_source, entity: ana, category_name: "EXCHANGE", is_payer: true)
-      received_allocation = attach_transfer(received_source, entity: ana, category_name: "BORROW RETURN", is_payer: false)
+      repayment_source = create_cash_transaction(price: -400, categories: [], entities: [])
+      received_source = create_cash_transaction(price: 600, categories: [], entities: [])
+      sent_allocation = attach_transfer(sent_source, entity: ana, category_name: "EXCHANGE", is_payer: false)
+      attach_transfer(repayment_source, entity: ana, category_name: "BORROW RETURN", is_payer: false)
+      attach_transfer(received_source, entity: ana, category_name: "EXCHANGE RETURN", is_payer: true)
 
       create_exchange(sent_allocation, price: 1_000, number: 1)
-      create_exchange(received_allocation, price: 400, number: 1)
 
-      expect(payload[:transfers]).to include(total_sent: 10.0, total_received: 4.0)
+      expect(payload[:transfers]).to include(total_sent: 14.0, total_received: 16.0)
       expect(payload.dig(:transfers, :items)).to contain_exactly(
-        include(entity_id: ana.id, direction: "sent", amount: 10.0),
-        include(entity_id: ana.id, direction: "received", amount: 4.0)
+        include(entity_id: ana.id, direction: "sent", amount: 14.0),
+        include(entity_id: ana.id, direction: "received", amount: 16.0)
       )
     end
   end
