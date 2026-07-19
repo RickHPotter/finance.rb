@@ -356,7 +356,7 @@ module Logic
     def sync_counterpart_transaction_state!
       transaction = counterpart_installment.cash_transaction
 
-      transaction.update_columns(paid: transaction.cash_installments.where(paid: false).none?)
+      Audit::BulkMutation.update_columns!(transaction, paid: transaction.cash_installments.where(paid: false).none?)
       return unless transaction.exchange_return?
 
       counterpart_installment.send(:sync_mirrored_exchange_settlement!)

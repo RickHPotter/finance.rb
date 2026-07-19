@@ -117,7 +117,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     @user_card = @card_transaction.user_card
     earliest_installment = @card_transaction.card_installments.order(:date).first
-    @card_transaction.update_columns(date: earliest_installment.date) if earliest_installment.present?
+    Audit::BulkMutation.update_columns!(@card_transaction, date: earliest_installment.date) if earliest_installment.present?
     destroyed = @card_transaction.destroy
 
     if destroyed

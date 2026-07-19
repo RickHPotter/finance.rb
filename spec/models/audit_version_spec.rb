@@ -47,6 +47,7 @@ RSpec.describe AuditVersion, type: :model do
   describe "[ PaperTrail contract ]" do
     it "uses the custom version class without retention pruning" do
       expect(PaperTrail.config.has_paper_trail_defaults.dig(:versions, :class_name)).to eq("AuditVersion")
+      expect(PaperTrail.config.has_paper_trail_defaults.dig(:versions, :autosave)).to be(false)
       expect(PaperTrail.config.version_error_behavior).to eq(:exception)
       expect(PaperTrail.config.version_limit).to be_nil
     end
@@ -87,12 +88,15 @@ RSpec.describe AuditVersion, type: :model do
       expect(card_version.reify).to be_a(CardInstallment)
     end
 
-    it "does not enable installment recording before graph auditing" do
-      expect(Installment.paper_trail_options.fetch(:on)).to be_empty
+    it "enables installment graph recording with derived fields excluded" do
+      expect(Installment.paper_trail_options.fetch(:on)).to match_array(%i[create update destroy])
+      expect(Installment.paper_trail_options.fetch(:skip)).to include("balance", "order_id", "cash_installments_count", "card_installments_count")
     end
 
-    it "does not create synthetic versions for ordinary records" do
-      expect { create(:cash_transaction) }.not_to change(described_class, :count)
+    it "does not create synthetic versions for records that predate deployment" do
+      transaction = PaperTrail.request(enabled: false) { create(:cash_transaction) }
+
+      expect(described_class.where(item: transaction)).to be_empty
     end
   end
 

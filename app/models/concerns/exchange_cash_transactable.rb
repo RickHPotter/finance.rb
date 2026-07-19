@@ -231,12 +231,15 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     previous_cash_transaction = cash_transaction
 
     if persisted?
-      update_columns(cash_transaction_id: nil)
+      Audit::BulkMutation.update_columns!(self, cash_transaction_id: nil)
     else
       self.cash_transaction = nil
     end
 
-    Exchange.where(cash_transaction_id: previous_cash_transaction.id).update_all(cash_transaction_id: nil) if previous_cash_transaction&.persisted?
+    if previous_cash_transaction&.persisted?
+      Audit::BulkMutation.update_all!(Exchange.where(cash_transaction_id: previous_cash_transaction.id),
+                                      cash_transaction_id: nil)
+    end
     delete_projection_cash_transaction(previous_cash_transaction)
   end
 
@@ -264,14 +267,13 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
                                           [ projection_date.month, projection_date.year ]
                                         end
 
-    cash_transaction.update_columns(
-      description: projection_description,
-      starting_price: projection_price,
-      price: projection_price,
-      date: projection_date,
-      month: projection_month,
-      year: projection_year
-    )
+    Audit::BulkMutation.update_columns!(cash_transaction,
+                                        description: projection_description,
+                                        starting_price: projection_price,
+                                        price: projection_price,
+                                        date: projection_date,
+                                        month: projection_month,
+                                        year: projection_year)
 
     rebuild_projection_installments!(
       cash_transaction:,
@@ -279,23 +281,22 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       allow_initial_paid_projection_rebuild:,
       projection_date:
     )
-    cash_transaction.update_columns(
-      cash_installments_count: cash_transaction.cash_installments.count,
-      paid: cash_transaction.cash_installments.where(paid: false).none?
-    )
+    Audit::BulkMutation.update_columns!(cash_transaction,
+                                        cash_installments_count: cash_transaction.cash_installments.count,
+                                        paid: cash_transaction.cash_installments.where(paid: false).none?)
     sync_projection_reference_transactable!(cash_transaction:)
   end
 
   def rebuild_projection_installments!(cash_transaction:, exchanges:, allow_initial_paid_projection_rebuild: false, projection_date: nil)
     if allow_initial_paid_projection_rebuild
-      cash_transaction.cash_installments.delete_all
+      Audit::BulkMutation.delete_all!(cash_transaction.cash_installments)
       return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
 
       return rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
     end
 
     if projection_exchange_paid_state_available?(exchanges)
-      cash_transaction.cash_installments.delete_all
+      Audit::BulkMutation.delete_all!(cash_transaction.cash_installments)
       return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
 
       return rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:, paid_by_exchange: true)
@@ -308,7 +309,7 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
       raise "Cannot rebuild paid projection installments"
     end
 
-    cash_transaction.cash_installments.delete_all
+    Audit::BulkMutation.delete_all!(cash_transaction.cash_installments)
     return rebuild_card_bound_projection_installment!(cash_transaction:, exchanges:, projection_date:) if card_bound?
 
     rebuild_unlocked_projection_installments!(cash_transaction:, exchanges:)
@@ -337,8 +338,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     paid_installments = cash_transaction.cash_installments.order(:number).select(&:paid?)
     installments_count = sorted_exchanges.count
 
-    cash_transaction.cash_installments.where(paid: false).delete_all
-    cash_transaction.cash_installments.where(id: paid_installments.map(&:id)).update_all(cash_installments_count: installments_count)
+    Audit::BulkMutation.delete_all!(cash_transaction.cash_installments.where(paid: false))
+    Audit::BulkMutation.update_all!(cash_transaction.cash_installments.where(id: paid_installments.map(&:id)), cash_installments_count: installments_count)
 
     sorted_exchanges.drop(paid_installments.count).each_with_index do |exchange, index|
       cash_transaction.cash_installments.create!(
@@ -358,8 +359,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     remaining_price = cash_transaction.price - paid_installments.sum(&:price)
     installments_count = paid_installments.count + (remaining_price.zero? ? 0 : 1)
 
-    cash_transaction.cash_installments.where(paid: false).delete_all
-    cash_transaction.cash_installments.where(id: paid_installments.map(&:id)).update_all(cash_installments_count: installments_count)
+    Audit::BulkMutation.delete_all!(cash_transaction.cash_installments.where(paid: false))
+    Audit::BulkMutation.update_all!(cash_transaction.cash_installments.where(id: paid_installments.map(&:id)), cash_installments_count: installments_count)
 
     return if remaining_price.zero?
 
@@ -459,8 +460,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def delete_projection_cash_transaction(cash_transaction)
     return unless cash_transaction&.persisted?
 
-    cash_transaction.cash_installments.delete_all
-    cash_transaction.delete
+    Audit::BulkMutation.delete_all!(cash_transaction.cash_installments)
+    Audit::BulkMutation.delete_all!(CashTransaction.where(id: cash_transaction.id))
   end
 
   def projection_sync_relevant_change?
@@ -561,10 +562,9 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
               current_reference.instance_of?(desired_reference.class) &&
               current_reference.id == desired_reference.id
 
-    cash_transaction.update_columns(
-      reference_transactable_type: desired_reference.class.name,
-      reference_transactable_id: desired_reference.id
-    )
+    Audit::BulkMutation.update_columns!(cash_transaction,
+                                        reference_transactable_type: desired_reference.class.name,
+                                        reference_transactable_id: desired_reference.id)
   end
 
   def projection_reference_transactable

@@ -5,6 +5,7 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
+  include FinancialAuditable
   include HasCardInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards
@@ -15,6 +16,8 @@ class CardTransaction < ApplicationRecord
   include Budgetable
   include FriendNotifiable
   include PiggyBankCategorizable
+
+  audits_financial_changes skip: %i[card_installments_count]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation, :skip_subscription_installment_sync

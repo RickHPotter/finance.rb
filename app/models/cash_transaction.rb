@@ -5,6 +5,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
+  include FinancialAuditable
   include HasCashInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards
@@ -14,6 +15,8 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include Budgetable
   include FriendNotifiable
   include PiggyBankCategorizable
+
+  audits_financial_changes skip: %i[cash_installments_count]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :source_message_id, :historical_correction_confirmation,
@@ -323,7 +326,10 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
         exchange.non_monetary? || exchange.mirrored_paid?
       end
 
-      entity_transaction.update_columns(status: all_non_monetary_and_paid ? EntityTransaction.statuses[:finished] : EntityTransaction.statuses[:pending])
+      Audit::BulkMutation.update_columns!(
+        entity_transaction,
+        status: all_non_monetary_and_paid ? EntityTransaction.statuses[:finished] : EntityTransaction.statuses[:pending]
+      )
     end
   end
 
@@ -358,34 +364,37 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     total_price = desired_rows.sum { |row| row[:price] }
     now = Time.current
 
-    desired_rows.each do |row|
+    desired_rows.each do |row| # rubocop:disable Metrics/BlockLength
       exchange = existing_by_number.delete(row[:number])
 
       if exchange.present?
-        exchange.update_columns(row.merge(exchanges_count:, updated_at: now))
+        Audit::BulkMutation.update_columns!(exchange, row.merge(exchanges_count:, updated_at: now))
       else
-        Exchange.insert({
-                          entity_transaction_id: payer_entity_transaction.id,
-                          cash_transaction_id: id,
-                          bound_type:,
-                          exchange_type: Exchange.exchange_types.fetch(:monetary),
-                          number: row[:number],
-                          date: row[:date],
-                          month: row[:month],
-                          year: row[:year],
-                          price: row[:price],
-                          starting_price: row[:starting_price],
-                          exchanges_count:,
-                          created_at: now,
-                          updated_at: now
-                        })
+        Audit::BulkMutation.insert!(
+          Exchange,
+          {
+            entity_transaction_id: payer_entity_transaction.id,
+            cash_transaction_id: id,
+            bound_type:,
+            exchange_type: Exchange.exchange_types.fetch(:monetary),
+            number: row[:number],
+            date: row[:date],
+            month: row[:month],
+            year: row[:year],
+            price: row[:price],
+            starting_price: row[:starting_price],
+            exchanges_count:,
+            created_at: now,
+            updated_at: now
+          }
+        )
       end
     end
 
-    Exchange.where(id: existing_by_number.values.map(&:id)).delete_all if existing_by_number.present?
+    Audit::BulkMutation.delete_all!(Exchange.where(id: existing_by_number.values.map(&:id))) if existing_by_number.present?
 
-    payer_entity_transaction.update_columns(price: total_price, price_to_be_returned: total_price, exchanges_count:)
-    payer_entity_transaction.exchanges.update_all(exchanges_count:) if exchanges_count.positive?
+    Audit::BulkMutation.update_columns!(payer_entity_transaction, price: total_price, price_to_be_returned: total_price, exchanges_count:)
+    Audit::BulkMutation.update_all!(payer_entity_transaction.exchanges, exchanges_count:) if exchanges_count.positive?
   end
 
   def effective_friend_notification_intent
@@ -649,10 +658,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   def sync_subscription_installment
     return if subscription_id.blank? || cash_installments_count != 1
 
-    cash_installments.first&.update_columns(
-      price:,
-      starting_price: price
-    )
+    Audit::BulkMutation.update_columns!(cash_installments.first, price:, starting_price: price) if cash_installments.first
   end
 
   # Sets `paid` based on current `date` in case it was not previously set, on create.
