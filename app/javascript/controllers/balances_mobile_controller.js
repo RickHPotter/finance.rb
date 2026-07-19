@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 import {
-  BarController,
-  BarElement,
   CategoryScale,
   Chart,
   Filler,
@@ -13,7 +11,7 @@ import {
   Tooltip
 } from "chart.js"
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, BarController, BarElement, Tooltip, Legend, Filler)
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler)
 
 const monthlyRangeConnectorPlugin = {
   id: "monthlyRangeConnector",
@@ -42,13 +40,10 @@ const monthlyRangeConnectorPlugin = {
 }
 
 export default class extends Controller {
-  static values = { summaryUrl: String, trendUrl: String, breakdownUrl: String }
+  static values = { summaryUrl: String, trendUrl: String }
   static targets = [
     "trendCanvas",
     "extremesCanvas",
-    "breakdownCanvas",
-    "monthInput",
-    "legend",
     "presetButton",
     "rangeButton",
     "currentValue",
@@ -62,17 +57,14 @@ export default class extends Controller {
     this.summary = null
     this.trendChart = null
     this.extremesChart = null
-    this.breakdownChart = null
 
     await this.loadSummary()
     await this.loadTrend()
-    await this.loadBreakdown()
   }
 
   disconnect() {
     this.trendChart?.destroy()
     this.extremesChart?.destroy()
-    this.breakdownChart?.destroy()
   }
 
   async changePreset(event) {
@@ -99,10 +91,6 @@ export default class extends Controller {
     this.renderTrend()
   }
 
-  async changeMonth() {
-    await this.loadBreakdown()
-  }
-
   async loadSummary() {
     const response = await fetch(this.summaryUrlValue)
     this.summary = await response.json()
@@ -112,17 +100,6 @@ export default class extends Controller {
     const response = await fetch(this.trendUrlValue)
     this.trendData = await response.json()
     this.renderTrend()
-  }
-
-  async loadBreakdown() {
-    const month = this.monthInputTarget.value
-    const url = new URL(this.breakdownUrlValue, window.location.origin)
-    url.searchParams.set("month_year_one", `${month}-01`)
-    url.searchParams.set("month_year_two", `${month}-01`)
-
-    const response = await fetch(url)
-    this.breakdownData = await response.json()
-    this.renderBreakdown()
   }
 
   renderTrend() {
@@ -292,75 +269,6 @@ export default class extends Controller {
               callback: (value) => this.currencyShort(value)
             },
             grid: { color: "rgba(120, 113, 108, 0.12)" }
-          }
-        }
-      }
-    })
-  }
-
-  renderBreakdown() {
-    const sorted = [...(this.breakdownData || [])]
-      .sort((a, b) => Math.abs(b.price) - Math.abs(a.price))
-      .slice(0, 6)
-
-    const labels = sorted.map((item) => item.category_name)
-    const values = sorted.map((item) => Math.abs(item.price))
-    const colors = sorted.map((item) => item.color || "#a8a29e")
-
-    this.legendTarget.innerHTML = ""
-    sorted.forEach((item) => {
-      const row = document.createElement("div")
-      row.className = "flex items-center justify-between rounded-2xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-      row.innerHTML = `
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="inline-flex size-3 rounded-full shrink-0" style="background:${item.color || "#a8a29e"}"></span>
-          <span class="truncate text-stone-700 dark:text-slate-300">${item.category_name}</span>
-        </div>
-        <span class="shrink-0 font-semibold text-stone-900 dark:text-slate-100">${this.currency(item.price)}</span>
-      `
-      this.legendTarget.appendChild(row)
-    })
-
-    this.breakdownChart?.destroy()
-    this.breakdownChart = new Chart(this.breakdownCanvasTarget, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            data: values,
-            backgroundColor: colors,
-            borderRadius: 10,
-            borderSkipped: false
-          }
-        ]
-      },
-      options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            displayColors: false,
-            callbacks: {
-              label: (context) => this.currency(context.raw)
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: "#57534e",
-              callback: (value) => this.currencyShort(value)
-            },
-            grid: { color: "rgba(120, 113, 108, 0.12)" }
-          },
-          y: {
-            ticks: {
-              color: "#57534e"
-            },
-            grid: { display: false }
           }
         }
       }

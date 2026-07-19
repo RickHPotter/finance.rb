@@ -1,18 +1,16 @@
 en:
   balances:
     title: Balances
-    subtitle: Balance History Chart
     all: All
     from_now: From Now On
     until_now: Until Now
     around_now: Around Now
     mobile:
+      history: Balance History
       trend: Trend
       trend_subtitle: Balance across months
       extremes: Extremes
       extremes_subtitle: Highest and lowest values for each month in the selected range
-      breakdown: Breakdown
-      breakdown_subtitle: Selected month categories
       current: Current
       delta: Delta
       high: High
@@ -20,39 +18,51 @@ en:
       six_months: 6 months
       three_months: 3 months
       one_year: 1 year
-    custom: Custom
+    monthly_analysis:
+      title: Monthly Analysis
+      subtitle: Income, outcome, transfers, and Piggy Bank activity for one selected month.
+      loading: Loading monthly analysis...
+      empty: No financial activity was found for this month.
+      error: Monthly analysis could not be loaded.
+      retry: Retry
+      previous_month: Previous month
+      next_month: Next month
+      income: Income
+      outcome: Outcome
+      net: Net
+      income_by_category: Income by category
+      outcome_by_category: Outcome by category
+      income_by_entity: Income by entity
+      outcome_by_entity: Outcome by entity
+      transfers: Transfers
+      sent: Sent
+      received: Received
+      failed: Failed returns
+      piggy_banks: Piggy Banks
+      contributed: Contributed
+      projected_contribution: Projected contribution
+      withdrawn: Withdrawn
+      projected_withdrawal: Projected withdrawal
+      recognized_profit_loss: Recognized profit/loss
+      no_items: No activity
+      unassigned: Unassigned
+      invalid_month: Month must use the YYYY-MM format.
     types:
       default: Default
-      high_and_low: Low and High
-      month: Monthly
-      trimester: Trimester
-      semester: Semester
-      year: Year
-    types_titles:
-      default: Balance
-      high: Highest Balance
-      low: Lowest Balance
-      negative_amounts_pie: Outcome Amounts by Category
-      positive_amounts_pie: Income Amounts by Category
-      negative_transactions_pie: Outcome Transactions by Category
-      positive_transactions_pie: Income Transactions by Category
-      period: Throughout the Period
 
 pt-BR:
   balances:
     title: Saldo
-    subtitle: Grafico do Histórico de Saldo
     all: Todos
     from_now: A partir de Agora
     until_now: Até Agora
     around_now: Aproximadamente Agora
     mobile:
+      history: Histórico de Saldo
       trend: Tendência
       trend_subtitle: Saldo ao longo dos meses
       extremes: Extremos
       extremes_subtitle: Maior e menor valor de cada mês no filtro selecionado
-      breakdown: Distribuição
-      breakdown_subtitle: Categorias do mês selecionado
       current: Atual
       delta: Variação
       high: Maior
@@ -60,20 +70,34 @@ pt-BR:
       six_months: 6 meses
       three_months: 3 meses
       one_year: 1 ano
-    custom: Personalizado
+    monthly_analysis:
+      title: Análise Mensal
+      subtitle: Receitas, despesas, transferências e atividade de Cofrinhos em um mês selecionado.
+      loading: Carregando análise mensal...
+      empty: Nenhuma atividade financeira foi encontrada neste mês.
+      error: Não foi possível carregar a análise mensal.
+      retry: Tentar novamente
+      previous_month: Mês anterior
+      next_month: Próximo mês
+      income: Receitas
+      outcome: Despesas
+      net: Saldo
+      income_by_category: Receitas por categoria
+      outcome_by_category: Despesas por categoria
+      income_by_entity: Receitas por entidade
+      outcome_by_entity: Despesas por entidade
+      transfers: Transferências
+      sent: Enviado
+      received: Recebido
+      failed: Retornos falhos
+      piggy_banks: Cofrinhos
+      contributed: Contribuído
+      projected_contribution: Contribuição projetada
+      withdrawn: Retirado
+      projected_withdrawal: Retirada projetada
+      recognized_profit_loss: Lucro/prejuízo reconhecido
+      no_items: Nenhuma atividade
+      unassigned: Não atribuído
+      invalid_month: O mês deve usar o formato AAAA-MM.
     types:
       default: Padrão
-      high_and_low: Baixo e Alto
-      month: Mensal
-      trimester: Trimestral
-      semester: Semestral
-      year: Anual
-    types_titles:
-      default: Saldo
-      high: Maior Saldo
-      low: Menor Saldo
-      negative_amounts_pie: Valores de Despesas por Categoria
-      positive_amounts_pie: Valores de Receitas por Categoria
-      negative_transactions_pie: Transações de Despesas por Categoria
-      positive_transactions_pie: Transações de Receitas por Categoria
-      period: Durante o Período

@@ -13,6 +13,9 @@ application.register("autosave", AutosaveController)
 import BalancesMobileController from "./balances_mobile_controller"
 application.register("balances-mobile", BalancesMobileController)
 
+import BalancesMonthlyAnalysisController from "./balances_monthly_analysis_controller"
+application.register("balances-monthly-analysis", BalancesMonthlyAnalysisController)
+
 import BlinkingPlaceholderController from "./blinking_placeholder_controller"
 application.register("blinking-placeholder", BlinkingPlaceholderController)
 
@@ -91,9 +94,6 @@ application.register("mobile-scroll-nav", MobileScrollNavController)
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 
-import MonthlyBalanceController from "./monthly_balance_controller"
-application.register("monthly-balance", MonthlyBalanceController)
-
 import NamingTabsController from "./naming_tabs_controller"
 application.register("naming-tabs", NamingTabsController)
 
@@ -151,11 +151,11 @@ application.register("ruby-ui--sheet-content", RubyUi__SheetContentController)
 import RubyUi__SheetController from "./ruby_ui/sheet_controller"
 application.register("ruby-ui--sheet", RubyUi__SheetController)
 
-import RubyUi__TimePickerController from "./ruby_ui/time_picker_controller"
-application.register("ruby-ui--time-picker", RubyUi__TimePickerController)
-
 import RubyUi__TabsController from "./ruby_ui/tabs_controller"
 application.register("ruby-ui--tabs", RubyUi__TabsController)
+
+import RubyUi__TimePickerController from "./ruby_ui/time_picker_controller"
+application.register("ruby-ui--time-picker", RubyUi__TimePickerController)
 
 import ShowSectionCardController from "./show_section_card_controller"
 application.register("show-section-card", ShowSectionCardController)

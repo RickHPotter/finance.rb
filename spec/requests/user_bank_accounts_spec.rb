@@ -150,7 +150,7 @@ RSpec.describe "UserBankAccounts", type: :request do
       expect(mixed_assets_group.fetch("memberIds")).to eq([ assets.id, lend_request.id ].sort.map(&:to_s))
       expect(only_assets_group.fetch("secondaryItems").sum { |entity| entity.fetch("total") }).to eq(1_000)
       expect(mixed_assets_group.fetch("secondaryItems").sum { |entity| entity.fetch("total") }).to eq(9_000)
-      expect(gigi_moi_entity.fetch("memberIds").sort).to eq([ gigi.id, moi.id ].sort.map(&:to_s))
+      expect(gigi_moi_entity.fetch("memberIds").map(&:to_i).sort).to eq([ gigi.id, moi.id ].sort)
       expect(gigi_moi_entity.fetch("points").pluck("x")).to eq(%w[2026-02-01 2026-04-01 2026-05-01 2026-06-01])
     end
 
@@ -210,7 +210,7 @@ RSpec.describe "UserBankAccounts", type: :request do
       expect(mixed_gigi_group.fetch("memberIds")).to eq([ gigi.id, moi.id ].sort.map(&:to_s))
       expect(only_gigi_group.fetch("secondaryItems").sum { |category| category.fetch("total") }).to eq(1_000)
       expect(mixed_gigi_group.fetch("secondaryItems").sum { |category| category.fetch("total") }).to eq(9_000)
-      expect(assets_lend_request_category.fetch("memberIds").sort).to eq([ assets.id, lend_request.id ].sort.map(&:to_s))
+      expect(assets_lend_request_category.fetch("memberIds").map(&:to_i).sort).to eq([ assets.id, lend_request.id ].sort)
       expect(assets_lend_request_category.fetch("points").pluck("x")).to eq(%w[2026-02-01 2026-04-01 2026-05-01 2026-06-01])
     end
 

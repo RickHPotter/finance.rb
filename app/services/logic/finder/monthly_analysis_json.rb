@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+class Logic::Finder::MonthlyAnalysisJson
+  class InvalidMonthError < ArgumentError; end
+
+  def initialize(user:, month:, context: user.main_context)
+    @user = user
+    @context = context
+    @month = parse_month(month)
+  end
+
+  def call
+    {
+      month: @month.strftime("%Y-%m"),
+      ordinary: Logic::Finder::MonthlyAnalysis::Ordinary.new(context: @context, month: @month).call,
+      transfers: Logic::Finder::MonthlyAnalysis::Transfers.new(context: @context, month: @month).call,
+      piggy_banks: Logic::Finder::MonthlyAnalysis::PiggyBanks.new(context: @context, month: @month).call
+    }
+  end
+
+  private
+
+  def parse_month(value)
+    match = /\A(?<year>\d{4})-(?<month>0[1-9]|1[0-2])\z/.match(value.to_s)
+    raise InvalidMonthError, I18n.t("balances.monthly_analysis.invalid_month") if match.blank?
+
+    Date.new(match[:year].to_i, match[:month].to_i, 1)
+  end
+end

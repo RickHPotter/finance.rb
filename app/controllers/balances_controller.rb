@@ -4,17 +4,10 @@
 class BalancesController < ApplicationController
   include TabsConcern
 
-  before_action :set_balance_tabs, only: %i[index legacy]
+  before_action :set_balance_tabs, only: %i[index monthly_analysis]
 
   def index
     render Views::Balances::Mobile.new
-  end
-
-  def legacy
-    respond_to do |format|
-      format.html { render Views::Balances::Index.new(mobile: @mobile) }
-      format.turbo_stream
-    end
   end
 
   def cash_balance_json
@@ -27,12 +20,15 @@ class BalancesController < ApplicationController
     render json: result
   end
 
-  def transaction_balance_json
-    month_year_one = params[:month_year_one]&.to_date
-    month_year_two = params[:month_year_two]&.to_date
+  def monthly_analysis
+    render Views::Balances::MonthlyAnalysis.new
+  end
 
-    result = Logic::Finder::TransactionBalanceJson.new(user: current_user, context: current_context, month_year_one:, month_year_two:).call
+  def monthly_analysis_json
+    result = Logic::Finder::MonthlyAnalysisJson.new(user: current_user, context: current_context, month: params[:month]).call
     render json: result
+  rescue Logic::Finder::MonthlyAnalysisJson::InvalidMonthError => e
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
   private
