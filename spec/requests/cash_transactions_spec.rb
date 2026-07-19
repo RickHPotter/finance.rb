@@ -70,6 +70,41 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("piggy_bank_return_mode_NEW_RECORD")
       expect(response.body).to include("data-piggy-bank-return-selector")
       expect(response.body).not_to include("hw-combobox")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      installment_dates = document.css("input.installment_date")
+      active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
+      datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
+      expect(active_installment_date["type"]).to eq("hidden")
+      expect(active_installment_date["name"]).to eq("cash_transaction[cash_installments_attributes][0][date]")
+      expect(active_installment_date["data-reactive-form-target"]).to eq("dateInput")
+      expect(active_installment_date["data-action"]).to eq("input->reactive-form#setPaidIfPastCurrentDay")
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
+      expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
+      expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
+    end
+
+    it "renders paid installment datetimes as read-only while keeping their canonical values enabled" do
+      locked_transaction = create_cash_transaction_with_paid_history
+
+      get edit_cash_transaction_path(locked_transaction)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      installment_dates = document.css("input.installment_date").reject { |input| input["name"].include?("NEW_RECORD") }
+      paid_date = installment_dates.find { |input| input["value"].start_with?("2026-03-10") }
+      unpaid_date = installment_dates.find { |input| input["value"].start_with?("2026-04-10") }
+      paid_wrapper = paid_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      unpaid_wrapper = unpaid_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(paid_date["disabled"]).to be_nil
+      expect(paid_wrapper["data-datetime-input-readonly-value"]).to eq("")
+      expect(paid_wrapper.at_css("input[type='date']")["disabled"]).to eq("disabled")
+      expect(paid_wrapper.at_css("input[id$='_time_input']")["disabled"]).to eq("disabled")
+      expect(unpaid_wrapper["data-datetime-input-readonly-value"]).to be_nil
+      expect(unpaid_wrapper.at_css("input[type='date']")["disabled"]).to be_nil
+      expect(unpaid_wrapper.at_css("input[id$='_time_input']")["disabled"]).to be_nil
     end
 
     it "renders the cash-specific form skeleton on edit" do

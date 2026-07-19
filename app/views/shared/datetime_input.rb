@@ -4,7 +4,7 @@ class Views::Shared::DatetimeInput < Views::Base
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :form, :field, :value, :id, :hidden_data, :date_data, :time_data, :date_actions, :time_actions, :autofocus, :time_autofocus, :disabled,
+  attr_reader :form, :field, :value, :id, :hidden_class, :hidden_data, :date_data, :time_data, :date_actions, :time_actions, :autofocus, :time_autofocus, :disabled,
               :readonly, :compact, :min_datetime, :min_datetime_message, :max_datetime, :max_datetime_message, :show_time, :calendar
 
   def initialize(form:, field:, value:, id:, **options)
@@ -12,6 +12,7 @@ class Views::Shared::DatetimeInput < Views::Base
     @field = field
     @value = value
     @id = id
+    @hidden_class = options.fetch(:hidden_class, "transaction-date")
     @hidden_data = options.fetch(:hidden_data, {})
     @date_data = options.fetch(:date_data, {})
     @time_data = options.fetch(:time_data, {})
@@ -48,7 +49,7 @@ class Views::Shared::DatetimeInput < Views::Base
         field,
         id:,
         value: formatted_datetime,
-        class: "transaction-date",
+        class: hidden_class,
         disabled:,
         data: { datetime_input_target: "hiddenInput" }.merge(hidden_data)
       )
@@ -56,7 +57,7 @@ class Views::Shared::DatetimeInput < Views::Base
       div(class: datetime_layout_class) do
         div(class: date_container_class) do
           div(class: calendar ? "hidden" : "relative") do
-            div(class: "pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white") do
+            div(class: datetime_icon_class) do
               cached_icon :calendar
             end
 
@@ -69,7 +70,7 @@ class Views::Shared::DatetimeInput < Views::Base
               disabled: visible_input_disabled?,
               autofocus: autofocus,
               aria: { label: I18n.t("datetime_input.date"), readonly: },
-              class: "#{input_class} datetime-input-date font-graduate dark:font-mono",
+              class: "#{visible_input_class} datetime-input-date font-graduate dark:font-mono",
               data: {
                 datetime_input_target: "dateInput",
                 controller: date_input_controllers,
@@ -103,7 +104,7 @@ class Views::Shared::DatetimeInput < Views::Base
         if show_time
           div(class: time_container_class) do
             div(class: calendar ? "hidden" : "relative") do
-              div(class: "pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white") do
+              div(class: datetime_icon_class) do
                 cached_icon :clock
               end
 
@@ -118,7 +119,7 @@ class Views::Shared::DatetimeInput < Views::Base
                 placeholder: "20:20",
                 maxlength: 5,
                 aria: { label: I18n.t("datetime_input.time"), readonly: },
-                class: "#{input_class} text-center font-graduate dark:font-mono",
+                class: "#{visible_input_class} text-center font-graduate dark:font-mono",
                 data: {
                   controller: time_input_controllers,
                   autofocus_select_value: visible_time_autofocus?,
@@ -148,6 +149,16 @@ class Views::Shared::DatetimeInput < Views::Base
     return "w-full [&_input]:h-9 [&_input]:py-1" if compact
 
     "w-full"
+  end
+
+  def datetime_icon_class
+    "#{'hidden ' if compact}pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white"
+  end
+
+  def visible_input_class
+    return "#{input_class_without_icon} px-2" if compact
+
+    input_class
   end
 
   def formatted_datetime

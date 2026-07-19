@@ -14,7 +14,7 @@ module Views
       end
 
       def view_template
-        readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
+        price_readonly = transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance?)
 
         div(
           class: "nested-form-wrapper space-y-1 rounded-xl border bg-white p-1 shadow-sm transition hover:shadow-md dark:rounded-lg dark:bg-slate-800
@@ -62,13 +62,16 @@ module Views
           end
 
           div(class: "flex-1 grid gap-1") do
-            form.text_field \
-              :date,
-              id: :installment_date,
-              type: "datetime-local",
-              value: installment.date&.strftime("%Y-%m-%dT%H:%M"),
-              class: installment_input_class("installment_date"),
-              data: { reactive_form_target: :dateInput, action: "input->reactive-form#setPaidIfPastCurrentDay" }
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: installment.date,
+              id: "installment_date_#{form.index}",
+              hidden_class: "installment_date",
+              hidden_data: installment_date_data,
+              compact: true,
+              readonly: locked?
+            )
 
             positive = installment.price.to_i.positive?
             sign = positive ? "+" : "-"
@@ -78,7 +81,7 @@ module Views
                 :price,
                 inputmode: :numeric,
                 class: installment_input_class("sign-based price-input"),
-                readonly:,
+                readonly: price_readonly,
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
@@ -118,6 +121,12 @@ module Views
 
       def locked?
         installment&.paid? || false
+      end
+
+      def installment_date_data
+        data = { reactive_form_target: :dateInput }
+        data[:action] = "input->reactive-form#setPaidIfPastCurrentDay" if installment.installment_type == "CashInstallment"
+        data
       end
 
       def installment_input_class(prefix)

@@ -19,6 +19,7 @@ export default class extends Controller {
         inst.classList.remove("border-gray-300")
         inst.querySelector("[data-installment-lock-target='lockBtn']").classList.add("hidden")
         inst.querySelector("[data-installment-lock-target='unlockBtn']").classList.remove("hidden")
+        this.setDatetimeReadonly(inst, true)
       }
     })
 
@@ -37,6 +38,7 @@ export default class extends Controller {
       inst.classList.remove("border-red-300")
       inst.querySelector("[data-installment-lock-target='lockBtn']").classList.remove("hidden")
       inst.querySelector("[data-installment-lock-target='unlockBtn']").classList.add("hidden")
+      this.setDatetimeReadonly(inst, false)
     })
 
     this.toggleAllowedLocks()
@@ -60,5 +62,10 @@ export default class extends Controller {
         lockBtn.disabled = installment.dataset.locked === "true"
       }
     })
+  }
+
+  setDatetimeReadonly(installment, readonly) {
+    const control = installment.querySelector("[data-controller~='datetime-input']")
+    control?.dispatchEvent(new CustomEvent("datetime-input:readonly", { detail: { readonly }, bubbles: true }))
   }
 }

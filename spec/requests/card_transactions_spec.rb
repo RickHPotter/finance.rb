@@ -80,6 +80,20 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('id="card_transaction_date"')
       expect(response.body).to include('id="card_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      installment_dates = document.css("input.installment_date")
+      active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
+      datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
+      expect(active_installment_date["type"]).to eq("hidden")
+      expect(active_installment_date["name"]).to eq("card_transaction[card_installments_attributes][0][date]")
+      expect(active_installment_date["data-reactive-form-target"]).to eq("dateInput")
+      expect(active_installment_date["data-action"]).to be_nil
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
+      expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
+      expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
     end
 
     it "renders the card-specific form skeleton on edit" do

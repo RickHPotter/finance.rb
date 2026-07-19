@@ -139,8 +139,11 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
                     # next
                     Skeleton(class: "h-5 w-4 rounded-sm")
                   end
-                  # date
-                  Skeleton(class: "h-8 w-full rounded-md")
+                  # date and time
+                  div(class: "grid grid-cols-[minmax(0,1fr)_5.5rem] gap-1") do
+                    Skeleton(class: "h-9 w-full rounded-md")
+                    Skeleton(class: "h-9 w-full rounded-md")
+                  end
                   div(class: "flex gap-1") do
                     # price
                     Skeleton(class: "h-8 w-7/8 rounded-md")
