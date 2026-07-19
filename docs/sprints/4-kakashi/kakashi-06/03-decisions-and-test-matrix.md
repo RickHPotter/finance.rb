@@ -84,9 +84,9 @@ description. IDs remain authoritative when descriptions are equal or later chang
 
 ### D14. How lazy is the new tab?
 
-Decision: Overview is rendered immediately. Monthly Analysis uses a lazy Turbo frame;
-neither its analysis markup nor its JSON is requested until first activation. Once
-loaded, switching tabs preserves the frame and chart state.
+Decision: Balance History is rendered immediately. Monthly Analysis uses a lazy Turbo
+frame; neither its analysis markup nor its JSON is requested until first activation.
+Once loaded, switching tabs preserves the frame and chart state.
 
 ### D15. Are category and entity views toggled?
 
@@ -213,7 +213,7 @@ Reconciliation assertions:
 
 | Scenario | Expected result |
 | --- | --- |
-| `GET /balances` | Overview selected; existing content and URLs preserved |
+| `GET /balances` | Balance History selected with summary, trend, and extremes |
 | initial `/balances` response | lazy analysis frame has no active `src` |
 | first Monthly Analysis activation | frame HTML requested once |
 | reopen already loaded analysis tab | no duplicate frame request |

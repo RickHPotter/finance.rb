@@ -6,8 +6,9 @@ Add a lazy-loaded `Monthly Analysis` tab to `/balances` so one selected month ca
 be understood through ordinary income, ordinary outcome, category allocation,
 entity allocation, person-to-person transfers, and piggy-bank savings activity.
 
-The existing modern balances dashboard remains the default `Overview` tab. Its
-summary, trend, extremes, and selected-month breakdown behavior must remain stable.
+The existing modern balances dashboard remains the default `Balance History` tab. Its
+summary, trend, and extremes behavior must remain stable. Its older selected-month
+category breakdown is removed because Monthly Analysis supersedes it.
 `/balances/legacy` remains untouched and continues to be the only ApexCharts balances
 surface.
 
@@ -34,7 +35,6 @@ third financial dimension rather than misclassifying principal as spending or in
 
 - loads current, low, and high balance summaries
 - renders balance trend and monthly extremes with Chart.js
-- renders an existing selected-month category breakdown
 - scopes its finder calls through `current_context`
 
 KAKASHI-06 adds a sibling analysis surface. It does not extend the legacy-shaped
@@ -293,13 +293,13 @@ copy, and currency presentation follow the current user's locale.
 
 `/balances` becomes a two-tab surface:
 
-1. `Overview`
+1. `Balance History`
    - selected and rendered by default
-   - preserves existing requests and interactions
+   - preserves the existing summary, trend, and extremes interactions
 2. `Monthly Analysis`
    - contains a lazy Turbo frame
    - does not render its analysis markup or request JSON until first activation
-   - keeps the loaded frame available when the user returns to Overview
+   - keeps the loaded frame available when the user returns to Balance History
 
 The analysis surface contains:
 

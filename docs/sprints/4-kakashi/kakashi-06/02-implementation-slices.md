@@ -7,8 +7,9 @@ reconcilable selected-month payload with focused specs. Do not apply either hist
 stash wholesale; both attempts contain useful ideas, but their code predates current
 repository changes and each embeds rejected or incomplete behavior.
 
-Keep the existing Overview functional after every slice. The new route may exist before
-the tab is linked, but `/balances` and `/balances/legacy` must remain stable throughout.
+Keep the existing Balance History functional after every slice. The new route may
+exist before the tab is linked, but `/balances` and `/balances/legacy` must remain
+stable throughout.
 
 ## Slice 1: Ordinary Monthly Finder
 
@@ -121,8 +122,9 @@ Acceptance criteria:
 2. Add controller actions that always pass `current_user` and `current_context` to the
    finder.
 3. Return a localized `422 Unprocessable Entity` JSON error for invalid month input.
-4. Refactor `Views::Balances::Mobile` into `Overview` and `Monthly Analysis` tabs.
-5. Keep Overview selected and rendered immediately.
+4. Refactor `Views::Balances::Mobile` into `Balance History` and `Monthly Analysis`
+   tabs.
+5. Keep Balance History selected and rendered immediately.
 6. Place a lazy Turbo frame in the inactive analysis panel and assign its `src` only
    when the tab is first activated.
 7. Reuse the repository's tab components and lazy-frame behavior where their contract
@@ -142,7 +144,7 @@ Primary touchpoints:
 
 Acceptance criteria:
 
-- initial `/balances` still starts the existing Overview requests
+- initial `/balances` starts only the existing balance summary and trend requests
 - initial `/balances` does not request analysis HTML or JSON
 - first analysis activation loads its frame once
 - analysis HTML contains no ApexCharts dependency
@@ -215,7 +217,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-- existing Overview request/data behavior has no regression
+- existing Balance History summary/trend behavior has no regression
 - legacy balances remains the only ApexCharts balances surface
 - monthly finder queries remain bounded to one context and month
 - every test-matrix reconciliation assertion passes

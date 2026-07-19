@@ -31,13 +31,11 @@ class Views::Balances::Mobile < Views::Base
               data: {
                 controller: "balances-mobile",
                 balances_mobile_summary_url_value: current_balance_json_balances_path(format: :json),
-                balances_mobile_trend_url_value: cash_balance_json_balances_path(format: :json),
-                balances_mobile_breakdown_url_value: transaction_balance_json_balances_path(format: :json)
+                balances_mobile_trend_url_value: cash_balance_json_balances_path(format: :json)
               }
             ) do
               render_summary_cards
               render_trend_card
-              render_breakdown_card
             end
           end
 
@@ -121,32 +119,6 @@ class Views::Balances::Mobile < Views::Base
     end
   end
 
-  def render_breakdown_card
-    div(class: breakdown_card_class) do
-      div(class: "flex items-center justify-between gap-3") do
-        div do
-          p(class: "text-2xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400") { I18n.t("balances.mobile.breakdown") }
-          p(class: "mt-1 text-sm font-medium text-stone-800 dark:text-slate-200") { I18n.t("balances.mobile.breakdown_subtitle") }
-        end
-
-        input(
-          type: :month,
-          value: Time.zone.today.strftime("%Y-%m"),
-          class: month_input_class,
-          data: { balances_mobile_target: "monthInput", action: "change->balances-mobile#changeMonth" }
-        )
-      end
-
-      div(class: chart_panel_class) do
-        div(class: "h-72") do
-          canvas(data: { balances_mobile_target: "breakdownCanvas" })
-        end
-      end
-
-      div(class: "mt-4 space-y-2", data: { balances_mobile_target: "legend" })
-    end
-  end
-
   def render_range_button(label, value, selected: false)
     button(
       type: :button,
@@ -189,15 +161,6 @@ class Views::Balances::Mobile < Views::Base
   def trend_card_class
     "rounded-[28px] border border-stone-200 bg-linear-to-br from-stone-50 via-white to-sky-50 p-4 shadow-sm " \
       "dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:shadow-none"
-  end
-
-  def breakdown_card_class
-    "rounded-[28px] border border-stone-200 bg-linear-to-br from-amber-50 via-white to-rose-50 p-4 shadow-sm " \
-      "dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:shadow-none"
-  end
-
-  def month_input_class
-    "rounded-2xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
   end
 
   def pill_button_class(selected:, active_class:)

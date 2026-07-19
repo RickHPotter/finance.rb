@@ -16,9 +16,10 @@ RSpec.describe "Balances", type: :request do
       expect(response.body).to include(I18n.t("balances.title"))
       expect(response.body).to include("Legacy")
       expect(response.body).to include("Trend")
-      expect(response.body).to include("Breakdown")
-      expect(response.body).to include(I18n.t("balances.monthly_analysis.overview"))
+      expect(response.body).to include(I18n.t("balances.mobile.history"))
       expect(response.body).to include(I18n.t("balances.monthly_analysis.title"))
+      expect(response.body).not_to include("data-balances-mobile-breakdown-url-value")
+      expect(response.body).not_to include("data-balances-mobile-target=\"breakdownCanvas\"")
 
       document = Nokogiri::HTML.fragment(response.body)
       analysis_frame = document.at_css("turbo-frame#balances_monthly_analysis_content")

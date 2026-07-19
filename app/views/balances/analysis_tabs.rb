@@ -5,7 +5,7 @@ module Views::Balances::AnalysisTabs
 
   def render_analysis_tabs
     div(class: "mb-5 flex gap-2 overflow-x-auto border-b border-stone-200 px-4 pb-3 dark:border-slate-700", role: :tablist) do
-      analysis_tab_button("overview", I18n.t("balances.monthly_analysis.overview"), selected: true)
+      analysis_tab_button("overview", I18n.t("balances.mobile.history"), selected: true)
       analysis_tab_button("monthly_analysis", I18n.t("balances.monthly_analysis.title"))
     end
   end
