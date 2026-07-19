@@ -129,7 +129,7 @@ class Views::CardTransactions::FormSubmissionSkeleton < Views::Base
         div(class: "overflow-hidden") do
           div(class: "flex -ml-2") do
             4.times do
-              div(class: "min-w-0 shrink-0 grow-0 basis-full pl-3 md:basis-1/2 lg:basis-1/3 xl:basis-1/4") do
+              div(class: "min-w-0 shrink-0 grow-0 basis-full pl-3 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5") do
                 div(class: "space-y-3 rounded-lg border border-purple-100 dark:border-slate-700/50 dark:bg-slate-800 p-3") do
                   div(class: "flex justify-between gap-3") do
                     # prev

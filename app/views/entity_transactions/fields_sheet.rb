@@ -186,7 +186,7 @@ module Views
 
               div(
                 id: "exchanges_nested",
-                class: "pt-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 pb-3",
+                class: "pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-3",
                 data: { controller: "nested-form exchange-lock", nested_form_wrapper_selector_value: ".nested-exchange-wrapper" }
               ) do
                 template(data_nested_form_target: "template") do
