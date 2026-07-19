@@ -12,11 +12,13 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   belongs_to :superseded_by, class_name: "Message", optional: true
   has_one :supersedes, class_name: "Message", foreign_key: "superseded_by_id"
   belongs_to :reference_transactable, polymorphic: true, optional: true
+  belongs_to :audit_operation, optional: true
 
   # @validations ..............................................................
   validates :body, presence: true
 
   # @callbacks ................................................................
+  before_validation :assign_audit_operation, on: :create
   after_create_commit do
     broadcast_append_to conversation,
                         target: "messages_#{conversation.id}",
@@ -146,6 +148,11 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @private_instance_methods .................................................
 
   private
+
+  def assign_audit_operation
+    operation_id = Audit::Current.operation_id
+    self.audit_operation_id = operation_id if operation_id.present? && AuditOperation.exists?(id: operation_id)
+  end
 
   def local_reference_exists_for?(context:)
     local_reference_for(context:).present?
@@ -357,6 +364,7 @@ end
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  audit_operation_id          :uuid             indexed
 #  conversation_id             :bigint           not null, indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
@@ -365,6 +373,7 @@ end
 # Indexes
 #
 #  index_messages_on_applied_at              (applied_at)
+#  index_messages_on_audit_operation_id      (audit_operation_id)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
@@ -372,6 +381,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (audit_operation_id => audit_operations.id) ON DELETE => restrict
 #  fk_rails_...  (conversation_id => conversations.id)
 #  fk_rails_...  (superseded_by_id => messages.id)
 #  fk_rails_...  (user_id => users.id)

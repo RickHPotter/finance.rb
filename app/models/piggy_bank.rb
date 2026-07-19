@@ -2,6 +2,28 @@
 
 class PiggyBank < ApplicationRecord
   # @extends ..................................................................
+  module ProjectionAuditSource
+    def sync_return_projection!(...)
+      Audit::Operation.with_mutation_source(:piggy_bank_sync) { super }
+    end
+
+    private
+
+    def create_return_projection!(...)
+      Audit::Operation.with_mutation_source(:piggy_bank_sync) { super }
+    end
+
+    def destroy_return_projection!(...)
+      Audit::Operation.with_mutation_source(:piggy_bank_sync) { super }
+    end
+
+    def sync_remaining_return_projection!(...)
+      Audit::Operation.with_mutation_source(:piggy_bank_sync) { super }
+    end
+  end
+
+  prepend ProjectionAuditSource
+
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................

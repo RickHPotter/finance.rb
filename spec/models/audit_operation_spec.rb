@@ -47,3 +47,30 @@ RSpec.describe AuditOperation, type: :model do
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: audit_operations
+# Database name: primary
+#
+#  id                       :uuid             not null, primary key
+#  metadata                 :jsonb            not null
+#  result                   :string           not null
+#  source                   :string           not null, indexed => [created_at]
+#  created_at               :datetime         not null, indexed => [actor_id], indexed => [context_id], indexed => [source]
+#  actor_id                 :bigint           indexed => [created_at]
+#  context_id               :bigint           indexed => [created_at]
+#  parent_operation_id      :uuid             indexed
+#  request_id               :string           indexed
+#  rollback_of_operation_id :uuid             indexed
+#  selected_version_id      :bigint
+#
+# Indexes
+#
+#  index_audit_operations_on_actor_id_and_created_at    (actor_id,created_at)
+#  index_audit_operations_on_context_id_and_created_at  (context_id,created_at)
+#  index_audit_operations_on_parent_operation_id        (parent_operation_id)
+#  index_audit_operations_on_request_id                 (request_id) WHERE (request_id IS NOT NULL)
+#  index_audit_operations_on_rollback_of_operation_id   (rollback_of_operation_id)
+#  index_audit_operations_on_source_and_created_at      (source,created_at)
+#

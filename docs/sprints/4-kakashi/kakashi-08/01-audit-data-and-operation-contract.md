@@ -190,6 +190,8 @@ source must establish it explicitly around the mutation.
   creates a new operation ID because it commits in a separate transaction and time.
 - Applying an actionable message creates a new operation owned by the receiving user
   and links the sender-side operation as its parent when known.
+- New actionable messages persist the nullable sender-side `audit_operation_id` used
+  for that causal link. Existing messages are not backfilled.
 - One operation may contain versions with different `owner_id` and `context_id` values.
   This is expected for shared-user financial graphs.
 - Non-admin readers see only versions where `owner_id == current_user.id`; they do not

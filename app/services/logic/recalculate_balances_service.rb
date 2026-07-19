@@ -10,13 +10,17 @@ module Logic
     end
 
     def call
+      Audit::Operation.with_mutation_source(:balance_recalculation) { recalculate }
+    end
+
+    private
+
+    def recalculate
       set_order_and_balance
       set_items
 
       apply_balances
     end
-
-    private
 
     def set_order_and_balance
       @date_threshold = Date.new(@year, @month).in_time_zone(Time.zone.now.time_zone.name)

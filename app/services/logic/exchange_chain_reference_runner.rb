@@ -12,6 +12,12 @@ class Logic::ExchangeChainReferenceRunner
   end
 
   def call
+    Audit::Operation.with_mutation_source(:reference_sync) { result }
+  end
+
+  private
+
+  def result
     {
       dry_run:,
       candidate_count: candidates.size,
@@ -23,8 +29,6 @@ class Logic::ExchangeChainReferenceRunner
       skipped:
     }
   end
-
-  private
 
   def audit
     @audit ||= Logic::ExchangeChainReferenceAudit.new(rows:, source_transaction_ids:, middle_overrides:, receiver_overrides:)

@@ -19,6 +19,12 @@ module Logic
     end
 
     def call
+      Audit::Operation.with_mutation_source(:projection_sync) { clone_context }
+    end
+
+    private
+
+    def clone_context
       ApplicationRecord.transaction do
         clone_context!
         clone_references!
@@ -37,8 +43,6 @@ module Logic
         @target_context
       end
     end
-
-    private
 
     def clone_context!
       @target_context = @user.contexts.create!(

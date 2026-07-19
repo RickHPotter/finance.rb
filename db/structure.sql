@@ -70,8 +70,8 @@ CREATE TABLE public.audit_operations (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT audit_operations_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY ((ARRAY['committed'::character varying, 'rejected'::character varying, 'failed'::character varying])::text[]))),
-    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying])::text[])))
+    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY (ARRAY[('committed'::character varying)::text, ('rejected'::character varying)::text, ('failed'::character varying)::text]))),
+    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text])))
 );
 
 
@@ -94,9 +94,9 @@ CREATE TABLE public.audit_versions (
     mutation_source character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY ((ARRAY['create'::character varying, 'update'::character varying, 'destroy'::character varying])::text[]))),
+    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY (ARRAY[('create'::character varying)::text, ('update'::character varying)::text, ('destroy'::character varying)::text]))),
     CONSTRAINT audit_versions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying, 'shared_sync'::character varying, 'projection_sync'::character varying, 'reference_sync'::character varying, 'piggy_bank_sync'::character varying, 'balance_recalculation'::character varying])::text[]))),
+    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text, ('shared_sync'::character varying)::text, ('projection_sync'::character varying)::text, ('reference_sync'::character varying)::text, ('piggy_bank_sync'::character varying)::text, ('balance_recalculation'::character varying)::text]))),
     CONSTRAINT audit_versions_object_changes_size CHECK (((object_changes IS NULL) OR (octet_length((object_changes)::text) <= 262144))),
     CONSTRAINT audit_versions_object_size CHECK (((object IS NULL) OR (octet_length((object)::text) <= 262144)))
 );
@@ -857,7 +857,8 @@ CREATE TABLE public.messages (
     reference_transactable_type character varying,
     superseded_by_id bigint,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    user_id bigint NOT NULL,
+    audit_operation_id uuid
 );
 
 
@@ -2113,6 +2114,13 @@ CREATE INDEX index_messages_on_applied_at ON public.messages USING btree (applie
 
 
 --
+-- Name: index_messages_on_audit_operation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_audit_operation_id ON public.messages USING btree (audit_operation_id);
+
+
+--
 -- Name: index_messages_on_conversation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2322,6 +2330,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.contexts
     ADD CONSTRAINT fk_rails_2c076dcb91 FOREIGN KEY (source_context_id) REFERENCES public.contexts(id);
+
+
+--
+-- Name: messages fk_rails_344cc91310; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT fk_rails_344cc91310 FOREIGN KEY (audit_operation_id) REFERENCES public.audit_operations(id) ON DELETE RESTRICT;
 
 
 --
@@ -2659,6 +2675,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260719091000'),
 ('20260719090000'),
 ('20260714100000'),
 ('20260712122000'),

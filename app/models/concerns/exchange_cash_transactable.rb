@@ -4,7 +4,33 @@
 module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
 
+  module ProjectionAuditSource
+    protected
+
+    def create_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def destroy_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_or_destroy_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def cleanup_orphaned_projection_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+  end
+
   included do
+    prepend ProjectionAuditSource
+
     # @security (i.e. attr_accessible) ........................................
     enum :bound_type, { standalone: "standalone", card_bound: "card_bound" }
     attr_accessor :destroyed_projection_cash_transaction_id

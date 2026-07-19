@@ -23,6 +23,14 @@ module Import
     end
 
     def run
+      Audit::Operation.run(source: :import, metadata: { importer: self.class.name }) { perform_import }
+    rescue StandardError => e
+      Rails.logger.error("ERROR: #{e.message}")
+
+      raise
+    end
+
+    def perform_import
       delete_user
 
       xlsx_service = Import::XlsxService.new(@file)
@@ -34,10 +42,6 @@ module Import
 
       aftermath_fix
       create_budgets
-    rescue StandardError => e
-      Rails.logger.error("ERROR: #{e.message}")
-
-      raise
     end
 
     def delete_user

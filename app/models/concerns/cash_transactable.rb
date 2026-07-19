@@ -4,7 +4,29 @@
 module CashTransactable
   extend ActiveSupport::Concern
 
+  module ProjectionAuditSource
+    protected
+
+    def attach_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def fix_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_or_destroy_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+  end
+
   included do
+    prepend ProjectionAuditSource
+
     # @security (i.e. attr_accessible) ........................................
     attr_accessor :previous_cash_transaction_id
 

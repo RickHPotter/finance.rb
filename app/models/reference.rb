@@ -51,6 +51,10 @@ class Reference < ApplicationRecord
   end
 
   def set_card_payment_date
+    Audit::Operation.with_mutation_source(:reference_sync) { sync_card_payment_date }
+  end
+
+  def sync_card_payment_date
     card_payment = user_card.unpaid_invoices(context:).find_by(month:, year:)
     return if card_payment.nil?
 
