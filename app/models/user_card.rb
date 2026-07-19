@@ -4,6 +4,9 @@ class UserCard < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[card_transactions_count card_transactions_total]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :current_closing_date, :current_due_date
@@ -134,10 +137,10 @@ class UserCard < ApplicationRecord
       next if exchanges.empty?
 
       ApplicationRecord.transaction do
-        cash_installment.update_columns(date: reference_date)
-        cash_transaction.update_columns(date: reference_date)
+        Audit::BulkMutation.update_columns!(cash_installment, date: reference_date)
+        Audit::BulkMutation.update_columns!(cash_transaction, date: reference_date)
         exchanges.each do |exchange|
-          exchange.update_columns(date: reference_date)
+          Audit::BulkMutation.update_columns!(exchange, date: reference_date)
         end
       end
     end

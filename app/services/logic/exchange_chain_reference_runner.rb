@@ -123,11 +123,10 @@ class Logic::ExchangeChainReferenceRunner
         change[:transaction].lock!
         transaction = change[:transaction]
 
-        transaction.update_columns(
-          reference_transactable_type: change[:target_reference]&.class&.name,
-          reference_transactable_id: change[:target_reference]&.id,
-          updated_at: timestamp
-        )
+        Audit::BulkMutation.update_columns!(transaction,
+                                            reference_transactable_type: change[:target_reference]&.class&.name,
+                                            reference_transactable_id: change[:target_reference]&.id,
+                                            updated_at: timestamp)
       end
     end
   end

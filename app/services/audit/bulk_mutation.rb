@@ -3,6 +3,11 @@
 class Audit::BulkMutation
   class << self
     def update_columns!(record, attributes)
+      unless audited_model?(record.class)
+        record.update_columns(attributes)
+        return record
+      end
+
       attributes = attributes.stringify_keys
       audited, skipped = attributes.partition { |name, _| audited_attribute?(record, name) }.map(&:to_h)
 
@@ -36,12 +41,18 @@ class Audit::BulkMutation
     end
 
     def insert!(model, attributes)
+      raise ArgumentError, "#{model.name} is not financially audited" unless audited_model?(model)
+
       model.transaction do
         result = model.insert!(attributes)
         record = model.find(result.rows.first.first)
         record_insert_version!(record)
         record
       end
+    end
+
+    def audited_model?(model)
+      model.respond_to?(:paper_trail_options) && model.paper_trail_options.present?
     end
 
     private
@@ -84,7 +95,7 @@ class Audit::BulkMutation
         mutation_source: Audit::Current.mutation_source.presence || "unknown",
         whodunnit: PaperTrail.request.whodunnit,
         object_changes: snapshot.transform_values { |value| [ nil, value ] },
-        metadata: {}
+        metadata: Audit::VersionMetadata.for(record)
       )
     end
   end

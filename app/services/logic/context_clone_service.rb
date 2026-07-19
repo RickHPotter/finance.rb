@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Logic
-  class ContextCloneService
+  class ContextCloneService # rubocop:disable Metrics/ClassLength
     def initialize(source_context:, name:, description: nil, scenario_key: nil)
       @source_context = source_context
       @user = source_context.user
@@ -32,6 +32,7 @@ module Logic
         clone_subscriptions!
         clone_cash_transactions!
         clone_card_transactions!
+        clone_piggy_banks!
         clone_investments!
         clone_budget_associations!
         clone_subscription_associations!
@@ -108,8 +109,20 @@ module Logic
       @source_context.investments.order(:id).find_each do |investment|
         @investment_map[investment.id] = insert_clone!(Investment, investment, overrides: {
                                                          context_id: @target_context.id,
-                                                         cash_transaction_id: map_cash_transaction_id(investment.cash_transaction_id)
+                                                         cash_transaction_id: map_cash_transaction_id(investment.cash_transaction_id),
+                                                         piggy_bank_return_cash_transaction_id: map_cash_transaction_id(
+                                                           investment.piggy_bank_return_cash_transaction_id
+                                                         )
                                                        })
+      end
+    end
+
+    def clone_piggy_banks!
+      PiggyBank.where(source_cash_transaction_id: @cash_transaction_map.keys).order(:id).find_each do |piggy_bank|
+        insert_clone!(PiggyBank, piggy_bank, overrides: {
+                        source_cash_transaction_id: @cash_transaction_map.fetch(piggy_bank.source_cash_transaction_id),
+                        return_cash_transaction_id: map_cash_transaction_id(piggy_bank.return_cash_transaction_id)
+                      })
       end
     end
 
@@ -209,6 +222,8 @@ module Logic
 
     def insert_clone!(model, record, overrides: {})
       attrs = record.attributes.slice(*cloneable_column_names_for(model)).merge(overrides.stringify_keys)
+      return Audit::BulkMutation.insert!(model, attrs).id if Audit::BulkMutation.audited_model?(model)
+
       result = model.insert_all!([ attrs ], returning: %w[id], record_timestamps: false)
       result.rows.first.first
     end

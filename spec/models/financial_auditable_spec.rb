@@ -21,6 +21,59 @@ RSpec.describe FinancialAuditable, type: :model do
     )
   end
 
+  it "enables the complete initial model scope with explicit derived-field exclusions" do
+    expected_skips = {
+      CashTransaction => %w[cash_installments_count],
+      CardTransaction => %w[card_installments_count],
+      Installment => %w[balance order_id cash_installments_count card_installments_count],
+      CategoryTransaction => [],
+      EntityTransaction => %w[exchanges_count],
+      Exchange => %w[exchanges_count],
+      Reference => [],
+      UserCard => %w[card_transactions_count card_transactions_total],
+      UserBankAccount => %w[balance cash_transactions_count cash_transactions_total],
+      Budget => %w[balance order_id remaining_value],
+      Subscription => %w[card_transactions_count cash_transactions_count price],
+      Investment => [],
+      PiggyBank => []
+    }
+
+    expected_skips.each do |model, model_skips|
+      expect(Audit::BulkMutation.audited_model?(model)).to be(true)
+      expect(model.paper_trail_options.fetch(:skip)).to contain_exactly("created_at", "updated_at", *model_skips)
+    end
+  end
+
+  it "retains account history without a selected context" do
+    account = build(:user_bank_account, :random, user:)
+
+    Audit::Operation.run(actor: user, context:, source: :web) do
+      account.save!
+      account.update!(active: false)
+      account.destroy!
+    end
+
+    versions = AuditVersion.where(item_type: "UserBankAccount", item_id: account.id).order(:id)
+    expect(versions.pluck(:event)).to eq(%w[create update destroy])
+    expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
+    expect(versions.pluck(:context_id).uniq).to eq([ nil ])
+    expect(versions.last.metadata).to eq("bank_id" => account.bank_id)
+  end
+
+  it "rolls back a business mutation when its audit payload exceeds the limit" do
+    account = PaperTrail.request(enabled: false) { create(:user_bank_account, :random, user:) }
+    original_name = account.user_bank_account_name
+
+    expect do
+      Audit::Operation.run(actor: user, context:, source: :web) do
+        account.update!(user_bank_account_name: "a" * 300.kilobytes)
+      end
+    end.to raise_error(ActiveRecord::RecordInvalid, /Object changes/)
+
+    expect(account.reload.user_bank_account_name).to eq(original_name)
+    expect(AuditVersion.where(item: account)).to be_empty
+  end
+
   it "records a transaction graph under one owned operation" do
     transaction = build_cash_transaction
     transaction.category_transactions = [ build(:category_transaction, transactable: nil, category: create(:category, :random, user:)) ]
@@ -38,7 +91,8 @@ RSpec.describe FinancialAuditable, type: :model do
 
     Audit::Operation.run(actor: user, context:, source: :web) { transaction.save! }
 
-    versions = AuditVersion.where(operation_id: AuditOperation.last.id)
+    root_version = AuditVersion.find_by!(item: transaction, event: :create)
+    versions = AuditVersion.where(operation_id: root_version.operation_id)
     expect(versions.pluck(:item_type)).to include("CashTransaction", "Installment", "CategoryTransaction", "EntityTransaction")
     expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
     expect(versions.pluck(:context_id).uniq).to eq([ context.id ])
@@ -46,6 +100,7 @@ RSpec.describe FinancialAuditable, type: :model do
 
     installment_version = versions.find_by!(item_type: "Installment")
     expect(installment_version.item_subtype).to eq("CashInstallment")
+    expect(installment_version.metadata).to eq("cash_transaction_id" => transaction.id)
   end
 
   it "excludes cache-only fields without suppressing canonical changes" do
@@ -104,7 +159,8 @@ RSpec.describe FinancialAuditable, type: :model do
 
     Audit::Operation.run(actor: user, context:, source: :web) { transaction.destroy! }
 
-    destroy_versions = AuditVersion.where(operation_id: AuditOperation.last.id, event: :destroy)
+    root_destroy = AuditVersion.find_by!(item_type: "CashTransaction", item_id: transaction.id, event: :destroy)
+    destroy_versions = AuditVersion.where(operation_id: root_destroy.operation_id, event: :destroy)
     graph_ids.each do |item_type, item_ids|
       expect(destroy_versions.where(item_type:, item_id: item_ids).count).to eq(item_ids.count)
     end

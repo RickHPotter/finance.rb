@@ -14,7 +14,7 @@ module FinancialAuditable
           owner_id: ->(record) { Audit::OwnershipResolver.resolve!(record).owner_id },
           context_id: ->(record) { Audit::OwnershipResolver.resolve!(record).context_id },
           mutation_source: ->(_) { Audit::Current.mutation_source.presence || "unknown" },
-          metadata: ->(_) { {} }
+          metadata: ->(record) { Audit::VersionMetadata.for(record) }
         }
       )
     end

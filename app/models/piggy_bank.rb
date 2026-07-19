@@ -25,6 +25,10 @@ class PiggyBank < ApplicationRecord
   prepend ProjectionAuditSource
 
   # @includes .................................................................
+  include FinancialAuditable
+
+  audits_financial_changes
+
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :source_cash_transaction, class_name: "CashTransaction", inverse_of: :piggy_bank
@@ -83,7 +87,7 @@ class PiggyBank < ApplicationRecord
     sync_return_allocations(return_transaction)
     sync_initial_installment(return_transaction)
     return_transaction.save!
-    update_column(:return_cash_transaction_id, return_transaction.id)
+    Audit::BulkMutation.update_columns!(self, return_cash_transaction_id: return_transaction.id)
     self.return_cash_transaction = return_transaction
     sync_return_projection!
   end
@@ -160,7 +164,7 @@ class PiggyBank < ApplicationRecord
     end
 
     generated_return = return_cash_transaction
-    update_column(:return_cash_transaction_id, nil)
+    Audit::BulkMutation.update_columns!(self, return_cash_transaction_id: nil)
     @destroyed_return_projection = true
     generated_return.piggy_bank_projection_write = true
     generated_return.destroy!

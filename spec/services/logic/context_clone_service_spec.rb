@@ -17,6 +17,64 @@ RSpec.describe Logic::ContextCloneService do
       expect(cloned_context.scenario_key).to eq("shared-scenario")
     end
 
+    it "records callback-bypassing financial clones as one projection operation" do
+      user = create(:user, :random)
+      source_context = create(:context, user:, name: "Audited source")
+      create(:subscription, user:, context: source_context, description: "Audited subscription")
+      create(:budget, user:, context: source_context, description: "Audited budget")
+
+      cloned_context = Audit::Operation.run(actor: user, context: source_context, source: :web) do
+        described_class.new(source_context:, name: "Audited clone").call
+      end
+
+      versions = AuditVersion.where(context_id: cloned_context.id)
+      expect(versions.where(event: :create).pluck(:item_type)).to contain_exactly("Subscription", "Budget")
+      expect(versions.pluck(:mutation_source).uniq).to eq([ "projection_sync" ])
+      expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
+    end
+
+    it "remaps Piggy Bank links and valuations inside the cloned context" do
+      user = create(:user, :random)
+      source_context = create(:context, user:, name: "Piggy source")
+      account = create(:user_bank_account, :random, user:)
+      entity = create(:entity, :random, user:)
+      source = build(
+        :cash_transaction,
+        user:,
+        context: source_context,
+        user_bank_account: account,
+        description: "Emergency reserve",
+        price: -5_000,
+        cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Time.zone.now) ],
+        category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+        entity_transactions: [ EntityTransaction.new(entity:, price: 0, price_to_be_returned: 0, is_payer: false) ],
+        piggy_bank: PiggyBank.new(return_price: 5_000, return_date: 3.months.from_now)
+      )
+      source.save!
+      valuation = create(
+        :investment,
+        user:,
+        context: source_context,
+        user_bank_account: account,
+        investment_type: create(:investment_type, :random),
+        description: "Reserve profit",
+        price: 500,
+        date: Time.zone.today,
+        piggy_bank_return_cash_transaction: source.piggy_bank.return_cash_transaction
+      )
+
+      cloned_context = described_class.new(source_context:, name: "Piggy clone").call
+      cloned_source = cloned_context.cash_transactions.joins(:categories).find_by!(categories: { category_name: "PIGGY BANK" })
+      cloned_return = cloned_source.piggy_bank.return_cash_transaction
+      cloned_valuation = cloned_context.investments.find_by!(description: valuation.description)
+
+      expect(cloned_source.piggy_bank.id).not_to eq(source.piggy_bank.id)
+      expect(cloned_return.context).to eq(cloned_context)
+      expect(cloned_return.id).not_to eq(source.piggy_bank.return_cash_transaction_id)
+      expect(cloned_valuation.piggy_bank_return_cash_transaction).to eq(cloned_return)
+      expect(AuditVersion.where(item: cloned_source.piggy_bank, event: :create)).to exist
+    end
+
     it "clones a context financial snapshot into a new derived context" do
       user = create(:user)
       source_context = create(:context, user:, name: "What If")

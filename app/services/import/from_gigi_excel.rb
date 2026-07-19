@@ -122,7 +122,7 @@ module Import
           reference.update(reference_date:)
 
           card_payment.update(imported: true, date: reference_date)
-          card_payment.cash_installments.first.update_columns(date: reference_date, paid: false)
+          Audit::BulkMutation.update_columns!(card_payment.cash_installments.first, date: reference_date, paid: false)
         end
       end
     end

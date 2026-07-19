@@ -75,7 +75,7 @@ class BudgetsController < ApplicationController
   end
 
   def bulk_update
-    selected_budgets.update_all(bulk_budget_attributes.merge(updated_at: Time.current))
+    Audit::BulkMutation.update_all!(selected_budgets, bulk_budget_attributes.merge(updated_at: Time.current))
     recalculate_selected_budget_balances
     redirect_to_bulk_return_path(:updated) && return
 

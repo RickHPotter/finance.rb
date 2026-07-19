@@ -20,7 +20,7 @@ module Logic
 
       return false if source_reference.nil? || target_reference.nil?
 
-      target_reference.update_columns(reference_closing_date: source_reference.reference_closing_date)
+      Audit::BulkMutation.update_columns!(target_reference, reference_closing_date: source_reference.reference_closing_date)
       source_reference.destroy
     end
   end

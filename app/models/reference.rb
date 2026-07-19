@@ -3,6 +3,10 @@
 class Reference < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include FinancialAuditable
+
+  audits_financial_changes
+
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :skip_reference_closing_date_calculation
 
@@ -62,8 +66,8 @@ class Reference < ApplicationRecord
 
     new_reference_date = reference_date.end_of_day
 
-    card_payment.update_columns(date: new_reference_date)
-    card_payment.cash_installments.first.update_columns(date: new_reference_date)
+    Audit::BulkMutation.update_columns!(card_payment, date: new_reference_date)
+    Audit::BulkMutation.update_columns!(card_payment.cash_installments.first, date: new_reference_date)
 
     Logic::RecalculateBalancesService.new(user: user_card.user, context:, year: min_date.year, month: min_date.month).call
   end

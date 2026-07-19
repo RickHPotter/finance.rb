@@ -52,6 +52,35 @@ RSpec.describe PiggyBank, type: :model do
     expect(return_transaction.cash_installments.first).to have_attributes(price: 5_000, paid: false)
   end
 
+  it "groups source, return, and valuation history under one causal operation" do
+    source = build_source
+    valuation = nil
+
+    Audit::Operation.run(actor: user, context: user.main_context, source: :web) do
+      source.save!
+      valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account: account,
+        investment_type: create(:investment_type, :random),
+        description: "Recognized Piggy Bank profit",
+        price: 500,
+        date: Time.zone.today,
+        piggy_bank_return_cash_transaction: source.piggy_bank.return_cash_transaction
+      )
+    end
+
+    root_version = AuditVersion.find_by!(item: source, event: :create)
+    versions = AuditVersion.where(operation_id: root_version.operation_id)
+    expect(versions.where(item: source.piggy_bank)).to exist
+    expect(versions.where(item: source.piggy_bank.return_cash_transaction)).to exist
+    expect(versions.where(item: valuation)).to exist
+    expect(versions.where(mutation_source: :piggy_bank_sync)).to exist
+    expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
+    expect(versions.pluck(:context_id).uniq).to eq([ user.main_context.id ])
+  end
+
   it "rejects zero and negative projected return values" do
     expect(build_source(return_price: 0)).not_to be_valid
     expect(build_source(return_price: -1)).not_to be_valid
