@@ -219,6 +219,7 @@ en:
     date: "Date"
     time: "Time"
     invalid_time: "Enter a valid time in 24-hour format."
+    invalid_min: "Choose a date and time on or after the earliest permitted moment."
     invalid_max: "Choose a payment date and time up to the end of today."
   bulk_actions:
     total_selected: "Selected total"
@@ -475,6 +476,7 @@ pt-BR:
     date: "Data"
     time: "Hora"
     invalid_time: "Digite um horario valido no formato 24 horas."
+    invalid_min: "Escolha uma data e hora a partir do primeiro momento permitido."
     invalid_max: "Escolha uma data e hora de pagamento até o fim de hoje."
   bulk_actions:
     total_selected: "Total selecionado"

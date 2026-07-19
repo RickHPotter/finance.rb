@@ -5,7 +5,7 @@ class Views::Shared::DatetimeInput < Views::Base
   include CacheHelper
 
   attr_reader :form, :field, :value, :id, :hidden_data, :date_data, :time_data, :date_actions, :time_actions, :autofocus, :time_autofocus, :disabled,
-              :max_datetime, :max_datetime_message, :show_time, :calendar
+              :readonly, :compact, :min_datetime, :min_datetime_message, :max_datetime, :max_datetime_message, :show_time, :calendar
 
   def initialize(form:, field:, value:, id:, **options)
     @form = form
@@ -20,6 +20,10 @@ class Views::Shared::DatetimeInput < Views::Base
     @autofocus = options.fetch(:autofocus, false)
     @time_autofocus = options.fetch(:time_autofocus, false)
     @disabled = options.fetch(:disabled, false)
+    @readonly = options.fetch(:readonly, false)
+    @compact = options.fetch(:compact, false)
+    @min_datetime = options.fetch(:min_datetime, nil)
+    @min_datetime_message = options.fetch(:min_datetime_message, nil)
     @max_datetime = options.fetch(:max_datetime, nil)
     @max_datetime_message = options.fetch(:max_datetime_message, nil)
     @show_time = options.fetch(:show_time, true)
@@ -28,10 +32,14 @@ class Views::Shared::DatetimeInput < Views::Base
 
   def view_template
     div(
-      class: "w-full",
+      class: datetime_root_class,
       data: {
         controller: "datetime-input",
+        action: "datetime-input:refresh->datetime-input#refresh datetime-input:readonly->datetime-input#setReadonly",
         datetime_input_invalid_time_message_value: I18n.t("datetime_input.invalid_time"),
+        datetime_input_readonly_value: readonly,
+        datetime_input_min_datetime_value: min_datetime&.strftime("%Y-%m-%dT%H:%M"),
+        datetime_input_min_datetime_message_value: min_datetime_message || I18n.t("datetime_input.invalid_min"),
         datetime_input_max_datetime_value: max_datetime&.strftime("%Y-%m-%dT%H:%M"),
         datetime_input_max_datetime_message_value: max_datetime_message || I18n.t("datetime_input.invalid_max")
       }
@@ -56,9 +64,11 @@ class Views::Shared::DatetimeInput < Views::Base
               type: "date",
               id: "#{id}_date_input",
               value: date_value,
-              disabled:,
+              min: min_datetime&.strftime("%Y-%m-%d"),
+              max: max_datetime&.strftime("%Y-%m-%d"),
+              disabled: visible_input_disabled?,
               autofocus: autofocus,
-              aria: { label: I18n.t("datetime_input.date") },
+              aria: { label: I18n.t("datetime_input.date"), readonly: },
               class: "#{input_class} datetime-input-date font-graduate dark:font-mono",
               data: {
                 datetime_input_target: "dateInput",
@@ -74,7 +84,7 @@ class Views::Shared::DatetimeInput < Views::Base
             )
           end
 
-          unless calendar
+          unless calendar || compact
             p(
               class: "mt-0.5 min-h-4 px-1 font-graduate text-2xs leading-4 text-muted-foreground dark:font-mono dark:text-slate-500",
               data: { datetime_input_target: "weekdayLabel" }
@@ -91,7 +101,7 @@ class Views::Shared::DatetimeInput < Views::Base
         end
 
         if show_time
-          div(class: calendar ? "w-full" : "w-28 shrink-0") do
+          div(class: time_container_class) do
             div(class: calendar ? "hidden" : "relative") do
               div(class: "pointer-events-none absolute inset-y-0 start-0 z-1 flex items-center ps-3.5 text-black dark:text-white") do
                 cached_icon :clock
@@ -101,13 +111,13 @@ class Views::Shared::DatetimeInput < Views::Base
                 type: "text",
                 id: "#{id}_time_input",
                 value: time_value,
-                disabled:,
+                disabled: visible_input_disabled?,
                 autofocus: visible_time_autofocus?,
                 inputmode: "numeric",
                 autocomplete: "off",
                 placeholder: "20:20",
                 maxlength: 5,
-                aria: { label: I18n.t("datetime_input.time") },
+                aria: { label: I18n.t("datetime_input.time"), readonly: },
                 class: "#{input_class} text-center font-graduate dark:font-mono",
                 data: {
                   controller: time_input_controllers,
@@ -134,6 +144,12 @@ class Views::Shared::DatetimeInput < Views::Base
 
   private
 
+  def datetime_root_class
+    return "w-full [&_input]:h-9 [&_input]:py-1" if compact
+
+    "w-full"
+  end
+
   def formatted_datetime
     value&.strftime("%Y-%m-%dT%H:%M")
   end
@@ -156,8 +172,17 @@ class Views::Shared::DatetimeInput < Views::Base
   def datetime_layout_class
     return "grid grid-cols-[minmax(0,2fr)_minmax(7rem,1fr)] gap-2" if calendar && show_time
     return "flex justify-center" if calendar
+    return "grid grid-cols-[minmax(0,1fr)_5.5rem] gap-1" if compact && show_time
+    return "block" if compact
 
     "flex gap-1"
+  end
+
+  def time_container_class
+    return "w-full" if calendar
+    return "w-[5.5rem] shrink-0" if compact
+
+    "w-28 shrink-0"
   end
 
   def date_container_class
@@ -175,5 +200,9 @@ class Views::Shared::DatetimeInput < Views::Base
 
   def visible_time_autofocus?
     time_autofocus && !calendar
+  end
+
+  def visible_input_disabled?
+    disabled || readonly
   end
 end
