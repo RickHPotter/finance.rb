@@ -249,6 +249,8 @@ Planned surfaces:
    - replace its remaining raw `datetime-local` field with
      `Views::Shared::DatetimeInput`
    - retain autofocus and the current minimum/maximum payment-date constraints
+   - enforce the same inclusive payment window in the backend so direct requests
+     cannot bypass the modal limits
    - align mobile calendar/clock behavior with the other payment modals
 
 Shared control work:
@@ -276,8 +278,15 @@ Regression coverage:
 - card-bound exchanges continue to derive their date from the user-card reference and
   submit it without becoming user-editable
 - locked or paid installment/exchange history remains protected
+- installment datetime editability follows the existing lock/unlock state
 - duplicate and failed-validation rerenders preserve entered date and time values
 - desktop and mobile repeated rows remain compact and free of overlapping controls
+
+References:
+
+- [datetime control contract](docs/sprints/4-kakashi/kakashi-07/01-datetime-control-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-07/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-07/03-decisions-and-test-matrix.md)
 
 Explicitly out of scope:
 
