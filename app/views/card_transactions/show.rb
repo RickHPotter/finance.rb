@@ -47,6 +47,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "CardTransaction", item_id: card_transaction.id), variant: :outline)
         dashboard_action(action_message(:edit), edit_card_transaction_path(card_transaction), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_card_transaction_path(card_transaction), variant: :duplicate) if duplicate_allowed?
         destroy_action

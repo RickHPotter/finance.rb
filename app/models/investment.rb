@@ -7,6 +7,9 @@ class Investment < ApplicationRecord
   include CashTransactable
   include CategoryTransactable
   include TranslateHelper
+  include FinancialAuditable
+
+  audits_financial_changes
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :min_date, :duplicate

@@ -6,7 +6,25 @@ module HasAdvancePayments
 
   include TranslateHelper
 
+  module ProjectionAuditSource
+    protected
+
+    def create_advance_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_advance_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def destroy_advance_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+  end
+
   included do
+    prepend ProjectionAuditSource
+
     # @security (i.e. attr_accessible) ........................................
     attr_accessor :destroy_advance_cash_transaction_id
 
@@ -101,8 +119,8 @@ module HasAdvancePayments
       destroyed = cash_transaction.destroy
 
       unless destroyed
-        Installment.where(cash_transaction_id: cash_transaction.id).delete_all
-        CashTransaction.where(id: cash_transaction.id).delete_all
+        Audit::BulkMutation.delete_all!(CashInstallment.where(cash_transaction_id: cash_transaction.id))
+        Audit::BulkMutation.delete_all!(CashTransaction.where(id: cash_transaction.id))
       end
     end
     self.destroy_advance_cash_transaction_id = nil

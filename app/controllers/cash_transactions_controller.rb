@@ -94,7 +94,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def destroy
     @cash_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
     @user_bank_account = @cash_transaction.user_bank_account
-    @cash_transaction.update_columns(date: @cash_transaction.cash_installments.order(:date).first.date)
+    Audit::BulkMutation.update_columns!(@cash_transaction, date: @cash_transaction.cash_installments.order(:date).first.date)
     destroyed = @cash_transaction.destroy
 
     if destroyed
@@ -1154,7 +1154,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return @cash_transaction if target.blank?
 
     duplicate_card_bound_projection_transactions.where.not(id: target.id).find_each do |duplicate|
-      duplicate.exchanges.update_all(cash_transaction_id: target.id, updated_at: Time.current)
+      Audit::BulkMutation.update_all!(duplicate.exchanges, cash_transaction_id: target.id, updated_at: Time.current)
       duplicate.destroy!
     end
 
@@ -1202,19 +1202,18 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       source_installment = card_bound_projection_source_installment(exchange)
       next if source_installment.blank?
 
-      exchange.update_columns(
-        month: source_installment.month,
-        year: source_installment.year,
-        date: card_bound_projection_reference_date(exchange, source_installment),
-        updated_at: Time.current
-      )
+      Audit::BulkMutation.update_columns!(exchange,
+                                          month: source_installment.month,
+                                          year: source_installment.year,
+                                          date: card_bound_projection_reference_date(exchange, source_installment),
+                                          updated_at: Time.current)
     end
   end
 
   def rehome_out_of_bucket_card_bound_projection_exchanges!
     rehomed_projection_transactions = []
     (out_of_bucket_card_bound_projection_exchanges + incoming_wrong_owner_card_bound_projection_exchanges).uniq.each do |exchange|
-      exchange.update_columns(cash_transaction_id: nil, updated_at: Time.current)
+      Audit::BulkMutation.update_columns!(exchange, cash_transaction_id: nil, updated_at: Time.current)
       exchange.reload
       exchange.send(:create_cash_transaction)
       exchange.save!

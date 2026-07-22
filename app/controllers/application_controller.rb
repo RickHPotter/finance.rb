@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
   before_action :resolve_current_context, unless: :devise_controller?
   before_action :set_locale
   before_action :redirect_turbo_stream_requests_to_html
+  around_action :with_audit_operation, if: :audit_mutating_request?
   # TODO: keep this for in development to see if it detects any bugs
   after_action :check_reasoning, if: -> { Rails.env.development? && !devise_controller? && action_name.in?(%w[create update destroy pay pay_multiple]) }
 
@@ -64,6 +65,29 @@ class ApplicationController < ActionController::Base
     end
   end
   helper_method :current_context
+
+  def with_audit_operation(&)
+    Audit::Operation.run(
+      actor: current_user,
+      context: current_context,
+      source: audit_operation_source,
+      request_id: request.request_id,
+      parent_operation_id: audit_parent_operation_id,
+      &
+    )
+  end
+
+  def audit_mutating_request?
+    request.request_method_symbol.in?(%i[post put patch delete])
+  end
+
+  def audit_operation_source
+    :web
+  end
+
+  def audit_parent_operation_id
+    nil
+  end
 
   def redirect_turbo_stream_requests_to_html
     return unless request.get? && request.path.ends_with?(".turbo_stream")

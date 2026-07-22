@@ -5,6 +5,7 @@ class CardTransaction < ApplicationRecord
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
+  include FinancialAuditable
   include HasCardInstallments
   include HasFinancialSafetyRules
   include HasFinancialSafetyGuards
@@ -16,8 +17,11 @@ class CardTransaction < ApplicationRecord
   include FriendNotifiable
   include PiggyBankCategorizable
 
+  audits_financial_changes skip: %i[card_installments_count]
+
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation, :skip_subscription_installment_sync
+  attr_accessor :duplicate, :edit_phase, :historical_correction_confirmation, :skip_subscription_installment_sync,
+                :skip_post_commit_financial_recalculation
 
   # @relationships ............................................................
   belongs_to :user
@@ -34,7 +38,7 @@ class CardTransaction < ApplicationRecord
   before_validation :set_paid, on: :create
   after_initialize :build_default_card_installments
   after_save :update_month_year, :sync_subscription_installment
-  after_commit :update_cash_balance, :update_associations_total
+  after_commit :update_cash_balance, :update_associations_total, unless: :skip_post_commit_financial_recalculation
 
   # @scopes ...................................................................
   # @class_methods ............................................................

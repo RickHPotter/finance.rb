@@ -9,6 +9,9 @@ class Subscription < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @includes .................................................................
   include CategoryTransactable
   include EntityTransactable
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[card_transactions_count cash_transactions_count price]
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -52,7 +55,7 @@ class Subscription < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def refresh_price!
-    update_columns(price: cash_transactions.sum(:price) + card_transactions.sum(:price))
+    Audit::BulkMutation.update_columns!(self, price: cash_transactions.sum(:price) + card_transactions.sum(:price))
   end
 
   def can_be_destroyed?

@@ -125,6 +125,9 @@ Rails.application.routes.draw do
   end
 
   resources :subscriptions, except: :show
+  resources :audit_operations, only: %i[index show]
+  resources :audit_versions, only: :index
+  get "audit_records/:item_type/:item_id", to: "audit_versions#index", defaults: { record_filter: true }, as: :record_audit_versions
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do
@@ -145,6 +148,10 @@ Rails.application.routes.draw do
 
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
+
+    resources :audit_operations, only: [] do
+      resource :rollback_preview, only: %i[show create], controller: "audit_rollback_previews"
+    end
 
     resource :settings, only: [] do
       get :exchange_audit

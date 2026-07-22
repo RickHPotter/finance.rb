@@ -88,7 +88,7 @@ class CashInstallment < Installment
   # @return [void].
   #
   def check_paid_situation
-    cash_transaction.update_columns(paid: should_be_paid?)
+    Audit::BulkMutation.update_columns!(cash_transaction, paid: should_be_paid?)
     sync_mirrored_exchange_settlement! if cash_transaction.exchange_return?
     cash_transaction.sync_exchange_entity_transaction_statuses! if cash_transaction.exchange_return?
 
@@ -115,7 +115,7 @@ class CashInstallment < Installment
 
     return if attributes.all? { |key, value| exchange.public_send(key) == value }
 
-    exchange.update_columns(attributes)
+    Audit::BulkMutation.update_columns!(exchange, attributes)
   end
 
   def shared_paid_state_transaction?
