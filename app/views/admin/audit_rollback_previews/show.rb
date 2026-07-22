@@ -5,6 +5,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
                "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
 
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::FormWith
 
   attr_reader :preview
 
@@ -19,7 +20,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
         preview_summary
         global_issues
         preview_rows
-        input(type: :hidden, id: "audit_rollback_apply_token", value: preview.apply_token)
+        apply_form if preview.state == "previewable"
       end
     end
   end
@@ -206,6 +207,21 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
       pre(class: "mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-emerald-200") do
         JSON.pretty_generate(before: row.before_state, expected_after: row.expected_after_state, current: row.current_state)
       end
+    end
+  end
+
+  def apply_form
+    form_with(url: admin_audit_operation_rollback_preview_path(preview.operation), method: :post,
+              class: "mt-5 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700") do |form|
+      form.hidden_field(:apply_token, value: preview.apply_token, id: "audit_rollback_apply_token")
+      if preview.confirmation_required?
+        label(class: "inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200") do
+          form.check_box(:historical_correction_confirmation, { class: "size-4 rounded border-slate-300 text-rose-700 focus:ring-rose-600" }, "1", "0")
+          span { I18n.t("audit.rollback.actions.confirm_history") }
+        end
+      end
+      form.submit(I18n.t("audit.rollback.actions.apply"),
+                  class: "min-h-10 rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500")
     end
   end
 end

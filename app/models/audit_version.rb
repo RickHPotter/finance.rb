@@ -63,7 +63,9 @@ end
 #  object          :jsonb
 #  object_changes  :jsonb
 #  whodunnit       :string
+# rubocop:disable Layout/LineLength
 #  created_at      :datetime         not null, indexed => [context_id], indexed => [event], indexed => [item_type, item_id], indexed => [mutation_source], indexed => [owner_id]
+# rubocop:enable Layout/LineLength
 #  context_id      :bigint           indexed => [created_at]
 #  item_id         :bigint           not null, indexed => [item_type, created_at]
 #  operation_id    :uuid             not null, indexed => [id]

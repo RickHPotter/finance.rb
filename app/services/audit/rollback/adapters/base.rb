@@ -3,13 +3,14 @@
 class Audit::Rollback::Adapters::Base
   DERIVED_ATTRIBUTES = %w[created_at updated_at].freeze
 
-  attr_reader :transition, :operation_keys
+  attr_reader :transition, :operation_keys, :transitions
 
   delegate :record_type, :item_id, :owner_id, :context_id, :before_state, :expected_after_state, :action, to: :transition
 
-  def initialize(transition:, operation_keys:)
+  def initialize(transition:, operation_keys:, transitions: [])
     @transition = transition
     @operation_keys = operation_keys
+    @transitions = transitions
   end
 
   def support_issues
@@ -50,6 +51,14 @@ class Audit::Rollback::Adapters::Base
     return @current_state = nil if current_record.nil?
 
     @current_state = Audit::Rollback::State.normalize(record_type, current_record.attributes.slice(*comparable_attributes))
+  end
+
+  def live_record
+    current_record
+  end
+
+  def restore_attributes
+    Audit::Rollback::Attributes.for(self)
   end
 
   def differences

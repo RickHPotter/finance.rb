@@ -150,7 +150,7 @@ Rails.application.routes.draw do
     get :data_backup, to: "backups#data_backup"
 
     resources :audit_operations, only: [] do
-      resource :rollback_preview, only: :show, controller: "audit_rollback_previews"
+      resource :rollback_preview, only: %i[show create], controller: "audit_rollback_previews"
     end
 
     resource :settings, only: [] do

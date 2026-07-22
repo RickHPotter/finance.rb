@@ -20,7 +20,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :min_date, :duplicate, :edit_phase, :skip_recalculate_balance, :source_message_id, :historical_correction_confirmation,
-                :piggy_bank_projection_write
+                :piggy_bank_projection_write, :skip_post_commit_financial_recalculation
 
   FRIEND_NOTIFICATION_INTENTS = %w[loan reimbursement].freeze
 
@@ -62,7 +62,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   before_destroy :prevent_piggy_bank_destruction, prepend: true
   after_initialize :build_default_cash_installments
   after_save :sync_subscription_installment, :sync_piggy_bank_projection, :set_min_date
-  after_commit :update_cash_balance, :update_associations_total
+  after_commit :update_cash_balance, :update_associations_total, unless: :skip_post_commit_financial_recalculation
 
   # @scopes ...................................................................
   scope :investment, -> { where(cash_transaction_type: "Investment") }

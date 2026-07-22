@@ -9,9 +9,9 @@ class Audit::Rollback::Registry
   }.freeze
 
   class << self
-    def build(transition:, operation_keys:)
+    def build(transition:, operation_keys:, transitions: [])
       adapter_class = ADAPTERS[transition.record_type]
-      adapter_class&.new(transition:, operation_keys:)
+      adapter_class&.new(transition:, operation_keys:, transitions:)
     end
 
     def supported_types

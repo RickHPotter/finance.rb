@@ -11,7 +11,7 @@ class Audit::Rollback::Preview
     transitions = Audit::Rollback::NetState.new(versions: operation.audit_versions).call
     operation_keys = transitions.map(&:key)
     @rows = transitions.map do |transition|
-      adapter = Audit::Rollback::Registry.build(transition:, operation_keys:)
+      adapter = Audit::Rollback::Registry.build(transition:, operation_keys:, transitions:)
       Audit::Rollback::PreviewRow.new(transition:, adapter:)
     end
     @global_issues = build_global_issues
@@ -61,6 +61,7 @@ class Audit::Rollback::Preview
   def build_global_issues
     issues = []
     issues << issue(:operation_has_no_versions) if rows.empty?
+    issues << issue(:operation_has_no_compensation) if rows.present? && rows.all? { |row| row.action == "none" }
     issues << issue(:target_not_committed) unless operation.result_committed?
     issues << issue(:rollback_target_not_supported) if operation.source_rollback? || operation.rollback_of_operation_id.present?
     issues

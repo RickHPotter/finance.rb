@@ -1645,6 +1645,13 @@ CREATE INDEX index_audit_operations_on_request_id ON public.audit_operations USI
 
 
 --
+-- Name: index_audit_operations_on_rollback_idempotency; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_audit_operations_on_rollback_idempotency ON public.audit_operations USING btree (rollback_of_operation_id, actor_id, ((metadata ->> 'preview_digest'::text))) WHERE (((source)::text = 'rollback'::text) AND ((result)::text = 'committed'::text) AND (rollback_of_operation_id IS NOT NULL) AND (actor_id IS NOT NULL) AND (metadata ? 'preview_digest'::text));
+
+
+--
 -- Name: index_audit_operations_on_rollback_of_operation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2675,6 +2682,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722090000'),
 ('20260719091000'),
 ('20260719090000'),
 ('20260714100000'),

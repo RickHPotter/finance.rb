@@ -71,6 +71,9 @@ end
 #  index_audit_operations_on_context_id_and_created_at  (context_id,created_at)
 #  index_audit_operations_on_parent_operation_id        (parent_operation_id)
 #  index_audit_operations_on_request_id                 (request_id) WHERE (request_id IS NOT NULL)
+# rubocop:disable Layout/LineLength
+#  index_audit_operations_on_rollback_idempotency       (rollback_of_operation_id, actor_id, ((metadata ->> 'preview_digest'::text))) UNIQUE WHERE (((source)::text = 'rollback'::text) AND ((result)::text = 'committed'::text) AND (rollback_of_operation_id IS NOT NULL) AND (actor_id IS NOT NULL) AND (metadata ? 'preview_digest'::text))
+# rubocop:enable Layout/LineLength
 #  index_audit_operations_on_rollback_of_operation_id   (rollback_of_operation_id)
 #  index_audit_operations_on_source_and_created_at      (source,created_at)
 #

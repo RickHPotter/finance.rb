@@ -62,6 +62,20 @@ RSpec.describe "Admin audit rollback previews", type: :request do
     expect(response.body).to include(admin_audit_operation_rollback_preview_path(operation))
   end
 
+  it "applies a current preview and redirects to the committed rollback operation" do
+    sign_in admin
+    preview = Audit::Rollback::Preview.new(operation:, actor: admin)
+
+    expect do
+      post admin_audit_operation_rollback_preview_path(operation), params: { apply_token: preview.apply_token }
+    end.to change { AuditOperation.where(source: :rollback, result: :committed).count }.by(1)
+
+    rollback_operation = AuditOperation.where(source: :rollback, result: :committed).order(:created_at).last
+    expect(response).to redirect_to(audit_operation_path(rollback_operation))
+    expect(rollback_operation).to have_attributes(actor_id: admin.id, rollback_of_operation_id: operation.id)
+    expect(transaction.reload.description).to eq("Original transaction")
+  end
+
   it "hides controls and endpoint discovery from ordinary users while recording the rejection" do
     sign_in user
 
@@ -78,6 +92,18 @@ RSpec.describe "Admin audit rollback previews", type: :request do
     rejection = AuditOperation.where(source: :rollback, result: :rejected).order(:created_at).last
     expect(rejection).to have_attributes(actor_id: user.id, context_id: user.main_context.id, rollback_of_operation_id: nil)
     expect(rejection.metadata).to eq("reason_code" => "authorization_denied")
+  end
+
+  it "rejects ordinary-user apply requests without exposing the target operation" do
+    sign_in user
+    preview = Audit::Rollback::Preview.new(operation:, actor: admin)
+
+    expect do
+      post admin_audit_operation_rollback_preview_path(operation), params: { apply_token: preview.apply_token }
+    end.to change { AuditOperation.where(source: :rollback, result: :rejected).count }.by(1)
+
+    expect(response).to have_http_status(:not_found)
+    expect(transaction.reload.description).to eq("Corrected transaction")
   end
 
   it "records a bounded rejected operation when an admin selects a missing target" do

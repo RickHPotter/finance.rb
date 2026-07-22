@@ -10,7 +10,9 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
 
   def support_issues
     attributes = SPECIAL_GRAPH_ATTRIBUTES.select { |attribute| historical_state[attribute].present? }
-    attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
+    issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
+    issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
+    issues
   end
 
   def dependencies
@@ -33,6 +35,13 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
 
   def historical_state
     expected_after_state || before_state || {}
+  end
+
+  def historical_installments
+    transitions.select do |candidate|
+      candidate.record_type == "CashInstallment" &&
+        candidate.before_state&.fetch("cash_transaction_id", nil) == item_id
+    end
   end
 
   def paid_history?
