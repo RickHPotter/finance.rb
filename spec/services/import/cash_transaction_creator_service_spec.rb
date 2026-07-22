@@ -87,7 +87,7 @@ RSpec.describe Import::CashTransactionCreatorService do
         )
       ).and_return(matched_transactions)
       expect(main_transaction).to receive(:update).with(date: Date.new(2026, 3, 15), imported: true)
-      expect(card_installment).to receive(:update_columns).with(date: Date.new(2026, 3, 15))
+      expect(card_installment).to receive(:update_columns).with({ date: Date.new(2026, 3, 15) })
 
       service.send(
         :add_card_advance,

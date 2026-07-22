@@ -115,6 +115,17 @@ RSpec.describe AuditVersion, type: :model do
       expect(invalid_version.errors).to include(:object)
     end
 
+    it "enforces payload limits for writes that bypass Active Record validations" do
+      attributes = version_attributes.except(:operation).merge(
+        operation_id: operation.id,
+        object: { "value" => "a" * 257.kilobytes },
+        created_at: Time.current
+      )
+
+      expect { described_class.insert_all!([ attributes ]) }
+        .to raise_error(ActiveRecord::StatementInvalid, /audit_versions_object_size/)
+    end
+
     it "aborts the surrounding business transaction when audit persistence fails" do
       expect do
         expect do

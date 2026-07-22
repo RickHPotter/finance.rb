@@ -74,5 +74,31 @@ RSpec.describe RecalculateBalanceJob, type: :job do
       )
       expect(Audit::Current).not_to be_active
     end
+
+    it "isolates audit state between sequential jobs" do
+      users = create_list(:user, 2, :random)
+      observed_boundaries = []
+      allow(Logic::RecalculateBalancesService).to receive(:new) do |**|
+        service = instance_double(Logic::RecalculateBalancesService)
+        allow(service).to receive(:call) do
+          observed_boundaries << Audit::Current.attributes.slice(:operation_id, :actor_id, :context_id, :root_source)
+        end
+        service
+      end
+
+      users.each do |user|
+        job = described_class.new(user:, context: user.main_context)
+        job.audit_actor_id = user.id
+        job.audit_context_id = user.main_context.id
+        job.perform_now
+        expect(Audit::Current).not_to be_active
+      end
+
+      expect(observed_boundaries.map { |boundary| boundary[:operation_id] }.uniq.size).to eq(2)
+      expect(observed_boundaries.map { |boundary| boundary[:actor_id] }).to eq(users.map(&:id))
+      expect(observed_boundaries.map { |boundary| boundary[:context_id] }).to eq(users.map { |user| user.main_context.id })
+      expect(observed_boundaries.pluck(:root_source)).to eq(%w[background_job background_job])
+      expect(PaperTrail.request.whodunnit).to be_nil
+    end
   end
 end

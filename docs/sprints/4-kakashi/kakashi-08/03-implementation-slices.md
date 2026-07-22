@@ -219,6 +219,8 @@ Commit: `feat: apply guarded financial rollback operations`
 7. Keep rollback adapters disabled behind a per-family registry until their full graph
    coverage passes.
 
+Operational runbook: [deployment and operations](06-deployment-and-operations.md).
+
 Acceptance criteria:
 
 - no audit context leaks between requests/jobs

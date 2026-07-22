@@ -27,6 +27,22 @@ RSpec.describe AuditOperation, type: :model do
   end
 
   describe "[ append-only contract ]" do
+    it "keeps both PostgreSQL append-only triggers enabled" do
+      triggers = ActiveRecord::Base.connection.select_rows(<<~SQL.squish)
+        SELECT tgrelid::regclass::text, tgname, tgenabled
+        FROM pg_trigger
+        WHERE tgname IN ('audit_operations_append_only', 'audit_versions_append_only')
+        ORDER BY tgname
+      SQL
+
+      expect(triggers).to eq(
+        [
+          %w[audit_operations audit_operations_append_only O],
+          %w[audit_versions audit_versions_append_only O]
+        ]
+      )
+    end
+
     it "rejects updates and destruction through Active Record" do
       expect { operation.update!(result: :failed) }.to raise_error(ActiveRecord::ReadOnlyRecord)
       expect { operation.destroy! }.to raise_error(ActiveRecord::ReadOnlyRecord)

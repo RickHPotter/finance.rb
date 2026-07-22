@@ -117,6 +117,20 @@ RSpec.describe FinancialAuditable, type: :model do
     expect(versions.first.object).not_to include("cash_installments_count", "created_at", "updated_at")
   end
 
+  it "records one version for one model event without recursively auditing audit rows" do
+    transaction = PaperTrail.request(enabled: false) { build_cash_transaction.tap(&:save!) }
+    operation = nil
+
+    Audit::Operation.run(actor: user, context:, source: :web) do
+      transaction.update!(description: "One audited correction")
+      operation = Audit::Operation.ensure_persisted!
+    end
+
+    versions = operation.audit_versions
+    expect(versions.where(item_type: "CashTransaction", item_id: transaction.id, event: :update).count).to eq(1)
+    expect(versions.where(item_type: %w[AuditOperation AuditVersion])).to be_empty
+  end
+
   it "captures before-state for callback-bypassing bulk deletion" do
     transaction = PaperTrail.request(enabled: false) { build_cash_transaction.tap(&:save!) }
     installment_ids = transaction.cash_installments.ids

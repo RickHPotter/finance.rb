@@ -32,6 +32,30 @@ RSpec.describe "Audit operation context", type: :request do
     expect(response).to have_http_status(:ok)
   end
 
+  it "does not leak actor or context between sequential mutating requests" do
+    second_user = create(:user, :random)
+    observed_boundaries = []
+    allow(Audit::Operation).to receive(:run).and_wrap_original do |method, **attributes, &block|
+      observed_boundaries << attributes.slice(:actor, :context, :source)
+      method.call(**attributes, &block)
+    end
+
+    patch switch_context_path(user.main_context)
+    expect(Audit::Current).not_to be_active
+    sign_out user
+    sign_in second_user
+    patch switch_context_path(second_user.main_context)
+
+    expect(observed_boundaries).to eq(
+      [
+        { actor: user, context: user.main_context, source: :web },
+        { actor: second_user, context: second_user.main_context, source: :web }
+      ]
+    )
+    expect(Audit::Current).not_to be_active
+    expect(PaperTrail.request.whodunnit).to be_nil
+  end
+
   it "selects specialized root sources for actionable messages and admin repairs" do
     messages_controller = MessagesController.new
     allow(messages_controller).to receive(:action_name).and_return("apply")

@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
+DEVELOPMENT_ENV = "set -a; if [ -f .env ]; then . ./.env; fi; set +a"
+TEST_ENV = "set -a; if [ -f .env.test ]; then . ./.env.test; elif [ -f .env ]; then . ./.env; fi; set +a"
+
 CI.run do
-  step "Setup", "bin/setup --skip-server"
+  step "Setup", "#{DEVELOPMENT_ENV}; bin/setup --skip-server"
 
   step "Style: Ruby", "bin/rubocop --parallel"
   step "Style: ERuby", "bin/erblint -la"
 
-  step "Specs: Rspec", "bin/rspec spec/models/ spec/concerns spec/requests"
+  step "Specs: Rspec", "#{TEST_ENV}; bin/rspec spec/models/ spec/concerns spec/requests"
 
   step "Security: Gem audit", "bin/bundler-audit --update"
   step "Security: Brakeman code analysis", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"

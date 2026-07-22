@@ -392,6 +392,7 @@ References:
 - [guarded rollback contract](docs/sprints/4-kakashi/kakashi-08/02-guarded-rollback-contract.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-08/03-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-08/04-decisions-and-test-matrix.md)
+- [deployment and operations](docs/sprints/4-kakashi/kakashi-08/06-deployment-and-operations.md)
 
 Explicitly out of scope:
 
