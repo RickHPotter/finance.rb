@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Views::Settings::Show < Views::Base
+  include Phlex::Rails::Helpers::LinkTo
+
   include TranslateHelper
 
   attr_reader :show_exchange_audit
@@ -18,6 +20,11 @@ class Views::Settings::Show < Views::Base
             render_scenario_badge
             p(class: "mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-400") { I18n.t("settings.description") }
           end
+
+          link_to(I18n.t("audit.actions.history"), audit_operations_path,
+                  class: "inline-flex min-h-10 items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 " \
+                         "dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800",
+                  data: { turbo_frame: "_top", turbo_prefetch: false })
         end
 
         div(class: "rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/70 dark:shadow-black/30",
