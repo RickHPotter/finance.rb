@@ -7,23 +7,18 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
   include ComponentsHelper
   include CacheHelper
 
-  attr_reader :month, :year, :user_card_id, :min_date, :max_date
+  attr_reader :month, :year, :user_card_id, :payment_window
 
-  def initialize(month:, year:, user_card_id:, min_date:, max_date:)
+  def initialize(month:, year:, user_card_id:, payment_window:)
     @month = month
     @year = year
     @user_card_id = user_card_id
-    @min_date = min_date
-    @max_date = max_date
+    @payment_window = payment_window
   end
 
   def view_template
     modal_id = "cardTransactionModal_#{user_card_id}_#{month}_#{year}"
-    if min_date.present? && max_date.present? && Time.zone.now.between?(Time.zone.parse(min_date), Time.zone.parse(max_date))
-      Time.zone.now.strftime("%Y-%m-%dT%H:%M")
-    else
-      max_date
-    end => default_date
+    date_input_id = "card_advance_date_#{user_card_id}_#{year}_#{month}"
 
     div(
       id: modal_id,
@@ -56,17 +51,19 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
           TextField form, :user_card_id, class: :hidden, value: user_card_id
 
           div(class: "mx-auto pb-4 text-center") do
-            bold_label(form, :date)
+            bold_label(form, :date, date_input_id)
 
-            TextField \
-              form, :date,
-              type: "datetime-local",
-              svg: :calendar,
-              class: "font-graduate dark:font-mono dark:[color-scheme:dark]",
-              min: min_date,
-              max: max_date,
-              value: default_date,
-              data: { controller: "autofocus" }
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: payment_window.default_datetime,
+              id: date_input_id,
+              min_datetime: payment_window.minimum,
+              min_datetime_message: payment_window_message,
+              max_datetime: payment_window.maximum,
+              max_datetime_message: payment_window_message,
+              autofocus: true
+            )
           end
 
           div(class: "mx-auto pb-4 text-center") do
@@ -100,6 +97,10 @@ class Views::CardTransactions::PayInAdvanceModal < Views::Base
   end
 
   private
+
+  def payment_window_message
+    I18n.t("card_advance.invalid_payment_window")
+  end
 
   def cancel_button_class
     "ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded " \

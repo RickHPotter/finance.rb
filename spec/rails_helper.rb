@@ -2,10 +2,10 @@
 
 require "simplecov"
 SimpleCov.start do
-  add_filter "/spec/"
-  add_filter "/app/helpers/"
-  add_filter "/app/controllers/"
-  add_filter "/config/"
+  skip "/spec/"
+  skip "/app/helpers/"
+  skip "/app/controllers/"
+  skip "/config/"
 end
 
 # This file is copied to spec/ when you run 'rails generate rspec:install'

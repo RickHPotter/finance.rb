@@ -50,6 +50,7 @@ export default class extends Controller {
         if (data.reference_date) {
           const referenceDate = new RailsDate(data.reference_date)
           dateInput.value = referenceDate.dateTime()
+          this.refreshDatetimeInput(dateInput)
         }
       }
     }
@@ -236,18 +237,16 @@ export default class extends Controller {
     if (!target) return
 
     this.element.querySelectorAll(".bound_type").forEach((element) => element.value = target.value)
+    const cardBound = target.value === "card_bound"
+    this.element.querySelectorAll(".exchange_date").forEach((element) => this.setExchangeDatetimeReadonly(element, cardBound))
 
-    if (target.value == "card_bound") {
-      this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = true)
-
+    if (cardBound) {
       this.monthYearExchangeTarget.textContent = ""
       const railsDueDate = this._getDueDate()
       this._updateWrappers(railsDueDate, 0)
 
       const prevMonthTarget = this.element.querySelector("[data-entity-transaction-target='button']")
       this.updateExchangeDate(prevMonthTarget, 0)
-    } else {
-      this.element.querySelectorAll(".exchange_date").forEach((element) => element.readOnly = false)
     }
   }
 
@@ -418,10 +417,22 @@ export default class extends Controller {
       target.querySelector(".exchange_number_display").textContent = index + startingNumber + 1
 
       target.querySelector(".exchange_month_year").textContent = startingRailsDate.monthYear()
-      target.querySelector(".exchange_date").value = proposedDate.dateTime()
+      const exchangeDateInput = target.querySelector(".exchange_date")
+      exchangeDateInput.value = proposedDate.dateTime()
+      this.refreshDatetimeInput(exchangeDateInput)
       target.querySelector(".exchange_month").value = startingRailsDate.month
       target.querySelector(".exchange_year").value = startingRailsDate.year
     })
+  }
+
+  refreshDatetimeInput(input) {
+    const control = input.closest("[data-controller~='datetime-input']")
+    control?.dispatchEvent(new CustomEvent("datetime-input:refresh", { bubbles: true }))
+  }
+
+  setExchangeDatetimeReadonly(input, readonly) {
+    const control = input.closest("[data-controller~='datetime-input']")
+    control?.dispatchEvent(new CustomEvent("datetime-input:readonly", { detail: { readonly }, bubbles: true }))
   }
 
   _getDueDate() {

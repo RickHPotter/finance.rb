@@ -210,7 +210,10 @@ export default class extends Controller {
   }
 
   updateInstallmentsDates() {
-    if (this.dateInputTarget.value === "") { this.dateInputTarget.value = RailsDate.now() }
+    if (this.dateInputTarget.value === "") {
+      this.dateInputTarget.value = RailsDate.now()
+      this.refreshDatetimeInput(this.dateInputTarget)
+    }
 
     const railsDueDate = this._getDueDate()
     this._updateWrappers(railsDueDate, { preserveLocked: true })
@@ -631,13 +634,16 @@ export default class extends Controller {
           1
         )
       } else {
+        const installmentDateInput = target.querySelector(".installment_date")
+
         target.querySelector(".installment_month_year").textContent = startingRailsDate.monthYear()
-        target.querySelector(".installment_date").value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
+        installmentDateInput.value = proposedDate.dateTime().length === 15 ? "0" + proposedDate.dateTime() : proposedDate.dateTime()
+        this.refreshDatetimeInput(installmentDateInput)
         target.querySelector(".installment_month").value = startingRailsDate.month
         target.querySelector(".installment_year").value = startingRailsDate.year
 
         if (target.querySelector("[data-action='click->reactive-form#togglePaid']")) {
-          this.setPaidIfPastCurrentDay({ target: target.querySelector(".installment_date") })
+          this.setPaidIfPastCurrentDay({ target: installmentDateInput })
         }
       }
 
@@ -646,6 +652,11 @@ export default class extends Controller {
     })
 
     this.element.dispatchEvent(new CustomEvent("installments:layout-changed", { bubbles: true }))
+  }
+
+  refreshDatetimeInput(input) {
+    const control = input.closest("[data-controller~='datetime-input']")
+    control?.dispatchEvent(new CustomEvent("datetime-input:refresh", { bubbles: true }))
   }
 
   // FIXME: this way will be a legacy and will serve as a user_card setting

@@ -2,19 +2,44 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["hiddenInput", "dateInput", "timeInput", "weekdayLabel"]
-  static values = { invalidTimeMessage: String, maxDatetime: String, maxDatetimeMessage: String }
+  static values = {
+    invalidTimeMessage: String,
+    readonly: Boolean,
+    minDatetime: String,
+    minDatetimeMessage: String,
+    maxDatetime: String,
+    maxDatetimeMessage: String
+  }
 
   connect() {
     this.handleFormSubmit = this.handleFormSubmit.bind(this)
     this.skipSubmitOnNextSync = false
     this.pendingQuietValue = null
     this.syncVisibleFromHidden()
+    this.applyReadonlyState(this.readonlyValue)
     this.updateWeekdayLabel()
     this.hiddenInputTarget.form?.addEventListener("submit", this.handleFormSubmit)
   }
 
   disconnect() {
     this.hiddenInputTarget.form?.removeEventListener("submit", this.handleFormSubmit)
+  }
+
+  refresh() {
+    this.pendingQuietValue = null
+    this.clearDateValidity()
+    this.clearValidity()
+    this.syncVisibleFromHidden()
+  }
+
+  setReadonly(event) {
+    this.readonlyValue = event.detail?.readonly === true
+  }
+
+  readonlyValueChanged(value) {
+    if (!this.hasDateInputTarget) return
+
+    this.applyReadonlyState(value)
   }
 
   formatTimeInput() {
@@ -55,13 +80,16 @@ export default class extends Controller {
     }
 
     this.clearValidity()
+    this.clearDateValidity()
     if (this.hasTimeInputTarget) this.timeInputTarget.value = parsedTime
     this.updateWeekdayLabel()
 
     const nextValue = `${nextDate}T${parsedTime}`
-    if (!this.withinAllowedRange(nextValue)) {
-      this.setInvalidMax()
-      this.showMessage("alert", this.maxDatetimeMessageValue)
+    const rangeViolation = this.rangeViolation(nextValue)
+    if (rangeViolation) {
+      const message = rangeViolation === "min" ? this.minDatetimeMessageValue : this.maxDatetimeMessageValue
+      this.setInvalidRange(message)
+      this.showMessage("alert", message)
       return
     }
 
@@ -73,7 +101,6 @@ export default class extends Controller {
     const pendingChanged = this.pendingQuietValue !== null && this.pendingQuietValue === nextValue && this.hiddenInputTarget.value !== nextValue
     if (this.hiddenInputTarget.value === nextValue && !pendingChanged) return
 
-    this.clearDateValidity()
     this.hiddenInputTarget.value = nextValue
     this.pendingQuietValue = null
     if (!dispatch) return
@@ -250,10 +277,12 @@ export default class extends Controller {
     this.timeInputTarget.validationMessage
   }
 
-  withinAllowedRange(nextValue) {
-    if (!this.hasMaxDatetimeValue || !this.maxDatetimeValue) return true
+  rangeViolation(nextValue) {
+    const value = this.dateTimeFromValue(nextValue)
+    if (this.hasMinDatetimeValue && this.minDatetimeValue && value < this.dateTimeFromValue(this.minDatetimeValue)) return "min"
+    if (this.hasMaxDatetimeValue && this.maxDatetimeValue && value > this.dateTimeFromValue(this.maxDatetimeValue)) return "max"
 
-    return this.dateTimeFromValue(nextValue) <= this.dateTimeFromValue(this.maxDatetimeValue)
+    return null
   }
 
   dateTimeFromValue(value) {
@@ -263,9 +292,20 @@ export default class extends Controller {
     return new Date(year, month - 1, day, hour, minute)
   }
 
-  setInvalidMax() {
-    this.dateInputTarget.setCustomValidity(this.maxDatetimeMessageValue)
+  setInvalidRange(message) {
+    this.dateInputTarget.setCustomValidity(message)
     this.dateInputTarget.reportValidity()
+  }
+
+  applyReadonlyState(readonly) {
+    const disabled = this.hiddenInputTarget.disabled || readonly
+    this.dateInputTarget.disabled = disabled
+    this.dateInputTarget.setAttribute("aria-readonly", readonly.toString())
+
+    if (!this.hasTimeInputTarget) return
+
+    this.timeInputTarget.disabled = disabled
+    this.timeInputTarget.setAttribute("aria-readonly", readonly.toString())
   }
 
   showMessage(type, message) {

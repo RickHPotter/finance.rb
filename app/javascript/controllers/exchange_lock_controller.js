@@ -7,6 +7,10 @@ export default class extends Controller {
     this.toggleAllowedLocks()
   }
 
+  exchangeTargetConnected(exchange) {
+    this.setPriceReadonly(exchange, exchange.dataset.locked === "true")
+  }
+
   lock(event) {
     const lockIcon = event.currentTarget
     const exchange = lockIcon.closest("[data-exchange-lock-target='exchange']")
@@ -19,6 +23,7 @@ export default class extends Controller {
         ex.classList.remove("border-green-300")
         ex.querySelector("[data-exchange-lock-target='lockBtn']").classList.add("hidden")
         ex.querySelector("[data-exchange-lock-target='unlockBtn']").classList.remove("hidden")
+        this.setPriceReadonly(ex, true)
       }
     })
 
@@ -37,6 +42,7 @@ export default class extends Controller {
       ex.classList.remove("border-red-300")
       ex.querySelector("[data-exchange-lock-target='lockBtn']").classList.remove("hidden")
       ex.querySelector("[data-exchange-lock-target='unlockBtn']").classList.add("hidden")
+      this.setPriceReadonly(ex, false)
     })
 
     this.toggleAllowedLocks()
@@ -60,5 +66,13 @@ export default class extends Controller {
         lockBtn.disabled = exchange.dataset.locked === "true"
       }
     })
+  }
+
+  setPriceReadonly(exchange, readonly) {
+    const price = exchange.querySelector("[data-exchange-lock-target~='price']")
+    if (!price) return
+
+    price.readOnly = readonly
+    price.setAttribute("aria-readonly", readonly.toString())
   }
 }

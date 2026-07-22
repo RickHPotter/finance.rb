@@ -236,6 +236,9 @@ Planned surfaces:
    - retain `reactive-form` date targets, automatic schedule updates, month/year
      synchronization, and cash paid-state behavior
    - preserve locked/paid installment behavior and exact nested parameter submission
+   - make installment prices read-only while their row is locked and editable again
+     when it is unlocked, while keeping generated card-payment and card-advance prices
+     permanently read-only
 
 2. Nested exchanges in the entity sheet
    - replace the raw `datetime-local` field in `Views::Exchanges::Fields`
@@ -244,11 +247,15 @@ Planned surfaces:
    - keep card-bound exchange dates read-only while allowing their derived value to be
      submitted and refreshed from the selected card reference
    - preserve exchange-lock and paid-history behavior
+   - make exchange prices read-only while their row is locked and editable again when
+     it is unlocked; card binding continues to control only date editability
 
 3. Card pay-in-advance modal
    - replace its remaining raw `datetime-local` field with
      `Views::Shared::DatetimeInput`
    - retain autofocus and the current minimum/maximum payment-date constraints
+   - enforce the same inclusive payment window in the backend so direct requests
+     cannot bypass the modal limits
    - align mobile calendar/clock behavior with the other payment modals
 
 Shared control work:
@@ -276,8 +283,17 @@ Regression coverage:
 - card-bound exchanges continue to derive their date from the user-card reference and
   submit it without becoming user-editable
 - locked or paid installment/exchange history remains protected
+- installment datetime editability follows the existing lock/unlock state
+- installment and exchange price editability follows the existing lock/unlock state,
+  except for permanently derived installment prices
 - duplicate and failed-validation rerenders preserve entered date and time values
 - desktop and mobile repeated rows remain compact and free of overlapping controls
+
+References:
+
+- [datetime control contract](docs/sprints/4-kakashi/kakashi-07/01-datetime-control-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-07/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-07/03-decisions-and-test-matrix.md)
 
 Explicitly out of scope:
 

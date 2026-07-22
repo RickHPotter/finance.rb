@@ -33,14 +33,16 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
     user_card_id = card_transaction_params[:user_card_id].presence
+    user_card = current_user.user_cards.find_by(id: user_card_id)
 
     card_installments = Logic::CardInstallments.find_ref_month_year_by_params(current_context, card_transaction_params, search_card_transaction_params)
 
     render Views::CardTransactions::MonthYear.new(
       mobile:,
       month_year:,
-      user_card_id:,
-      card_installments:
+      user_card:,
+      card_installments:,
+      current_context:
     )
   end
 
@@ -178,12 +180,13 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def pay_in_advance
-    @card_transaction = CardTransaction.new_advanced_payment(current_user, card_transaction_params, context: current_context)
-    @card_transaction.description = @card_transaction.card_advance_description
-    @card_transaction.card_installments.first.assign_attributes(@card_transaction.slice(:year, :month))
-    @card_transaction.save
-
     @user_card = current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
+    payment_window = card_advance_payment_window
+    payment_date = parsed_card_advance_date
+
+    return render_card_advance_failure(I18n.t("card_advance.invalid_payment_window")) unless payment_window&.cover?(payment_date)
+    return render_card_advance_failure(card_advance_save_failure_message) unless persist_card_advance(payment_date)
+
     build_index_context(card_installments_for_selected_user_card)
     @index_context[:active_month_years] = [ Date.new(@card_transaction.year, @card_transaction.month).strftime("%Y%m").to_i ]
 
@@ -233,6 +236,57 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def card_advance_payment_window
+    return if @user_card.blank?
+
+    Logic::CardAdvancePaymentWindow.new(
+      user_card: @user_card,
+      context: current_context,
+      month: card_transaction_params[:month],
+      year: card_transaction_params[:year]
+    )
+  end
+
+  def parsed_card_advance_date
+    Time.zone.parse(card_transaction_params[:date].to_s)&.change(sec: 0, usec: 0)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def persist_card_advance(payment_date)
+    saved = false
+    ActiveRecord::Base.transaction do
+      @card_transaction = CardTransaction.new_advanced_payment(current_user, card_advance_attributes(payment_date), context: current_context)
+      @card_transaction.description = @card_transaction.card_advance_description
+      @card_transaction.card_installments.first.assign_attributes(@card_transaction.slice(:year, :month))
+      saved = @card_transaction.save
+
+      raise ActiveRecord::Rollback unless saved
+    end
+    saved
+  rescue ActiveRecord::RecordInvalid => e
+    @card_transaction&.errors&.add(:base, e.message)
+    false
+  end
+
+  def card_advance_attributes(payment_date)
+    card_transaction_params.slice(:date, :month, :year, :price, :user_card_id).merge(date: payment_date)
+  end
+
+  def card_advance_save_failure_message
+    errors = @card_transaction&.errors
+    errors&.full_messages&.to_sentence.presence || I18n.t("card_advance.not_created")
+  end
+
+  def render_card_advance_failure(alert_message)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message }), status: :unprocessable_content
+      end
+      format.html { render plain: alert_message, status: :unprocessable_content }
+    end
+  end
 
   def set_card_tabs
     set_tabs(active_menu: :card, active_sub_menu: card_tab_name_for_state)

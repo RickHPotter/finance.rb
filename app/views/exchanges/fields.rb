@@ -67,20 +67,27 @@ module Views
           end
 
           div(class: "flex-1 grid gap-1") do
-            form.text_field \
-              :date,
-              id: :exchange_date,
-              type: "datetime-local",
-              value: (exchange.date || exchange.cash_transaction&.date)&.strftime("%Y-%m-%dT%H:%M"),
-              class: exchange_input_class("exchange_date"),
-              readonly: bound_type == :card_bound,
-              data: { entity_transaction_target: :dateInput, action: "change->entity-transaction#updateReferenceMonthYear" }
+            render Views::Shared::DatetimeInput.new(
+              form:,
+              field: :date,
+              value: exchange.date || exchange.cash_transaction&.date,
+              id: exchange_date_id,
+              hidden_class: "exchange_date",
+              hidden_data: {
+                entity_transaction_target: :dateInput,
+                action: "change->entity-transaction#updateReferenceMonthYear"
+              },
+              compact: true,
+              readonly: bound_type == :card_bound
+            )
 
             div(class: "flex gap-1") do
               form.text_field \
                 :price,
                 inputmode: :numeric,
                 class: exchange_input_class("dynamic-price sign-based price-input"),
+                readonly: locked?,
+                aria: { readonly: locked? },
                 data: {
                   controller: "input-select",
                   price_mask_target: :input,
@@ -115,6 +122,13 @@ module Views
         exchange.effective_paid_state
       end
 
+      def exchange_date_id
+        parent_index = form.options[:parent_builder]&.index
+        nested_index = [ parent_index, form.index ].compact.join("_")
+
+        "exchange_date_#{nested_index}"
+      end
+
       def exchange_border_class
         locked? ? "border-green-300 dark:border-emerald-500/40" : "border-red-300 dark:border-red-500/40"
       end
@@ -122,7 +136,8 @@ module Views
       def exchange_input_class(extra_classes)
         "#{extra_classes} w-full border border-gray-300 bg-gray-50 text-gray-900 text-sm rounded-lg p-2 " \
           "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/50 " \
-          "dark:focus:ring-2 dark:focus:ring-sky-500/60"
+          "read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-500 read-only:opacity-70 dark:focus:ring-2 " \
+          "dark:focus:ring-sky-500/60 dark:read-only:bg-slate-950 dark:read-only:text-slate-500"
       end
     end
   end

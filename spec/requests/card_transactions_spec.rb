@@ -80,6 +80,20 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('id="card_transaction_date"')
       expect(response.body).to include('id="card_transaction_date_time_input"')
       expect(response.body).not_to include("hw-combobox")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      installment_dates = document.css("input.installment_date")
+      active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
+      datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+
+      expect(installment_dates.map { |input| input["id"] }).to contain_exactly("installment_date_NEW_RECORD", "installment_date_0")
+      expect(active_installment_date["type"]).to eq("hidden")
+      expect(active_installment_date["name"]).to eq("card_transaction[card_installments_attributes][0][date]")
+      expect(active_installment_date["data-reactive-form-target"]).to eq("dateInput")
+      expect(active_installment_date["data-action"]).to be_nil
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
+      expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
+      expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
     end
 
     it "renders the card-specific form skeleton on edit" do
@@ -102,6 +116,45 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="card_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="card_transaction[historical_correction_confirmation]"')
+    end
+
+    it "renders card-bound exchange datetimes as read-only while keeping their canonical values enabled" do
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        description: "Card-bound exchange datetime",
+        price: -2_200,
+        date: Time.zone.local(2026, 3, 10, 14, 30),
+        month: 4,
+        year: 2026
+      )
+      exchange = attach_locked_exchange_projection(transaction)
+      exchange.update_columns(bound_type: "card_bound", date: Time.zone.local(2026, 4, 20, 16, 45), month: 4, year: 2026)
+
+      get edit_card_transaction_path(transaction.reload)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      exchange_date = document.css("input.exchange_date").find { |input| input["value"] == "2026-04-20T16:45" }
+      datetime_wrapper = exchange_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      exchange_wrapper = exchange_date.ancestors.find { |node| node["data-exchange-lock-target"] == "exchange" }
+      price_input = exchange_wrapper.at_css("[data-exchange-lock-target~='price']")
+
+      expect(exchange_date["id"]).to eq("exchange_date_0_0")
+      expect(exchange_date["type"]).to eq("hidden")
+      expect(exchange_date["disabled"]).to be_nil
+      expect(exchange_date["name"]).to eq("card_transaction[entity_transactions_attributes][0][exchanges_attributes][0][date]")
+      expect(exchange_date["data-entity-transaction-target"]).to eq("dateInput")
+      expect(datetime_wrapper["data-datetime-input-readonly-value"]).to eq("")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_date_input")["disabled"]).to eq("disabled")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["disabled"]).to eq("disabled")
+      expect(datetime_wrapper.at_css("#exchange_date_0_0_time_input")["value"]).to eq("16:45")
+      expect(datetime_wrapper.at_css("input[type='datetime-local']")).to be_nil
+      expect(document.css("input.exchange_date").map { |input| input["id"] }).to eq(document.css("input.exchange_date").map { |input| input["id"] }.uniq)
+      expect(price_input["readonly"]).to be_nil
+      expect(price_input["aria-readonly"]).to eq("false")
+      expect(price_input["name"]).to eq("card_transaction[entity_transactions_attributes][0][exchanges_attributes][0][price]")
     end
 
     it "renders the bulk add to subscription action on the index" do
@@ -349,18 +402,36 @@ RSpec.describe "CardTransactions", type: :request do
     transaction.reload
   end
 
-  def create_card_advance_transaction(price: 200, date: Time.zone.today)
+  def create_card_advance_transaction(price: 200, date: nil)
+    installment, reference = card_advance_cycle
+
     post pay_in_advance_card_transactions_path, params: {
       card_transaction: {
         user_card_id: user_card_one.id,
-        date:,
-        month: date.month,
-        year: date.year,
+        date: date || reference.reference_date.in_time_zone,
+        month: installment.month,
+        year: installment.year,
         price:
       }
     }, headers: turbo_stream_headers
 
     CardTransaction.last
+  end
+
+  def card_advance_cycle
+    source_transaction = user.main_context.card_transactions.where(user_card: user_card_one).order(:id).first
+    installment = source_transaction.card_installments.order(:number).first
+    reference = user_card_one.references.find_by(context: user.main_context, month: installment.month, year: installment.year)
+    reference ||= create(
+      :reference,
+      user_card: user_card_one,
+      context: user.main_context,
+      month: installment.month,
+      year: installment.year,
+      reference_date: Date.new(installment.year, installment.month, 1).end_of_month
+    )
+
+    [ installment, reference ]
   end
 
   def create_card_transaction_with_locked_exchange_projection(description: "Locked exchange projection")
@@ -1689,6 +1760,28 @@ RSpec.describe "CardTransactions", type: :request do
       created_transaction = CardTransaction.order(:id).last
       installment = created_transaction.card_installments.first
       installment_month_year = "#{installment.year}#{installment.month.to_s.rjust(2, '0')}"
+      cycle_date = Date.new(installment.year, installment.month, 1)
+      previous_cycle = cycle_date.prev_month
+      create(
+        :reference,
+        user_card: user_card_one,
+        context: user.main_context,
+        month: previous_cycle.month,
+        year: previous_cycle.year,
+        reference_date: previous_cycle.change(day: 20),
+        reference_closing_date: previous_cycle.change(day: 10),
+        skip_reference_closing_date_calculation: true
+      )
+      create(
+        :reference,
+        user_card: user_card_one,
+        context: user.main_context,
+        month: cycle_date.month,
+        year: cycle_date.year,
+        reference_date: cycle_date.end_of_month,
+        reference_closing_date: cycle_date.change(day: 10),
+        skip_reference_closing_date_calculation: true
+      )
 
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
@@ -1700,9 +1793,27 @@ RSpec.describe "CardTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       modal_id = "cardTransactionModal_#{user_card_one.id}_#{installment.month}_#{installment.year}"
-      date_input = document.at_css("##{modal_id} #card_transaction_date")
+      input_id = "card_advance_date_#{user_card_one.id}_#{installment.year}_#{installment.month}"
+      canonical_input = document.at_css("##{modal_id} ##{input_id}")
+      date_input = document.at_css("##{modal_id} ##{input_id}_date_input")
+      time_input = document.at_css("##{modal_id} ##{input_id}_time_input")
+      datetime_wrapper = canonical_input.ancestors.find { |node| node["data-controller"] == "datetime-input" }
+      payment_window = Logic::CardAdvancePaymentWindow.new(
+        user_card: user_card_one,
+        context: user.main_context,
+        month: installment.month,
+        year: installment.year
+      )
 
+      expect(canonical_input["type"]).to eq("hidden")
+      expect(canonical_input["name"]).to eq("card_transaction[date]")
       expect(date_input["data-controller"]).to include("autofocus")
+      expect(date_input["min"]).to eq(payment_window.minimum.strftime("%Y-%m-%d"))
+      expect(date_input["max"]).to eq(payment_window.maximum.strftime("%Y-%m-%d"))
+      expect(datetime_wrapper["data-datetime-input-min-datetime-value"]).to eq(payment_window.minimum.strftime("%Y-%m-%dT%H:%M"))
+      expect(datetime_wrapper["data-datetime-input-max-datetime-value"]).to eq(payment_window.maximum.strftime("%Y-%m-%dT%H:%M"))
+      expect(canonical_input["value"]).to eq("#{date_input['value']}T#{time_input['value']}")
+      expect(document.at_css("##{modal_id} input[type='datetime-local']")).to be_nil
     end
   end
 
@@ -2342,18 +2453,40 @@ RSpec.describe "CardTransactions", type: :request do
       card_transaction.entity_transactions = [ { entity_id: entity_one.id, price: 0, price_to_be_returned: 0, exchanges_attributes: [] } ]
       card_transaction.price = -500
       post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+
+      source_transaction = user.main_context.card_transactions.where(user_card: user_card_one).order(:id).first
+      installment = source_transaction.card_installments.order(:number).first
+      cycle_date = Date.new(installment.year, installment.month, 1)
+      create(
+        :reference,
+        user_card: user_card_one,
+        context: user.main_context,
+        month: installment.month,
+        year: installment.year,
+        reference_date: cycle_date.end_of_month,
+        reference_closing_date: cycle_date.change(day: 10),
+        skip_reference_closing_date_calculation: true
+      )
+    end
+
+    def valid_card_advance_attributes(context:, price: 200)
+      source_transaction = context.card_transactions.where(user_card: user_card_one).order(:id).first
+      installment = source_transaction.card_installments.order(:number).first
+      reference = user_card_one.references.find_by!(context:, month: installment.month, year: installment.year)
+
+      {
+        user_card_id: user_card_one.id,
+        date: reference.reference_date.in_time_zone,
+        month: installment.month,
+        year: installment.year,
+        price:
+      }
     end
 
     it "creates a CARD ADVANCE transaction and its linked cash transaction" do
       expect do
         post pay_in_advance_card_transactions_path, params: {
-          card_transaction: {
-            user_card_id: user_card_one.id,
-            date: Time.zone.today,
-            month: Time.zone.today.month,
-            year: Time.zone.today.year,
-            price: 200
-          }
+          card_transaction: valid_card_advance_attributes(context: user.main_context)
         }, headers: turbo_stream_headers
       end.to change(CardTransaction, :count).by(1)
 
@@ -2377,13 +2510,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       expect do
         post pay_in_advance_card_transactions_path, params: {
-          card_transaction: {
-            user_card_id: user_card_one.id,
-            date: Time.zone.today,
-            month: Time.zone.today.month,
-            year: Time.zone.today.year,
-            price: 200
-          }
+          card_transaction: valid_card_advance_attributes(context: derived_context)
         }, headers: turbo_stream_headers
       end.to change { derived_context.card_transactions.reload.count }.by(1)
          .and change { derived_context.cash_transactions.reload.count }.by(1)
@@ -2396,6 +2523,51 @@ RSpec.describe "CardTransactions", type: :request do
       expect(advanced_card_transaction.advance_cash_transaction).to be_present
       expect(advanced_card_transaction.context).to eq(derived_context)
       expect(advanced_card_transaction.advance_cash_transaction.context).to eq(derived_context)
+    end
+
+    it "rejects a payment outside the server-owned cycle window without creating card or cash records" do
+      attributes = valid_card_advance_attributes(context: user.main_context)
+      payment_window = Logic::CardAdvancePaymentWindow.new(
+        user_card: user_card_one,
+        context: user.main_context,
+        month: attributes[:month],
+        year: attributes[:year]
+      )
+      attributes[:date] = payment_window.maximum + 1.minute
+
+      expect do
+        post pay_in_advance_card_transactions_path, params: { card_transaction: attributes }, headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(0)
+         .and change(CashTransaction, :count).by(0)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("card_advance.invalid_payment_window"))
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+    end
+
+    it "rejects a payment immediately before the server-owned minimum boundary" do
+      attributes = valid_card_advance_attributes(context: user.main_context)
+      cycle_date = Date.new(attributes[:year], attributes[:month], 1)
+      previous_cycle = cycle_date.prev_month
+      previous_reference = create(
+        :reference,
+        user_card: user_card_one,
+        context: user.main_context,
+        month: previous_cycle.month,
+        year: previous_cycle.year,
+        reference_date: previous_cycle.end_of_month,
+        reference_closing_date: previous_cycle.change(day: 10),
+        skip_reference_closing_date_calculation: true
+      )
+      attributes[:date] = previous_reference.reference_closing_date.in_time_zone - 1.minute
+
+      expect do
+        post pay_in_advance_card_transactions_path, params: { card_transaction: attributes }, headers: turbo_stream_headers
+      end.to change(CardTransaction, :count).by(0)
+         .and change(CashTransaction, :count).by(0)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("card_advance.invalid_payment_window"))
     end
   end
 end

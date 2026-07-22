@@ -97,9 +97,10 @@ export default class extends Controller {
 
     this.itemTargets.forEach((item) => {
       item.classList.toggle("!basis-full", this.expanded)
-      item.classList.toggle("md:!basis-1/2", this.expanded)
-      item.classList.toggle("lg:!basis-1/3", this.expanded)
-      item.classList.toggle("xl:!basis-1/4", this.expanded)
+      item.classList.toggle("sm:!basis-1/2", this.expanded)
+      item.classList.toggle("md:!basis-1/3", this.expanded)
+      item.classList.toggle("lg:!basis-1/4", this.expanded)
+      item.classList.toggle("xl:!basis-1/5", this.expanded)
     })
 
     this.reduceSlotTarget.classList.toggle("hidden", !this.expanded)
