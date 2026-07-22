@@ -34,7 +34,10 @@ class Views::AuditOperations::Show < Views::Base
         p(class: "text-xs font-semibold uppercase text-sky-700 dark:text-sky-300") { I18n.t("audit.operations.operation") }
         h1(class: "mt-1 wrap-break-word font-mono text-lg font-bold text-slate-950 sm:text-xl dark:text-slate-100") { operation.id }
       end
-      link_to(I18n.t("navigation.back"), audit_operations_path, class: LINK_CLASS)
+      div(class: "flex flex-wrap gap-2") do
+        link_to(I18n.t("audit.rollback.preview"), admin_audit_operation_rollback_preview_path(operation), class: LINK_CLASS) if current_user.admin?
+        link_to(I18n.t("navigation.back"), audit_operations_path, class: LINK_CLASS)
+      end
     end
   end
 

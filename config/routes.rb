@@ -149,6 +149,10 @@ Rails.application.routes.draw do
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
 
+    resources :audit_operations, only: [] do
+      resource :rollback_preview, only: :show, controller: "audit_rollback_previews"
+    end
+
     resource :settings, only: [] do
       get :exchange_audit
       get :exchange_return_audit_misplaced_loans

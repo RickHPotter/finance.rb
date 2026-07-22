@@ -30,24 +30,6 @@ class Audit::VersionPresenter
     end
   end
 
-  def raw_payload
-    {
-      item_type: version.item_type,
-      item_subtype: version.item_subtype,
-      item_id: version.item_id,
-      event: version.event,
-      object: version.object,
-      object_changes: version.object_changes,
-      metadata: version.metadata
-    }
-  end
-
-  private
-
-  def model_class
-    @model_class ||= (version.item_subtype.presence || version.item_type).safe_constantize
-  end
-
   def attribute_label(attribute)
     model_class&.human_attribute_name(attribute, default: attribute.humanize) || attribute.humanize
   end
@@ -64,6 +46,24 @@ class Audit::VersionPresenter
     end
   rescue ArgumentError
     value.to_s
+  end
+
+  def raw_payload
+    {
+      item_type: version.item_type,
+      item_subtype: version.item_subtype,
+      item_id: version.item_id,
+      event: version.event,
+      object: version.object,
+      object_changes: version.object_changes,
+      metadata: version.metadata
+    }
+  end
+
+  private
+
+  def model_class
+    @model_class ||= (version.item_subtype.presence || version.item_type).safe_constantize
   end
 
   def format_money(value)
