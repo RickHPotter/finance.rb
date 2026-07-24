@@ -138,6 +138,13 @@ Rails.application.routes.draw do
   patch "healthcheck/checks/:check_key/repairs/:repair_key",
         to: "health_check/repairs#update",
         as: :healthcheck_repair
+  match "healthcheck/maintenance/naming-convention/preview",
+        to: "health_check/naming_conventions#preview",
+        via: %i[get post],
+        as: :preview_healthcheck_naming_convention
+  patch "healthcheck/maintenance/naming-convention",
+        to: "health_check/naming_conventions#update",
+        as: :healthcheck_naming_convention
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do
@@ -150,30 +157,11 @@ Rails.application.routes.draw do
 
   resources :push_subscriptions, only: :create
 
-  resource :naming_convention, only: [] do
-    get :preview
-    post :preview
-    patch :update
-  end
-
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
 
     resources :audit_operations, only: [] do
       resource :rollback_preview, only: %i[show create], controller: "audit_rollback_previews"
-    end
-
-    resource :settings, only: [] do
-      get :exchange_audit
-      get :exchange_return_audit_misplaced_loans
-      get :exchange_return_audit
-      get :exchange_return_audit_issue_bucket
-      get :card_exchange_projection_audit
-      get :piggy_bank_audit
-      patch :apply_exchange_audit
-      patch :convert_exchange_audit_loan_intent
-      patch :convert_misplaced_loan
-      patch :mark_exchange_return_source_as_fee
     end
   end
 

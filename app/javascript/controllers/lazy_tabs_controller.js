@@ -7,20 +7,20 @@ export default class extends Controller {
   connect() {
     if (this.hasCurrentValue && this.currentValue === "") return
 
-    const initial = this.currentValue || this.tabTargets[0]?.dataset.namingTabsName
+    const initial = this.currentValue || this.tabTargets[0]?.dataset.lazyTabsName
     if (initial) this.show(initial)
   }
 
   select(event) {
     event.preventDefault()
-    this.show(event.currentTarget.dataset.namingTabsName)
+    this.show(event.currentTarget.dataset.lazyTabsName)
   }
 
   show(name) {
     this.currentValue = name
 
     this.tabTargets.forEach((tab) => {
-      const active = tab.dataset.namingTabsName === name
+      const active = tab.dataset.lazyTabsName === name
       tab.setAttribute("aria-selected", active.toString())
       tab.tabIndex = active ? 0 : -1
       tab.classList.toggle("bg-sky-500", active)
@@ -32,7 +32,7 @@ export default class extends Controller {
     })
 
     this.panelTargets.forEach((panel) => {
-      const active = panel.dataset.namingTabsName === name
+      const active = panel.dataset.lazyTabsName === name
       panel.setAttribute("aria-hidden", (!active).toString())
       panel.classList.toggle("hidden", !active)
       if (active) this.loadPanel(panel)
@@ -40,9 +40,9 @@ export default class extends Controller {
   }
 
   loadPanel(panel) {
-    const frame = panel.querySelector("turbo-frame[data-naming-tabs-lazy-src]")
+    const frame = panel.querySelector("turbo-frame[data-lazy-tabs-lazy-src]")
     if (!frame || frame.getAttribute("src")) return
 
-    frame.setAttribute("src", frame.dataset.namingTabsLazySrc)
+    frame.setAttribute("src", frame.dataset.lazyTabsLazySrc)
   }
 }

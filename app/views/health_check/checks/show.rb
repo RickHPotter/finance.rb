@@ -209,10 +209,10 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
 
   def issue_translation_key(code)
     {
-      "exchange_trio" => "settings.exchange_audit.issue_codes.#{code}",
-      "exchange_return" => "settings.exchange_return_audit.issue_codes.#{code}",
-      "card_exchange_projection" => "settings.card_exchange_projection_audit.issue_codes.#{code}",
-      "piggy_bank" => "settings.piggy_bank_audit.issues.#{code}"
+      "exchange_trio" => "health_check.details.issue_codes.exchange_trio.#{code}",
+      "exchange_return" => "health_check.details.issue_codes.exchange_return.#{code}",
+      "card_exchange_projection" => "health_check.details.issue_codes.card_exchange_projection.#{code}",
+      "piggy_bank" => "health_check.details.issue_codes.piggy_bank.#{code}"
     }.fetch(entry.key, "health_check.details.issues.#{code}")
   end
 

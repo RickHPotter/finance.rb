@@ -17,7 +17,7 @@ module Views::Balances::AnalysisTabs
       aria: { selected: selected.to_s, controls: "balances_#{name}_panel" },
       tabindex: selected ? 0 : -1,
       class: "shrink-0 rounded-full bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-700 transition-colors dark:bg-slate-800 dark:text-slate-200",
-      data: { action: "click->naming-tabs#select", naming_tabs_target: "tab", naming_tabs_name: name }
+      data: { action: "click->lazy-tabs#select", lazy_tabs_target: "tab", lazy_tabs_name: name }
     ) { label }
   end
 

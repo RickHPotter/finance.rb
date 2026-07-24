@@ -56,12 +56,11 @@ RSpec.describe "Audit operation context", type: :request do
     expect(PaperTrail.request.whodunnit).to be_nil
   end
 
-  it "selects specialized root sources for actionable messages and admin repairs" do
+  it "selects the specialized root source for actionable messages" do
     messages_controller = MessagesController.new
     allow(messages_controller).to receive(:action_name).and_return("apply")
 
     expect(messages_controller.send(:audit_operation_source)).to eq(:actionable_message)
-    expect(Admin::SettingsController.new.send(:audit_operation_source)).to eq(:admin_repair)
   end
 
   it "links actionable message work to the latest audited sender operation" do

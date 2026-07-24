@@ -96,7 +96,9 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(response).to have_http_status(:success)
     expect(document.at_css("#health_check_overview_unavailable").text).to include(HealthCheck::Registry.entries.count.to_s)
     expect(document.css("[id^='health_check_reason_']").map { |node| node.text.strip }).to all(eq(I18n.t("health_check.reasons.never_run")))
-    expect(response.body).to include(preview_naming_convention_path)
+    expect(response.body).to include(preview_healthcheck_naming_convention_path)
+    expect(response.body).to include("healthcheck_naming_convention_content")
+    expect(response.body).not_to include("settings_")
   end
 
   it "distinguishes a completed healthy result from checks that have never run" do

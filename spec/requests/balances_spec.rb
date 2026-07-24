@@ -23,7 +23,9 @@ RSpec.describe "Balances", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       analysis_frame = document.at_css("turbo-frame#balances_monthly_analysis_content")
       expect(analysis_frame["src"]).to be_nil
-      expect(analysis_frame["data-naming-tabs-lazy-src"]).to eq(monthly_analysis_balances_path)
+      expect(analysis_frame["data-lazy-tabs-lazy-src"]).to eq(monthly_analysis_balances_path)
+      expect(document.at_css("[data-controller='lazy-tabs']")).to be_present
+      expect(response.body).not_to include("naming-tabs")
       expect(response.body).not_to include("data-controller=\"balances-monthly-analysis\"")
     end
   end

@@ -23,6 +23,6 @@ class Views::HealthCheck::Checks::PiggyBankFinding < Views::HealthCheck::Checks:
   private
 
   def issue_translation_key(code)
-    "settings.piggy_bank_audit.issues.#{code}"
+    "health_check.details.issue_codes.piggy_bank.#{code}"
   end
 end

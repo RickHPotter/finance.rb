@@ -30,6 +30,6 @@ class Views::HealthCheck::Checks::ExchangeTrioFinding < Views::HealthCheck::Chec
   end
 
   def issue_translation_key(code)
-    "settings.exchange_audit.issue_codes.#{code}"
+    "health_check.details.issue_codes.exchange_trio.#{code}"
   end
 end

@@ -15,11 +15,11 @@ class Views::HealthCheck::Dashboard::Maintenance < Views::Base
         p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("health_check.maintenance.naming.description") }
         link_to(
           I18n.t("health_check.maintenance.naming.action"),
-          preview_naming_convention_path,
+          preview_healthcheck_naming_convention_path,
           class: naming_link_class,
-          data: { turbo_frame: "naming_convention_content", turbo_prefetch: false }
+          data: { turbo_frame: "healthcheck_naming_convention_content", turbo_prefetch: false }
         )
-        turbo_frame_tag "naming_convention_content", class: "mt-4 block"
+        turbo_frame_tag "healthcheck_naming_convention_content", class: "mt-4 block"
       end
     end
   end

@@ -23,6 +23,6 @@ class Views::HealthCheck::Checks::CardExchangeProjectionFinding < Views::HealthC
   private
 
   def issue_translation_key(code)
-    "settings.card_exchange_projection_audit.issue_codes.#{code}"
+    "health_check.details.issue_codes.card_exchange_projection.#{code}"
   end
 end

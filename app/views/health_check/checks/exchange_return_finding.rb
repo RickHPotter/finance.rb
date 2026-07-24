@@ -23,6 +23,6 @@ class Views::HealthCheck::Checks::ExchangeReturnFinding < Views::HealthCheck::Ch
   private
 
   def issue_translation_key(code)
-    "settings.exchange_return_audit.issue_codes.#{code}"
+    "health_check.details.issue_codes.exchange_return.#{code}"
   end
 end

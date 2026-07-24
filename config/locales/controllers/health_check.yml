@@ -22,6 +22,47 @@ en:
         title: "Naming Convention"
         description: "Preview transaction naming suggestions without changing health status counts."
         action: "Open preview"
+    naming_conventions:
+      refresh_preview: "Refresh Preview"
+      preview_again: "Preview Again"
+      no_changes_found: "No naming convention changes were found."
+      no_changes_applied: "No naming convention changes were applied."
+      will_update:
+        one: "1 record will be updated."
+        other: "%{count} records will be updated."
+      did_update:
+        one: "1 record updated."
+        other: "%{count} records updated."
+      confirmation: "I reviewed every proposed description and explicitly confirm these naming changes."
+      apply: "Apply reviewed naming changes"
+      conventions:
+        investment: "Investment"
+        exchange_return: "Lend Return"
+        card_payment: "Card Payment"
+        card_advance: "Card Advance"
+      group:
+        card_transaction: "CardTransaction"
+        installments_count: "installments_count"
+        exchanges_count: "exchanges_count"
+        entity: "entity"
+      result:
+        states:
+          applied:
+            title: "Naming changes committed"
+          rejected:
+            title: "Naming changes rejected"
+          failed:
+            title: "Naming changes failed safely"
+        reasons:
+          authorization_denied: "Administrator authorization is required."
+          invalid_token: "The preview token is invalid, tampered with, or expired. Request a fresh preview."
+          confirmation_required: "Explicit confirmation is required before applying naming changes."
+          token_actor_mismatch: "The preview belongs to another administrator."
+          token_context_mismatch: "The selected context changed after preview."
+          stale_preview: "Naming candidates changed after preview. Nothing was overwritten."
+          validation_failed: "A required naming mutation failed. Every change was rolled back."
+          unexpected_failure: "Naming changes failed safely. No partial mutation was committed."
+        audit: "Open audit operation"
     history:
       action: "Audit history"
     actions:
@@ -93,6 +134,57 @@ en:
         valuation_delta: "Valuation delta"
       issues:
         misplaced_exchange_intent: "Loan intent disagrees with the current financial behavior"
+      issue_codes:
+        exchange_trio:
+          multiple_middle_candidates: "Multiple sender exchange-return options"
+          missing_middle: "Missing sender exchange return"
+          missing_receiver_reference: "Missing receiver-side local transaction"
+          missing_receiver_exchange_return: "Missing receiver exchange return"
+          source_reference_should_be_blank: "Source transaction should not reference another transaction"
+          middle_reference_missing: "Sender exchange return is missing its source reference"
+          middle_reference_mismatch: "Sender exchange return points to the wrong parent"
+          middle_candidate_reference_missing: "A sender exchange-return option is missing its source reference"
+          middle_candidate_reference_mismatch: "A sender exchange-return option points to the wrong parent"
+          middle_candidate_reference_should_be_blank: "A sender exchange-return option should not point to another transaction"
+          receiver_shared_return_reference_missing: "Receiver borrow return is missing its sender exchange-return reference"
+          receiver_shared_return_reference_mismatch: "Receiver borrow return points to the wrong parent"
+          receiver_exchange_reference_missing: "Receiver exchange is missing its sender exchange-return reference"
+          receiver_exchange_reference_mismatch: "Receiver exchange points to the wrong parent"
+          receiver_exchange_return_reference_missing: "Receiver exchange return is missing its receiver exchange reference"
+          receiver_exchange_return_reference_mismatch: "Receiver exchange return points to the wrong parent"
+          receiver_exchange_return_reference_should_be_blank: "Receiver exchange return should not point to a different parent"
+        exchange_return:
+          installments_total_mismatch: "Cash total differs from installments"
+          exchange_rows_total_mismatch: "Cash total differs from exchange rows"
+          stale_linked_source_rows: "Linked source aggregates are stale"
+          source_allocation_mismatch: "Source entity allocation is incomplete"
+          missing_moi_allocation: "Missing MOI allocation for the self-share"
+          entity_allocation_mismatch: "Entity allocation does not match the transaction total"
+          message_replay_payload_mismatch: "Assistant replay payload differs from the local transaction"
+          card_bound_bill_projection_mismatch: "Card-bound exchange row differs from the current card bill"
+          missing_card_installment: "Source card installment is missing"
+          card_bound_bill_bucket_mismatch: "Card-bound exchange row is in a stale bill month"
+          card_bound_bill_price_mismatch: "Card-bound exchange row has a stale amount"
+          card_bound_bill_merge_target: "This target projection should absorb stale card-bound rows"
+        card_exchange_projection:
+          payer_exchange_total_mismatch: "Payer exchanges differ from declared payer total"
+          projection_shape_mismatch: "Payer exchanges do not match installment projection"
+          duplicate_projection_buckets: "Payer exchanges repeat a projection bucket"
+          source_allocation_mismatch: "Source entity allocation is incomplete"
+          missing_moi_allocation: "Missing MOI allocation for the self-share"
+          entity_allocation_mismatch: "Entity allocation does not match the transaction total"
+        piggy_bank:
+          missing_return: "Contribution has no return"
+          wrong_category: "Return category is incorrect"
+          missing_contributions: "Return has no contributions"
+          user_context_mismatch: "User or context does not match"
+          entity_mismatch: "Bank entity does not match"
+          duplicate_contribution_ownership: "Source has duplicate contribution links"
+          incompatible_sources: "Grouped sources are incompatible"
+          grouped_principal_drift: "Projected total does not match principal and valuations"
+          valuation_profit_drift: "Valuation delta is not reflected in the return"
+          source_return_amount_drift: "Unpaid installment total is incorrect"
+          illegal_installment_collapse: "Partial-payment remainder is incorrect"
       pagination:
         label: "Finding pages"
         summary: "Page %{page} of %{pages} · %{count} findings"
@@ -264,6 +356,47 @@ pt-BR:
         title: "Convenção de Nomes"
         description: "Visualize sugestões de nomes de transações sem alterar os indicadores de saúde."
         action: "Abrir prévia"
+    naming_conventions:
+      refresh_preview: "Atualizar Prévia"
+      preview_again: "Visualizar Novamente"
+      no_changes_found: "Nenhuma mudança de convenção de nomenclatura foi encontrada."
+      no_changes_applied: "Nenhuma mudança de convenção de nomenclatura foi aplicada."
+      will_update:
+        one: "1 registro será atualizado."
+        other: "%{count} registros serão atualizados."
+      did_update:
+        one: "1 registro atualizado."
+        other: "%{count} registros atualizados."
+      confirmation: "Revisei cada descrição proposta e confirmo explicitamente estas mudanças de nomenclatura."
+      apply: "Aplicar mudanças de nomenclatura revisadas"
+      conventions:
+        investment: "Investimento"
+        exchange_return: "Acerto Empréstimo"
+        card_payment: "Pagamento de Cartão"
+        card_advance: "Adiantamento de Cartão"
+      group:
+        card_transaction: "Transação de Cartão"
+        installments_count: "quantidade_de_parcelas"
+        exchanges_count: "quantidade_de_trocas"
+        entity: "entidade"
+      result:
+        states:
+          applied:
+            title: "Mudanças de nomenclatura confirmadas"
+          rejected:
+            title: "Mudanças de nomenclatura rejeitadas"
+          failed:
+            title: "Mudanças de nomenclatura falharam com segurança"
+        reasons:
+          authorization_denied: "É necessária autorização de administrador."
+          invalid_token: "O token da prévia é inválido, foi alterado ou expirou. Solicite uma nova prévia."
+          confirmation_required: "É necessária confirmação explícita antes de aplicar mudanças de nomenclatura."
+          token_actor_mismatch: "A prévia pertence a outro administrador."
+          token_context_mismatch: "O contexto selecionado mudou após a prévia."
+          stale_preview: "Os candidatos de nomenclatura mudaram após a prévia. Nada foi sobrescrito."
+          validation_failed: "Uma mudança obrigatória falhou. Todas as alterações foram revertidas."
+          unexpected_failure: "As mudanças falharam com segurança. Nenhuma alteração parcial foi confirmada."
+        audit: "Abrir operação de auditoria"
     history:
       action: "Histórico de auditoria"
     actions:
@@ -335,6 +468,57 @@ pt-BR:
         valuation_delta: "Variação de avaliação"
       issues:
         misplaced_exchange_intent: "A intenção de empréstimo diverge do comportamento financeiro atual"
+      issue_codes:
+        exchange_trio:
+          multiple_middle_candidates: "Há múltiplas opções de retorno de empréstimo no remetente"
+          missing_middle: "Falta o retorno de empréstimo do remetente"
+          missing_receiver_reference: "Falta a transação local do destinatário"
+          missing_receiver_exchange_return: "Falta o retorno de empréstimo do destinatário"
+          source_reference_should_be_blank: "A transação de origem não deveria referenciar outra transação"
+          middle_reference_missing: "O retorno de empréstimo do remetente está sem referência para a origem"
+          middle_reference_mismatch: "O retorno de empréstimo do remetente aponta para o pai errado"
+          middle_candidate_reference_missing: "Uma opção de retorno de empréstimo no remetente está sem referência para a origem"
+          middle_candidate_reference_mismatch: "Uma opção de retorno de empréstimo no remetente aponta para o pai errado"
+          middle_candidate_reference_should_be_blank: "Uma opção de retorno de empréstimo no remetente não deveria apontar para outra transação"
+          receiver_shared_return_reference_missing: "O retorno de reembolso do destinatário está sem referência para o retorno de empréstimo do remetente"
+          receiver_shared_return_reference_mismatch: "O retorno de reembolso do destinatário aponta para o pai errado"
+          receiver_exchange_reference_missing: "O empréstimo do destinatário está sem referência para o retorno de empréstimo do remetente"
+          receiver_exchange_reference_mismatch: "O empréstimo do destinatário aponta para o pai errado"
+          receiver_exchange_return_reference_missing: "O retorno de empréstimo do destinatário está sem referência para o empréstimo do destinatário"
+          receiver_exchange_return_reference_mismatch: "O retorno de empréstimo do destinatário aponta para o pai errado"
+          receiver_exchange_return_reference_should_be_blank: "O retorno de empréstimo do destinatário não deveria apontar para um pai diferente"
+        exchange_return:
+          installments_total_mismatch: "O total da transação diverge das parcelas"
+          exchange_rows_total_mismatch: "O total da transação diverge das linhas de empréstimo/reembolso"
+          stale_linked_source_rows: "Os agregados das origens estão desatualizados"
+          source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+          missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+          entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"
+          message_replay_payload_mismatch: "A repetição do assistente diverge da transação local"
+          card_bound_bill_projection_mismatch: "A linha vinculada ao cartão diverge da fatura atual do cartão"
+          missing_card_installment: "A parcela do cartão de origem não existe mais"
+          card_bound_bill_bucket_mismatch: "A linha vinculada ao cartão está em um mês de fatura desatualizado"
+          card_bound_bill_price_mismatch: "A linha vinculada ao cartão está com valor desatualizado"
+          card_bound_bill_merge_target: "Esta projeção de destino deveria absorver linhas vinculadas ao cartão desatualizadas"
+        card_exchange_projection:
+          payer_exchange_total_mismatch: "As linhas pagadoras divergem do total declarado para os pagadores"
+          projection_shape_mismatch: "As linhas pagadoras não batem com a projeção das parcelas"
+          duplicate_projection_buckets: "As linhas pagadoras repetem uma fatura de projeção"
+          source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+          missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+          entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"
+        piggy_bank:
+          missing_return: "Aporte sem retorno"
+          wrong_category: "Categoria do retorno incorreta"
+          missing_contributions: "Retorno sem aportes"
+          user_context_mismatch: "Usuário ou contexto divergente"
+          entity_mismatch: "Entidade bancária divergente"
+          duplicate_contribution_ownership: "Origem com vínculos de aporte duplicados"
+          incompatible_sources: "Origens agrupadas incompatíveis"
+          grouped_principal_drift: "Total projetado diverge do principal e das valorizações"
+          valuation_profit_drift: "Valorização não refletida no retorno"
+          source_return_amount_drift: "Total das parcelas não pagas incorreto"
+          illegal_installment_collapse: "Saldo após pagamento parcial incorreto"
       pagination:
         label: "Páginas de problemas"
         summary: "Página %{page} de %{pages} · %{count} problemas"
