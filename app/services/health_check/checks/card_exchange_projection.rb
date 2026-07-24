@@ -7,7 +7,10 @@ class HealthCheck::Checks::CardExchangeProjection < HealthCheck::Checks::Base
 
   def audit_counts
     rows = audit_rows
-    repairable = rows.count { |row| repairable_projection?(row) }
+    targets_by_id = HealthCheck::Checks::Repairability.card_projection_targets(scope:, rows:)
+    repairable = rows.count do |row|
+      HealthCheck::Checks::Repairability.card_projection?(scope:, row:, targets_by_id:)
+    end
 
     {
       affected: rows.size,
@@ -27,36 +30,5 @@ class HealthCheck::Checks::CardExchangeProjection < HealthCheck::Checks::Base
         status_filter:
       ).call
     end
-  end
-
-  def repairable_projection?(row)
-    return false if row[:paid]
-
-    target_ids = Array(row[:actual_rows]).filter_map { |actual| actual[:cash_transaction_id] }.uniq
-    return false unless target_ids.one?
-
-    target = scope.context.cash_transactions
-                  .includes(:cash_installments, :exchanges)
-                  .find_by(id: target_ids.first)
-    return false unless safe_projection_target?(target)
-
-    projection_shape_fixable?(row, target)
-  end
-
-  def safe_projection_target?(target)
-    target&.exchange_return? &&
-      target.cash_installments.none?(&:paid?) &&
-      target.exchanges.card_bound.monetary.exists?
-  end
-
-  def projection_shape_fixable?(row, target)
-    actual_rows = Array(row[:actual_rows])
-    expected_by_number = Array(row[:expected_rows]).index_by { |expected| expected[:number] }
-    bucket_mismatch = actual_rows.any? do |actual|
-      expected = expected_by_number[actual[:number]]
-      expected.present? && (actual[:month] != expected[:month] || actual[:year] != expected[:year])
-    end
-
-    bucket_mismatch || target.price != actual_rows.sum { |actual| actual[:price] }
   end
 end

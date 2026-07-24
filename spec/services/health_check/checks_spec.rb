@@ -146,16 +146,14 @@ RSpec.describe "Health check diagnostic adapters" do
         }
       ]
     }
-    adapter = HealthCheck::Checks::CardExchangeProjection.new(scope:)
-
     expect(target.reload).to be_exchange_return
     expect(target.cash_installments).to all(satisfy { |installment| !installment.paid? })
     expect(target.exchanges.card_bound.monetary).to exist
-    expect(adapter.send(:repairable_projection?, row)).to be(true)
+    expect(HealthCheck::Checks::Repairability.card_projection?(scope:, row:)).to be(true)
 
     target.cash_installments.first.update!(paid: true)
 
-    expect(adapter.send(:repairable_projection?, row)).to be(false)
+    expect(HealthCheck::Checks::Repairability.card_projection?(scope:, row:)).to be(false)
   end
 
   it "counts misplaced sources and messages while keeping connected-user sources read-only" do

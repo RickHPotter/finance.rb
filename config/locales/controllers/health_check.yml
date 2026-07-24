@@ -30,6 +30,66 @@ en:
       run: "Run"
       rerun: "Rerun"
       running: "Running"
+      details: "Open details"
+    details:
+      eyebrow: "Live diagnostic details"
+      back: "Back to Health Check"
+      open_record: "Open record"
+      latest_summary: "Latest summary"
+      live_evaluated: "Live details evaluated"
+      live_notice: "These live details were evaluated after the latest persisted summary. Rerun the check to refresh its summary counts."
+      apply_filters: "Apply filters"
+      filters:
+        status: "Payment status"
+        issue: "Issue"
+        all_issues: "All issues"
+        per_page: "Rows per page"
+      statuses:
+        pending: "Pending"
+        paid: "Paid"
+      states:
+        empty:
+          title: "No current findings"
+          description: "The live diagnostic returned no rows for these filters. The latest persisted summary was not changed."
+        unavailable:
+          title: "Details unavailable"
+          description: "This detail provider is not available yet."
+        failed:
+          title: "Details could not be evaluated"
+          description: "The live diagnostic failed safely. No financial finding payload or internal error was displayed."
+      capabilities:
+        repairable: "Preview available"
+        read_only: "Read only"
+      unavailable_reasons:
+        diagnostic_only: "This finding is diagnostic-only in the current repair contract."
+        owner_only: "Only the transaction owner can repair this finding."
+        paid_history: "Repair is unavailable because paid history must be preserved."
+        ambiguous_projection: "The projection has more than one possible repair target."
+        no_canonical_change: "No supported canonical reference change is available."
+      fields:
+        intent: "Intent"
+        message: "Message"
+        conversation: "Conversation"
+        proposed_changes: "Proposed changes"
+        recorded_total: "Recorded total"
+        installments_total: "Installments total"
+        exchange_total: "Exchange total"
+        allocation_findings: "Allocation findings"
+        card_total: "Card total"
+        expected_total: "Expected total"
+        actual_total: "Actual total"
+        projected_rows: "Projected rows"
+        transaction_total: "Transaction total"
+        entity_return_total: "Entity return total"
+        delta: "Delta"
+        affected_messages: "Affected messages"
+        principal: "Principal"
+        valuation_delta: "Valuation delta"
+      issues:
+        misplaced_exchange_intent: "Loan intent disagrees with the current financial behavior"
+      pagination:
+        label: "Finding pages"
+        summary: "Page %{page} of %{pages} · %{count} findings"
     runs:
       queued:
         one: "Queued 1 health check."
@@ -131,6 +191,66 @@ pt-BR:
       run: "Executar"
       rerun: "Executar novamente"
       running: "Executando"
+      details: "Abrir detalhes"
+    details:
+      eyebrow: "Detalhes do diagnóstico ao vivo"
+      back: "Voltar à Verificação de Saúde"
+      open_record: "Abrir registro"
+      latest_summary: "Resumo mais recente"
+      live_evaluated: "Detalhes ao vivo avaliados"
+      live_notice: "Estes detalhes ao vivo foram avaliados após o resumo persistido mais recente. Execute novamente para atualizar os totais do resumo."
+      apply_filters: "Aplicar filtros"
+      filters:
+        status: "Estado do pagamento"
+        issue: "Problema"
+        all_issues: "Todos os problemas"
+        per_page: "Linhas por página"
+      statuses:
+        pending: "Pendente"
+        paid: "Pago"
+      states:
+        empty:
+          title: "Nenhum problema atual"
+          description: "O diagnóstico ao vivo não retornou linhas para estes filtros. O resumo persistido mais recente não foi alterado."
+        unavailable:
+          title: "Detalhes indisponíveis"
+          description: "Este provedor de detalhes ainda não está disponível."
+        failed:
+          title: "Não foi possível avaliar os detalhes"
+          description: "O diagnóstico ao vivo falhou com segurança. Nenhum dado financeiro ou erro interno foi exibido."
+      capabilities:
+        repairable: "Prévia disponível"
+        read_only: "Somente leitura"
+      unavailable_reasons:
+        diagnostic_only: "Este problema é somente diagnóstico no contrato de reparo atual."
+        owner_only: "Somente o proprietário da transação pode reparar este problema."
+        paid_history: "O reparo está indisponível porque o histórico pago deve ser preservado."
+        ambiguous_projection: "A projeção possui mais de um possível destino de reparo."
+        no_canonical_change: "Nenhuma alteração canônica de referência compatível está disponível."
+      fields:
+        intent: "Intenção"
+        message: "Mensagem"
+        conversation: "Conversa"
+        proposed_changes: "Alterações propostas"
+        recorded_total: "Total registrado"
+        installments_total: "Total das parcelas"
+        exchange_total: "Total dos câmbios"
+        allocation_findings: "Problemas de alocação"
+        card_total: "Total do cartão"
+        expected_total: "Total esperado"
+        actual_total: "Total atual"
+        projected_rows: "Linhas projetadas"
+        transaction_total: "Total da transação"
+        entity_return_total: "Total de retorno das entidades"
+        delta: "Diferença"
+        affected_messages: "Mensagens afetadas"
+        principal: "Principal"
+        valuation_delta: "Variação de avaliação"
+      issues:
+        misplaced_exchange_intent: "A intenção de empréstimo diverge do comportamento financeiro atual"
+      pagination:
+        label: "Páginas de problemas"
+        summary: "Página %{page} de %{pages} · %{count} problemas"
     runs:
       queued:
         one: "1 verificação de saúde foi enfileirada."

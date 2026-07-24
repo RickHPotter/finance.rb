@@ -60,7 +60,7 @@ class HealthCheck::Registry
       severity: "error",
       scope_kind: "context_with_connections",
       runner: HealthCheck::Checks::ExchangeTrio,
-      details: PENDING_ADAPTER,
+      details: HealthCheck::Checks::ExchangeTrioDetails,
       repair_keys: %w[canonical_reference]
     ),
     Entry.new(
@@ -71,7 +71,7 @@ class HealthCheck::Registry
       severity: "error",
       scope_kind: "context",
       runner: HealthCheck::Checks::ExchangeReturn,
-      details: PENDING_ADAPTER,
+      details: HealthCheck::Checks::ExchangeReturnDetails,
       repair_keys: %w[source_allocation]
     ),
     Entry.new(
@@ -82,7 +82,7 @@ class HealthCheck::Registry
       severity: "error",
       scope_kind: "context",
       runner: HealthCheck::Checks::CardExchangeProjection,
-      details: PENDING_ADAPTER,
+      details: HealthCheck::Checks::CardExchangeProjectionDetails,
       repair_keys: %w[projection]
     ),
     Entry.new(
@@ -93,7 +93,7 @@ class HealthCheck::Registry
       severity: "error",
       scope_kind: "context_with_connections",
       runner: HealthCheck::Checks::MisplacedExchangeIntent,
-      details: PENDING_ADAPTER,
+      details: HealthCheck::Checks::MisplacedExchangeIntentDetails,
       repair_keys: %w[convert_to_reimbursement]
     ),
     Entry.new(
@@ -104,7 +104,7 @@ class HealthCheck::Registry
       severity: "error",
       scope_kind: "context",
       runner: HealthCheck::Checks::PiggyBank,
-      details: PENDING_ADAPTER
+      details: HealthCheck::Checks::PiggyBankDetails
     )
   ].freeze
   ENTRIES = ENTRY_LIST.index_by(&:key).freeze

@@ -39,6 +39,8 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(document.css("a[href='#{audit_operations_path}']").text).to include(I18n.t("health_check.history.action"))
     expect(document.css("a[href='#{healthcheck_runs_path}']").text).to include(I18n.t("health_check.actions.run_all"))
     expect(document.css("a[data-turbo-method='post'][href^='/healthcheck/checks/']").count).to eq(HealthCheck::Registry.entries.count)
+    expect(document.css("a[href^='/healthcheck/checks/']:not([data-turbo-method])").count).to eq(HealthCheck::Registry.entries.count)
+    expect(response.body).not_to include("health_check_findings_")
   end
 
   it "renders the workspace in the administrator's Portuguese locale" do
@@ -83,7 +85,10 @@ RSpec.describe "Health Check dashboard", type: :request do
 
   it "renders a never-run dashboard without evaluating details or enqueuing work" do
     sign_in admin
-    expect(HealthCheck::Checks::Pending).not_to receive(:new)
+    HealthCheck::Registry.entries.each do |entry|
+      expect(entry.runner).not_to receive(:new)
+      expect(entry.details).not_to receive(:new)
+    end
 
     expect { get healthcheck_path }.not_to have_enqueued_job
 

@@ -130,6 +130,7 @@ Rails.application.routes.draw do
   get "audit_records/:item_type/:item_id", to: "audit_versions#index", defaults: { record_filter: true }, as: :record_audit_versions
   get "healthcheck", to: "health_check/dashboard#show", as: :healthcheck
   post "healthcheck/runs", to: "health_check/runs#create", as: :healthcheck_runs
+  get "healthcheck/checks/:check_key", to: "health_check/checks#show", as: :healthcheck_check
   post "healthcheck/checks/:check_key/run", to: "health_check/check_runs#create", as: :healthcheck_check_run
   resource :settings, only: :show
 

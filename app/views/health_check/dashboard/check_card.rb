@@ -73,8 +73,20 @@ class Views::HealthCheck::Dashboard::CheckCard < Views::Base
       p(class: "text-xs font-semibold text-slate-500 dark:text-slate-400") do
         summary.entry.repairable? ? I18n.t("health_check.values.repair_available") : I18n.t("health_check.values.diagnostic_only")
       end
-      run_action
+      div(class: "flex flex-wrap gap-2") do
+        details_action
+        run_action
+      end
     end
+  end
+
+  def details_action
+    link_to(
+      I18n.t("health_check.actions.details"),
+      healthcheck_check_path(summary.entry.key, **scope_query),
+      class: run_button_class,
+      data: { turbo_frame: "center_container", turbo_prefetch: false }
+    )
   end
 
   def run_action

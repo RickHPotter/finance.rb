@@ -30,7 +30,7 @@ RSpec.describe "Health Check runs", type: :request do
 
   it "queues one independent job per eligible registry check without evaluating adapters" do
     sign_in admin
-    expect(HealthCheck::Checks::Pending).not_to receive(:new)
+    HealthCheck::Registry.entries.each { |entry| expect(entry.runner).not_to receive(:new) }
 
     expect do
       post healthcheck_runs_path
@@ -104,7 +104,7 @@ RSpec.describe "Health Check runs", type: :request do
     expect(admin.health_check_runs.find_by!(check_key: "exchange_return").connected_user_id).to be_nil
   end
 
-  it "lets every queued job reach its own unavailable result independently" do
+  it "lets every queued real adapter complete independently" do
     sign_in admin
 
     perform_enqueued_jobs do
@@ -113,7 +113,8 @@ RSpec.describe "Health Check runs", type: :request do
 
     expect(response).to have_http_status(:see_other)
     expect(admin.health_check_runs.count).to eq(HealthCheck::Registry.entries.count)
-    expect(admin.health_check_runs.pluck(:execution_state).uniq).to eq([ "unavailable" ])
-    expect(admin.health_check_runs.pluck(:error_code).uniq).to eq([ "adapter_unavailable" ])
+    expect(admin.health_check_runs.pluck(:execution_state).uniq).to eq([ "completed" ])
+    expect(admin.health_check_runs.pluck(:outcome).uniq).to eq([ "healthy" ])
+    expect(admin.health_check_runs.pluck(:error_code).uniq).to eq([ nil ])
   end
 end
