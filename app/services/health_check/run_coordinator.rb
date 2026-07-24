@@ -9,10 +9,11 @@ class HealthCheck::RunCoordinator
 
   MAX_INSERT_ATTEMPTS = 2
 
-  attr_reader :scope
+  attr_reader :audit_parent_operation, :scope
 
-  def initialize(scope:)
+  def initialize(scope:, audit_parent_operation: nil)
     @scope = scope
+    @audit_parent_operation = audit_parent_operation
   end
 
   def call(entries: HealthCheck::Registry.entries)
@@ -82,7 +83,7 @@ class HealthCheck::RunCoordinator
   end
 
   def enqueue(schedule, scope:)
-    job = HealthCheck::RunJob.perform_later(**job_arguments(schedule.run, scope:))
+    job = enqueue_job(schedule.run, scope:)
     return schedule if job.successfully_enqueued?
 
     enqueue_failed(schedule, scope:, error: job.enqueue_error)
@@ -122,6 +123,23 @@ class HealthCheck::RunCoordinator
       check_key: run.check_key,
       generation_token: run.generation_token
     }
+  end
+
+  def assign_audit_parent(job)
+    return if audit_parent_operation.blank?
+
+    job.audit_parent_operation_id = audit_parent_operation.id
+    job.audit_actor_id = audit_parent_operation.actor_id
+    job.audit_context_id = audit_parent_operation.context_id
+  end
+
+  def enqueue_job(run, scope:)
+    return HealthCheck::RunJob.perform_later(**job_arguments(run, scope:)) if audit_parent_operation.blank?
+
+    HealthCheck::RunJob.new(**job_arguments(run, scope:)).tap do |job|
+      assign_audit_parent(job)
+      job.enqueue
+    end
   end
 
   def safe_broadcast(scope:, run:)

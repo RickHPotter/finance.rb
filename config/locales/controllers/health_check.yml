@@ -132,6 +132,45 @@ en:
         paid_history: "Paid-history implications"
         digest: "Deterministic preview digest"
         token_notice: "The signed preview token expires after 15 minutes and contains only bounded identifiers and this digest."
+        confirmation: "I reviewed every proposed change and explicitly confirm this repair."
+        apply: "Apply reviewed repair"
+      result:
+        eyebrow: "Repair result"
+        states:
+          applied:
+            title: "Repair committed"
+            description: "The reviewed repair was committed atomically and linked to its audit operation. The affected check is rerunning independently."
+          rejected:
+            title: "Repair rejected"
+          failed:
+            title: "Repair failed safely"
+        reasons:
+          authorization_denied: "Administrator authorization is required."
+          invalid_token: "The preview token is invalid, tampered with, or expired. Request a fresh preview."
+          confirmation_required: "Explicit confirmation is required before applying a repair."
+          token_actor_mismatch: "The preview belongs to another administrator."
+          token_context_mismatch: "The selected context changed after preview."
+          token_connection_mismatch: "The connected-user scope changed after preview."
+          token_check_mismatch: "The preview belongs to another health check."
+          token_repair_mismatch: "The preview belongs to another repair."
+          finding_not_current: "The finding is no longer current. Request a fresh preview."
+          stale_preview: "Relevant financial data changed after preview. Nothing was overwritten."
+          preview_not_applyable: "The current finding is no longer eligible for this repair."
+          validation_failed: "A validation or required mutation failed. The entire repair was rolled back."
+          unexpected_failure: "The repair failed safely. No partial financial mutation was committed."
+        operation: "Audit operation"
+        changed: "Audited changes"
+        rerun: "Affected check"
+        duplicate: "Repeated request"
+        boolean:
+          "true": "Yes — original result returned"
+          "false": "No"
+        rerun_queued: "Queued for verification"
+        rerun_already_running: "Already running"
+        rerun_enqueue_failed: "Rerun unavailable"
+        rerun_unavailable: "Rerun unavailable"
+        back: "Back to findings"
+        audit: "Open audit operation"
     runs:
       queued:
         one: "Queued 1 health check."
@@ -335,6 +374,45 @@ pt-BR:
         paid_history: "Implicações no histórico pago"
         digest: "Resumo determinístico da prévia"
         token_notice: "O token assinado da prévia expira após 15 minutos e contém somente identificadores limitados e este resumo."
+        confirmation: "Revisei todas as alterações propostas e confirmo explicitamente este reparo."
+        apply: "Aplicar reparo revisado"
+      result:
+        eyebrow: "Resultado do reparo"
+        states:
+          applied:
+            title: "Reparo confirmado"
+            description: "O reparo revisado foi confirmado atomicamente e vinculado à sua operação de auditoria. A verificação afetada está sendo executada novamente."
+          rejected:
+            title: "Reparo rejeitado"
+          failed:
+            title: "O reparo falhou com segurança"
+        reasons:
+          authorization_denied: "A autorização de administrador é obrigatória."
+          invalid_token: "O token da prévia é inválido, foi alterado ou expirou. Solicite uma nova prévia."
+          confirmation_required: "A confirmação explícita é obrigatória antes de aplicar o reparo."
+          token_actor_mismatch: "A prévia pertence a outro administrador."
+          token_context_mismatch: "O contexto selecionado mudou após a prévia."
+          token_connection_mismatch: "O escopo de usuário conectado mudou após a prévia."
+          token_check_mismatch: "A prévia pertence a outra verificação de saúde."
+          token_repair_mismatch: "A prévia pertence a outro reparo."
+          finding_not_current: "O problema não está mais atual. Solicite uma nova prévia."
+          stale_preview: "Dados financeiros relevantes mudaram após a prévia. Nada foi sobrescrito."
+          preview_not_applyable: "O problema atual não é mais elegível para este reparo."
+          validation_failed: "Uma validação ou alteração obrigatória falhou. O reparo inteiro foi revertido."
+          unexpected_failure: "O reparo falhou com segurança. Nenhuma alteração financeira parcial foi confirmada."
+        operation: "Operação de auditoria"
+        changed: "Alterações auditadas"
+        rerun: "Verificação afetada"
+        duplicate: "Solicitação repetida"
+        boolean:
+          "true": "Sim — resultado original retornado"
+          "false": "Não"
+        rerun_queued: "Enfileirada para verificação"
+        rerun_already_running: "Já está em execução"
+        rerun_enqueue_failed: "Nova execução indisponível"
+        rerun_unavailable: "Nova execução indisponível"
+        back: "Voltar aos problemas"
+        audit: "Abrir operação de auditoria"
     runs:
       queued:
         one: "1 verificação de saúde foi enfileirada."

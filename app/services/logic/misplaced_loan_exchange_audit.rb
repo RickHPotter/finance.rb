@@ -30,15 +30,7 @@ module Logic
 
       message_ids = row[:message_ids]
 
-      CashTransaction.transaction do
-        source.update!(friend_notification_intent: "reimbursement")
-        rewrite_message_intents!(message_ids)
-      end
-
-      {
-        source_id: source.id,
-        updated_message_count: message_ids.size
-      }
+      Logic::MisplacedExchangeIntentRepair.new(source:, message_ids:).call
     end
 
     def convert_exchange_audit_issue!(source_id:)
@@ -50,16 +42,10 @@ module Logic
 
       message_ids = source.active_notification_messages.pluck(:id)
 
-      CashTransaction.transaction do
-        source.update!(friend_notification_intent: "reimbursement")
-        rewrite_message_intents!(message_ids)
-      end
-
-      {
+      Logic::MisplacedExchangeIntentRepair.new(source:, message_ids:).call.merge(
         status: "converted",
-        source_id: source.id,
-        updated_message_count: message_ids.size
-      }
+        source_id: source.id
+      )
     end
 
     private
@@ -160,23 +146,6 @@ module Logic
         body: message.preview_body,
         created_at: message.created_at
       }
-    end
-
-    def rewrite_message_intents!(message_ids)
-      Message.where(id: message_ids).find_each do |message|
-        headers = parsed_headers_for(message)
-        next if headers.blank?
-
-        headers["intent"] = "reimbursement" if headers.key?("intent")
-        headers["replay"]["intent"] = "reimbursement" if headers["replay"].is_a?(Hash)
-        message.update!(headers: headers.to_json)
-      end
-    end
-
-    def parsed_headers_for(message)
-      JSON.parse(message.headers.to_s)
-    rescue JSON::ParserError
-      nil
     end
   end
 end

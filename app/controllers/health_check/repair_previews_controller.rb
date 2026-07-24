@@ -17,7 +17,8 @@ class HealthCheck::RepairPreviewsController < HealthCheck::BaseController
       check_key: entry.key,
       repair_key: definition.key,
       scope:,
-      result:
+      result:,
+      options: preview_options
     )
 
     render Views::HealthCheck::RepairPreviews::Show.new(entry:, definition:, preview:, workspace_scope:)

@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 class HealthCheck::Repairs::Preview
-  attr_reader :check_key, :repair_key, :scope, :result, :digest, :apply_token
+  attr_reader :check_key, :repair_key, :scope, :result, :options, :digest, :apply_token
 
   delegate :finding_id, :state, :changes, :references, :warnings, :paid_history, :unavailable_reason, :previewable?, to: :result
 
-  def initialize(check_key:, repair_key:, scope:, result:)
+  def initialize(check_key:, repair_key:, scope:, result:, options: {})
     @check_key = check_key.to_s
     @repair_key = repair_key.to_s
     @scope = scope
     @result = result
+    @options = normalize_options(options)
 
     validate!
     @digest = Digest::SHA256.hexdigest(HealthCheck::Repairs::Payload.canonical_json(digest_payload)).freeze
@@ -22,6 +23,7 @@ class HealthCheck::Repairs::Preview
       check_key:,
       repair_key:,
       scope: scope.to_h.except(:locale),
+      options:,
       result: result.to_h
     }.freeze
   end
@@ -34,6 +36,7 @@ class HealthCheck::Repairs::Preview
       "check_key" => check_key,
       "repair_key" => repair_key,
       "finding_id" => finding_id,
+      "options" => options,
       "digest" => digest
     }.freeze
   end
@@ -46,5 +49,13 @@ class HealthCheck::Repairs::Preview
     raise ArgumentError, "repair is not registered for check" unless repair_key.in?(entry.repair_keys)
     raise ArgumentError, "invalid scope" unless scope.is_a?(HealthCheck::Scope)
     raise ArgumentError, "invalid result" unless result.is_a?(HealthCheck::Repairs::Result)
+  end
+
+  def normalize_options(raw_options)
+    normalized = HealthCheck::Repairs::Payload.normalize(raw_options.to_h)
+    raise ArgumentError, "preview options must be scalar" unless normalized.values.all? { |value| value.nil? || value.is_a?(String) || value.is_a?(Numeric) }
+    raise ArgumentError, "preview options are too large" if normalized.to_json.bytesize > 1.kilobyte
+
+    normalized
   end
 end

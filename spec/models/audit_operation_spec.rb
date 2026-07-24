@@ -24,6 +24,22 @@ RSpec.describe AuditOperation, type: :model do
       expect(operation).not_to be_valid
       expect(operation.errors).to include(:metadata)
     end
+
+    it "enforces one committed admin repair per actor, context, and idempotency key" do
+      attributes = {
+        source: :admin_repair,
+        result: :committed,
+        actor_id: 91,
+        context_id: 92,
+        metadata: { "idempotency_key" => "same-reviewed-repair" }
+      }
+      described_class.create!(attributes)
+
+      expect { described_class.create!(attributes) }.to raise_error(ActiveRecord::RecordNotUnique)
+      expect do
+        described_class.create!(attributes.merge(context_id: 93))
+      end.not_to raise_error
+    end
   end
 
   describe "[ append-only contract ]" do
@@ -84,17 +100,15 @@ end
 #
 # Indexes
 #
+# rubocop:disable Layout/LineLength
 #  index_audit_operations_on_actor_id_and_created_at    (actor_id,created_at)
 #  index_audit_operations_on_context_id_and_created_at  (context_id,created_at)
+#  index_audit_operations_on_health_repair_idempotency  (actor_id, context_id, ((metadata ->> 'idempotency_key'::text))) UNIQUE WHERE (((source)::text = 'admin_repair'::text) AND ((result)::text = 'committed'::text) AND (actor_id IS NOT NULL) AND (context_id IS NOT NULL) AND (metadata ? 'idempotency_key'::text))
 #  index_audit_operations_on_parent_operation_id        (parent_operation_id)
 #  index_audit_operations_on_request_id                 (request_id) WHERE (request_id IS NOT NULL)
 #  index_audit_operations_on_rollback_idempotency       (rollback_of_operation_id, actor_id, ((metadata ->> 'preview_digest'::text))) UNIQUE WHERE (((source)::text = 'rollback'::text) AND ((result)::text = 'committed'::text) AND (rollback_of_operation_id IS NOT NULL) AND (actor_id IS NOT NULL) AND (metadata ? 'preview_digest'::text))
 #  index_audit_operations_on_rollback_of_operation_id   (rollback_of_operation_id)
 #  index_audit_operations_on_source_and_created_at      (source,created_at)
-#
-# rubocop:disable Layout/LineLength
-#  index_audit_operations_on_rollback_idempotency       (rollback_of_operation_id, actor_id, ((metadata ->> 'preview_digest'::text))) UNIQUE WHERE (((source)::text = 'rollback'::text) AND ((result)::text = 'committed'::text) AND (rollback_of_operation_id IS NOT NULL) AND (actor_id IS NOT NULL) AND (metadata ? 'preview_digest'::text))
-#  index_audit_operations_on_rollback_of_operation_id   (rollback_of_operation_id)
-#  index_audit_operations_on_source_and_created_at      (source,created_at)
+# rubocop:enable Layout/LineLength
 #
 # rubocop:enable Layout/LineLength

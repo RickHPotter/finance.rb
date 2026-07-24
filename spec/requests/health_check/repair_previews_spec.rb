@@ -69,9 +69,13 @@ RSpec.describe "Health Check repair previews", type: :request do
 
     document = Nokogiri::HTML(response.body)
     token = document.at_css("#health_check_repair_apply_token")["value"]
+    apply_form = document.at_css("form[action='/healthcheck/checks/exchange_trio/repairs/canonical_reference']")
 
     expect(response).to have_http_status(:success)
     expect(document.at_css("#health_check_repair_preview_changes")).to be_present
+    expect(apply_form).to be_present
+    expect(apply_form.at_css("input[name='repair_confirmation']")).to be_present
+    expect(apply_form.at_css("input[name='_method']")["value"]).to eq("patch")
     expect(document.at_css("#health_check_repair_preview_digest").text).to include(
       I18n.t("health_check.repairs.preview.digest")
     )

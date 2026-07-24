@@ -1710,6 +1710,13 @@ CREATE INDEX index_audit_operations_on_context_id_and_created_at ON public.audit
 
 
 --
+-- Name: index_audit_operations_on_health_repair_idempotency; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_audit_operations_on_health_repair_idempotency ON public.audit_operations USING btree (actor_id, context_id, ((metadata ->> 'idempotency_key'::text))) WHERE (((source)::text = 'admin_repair'::text) AND ((result)::text = 'committed'::text) AND (actor_id IS NOT NULL) AND (context_id IS NOT NULL) AND (metadata ? 'idempotency_key'::text));
+
+
+--
 -- Name: index_audit_operations_on_parent_operation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2813,6 +2820,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724120000'),
 ('20260724090000'),
 ('20260722090000'),
 ('20260719091000'),

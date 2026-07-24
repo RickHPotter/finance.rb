@@ -1102,14 +1102,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def repair_exchange_projection!
-    ActiveRecord::Base.transaction do
-      fix_stale_card_bound_projection_buckets! if stale_card_bound_projection_bucket_fixable?
-      move_out_of_bucket_projection_exchanges!
-      sync_current_projection_exchanges!
-      @duplicate_card_bound_projection_transactions = nil
-      @cash_transaction = merge_duplicate_card_bound_projection_transactions!
-      sync_current_projection_exchanges!
-    end
+    @cash_transaction = exchange_projection_repair.call
   end
 
   def move_out_of_bucket_projection_exchanges!
@@ -1132,13 +1125,15 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def exchange_projection_fixable?
-    @cash_transaction.exchange_return? &&
-      projection_exchanges.present? &&
-      (@cash_transaction.price != projection_exchanges.sum(&:price) ||
-        stale_card_bound_projection_bucket_fixable? ||
-        out_of_bucket_card_bound_projection_exchanges.present? ||
-        incoming_wrong_owner_card_bound_projection_exchanges.present? ||
-        duplicate_card_bound_projection_transactions.present?)
+    exchange_projection_repair.fixable?
+  end
+
+  def exchange_projection_repair
+    @exchange_projection_repair ||= Logic::CardExchangeProjectionRepair.new(
+      current_user:,
+      current_context:,
+      cash_transaction: @cash_transaction
+    )
   end
 
   def projection_exchanges

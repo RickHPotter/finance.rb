@@ -3,6 +3,7 @@
 class Views::HealthCheck::RepairPreviews::Show < Views::Base
   include TranslateHelper
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::FormWith
 
   attr_reader :definition, :entry, :preview, :workspace_scope
 
@@ -24,6 +25,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
         warnings_section if preview.warnings.present?
         paid_history_section if preview.paid_history.present?
         digest_section
+        apply_form if preview.previewable?
       end
     end
   end
@@ -150,8 +152,25 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
     section(id: "health_check_repair_preview_digest", class: panel_class("mt-5")) do
       h2(class: section_title_class) { I18n.t("health_check.repairs.preview.digest") }
       code(class: "mt-2 block break-all rounded-md bg-slate-950 px-3 py-2 text-xs text-slate-100") { preview.digest }
-      input(type: "hidden", id: "health_check_repair_apply_token", name: "apply_token", value: preview.apply_token)
       p(class: "mt-2 text-xs text-slate-500 dark:text-slate-400") { I18n.t("health_check.repairs.preview.token_notice") }
+    end
+  end
+
+  def apply_form
+    form_with(
+      url: healthcheck_repair_path(entry.key, definition.key, **workspace_scope_query),
+      method: :patch,
+      class: "mt-5 rounded-lg border border-rose-300 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/30"
+    ) do |form|
+      form.hidden_field(:apply_token, value: preview.apply_token, id: "health_check_repair_apply_token")
+      label(class: "flex items-start gap-3 text-sm font-semibold text-rose-950 dark:text-rose-100") do
+        form.check_box(:repair_confirmation, { class: "mt-0.5 size-4 rounded border-rose-400 text-rose-700 focus:ring-rose-600" }, "1", "0")
+        span { I18n.t("health_check.repairs.preview.confirmation") }
+      end
+      form.submit(
+        I18n.t("health_check.repairs.preview.apply"),
+        class: "mt-4 min-h-10 rounded-md bg-rose-700 px-4 py-2 text-sm font-bold text-white hover:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500"
+      )
     end
   end
 

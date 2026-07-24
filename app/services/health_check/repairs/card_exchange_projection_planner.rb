@@ -11,22 +11,44 @@ class HealthCheck::Repairs::CardExchangeProjectionPlanner < HealthCheck::Repairs
     target = projection_target(row)
     return unsafe_target_result(card_transaction, row) if target.blank?
 
-    changes = projection_changes(row, target)
+    repair = build_repair(target)
+    return read_only("diagnostic_only", references: references_for(card_transaction, row:, target:)) unless repair.fixable?
+
+    result_for_repair(repair, card_transaction:, row:, target:)
+  end
+
+  private
+
+  def build_repair(target)
+    Logic::CardExchangeProjectionRepair.new(
+      current_user: scope.user,
+      current_context: scope.context,
+      cash_transaction: target
+    )
+  end
+
+  def result_for_repair(repair, card_transaction:, row:, target:)
+    graph_snapshot = repair.graph_snapshot
+    affected_references = repair.affected_references
+    paid_history = repair.paid_history
+    if paid_history[:affected]
+      return read_only(
+        "paid_history",
+        references: references_for(card_transaction, row:, target:, graph_snapshot:, affected_references:),
+        paid_history:
+      )
+    end
+
+    changes = repair.preview_changes.map { |attributes| change(**attributes) }
     return read_only("diagnostic_only", references: references_for(card_transaction, row:, target:)) if changes.empty?
 
     previewable(
       changes:,
-      references: references_for(card_transaction, row:, target:),
+      references: references_for(card_transaction, row:, target:, graph_snapshot:, affected_references:),
       warnings: unresolved_warnings(row),
-      paid_history: {
-        affected: false,
-        target_installments: target.cash_installments.size,
-        paid_target_installments: 0
-      }
+      paid_history:
     )
   end
-
-  private
 
   def scoped_card_transaction
     @scoped_card_transaction ||= scope.context.card_transactions.includes(:card_installments).find(finding_id)
@@ -50,49 +72,6 @@ class HealthCheck::Repairs::CardExchangeProjectionPlanner < HealthCheck::Repairs
     return unless HealthCheck::Checks::Repairability.safe_projection_target?(target)
 
     target
-  end
-
-  def projection_changes(row, target)
-    expected_by_number = Array(row[:expected_rows]).index_by { |expected| expected[:number] }
-    [ *bucket_changes(row, target, expected_by_number), total_change(row, target) ].compact
-  end
-
-  def bucket_changes(row, target, expected_by_number)
-    Array(row[:actual_rows]).filter_map do |actual|
-      expected = expected_by_number[actual[:number]]
-      next if expected.blank? || [ actual[:month], actual[:year] ] == [ expected[:month], expected[:year] ]
-
-      bucket_change(actual, expected, target)
-    end
-  end
-
-  def total_change(row, target)
-    projected_total = Array(row[:actual_rows]).sum { |actual| actual[:price].to_i }
-    return if target.price.to_i == projected_total
-
-    change(
-      record_type: "CashTransaction",
-      record_id: target.id,
-      attribute: "price",
-      before: target.price,
-      after: projected_total,
-      metadata: { role: "projection_total" }
-    )
-  end
-
-  def bucket_change(actual, expected, target)
-    change(
-      record_type: "Exchange",
-      record_id: actual[:id],
-      attribute: "billing_bucket",
-      before: { month: actual[:month], year: actual[:year] },
-      after: { month: expected[:month], year: expected[:year] },
-      metadata: {
-        number: actual[:number],
-        cash_transaction_id: target.id,
-        entity_transaction_id: actual[:entity_transaction_id]
-      }
-    )
   end
 
   def unsafe_target_result(card_transaction, row)
@@ -122,8 +101,8 @@ class HealthCheck::Repairs::CardExchangeProjectionPlanner < HealthCheck::Repairs
     (Array(row[:issues]) + Array(row[:warnings])).uniq
   end
 
-  def references_for(card_transaction, row: nil, target: nil)
-    [
+  def references_for(card_transaction, row: nil, target: nil, graph_snapshot: nil, affected_references: [])
+    references = [
       {
         type: "CardTransaction",
         id: card_transaction.id,
@@ -138,5 +117,8 @@ class HealthCheck::Repairs::CardExchangeProjectionPlanner < HealthCheck::Repairs
         exchange_ids: Array(row&.dig(:actual_rows)).filter_map { |actual| actual[:id] }
       }
     ]
+    references.concat(affected_references)
+    references << { type: "ProjectionGraph", role: "repair_graph", snapshot: graph_snapshot } if graph_snapshot.present?
+    references
   end
 end

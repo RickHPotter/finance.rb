@@ -77,6 +77,7 @@ RSpec.describe "Health Check repair previews" do
       "check_key" => "exchange_trio",
       "repair_key" => "canonical_reference",
       "finding_id" => "41",
+      "options" => {},
       "digest" => first.digest
     )
     expect(payload.to_json).not_to include("reference_transactable", "CashTransaction\":")
@@ -104,6 +105,28 @@ RSpec.describe "Health Check repair previews" do
     changed = build_preview(result: changed_result)
 
     expect(changed.digest).not_to eq(original.digest)
+  end
+
+  it "binds the bounded repair choice into both the digest and signed token" do
+    matching = HealthCheck::Repairs::Preview.new(
+      check_key: "exchange_return",
+      repair_key: "source_allocation",
+      scope:,
+      result:,
+      options: { strategy: "match_percentage" }
+    )
+    corrected = HealthCheck::Repairs::Preview.new(
+      check_key: "exchange_return",
+      repair_key: "source_allocation",
+      scope:,
+      result:,
+      options: { strategy: "corrected_value" }
+    )
+
+    expect(matching.digest).not_to eq(corrected.digest)
+    expect(HealthCheck::Repairs::PreviewToken.verify(matching.apply_token)).to include(
+      "options" => { "strategy" => "match_percentage" }
+    )
   end
 
   it "plans canonical reference changes through the existing dry runner without applying them" do

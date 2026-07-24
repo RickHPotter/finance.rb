@@ -135,6 +135,9 @@ Rails.application.routes.draw do
   post "healthcheck/checks/:check_key/repairs/:repair_key/preview",
        to: "health_check/repair_previews#create",
        as: :healthcheck_repair_preview
+  patch "healthcheck/checks/:check_key/repairs/:repair_key",
+        to: "health_check/repairs#update",
+        as: :healthcheck_repair
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do

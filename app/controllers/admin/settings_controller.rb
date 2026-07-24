@@ -378,11 +378,14 @@ class Admin::SettingsController < ApplicationController # rubocop:disable Metric
     price = params[:price].presence
     price_to_be_returned = params[:price_to_be_returned].presence || price
 
-    entity_transaction.update!(
-      loan_return_percentage: percentage,
-      price: price || entity_transaction.price,
-      price_to_be_returned: price_to_be_returned || entity_transaction.price_to_be_returned
-    )
+    Logic::ExchangeReturnAllocationRepair.new(
+      entity_transaction:,
+      attributes: {
+        loan_return_percentage: percentage,
+        price: price || entity_transaction.price,
+        price_to_be_returned: price_to_be_returned || entity_transaction.price_to_be_returned
+      }
+    ).call
   end
 
   def sanitize_override_hash(raw_overrides)
