@@ -37,6 +37,8 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(document.at_css("#health_check_status_exchange_return").text.strip).to eq(I18n.t("health_check.states.warning"))
     expect(document.css("a[href='#{healthcheck_path}']").text).to include(I18n.t("tabs.health_check"))
     expect(document.css("a[href='#{audit_operations_path}']").text).to include(I18n.t("health_check.history.action"))
+    expect(document.css("a[href='#{healthcheck_runs_path}']").text).to include(I18n.t("health_check.actions.run_all"))
+    expect(document.css("a[data-turbo-method='post'][href^='/healthcheck/checks/']").count).to eq(HealthCheck::Registry.entries.count)
   end
 
   it "renders the workspace in the administrator's Portuguese locale" do
@@ -49,6 +51,34 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(response.body).to include(I18n.t("health_check.title", locale: :"pt-BR"))
     expect(response.body).to include(I18n.t("health_check.checks.piggy_bank.title", locale: :"pt-BR"))
     expect(response.body).to include(I18n.t("health_check.reasons.never_run", locale: :"pt-BR"))
+  end
+
+  it "subscribes through a signed stream isolated to the selected scope" do
+    sign_in admin
+
+    get healthcheck_path
+
+    source = Nokogiri::HTML(response.body).at_css("turbo-cable-stream-source")
+    expect(source).to be_present
+    expect(Turbo::StreamsChannel.verified_stream_name(source["signed-stream-name"])).to eq(
+      HealthCheck::Stream.name(user_id: admin.id, context_id: admin.main_context.id, connected_user_id: nil)
+    )
+  end
+
+  it "uses a validated selected connection only for relationship summaries" do
+    connected_user = create(:user, :random)
+    admin.entities.create!(entity_name: "CONNECTED USER", entity_user: connected_user)
+    create_completed_run(check_key: "exchange_return", outcome: "healthy")
+    create_completed_run(check_key: "exchange_trio", outcome: "warning", connected_user:)
+    sign_in admin
+
+    get healthcheck_path, params: { connected_user_id: connected_user.id }
+
+    document = Nokogiri::HTML(response.body)
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include(connected_user.full_name)
+    expect(document.at_css("#health_check_status_exchange_return").text.strip).to eq(I18n.t("health_check.states.healthy"))
+    expect(document.at_css("#health_check_status_exchange_trio").text.strip).to eq(I18n.t("health_check.states.warning"))
   end
 
   it "renders a never-run dashboard without evaluating details or enqueuing work" do
@@ -104,10 +134,11 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(response).to have_http_status(:success)
   end
 
-  def create_completed_run(check_key:, outcome:, context: admin.main_context)
+  def create_completed_run(check_key:, outcome:, context: admin.main_context, connected_user: nil)
     HealthCheckRun.create!(
       user: admin,
       context:,
+      connected_user:,
       check_key:,
       execution_state: "completed",
       outcome:,

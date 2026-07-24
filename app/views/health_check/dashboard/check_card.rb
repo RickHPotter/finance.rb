@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 class Views::HealthCheck::Dashboard::CheckCard < Views::Base
+  include Phlex::Rails::Helpers::LinkTo
+
   COUNT_KEYS = %w[affected failures warnings repairable read_only].freeze
 
-  attr_reader :summary
+  attr_reader :scope, :summary
 
-  def initialize(summary:)
+  def initialize(summary:, scope:)
     @summary = summary
+    @scope = scope
   end
 
   def view_template
@@ -66,9 +69,34 @@ class Views::HealthCheck::Dashboard::CheckCard < Views::Base
       metadata_value(I18n.t("health_check.fields.duration"), duration_label)
     end
 
-    p(class: "mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400") do
-      summary.entry.repairable? ? I18n.t("health_check.values.repair_available") : I18n.t("health_check.values.diagnostic_only")
+    div(class: "mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between") do
+      p(class: "text-xs font-semibold text-slate-500 dark:text-slate-400") do
+        summary.entry.repairable? ? I18n.t("health_check.values.repair_available") : I18n.t("health_check.values.diagnostic_only")
+      end
+      run_action
     end
+  end
+
+  def run_action
+    if summary.status == "running"
+      span(class: "#{run_button_class} cursor-not-allowed opacity-60", aria: { disabled: true }) do
+        I18n.t("health_check.actions.running")
+      end
+    else
+      label = summary.never_run? ? I18n.t("health_check.actions.run") : I18n.t("health_check.actions.rerun")
+      link_to(
+        label,
+        healthcheck_check_run_path(summary.entry.key, **scope_query),
+        class: run_button_class,
+        data: { turbo_method: :post, turbo_frame: "center_container", turbo_prefetch: false }
+      )
+    end
+  end
+
+  def scope_query
+    return {} if scope.all_connections?
+
+    { connected_user_id: scope.connected_user.id }
   end
 
   def metadata_value(label, value)
@@ -105,5 +133,10 @@ class Views::HealthCheck::Dashboard::CheckCard < Views::Base
       "running" => "border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
       "unavailable" => "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
     }.fetch(summary.status)
+  end
+
+  def run_button_class
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 " \
+      "transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
   end
 end

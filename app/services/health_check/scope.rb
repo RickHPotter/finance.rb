@@ -39,6 +39,13 @@ class HealthCheck::Scope
     context.scenario_key
   end
 
+  def for_entry(entry)
+    raise Invalid, :check_unregistered unless entry.is_a?(HealthCheck::Registry::Entry)
+    return self if entry.connection_scoped? || connected_user.nil?
+
+    self.class.new(user:, context:, locale:)
+  end
+
   private
 
   def validate!

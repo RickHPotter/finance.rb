@@ -2,6 +2,7 @@
 
 class Views::HealthCheck::Dashboard::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::TurboStreamFrom
 
   attr_reader :scope, :summaries
 
@@ -13,6 +14,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
   def view_template
     turbo_frame_tag :center_container do
       main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+        turbo_stream_from HealthCheck::Stream.for(scope)
         header_section
         render Views::HealthCheck::Dashboard::Overview.new(scope:, summaries:)
         financial_integrity_section
@@ -52,7 +54,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
 
       div(class: "mt-4 grid gap-4 lg:grid-cols-2") do
         summaries.each do |summary|
-          render Views::HealthCheck::Dashboard::CheckCard.new(summary:)
+          render Views::HealthCheck::Dashboard::CheckCard.new(summary:, scope:)
         end
       end
     end

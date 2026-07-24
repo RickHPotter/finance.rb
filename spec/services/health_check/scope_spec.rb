@@ -38,6 +38,18 @@ RSpec.describe HealthCheck::Scope do
     expect(scope.scenario_key).to eq(derived_context.scenario_key)
   end
 
+  it "removes a selected connection from context-only check scopes" do
+    connected_user = create(:user, :random)
+    user.entities.create!(entity_name: "CONNECTED USER", entity_user: connected_user)
+    scope = described_class.new(user:, context:, connected_user:)
+
+    context_scope = scope.for_entry(HealthCheck::Registry.fetch("exchange_return"))
+    relationship_scope = scope.for_entry(HealthCheck::Registry.fetch("exchange_trio"))
+
+    expect(context_scope).to be_all_connections
+    expect(relationship_scope.connected_user).to eq(connected_user)
+  end
+
   it "rejects a non-admin user" do
     user.update!(admin: false)
 

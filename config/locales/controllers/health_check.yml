@@ -24,6 +24,22 @@ en:
         action: "Open preview"
     history:
       action: "Audit history"
+    actions:
+      run_all: "Run all checks"
+      running_all: "Checks running"
+      run: "Run"
+      rerun: "Rerun"
+      running: "Running"
+    runs:
+      queued:
+        one: "Queued 1 health check."
+        other: "Queued %{count} health checks."
+      already_running: "All eligible checks are already queued or running."
+      enqueue_failed: "One or more health checks could not be queued."
+    check_runs:
+      queued: "Queued %{check}."
+      already_running: "%{check} is already queued or running."
+      enqueue_failed: "%{check} could not be queued."
     checks:
       exchange_trio:
         title: "Exchange Trio and Reference Chain"
@@ -49,6 +65,21 @@ en:
     reasons:
       never_run: "Never run"
       unavailable: "The latest run is unavailable."
+      adapter_unavailable: "This check is not available yet."
+      admin_required: "Administrator access changed before the check started."
+      user_not_found: "The administrator account is no longer available."
+      context_not_found: "The selected context is no longer available."
+      context_mismatch: "The selected context no longer belongs to this administrator."
+      context_archived: "The selected context was archived before the check started."
+      connected_user_not_found: "The selected connected user is no longer available."
+      connected_user_invalid: "The connected-user scope is invalid."
+      connected_user_unrelated: "The selected user is no longer connected to this administrator."
+      unsupported_locale: "The requested locale is no longer supported."
+      check_unregistered: "This check is no longer registered."
+      unexpected_connected_user: "This check does not support a connected-user scope."
+      invalid_result: "The check returned an invalid result."
+      execution_failed: "The check could not complete."
+      enqueue_failed: "The check could not be queued."
     fields:
       status: "Status"
       affected: "Affected"
@@ -94,6 +125,22 @@ pt-BR:
         action: "Abrir prévia"
     history:
       action: "Histórico de auditoria"
+    actions:
+      run_all: "Executar todas"
+      running_all: "Verificações em execução"
+      run: "Executar"
+      rerun: "Executar novamente"
+      running: "Executando"
+    runs:
+      queued:
+        one: "1 verificação de saúde foi enfileirada."
+        other: "%{count} verificações de saúde foram enfileiradas."
+      already_running: "Todas as verificações elegíveis já estão enfileiradas ou em execução."
+      enqueue_failed: "Uma ou mais verificações não puderam ser enfileiradas."
+    check_runs:
+      queued: "%{check} foi enfileirada."
+      already_running: "%{check} já está enfileirada ou em execução."
+      enqueue_failed: "%{check} não pôde ser enfileirada."
     checks:
       exchange_trio:
         title: "Trio de Câmbio e Cadeia de Referências"
@@ -119,6 +166,21 @@ pt-BR:
     reasons:
       never_run: "Nunca executada"
       unavailable: "A execução mais recente está indisponível."
+      adapter_unavailable: "Esta verificação ainda não está disponível."
+      admin_required: "O acesso de administrador mudou antes do início da verificação."
+      user_not_found: "A conta do administrador não está mais disponível."
+      context_not_found: "O contexto selecionado não está mais disponível."
+      context_mismatch: "O contexto selecionado não pertence mais a este administrador."
+      context_archived: "O contexto selecionado foi arquivado antes do início da verificação."
+      connected_user_not_found: "O usuário conectado selecionado não está mais disponível."
+      connected_user_invalid: "O escopo de usuário conectado é inválido."
+      connected_user_unrelated: "O usuário selecionado não está mais conectado a este administrador."
+      unsupported_locale: "O idioma solicitado não é mais compatível."
+      check_unregistered: "Esta verificação não está mais registrada."
+      unexpected_connected_user: "Esta verificação não aceita um escopo de usuário conectado."
+      invalid_result: "A verificação retornou um resultado inválido."
+      execution_failed: "A verificação não pôde ser concluída."
+      enqueue_failed: "A verificação não pôde ser enfileirada."
     fields:
       status: "Estado"
       affected: "Afetados"
