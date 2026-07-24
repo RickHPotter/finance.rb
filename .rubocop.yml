@@ -36,6 +36,8 @@ Style/ClassAndModuleChildren:
 
 Layout/LineLength:
   Max: 166
+  AllowedPatterns:
+    - "^#.*indexed =>"
 
 Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space
