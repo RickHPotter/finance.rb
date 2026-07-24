@@ -21,6 +21,12 @@ class User < ApplicationRecord
 
   has_many :budgets, dependent: :destroy
   has_many :contexts, dependent: :destroy
+  has_many :health_check_runs, dependent: :destroy
+  has_many :connected_health_check_runs,
+           class_name: "HealthCheckRun",
+           foreign_key: :connected_user_id,
+           inverse_of: :connected_user,
+           dependent: :destroy
 
   has_many :categories, dependent: :destroy
   has_many :entities, dependent: :destroy

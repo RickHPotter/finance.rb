@@ -722,6 +722,56 @@ ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subsc
 
 
 --
+-- Name: health_check_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.health_check_runs (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    context_id bigint NOT NULL,
+    connected_user_id bigint,
+    check_key character varying NOT NULL,
+    generation_token uuid DEFAULT gen_random_uuid() NOT NULL,
+    execution_state character varying DEFAULT 'queued'::character varying NOT NULL,
+    outcome character varying,
+    counts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    queued_at timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    started_at timestamp(6) without time zone,
+    finished_at timestamp(6) without time zone,
+    duration_ms bigint,
+    error_code character varying(100),
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT health_check_runs_check_key CHECK (((check_key)::text = ANY ((ARRAY['exchange_trio'::character varying, 'exchange_return'::character varying, 'card_exchange_projection'::character varying, 'misplaced_exchange_intent'::character varying, 'piggy_bank'::character varying])::text[]))),
+    CONSTRAINT health_check_runs_completed_outcome CHECK (((((execution_state)::text = 'completed'::text) AND (outcome IS NOT NULL)) OR (((execution_state)::text <> 'completed'::text) AND (outcome IS NULL)))),
+    CONSTRAINT health_check_runs_counts_object CHECK ((jsonb_typeof(counts) = 'object'::text)),
+    CONSTRAINT health_check_runs_counts_size CHECK ((octet_length((counts)::text) <= 4096)),
+    CONSTRAINT health_check_runs_duration CHECK (((duration_ms IS NULL) OR (duration_ms >= 0))),
+    CONSTRAINT health_check_runs_execution_state CHECK (((execution_state)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying, 'completed'::character varying, 'unavailable'::character varying])::text[]))),
+    CONSTRAINT health_check_runs_outcome CHECK (((outcome IS NULL) OR ((outcome)::text = ANY ((ARRAY['healthy'::character varying, 'warning'::character varying, 'failing'::character varying])::text[]))))
+);
+
+
+--
+-- Name: health_check_runs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.health_check_runs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: health_check_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.health_check_runs_id_seq OWNED BY public.health_check_runs.id;
+
+
+--
 -- Name: installments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1237,6 +1287,13 @@ ALTER TABLE ONLY public.finance_subscriptions ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: health_check_runs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.health_check_runs ALTER COLUMN id SET DEFAULT nextval('public.health_check_runs_id_seq'::regclass);
+
+
+--
 -- Name: installments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1459,6 +1516,14 @@ ALTER TABLE ONLY public.finance_subscriptions
 
 
 --
+-- Name: health_check_runs health_check_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.health_check_runs
+    ADD CONSTRAINT health_check_runs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: installments installments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1565,6 +1630,20 @@ CREATE INDEX idx_card_transactions_description_trgm ON public.card_transactions 
 --
 
 CREATE INDEX idx_card_transactions_price ON public.card_transactions USING btree (price);
+
+
+--
+-- Name: idx_health_check_runs_connected_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_health_check_runs_connected_scope ON public.health_check_runs USING btree (check_key, user_id, context_id, connected_user_id) WHERE (connected_user_id IS NOT NULL);
+
+
+--
+-- Name: idx_health_check_runs_unfiltered_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_health_check_runs_unfiltered_scope ON public.health_check_runs USING btree (check_key, user_id, context_id) WHERE (connected_user_id IS NULL);
 
 
 --
@@ -2044,6 +2123,34 @@ CREATE INDEX index_finance_subscriptions_on_user_id ON public.finance_subscripti
 
 
 --
+-- Name: index_health_check_runs_on_connected_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_health_check_runs_on_connected_user_id ON public.health_check_runs USING btree (connected_user_id);
+
+
+--
+-- Name: index_health_check_runs_on_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_health_check_runs_on_context_id ON public.health_check_runs USING btree (context_id);
+
+
+--
+-- Name: index_health_check_runs_on_execution_state_and_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_health_check_runs_on_execution_state_and_updated_at ON public.health_check_runs USING btree (execution_state, updated_at);
+
+
+--
+-- Name: index_health_check_runs_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_health_check_runs_on_user_id ON public.health_check_runs USING btree (user_id);
+
+
+--
 -- Name: index_installments_on_card_transaction_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2436,6 +2543,14 @@ ALTER TABLE ONLY public.contexts
 
 
 --
+-- Name: health_check_runs fk_rails_6df6b22c90; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.health_check_runs
+    ADD CONSTRAINT fk_rails_6df6b22c90 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
+
+
+--
 -- Name: budget_entities fk_rails_70b492048f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2636,6 +2751,14 @@ ALTER TABLE ONLY public.audit_versions
 
 
 --
+-- Name: health_check_runs fk_rails_eec3b14118; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.health_check_runs
+    ADD CONSTRAINT fk_rails_eec3b14118 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: card_transactions fk_rails_f1f6a75d66; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2668,6 +2791,14 @@ ALTER TABLE ONLY public."references"
 
 
 --
+-- Name: health_check_runs fk_rails_f64ca0883f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.health_check_runs
+    ADD CONSTRAINT fk_rails_f64ca0883f FOREIGN KEY (connected_user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: card_transactions fk_rails_ff4db61853; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2682,6 +2813,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724090000'),
 ('20260722090000'),
 ('20260719091000'),
 ('20260719090000'),
