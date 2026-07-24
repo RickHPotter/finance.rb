@@ -24,6 +24,22 @@ RSpec.describe HealthCheck::DashboardSnapshot do
     expect(summaries.fetch("exchange_trio").status).to eq("warning")
   end
 
+  it "loads every summary with one bounded query and never evaluates detail providers" do
+    HealthCheck::Registry.entries.each do |entry|
+      create_completed_run(check_key: entry.key, outcome: "healthy")
+      expect(entry.details).not_to receive(:new)
+    end
+    scope = HealthCheck::Scope.new(user: admin, context: admin.main_context)
+
+    query_count = count_sql_queries do
+      summaries = described_class.new(scope:).summaries
+      expect(summaries.size).to eq(HealthCheck::Registry.entries.size)
+      expect(summaries).to all(have_attributes(status: "healthy"))
+    end
+
+    expect(query_count).to eq(1)
+  end
+
   def create_completed_run(check_key:, outcome:, connected_user: nil)
     HealthCheckRun.create!(
       user: admin,
@@ -37,5 +53,15 @@ RSpec.describe HealthCheck::DashboardSnapshot do
       finished_at: Time.current,
       duration_ms: 1_000
     )
+  end
+
+  def count_sql_queries(&)
+    count = 0
+    subscriber = lambda do |_name, _started, _finished, _unique_id, payload|
+      count += 1 unless payload[:name].in?(%w[SCHEMA CACHE TRANSACTION])
+    end
+
+    ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record", &)
+    count
   end
 end

@@ -158,6 +158,20 @@ RSpec.describe HealthCheck::RunJob, type: :job do
     expect(HealthCheck::Broadcaster).to have_received(:call).once
   end
 
+  it "is idempotent when the queue redelivers the same generation" do
+    run = create_run(check_key: "exchange_return")
+    scope = HealthCheck::Scope.new(user: admin, context:)
+    result = build_result(scope:, check_key: run.check_key, outcome: "healthy")
+    adapter = use_runner(run.check_key, result:)
+    expect(adapter).to receive(:call).once.and_return(result)
+    arguments = job_arguments(run)
+
+    2.times { described_class.perform_now(**arguments) }
+
+    expect(run.reload).to have_attributes(execution_state: "completed", outcome: "healthy")
+    expect(HealthCheck::Broadcaster).to have_received(:call).twice
+  end
+
   it "rejects a result for a different scope" do
     run = create_run(check_key: "exchange_return")
     wrong_scope = { user_id: admin.id, context_id: context.id + 10_000, connected_user_id: nil, locale: "en" }
@@ -238,5 +252,6 @@ RSpec.describe HealthCheck::RunJob, type: :job do
     entry = HealthCheck::Registry.fetch(check_key)
     stubbed_entry = HealthCheck::Registry::Entry.new(**entry.to_h, runner:)
     allow(HealthCheck::Registry).to receive(:find).with(check_key).and_return(stubbed_entry)
+    adapter
   end
 end

@@ -38,6 +38,18 @@ RSpec.describe "Health Check repair apply", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
+  it "cannot bypass preview and confirmation with a direct apply request" do
+    sign_in admin
+
+    expect do
+      patch apply_path
+    end.to change(AuditOperation, :count).by(0).and change(AuditVersion, :count).by(0)
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.body).to include(I18n.t("health_check.repairs.result.reasons.invalid_token"))
+    expect(response.body).not_to include("/audit_operations/")
+  end
+
   it "passes the validated scope, signed token, and explicit confirmation to apply" do
     result = HealthCheck::Repairs::ApplyResult.new(
       status: "applied",

@@ -73,6 +73,18 @@ RSpec.describe "Health Check Naming Convention maintenance", type: :request do
     expect(response.body).to include(I18n.t("health_check.naming_conventions.result.reasons.confirmation_required"))
   end
 
+  it "cannot bypass preview with a direct apply request" do
+    sign_in admin
+
+    expect do
+      patch healthcheck_naming_convention_path, params: { naming_confirmation: "1" }
+    end.to change(AuditOperation, :count).by(0).and change(AuditVersion, :count).by(0)
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.body).to include(I18n.t("health_check.naming_conventions.result.reasons.invalid_token"))
+    expect(response.body).not_to include("/audit_operations/")
+  end
+
   it "applies the unchanged preview as one linked admin repair operation" do
     transaction = create_naming_candidate
     expected_description = transaction.investments.first.cash_transaction_description
@@ -139,6 +151,24 @@ RSpec.describe "Health Check Naming Convention maintenance", type: :request do
     expect(transaction.reload.description).to eq(original_description)
     expect(response.body).to include(I18n.t("health_check.naming_conventions.no_changes_found"))
     expect(document.at_css("form[action='#{healthcheck_naming_convention_path}']")).to be_nil
+  end
+
+  it "renders complete Portuguese maintenance copy without changing stable controls" do
+    create_naming_candidate
+    admin.update!(locale: "pt-BR")
+    sign_in admin
+
+    get preview_healthcheck_naming_convention_path
+
+    document = Nokogiri::HTML.fragment(response.body)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(
+      I18n.t("health_check.naming_conventions.will_update", count: 1, locale: "pt-BR"),
+      I18n.t("health_check.naming_conventions.confirmation", locale: "pt-BR"),
+      I18n.t("health_check.naming_conventions.apply", locale: "pt-BR")
+    )
+    expect(response.body).not_to include("Translation missing")
+    expect(document.at_css("input#healthcheck_naming_convention_apply_token")).to be_present
   end
 
   private
