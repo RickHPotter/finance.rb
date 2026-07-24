@@ -433,6 +433,28 @@ Product direction:
   intentionally connected user
 - move genuine user preferences elsewhere if settings/preferences are introduced later
 
+Locked V1 direction:
+
+- run checks asynchronously through Solid Queue and persist one latest summary per
+  check, administrator, context, and optional connected-user scope
+- persist execution state, normalized counts, timestamps, duration, and sanitized
+  errors without persisting copies of financial finding payloads
+- treat details as current, lazy-loaded, paginated diagnostics rather than historical
+  snapshots of the last run
+- include five initial registry checks: Exchange Trio with canonical reference-chain
+  health, Exchange Return, Card-bound Exchange Projection, misplaced
+  loan/reimbursement intent, and Piggy Bank integrity
+- scope context checks to the signed-in administrator's selected context and allow
+  relationship checks to cover all of that administrator's connected users or one
+  explicitly selected connected user; do not introduce a global all-user console
+- keep Naming Convention administrator-only and separate from health status; keep
+  backup download in its current location and defer generic recalculation tooling
+- expose only existing correction capabilities after extracting them into focused
+  services with preview, confirmation, audit linkage, and rerun behavior
+- keep Piggy Bank diagnostic-only in V1 and do not add a global `Repair all` action
+- preserve KAKASHI-08 owner-scoped history access for non-admin users even though the
+  Health Check workspace itself is administrator-only
+
 Workspace structure:
 
 1. Overview
@@ -446,6 +468,7 @@ Workspace structure:
    - Exchange Return health
    - Card-bound exchange projection health
    - misplaced loan/reimbursement intent health
+   - Piggy Bank relationship and projection health
    - reference/invoice and balance-projection checks as those checks become available
 
 3. Maintenance tools
@@ -504,6 +527,12 @@ Acceptance direction:
   workspace
 - adding another health check does not require expanding one monolithic controller and
   one monolithic tab view
+
+References:
+
+- [product and execution contract](docs/sprints/4-kakashi/kakashi-09/01-product-and-execution-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-09/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-09/03-decisions-and-test-matrix.md)
 
 ### KAKASHI-10: Connect and evolve finance dashboards
 
