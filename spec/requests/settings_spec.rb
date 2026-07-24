@@ -8,30 +8,21 @@ RSpec.describe "Settings", type: :request do
   describe "[ GET /settings ]" do
     before { sign_in user }
 
-    it "renders successfully" do
+    it "temporarily redirects ordinary users to the canonical Health Check route" do
       get settings_path
 
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("settings.tabs.naming"))
-      expect(response.body).not_to include(I18n.t("settings.tabs.exchange_audit"))
-      expect(response.body).not_to include(I18n.t("settings.tabs.exchange_return_audit"))
-      expect(response.body).to include(preview_naming_convention_path)
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(healthcheck_path)
     end
 
-    it "shows the admin audit tabs for admin users" do
+    it "temporarily redirects administrators without rendering the old page" do
       user.update!(admin: true)
 
       get settings_path
 
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include(I18n.t("settings.tabs.exchange_audit"))
-      expect(response.body).to include(I18n.t("settings.tabs.exchange_return_audit"))
-      expect(response.body).to include(I18n.t("settings.tabs.card_exchange_projection_audit"))
-      expect(response.body).to include(I18n.t("settings.tabs.piggy_bank_audit"))
-      expect(response.body).to include(exchange_audit_admin_settings_path)
-      expect(response.body).to include(exchange_return_audit_admin_settings_path)
-      expect(response.body).to include(card_exchange_projection_audit_admin_settings_path)
-      expect(response.body).to include(piggy_bank_audit_admin_settings_path)
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(healthcheck_path)
+      expect(response.body).not_to include(I18n.t("settings.title"))
     end
   end
 

@@ -20,6 +20,7 @@ en:
     balance: Balance
     context: Contexts
     settings: Settings
+    health_check: Health Check
 
 pt-BR:
   tabs:
@@ -43,3 +44,4 @@ pt-BR:
     balance: Saldo
     context: Contextos
     settings: Ajustes
+    health_check: Verificação de Saúde

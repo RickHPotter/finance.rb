@@ -1,0 +1,139 @@
+en:
+  health_check:
+    title: "Health Check"
+    description: "Review the latest financial integrity results for the selected context."
+    overview:
+      title: "Overview"
+      description: "Latest persisted result for each registered check. Finding details are evaluated only when opened."
+    scope:
+      title: "Current scope"
+      administrator: "Administrator"
+      context: "Context"
+      connections: "Connections"
+      all_connections: "All connected users"
+    groups:
+      financial_integrity:
+        title: "Financial Integrity"
+        description: "Checks that verify transaction relationships, allocations, projections, and stored-value integrity."
+    maintenance:
+      title: "Maintenance"
+      description: "Operational helpers are kept separate from financial health results."
+      naming:
+        title: "Naming Convention"
+        description: "Preview transaction naming suggestions without changing health status counts."
+        action: "Open preview"
+    history:
+      action: "Audit history"
+    checks:
+      exchange_trio:
+        title: "Exchange Trio and Reference Chain"
+        description: "Verifies connected-user exchange topology and canonical transaction references."
+      exchange_return:
+        title: "Exchange Return Integrity"
+        description: "Verifies return totals, allocations, linked sources, and replay projections."
+      card_exchange_projection:
+        title: "Card-bound Exchange Projections"
+        description: "Verifies payer exchange rows against current card installment projections."
+      misplaced_exchange_intent:
+        title: "Misplaced Loan/Reimbursement Intent"
+        description: "Finds exchange sources whose persisted intent disagrees with their financial behavior."
+      piggy_bank:
+        title: "Piggy Bank Integrity"
+        description: "Verifies contribution relationships, return projections, valuations, and installments."
+    states:
+      healthy: "Healthy"
+      warning: "Warning"
+      failing: "Failing"
+      running: "Running"
+      unavailable: "Unavailable"
+    reasons:
+      never_run: "Never run"
+      unavailable: "The latest run is unavailable."
+    fields:
+      status: "Status"
+      affected: "Affected"
+      failures: "Failures"
+      warnings: "Warnings"
+      repairable: "Repairable"
+      read_only: "Read only"
+      last_run: "Last run"
+      duration: "Duration"
+      scope: "Scope"
+    scopes:
+      context: "Selected context"
+      context_with_connections: "Selected context and connected users"
+    values:
+      no_value: "—"
+      milliseconds: "%{count} ms"
+      repair_available: "Supported repairs available"
+      diagnostic_only: "Diagnostic only"
+
+pt-BR:
+  health_check:
+    title: "Verificação de Saúde"
+    description: "Revise os resultados mais recentes de integridade financeira para o contexto selecionado."
+    overview:
+      title: "Visão Geral"
+      description: "Resultado persistido mais recente de cada verificação registrada. Os detalhes são avaliados somente quando abertos."
+    scope:
+      title: "Escopo atual"
+      administrator: "Administrador"
+      context: "Contexto"
+      connections: "Conexões"
+      all_connections: "Todos os usuários conectados"
+    groups:
+      financial_integrity:
+        title: "Integridade Financeira"
+        description: "Verificações de relacionamentos, alocações, projeções e integridade de valores armazenados."
+    maintenance:
+      title: "Manutenção"
+      description: "Ferramentas operacionais permanecem separadas dos resultados de saúde financeira."
+      naming:
+        title: "Convenção de Nomes"
+        description: "Visualize sugestões de nomes de transações sem alterar os indicadores de saúde."
+        action: "Abrir prévia"
+    history:
+      action: "Histórico de auditoria"
+    checks:
+      exchange_trio:
+        title: "Trio de Câmbio e Cadeia de Referências"
+        description: "Verifica a topologia de câmbio entre usuários conectados e as referências canônicas das transações."
+      exchange_return:
+        title: "Integridade de Retorno de Câmbio"
+        description: "Verifica totais, alocações, origens vinculadas e projeções de repetição dos retornos."
+      card_exchange_projection:
+        title: "Projeções de Câmbio Vinculadas ao Cartão"
+        description: "Verifica as linhas de câmbio do pagador contra as projeções atuais das parcelas do cartão."
+      misplaced_exchange_intent:
+        title: "Intenção Incorreta de Empréstimo/Reembolso"
+        description: "Encontra origens de câmbio cuja intenção persistida diverge do comportamento financeiro."
+      piggy_bank:
+        title: "Integridade do Cofrinho"
+        description: "Verifica relacionamentos de aportes, projeções de retorno, avaliações e parcelas."
+    states:
+      healthy: "Saudável"
+      warning: "Alerta"
+      failing: "Falhando"
+      running: "Executando"
+      unavailable: "Indisponível"
+    reasons:
+      never_run: "Nunca executada"
+      unavailable: "A execução mais recente está indisponível."
+    fields:
+      status: "Estado"
+      affected: "Afetados"
+      failures: "Falhas"
+      warnings: "Alertas"
+      repairable: "Reparáveis"
+      read_only: "Somente leitura"
+      last_run: "Última execução"
+      duration: "Duração"
+      scope: "Escopo"
+    scopes:
+      context: "Contexto selecionado"
+      context_with_connections: "Contexto selecionado e usuários conectados"
+    values:
+      no_value: "—"
+      milliseconds: "%{count} ms"
+      repair_available: "Reparos compatíveis disponíveis"
+      diagnostic_only: "Somente diagnóstico"

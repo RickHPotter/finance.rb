@@ -88,9 +88,12 @@ module TabsConcern
     @hub_tab = [
       Item.new(t("tabs.balance"),      :chart,    balances_path,        @active_sub_menu == :balance),
       Item.new(t("tabs.conversation"), :message,  conversations_path,   @active_sub_menu == :conversation, conversation_notification_type),
-      Item.new(t("tabs.context"),      :exchange, contexts_path,        @active_sub_menu == :context),
-      Item.new(t("tabs.settings"),     :cog,      settings_path,        @active_sub_menu == :settings)
+      Item.new(t("tabs.context"),      :exchange, contexts_path,        @active_sub_menu == :context)
     ]
+
+    return unless current_user.admin?
+
+    @hub_tab << Item.new(t("tabs.health_check"), :cog, healthcheck_path, @active_sub_menu == :health_check)
   end
 
   def set_main_sublinks

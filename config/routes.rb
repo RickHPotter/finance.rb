@@ -128,6 +128,7 @@ Rails.application.routes.draw do
   resources :audit_operations, only: %i[index show]
   resources :audit_versions, only: :index
   get "audit_records/:item_type/:item_id", to: "audit_versions#index", defaults: { record_filter: true }, as: :record_audit_versions
+  get "healthcheck", to: "health_check/dashboard#show", as: :healthcheck
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do
