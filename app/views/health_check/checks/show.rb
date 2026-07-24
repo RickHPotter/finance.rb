@@ -144,7 +144,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
       empty_panel
     else
       div(id: "health_check_findings_#{entry.key}", class: "mt-5 space-y-4") do
-        page.records.each { |row| render FINDING_COMPONENTS.fetch(entry.key).new(row:) }
+        page.records.each { |row| render FINDING_COMPONENTS.fetch(entry.key).new(row:, entry:, workspace_scope:) }
       end
       render Views::HealthCheck::Checks::Pagination.new(entry:, page:, query: pagination_query)
     end

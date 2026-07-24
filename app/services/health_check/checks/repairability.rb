@@ -11,7 +11,7 @@ module HealthCheck::Checks::Repairability
     Array(row[:source_allocation_rows]).any? do |allocation|
       allocation[:entity_transaction_id].present? &&
         allocation[:issue_code].in?(SUPPORTED_ALLOCATION_ISSUES) &&
-        (allocation[:calculated_loan_return_percentage].present? || allocation[:calculated_price].present?)
+        HealthCheck::Repairs::ExchangeReturnAllocationPlanner.strategies_for(allocation).any?
     end
   end
 

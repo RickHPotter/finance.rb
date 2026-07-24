@@ -230,6 +230,52 @@ RSpec.describe "Health Check details", type: :request do
     end
   end
 
+  it "routes every repairable detail action through preview and exposes no Piggy Bank repair control" do
+    repairable_record = {
+      source_id: 13,
+      description: "Misplaced source",
+      date: Time.zone.today,
+      month_year: "07/2026",
+      transaction_total: 500,
+      entity_return_total: 300,
+      delta: 200,
+      message_ids: [ 41 ],
+      health_check: {
+        repairable: true,
+        preview_actions: [ { finding_id: 13 } ]
+      }
+    }
+    piggy_record = {
+      id: 14,
+      description: "Piggy finding",
+      date: Time.zone.today,
+      principal: 100,
+      valuation_delta: 10,
+      expected_total: 100,
+      recorded_total: 90,
+      issues: [ "grouped_principal_drift" ],
+      health_check: {
+        repairable: false,
+        unavailable_reason: "diagnostic_only"
+      }
+    }
+    allow(HealthCheck::Checks::MisplacedExchangeIntentDetails).to receive(:new).and_return(
+      instance_double(HealthCheck::Checks::MisplacedExchangeIntentDetails, call: build_page(records: [ repairable_record ]))
+    )
+    allow(HealthCheck::Checks::PiggyBankDetails).to receive(:new).and_return(
+      instance_double(HealthCheck::Checks::PiggyBankDetails, call: build_page(records: [ piggy_record ]))
+    )
+    sign_in admin
+
+    get healthcheck_check_path("misplaced_exchange_intent")
+    preview_link = Nokogiri::HTML(response.body).at_css("a[data-turbo-method='post'][href*='/repairs/convert_to_reimbursement/preview']")
+    expect(preview_link).to be_present
+    expect(preview_link["href"]).to include("finding_id=13")
+
+    get healthcheck_check_path("piggy_bank")
+    expect(response.body).not_to include("/repairs/")
+  end
+
   def build_page(records:, evaluated_at: Time.current)
     HealthCheck::Page.new(
       records:,

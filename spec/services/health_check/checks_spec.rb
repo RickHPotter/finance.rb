@@ -63,6 +63,9 @@ RSpec.describe "Health check diagnostic adapters" do
         {
           entity_transaction_id: 12,
           issue_code: "missing_moi_allocation",
+          friend_notification_intent: "loan",
+          loan_return_percentage: 25,
+          current_price: -1_000,
           calculated_loan_return_percentage: 50,
           calculated_price: -500
         }

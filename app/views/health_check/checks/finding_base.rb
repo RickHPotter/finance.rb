@@ -3,10 +3,12 @@
 class Views::HealthCheck::Checks::FindingBase < Views::Base
   include TranslateHelper
 
-  attr_reader :row
+  attr_reader :entry, :row, :workspace_scope
 
-  def initialize(row:)
+  def initialize(row:, entry:, workspace_scope:)
     @row = row
+    @entry = entry
+    @workspace_scope = workspace_scope
   end
 
   private
@@ -20,7 +22,7 @@ class Views::HealthCheck::Checks::FindingBase < Views::Base
         end
 
         div(class: "flex shrink-0 flex-wrap items-center gap-2") do
-          capability_badge
+          capability_controls
           a(href:, class: open_link_class, data: { turbo_frame: "_top" }) { I18n.t("health_check.details.open_record") } if href.present?
         end
       end
@@ -73,6 +75,11 @@ class Views::HealthCheck::Checks::FindingBase < Views::Base
     I18n.l(value.to_date, format: :short)
   end
 
+  def capability_controls
+    capability_badge
+    preview_actions.each { |action| preview_link(action) }
+  end
+
   def capability_badge
     repairable = row.dig(:health_check, :repairable)
     key = repairable ? "repairable" : "read_only"
@@ -83,6 +90,24 @@ class Views::HealthCheck::Checks::FindingBase < Views::Base
               end
 
     span(class: "rounded-full border px-2.5 py-1 text-xs font-bold #{classes}") { I18n.t("health_check.details.capabilities.#{key}") }
+  end
+
+  def preview_actions
+    Array(row.dig(:health_check, :preview_actions))
+  end
+
+  def preview_link(action)
+    repair_key = entry.repair_keys.first
+    query = action.symbolize_keys
+    query[:connected_user_id] = workspace_scope.connected_user.id unless workspace_scope.all_connections?
+    strategy = action[:strategy] || action["strategy"]
+    label_key = strategy.present? ? "health_check.repairs.actions.#{strategy}" : "health_check.repairs.actions.preview"
+
+    a(
+      href: healthcheck_repair_preview_path(entry.key, repair_key, **query),
+      class: preview_link_class,
+      data: { turbo_method: :post, turbo_frame: "center_container", turbo_prefetch: false }
+    ) { I18n.t(label_key) }
   end
 
   def capability_reason
@@ -97,6 +122,11 @@ class Views::HealthCheck::Checks::FindingBase < Views::Base
   def open_link_class
     "inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 px-2.5 py-1 text-xs font-bold text-slate-700 " \
       "hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+  end
+
+  def preview_link_class
+    "inline-flex min-h-8 items-center justify-center rounded-md border border-sky-700 bg-sky-700 px-2.5 py-1 text-xs font-bold text-white " \
+      "hover:bg-sky-800 dark:border-sky-500 dark:bg-sky-600 dark:hover:bg-sky-500"
   end
 
   def finding_header_class

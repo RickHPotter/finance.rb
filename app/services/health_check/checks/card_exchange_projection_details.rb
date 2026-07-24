@@ -25,7 +25,8 @@ class HealthCheck::Checks::CardExchangeProjectionDetails < HealthCheck::Checks::
       row.merge(
         health_check: {
           repairable:,
-          unavailable_reason: unavailable_reason(row, repairable:)
+          unavailable_reason: unavailable_reason(row, repairable:),
+          preview_actions: repairable ? [ { finding_id: row[:id] } ] : []
         }
       )
     end

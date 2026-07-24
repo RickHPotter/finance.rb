@@ -19,10 +19,19 @@ class HealthCheck::Checks::ExchangeReturnDetails < HealthCheck::Checks::DetailsB
       issue_filter: issue_filter(ISSUE_CODES),
       status_filter:
     ).call.map do |row|
+      preview_actions = Array(row[:source_allocation_rows]).flat_map do |allocation|
+        HealthCheck::Repairs::ExchangeReturnAllocationPlanner.strategies_for(allocation).map do |strategy|
+          {
+            finding_id: allocation[:entity_transaction_id],
+            strategy:
+          }
+        end
+      end
       row.merge(
         health_check: {
           repairable: HealthCheck::Checks::Repairability.exchange_return_allocation?(row),
-          unavailable_reason: unavailable_reason(row)
+          unavailable_reason: unavailable_reason(row),
+          preview_actions:
         }
       )
     end

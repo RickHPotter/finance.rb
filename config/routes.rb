@@ -132,6 +132,9 @@ Rails.application.routes.draw do
   post "healthcheck/runs", to: "health_check/runs#create", as: :healthcheck_runs
   get "healthcheck/checks/:check_key", to: "health_check/checks#show", as: :healthcheck_check
   post "healthcheck/checks/:check_key/run", to: "health_check/check_runs#create", as: :healthcheck_check_run
+  post "healthcheck/checks/:check_key/repairs/:repair_key/preview",
+       to: "health_check/repair_previews#create",
+       as: :healthcheck_repair_preview
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do

@@ -13,7 +13,8 @@ class HealthCheck::Checks::MisplacedExchangeIntentDetails < HealthCheck::Checks:
       row.merge(
         health_check: {
           repairable: owner,
-          unavailable_reason: ("owner_only" unless owner)
+          unavailable_reason: ("owner_only" unless owner),
+          preview_actions: owner ? [ { finding_id: row[:source_id] } ] : []
         }.compact
       )
     end

@@ -34,10 +34,12 @@ class HealthCheck::Checks::ExchangeTrioDetails < HealthCheck::Checks::DetailsBas
       next if selected_issue.present? && !Array(row[:issues]).include?(selected_issue)
 
       candidate = candidates_by_message_id[row.dig(:message, :id)]
+      repairable = candidate&.fetch(:supported, false) || false
       row.merge(
         health_check: {
-          repairable: candidate&.fetch(:supported, false) || false,
-          unavailable_reason: candidate&.dig(:unsupported_reason) || ("no_canonical_change" if row[:proposed_changes].blank?)
+          repairable:,
+          unavailable_reason: candidate&.dig(:unsupported_reason) || ("no_canonical_change" if row[:proposed_changes].blank?),
+          preview_actions: repairable ? [ { finding_id: row.dig(:source, :id) } ] : []
         }.compact
       )
     end

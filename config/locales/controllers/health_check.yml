@@ -66,6 +66,12 @@ en:
         paid_history: "Repair is unavailable because paid history must be preserved."
         ambiguous_projection: "The projection has more than one possible repair target."
         no_canonical_change: "No supported canonical reference change is available."
+        finding_not_current: "The finding is no longer current. Return to details and evaluate it again."
+        planned_changes_not_resolvable: "The proposed references no longer match the current records."
+        non_cash_transaction_target: "This reference target is not supported by the repair contract."
+        unsupported_reference_target_type: "The proposed reference type is not supported."
+        multiple_middle_candidates: "The reference chain has more than one possible middle transaction."
+        missing_middle: "The reference chain does not have a resolvable middle transaction."
       fields:
         intent: "Intent"
         message: "Message"
@@ -90,6 +96,42 @@ en:
       pagination:
         label: "Finding pages"
         summary: "Page %{page} of %{pages} · %{count} findings"
+    repairs:
+      canonical_reference:
+        title: "Canonical reference repair preview"
+      source_allocation:
+        title: "Exchange Return allocation preview"
+      projection:
+        title: "Card projection repair preview"
+      convert_to_reimbursement:
+        title: "Reimbursement intent conversion preview"
+      actions:
+        preview: "Preview repair"
+        match_percentage: "Preview matching percentage"
+        corrected_value: "Preview corrected value"
+      states:
+        previewable: "Ready for review"
+        read_only: "Apply unavailable"
+        prohibited: "Repair prohibited"
+      preview:
+        eyebrow: "Read-only repair preview"
+        description: "%{check} finding #%{finding_id}. No financial data has been changed."
+        back: "Back to findings"
+        finding: "Finding"
+        state: "Preview state"
+        state_descriptions:
+          previewable: "The current finding has one supported change plan. Review every value before applying it in the next step."
+          read_only: "The current finding can be inspected, but the repair contract does not allow it to be applied."
+          prohibited: "A financial safety rule prohibits this repair."
+        changes: "Proposed changes"
+        no_changes: "No supported changes are available for the current state."
+        before: "Before"
+        after: "After"
+        references: "Affected references"
+        warnings: "Warnings and remaining implications"
+        paid_history: "Paid-history implications"
+        digest: "Deterministic preview digest"
+        token_notice: "The signed preview token expires after 15 minutes and contains only bounded identifiers and this digest."
     runs:
       queued:
         one: "Queued 1 health check."
@@ -227,6 +269,12 @@ pt-BR:
         paid_history: "O reparo está indisponível porque o histórico pago deve ser preservado."
         ambiguous_projection: "A projeção possui mais de um possível destino de reparo."
         no_canonical_change: "Nenhuma alteração canônica de referência compatível está disponível."
+        finding_not_current: "O problema não está mais atual. Volte aos detalhes e avalie-o novamente."
+        planned_changes_not_resolvable: "As referências propostas não correspondem mais aos registros atuais."
+        non_cash_transaction_target: "Este destino de referência não é compatível com o contrato de reparo."
+        unsupported_reference_target_type: "O tipo de referência proposto não é compatível."
+        multiple_middle_candidates: "A cadeia de referências possui mais de uma possível transação intermediária."
+        missing_middle: "A cadeia de referências não possui uma transação intermediária resolvível."
       fields:
         intent: "Intenção"
         message: "Mensagem"
@@ -251,6 +299,42 @@ pt-BR:
       pagination:
         label: "Páginas de problemas"
         summary: "Página %{page} de %{pages} · %{count} problemas"
+    repairs:
+      canonical_reference:
+        title: "Prévia do reparo de referência canônica"
+      source_allocation:
+        title: "Prévia da alocação de Retorno de Câmbio"
+      projection:
+        title: "Prévia do reparo da projeção do cartão"
+      convert_to_reimbursement:
+        title: "Prévia da conversão da intenção para reembolso"
+      actions:
+        preview: "Visualizar reparo"
+        match_percentage: "Visualizar percentual correspondente"
+        corrected_value: "Visualizar valor corrigido"
+      states:
+        previewable: "Pronto para revisão"
+        read_only: "Aplicação indisponível"
+        prohibited: "Reparo proibido"
+      preview:
+        eyebrow: "Prévia de reparo somente leitura"
+        description: "Problema #%{finding_id} de %{check}. Nenhum dado financeiro foi alterado."
+        back: "Voltar aos problemas"
+        finding: "Problema"
+        state: "Estado da prévia"
+        state_descriptions:
+          previewable: "O problema atual possui um plano de alterações compatível. Revise todos os valores antes de aplicá-lo na próxima etapa."
+          read_only: "O problema atual pode ser inspecionado, mas o contrato de reparo não permite sua aplicação."
+          prohibited: "Uma regra de segurança financeira proíbe este reparo."
+        changes: "Alterações propostas"
+        no_changes: "Nenhuma alteração compatível está disponível para o estado atual."
+        before: "Antes"
+        after: "Depois"
+        references: "Referências afetadas"
+        warnings: "Alertas e implicações restantes"
+        paid_history: "Implicações no histórico pago"
+        digest: "Resumo determinístico da prévia"
+        token_notice: "O token assinado da prévia expira após 15 minutos e contém somente identificadores limitados e este resumo."
     runs:
       queued:
         one: "1 verificação de saúde foi enfileirada."

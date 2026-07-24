@@ -43,6 +43,10 @@ class HealthCheck::Registry
       repair_keys.any?
     end
 
+    def repair_definitions
+      HealthCheck::Repairs::Registry.for_check(key)
+    end
+
     private
 
     def validate_value!(attribute, value, allowed)
