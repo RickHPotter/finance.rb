@@ -48,7 +48,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
           I18n.t("health_check.details.back"),
           healthcheck_path(**workspace_scope_query),
           class: secondary_button_class,
-          data: { turbo_frame: "center_container", turbo_prefetch: false }
+          data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
         )
         link_to(
           I18n.t("health_check.actions.rerun"),
@@ -81,7 +81,8 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
     form(
       action: healthcheck_check_path(entry.key),
       method: "get",
-      class: "mt-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-700 dark:bg-slate-900"
+      class: "mt-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-700 dark:bg-slate-900",
+      data: { turbo_frame: "_top", turbo_action: "advance" }
     ) do
       hidden_scope_fields
       status_filter_field if status_filter?

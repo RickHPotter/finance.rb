@@ -39,7 +39,10 @@ RSpec.describe "Health Check dashboard", type: :request do
     expect(document.css("a[href='#{audit_operations_path}']").text).to include(I18n.t("health_check.history.action"))
     expect(document.css("a[href='#{healthcheck_runs_path}']").text).to include(I18n.t("health_check.actions.run_all"))
     expect(document.css("a[data-turbo-method='post'][href^='/healthcheck/checks/']").count).to eq(HealthCheck::Registry.entries.count)
-    expect(document.css("a[href^='/healthcheck/checks/']:not([data-turbo-method])").count).to eq(HealthCheck::Registry.entries.count)
+    detail_links = document.css("a[href^='/healthcheck/checks/']:not([data-turbo-method])")
+    expect(detail_links.count).to eq(HealthCheck::Registry.entries.count)
+    expect(detail_links.map { |link| link["data-turbo-action"] }).to all(eq("advance"))
+    expect(detail_links.map { |link| link["data-turbo-frame"] }).to all(eq("_top"))
     expect(response.body).not_to include("health_check_findings_")
   end
 

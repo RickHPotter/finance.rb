@@ -85,7 +85,7 @@ class Views::HealthCheck::Dashboard::CheckCard < Views::Base
       I18n.t("health_check.actions.details"),
       healthcheck_check_path(summary.entry.key, **scope_query),
       class: run_button_class,
-      data: { turbo_frame: "center_container", turbo_prefetch: false }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
     )
   end
 

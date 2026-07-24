@@ -38,7 +38,7 @@ class Views::HealthCheck::Checks::Pagination < Views::Base
         label,
         healthcheck_check_path(entry.key, **query.merge(page: target_page).compact_blank),
         class: "#{classes} border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800",
-        data: { turbo_frame: "center_container", turbo_prefetch: false }
+        data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
       )
     end
   end

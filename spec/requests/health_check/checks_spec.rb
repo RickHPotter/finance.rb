@@ -117,6 +117,8 @@ RSpec.describe "Health Check details", type: :request do
 
     next_link = Nokogiri::HTML(response.body).css("nav a").find { |node| node.text.include?(I18n.t("navigation.next")) }
     query = Rack::Utils.parse_nested_query(URI.parse(next_link["href"]).query)
+    expect(next_link["data-turbo-action"]).to eq("advance")
+    expect(next_link["data-turbo-frame"]).to eq("_top")
     expect(query).to include(
       "connected_user_id" => connected_user.id.to_s,
       "status_filter" => "paid",
