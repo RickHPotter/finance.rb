@@ -28,8 +28,9 @@ RSpec.describe HealthCheck::RunJob, type: :job do
     expect(HealthCheck::Broadcaster).to have_received(:call).twice
   end
 
-  it "persists a bounded unavailable reason for the pending adapters" do
+  it "persists a bounded unavailable reason when an adapter is unavailable" do
     run = create_run(check_key: "piggy_bank")
+    use_runner(run.check_key, error: HealthCheck::Checks::Pending::AdapterUnavailable.new("pending_adapter"))
 
     described_class.perform_now(**job_arguments(run))
 
@@ -37,6 +38,26 @@ RSpec.describe HealthCheck::RunJob, type: :job do
       execution_state: "unavailable",
       outcome: nil,
       error_code: "adapter_unavailable"
+    )
+  end
+
+  it "completes a real registered adapter when its scoped audit has no findings" do
+    run = create_run(check_key: "piggy_bank")
+
+    described_class.perform_now(**job_arguments(run))
+
+    expect(run.reload).to have_attributes(
+      execution_state: "completed",
+      outcome: "healthy",
+      error_code: nil
+    )
+    expect(run.counts).to include(
+      "affected" => 0,
+      "failures" => 0,
+      "warnings" => 0,
+      "repairable" => 0,
+      "read_only" => 0,
+      "unavailable_actions" => 0
     )
   end
 
@@ -101,7 +122,7 @@ RSpec.describe HealthCheck::RunJob, type: :job do
     run = create_run(check_key: "exchange_return")
     stale_arguments = job_arguments(run)
     run.update_columns(generation_token: SecureRandom.uuid)
-    expect(HealthCheck::Checks::Pending).not_to receive(:new)
+    expect(HealthCheck::Checks::ExchangeReturn).not_to receive(:new)
 
     described_class.perform_now(**stale_arguments)
 

@@ -382,7 +382,9 @@ RSpec.describe "Settings", type: :request do
         convert!: { source_id: 4_864, updated_message_count: 2 }
       )
       expect(audit).not_to receive(:call)
-      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new).with(current_user: user, connected_user_id: nil).and_return(audit)
+      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit)
 
       patch convert_misplaced_loan_admin_settings_path,
             params: { source_transaction_id: 4_864 },
@@ -418,32 +420,34 @@ RSpec.describe "Settings", type: :request do
     it "offers intent conversion for loan rows missing receiver exchange return" do
       user.update!(admin: true)
       counterpart = create(:user, :random)
-      allow(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(
-        instance_double(
-          Logic::ExchangeTrioAudit,
-          call: [
-            {
-              status: "pending",
-              message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction" },
-              sender: { id: user.id, first_name: user.first_name, email: user.email },
-              receiver: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
-              chain_kind: "loan_chain",
-              source: { id: 4565, type: "CashTransaction", description: "Source", user_id: user.id, current_reference: nil, expected_reference: nil,
-                        reference_status: "ok", category_names: [ "EXCHANGE" ], entity_names: [ "GIGI" ] },
-              middle: nil,
-              middle_candidates: [],
-              middle_candidates_count: 0,
-              receiver_candidates: [],
-              receiver_candidates_count: 0,
-              end_kind: "loan_receiver_combo",
-              end_transactions: [ nil, nil ],
-              intent: "loan",
-              issues: [ "missing_receiver_exchange_return" ],
-              proposed_changes: []
-            }
-          ]
+      allow(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(
+          instance_double(
+            Logic::ExchangeTrioAudit,
+            call: [
+              {
+                status: "pending",
+                message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction" },
+                sender: { id: user.id, first_name: user.first_name, email: user.email },
+                receiver: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
+                chain_kind: "loan_chain",
+                source: { id: 4565, type: "CashTransaction", description: "Source", user_id: user.id, current_reference: nil, expected_reference: nil,
+                          reference_status: "ok", category_names: [ "EXCHANGE" ], entity_names: [ "GIGI" ] },
+                middle: nil,
+                middle_candidates: [],
+                middle_candidates_count: 0,
+                receiver_candidates: [],
+                receiver_candidates_count: 0,
+                end_kind: "loan_receiver_combo",
+                end_transactions: [ nil, nil ],
+                intent: "loan",
+                issues: [ "missing_receiver_exchange_return" ],
+                proposed_changes: []
+              }
+            ]
+          )
         )
-      )
 
       get exchange_audit_admin_settings_path
 
@@ -455,32 +459,34 @@ RSpec.describe "Settings", type: :request do
     it "disables intent conversion for loan rows owned by the connected user" do
       user.update!(admin: true)
       counterpart = create(:user, :random)
-      allow(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(
-        instance_double(
-          Logic::ExchangeTrioAudit,
-          call: [
-            {
-              status: "pending",
-              message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction" },
-              sender: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
-              receiver: { id: user.id, first_name: user.first_name, email: user.email },
-              chain_kind: "loan_chain",
-              source: { id: 4565, type: "CashTransaction", description: "Source", user_id: counterpart.id, current_reference: nil, expected_reference: nil,
-                        reference_status: "ok", category_names: [ "EXCHANGE" ], entity_names: [ "GIGI" ] },
-              middle: nil,
-              middle_candidates: [],
-              middle_candidates_count: 0,
-              receiver_candidates: [],
-              receiver_candidates_count: 0,
-              end_kind: "loan_receiver_combo",
-              end_transactions: [ nil, nil ],
-              intent: "loan",
-              issues: [ "missing_receiver_exchange_return" ],
-              proposed_changes: []
-            }
-          ]
+      allow(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(
+          instance_double(
+            Logic::ExchangeTrioAudit,
+            call: [
+              {
+                status: "pending",
+                message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction" },
+                sender: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
+                receiver: { id: user.id, first_name: user.first_name, email: user.email },
+                chain_kind: "loan_chain",
+                source: { id: 4565, type: "CashTransaction", description: "Source", user_id: counterpart.id, current_reference: nil, expected_reference: nil,
+                          reference_status: "ok", category_names: [ "EXCHANGE" ], entity_names: [ "GIGI" ] },
+                middle: nil,
+                middle_candidates: [],
+                middle_candidates_count: 0,
+                receiver_candidates: [],
+                receiver_candidates_count: 0,
+                end_kind: "loan_receiver_combo",
+                end_transactions: [ nil, nil ],
+                intent: "loan",
+                issues: [ "missing_receiver_exchange_return" ],
+                proposed_changes: []
+              }
+            ]
+          )
         )
-      )
 
       get exchange_audit_admin_settings_path
 
@@ -496,10 +502,14 @@ RSpec.describe "Settings", type: :request do
         Logic::MisplacedLoanExchangeAudit,
         convert_exchange_audit_issue!: { status: "unavailable", source_id: 4565, reason: "owner_only", updated_message_count: 0 }
       )
-      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new).with(current_user: user, connected_user_id: nil).and_return(audit)
-      allow(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(
-        instance_double(Logic::ExchangeTrioAudit, call: [])
-      )
+      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit)
+      allow(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(
+          instance_double(Logic::ExchangeTrioAudit, call: [])
+        )
 
       patch convert_exchange_audit_loan_intent_admin_settings_path, params: { source_transaction_id: 4565 }
 
@@ -513,7 +523,9 @@ RSpec.describe "Settings", type: :request do
         Logic::MisplacedLoanExchangeAudit,
         convert_exchange_audit_issue!: { status: "converted", source_id: 4565, updated_message_count: 2 }
       )
-      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new).with(current_user: user, connected_user_id: nil).and_return(audit)
+      allow(Logic::MisplacedLoanExchangeAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit)
       expect(Logic::ExchangeTrioAudit).not_to receive(:new)
 
       patch convert_exchange_audit_loan_intent_admin_settings_path,
@@ -630,7 +642,9 @@ RSpec.describe "Settings", type: :request do
         ]
       )
 
-      expect(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(audit_service)
+      expect(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit_service)
 
       get exchange_audit_admin_settings_path, params: { middle_overrides: { "4565" => "4570" } }
 
@@ -734,7 +748,9 @@ RSpec.describe "Settings", type: :request do
         ]
       )
 
-      expect(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(audit_service)
+      expect(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit_service)
 
       get exchange_audit_admin_settings_path, params: { receiver_overrides: { "4094" => "3702" } }
 
@@ -849,7 +865,9 @@ RSpec.describe "Settings", type: :request do
         ]
       )
 
-      expect(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(audit_service)
+      expect(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit_service)
 
       get exchange_audit_admin_settings_path
 
@@ -861,33 +879,35 @@ RSpec.describe "Settings", type: :request do
     it "applies one selected audit row for admin users" do
       user.update!(admin: true)
       counterpart = create(:user, :random)
-      allow(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(
-        instance_double(
-          Logic::ExchangeTrioAudit,
-          call: [
-            {
-              status: "pending",
-              message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction",
-                         created_at: Time.zone.parse("2026-02-20") },
-              sender: { id: user.id, first_name: user.first_name, email: user.email },
-              receiver: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
-              chain_kind: "shared_return_chain",
-              source: { id: 4565, type: "CashTransaction", description: "Source", user_id: user.id, current_reference: nil, expected_reference: nil,
-                        reference_status: "ok" },
-              middle: nil,
-              middle_candidates: [],
-              middle_candidates_count: 0,
-              receiver_candidates: [],
-              receiver_candidates_count: 0,
-              end_kind: "shared_return",
-              end_transactions: [ nil ],
-              intent: "reimbursement",
-              issues: [ "missing_middle" ],
-              proposed_changes: []
-            }
-          ]
+      allow(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(
+          instance_double(
+            Logic::ExchangeTrioAudit,
+            call: [
+              {
+                status: "pending",
+                message: { id: 96, conversation_id: 2, actionable: false, action: "edit", scenario_key: nil, body: "Updated transaction",
+                           created_at: Time.zone.parse("2026-02-20") },
+                sender: { id: user.id, first_name: user.first_name, email: user.email },
+                receiver: { id: counterpart.id, first_name: counterpart.first_name, email: counterpart.email },
+                chain_kind: "shared_return_chain",
+                source: { id: 4565, type: "CashTransaction", description: "Source", user_id: user.id, current_reference: nil, expected_reference: nil,
+                          reference_status: "ok" },
+                middle: nil,
+                middle_candidates: [],
+                middle_candidates_count: 0,
+                receiver_candidates: [],
+                receiver_candidates_count: 0,
+                end_kind: "shared_return",
+                end_transactions: [ nil ],
+                intent: "reimbursement",
+                issues: [ "missing_middle" ],
+                proposed_changes: []
+              }
+            ]
+          )
         )
-      )
       expect(Logic::ExchangeChainReferenceRunner).to receive(:new).with(
         source_transaction_ids: [ 4565 ],
         dry_run: false,
@@ -934,7 +954,9 @@ RSpec.describe "Settings", type: :request do
           }
         ]
       )
-      expect(Logic::ExchangeTrioAudit).to receive(:new).once.with(current_user: user).and_return(audit_service)
+      expect(Logic::ExchangeTrioAudit).to receive(:new).once
+                                                       .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+                                                       .and_return(audit_service)
       expect(Logic::ExchangeChainReferenceRunner).to receive(:new).with(
         source_transaction_ids: [ 4565 ],
         dry_run: false,
@@ -1013,7 +1035,9 @@ RSpec.describe "Settings", type: :request do
         ]
       )
 
-      expect(Logic::ExchangeTrioAudit).to receive(:new).with(current_user: user).and_return(audit_service)
+      expect(Logic::ExchangeTrioAudit).to receive(:new)
+        .with(current_user: user, current_context: user.main_context, connected_user_id: nil)
+        .and_return(audit_service)
 
       get exchange_audit_admin_settings_path
 

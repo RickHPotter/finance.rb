@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe Logic::MisplacedLoanExchangeAudit do
   describe "#call" do
-    it "only reports misplaced loan source transactions owned by the current user" do
+    it "reports misplaced sources across connected users and identifies each owner" do
       user = create(:user, :random)
       connected_user = create(:user, :random)
       user_source = create(
@@ -41,7 +41,8 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
                                                            }
                                                          ])
 
-      expect(audit.call.map { |row| row[:source_id] }).to eq([ user_source.id ])
+      expect(audit.call.pluck(:source_id)).to contain_exactly(user_source.id, connected_source.id)
+      expect(audit.call.pluck(:source_user_id)).to contain_exactly(user.id, connected_user.id)
     end
   end
 
@@ -91,6 +92,25 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
       expect(result).to eq(source_id: source.id, updated_message_count: 1)
       expect(source.reload.friend_notification_intent).to eq("reimbursement")
       expect(message.reload.replay_payload["intent"]).to eq("reimbursement")
+    end
+
+    it "does not convert a connected user's diagnostic row" do
+      user = create(:user, :random)
+      connected_user = create(:user, :random)
+      source = create(
+        :cash_transaction,
+        user: connected_user,
+        context: connected_user.main_context,
+        user_bank_account: create(:user_bank_account, user: connected_user, bank: create(:bank, :random)),
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [ { category_id: connected_user.built_in_category("EXCHANGE").id } ]
+      )
+      audit = described_class.new(current_user: user)
+      allow(audit).to receive(:call).and_return([ { source_id: source.id, message_ids: [] } ])
+      allow(audit).to receive(:source_transactions).and_return({ source.id => source })
+
+      expect { audit.convert!(source_id: source.id) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(source.reload.friend_notification_intent).to eq("loan")
     end
   end
 

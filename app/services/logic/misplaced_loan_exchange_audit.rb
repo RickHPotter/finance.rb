@@ -2,10 +2,11 @@
 
 module Logic
   class MisplacedLoanExchangeAudit
-    attr_reader :connected_user_id, :current_user
+    attr_reader :connected_user_id, :current_context, :current_user
 
-    def initialize(current_user:, connected_user_id: nil)
+    def initialize(current_user:, current_context: nil, connected_user_id: nil)
       @current_user = current_user
+      @current_context = current_context
       @connected_user_id = connected_user_id.presence&.to_i
     end
 
@@ -25,6 +26,8 @@ module Logic
       raise ActiveRecord::RecordNotFound if row.blank?
 
       source = source_transactions.fetch(row[:source_id])
+      raise ActiveRecord::RecordNotFound unless source.user_id == current_user.id
+
       message_ids = row[:message_ids]
 
       CashTransaction.transaction do
@@ -83,19 +86,26 @@ module Logic
     def current_user_source_loan_row?(row)
       row[:intent] == "loan" &&
         row.dig(:source, :type) == "CashTransaction" &&
-        row.dig(:source, :user_id).to_i == current_user.id
+        visible_source_user_ids.include?(row.dig(:source, :user_id).to_i)
     end
 
     def exchange_rows
-      scope = Logic::ExchangeTrioAudit.new(current_user:, connected_user_id:).call
+      scope = Logic::ExchangeTrioAudit.new(current_user:, current_context:, connected_user_id:).call
       Logic::ExchangeAuditSelectionProjector.new(rows: scope).call
     end
 
     def source_transactions
       @source_transactions ||= CashTransaction
                                .includes(:cash_installments, :categories, entity_transactions: :entity)
-                               .where(user_id: current_user.id, id: source_rows.keys)
+                               .where(user_id: visible_source_user_ids, id: source_rows.keys)
                                .index_by(&:id)
+    end
+
+    def visible_source_user_ids
+      @visible_source_user_ids ||= [
+        current_user.id,
+        *(connected_user_id.present? ? [ connected_user_id ] : current_user.entities.that_are_users.pluck(:entity_user_id))
+      ].uniq
     end
 
     def build_row(source, rows)
@@ -106,6 +116,7 @@ module Logic
       latest_message = latest_message_for(rows)
       {
         source_id: source.id,
+        source_user_id: source.user_id,
         description: source.description,
         date: source.date,
         month_year: source.month_year,

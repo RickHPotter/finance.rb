@@ -200,7 +200,11 @@ class Admin::SettingsController < ApplicationController # rubocop:disable Metric
   end
 
   def audit_scope_for(middle_overrides, receiver_overrides, selected_connected_user_id)
-    base_rows = Logic::ExchangeTrioAudit.new(current_user: current_user).call
+    base_rows = Logic::ExchangeTrioAudit.new(
+      current_user: current_user,
+      current_context: current_context,
+      connected_user_id: nil
+    ).call
     projected_rows = Logic::ExchangeAuditSelectionProjector.new(rows: base_rows, middle_overrides:, receiver_overrides:).call
 
     Logic::ExchangeAuditConnections.new(
@@ -213,6 +217,7 @@ class Admin::SettingsController < ApplicationController # rubocop:disable Metric
   def misplaced_loan_exchange_audit
     Logic::MisplacedLoanExchangeAudit.new(
       current_user: current_user,
+      current_context: current_context,
       connected_user_id: sanitized_connected_user_id
     )
   end

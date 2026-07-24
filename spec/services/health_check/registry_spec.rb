@@ -10,12 +10,20 @@ RSpec.describe HealthCheck::Registry do
     expect(described_class.entries.map(&:group).uniq).to eq([ "financial_integrity" ])
   end
 
-  it "declares stable metadata and the pending adapter contract for every entry" do
+  it "declares stable metadata, normalized runners, and pending detail adapters" do
+    expected_runners = {
+      "exchange_trio" => HealthCheck::Checks::ExchangeTrio,
+      "exchange_return" => HealthCheck::Checks::ExchangeReturn,
+      "card_exchange_projection" => HealthCheck::Checks::CardExchangeProjection,
+      "misplaced_exchange_intent" => HealthCheck::Checks::MisplacedExchangeIntent,
+      "piggy_bank" => HealthCheck::Checks::PiggyBank
+    }
+
     described_class.entries.each do |entry|
       expect(entry.title_key).to eq("health_check.checks.#{entry.key}.title")
       expect(entry.description_key).to eq("health_check.checks.#{entry.key}.description")
       expect(entry.severity).to eq("error")
-      expect(entry.runner).to eq(HealthCheck::Checks::Pending)
+      expect(entry.runner).to eq(expected_runners.fetch(entry.key))
       expect(entry.details).to eq(HealthCheck::Checks::Pending)
     end
   end

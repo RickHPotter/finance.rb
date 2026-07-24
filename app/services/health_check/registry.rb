@@ -59,7 +59,7 @@ class HealthCheck::Registry
       description_key: "health_check.checks.exchange_trio.description",
       severity: "error",
       scope_kind: "context_with_connections",
-      runner: PENDING_ADAPTER,
+      runner: HealthCheck::Checks::ExchangeTrio,
       details: PENDING_ADAPTER,
       repair_keys: %w[canonical_reference]
     ),
@@ -70,7 +70,7 @@ class HealthCheck::Registry
       description_key: "health_check.checks.exchange_return.description",
       severity: "error",
       scope_kind: "context",
-      runner: PENDING_ADAPTER,
+      runner: HealthCheck::Checks::ExchangeReturn,
       details: PENDING_ADAPTER,
       repair_keys: %w[source_allocation]
     ),
@@ -81,7 +81,7 @@ class HealthCheck::Registry
       description_key: "health_check.checks.card_exchange_projection.description",
       severity: "error",
       scope_kind: "context",
-      runner: PENDING_ADAPTER,
+      runner: HealthCheck::Checks::CardExchangeProjection,
       details: PENDING_ADAPTER,
       repair_keys: %w[projection]
     ),
@@ -92,7 +92,7 @@ class HealthCheck::Registry
       description_key: "health_check.checks.misplaced_exchange_intent.description",
       severity: "error",
       scope_kind: "context_with_connections",
-      runner: PENDING_ADAPTER,
+      runner: HealthCheck::Checks::MisplacedExchangeIntent,
       details: PENDING_ADAPTER,
       repair_keys: %w[convert_to_reimbursement]
     ),
@@ -103,7 +103,7 @@ class HealthCheck::Registry
       description_key: "health_check.checks.piggy_bank.description",
       severity: "error",
       scope_kind: "context",
-      runner: PENDING_ADAPTER,
+      runner: HealthCheck::Checks::PiggyBank,
       details: PENDING_ADAPTER
     )
   ].freeze
