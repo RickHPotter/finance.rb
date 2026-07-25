@@ -84,7 +84,6 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
     {
       key: "categories:#{allocations.pluck(:id).join('+')}",
       label: allocations.map(&:name).join(" + "),
-      color: chart_payload[:background],
       **chart_payload
     }
   end
@@ -104,7 +103,7 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
       key: "#{dimension}:unassigned",
       label: I18n.t("balances.monthly_analysis.unassigned")
     }.tap do |bundle|
-      bundle.merge!(color: CategoryColours::Presentation.neutral.background, **CategoryColours::Presentation.neutral.chart_payload) if dimension == :category
+      bundle.merge!(CategoryColours::Presentation.neutral.chart_payload) if dimension == :category
     end
   end
 

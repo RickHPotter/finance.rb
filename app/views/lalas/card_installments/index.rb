@@ -133,7 +133,7 @@ class Views::Lalas::CardInstallments::Index < Views::Base
   end
 
   def categories_for(card_transaction)
-    card_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+    CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
   end
 
   def row_presentation(card_transaction)

@@ -138,13 +138,13 @@ against every colour underneath it.
 
 Category-bearing transaction and budget rows support two explicit presentation modes:
 
-- `row_coloured`: the row uses the first category in deterministic allocation order
-  as its primary accessible background/foreground pair; every assigned category is
-  still shown as an individually resolved badge
+- `row_coloured`: the row uses the first category in deterministic built-in-first
+  allocation order as its primary accessible background/foreground pair; every
+  assigned category is still shown with its category background
 - `badges_only`: the row uses the normal light/dark application surface and only the
-  individually resolved category badges carry category colours
+  category badges carry category background colours
 
-`badges_only` is the KAKASHI-14 default. The display mode is an explicit presentation
+`row_coloured` is the KAKASHI-14 default. The display mode is an explicit presentation
 input, not inferred from category count, viewport, resource type, or theme. KAKASHI-14
 does not persist the future user preference; it provides a validated mode resolver and
 requires transaction/budget renderers to accept the resolved mode so a later settings
@@ -153,8 +153,20 @@ field can be connected without rewriting the surfaces.
 In `row_coloured` mode, the primary category's complete resolved pair colours the row.
 The foreground is never borrowed from one category while using another category or a
 neutral background. Additional categories never alter the primary pair and remain
-visible as their own accessible badges. Empty allocations use the normal application
+visible with their category backgrounds. Empty allocations use the normal application
 surface.
+
+In both modes and both themes, every category badge retains its own resolved foreground
+and border so its category background cannot produce white-on-white or black-on-black
+labels. The row description foreground is authoritative for entity badge text and
+borders. Entity exchange/info text uses a muted light foreground when the row
+foreground is light, and retains the row's dark foreground when it is dark. Category
+backgrounds remain category-specific.
+
+Built-in categories have precedence over ordinary categories for both badge order and
+primary row-colour selection. The established failed-return category remains first
+within built-ins; deterministic allocation order is preserved inside the remaining
+built-in and ordinary tiers.
 
 Gradients remain prohibited behind shared row text unless one measured foreground
 passes against every rendered stop. A future decorative gradient must not be treated
@@ -185,15 +197,16 @@ their names remain locked.
 
 Every category-bearing chart/legend payload includes both:
 
-- `background_colour`
-- `text_colour`
+- `background`
+- `foreground`
 
 Client chart code must use those fields for labels, tooltips, legends, and accessible
 text equivalents. A deterministic neutral pair represents multi-category bundles
 unless the payload carries independently styled category segments.
 
-Existing payload keys may be retained temporarily for compatibility, but one
-authoritative builder must populate the resolved pair.
+`background` and `foreground` are the only accepted category chart keys and are
+populated by the authoritative builder. Generic chart-library `color` options are
+presentation configuration, not category payload aliases.
 
 ## Surface Inventory
 
@@ -225,7 +238,7 @@ The future user setting will store one of the canonical mode strings:
 
 Controllers or parent views will resolve that stored value once and pass it to category
 row presenters. Leaf views must not read an eventual user column directly. Unknown,
-blank, or unavailable values fall back to `badges_only`; they must never become CSS
+blank, or unavailable values fall back to `row_coloured`; they must never become CSS
 classes or inline styles.
 
 ## Accessibility Semantics

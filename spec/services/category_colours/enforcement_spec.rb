@@ -87,6 +87,19 @@ RSpec.describe "Category colour presentation enforcement", type: :service do
     end
   end
 
+  it "keeps category pairs intact while styling entities from the row foreground" do
+    stylesheet = Rails.root.join("app/assets/tailwind/application.css").read
+
+    expect(stylesheet).to include(
+      '[data-category-display-mode] [data-entity-colour="true"]',
+      "color: var(--category-row-foreground) !important",
+      "border-color: var(--category-row-foreground) !important",
+      '[data-category-display-mode] [data-entity-info-text="true"]',
+      "color: var(--category-row-info-foreground) !important"
+    )
+    expect(stylesheet).not_to match(/\[data-category-display-mode[^\]]*\]\s+\[data-category-colour="true"\]/)
+  end
+
   def application_source
     source_for(Dir[Rails.root.join("app/**/*.{rb,erb,js,mjs}")])
   end

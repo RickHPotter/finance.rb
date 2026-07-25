@@ -851,9 +851,10 @@ Locked V1 direction:
   segments or a neutral bundle surface when one foreground cannot pass against every
   background
 - expose `row_coloured` and `badges_only` as explicit transaction/budget presentation
-  modes, defaulting to `badges_only` until a future user setting is persisted;
+  modes, defaulting to `row_coloured` until a future user setting is persisted;
   `row_coloured` uses the deterministic primary category's complete resolved pair and
-  both modes keep every assigned category visible as its own accessible badge
+  both modes keep every assigned category visible with its own resolved badge pair;
+  built-in categories take precedence for badge order and primary row colour
 - keep the migration reversible at the schema level and preserve every existing
   category background while normalizing legacy palette names to their current hex
   values

@@ -4,7 +4,7 @@ class Views::Categories::Popover < Views::Base
   attr_reader :items, :mobile, :target_ids, :trigger_label, :variant
 
   def initialize(items:, mobile:, target_ids:, trigger_label:, variant: :cash)
-    @items = ordered_items(items)
+    @items = items
     @mobile = mobile
     @target_ids = target_ids
     @trigger_label = trigger_label
@@ -20,16 +20,6 @@ class Views::Categories::Popover < Views::Base
   end
 
   private
-
-  def ordered_items(items)
-    items.sort_by do |item|
-      item[:name].to_s == failed_return_category_name ? 0 : 1
-    end
-  end
-
-  def failed_return_category_name
-    @failed_return_category_name ||= Category.new(built_in: true, category_name: "FAILED LEND/BORROW RETURN").name
-  end
 
   def render_mobile
     if items.size <= 2
@@ -78,7 +68,7 @@ class Views::Categories::Popover < Views::Base
   end
 
   def render_pill(item, class:)
-    span(class:, style: item[:style]) { item[:name] }
+    span(class:, style: item[:style], data: { category_colour: "true" }) { item[:name] }
   end
 
   def mobile_container_class

@@ -11,7 +11,7 @@ RSpec.describe CategoryColours::DisplayMode do
     end
 
     it "uses the default before the preference column exists" do
-      expect(described_class.for(Object.new)).to eq("badges_only")
+      expect(described_class.for(Object.new)).to eq("row_coloured")
     end
   end
 
@@ -22,10 +22,10 @@ RSpec.describe CategoryColours::DisplayMode do
     end
 
     it "falls back safely for blank, symbol, and unknown values" do
-      expect(described_class.resolve(nil)).to eq("badges_only")
-      expect(described_class.resolve("")).to eq("badges_only")
+      expect(described_class.resolve(nil)).to eq("row_coloured")
+      expect(described_class.resolve("")).to eq("row_coloured")
       expect(described_class.resolve(:row_coloured)).to eq("row_coloured")
-      expect(described_class.resolve("gradient")).to eq("badges_only")
+      expect(described_class.resolve("gradient")).to eq("row_coloured")
     end
   end
 end

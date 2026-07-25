@@ -369,7 +369,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def categories_for(cash_transaction)
-    cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+    CategoryColours::Ordering.from_allocations(cash_transaction.category_transactions)
   end
 
   def row_presentation(categories)

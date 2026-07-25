@@ -80,14 +80,19 @@ Decision: no. Server payloads provide the same resolved background and foregroun
 ### D17. How is the future row-colour user setting represented?
 
 Decision: category-bearing transaction and budget rows accept one resolved display
-mode: `row_coloured` or `badges_only`. `badges_only` is the default until a user
+mode: `row_coloured` or `badges_only`. `row_coloured` is the default until a user
 preference is persisted.
 
-In `row_coloured`, the first category in deterministic allocation order supplies its
-complete validated pair for the row. All assigned categories remain visible as their
-own resolved badges. In `badges_only`, the row uses the normal application surface and
-the badges alone carry category colours. Empty, blank, and unknown modes safely resolve
-to `badges_only`.
+In `row_coloured`, the first category in deterministic built-in-first allocation order
+supplies its complete validated pair for the row. All assigned categories remain visible as their
+own category-background badges. In `badges_only`, the row uses the normal application
+surface and the badges alone carry category backgrounds. In either mode, every category
+badge retains its own resolved foreground/border, while entity badge text/borders follow
+the row foreground. Entity info uses its matching light/dark supporting tone. The
+failed-return category comes
+first, followed by other built-ins and then ordinary categories, for both badge order
+and primary row selection; allocation order is preserved inside each remaining tier.
+Empty, blank, and unknown modes safely resolve to `row_coloured`.
 
 The setting is resolved at a controller/parent-view boundary and passed downward.
 Leaf presenters do not reach into user persistence, which keeps the future settings
@@ -163,13 +168,13 @@ migration separate from colour rendering.
 | selected chip | no unchecked generic foreground |
 | multi-category row | segmented or neutral bundle treatment |
 | gradient retained | chosen foreground passes every stop |
-| `row_coloured`, one category | row and badge use the category's resolved pair |
-| `row_coloured`, multiple categories | deterministic primary pair colours row; every category remains a resolved badge |
-| `badges_only`, one category | normal application row and one resolved badge |
-| `badges_only`, multiple categories | normal application row and every resolved badge |
-| blank/unknown display mode | resolves to `badges_only`; never reaches CSS |
+| `row_coloured`, one category | resolved pair colours both row and badge |
+| `row_coloured`, multiple categories | built-in-first primary pair colours row; every category badge retains its own resolved text/border |
+| `badges_only`, one category | normal application row; badge retains its own resolved text/border |
+| `badges_only`, multiple categories | normal application row; every category badge retains its own resolved text/border |
+| blank/unknown display mode | resolves to `row_coloured`; never reaches CSS |
 | nil/missing category | neutral accessible fallback |
-| dark mode | no foreground override defeats resolved inline/style pair |
+| dark mode | normal rows use their application foreground; coloured rows retain the primary foreground |
 | internal/external ledger | same presentation contract |
 
 ## Chart and Payload Matrix
@@ -192,7 +197,10 @@ migration separate from colour rendering.
 | card transaction, desktop/mobile | primary category pair on row | normal application row |
 | transaction sheet/ledger | primary category pair on row | normal application row |
 | budget, desktop/mobile | primary category pair on row | normal application row |
-| category badges | every badge uses its own pair | every badge uses its own pair |
+| one category badge | own resolved foreground/border | own resolved foreground/border |
+| multiple category badges | own resolved foreground/border; built-ins first | own resolved foreground/border; built-ins first |
+| entity badges | primary row foreground/border | application row foreground/border |
+| entity info | light supporting tone for a light foreground; dark otherwise | light/dark supporting tone follows theme |
 | no categories | normal application row | normal application row |
 
 Every row-mode example is covered with one and multiple categories. Tests must prove

@@ -20,7 +20,11 @@ class Views::EntityTransactions::ExchangeStateSheet < Views::Base
     div(data: { controller: "exchange-state-sheet" }) do
       Sheet do
         SheetTrigger do
-          button(type: :button, class: trigger_class, data: { action: "click->exchange-state-sheet#elevate" }) do
+          button(
+            type: :button,
+            class: trigger_class,
+            data: { action: "click->exchange-state-sheet#elevate", entity_info_text: "true" }
+          ) do
             span(class: "inline-flex items-center gap-1") do
               span(class: "inline-flex shrink-0 items-center justify-center [&_svg]:size-3.5") do
                 cached_icon(bound_type_icon_name)

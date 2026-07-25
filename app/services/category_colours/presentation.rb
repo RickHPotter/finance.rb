@@ -39,8 +39,7 @@ class CategoryColours::Presentation
   end
 
   def self.bundle(categories)
-    unique_categories = Array(categories).compact.uniq { |category| [ category.class.name, category.id || category.object_id ] }
-    segments = unique_categories.map do |category|
+    segments = CategoryColours::Ordering.call(categories).map do |category|
       Segment.new(
         key: category.id || category.object_id,
         label: category.name.to_s.dup.freeze,

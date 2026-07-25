@@ -28,7 +28,6 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
           key: "categories:#{food.id}",
           label: "FOOD",
           amount: 123.45,
-          color: "#ffffff",
           background: "#ffffff",
           foreground: "#767676",
           segments: [ { id: food.id, label: "FOOD", background: "#ffffff", foreground: "#767676" } ]
@@ -39,7 +38,6 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
           key: "categories:#{food.id}+#{transport.id}",
           label: "FOOD + TRANSPORT",
           amount: 45.67,
-          color: CategoryColours::Presentation.neutral.background,
           background: CategoryColours::Presentation.neutral.background,
           foreground: CategoryColours::Presentation.neutral.foreground,
           segments: contain_exactly(
@@ -48,6 +46,8 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
           )
         )
       )
+      expect(payload.dig(:ordinary, :income, :categories) + payload.dig(:ordinary, :outcome, :categories))
+        .to all(satisfy { |bundle| !bundle.key?(:color) && !bundle.key?(:colour) })
       expect(payload.dig(:ordinary, :outcome, :entities)).to contain_exactly(
         include(key: "entities:#{ana.id}+#{bruno.id}", label: "ANA + BRUNO", amount: 45.67)
       )
@@ -61,11 +61,11 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
           key: "category:unassigned",
           label: I18n.t("balances.monthly_analysis.unassigned"),
           amount: 25.01,
-          color: CategoryColours::Presentation.neutral.background,
           background: CategoryColours::Presentation.neutral.background,
           foreground: CategoryColours::Presentation.neutral.foreground
         )
       )
+      expect(payload.dig(:ordinary, :outcome, :categories).sole).not_to include(:color, :colour)
       expect(payload.dig(:ordinary, :outcome, :entities)).to contain_exactly(
         include(key: "entity:unassigned", label: I18n.t("balances.monthly_analysis.unassigned"), amount: 25.01)
       )

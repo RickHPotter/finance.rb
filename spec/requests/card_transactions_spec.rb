@@ -1754,9 +1754,9 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #month_year ]" do
-    it "renders multiple category allocations through either display mode" do
+    it "renders single and multiple category allocations through either display mode" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
-      light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#f1f5f9")
+      light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#fde68a")
       transaction = create(
         :card_transaction,
         user:,
@@ -1779,8 +1779,38 @@ RSpec.describe "CardTransactions", type: :request do
           )
         ]
       )
+      dark_single_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: dark_category) ],
+        card_installments: [
+          build(:card_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year)
+        ]
+      )
+      light_single_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [ CategoryTransaction.new(category: light_category) ],
+        card_installments: [
+          build(:card_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year)
+        ]
+      )
       installment = transaction.card_installments.first
+      dark_single_installment = dark_single_transaction.card_installments.first
+      light_single_installment = light_single_transaction.card_installments.first
       month_year = "#{installment.year}#{installment.month.to_s.rjust(2, '0')}"
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("badges_only")
 
       get month_year_card_transactions_path, params: {
         user_card_id: user_card_one.id,
@@ -1790,11 +1820,15 @@ RSpec.describe "CardTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       row = document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      dark_single_row = document.at_css("[data-datatable-target='row'][data-id='#{dark_single_installment.id}']")
+      light_single_row = document.at_css("[data-datatable-target='row'][data-id='#{light_single_installment.id}']")
 
       expect(response).to have_http_status(:success)
       expect(row["data-category-display-mode"]).to eq("badges_only")
       expect(row["style"]).to be_blank
       expect(row.text).to include("LEISURE", "ASSINATURA")
+      expect(dark_single_row.at_css('[data-category-colour="true"]')["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(light_single_row.at_css('[data-category-colour="true"]')["style"]).to include("background-color: #fde68a", "color: #000000")
 
       allow(CategoryColours::DisplayMode).to receive(:for).and_return("row_coloured")
 

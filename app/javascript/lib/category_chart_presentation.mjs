@@ -6,7 +6,7 @@ export const NEUTRAL_CHART_PRESENTATION = Object.freeze({
 })
 
 export function resolveCategoryChartPresentation(entry = {}, fallbackBackground = null) {
-  const background = normalizeHex(entry.background || entry.colour || entry.color || fallbackBackground)
+  const background = normalizeHex(entry.background || fallbackBackground)
   if (!background) return NEUTRAL_CHART_PRESENTATION
 
   const foreground = normalizeHex(entry.foreground) || automaticForeground(background)

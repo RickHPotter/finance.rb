@@ -139,7 +139,7 @@ Deliver:
 Coverage:
 
 - both display modes with single and multiple categories
-- invalid/blank mode fallback to `badges_only`
+- invalid/blank mode fallback to `row_coloured`
 - deterministic primary category in `row_coloured`
 - very light and very dark category rows
 - multi-category transaction rendering
@@ -198,7 +198,7 @@ Coverage:
 - multi-category payload
 - chart legend DOM styling
 - fallback palette entries
-- payload compatibility during migration
+- canonical `background`/`foreground` payload enforcement
 
 Suggested commit:
 

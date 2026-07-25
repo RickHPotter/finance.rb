@@ -212,7 +212,7 @@ class Views::Budgets::Budgets < Views::Base
   end
 
   def categories_for(budget)
-    budget.budget_categories.sort_by(&:id).filter_map(&:category)
+    CategoryColours::Ordering.from_allocations(budget.budget_categories)
   end
 
   def row_presentation(budget)

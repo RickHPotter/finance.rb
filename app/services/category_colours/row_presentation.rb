@@ -3,6 +3,7 @@
 class CategoryColours::RowPresentation
   APPLICATION_ROW_CLASSES = "bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100"
   APPLICATION_BACKGROUND_CLASSES = "bg-white dark:bg-slate-900"
+  LIGHT_INFO_FOREGROUND = "#e2e8f0"
 
   attr_reader :bundle, :mode
 
@@ -20,7 +21,10 @@ class CategoryColours::RowPresentation
   end
 
   def row_style
-    primary_presentation&.inline_style if row_coloured?
+    return unless row_coloured?
+
+    "#{primary_presentation.inline_style} --category-row-foreground: #{primary_presentation.foreground}; " \
+      "--category-row-info-foreground: #{row_info_foreground};"
   end
 
   def row_classes
@@ -42,6 +46,7 @@ class CategoryColours::RowPresentation
   def metadata
     {
       category_display_mode: mode,
+      category_multiple: bundle.multiple?.to_s,
       category_primary_id: primary_category_key
     }.compact
   end
@@ -54,5 +59,12 @@ class CategoryColours::RowPresentation
 
   def primary_presentation
     primary_segment&.presentation
+  end
+
+  def row_info_foreground
+    foreground = primary_presentation.foreground
+    return LIGHT_INFO_FOREGROUND if CategoryColours::Contrast.relative_luminance(foreground) > 0.5
+
+    foreground
   end
 end

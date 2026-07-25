@@ -145,7 +145,7 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
   end
 
   def categories_for(transaction)
-    transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+    CategoryColours::Ordering.from_allocations(transaction.category_transactions)
   end
 
   def entity_transactions_for(transaction)

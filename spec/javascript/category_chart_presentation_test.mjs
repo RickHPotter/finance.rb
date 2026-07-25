@@ -13,9 +13,9 @@ test("keeps an authoritative serialized background and foreground pair", () => {
   )
 })
 
-test("supports legacy color and colour keys during payload migration", () => {
-  assert.deepEqual(resolveCategoryChartPresentation({ color: "#000000" }), { background: "#000000", foreground: "#ffffff" })
-  assert.deepEqual(resolveCategoryChartPresentation({ colour: "#ffffff" }), { background: "#ffffff", foreground: "#000000" })
+test("does not treat legacy color and colour keys as category payloads", () => {
+  assert.equal(resolveCategoryChartPresentation({ color: "#000000" }), NEUTRAL_CHART_PRESENTATION)
+  assert.equal(resolveCategoryChartPresentation({ colour: "#ffffff" }), NEUTRAL_CHART_PRESENTATION)
 })
 
 test("resolves fallback palette foregrounds with the shared contrast contract", () => {

@@ -3,7 +3,7 @@
 class CategoryColours::DisplayMode
   ROW_COLOURED = "row_coloured"
   BADGES_ONLY = "badges_only"
-  DEFAULT = BADGES_ONLY
+  DEFAULT = ROW_COLOURED
   ALL = [ ROW_COLOURED, BADGES_ONLY ].freeze
 
   class << self
