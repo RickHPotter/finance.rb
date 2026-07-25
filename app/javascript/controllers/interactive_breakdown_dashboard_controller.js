@@ -9,6 +9,7 @@ import {
   BarElement,
   Tooltip
 } from "chart.js"
+import { resolveCategoryChartPresentation } from "../lib/category_chart_presentation.mjs"
 
 Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend, Filler)
 
@@ -176,17 +177,26 @@ export default class extends Controller {
       return
     }
 
-    if ((item.swatchHexes || []).length > 0) {
+    const swatches = this.itemSwatches(item)
+    if (swatches.length > 0) {
       const stack = document.createElement("span")
       stack.className = "flex -space-x-1"
-      item.swatchHexes.slice(0, 3).forEach((hex) => {
+      stack.setAttribute("aria-hidden", "true")
+      swatches.slice(0, 3).forEach((presentation) => {
         const swatch = document.createElement("span")
         swatch.className = "inline-flex h-5 w-5 rounded-full border-2 border-white shadow-xs dark:border-slate-900"
-        swatch.style.backgroundColor = hex
+        swatch.style.backgroundColor = presentation.background
+        swatch.style.borderColor = presentation.foreground
         stack.appendChild(swatch)
       })
       button.appendChild(stack)
     }
+  }
+
+  itemSwatches(item) {
+    if ((item.swatches || []).length > 0) return item.swatches
+
+    return (item.swatchHexes || []).map((background) => resolveCategoryChartPresentation({}, background))
   }
 
   renderChart() {
@@ -204,15 +214,19 @@ export default class extends Controller {
     this.chartCanvasTarget.classList.remove("hidden")
     this.emptyStateTarget.classList.add("hidden")
     const labels = this.timelineLabels(series)
-    const datasets = series.map((entry, index) => ({
-      label: entry.name,
-      data: this.monthlySeries(entry.points, labels),
-      borderColor: this.palette(index).border,
-      backgroundColor: this.palette(index).fill,
-      borderWidth: 1,
-      borderRadius: 8,
-      borderSkipped: false
-    }))
+    const datasets = series.map((entry, index) => {
+      const presentation = entry.chartPresentation
+
+      return {
+        label: entry.name,
+        data: this.monthlySeries(entry.points, labels),
+        borderColor: presentation?.foreground || this.palette(index).border,
+        backgroundColor: presentation?.background || this.palette(index).fill,
+        borderWidth: 1,
+        borderRadius: 8,
+        borderSkipped: false
+      }
+    })
 
     this.destroyChart()
     this.chart = new Chart(this.chartCanvasTarget, this.chartOptions(labels, datasets))
@@ -338,6 +352,7 @@ export default class extends Controller {
             ...item,
             points: [ ...(item.points || []) ],
             avatarPaths: [ ...(item.avatarPaths || []) ],
+            swatches: [ ...(item.swatches || []) ],
             swatchHexes: [ ...(item.swatchHexes || []) ]
           })
           return

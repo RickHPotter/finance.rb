@@ -8,7 +8,12 @@ class CategoryColours::Presentation
 
   class InaccessiblePair < ArgumentError; end
 
-  Segment = Data.define(:key, :label, :presentation)
+  Segment = Data.define(:key, :label, :presentation) do
+    def chart_payload
+      presentation.chart_payload.merge(id: key, label:)
+    end
+  end
+
   Bundle = Data.define(:segments, :combined, :label) do
     def empty?
       segments.empty?
@@ -16,6 +21,10 @@ class CategoryColours::Presentation
 
     def multiple?
       segments.many?
+    end
+
+    def chart_payload
+      combined.chart_payload.merge(segments: segments.map(&:chart_payload))
     end
   end
 
@@ -86,6 +95,10 @@ class CategoryColours::Presentation
 
   def disabled_style
     "#{inline_style} border-style: dashed;"
+  end
+
+  def chart_payload
+    { background:, foreground: }
   end
 
   alias chart_background background

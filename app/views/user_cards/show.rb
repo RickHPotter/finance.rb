@@ -625,13 +625,17 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
     sorted_categories = categories.sort_by(&:name)
     category_ids = sorted_categories.map(&:id)
     category_id = category_ids.join("-")
+    chart_presentation = CategoryColours::Presentation.bundle(sorted_categories).chart_payload
+    swatches = chart_presentation[:segments].first(3)
 
     group_entry[:secondaryItems][category_id] ||= {
       record: sorted_categories.first,
       id: category_id,
       memberIds: category_ids.map(&:to_s),
       name: sorted_categories.map(&:name).join(" / "),
-      swatchHexes: sorted_categories.filter_map(&:hex_colour).first(3),
+      chartPresentation: chart_presentation.except(:segments),
+      swatches:,
+      swatchHexes: swatches.pluck(:background),
       rank: sorted_categories.length,
       total: 0,
       points: Hash.new(0)

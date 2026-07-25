@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { ArcElement, Chart, Legend, PieController, Tooltip } from "chart.js"
+import { resolveCategoryChartPresentation } from "../lib/category_chart_presentation.mjs"
 
 Chart.register(PieController, ArcElement, Tooltip, Legend)
 
@@ -40,10 +41,11 @@ export default class extends Controller {
 
     const labels = entries.map((entry) => entry.name)
     const data = entries.map((entry) => entry.total / 100.0)
-    const backgroundColor = entries.map((entry, index) => entry.colour || this.palette(index))
+    const presentations = entries.map((entry, index) => this.entryPresentation(entry, index))
+    const backgroundColor = presentations.map((presentation) => presentation.background)
     const theme = this.chartTheme()
 
-    this.renderLegend(entries, backgroundColor)
+    this.renderLegend(entries, presentations)
 
     this.destroyChart()
     this.chart = new Chart(this.chartCanvasTarget, {
@@ -113,7 +115,7 @@ export default class extends Controller {
     return this.filterInputTargets.filter((input) => input.checked).map((input) => input.value)
   }
 
-  renderLegend(entries, colours) {
+  renderLegend(entries, presentations) {
     entries.forEach((entry, index) => {
       const row = document.createElement("div")
       row.className = [
@@ -126,12 +128,16 @@ export default class extends Controller {
 
       const dot = document.createElement("span")
       dot.className = "inline-flex h-3 w-3 shrink-0 rounded-full"
-      dot.style.backgroundColor = colours[index]
+      dot.style.backgroundColor = presentations[index].background
+      dot.style.borderColor = presentations[index].foreground
       left.appendChild(dot)
 
       const name = document.createElement("span")
-      name.className = "truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
+      name.className = "truncate rounded-md border px-2 py-1 text-sm font-semibold"
       name.textContent = entry.name
+      name.style.backgroundColor = presentations[index].background
+      name.style.color = presentations[index].foreground
+      name.style.borderColor = presentations[index].foreground
       left.appendChild(name)
 
       const total = document.createElement("span")
@@ -142,6 +148,10 @@ export default class extends Controller {
       row.appendChild(total)
       this.legendTarget.appendChild(row)
     })
+  }
+
+  entryPresentation(entry, index) {
+    return resolveCategoryChartPresentation(entry, this.palette(index))
   }
 
   destroyChart() {

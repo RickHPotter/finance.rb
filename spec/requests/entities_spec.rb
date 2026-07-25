@@ -25,7 +25,14 @@ RSpec.describe "Entities", type: :request do
     it "renders entity details and the pie sections scoped to the current context" do
       entity = create(:entity, user:, entity_name: "GIGI")
       scenario_context = create(:context, user:, name: "Scenario Entity", source_context: user.main_context)
-      scenario_category = create(:category, user:, category_name: "Scenario Category")
+      scenario_category = create(
+        :category,
+        user:,
+        category_name: "Scenario Category",
+        colour: "#ffffff",
+        text_colour_mode: "manual",
+        text_colour: "#767676"
+      )
       main_category = create(:category, user:, category_name: "Main Category")
       user_card = user.user_cards.find_by!(user_card_name: "99PAY")
 
@@ -60,6 +67,12 @@ RSpec.describe "Entities", type: :request do
       counterpart_payload = pie_payloads(response.body).fetch("counterpart")
       expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
       expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Category")
+      scenario_entry = counterpart_payload.fetch("entries").find { |entry| entry.fetch("name") == "Scenario Category" }
+      expect(scenario_entry).to include(
+        "colour" => "#ffffff",
+        "background" => "#ffffff",
+        "foreground" => "#767676"
+      )
     end
   end
 

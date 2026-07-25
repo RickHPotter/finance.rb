@@ -63,6 +63,16 @@ RSpec.describe "UserBankAccounts", type: :request do
       expect(response.body).not_to include("Main Food")
       expect(response.body).not_to include("Main Entity")
       expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
+
+      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
+      scenario_entity_entry = entity_payload.fetch("items").find { |entry| entry.fetch("name") == "Scenario Entity" }
+      scenario_category_item = scenario_entity_entry.fetch("groups").flat_map { |group| group.fetch("secondaryItems") }
+                                                                    .find { |item| item.fetch("memberIds").include?(scenario_category.id.to_s) }
+      expect(scenario_category_item.fetch("chartPresentation")).to eq("background" => "#4b5563", "foreground" => "#ffffff")
+      expect(scenario_category_item.fetch("swatches")).to contain_exactly(
+        include("label" => "Scenario Food", "background" => "#4b5563", "foreground" => "#ffffff")
+      )
+      expect(scenario_category_item.fetch("swatchHexes")).to eq([ "#4b5563" ])
     end
 
     it "includes future installment points in the interactive category dashboard payload" do

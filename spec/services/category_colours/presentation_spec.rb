@@ -16,6 +16,7 @@ RSpec.describe CategoryColours::Presentation, type: :service do
       expect(presentation.ratio_label).to eq("4.54:1")
       expect(presentation.chart_background).to eq("#ffffff")
       expect(presentation.chart_foreground).to eq("#767676")
+      expect(presentation.chart_payload).to eq(background: "#ffffff", foreground: "#767676")
       expect(presentation).not_to be_fallback
       expect(presentation).to be_frozen
     end
@@ -56,6 +57,14 @@ RSpec.describe CategoryColours::Presentation, type: :service do
       expect(bundle.segments.map(&:label)).to eq(%w[Light Dark])
       expect(bundle.segments.map { |segment| segment.presentation.foreground }).to eq(%w[#000000 #ffffff])
       expect(bundle.combined).to equal(described_class.neutral)
+      expect(bundle.chart_payload).to eq(
+        background: described_class.neutral.background,
+        foreground: described_class.neutral.foreground,
+        segments: [
+          { id: light.id, label: "Light", background: "#ffffff", foreground: "#000000" },
+          { id: dark.id, label: "Dark", background: "#000000", foreground: "#ffffff" }
+        ]
+      )
       expect(bundle.label).to eq("Light + Dark")
       expect(bundle).to be_multiple
       expect(bundle).to be_frozen

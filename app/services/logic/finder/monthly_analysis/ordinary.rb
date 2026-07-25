@@ -4,8 +4,6 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
   TRANSFER_CATEGORY_NAMES = [ "EXCHANGE", "EXCHANGE RETURN", "BORROW RETURN", "FAILED LEND/BORROW RETURN" ].freeze
   PIGGY_BANK_CATEGORY_NAMES = [ "PIGGY BANK", "PIGGY BANK RETURN" ].freeze
   EXCLUDED_CASH_TRANSACTION_TYPES = %w[CardInstallment Investment PiggyBank].freeze
-  NEUTRAL_COLOR = "#78716c"
-
   def initialize(context:, month:)
     @context = context
     @month = month
@@ -81,10 +79,13 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
     allocations = transaction.categories.sort_by { |category| [ category.category_name, category.id ] }
     return unassigned_bundle(:category) if allocations.empty?
 
+    chart_payload = CategoryColours::Presentation.bundle(allocations).chart_payload
+
     {
       key: "categories:#{allocations.pluck(:id).join('+')}",
       label: allocations.map(&:name).join(" + "),
-      color: allocations.one? ? (allocations.first.hex_colour || NEUTRAL_COLOR) : NEUTRAL_COLOR
+      color: chart_payload[:background],
+      **chart_payload
     }
   end
 
@@ -103,7 +104,7 @@ class Logic::Finder::MonthlyAnalysis::Ordinary
       key: "#{dimension}:unassigned",
       label: I18n.t("balances.monthly_analysis.unassigned")
     }.tap do |bundle|
-      bundle[:color] = NEUTRAL_COLOR if dimension == :category
+      bundle.merge!(color: CategoryColours::Presentation.neutral.background, **CategoryColours::Presentation.neutral.chart_payload) if dimension == :category
     end
   end
 
