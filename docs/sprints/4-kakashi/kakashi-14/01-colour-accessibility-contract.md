@@ -96,9 +96,10 @@ contrast = (lighter_luminance + 0.05) / (darker_luminance + 0.05)
 The comparison uses the unrounded ratio. Rounding is display-only. Exactly `4.5:1`
 passes.
 
-The existing `ColoursHelper#auto_text_color` and its private contrast implementation
-must be retired or reduced to delegating compatibility wrappers during migration.
-Views must not parse hex or guess foregrounds.
+The former `ColoursHelper#auto_text_color` and `solid_or_gradient_style` compatibility
+wrappers were removed after all callers migrated. Views must not parse hex or guess
+foregrounds; an enforcement spec keeps raw category colour access behind the shared
+presentation boundary.
 
 ## Presentation Contract
 
