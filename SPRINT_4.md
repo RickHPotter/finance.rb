@@ -834,6 +834,26 @@ Coverage:
 Goal: guarantee that category text remains legible for every user-selected background
 colour across light mode, dark mode, chips, charts, forms, indexes, and dashboards.
 
+Locked V1 direction:
+
+- use WCAG 2.x relative luminance and a `4.5:1` minimum contrast ratio for every
+  category label, regardless of font size
+- persist category backgrounds and manual foregrounds as lowercase six-digit hex
+  values; accept convenient three/six-digit input but reject alpha, transparency, CSS
+  names, and malformed values
+- add an explicit string-backed `automatic`/`manual` text-colour mode; automatic is the
+  default and stores no derived foreground value
+- choose pure black or white in automatic mode, using the candidate with the greater
+  measured contrast
+- treat Ruby validation and resolution as authoritative while keeping the category
+  form preview mathematically equivalent in JavaScript
+- replace multi-category text-over-gradient assumptions with individually resolved
+  segments or a neutral bundle surface when one foreground cannot pass against every
+  background
+- keep the migration reversible at the schema level and preserve every existing
+  category background while normalizing legacy palette names to their current hex
+  values
+
 Colour contract:
 
 - add an optional category text-colour preference with automatic and manual modes
@@ -865,6 +885,12 @@ Coverage:
 - add view coverage proving that no category surface hardcodes an incompatible text
   colour over the resolved background
 
+References:
+
+- [colour accessibility contract](docs/sprints/4-kakashi/kakashi-14/01-colour-accessibility-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-14/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-14/03-decisions-and-test-matrix.md)
+
 ### KAKASHI-15: Make Turbo navigation URL-correct
 
 - Issues:
@@ -872,6 +898,27 @@ Coverage:
 
 Goal: ensure the browser URL, history stack, rendered screen, and server resource always
 describe the same location after Turbo navigation and form submission.
+
+Locked V1 direction:
+
+- stop using `center_container` replacement as top-level routing; index, new, show,
+  edit, duplicate, Health Check, audit history, and other full screens navigate through
+  normal Turbo Drive visits targeting `_top`
+- remove `format: :turbo_stream` from top-level links while retaining Turbo Streams for
+  validation rendering, modals, lazy fragments, bulk controls, and genuine in-place
+  mutations
+- redirect successful create, update, and destroy submissions to an explicit canonical
+  destination with `303 See Other`; replace the submitted form history entry so Back
+  does not reopen a stale successful form
+- preserve index filters, month/card selection, context, and safe return destinations
+  through an allowlisted navigation-state contract rather than the incidental current
+  browser URL
+- retain chained create/duplicate behavior, but give every continuation and finish
+  state a refreshable canonical URL and deterministic Back/Forward behavior
+- migrate cash transactions first, card transactions second, and then the remaining
+  resource families in bounded slices with request and browser regression coverage
+- keep `center_container` as a stable layout/frame boundary only where existing
+  rendering requires it; its presence must not imply that links should target it
 
 Navigation contract:
 
@@ -909,6 +956,12 @@ Regression coverage:
 - cover Turbo and non-Turbo requests so progressive navigation remains valid
 - treat screen/URL disagreement as a navigation regression even when the visible HTML
   appears correct
+
+References:
+
+- [Turbo navigation contract and inventory](docs/sprints/4-kakashi/kakashi-15/01-navigation-contract-and-inventory.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-15/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-15/03-decisions-and-test-matrix.md)
 
 ### KAKASHI-16: Unlock and bulk-manage category and entity allocations
 
