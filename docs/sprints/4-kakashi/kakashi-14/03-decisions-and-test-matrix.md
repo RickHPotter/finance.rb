@@ -77,6 +77,22 @@ Prefer borders, rings, shadows, or underlines that leave the accessible pair int
 
 Decision: no. Server payloads provide the same resolved background and foreground.
 
+### D17. How is the future row-colour user setting represented?
+
+Decision: category-bearing transaction and budget rows accept one resolved display
+mode: `row_coloured` or `badges_only`. `badges_only` is the default until a user
+preference is persisted.
+
+In `row_coloured`, the first category in deterministic allocation order supplies its
+complete validated pair for the row. All assigned categories remain visible as their
+own resolved badges. In `badges_only`, the row uses the normal application surface and
+the badges alone carry category colours. Empty, blank, and unknown modes safely resolve
+to `badges_only`.
+
+The setting is resolved at a controller/parent-view boundary and passed downward.
+Leaf presenters do not reach into user persistence, which keeps the future settings
+migration separate from colour rendering.
+
 ## Normalization and Contrast Matrix
 
 | Scenario | Expected result |
@@ -147,6 +163,11 @@ Decision: no. Server payloads provide the same resolved background and foregroun
 | selected chip | no unchecked generic foreground |
 | multi-category row | segmented or neutral bundle treatment |
 | gradient retained | chosen foreground passes every stop |
+| `row_coloured`, one category | row and badge use the category's resolved pair |
+| `row_coloured`, multiple categories | deterministic primary pair colours row; every category remains a resolved badge |
+| `badges_only`, one category | normal application row and one resolved badge |
+| `badges_only`, multiple categories | normal application row and every resolved badge |
+| blank/unknown display mode | resolves to `badges_only`; never reaches CSS |
 | nil/missing category | neutral accessible fallback |
 | dark mode | no foreground override defeats resolved inline/style pair |
 | internal/external ledger | same presentation contract |
@@ -162,6 +183,21 @@ Decision: no. Server payloads provide the same resolved background and foregroun
 | tooltip | readable pair or accessible neutral tooltip |
 | chart unavailable | text equivalent still identifies category/value |
 | fallback palette | foreground resolved through same service |
+
+## Display Mode Matrix
+
+| Surface | `row_coloured` | `badges_only` |
+| --- | --- | --- |
+| cash transaction, desktop/mobile | primary category pair on row | normal application row |
+| card transaction, desktop/mobile | primary category pair on row | normal application row |
+| transaction sheet/ledger | primary category pair on row | normal application row |
+| budget, desktop/mobile | primary category pair on row | normal application row |
+| category badges | every badge uses its own pair | every badge uses its own pair |
+| no categories | normal application row | normal application row |
+
+Every row-mode example is covered with one and multiple categories. Tests must prove
+that the row background and foreground come from the same presentation object and that
+changing display mode does not change category ordering or hide allocations.
 
 ## Regression and Manual Matrix
 

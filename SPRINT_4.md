@@ -850,6 +850,10 @@ Locked V1 direction:
 - replace multi-category text-over-gradient assumptions with individually resolved
   segments or a neutral bundle surface when one foreground cannot pass against every
   background
+- expose `row_coloured` and `badges_only` as explicit transaction/budget presentation
+  modes, defaulting to `badges_only` until a future user setting is persisted;
+  `row_coloured` uses the deterministic primary category's complete resolved pair and
+  both modes keep every assigned category visible as its own accessible badge
 - keep the migration reversible at the schema level and preserve every existing
   category background while normalizing legacy palette names to their current hex
   values

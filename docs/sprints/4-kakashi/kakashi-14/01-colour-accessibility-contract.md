@@ -135,15 +135,32 @@ whose markup cannot use that component, consume the same presentation object or 
 A foreground is valid over a multi-colour background only if it reaches `4.5:1`
 against every colour underneath it.
 
-Preferred rendering order:
+Category-bearing transaction and budget rows support two explicit presentation modes:
 
-1. render one labelled/accessible segment per category with its own resolved pair
-2. when one combined label is required, use a neutral application surface and show
-   category colours as separate swatches
-3. use a gradient behind text only when one foreground passes against every stop and
-   the browser rendering does not introduce transparency
+- `row_coloured`: the row uses the first category in deterministic allocation order
+  as its primary accessible background/foreground pair; every assigned category is
+  still shown as an individually resolved badge
+- `badges_only`: the row uses the normal light/dark application surface and only the
+  individually resolved category badges carry category colours
 
-The first category's foreground is never assumed to represent the bundle.
+`badges_only` is the KAKASHI-14 default. The display mode is an explicit presentation
+input, not inferred from category count, viewport, resource type, or theme. KAKASHI-14
+does not persist the future user preference; it provides a validated mode resolver and
+requires transaction/budget renderers to accept the resolved mode so a later settings
+field can be connected without rewriting the surfaces.
+
+In `row_coloured` mode, the primary category's complete resolved pair colours the row.
+The foreground is never borrowed from one category while using another category or a
+neutral background. Additional categories never alter the primary pair and remain
+visible as their own accessible badges. Empty allocations use the normal application
+surface.
+
+Gradients remain prohibited behind shared row text unless one measured foreground
+passes against every rendered stop. A future decorative gradient must not be treated
+as an alternative to the two supported display modes.
+
+Both modes apply consistently to cash/card transactions, transaction sheets and
+ledgers, budgets, mobile/desktop layouts, and single/multi-category allocations.
 
 ## Category Form Contract
 
@@ -197,6 +214,18 @@ The initial repository audit found category colours in:
 This list is a migration checklist, not permission to update only the named files.
 The final sweep searches all Ruby, Phlex, ERB, JavaScript, serializers, and chart
 payloads for raw category background usage and hardcoded foreground assumptions.
+
+## Future Settings Boundary
+
+The future user setting will store one of the canonical mode strings:
+
+- `row_coloured`
+- `badges_only`
+
+Controllers or parent views will resolve that stored value once and pass it to category
+row presenters. Leaf views must not read an eventual user column directly. Unknown,
+blank, or unavailable values fall back to `badges_only`; they must never become CSS
+classes or inline styles.
 
 ## Accessibility Semantics
 

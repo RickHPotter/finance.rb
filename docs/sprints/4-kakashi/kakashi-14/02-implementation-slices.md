@@ -127,6 +127,8 @@ Migrate the highest-frequency category surfaces.
 
 Deliver:
 
+- settings-ready `row_coloured`/`badges_only` presentation boundary without adding
+  user persistence
 - cash/card installment indexes
 - cash/card transaction forms and detail screens
 - category transaction fields
@@ -136,6 +138,9 @@ Deliver:
 
 Coverage:
 
+- both display modes with single and multiple categories
+- invalid/blank mode fallback to `badges_only`
+- deterministic primary category in `row_coloured`
 - very light and very dark category rows
 - multi-category transaction rendering
 - mobile and desktop markup
