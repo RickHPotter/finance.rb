@@ -5,40 +5,41 @@ class Views::Lalas::CardInstallments::Index < Views::Base
 
   include TranslateHelper
   include CacheHelper
-  include ColoursHelper
 
-  attr_reader :mobile, :card_installments, :user_card_id
+  attr_reader :mobile, :card_installments, :user_card_id, :category_colour_display_mode
 
-  def initialize(mobile:, card_installments:, user_card_id:)
+  def initialize(mobile:, card_installments:, user_card_id:,
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @card_installments = card_installments
     @user_card_id = user_card_id
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
     if mobile
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(card_transaction)
 
-        render_mobile_card_installment(card_installment, card_transaction, style)
+        render_mobile_card_installment(card_installment, card_transaction, presentation)
       end
     else
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(card_transaction)
 
-        render_card_installment(card_installment, card_transaction, style)
+        render_card_installment(card_installment, card_transaction, presentation)
       end
     end
   end
 
-  def render_mobile_card_installment(card_installment, card_transaction, style)
+  def render_mobile_card_installment(card_installment, card_transaction, presentation)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none",
-        style: "background-clip: padding-box; #{style}",
-        data: { id: card_installment.id, datatable_target: :row }
+        class: [ "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
+        data: { id: card_installment.id, datatable_target: :row }.merge(presentation.metadata)
       ) do
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
@@ -63,10 +64,8 @@ class Views::Lalas::CardInstallments::Index < Views::Base
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }) do
-              card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: category_chip_class("text-xs")) do
-                  category.name
-                end
+              categories_for(card_transaction).each do |category|
+                CategoryBadge(category:, class: "px-2 py-1 text-xs")
               end
             end
 
@@ -77,15 +76,15 @@ class Views::Lalas::CardInstallments::Index < Views::Base
     end
   end
 
-  def render_card_installment(card_installment, card_transaction, style)
+  def render_card_installment(card_installment, card_transaction, presentation)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "grid grid-cols-11 hover:opacity-80 dark:text-slate-100",
-        style: "background-clip: padding-box; #{style}",
+        class: [ "grid grid-cols-11 transition-shadow hover:shadow-md", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
-                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
+                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }.merge(presentation.metadata)
       ) do
         div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           date, time = I18n.l(card_installment.date, format: :shorter).split(",")
@@ -107,35 +106,8 @@ class Views::Lalas::CardInstallments::Index < Views::Base
           class: "col-span-3 py-2 flex items-center justify-center gap-2",
           data: { datatable_target: :category, id: card_transaction.categories.map(&:id) }
         ) do
-          if card_transaction.categories.count > 1
-            first_one = card_transaction.categories.first
-            remaining = card_transaction.categories[1..]
-
-            span(class: category_chip_class) do
-              first_one.name
-            end
-
-            Popover(options: { placement: "right" }, class: category_chip_class) do
-              PopoverTrigger(class: "w-full") do
-                button(class: "text-xs") do
-                  "+#{card_transaction.categories.count - 1}"
-                end
-              end
-
-              PopoverContent(class: "z-50 opacity-100! ml-2") do
-                remaining.each do |category|
-                  span(class: category_chip_class) do
-                    category.name
-                  end
-                end
-              end
-            end
-          else
-            card_transaction.category_transactions.order(:id).map(&:category).each do |category|
-              span(class: category_chip_class) do
-                category.name
-              end
-            end
+          categories_for(card_transaction).each do |category|
+            CategoryBadge(category:, class: "px-2 py-1 text-sm")
           end
         end
 
@@ -158,6 +130,14 @@ class Views::Lalas::CardInstallments::Index < Views::Base
       trigger_label: pluralise_model(Entity, items.count).upcase,
       variant: :card
     )
+  end
+
+  def categories_for(card_transaction)
+    card_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+  end
+
+  def row_presentation(card_transaction)
+    CategoryColours::RowPresentation.new(categories: categories_for(card_transaction), mode: category_colour_display_mode)
   end
 
   def render_desktop_entities(card_transaction)
@@ -196,10 +176,5 @@ class Views::Lalas::CardInstallments::Index < Views::Base
       "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
       ("opacity-40" if single_installment)
     ].compact.join(" ")
-  end
-
-  def category_chip_class(text_size = "text-sm")
-    "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black #{text_size} " \
-      "dark:border-slate-600 dark:text-slate-100"
   end
 end

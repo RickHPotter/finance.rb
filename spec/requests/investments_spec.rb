@@ -429,11 +429,16 @@ RSpec.describe "Investments", type: :request do
 
   describe "[ #month_year ]" do
     it "renders successfully" do
-      create(:investment, user:, user_bank_account:, investment_type:, month: 3, year: 2026, date: Date.new(2026, 3, 14))
+      investment = create(:investment, user:, user_bank_account:, investment_type:, month: 3, year: 2026, date: Date.new(2026, 3, 14))
+      presentation = CategoryColours::Presentation.for(user.built_in_category("INVESTMENT"))
 
       get month_year_investments_path, params: { month_year: "202603" }
 
       expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML.fragment(response.body)
+      row = document.at_css("[data-datatable-target='row'][data-id='#{investment.id}']")
+      expect(row["style"]).to include("background-color: #{presentation.background}", "color: #{presentation.foreground}")
+      expect(row["class"]).not_to include("hover:opacity")
     end
   end
 

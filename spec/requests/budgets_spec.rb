@@ -190,6 +190,7 @@ RSpec.describe "Budgets", type: :request do
 
   describe "[ #show ]" do
     it "renders a context-scoped dashboard with summary, definition, consumption, and actions" do
+      category.update!(colour: "#4b5563")
       cash_transaction = create(
         :cash_transaction,
         user:,
@@ -229,6 +230,7 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include(cash_transaction_path(cash_transaction))
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include(category.name)
+      expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
     end
 
     it "shows Available for expense budgets that still have room remaining" do

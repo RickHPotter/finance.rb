@@ -6,7 +6,6 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   include TranslateHelper
   include CacheHelper
-  include ColoursHelper
 
   attr_reader :mobile, :cash_installments, :index_context, :category_colour_display_mode
 

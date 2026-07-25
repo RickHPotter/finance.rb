@@ -5,7 +5,6 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :user_bank_account
@@ -73,11 +72,11 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
     section_card(model_attribute(CashTransaction, :categories), open: false) do
       if category_breakdowns.present?
         allocation_breakdown_grid(category_breakdowns) do |entry|
-          span(
-            class: "flex min-h-12 items-center justify-center wrap-break-word rounded-sm border border-black px-2 py-1 text-center text-sm",
-            style: "background: #{entry[:record].hex_colour}; #{auto_text_color(entry[:record].hex_colour)}",
+          CategoryBadge(
+            category: entry[:record],
+            class: "min-h-12 wrap-break-word px-2 py-1 text-center text-sm",
             title: entry[:record].name
-          ) { entry[:record].name }
+          )
         end
       else
         empty_state

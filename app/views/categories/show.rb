@@ -4,7 +4,6 @@ class Views::Categories::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::AssetPath
 
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :category

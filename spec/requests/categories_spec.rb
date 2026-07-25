@@ -19,6 +19,18 @@ RSpec.describe "Categories", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders category links with the complete resolved pair" do
+      category = create(:category, user:, category_name: "Dark category", colour: "#4b5563")
+
+      get categories_path
+
+      document = response.parsed_body
+      badge = document.at_css("#show_category_#{category.id}")
+
+      expect(badge["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(badge["class"]).not_to include("hover:opacity")
+    end
   end
 
   describe "[ #show ]" do

@@ -24,7 +24,13 @@ class Lalas::CardTransactionsController < LalasController
 
     card_installments = Logic::CardInstallments.find_ref_month_year_by_params(lala_context, external_card_transaction_params, search_card_transaction_params)
 
-    render Views::Lalas::CardTransactions::MonthYear.new(mobile:, month_year:, user_card_id:, card_installments:)
+    render Views::Lalas::CardTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      user_card_id:,
+      card_installments:,
+      category_colour_display_mode: CategoryColours::DisplayMode.for(user)
+    )
   end
 
   def build_index_context(card_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength

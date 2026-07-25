@@ -6,7 +6,6 @@ class Views::Categories::Category < Views::Base
   include Phlex::Rails::Helpers::Cycle
 
   include CacheHelper
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :category, :mobile
@@ -25,22 +24,19 @@ class Views::Categories::Category < Views::Base
   private
 
   def desktop_row
-    bg = solid_or_gradient_style(category)
-    text = auto_text_color(category.hex_colour)
-
     div(
       class: "grid grid-cols-8 border-b border-slate-200 #{cycle('bg-gray-100', 'bg-gray-200')} hover:bg-white " \
              "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
       data: { id: category.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        link_to category_path(category),
-                id: "show_category_#{category.id}",
-                class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md hover:opacity-85",
-                style: "background-clip: padding-box; #{bg}; #{text}",
-                data: { turbo_frame: "_top", turbo_prefetch: false } do
-          category.name
-        end
+        CategoryBadge(
+          category:,
+          href: category_path(category),
+          id: "show_category_#{category.id}",
+          class: "whitespace-nowrap px-4 shadow-md",
+          data: { turbo_frame: "_top", turbo_prefetch: false }
+        )
       end
 
       div(class: "flex items-center justify-center px-2 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300") do
@@ -112,11 +108,10 @@ class Views::Categories::Category < Views::Base
   end
 
   def mobile_row
-    bg = solid_or_gradient_style(category)
-    text = auto_text_color(category.hex_colour)
+    presentation = CategoryColours::Presentation.for(category)
 
     div(class: "mx-2 rounded-lg shadow-sm overflow-hidden my-3 dark:bg-slate-900 dark:text-slate-100", data: { id: category.id, datatable_target: :row }) do
-      div(class: "p-4 whitespace-nowrap border-0 rounded-sm shadow-md", style: "background-clip: padding-box; #{bg}; #{text}") do
+      div(class: "rounded-sm border p-4 whitespace-nowrap shadow-md", style: presentation.inline_style) do
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category

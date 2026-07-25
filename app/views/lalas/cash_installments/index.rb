@@ -5,41 +5,41 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
   include TranslateHelper
   include CacheHelper
-  include ColoursHelper
 
-  attr_reader :mobile, :cash_installments
+  attr_reader :mobile, :cash_installments, :category_colour_display_mode
 
-  def initialize(mobile:, cash_installments:)
+  def initialize(mobile:, cash_installments:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @cash_installments = cash_installments
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
     if mobile
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction.reload
-        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(cash_transaction)
 
-        render_mobile_cash_installment(cash_installment, cash_transaction, style)
+        render_mobile_cash_installment(cash_installment, cash_transaction, presentation)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction.reload
-        style = solid_or_gradient_style(cash_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(cash_transaction)
 
-        render_cash_installment(cash_installment, cash_transaction, style)
+        render_cash_installment(cash_installment, cash_transaction, presentation)
       end
     end
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, style)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, presentation)
     turbo_frame_tag dom_id cash_installment do
       icon = choose_icon(cash_installment)
 
       div(
-        class: "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none",
-        style: "background-clip: padding-box; #{style}",
-        data: { id: cash_installment.id, datatable_target: :row }
+        class: [ "rounded-lg shadow-sm overflow-hidden my-4 border-2 dark:border-slate-700 dark:shadow-none", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
+        data: { id: cash_installment.id, datatable_target: :row }.merge(presentation.metadata)
       ) do
         div(class: "p-4") do
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
@@ -73,11 +73,8 @@ class Views::Lalas::CashInstallments::Index < Views::Base
 
           div(class: "flex flex-wrap items-center gap-1") do
             div(class: "flex flex-wrap gap-1", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-              border = style.split("; color:").last
-              cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-                span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-xs", style: "border-color: #{border}") do
-                  category.name
-                end
+              categories_for(cash_transaction).each do |category|
+                CategoryBadge(category:, class: "px-2 py-1 text-xs")
               end
             end
 
@@ -88,17 +85,17 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, style)
+  def render_cash_installment(cash_installment, cash_transaction, presentation)
     turbo_frame_tag dom_id cash_installment do
       icon = choose_icon(cash_installment)
 
       div(
-        class: "grid grid-cols-12 hover:opacity-80 dark:text-slate-100",
-        style: "background-clip: padding-box; #{style}",
+        class: [ "grid grid-cols-12 transition-shadow hover:shadow-md", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
-                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }
+                action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop" }.merge(presentation.metadata)
       ) do
         div(class: "col-span-5 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           date, time = I18n.l(cash_installment.date, format: :shorter).split(",")
@@ -117,11 +114,8 @@ class Views::Lalas::CashInstallments::Index < Views::Base
         end
 
         div(class: "col-span-3 py-2 flex items-center justify-center gap-2", data: { datatable_target: :category, id: cash_transaction.categories.map(&:id) }) do
-          border = style.split("; color:").last
-          cash_transaction.category_transactions.order(:id).map(&:category).each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border text-sm", style: "border-color: #{border}") do
-              category.name
-            end
+          categories_for(cash_transaction).each do |category|
+            CategoryBadge(category:, class: "px-2 py-1 text-sm")
           end
         end
 
@@ -147,6 +141,14 @@ class Views::Lalas::CashInstallments::Index < Views::Base
     in [ false, true  ] then :warning_octagon
     in [ false, false ] then :x_circle
     end
+  end
+
+  def categories_for(cash_transaction)
+    cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+  end
+
+  def row_presentation(cash_transaction)
+    CategoryColours::RowPresentation.new(categories: categories_for(cash_transaction), mode: category_colour_display_mode)
   end
 
   def render_mobile_entities(cash_transaction)

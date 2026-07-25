@@ -5,7 +5,6 @@ class Views::Entities::Show < Views::Base
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :entity
