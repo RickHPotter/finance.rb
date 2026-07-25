@@ -15,10 +15,16 @@ RSpec.describe Components::CategoryColourSegments, type: :component do
 
     expect(container["aria-hidden"]).to eq("true")
     expect(container["data-category-count"]).to eq("2")
-    expect(segments.map { |segment| segment["data-category-id"] }).to eq(%w[11 148])
-    expect(segments.map { |segment| segment["style"] }).to eq(
-      [ "background-color: #4b5563;", "background-color: #f1f5f9;" ]
-    )
+    expect(container.css("[data-category-colour-segment-side]").pluck("data-category-colour-segment-side")).to contain_exactly("top", "right", "bottom", "left")
+
+    %w[top right bottom left].each do |edge|
+      edge_segments = segments.select { |segment| segment["data-category-colour-segment-edge"] == edge }
+
+      expect(edge_segments.map { |segment| segment["data-category-id"] }).to eq(%w[11 148])
+      expect(edge_segments.map { |segment| segment["style"] }).to eq(
+        [ "background-color: #4b5563;", "background-color: #f1f5f9;" ]
+      )
+    end
   end
 
   it "does not add a decorative strip to a single-category surface" do
