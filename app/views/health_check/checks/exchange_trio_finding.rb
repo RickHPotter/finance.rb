@@ -8,7 +8,7 @@ class Views::HealthCheck::Checks::ExchangeTrioFinding < Views::HealthCheck::Chec
       subtitle: "#{formatted_date(source[:date])} · #{row[:chain_kind].to_s.humanize}",
       href: transaction_path(source)
     ) do
-      div(class: "space-y-4 p-4") do
+      div(class: "space-y-3 p-3") do
         issue_chips(row[:issues], warnings: row[:warnings])
         div(class: "grid gap-3 sm:grid-cols-2 lg:grid-cols-4") do
           metric(I18n.t("health_check.details.fields.intent"), row[:intent].to_s.humanize)

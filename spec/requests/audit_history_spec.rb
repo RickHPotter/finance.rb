@@ -75,6 +75,26 @@ RSpec.describe "Audit history", type: :request do
     expect(response).to have_http_status(:success)
     expect(response.body).to include(own_operation.id)
     expect(response.body).not_to include(foreign_operation.id)
+    expect(Nokogiri::HTML(response.body).at_css("#audit_health_check_link")).to be_nil
+  end
+
+  it "gives administrators a compact canonical return to Health Check from every audit workspace" do
+    create_version(owner: user, item_id: 101, description: "Audited correction")
+    sign_in admin
+
+    [ audit_operations_path, audit_versions_path, audit_operation_path(operation) ].each do |path|
+      get path
+
+      document = Nokogiri::HTML(response.body)
+      link = document.at_css("#audit_health_check_link")
+      workspace_classes = document.at_css("turbo-frame#center_container > main")["class"].split
+      expect(response).to have_http_status(:success)
+      expect(link["href"]).to eq(healthcheck_path)
+      expect(link["data-turbo-frame"]).to eq("_top")
+      expect(link["data-turbo-action"]).to eq("advance")
+      expect(workspace_classes).to include("px-2", "py-2", "sm:px-3")
+      expect(workspace_classes).not_to include("py-4", "sm:px-5")
+    end
   end
 
   it "returns not found when an ordinary user cannot see any version in the operation" do

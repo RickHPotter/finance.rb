@@ -13,7 +13,7 @@ class Views::HealthCheck::Checks::Pagination < Views::Base
 
   def view_template
     nav(
-      class: "mt-5 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row dark:border-slate-700",
+      class: "mt-3 flex flex-col items-center justify-between gap-2 border-t border-slate-200 pt-3 sm:flex-row dark:border-slate-700",
       aria: { label: I18n.t("health_check.details.pagination.label") }
     ) do
       p(class: "text-sm text-slate-600 dark:text-slate-400") do

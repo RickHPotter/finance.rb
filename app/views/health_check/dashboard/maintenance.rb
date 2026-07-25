@@ -4,13 +4,13 @@ class Views::HealthCheck::Dashboard::Maintenance < Views::Base
   include Phlex::Rails::Helpers::LinkTo
 
   def view_template
-    section(aria: { labelledby: "health_check_maintenance_title" }, class: "py-6") do
+    section(aria: { labelledby: "health_check_maintenance_title" }, class: "py-4") do
       h2(id: "health_check_maintenance_title", class: "text-lg font-bold text-slate-950 dark:text-slate-100") do
         I18n.t("health_check.maintenance.title")
       end
       p(class: "mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-400") { I18n.t("health_check.maintenance.description") }
 
-      article(class: "mt-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900") do
+      article(class: "mt-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
         h3(class: "font-bold text-slate-950 dark:text-slate-100") { I18n.t("health_check.maintenance.naming.title") }
         p(class: "mt-1 text-sm text-slate-600 dark:text-slate-400") { I18n.t("health_check.maintenance.naming.description") }
         link_to(
@@ -19,7 +19,7 @@ class Views::HealthCheck::Dashboard::Maintenance < Views::Base
           class: naming_link_class,
           data: { turbo_frame: "healthcheck_naming_convention_content", turbo_prefetch: false }
         )
-        turbo_frame_tag "healthcheck_naming_convention_content", class: "mt-4 block"
+        turbo_frame_tag "healthcheck_naming_convention_content", class: "mt-3 block"
       end
     end
   end

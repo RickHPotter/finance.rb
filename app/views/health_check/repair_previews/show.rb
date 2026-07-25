@@ -16,7 +16,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
 
   def view_template
     turbo_frame_tag "center_container" do
-      main(class: "mx-auto w-full max-w-6xl px-3 py-4 sm:px-5") do
+      main(class: "mx-auto w-full max-w-6xl px-2 py-2 sm:px-3") do
         header_section
         scope_section
         state_section
@@ -33,7 +33,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
       div(class: "min-w-0") do
         p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300") { I18n.t("health_check.repairs.preview.eyebrow") }
         h1(class: "mt-1 wrap-break-word text-2xl font-bold text-slate-950 dark:text-slate-100") { I18n.t(definition.title_key) }
@@ -52,8 +52,8 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   end
 
   def scope_section
-    section(class: panel_class("mt-5")) do
-      dl(class: "grid gap-3 sm:grid-cols-2 lg:grid-cols-4") do
+    section(class: panel_class("mt-3")) do
+      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-4") do
         metadata(I18n.t("health_check.scope.administrator"), preview.scope.user.full_name)
         metadata(I18n.t("health_check.scope.context"), preview.scope.context.name)
         metadata(I18n.t("health_check.repairs.preview.finding"), "##{preview.finding_id}")
@@ -78,7 +78,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   end
 
   def changes_section
-    section(class: "mt-5") do
+    section(class: "mt-3") do
       h2(class: section_title_class) { I18n.t("health_check.repairs.preview.changes") }
       if preview.changes.empty?
         p(class: "#{panel_class('mt-3')} text-sm text-slate-600 dark:text-slate-400") { I18n.t("health_check.repairs.preview.no_changes") }
@@ -129,14 +129,14 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   end
 
   def paid_history_section
-    section(id: "health_check_repair_preview_paid_history", class: panel_class("mt-5")) do
+    section(id: "health_check_repair_preview_paid_history", class: panel_class("mt-3")) do
       h2(class: section_title_class) { I18n.t("health_check.repairs.preview.paid_history") }
       p(class: "mt-2 text-sm text-slate-600 dark:text-slate-300") { display_value(preview.paid_history) }
     end
   end
 
   def list_section(title:, id:, entries:, warning: false)
-    section(id:, class: panel_class("mt-5")) do
+    section(id:, class: panel_class("mt-3")) do
       h2(class: section_title_class) { title }
       ul(class: "mt-3 space-y-2") do
         Array(entries).each do |entry|
@@ -149,7 +149,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   end
 
   def digest_section
-    section(id: "health_check_repair_preview_digest", class: panel_class("mt-5")) do
+    section(id: "health_check_repair_preview_digest", class: panel_class("mt-3")) do
       h2(class: section_title_class) { I18n.t("health_check.repairs.preview.digest") }
       code(class: "mt-2 block break-all rounded-md bg-slate-950 px-3 py-2 text-xs text-slate-100") { preview.digest }
       p(class: "mt-2 text-xs text-slate-500 dark:text-slate-400") { I18n.t("health_check.repairs.preview.token_notice") }
@@ -160,7 +160,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
     form_with(
       url: healthcheck_repair_path(entry.key, definition.key, **workspace_scope_query),
       method: :patch,
-      class: "mt-5 rounded-lg border border-rose-300 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/30"
+      class: "mt-3 rounded-lg border border-rose-300 bg-rose-50 p-3 dark:border-rose-800 dark:bg-rose-950/30"
     ) do |form|
       form.hidden_field(:apply_token, value: preview.apply_token, id: "health_check_repair_apply_token")
       label(class: "flex items-start gap-3 text-sm font-semibold text-rose-950 dark:text-rose-100") do
@@ -205,14 +205,14 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
   end
 
   def state_panel_class
-    base = "mt-5 rounded-lg border px-4 py-4"
+    base = "mt-3 rounded-lg border p-3"
     return "#{base} border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" if preview.previewable?
 
     "#{base} border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
   end
 
   def panel_class(prefix = nil)
-    "#{prefix} rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900".strip
+    "#{prefix} rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900".strip
   end
 
   def section_title_class

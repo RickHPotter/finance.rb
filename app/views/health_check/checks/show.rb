@@ -24,7 +24,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
 
   def view_template
     turbo_frame_tag "center_container" do
-      main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+      main(class: "mx-auto w-full max-w-7xl px-2 py-2 sm:px-3") do
         header_section
         timing_and_scope
         filters if page.present?
@@ -36,7 +36,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
       div(class: "min-w-0") do
         p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300") { I18n.t("health_check.details.eyebrow") }
         h1(class: "mt-1 wrap-break-word text-2xl font-bold text-slate-950 dark:text-slate-100") { I18n.t(entry.title_key) }
@@ -61,8 +61,8 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
   end
 
   def timing_and_scope
-    section(class: "mt-5 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900") do
-      dl(class: "grid gap-3 sm:grid-cols-2 lg:grid-cols-4") do
+    section(class: "mt-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
+      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-4") do
         metadata(I18n.t("health_check.scope.administrator"), scope.user.full_name)
         metadata(I18n.t("health_check.scope.context"), scope.context.name)
         metadata(I18n.t("health_check.details.latest_summary"), last_summary_label)
@@ -81,7 +81,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
     form(
       action: healthcheck_check_path(entry.key),
       method: "get",
-      class: "mt-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-700 dark:bg-slate-900",
+      class: "mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-700 dark:bg-slate-900",
       data: { turbo_frame: "_top", turbo_action: "advance" }
     ) do
       hidden_scope_fields
@@ -144,7 +144,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
     elsif page.records.empty?
       empty_panel
     else
-      div(id: "health_check_findings_#{entry.key}", class: "mt-5 space-y-4") do
+      div(id: "health_check_findings_#{entry.key}", class: "mt-3 space-y-3") do
         page.records.each { |row| render FINDING_COMPONENTS.fetch(entry.key).new(row:, entry:, workspace_scope:) }
       end
       render Views::HealthCheck::Checks::Pagination.new(entry:, page:, query: pagination_query)
@@ -154,7 +154,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
   def state_panel
     div(
       id: "health_check_details_#{state}",
-      class: "mt-5 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-10 text-center dark:border-slate-700 dark:bg-slate-900"
+      class: "mt-3 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-6 text-center dark:border-slate-700 dark:bg-slate-900"
     ) do
       h2(class: "font-bold text-slate-950 dark:text-slate-100") { I18n.t("health_check.details.states.#{state}.title") }
       p(class: "mt-2 text-sm text-slate-600 dark:text-slate-400") { I18n.t("health_check.details.states.#{state}.description") }
@@ -164,7 +164,7 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
   def empty_panel
     div(
       id: "health_check_details_empty",
-      class: "mt-5 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 px-4 py-10 text-center dark:border-emerald-800 dark:bg-emerald-950/30"
+      class: "mt-3 rounded-lg border border-dashed border-emerald-300 bg-emerald-50 px-3 py-6 text-center dark:border-emerald-800 dark:bg-emerald-950/30"
     ) do
       h2(class: "font-bold text-emerald-900 dark:text-emerald-100") { I18n.t("health_check.details.states.empty.title") }
       p(class: "mt-2 text-sm text-emerald-800 dark:text-emerald-200") { I18n.t("health_check.details.states.empty.description") }

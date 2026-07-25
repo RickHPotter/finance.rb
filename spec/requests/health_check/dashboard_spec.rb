@@ -30,7 +30,10 @@ RSpec.describe "Health Check dashboard", type: :request do
     get healthcheck_path
 
     document = Nokogiri::HTML(response.body)
+    workspace_classes = document.at_css("turbo-frame#center_container > main")["class"].split
     expect(response).to have_http_status(:success)
+    expect(workspace_classes).to include("px-2", "py-2", "sm:px-3")
+    expect(workspace_classes).not_to include("py-4", "sm:px-5")
     expect(response.body).to include(admin.full_name, selected_context.name)
     expect(document.css("[id^='health_check_check_']").count).to eq(HealthCheck::Registry.entries.count)
     expect(HealthCheck::Registry.entries.map { |entry| I18n.t(entry.title_key) }).to all(satisfy { |title| response.body.include?(title) })

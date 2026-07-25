@@ -14,9 +14,9 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
     section(
       id: "health_check_overview",
       aria: { labelledby: "health_check_overview_title" },
-      class: "border-b border-slate-200 py-6 dark:border-slate-700"
+      class: "border-b border-slate-200 py-4 dark:border-slate-700"
     ) do
-      div(class: "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between") do
+      div(class: "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between") do
         div(class: "flex flex-col gap-1") do
           h2(id: "health_check_overview_title", class: "text-lg font-bold text-slate-950 dark:text-slate-100") do
             I18n.t("health_check.overview.title")
@@ -27,7 +27,7 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
         run_all_action
       end
 
-      div(class: "mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5") do
+      div(class: "mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5") do
         HealthCheck::DashboardSummary::DISPLAY_STATES.each { |state| status_total(state) }
       end
 
@@ -40,7 +40,7 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
   def status_total(state)
     div(
       id: "health_check_overview_#{state}",
-      class: "rounded-lg border px-3 py-3 #{status_panel_class(state)}"
+      class: "rounded-lg border px-3 py-2 #{status_panel_class(state)}"
     ) do
       p(class: "text-xs font-semibold uppercase tracking-[0.12em]") { I18n.t("health_check.states.#{state}") }
       p(class: "mt-1 text-2xl font-bold") { summaries.count { |summary| summary.status == state } }
@@ -48,9 +48,9 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
   end
 
   def scope_summary
-    div(class: "mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900") do
+    div(class: "mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900") do
       h3(class: "text-sm font-bold text-slate-950 dark:text-slate-100") { I18n.t("health_check.scope.title") }
-      dl(class: "mt-3 grid gap-3 sm:grid-cols-3") do
+      dl(class: "mt-2 grid gap-2 sm:grid-cols-3") do
         scope_value(I18n.t("health_check.scope.administrator"), scope.user.full_name)
         scope_value(I18n.t("health_check.scope.context"), scope.context.name)
         scope_value(I18n.t("health_check.scope.connections"), connection_label)

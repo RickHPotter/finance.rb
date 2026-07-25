@@ -17,7 +17,7 @@ class Views::AuditOperations::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+      main(class: "mx-auto w-full max-w-7xl px-2 py-2 sm:px-3") do
         header_section
         render Views::Audit::FilterForm.new(url: audit_operations_path, filters:, current_user:)
         operation_list
@@ -29,12 +29,27 @@ class Views::AuditOperations::Index < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
       div do
         h1(class: "text-2xl font-black text-slate-950 sm:text-3xl dark:text-slate-100") { I18n.t("audit.operations.title") }
       end
-      link_to(I18n.t("audit.actions.version_ledger"), audit_versions_path,
-              class: LINK_CLASS)
+      div(class: "flex flex-wrap gap-2") do
+        if current_user.admin?
+          link_to(
+            I18n.t("tabs.health_check"),
+            healthcheck_path,
+            id: "audit_health_check_link",
+            class: LINK_CLASS,
+            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+          )
+        end
+        link_to(
+          I18n.t("audit.actions.version_ledger"),
+          audit_versions_path,
+          class: LINK_CLASS,
+          data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+        )
+      end
     end
   end
 
@@ -52,7 +67,7 @@ class Views::AuditOperations::Index < Views::Base
   def operation_row(operation)
     summary = summaries.fetch(operation.id, { count: 0, item_types: [] })
 
-    article(class: "grid gap-4 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center") do
+    article(class: "grid gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center") do
       div(class: "min-w-0") do
         div(class: "flex flex-wrap items-center gap-2") do
           source_badge(operation.source)

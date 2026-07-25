@@ -13,7 +13,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+      main(class: "mx-auto w-full max-w-7xl px-2 py-2 sm:px-3") do
         turbo_stream_from HealthCheck::Stream.for(scope)
         header_section
         render Views::HealthCheck::Dashboard::Overview.new(scope:, summaries:)
@@ -26,7 +26,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between dark:border-slate-700") do
       div(class: "min-w-0") do
         p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300") { I18n.t("health_check.title") }
         h1(class: "mt-1 text-2xl font-bold text-slate-950 dark:text-slate-100") { I18n.t("health_check.title") }
@@ -44,7 +44,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
   end
 
   def financial_integrity_section
-    section(aria: { labelledby: "health_check_financial_integrity_title" }, class: "border-b border-slate-200 py-6 dark:border-slate-700") do
+    section(aria: { labelledby: "health_check_financial_integrity_title" }, class: "border-b border-slate-200 py-4 dark:border-slate-700") do
       h2(id: "health_check_financial_integrity_title", class: "text-lg font-bold text-slate-950 dark:text-slate-100") do
         I18n.t("health_check.groups.financial_integrity.title")
       end
@@ -52,7 +52,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
         I18n.t("health_check.groups.financial_integrity.description")
       end
 
-      div(class: "mt-4 grid gap-4 lg:grid-cols-2") do
+      div(class: "mt-3 grid gap-3 lg:grid-cols-2") do
         summaries.each do |summary|
           render Views::HealthCheck::Dashboard::CheckCard.new(summary:, scope:)
         end

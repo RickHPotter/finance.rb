@@ -13,7 +13,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
 
   def view_template
     turbo_frame_tag "center_container" do
-      main(class: "mx-auto w-full max-w-4xl px-3 py-4 sm:px-5") do
+      main(class: "mx-auto w-full max-w-4xl px-2 py-2 sm:px-3") do
         section(id: "health_check_repair_result", class: result_panel_class) do
           p(class: "text-xs font-semibold uppercase tracking-[0.18em]") { I18n.t("health_check.repairs.result.eyebrow") }
           h1(class: "mt-2 text-2xl font-bold") { I18n.t("health_check.repairs.result.states.#{result.status}.title") }
@@ -29,7 +29,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
   private
 
   def operation_details
-    dl(class: "mt-5 grid gap-3 rounded-md border border-current/20 p-3 sm:grid-cols-2") do
+    dl(class: "mt-3 grid gap-2 rounded-md border border-current/20 p-3 sm:grid-cols-2") do
       metadata(I18n.t("health_check.repairs.result.operation"), result.operation_id)
       metadata(I18n.t("health_check.repairs.result.changed"), result.changed_count)
       metadata(I18n.t("health_check.repairs.result.rerun"), rerun_label)
@@ -38,7 +38,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
   end
 
   def action_links
-    div(class: "mt-5 flex flex-wrap gap-2") do
+    div(class: "mt-3 flex flex-wrap gap-2") do
       link_to(
         I18n.t("health_check.repairs.result.back"),
         healthcheck_check_path(entry.key, **workspace_scope_query),
@@ -87,7 +87,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
   end
 
   def result_panel_class
-    base = "rounded-lg border p-5"
+    base = "rounded-lg border p-3"
     return "#{base} border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" if result.applied?
     return "#{base} border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100" if result.rejected?
 

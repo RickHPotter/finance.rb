@@ -7,7 +7,7 @@ class Views::HealthCheck::Checks::PiggyBankFinding < Views::HealthCheck::Checks:
       subtitle: formatted_date(row[:date]),
       href: (cash_transaction_path(row[:id]) if row[:id])
     ) do
-      div(class: "space-y-4 p-4") do
+      div(class: "space-y-3 p-3") do
         issue_chips(row[:issues])
         div(class: "grid gap-3 sm:grid-cols-2 lg:grid-cols-4") do
           metric(I18n.t("health_check.details.fields.principal"), money(row[:principal]))

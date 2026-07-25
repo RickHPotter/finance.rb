@@ -107,7 +107,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
   end
 
   def tabs
-    div(class: "mt-4 flex flex-wrap gap-2", role: "tablist") do
+    div(class: "mt-3 flex flex-wrap gap-2", role: "tablist") do
       grouped_results.each_key do |name|
         button(
           type: :button,
@@ -120,7 +120,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
   end
 
   def panels
-    div(class: "mt-4 h-[min(26rem,55vh)] overflow-hidden rounded-lg border border-gray-400 bg-gray-200 dark:border-slate-700 dark:bg-slate-950") do
+    div(class: "mt-3 h-[min(26rem,55vh)] overflow-hidden rounded-lg border border-gray-400 bg-gray-200 dark:border-slate-700 dark:bg-slate-950") do
       grouped_results.each do |name, convention_results|
         div(
           class: "h-full overflow-y-auto hidden",
@@ -134,7 +134,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
   end
 
   def actions
-    div(class: "mt-4 flex flex-col gap-3 sm:flex-row sm:justify-between") do
+    div(class: "mt-3 flex flex-col gap-2 sm:flex-row sm:justify-between") do
       preview_form
       apply_form if dry_run? && changed_results.any?
     end
@@ -177,7 +177,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
   def render_standard_results(convention_results)
     ul(class: "divide-y divide-gray-200 dark:divide-slate-800") do
       convention_results.each do |entry|
-        li(class: "px-4 py-3 text-sm") { render_result_diff(entry) }
+        li(class: "px-3 py-2 text-sm") { render_result_diff(entry) }
       end
     end
   end
@@ -188,7 +188,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
       card_transaction = exchange_metadata[:card_transaction] || {}
 
       div(class: "border-b border-gray-400 last:border-b-0 dark:border-slate-700") do
-        div(class: "sticky top-0 z-10 border-b border-gray-400 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95") do
+        div(class: "sticky top-0 z-10 border-b border-gray-400 bg-white/95 px-3 py-2 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95") do
           div(class: "text-sm font-semibold text-gray-900 dark:text-slate-100") do
             plain "#{I18n.t('health_check.naming_conventions.group.card_transaction')} ##{card_transaction[:id] || '-'}"
             plain " · #{card_transaction[:description]}" if card_transaction[:description].present?
@@ -202,7 +202,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
 
         ul(class: "divide-y divide-gray-200 dark:divide-slate-800") do
           exchange_results.each do |entry|
-            li(class: "px-4 py-3 text-sm") { render_result_diff(entry) }
+            li(class: "px-3 py-2 text-sm") { render_result_diff(entry) }
           end
         end
       end

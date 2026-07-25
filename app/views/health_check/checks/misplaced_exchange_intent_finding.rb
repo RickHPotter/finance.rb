@@ -7,7 +7,7 @@ class Views::HealthCheck::Checks::MisplacedExchangeIntentFinding < Views::Health
       subtitle: "#{formatted_date(row[:date])} · #{row[:month_year]}",
       href: cash_transaction_path(row[:source_id])
     ) do
-      div(class: "space-y-4 p-4") do
+      div(class: "space-y-3 p-3") do
         issue_chips([ "misplaced_exchange_intent" ])
         div(class: "grid gap-3 sm:grid-cols-2 lg:grid-cols-4") do
           metric(I18n.t("health_check.details.fields.transaction_total"), money(row[:transaction_total]))
