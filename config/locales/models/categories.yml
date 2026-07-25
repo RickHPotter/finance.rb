@@ -8,6 +8,9 @@ en:
       category:
         id: ID
         category_name: Category Name
+        colour: Background colour
+        text_colour_mode: Text colour mode
+        text_colour: Text colour
         active: Active
         status: Status
         user_id: User
@@ -29,6 +32,12 @@ en:
         piggy_bank: Piggy Bank
         piggy_bank_return: Piggy Bank Return
         subscription: Subscription
+    errors:
+      models:
+        category:
+          attributes:
+            text_colour:
+              insufficient_contrast: "must have at least %{minimum} contrast against the background (measured %{ratio}; try %{suggestion})"
 
 pt-BR:
   activerecord:
@@ -40,6 +49,9 @@ pt-BR:
       category:
         id: ID
         category_name: Nome da Categoria
+        colour: Cor de fundo
+        text_colour_mode: Modo da cor do texto
+        text_colour: Cor do texto
         active: Ativo
         status: Status
         user_id: Usuário
@@ -61,3 +73,9 @@ pt-BR:
         piggy_bank: Cofrinho
         piggy_bank_return: Retorno do Cofrinho
         subscription: Assinatura
+    errors:
+      models:
+        category:
+          attributes:
+            text_colour:
+              insufficient_contrast: "deve ter contraste mínimo de %{minimum} com o fundo (medido %{ratio}; tente %{suggestion})"

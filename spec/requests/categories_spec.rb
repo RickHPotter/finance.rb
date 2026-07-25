@@ -64,34 +64,61 @@ RSpec.describe "Categories", type: :request do
   end
 
   describe "[ #create ]" do
-    it "creates a category" do
+    it "creates a category with a normalized manual text-colour preference" do
       expect do
         post categories_path, params: {
           category: {
             category_name: "Travel",
-            colour: "#123456",
+            colour: "FFFFFF",
+            text_colour_mode: "manual",
+            text_colour: "767676",
             active: true,
             user_id: user.id
           }
         }, headers: turbo_stream_headers
       end.to change(Category, :count).by(1)
+
+      category = user.categories.find_by!(category_name: "Travel")
+      expect(category.colour).to eq("#ffffff")
+      expect(category.text_colour_mode).to eq("manual")
+      expect(category.text_colour).to eq("#767676")
+    end
+
+    it "rejects an inaccessible manual text colour" do
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Unreadable",
+            colour: "#ffffff",
+            text_colour_mode: "manual",
+            text_colour: "#777777",
+            active: true,
+            user_id: user.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Category, :count)
     end
   end
 
   describe "[ #update ]" do
-    it "updates the record" do
-      category = create(:category, user:)
+    it "updates the record and clears a previous manual foreground in automatic mode" do
+      category = create(:category, user:, colour: "#000000", text_colour_mode: "manual", text_colour: "#ffffff")
 
       patch category_path(category), params: {
         category: {
           category_name: "Updated Category",
           colour: category.colour,
+          text_colour_mode: "automatic",
+          text_colour: "#ffffff",
           active: category.active,
           user_id: user.id
         }
       }, headers: turbo_stream_headers
 
-      expect(category.reload.category_name).to eq("Updated Category")
+      category.reload
+      expect(category.category_name).to eq("Updated Category")
+      expect(category.text_colour_mode).to eq("automatic")
+      expect(category.text_colour).to be_nil
     end
   end
 

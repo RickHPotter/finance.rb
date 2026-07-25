@@ -398,14 +398,20 @@ CREATE TABLE public.categories (
     category_name character varying NOT NULL,
     built_in boolean DEFAULT false NOT NULL,
     active boolean DEFAULT true NOT NULL,
-    colour character varying DEFAULT 'white'::character varying NOT NULL,
+    colour character varying DEFAULT '#f1f5f9'::character varying NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_total integer DEFAULT 0 NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     cash_transactions_total integer DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    text_colour_mode character varying DEFAULT 'automatic'::character varying NOT NULL,
+    text_colour character varying,
+    CONSTRAINT categories_colour_hex_format CHECK (((colour)::text ~ '^#[0-9a-f]{6}$'::text)),
+    CONSTRAINT categories_text_colour_hex_format CHECK (((text_colour IS NULL) OR ((text_colour)::text ~ '^#[0-9a-f]{6}$'::text))),
+    CONSTRAINT categories_text_colour_mode_payload CHECK (((((text_colour_mode)::text = 'automatic'::text) AND (text_colour IS NULL)) OR (((text_colour_mode)::text = 'manual'::text) AND (text_colour IS NOT NULL)))),
+    CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY ((ARRAY['automatic'::character varying, 'manual'::character varying])::text[])))
 );
 
 
@@ -2820,6 +2826,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260725120000'),
 ('20260724120000'),
 ('20260724090000'),
 ('20260722090000'),

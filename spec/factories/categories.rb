@@ -3,6 +3,8 @@
 FactoryBot.define do
   factory :category do
     category_name { "FOOD" }
+    colour { "#f1f5f9" }
+    text_colour_mode { "automatic" }
     user { custom_create(:user) }
 
     trait :different do
@@ -30,7 +32,9 @@ end
 #  cash_transactions_count :integer          default(0), not null
 #  cash_transactions_total :integer          default(0), not null
 #  category_name           :string           not null, uniquely indexed => [user_id]
-#  colour                  :string           default("white"), not null
+#  colour                  :string           default("#f1f5f9"), not null
+#  text_colour             :string
+#  text_colour_mode        :string           default("automatic"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [category_name]

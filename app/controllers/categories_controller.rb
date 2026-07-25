@@ -98,7 +98,7 @@ class CategoriesController < ApplicationController
   end
 
   def category_params
-    params.require(:category).permit(:category_name, :colour, :active, :user_id)
+    params.require(:category).permit(:category_name, :colour, :text_colour_mode, :text_colour, :active, :user_id)
   end
 
   def search_params
