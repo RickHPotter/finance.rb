@@ -21,17 +21,19 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(categories_for(cash_transaction))
+        categories = categories_for(cash_transaction)
+        style = solid_or_gradient_style(categories)
 
-        render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
+        render_mobile_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
-        style = solid_or_gradient_style(categories_for(cash_transaction))
+        categories = categories_for(cash_transaction)
+        style = solid_or_gradient_style(categories)
 
-        render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
+        render_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
       end
     end
   end
@@ -43,7 +45,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, style, avatar_name)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
@@ -60,10 +62,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer #{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}",
+        class: "relative rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer " \
+               "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}",
         style: "background-clip: padding-box; #{style}",
         data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
+        CategoryColourSegments(categories:)
+
         render_row_checkbox(cash_installment, cash_transaction, mobile: true)
 
         div(class: "p-4") do
@@ -102,12 +107,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, style, avatar_name)
+  def render_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
-      text_style = auto_text_color(categories_for(cash_transaction).first&.hex_colour)
-
       render Views::CashInstallments::PayModal.new(cash_installment:, index_context:) if should_display_link_to_pay || cash_transaction.card_payment?
 
       div(
@@ -117,7 +120,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
           ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
         ].compact.join(" "),
-        style: text_style,
+        style:,
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -133,7 +136,9 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                  "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
           style: "background-clip: padding-box; #{style}",
           data: { row_background: true }
-        )
+        ) do
+          CategoryColourSegments(categories:)
+        end
 
         render_row_checkbox(cash_installment, cash_transaction) do
           div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do

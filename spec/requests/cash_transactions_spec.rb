@@ -4709,6 +4709,56 @@ RSpec.describe "CashTransactions", type: :request do
       expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
     end
 
+    it "uses a readable neutral row and preserves every incompatible category as a decorative segment" do
+      dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
+      light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#f1f5f9")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Contrasting category bundle",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      transaction.category_transactions.create!(category: dark_category)
+      transaction.category_transactions.create!(category: light_category)
+      installment = transaction.cash_installments.first
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      row = document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      segments = row.css("[data-category-colour-segment='true']")
+
+      expect(response).to have_http_status(:success)
+      expect(row["style"]).to include("background-color: #e2e8f0", "color: #0f172a")
+      expect(row["style"]).not_to include("color: #ffffff")
+      expect(segments.map { |segment| segment["style"] }).to contain_exactly(
+        "background-color: #4b5563;",
+        "background-color: #f1f5f9;"
+      )
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        force_mobile: true,
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      mobile_document = Nokogiri::HTML.fragment(response.body)
+      mobile_row = mobile_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+
+      expect(mobile_row["style"]).to include("background-color: #e2e8f0", "color: #0f172a")
+      expect(mobile_row.css("[data-category-colour-segment='true']").size).to eq(2)
+    end
+
     it "does not render row-menu destroy for investment-derived cash rows" do
       transaction = create(
         :cash_transaction,
