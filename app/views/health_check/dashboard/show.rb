@@ -13,7 +13,7 @@ class Views::HealthCheck::Dashboard::Show < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-2 py-2 sm:px-3") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         turbo_stream_from HealthCheck::Stream.for(scope)
         header_section
         render Views::HealthCheck::Dashboard::Overview.new(scope:, summaries:)

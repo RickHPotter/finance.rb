@@ -16,7 +16,7 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
 
   def view_template
     turbo_frame_tag "center_container" do
-      main(class: "mx-auto w-full max-w-6xl px-2 py-2 sm:px-3") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         header_section
         scope_section
         state_section

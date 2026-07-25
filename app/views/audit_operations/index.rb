@@ -17,7 +17,7 @@ class Views::AuditOperations::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-2 py-2 sm:px-3") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         header_section
         render Views::Audit::FilterForm.new(url: audit_operations_path, filters:, current_user:)
         operation_list

@@ -13,7 +13,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
 
   def view_template
     turbo_frame_tag "center_container" do
-      main(class: "mx-auto w-full max-w-4xl px-2 py-2 sm:px-3") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         section(id: "health_check_repair_result", class: result_panel_class) do
           p(class: "text-xs font-semibold uppercase tracking-[0.18em]") { I18n.t("health_check.repairs.result.eyebrow") }
           h1(class: "mt-2 text-2xl font-bold") { I18n.t("health_check.repairs.result.states.#{result.status}.title") }

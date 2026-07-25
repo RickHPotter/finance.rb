@@ -92,8 +92,8 @@ RSpec.describe "Audit history", type: :request do
       expect(link["href"]).to eq(healthcheck_path)
       expect(link["data-turbo-frame"]).to eq("_top")
       expect(link["data-turbo-action"]).to eq("advance")
-      expect(workspace_classes).to include("px-2", "py-2", "sm:px-3")
-      expect(workspace_classes).not_to include("py-4", "sm:px-5")
+      expect(workspace_classes).to include("w-full", "px-2", "py-2", "sm:px-3")
+      expect(workspace_classes).not_to include("mx-auto", "max-w-7xl", "py-4", "sm:px-5")
     end
   end
 

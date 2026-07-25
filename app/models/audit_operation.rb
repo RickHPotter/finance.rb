@@ -43,7 +43,6 @@ class AuditOperation < ApplicationRecord
   end
 end
 
-# rubocop:disable Layout/LineLength
 # == Schema Information
 #
 # Table name: audit_operations
@@ -63,15 +62,11 @@ end
 #
 # Indexes
 #
-# rubocop:disable Layout/LineLength
 #  index_audit_operations_on_actor_id_and_created_at    (actor_id,created_at)
 #  index_audit_operations_on_context_id_and_created_at  (context_id,created_at)
-#  index_audit_operations_on_health_repair_idempotency  (actor_id, context_id, ((metadata ->> 'idempotency_key'::text))) UNIQUE WHERE (((source)::text = 'admin_repair'::text) AND ((result)::text = 'committed'::text) AND (actor_id IS NOT NULL) AND (context_id IS NOT NULL) AND (metadata ? 'idempotency_key'::text))
 #  index_audit_operations_on_parent_operation_id        (parent_operation_id)
 #  index_audit_operations_on_request_id                 (request_id) WHERE (request_id IS NOT NULL)
 #  index_audit_operations_on_rollback_idempotency       (rollback_of_operation_id, actor_id, ((metadata ->> 'preview_digest'::text))) UNIQUE WHERE (((source)::text = 'rollback'::text) AND ((result)::text = 'committed'::text) AND (rollback_of_operation_id IS NOT NULL) AND (actor_id IS NOT NULL) AND (metadata ? 'preview_digest'::text))
 #  index_audit_operations_on_rollback_of_operation_id   (rollback_of_operation_id)
 #  index_audit_operations_on_source_and_created_at      (source,created_at)
-# rubocop:enable Layout/LineLength
 #
-# rubocop:enable Layout/LineLength

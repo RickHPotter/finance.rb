@@ -168,7 +168,6 @@ RSpec.describe AuditVersion, type: :model do
   end
 end
 
-# rubocop:disable Layout/LineLength
 # == Schema Information
 #
 # Table name: audit_versions
