@@ -8,12 +8,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   include CacheHelper
   include ColoursHelper
 
-  attr_reader :mobile, :cash_installments, :index_context
+  attr_reader :mobile, :cash_installments, :index_context, :category_colour_display_mode
 
-  def initialize(mobile:, cash_installments:, index_context: {})
+  def initialize(mobile:, cash_installments:, index_context: {},
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @cash_installments = cash_installments
     @index_context = index_context
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -22,18 +24,18 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
         categories = categories_for(cash_transaction)
-        bundle = CategoryColours::Presentation.bundle(categories)
+        presentation = row_presentation(categories)
 
-        render_mobile_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
+        render_mobile_cash_installment(cash_installment, cash_transaction, presentation, avatar_name)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
         categories = categories_for(cash_transaction)
-        bundle = CategoryColours::Presentation.bundle(categories)
+        presentation = row_presentation(categories)
 
-        render_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
+        render_cash_installment(cash_installment, cash_transaction, presentation, avatar_name)
       end
     end
   end
@@ -45,7 +47,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, presentation, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
@@ -64,11 +66,16 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       div(
         class: [
           "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer",
-          ("bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" if bundle.multiple?),
+          presentation.row_classes,
+          ("dark:border-slate-700" if presentation.badges_only?),
           ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
         ].compact.join(" "),
-        style: row_style(bundle),
-        data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
+        style: presentation.row_style,
+        data: {
+          id: cash_installment.id,
+          datatable_target: :row,
+          action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection"
+        }.merge(presentation.metadata)
       ) do
         render_row_checkbox(cash_installment, cash_transaction, mobile: true)
 
@@ -108,7 +115,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
+  def render_cash_installment(cash_installment, cash_transaction, presentation, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
@@ -119,10 +126,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
           "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
-          ("text-slate-900 dark:text-slate-100" if bundle.multiple?),
+          presentation.row_classes,
           ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
         ].compact.join(" "),
-        style: row_style(bundle),
+        style: presentation.row_style,
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -131,15 +138,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                   "dragstart->datatable#start",
                   "dragover->datatable#activate",
                   "drop->datatable#drop"
-                ].join(" ") }
+                ].join(" ") }.merge(presentation.metadata)
       ) do
         div(
           class: [
             "pointer-events-none absolute inset-0 z-0 transition-all duration-150",
             "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
-            ("bg-white dark:bg-slate-900" if bundle.multiple?)
+            presentation.background_classes
           ].compact.join(" "),
-          style: row_style(bundle),
+          style: presentation.row_style,
           data: { row_background: true }
         )
 
@@ -366,10 +373,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
   end
 
-  def row_style(bundle)
-    return if bundle.multiple?
-
-    "background-clip: padding-box; #{bundle.combined.inline_style}"
+  def row_presentation(categories)
+    CategoryColours::RowPresentation.new(categories:, mode: category_colour_display_mode)
   end
 
   def cash_category_popover_items(cash_transaction)

@@ -48,6 +48,10 @@ class ApplicationController < ActionController::Base
     @f.lee if current_state != new_state
   end
 
+  def category_colour_display_mode
+    CategoryColours::DisplayMode.for(current_user)
+  end
+
   # @private_instance_methods ................................................
   private
 

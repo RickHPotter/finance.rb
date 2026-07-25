@@ -27,7 +27,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       month_year:,
       cash_installments:,
       budgets:,
-      index_context: month_year_index_context(mobile)
+      index_context: month_year_index_context(mobile),
+      category_colour_display_mode:
     )
   end
 

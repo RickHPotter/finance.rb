@@ -6,14 +6,15 @@ class Views::Budgets::Budgets < Views::Base
 
   include TranslateHelper
   include CacheHelper
-  include ColoursHelper
 
-  attr_reader :mobile, :budgets, :show_rows_not_found
+  attr_reader :mobile, :budgets, :show_rows_not_found, :category_colour_display_mode
 
-  def initialize(mobile:, budgets:, show_rows_not_found: true)
+  def initialize(mobile:, budgets:, show_rows_not_found: true,
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @budgets = budgets
     @show_rows_not_found = show_rows_not_found
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -32,6 +33,7 @@ class Views::Budgets::Budgets < Views::Base
 
   def render_mobile_budget(budget)
     tight_budget = budget.remaining_value >= budget.value / 5
+    presentation = row_presentation(budget)
 
     turbo_frame_tag dom_id budget do
       div(class: "relative") do
@@ -44,8 +46,13 @@ class Views::Budgets::Budgets < Views::Base
       end
 
       div(
-        class: "rounded-lg shadow-sm overflow-visible bg-indigo-800 text-zinc-50 my-4 hover:opacity-80 transition-all #{'animate-pulse' if tight_budget}",
-        data: { id: budget.id, datatable_target: :row, row_kind: :budget }
+        class: [
+          "rounded-lg shadow-sm overflow-visible my-4 transition-all hover:shadow-md",
+          presentation.row_classes,
+          ("animate-pulse" if tight_budget)
+        ].compact.join(" "),
+        style: presentation.row_style,
+        data: { id: budget.id, datatable_target: :row, row_kind: :budget }.merge(presentation.metadata)
       ) do
         render_budget_checkbox(budget, mobile: true)
 
@@ -86,17 +93,19 @@ class Views::Budgets::Budgets < Views::Base
 
   def render_budget(budget)
     tight_budget = budget.remaining_value >= budget.value / 5
+    presentation = row_presentation(budget)
 
     turbo_frame_tag dom_id budget do
       div(
-        class: "grid grid-cols-12 bg-indigo-800 text-zinc-50 hover:opacity-80 transition-all",
+        class: [ "grid grid-cols-12 transition-all hover:shadow-md", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
         draggable: true,
         data: {
           id: budget.id,
           datatable_target: :row,
           row_kind: :budget,
           action: "dragstart->datatable#start dragover->datatable#activate drop->datatable#drop"
-        }
+        }.merge(presentation.metadata)
       ) do
         render_budget_checkbox(budget) do
           month, year = I18n.l(budget.date, format: "%B %Y").split
@@ -194,12 +203,20 @@ class Views::Budgets::Budgets < Views::Base
   end
 
   def budget_category_popover_items(budget)
-    budget.budget_categories.sort_by(&:id).filter_map(&:category).map do |category|
+    categories_for(budget).map do |category|
       {
         name: category.name,
-        style: "background: #{category.hex_colour}; #{auto_text_color(category.hex_colour)}"
+        style: CategoryColours::Presentation.for(category).inline_style
       }
     end
+  end
+
+  def categories_for(budget)
+    budget.budget_categories.sort_by(&:id).filter_map(&:category)
+  end
+
+  def row_presentation(budget)
+    CategoryColours::RowPresentation.new(categories: categories_for(budget), mode: category_colour_display_mode)
   end
 
   def render_budget_actions(budget, mobile: false)

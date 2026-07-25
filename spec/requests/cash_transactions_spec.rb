@@ -4762,6 +4762,21 @@ RSpec.describe "CashTransactions", type: :request do
       expect(mobile_row["style"]).to be_blank
       expect(mobile_pills.map(&:text)).to contain_exactly("LEISURE", "ASSINATURA")
       expect(mobile_row.text).not_to include("+1")
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("row_coloured")
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      coloured_document = Nokogiri::HTML.fragment(response.body)
+      coloured_row = coloured_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+
+      expect(coloured_row["data-category-display-mode"]).to eq("row_coloured")
+      expect(coloured_row["data-category-primary-id"]).to eq(dark_category.id.to_s)
+      expect(coloured_row["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(coloured_row.text).to include("LEISURE", "ASSINATURA")
     end
 
     it "does not render row-menu destroy for investment-derived cash rows" do

@@ -93,7 +93,8 @@ class Views::CardTransactions::Form < Views::Base
 
   def categories_json
     current_user.categories.to_h do |c|
-      [ c.id, c.hex_colour ]
+      presentation = CategoryColours::Presentation.for(c)
+      [ c.id, { background_colour: presentation.background, text_colour: presentation.foreground } ]
     end.to_json
   end
 

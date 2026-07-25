@@ -1754,6 +1754,64 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #month_year ]" do
+    it "renders multiple category allocations through either display mode" do
+      dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
+      light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#f1f5f9")
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        category_transactions: [
+          CategoryTransaction.new(category: dark_category),
+          CategoryTransaction.new(category: light_category)
+        ],
+        card_installments: [
+          build(
+            :card_installment,
+            number: 1,
+            date: Time.zone.today,
+            month: Time.zone.today.month,
+            year: Time.zone.today.year
+          )
+        ]
+      )
+      installment = transaction.card_installments.first
+      month_year = "#{installment.year}#{installment.month.to_s.rjust(2, '0')}"
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year:,
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      row = document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+
+      expect(response).to have_http_status(:success)
+      expect(row["data-category-display-mode"]).to eq("badges_only")
+      expect(row["style"]).to be_blank
+      expect(row.text).to include("LEISURE", "ASSINATURA")
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("row_coloured")
+
+      get month_year_card_transactions_path, params: {
+        user_card_id: user_card_one.id,
+        month_year:,
+        card_transaction: { user_card_id: user_card_one.id }
+      }
+
+      coloured_document = Nokogiri::HTML.fragment(response.body)
+      coloured_row = coloured_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+
+      expect(coloured_row["data-category-primary-id"]).to eq(dark_category.id.to_s)
+      expect(coloured_row["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(coloured_row.text).to include("LEISURE", "ASSINATURA")
+    end
+
     it "renders the pay in advance modal with autofocus on the date input" do
       card_transaction.description = "Pay in advance autofocus"
       post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers

@@ -3,9 +3,11 @@
 class Views::CashTransactions::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context, :frame_prefix
+  attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context, :frame_prefix,
+              :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {})
+  def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {}, # rubocop:disable Metrics/ParameterLists
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @month_year = month_year
     @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")
@@ -14,6 +16,7 @@ class Views::CashTransactions::MonthYear < Views::Base
     @total_amount = cash_installments.sum(&:price) + budgets.sum(&:remaining_value)
     @index_context = index_context
     @frame_prefix = index_context.fetch(:frame_prefix, "month_year_container")
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -32,8 +35,8 @@ class Views::CashTransactions::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str: I18n.l(month_year_date, format: "%b %Y"), total_amount:, mobile:)
 
         if cash_installments.present? || budgets.present?
-          render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
-          render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
+          render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:, category_colour_display_mode:)
+          render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false, category_colour_display_mode:)
         else
           div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-800 dark:text-slate-400") { I18n.t(:rows_not_found) }
         end
@@ -61,8 +64,8 @@ class Views::CashTransactions::MonthYear < Views::Base
           )
 
           if cash_installments.present? || budgets.present?
-            render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:)
-            render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false)
+            render Views::CashInstallments::Index.new(mobile:, cash_installments:, index_context:, category_colour_display_mode:)
+            render Views::Budgets::Budgets.new(mobile:, budgets:, show_rows_not_found: false, category_colour_display_mode:)
           else
             div(class: "py-2 text-lg dark:text-slate-400") { I18n.t(:rows_not_found) }
           end

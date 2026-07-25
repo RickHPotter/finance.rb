@@ -42,7 +42,8 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       month_year:,
       user_card:,
       card_installments:,
-      current_context:
+      current_context:,
+      category_colour_display_mode:
     )
   end
 

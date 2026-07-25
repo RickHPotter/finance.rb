@@ -770,7 +770,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
+    this._applyCategoryPresentation(newWrapper.querySelector(".category_container"), this.categoryColours[value])
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
     this.syncExchangeIntentVisibility()
@@ -801,7 +801,7 @@ export default class extends Controller {
     const wrappers = this.categoryWrapperTargets
     const newWrapper = wrappers[wrappers.length - 1]
 
-    newWrapper.querySelector(".category_container").style.backgroundColor = this.categoryColours[value]
+    this._applyCategoryPresentation(newWrapper.querySelector(".category_container"), this.categoryColours[value])
     newWrapper.querySelector(".categories_category_id").value = value
     newWrapper.querySelector(".categories_category_name").textContent = text
     this.syncExchangeIntentVisibility()
@@ -816,6 +816,19 @@ export default class extends Controller {
     categoryWrapperDiv.style.display = "none"
     categoryWrapperDiv.querySelector("input[name*='_destroy']").value = "true"
     this.syncExchangeIntentVisibility()
+  }
+
+  _applyCategoryPresentation(container, presentation) {
+    if (!container || !presentation) return
+
+    if (typeof presentation === "string") {
+      container.style.backgroundColor = presentation
+      return
+    }
+
+    container.style.backgroundColor = presentation.background_colour
+    container.style.color = presentation.text_colour
+    container.style.borderColor = presentation.text_colour
   }
 
   syncExchangeIntentVisibility() {

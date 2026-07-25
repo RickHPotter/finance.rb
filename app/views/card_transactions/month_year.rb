@@ -6,9 +6,10 @@ class Views::CardTransactions::MonthYear < Views::Base
 
   attr_reader :mobile, :month_year, :month_year_date, :month, :year, :user_card_id,
               :card_installments, :total_amount, :modal_id,
-              :payment_window
+              :payment_window, :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, user_card:, card_installments:, current_context:)
+  def initialize(mobile:, month_year:, user_card:, card_installments:, current_context:, # rubocop:disable Metrics/ParameterLists
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @month_year = month_year
     @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")
@@ -18,6 +19,7 @@ class Views::CardTransactions::MonthYear < Views::Base
     @card_installments = card_installments
     @total_amount = card_installments.sum(&:price)
     @modal_id = "cardTransactionModal_#{user_card_id}_#{month}_#{year}"
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
 
     return unless user_card
 
@@ -48,7 +50,7 @@ class Views::CardTransactions::MonthYear < Views::Base
         end
 
         if card_installments.present?
-          render Views::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:)
+          render Views::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:, category_colour_display_mode:)
         else
           div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-800 dark:text-slate-400") { I18n.t(:rows_not_found) }
         end
@@ -84,7 +86,7 @@ class Views::CardTransactions::MonthYear < Views::Base
           )
 
           if card_installments.present?
-            render Views::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:)
+            render Views::CardInstallments::Index.new(mobile:, card_installments:, user_card_id:, category_colour_display_mode:)
           else
             div(class: "py-2 text-lg dark:text-slate-400") { I18n.t(:rows_not_found) }
           end
