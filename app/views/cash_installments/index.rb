@@ -22,18 +22,18 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
         categories = categories_for(cash_transaction)
-        style = solid_or_gradient_style(categories)
+        bundle = CategoryColours::Presentation.bundle(categories)
 
-        render_mobile_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
+        render_mobile_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
       end
     else
       cash_installments.each do |cash_installment|
         cash_transaction = cash_installment.cash_transaction
         avatar_name = retrieve_avatar_name(cash_transaction)
         categories = categories_for(cash_transaction)
-        style = solid_or_gradient_style(categories)
+        bundle = CategoryColours::Presentation.bundle(categories)
 
-        render_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
+        render_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
       end
     end
   end
@@ -45,7 +45,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     nil
   end
 
-  def render_mobile_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
+  def render_mobile_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
@@ -62,13 +62,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       end
 
       div(
-        class: "relative rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer " \
-               "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}",
-        style: "background-clip: padding-box; #{style}",
+        class: [
+          "rounded-lg shadow-sm overflow-visible my-4 border-2 cursor-pointer",
+          ("bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" if bundle.multiple?),
+          ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
+        ].compact.join(" "),
+        style: row_style(bundle),
         data: { id: cash_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
       ) do
-        CategoryColourSegments(categories:)
-
         render_row_checkbox(cash_installment, cash_transaction, mobile: true)
 
         div(class: "p-4") do
@@ -107,7 +108,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     end
   end
 
-  def render_cash_installment(cash_installment, cash_transaction, categories, style, avatar_name)
+  def render_cash_installment(cash_installment, cash_transaction, bundle, avatar_name)
     turbo_frame_tag dom_id cash_installment do
       should_display_link_to_pay = should_display_link_to_pay?(cash_installment)
       failed_zeroed_installment = failed_zeroed_return_installment?(cash_installment, cash_transaction)
@@ -118,9 +119,10 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
           "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
+          ("text-slate-900 dark:text-slate-100" if bundle.multiple?),
           ("animate-pulse" if should_display_link_to_pay && !failed_zeroed_installment)
         ].compact.join(" "),
-        style:,
+        style: row_style(bundle),
         draggable: true,
         data: { id: cash_installment.id,
                 datatable_target: :row,
@@ -132,13 +134,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                 ].join(" ") }
       ) do
         div(
-          class: "pointer-events-none absolute inset-0 z-0 transition-all duration-150 " \
-                 "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
-          style: "background-clip: padding-box; #{style}",
+          class: [
+            "pointer-events-none absolute inset-0 z-0 transition-all duration-150",
+            "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
+            ("bg-white dark:bg-slate-900" if bundle.multiple?)
+          ].compact.join(" "),
+          style: row_style(bundle),
           data: { row_background: true }
-        ) do
-          CategoryColourSegments(categories:)
-        end
+        )
 
         render_row_checkbox(cash_installment, cash_transaction) do
           div(class: "flex-1 flex items-center justify-between gap-2 rounded-sm pl-2") do
@@ -363,10 +366,17 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     cash_transaction.category_transactions.sort_by(&:id).filter_map(&:category)
   end
 
+  def row_style(bundle)
+    return if bundle.multiple?
+
+    "background-clip: padding-box; #{bundle.combined.inline_style}"
+  end
+
   def cash_category_popover_items(cash_transaction)
     categories_for(cash_transaction).map do |category|
       {
-        name: category.name
+        name: category.name,
+        style: CategoryColours::Presentation.for(category).inline_style
       }
     end
   end

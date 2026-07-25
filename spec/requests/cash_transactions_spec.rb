@@ -4709,7 +4709,7 @@ RSpec.describe "CashTransactions", type: :request do
       expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
     end
 
-    it "uses a readable neutral row and preserves every incompatible category as a decorative segment" do
+    it "uses the normal row surface and renders two incompatible categories as readable pills" do
       dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
       light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#f1f5f9")
       transaction = create(
@@ -4736,21 +4736,17 @@ RSpec.describe "CashTransactions", type: :request do
 
       document = Nokogiri::HTML.fragment(response.body)
       row = document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
-      segments = row.css("[data-category-colour-segment='true']")
+      row_background = row.at_css("[data-row-background]")
+      category_pills = row.css("[data-datatable-target='category'] span").select { |pill| %w[LEISURE ASSINATURA].include?(pill.text) }
 
       expect(response).to have_http_status(:success)
-      expect(row["style"]).to include("background-color: #e2e8f0", "color: #0f172a")
-      expect(row["style"]).not_to include("color: #ffffff")
-      expect(row.css("[data-category-colour-segment-side]").pluck("data-category-colour-segment-side")).to contain_exactly("top", "right", "bottom", "left")
-
-      %w[top right bottom left].each do |edge|
-        edge_segments = segments.select { |segment| segment["data-category-colour-segment-edge"] == edge }
-
-        expect(edge_segments.map { |segment| segment["style"] }).to contain_exactly(
-          "background-color: #4b5563;",
-          "background-color: #f1f5f9;"
-        )
-      end
+      expect(row["class"]).to include("text-slate-900", "dark:text-slate-100")
+      expect(row["style"]).to be_blank
+      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(category_pills.map(&:text)).to contain_exactly("LEISURE", "ASSINATURA")
+      expect(category_pills.find { |pill| pill.text == "LEISURE" }["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(category_pills.find { |pill| pill.text == "ASSINATURA" }["style"]).to include("background-color: #f1f5f9", "color: #000000")
+      expect(row.text).not_to include("+1")
 
       get month_year_cash_transactions_path, params: {
         month_year: Time.zone.today.strftime("%Y%m"),
@@ -4760,9 +4756,12 @@ RSpec.describe "CashTransactions", type: :request do
 
       mobile_document = Nokogiri::HTML.fragment(response.body)
       mobile_row = mobile_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      mobile_pills = mobile_row.css("[data-datatable-target='category'] span").select { |pill| %w[LEISURE ASSINATURA].include?(pill.text) }
 
-      expect(mobile_row["style"]).to include("background-color: #e2e8f0", "color: #0f172a")
-      expect(mobile_row.css("[data-category-colour-segment='true']").size).to eq(8)
+      expect(mobile_row["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(mobile_row["style"]).to be_blank
+      expect(mobile_pills.map(&:text)).to contain_exactly("LEISURE", "ASSINATURA")
+      expect(mobile_row.text).not_to include("+1")
     end
 
     it "does not render row-menu destroy for investment-derived cash rows" do

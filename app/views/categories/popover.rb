@@ -32,8 +32,8 @@ class Views::Categories::Popover < Views::Base
   end
 
   def render_mobile
-    if items.one?
-      render_pill(items.first, class: mobile_pill_class)
+    if items.size <= 2
+      items.each { |item| render_pill(item, class: mobile_pill_class) }
     else
       Popover(options: { placement: "top-start" }, class: mobile_popover_class) do
         PopoverTrigger(class: "w-full") do
@@ -55,8 +55,8 @@ class Views::Categories::Popover < Views::Base
   end
 
   def render_desktop
-    if items.one?
-      render_pill(items.first, class: desktop_pill_class)
+    if items.size <= 2
+      items.each { |item| render_pill(item, class: desktop_pill_class) }
     else
       Popover(options: { placement: "right" }, class: "flex items-center justify-center gap-1") do
         PopoverTrigger(class: "w-full") do
