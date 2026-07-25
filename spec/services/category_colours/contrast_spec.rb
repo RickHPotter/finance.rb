@@ -3,6 +3,10 @@
 require "rails_helper"
 
 RSpec.describe CategoryColours::Contrast, type: :service do
+  let(:parity_fixtures) do
+    JSON.parse(Rails.root.join("spec/fixtures/category_colour_contrast.json").read)
+  end
+
   describe ".normalize" do
     it "accepts convenient hex input and returns canonical lowercase six-digit hex" do
       {
@@ -136,6 +140,27 @@ RSpec.describe CategoryColours::Contrast, type: :service do
       expect(assessment.suggested_foreground).to eq("#ffffff")
       expect(assessment.ratio).to be_within(0.001).of(8.592)
       expect(assessment).to be_passing
+    end
+  end
+
+  describe "client parity fixtures" do
+    it "keeps normalization, ratios, automatic choices, and invalid input aligned with JavaScript" do
+      parity_fixtures.fetch("normalization").each do |fixture|
+        expect(described_class.normalize(fixture.fetch("input"))).to eq(fixture.fetch("normalized"))
+      end
+
+      parity_fixtures.fetch("ratios").each do |fixture|
+        expect(described_class.ratio(fixture.fetch("background"), fixture.fetch("foreground")))
+          .to be_within(1e-12).of(fixture.fetch("ratio"))
+      end
+
+      parity_fixtures.fetch("automatic").each do |fixture|
+        expect(described_class.new(fixture.fetch("background")).automatic_foreground).to eq(fixture.fetch("foreground"))
+      end
+
+      parity_fixtures.fetch("invalid").each do |value|
+        expect { described_class.normalize(value) }.to raise_error(described_class::InvalidColour)
+      end
     end
   end
 end

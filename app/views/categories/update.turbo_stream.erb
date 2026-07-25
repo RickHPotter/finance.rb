@@ -8,7 +8,9 @@
     <%= turbo_stream.replace(:center_container, Views::Categories::Index.new(categories: @categories, mobile: @mobile)) %>
   <% end %>
 <% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_updateda, Category) }) %>
+  <% failure_notifications_for(@category, :not_updateda, Category).each_with_index do |alert, index| %>
+    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
+  <% end %>
 
   <%= turbo_stream.replace(:center_container, Views::Categories::Edit.new(current_user:, category: @category)) %>
 <% end %>

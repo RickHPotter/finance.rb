@@ -54,7 +54,9 @@ class CategoriesController < ApplicationController
       @categories = categories_scope
     end
 
-    respond_to(&:turbo_stream)
+    respond_to do |format|
+      format.turbo_stream { render action_name, status: @category.errors.empty? ? :ok : :unprocessable_content }
+    end
   end
 
   private

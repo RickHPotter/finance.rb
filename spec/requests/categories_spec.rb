@@ -63,6 +63,44 @@ RSpec.describe "Categories", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the accessible colour controls and complete live preview surface" do
+      get new_category_path
+
+      document = response.parsed_body
+      form = document.at_css("form[data-controller~='category-colour-preview']")
+
+      expect(response).to have_http_status(:success)
+      expect(form).to be_present
+      expect(form.at_css("#category_text_colour_mode_automatic[checked]")).to be_present
+      expect(form.at_css("#category_text_colour_mode_manual")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='backgroundInput']")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='foregroundInput']")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='manualFields'][aria-hidden='true']")).to be_present
+      expect(form.css("[data-category-colour-preview-target='preview']").size).to eq(7)
+      expect(form.css("[data-preview-state]").pluck("data-preview-state")).to contain_exactly(
+        "normal", "normal", "normal", "hover", "focus", "selected", "disabled"
+      )
+    end
+  end
+
+  describe "[ #edit ]" do
+    it "renders persisted manual colours without hiding the foreground controls" do
+      category = create(:category, user:, colour: "#000000", text_colour_mode: "manual", text_colour: "#ffffff")
+
+      get edit_category_path(category)
+
+      document = response.parsed_body
+      form = document.at_css("form[data-controller~='category-colour-preview']")
+
+      expect(response).to have_http_status(:success)
+      expect(form.at_css("#category_text_colour_mode_manual[checked]")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='manualFields'][aria-hidden='false']")).to be_present
+      expect(form.at_css("input[name='category[text_colour]']")["value"]).to eq("#ffffff")
+      expect(form.at_css("[data-category-colour-preview-target='ratio']").text).to eq("21.00:1")
+    end
+  end
+
   describe "[ #create ]" do
     it "creates a category with a normalized manual text-colour preference" do
       expect do
@@ -84,7 +122,7 @@ RSpec.describe "Categories", type: :request do
       expect(category.text_colour).to eq("#767676")
     end
 
-    it "rejects an inaccessible manual text colour" do
+    it "rejects an inaccessible manual colour while retaining inputs and stacking concrete feedback" do
       expect do
         post categories_path, params: {
           category: {
@@ -97,6 +135,36 @@ RSpec.describe "Categories", type: :request do
           }
         }, headers: turbo_stream_headers
       end.not_to change(Category, :count)
+
+      document = Nokogiri::HTML5.fragment(response.body)
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("4.48:1", "#000000")
+      expect(document.css("turbo-stream[action='update'][target='notification']").size).to eq(1)
+      expect(document.css("turbo-stream[action='append'][target='notification']")).not_to be_empty
+      expect(rendered_form.at_css("#category_text_colour_mode_manual[checked]")).to be_present
+      expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#ffffff")
+      expect(rendered_form.at_css("input[name='category[text_colour]']")["value"]).to eq("#777777")
+    end
+
+    it "retains malformed colour input without interpolating it into inline styles" do
+      post categories_path, params: {
+        category: {
+          category_name: "Malformed",
+          colour: "#abcd",
+          text_colour_mode: "automatic",
+          active: true,
+          user_id: user.id
+        }
+      }, headers: turbo_stream_headers
+
+      document = Nokogiri::HTML5.fragment(response.body)
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#abcd")
+      expect(rendered_form.css("[style]").pluck("style")).not_to include(a_string_including("#abcd"))
     end
   end
 

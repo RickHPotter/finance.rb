@@ -1,66 +1,104 @@
 import { Controller } from "@hotwired/stimulus"
+import { automaticForeground, normalizeHex } from "../lib/category_colour_contrast.mjs"
 
 export default class extends Controller {
   static targets = [
     "optionContainer", "option", "selectedValue", "indicator",
-    "customInput", "hexField"
+    "customInput", "hexField", "trigger"
   ]
 
+  static values = { field: String }
+
   connect() {
-    this.apply(this.selectedValueTarget.value)
+    this.render(this.selectedValueTarget.value)
   }
 
-  toggle() { this.optionContainerTarget.classList.toggle("hidden") }
+  toggle() {
+    const opening = this.optionContainerTarget.classList.contains("hidden")
+    this.optionContainerTarget.classList.toggle("hidden", !opening)
+    this.triggerTarget.setAttribute("aria-expanded", opening.toString())
+  }
 
-  selectColour({ target }) {
-    const value = target.dataset.value
-    this.selectedValueTarget.value = value
-    this.apply(value)
+  close() {
     this.optionContainerTarget.classList.add("hidden")
+    this.triggerTarget.setAttribute("aria-expanded", "false")
+  }
+
+  selectColour(event) {
+    event.preventDefault()
+    this.commit(event.currentTarget.dataset.value)
+    this.close()
   }
 
   pickCustom(event) {
-    const hex = event.target.value
-    this.hexFieldTarget.value = hex
-    this.selectedValueTarget.value = hex
-    this.apply(hex)
+    this.commit(event.currentTarget.value)
   }
 
   hexChanged(event) {
-    const hex = event.target.value
-    if (this.isValidHex(hex)) {
-      this.selectedValueTarget.value = hex
-      this.apply(hex)
+    const value = event.currentTarget.value
+    const normalized = normalizeHex(value)
+
+    this.selectedValueTarget.value = value
+    if (normalized) {
+      this.customInputTarget.value = normalized
+      this.render(normalized)
+    } else {
+      this.renderInvalid()
     }
+    this.emitChange(value, normalized)
   }
 
-  apply(value) {
-    const text = this.autoTextColor(value)
-    this.indicatorTarget.style.backgroundColor = value
-    this.indicatorTarget.style.color = text
-    this.indicatorTarget.dataset.text = text
-    this.indicatorTarget.className = "w-10 h-10 rounded-full border border-slate-200"
+  commit(value) {
+    const normalized = normalizeHex(value)
+    if (!normalized) {
+      this.selectedValueTarget.value = value
+      this.hexFieldTarget.value = value
+      this.renderInvalid()
+      this.emitChange(value, null)
+      return
+    }
+
+    this.selectedValueTarget.value = normalized
+    this.hexFieldTarget.value = normalized
+    this.customInputTarget.value = normalized
+    this.render(normalized)
+    this.emitChange(normalized, normalized)
   }
 
-  autoTextColor(hex) {
-    const h = hex.replace('#','');
-    const full = h.length === 3 ? h.split('').map(c=>c+c).join('') : h;
-    const r = parseInt(full.slice(0,2),16)/255;
-    const g = parseInt(full.slice(2,4),16)/255;
-    const b = parseInt(full.slice(4,6),16)/255;
-    const lin = [r,g,b].map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
-    const L = 0.2126*lin + 0.7152*lin[1] + 0.0722*lin[2];
-    const cw = (1.05)/(L+0.05);
-    const cb = (L+0.05)/0.05;
-    return cb >= cw ? '#000000' : '#ffffff';
+  render(value) {
+    const normalized = normalizeHex(value)
+    if (!normalized) {
+      this.renderInvalid()
+      return
+    }
+
+    const foreground = automaticForeground(normalized)
+    this.indicatorTarget.style.backgroundColor = normalized
+    this.indicatorTarget.style.color = foreground
+    this.indicatorTarget.dataset.text = foreground
+    this.indicatorTarget.dataset.valid = "true"
+
+    this.optionTargets.forEach(option => {
+      option.setAttribute("aria-pressed", (normalizeHex(option.dataset.value) === normalized).toString())
+    })
   }
 
-  hexToRgb(hex) {
-    let h = hex.replace("#","")
-    if (h.length === 3) h = h.split("").map(c => c+c).join("")
-    const num = parseInt(h, 16)
-    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 }
+  renderInvalid() {
+    this.indicatorTarget.style.backgroundColor = "#e2e8f0"
+    this.indicatorTarget.style.color = "#0f172a"
+    this.indicatorTarget.dataset.text = ""
+    this.indicatorTarget.dataset.valid = "false"
+    this.optionTargets.forEach(option => option.setAttribute("aria-pressed", "false"))
   }
 
-  isValidHex(h) { return /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(h) }
+  emitChange(value, normalized) {
+    this.dispatch("change", {
+      detail: {
+        field: this.fieldValue,
+        value,
+        normalized,
+        valid: normalized !== null
+      }
+    })
+  }
 }
