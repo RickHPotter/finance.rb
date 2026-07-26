@@ -28,15 +28,7 @@ format_turbo_stream_links:
   - path: app/views/cash_transactions/form.rb
     occurrences: 1
     classification: top_level_drive
-    slice: 2
-  - path: app/views/cash_transactions/index.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 2
-  - path: app/views/cash_transactions/index_search_form.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 2
+    slice: 3
   - path: app/views/investments/index.rb
     occurrences: 1
     classification: top_level_drive
@@ -46,8 +38,8 @@ format_turbo_stream_links:
     classification: top_level_drive
     slice: 4
   - path: app/views/messages/message.rb
-    occurrences: 4
-    classification: top_level_drive
+    occurrences: 1
+    classification: in_place_stream
     slice: 9
 
 center_container_replacements:
@@ -68,10 +60,6 @@ center_container_replacements:
     expected_occurrences: 1
     classification: in_place_stream
     slice: 4
-  - glob: app/views/cash_transactions/*.turbo_stream.erb
-    expected_occurrences: 10
-    classification: top_level_drive
-    slice: 2
   - paths:
       - app/views/card_transactions/create.turbo_stream.erb
       - app/views/card_transactions/destroy.turbo_stream.erb

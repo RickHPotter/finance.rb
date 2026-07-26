@@ -8,10 +8,11 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   include TranslateHelper
 
-  attr_reader :cash_transaction
+  attr_reader :cash_transaction, :return_to
 
-  def initialize(cash_transaction:)
+  def initialize(cash_transaction:, return_to: cash_transactions_path)
     @cash_transaction = cash_transaction
+    @return_to = return_to
   end
 
   def view_template
@@ -50,8 +51,8 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "CashTransaction", item_id: cash_transaction.id), variant: :outline)
-        dashboard_action(action_message(:edit), edit_cash_transaction_path(editable_cash_transaction), variant: :edit)
-        dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction), variant: :duplicate) if duplicate_allowed?
+        dashboard_action(action_message(:edit), edit_cash_transaction_path(editable_cash_transaction, return_to:), variant: :edit)
+        dashboard_action(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction, return_to:), variant: :duplicate) if duplicate_allowed?
         pay_action_button
         destroy_action
       end
@@ -298,11 +299,11 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       id: "cash_transaction_dashboard_destroy_#{cash_transaction.id}",
       text: action_message(:destroy),
       link_params: {
-        href: cash_transaction_path(cash_transaction),
+        href: cash_transaction_path(cash_transaction, return_to:),
         variant: :destructive,
         id: "delete_cash_transaction_#{cash_transaction.id}",
         class: dashboard_action_class(:destroy),
-        data: { turbo_method: :delete, turbo_frame: "_top" }
+        data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
   end

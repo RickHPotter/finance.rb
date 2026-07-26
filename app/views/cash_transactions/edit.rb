@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Views::CashTransactions::Edit < Views::Base
-  def initialize(current_user:, cash_transaction:)
+  def initialize(current_user:, cash_transaction:, return_to: cash_transactions_path)
     @current_user = current_user
     @cash_transaction = cash_transaction
+    @return_to = return_to
   end
 
   def view_template
@@ -13,7 +14,7 @@ class Views::CashTransactions::Edit < Views::Base
         badge_class: form_badge_class(:edit),
         skeleton_view: Views::CashTransactions::FormSubmissionSkeleton
       ) do
-        render Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction)
+        render Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction, return_to: @return_to)
       end
     end
   end

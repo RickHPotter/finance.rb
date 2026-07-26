@@ -11,12 +11,13 @@ class Views::CashTransactions::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :cash_transaction, :chain_context
+  attr_reader :current_user, :cash_transaction, :chain_context, :return_to
 
-  def initialize(current_user:, cash_transaction:, chain_context: nil)
+  def initialize(current_user:, cash_transaction:, chain_context: nil, return_to: cash_transactions_path)
     @current_user = current_user
     @cash_transaction = cash_transaction
     @chain_context = chain_context
+    @return_to = return_to
 
     set_banks
     set_user_bank_accounts
@@ -42,6 +43,7 @@ class Views::CashTransactions::Form < Views::Base
         end
         form.hidden_field :source_message_id,
                           value: cash_transaction.source_message_id
+        hidden_field_tag :return_to, return_to
 
         hidden_field_tag :category_colours,       categories_json,        disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,           entities_json,          disabled: true, data: { reactive_form_target: :entityIcons }
@@ -71,11 +73,12 @@ class Views::CashTransactions::Form < Views::Base
 
         render Views::Transactions::FormActions.new(
           transaction: cash_transaction,
-          destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction) : nil,
+          destroy_href: cash_transaction.persisted? ? cash_transaction_path(cash_transaction, return_to:) : nil,
           destroy_id: cash_transaction.persisted? ? "delete_cash_transaction_#{cash_transaction.id}" : nil,
-          duplicate_href: cash_transaction.persisted? && cash_transaction.can_be_destroyed? ? duplicate_cash_transaction_path(cash_transaction) : nil,
+          duplicate_href: cash_transaction.persisted? && cash_transaction.can_be_destroyed? ? duplicate_cash_transaction_path(cash_transaction, return_to:) : nil,
           confirmation_submit: historical_correction_confirmation_submit_for(cash_transaction, :cash_transaction),
-          chain_context:
+          chain_context:,
+          canonical_navigation: true
         ) do
           if cash_transaction.exchange_return?
             transactables_type = cash_transaction.exchanges.joins(:entity_transaction).pluck(:transactable_type)

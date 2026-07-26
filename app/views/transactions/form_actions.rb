@@ -3,7 +3,7 @@
 class Views::Transactions::FormActions < Views::Base
   include TranslateHelper
 
-  attr_reader :transaction, :destroy_href, :destroy_id, :duplicate_href, :confirmation_submit, :chain_context
+  attr_reader :transaction, :destroy_href, :destroy_id, :duplicate_href, :confirmation_submit, :chain_context, :canonical_navigation
 
   def initialize(transaction:, chain_context: nil, **action_options)
     @transaction = transaction
@@ -12,6 +12,7 @@ class Views::Transactions::FormActions < Views::Base
     @duplicate_href = action_options[:duplicate_href]
     @confirmation_submit = action_options[:confirmation_submit]
     @chain_context = chain_context
+    @canonical_navigation = action_options.fetch(:canonical_navigation, false)
   end
 
   def view_template(&)
@@ -19,7 +20,11 @@ class Views::Transactions::FormActions < Views::Base
       render_top_control
 
       div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-        Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(transaction))}") { action_message(:submit) }
+        Button(
+          type: :submit,
+          class: "w-64 #{submit_button_class(form_action_mode(transaction))}",
+          data: workflow_finishing_data
+        ) { action_message(:submit) }
 
         render_finish_chain_button
         render_finish_chain_without_save_button
@@ -39,7 +44,7 @@ class Views::Transactions::FormActions < Views::Base
               id: destroy_id,
               variant: :outline,
               class: "min-w-64 #{destroy_button_class}",
-              data: { turbo_method: :delete }
+              data: { turbo_method: :delete, **workflow_finishing_data }
             }
           )
         end
@@ -83,7 +88,14 @@ class Views::Transactions::FormActions < Views::Base
     return unless transaction.new_record?
     return if transaction.persisted?
 
-    Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain", value: "1") do
+    Button(
+      type: :submit,
+      variant: :outline,
+      class: secondary_action_button_class,
+      name: "finish_chain",
+      value: "1",
+      data: workflow_finishing_data
+    ) do
       I18n.t("actions.finish_chain")
     end
   end
@@ -92,7 +104,14 @@ class Views::Transactions::FormActions < Views::Base
     return unless transaction.new_record?
     return if transaction.persisted?
 
-    Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain_without_save", value: "1") do
+    Button(
+      type: :submit,
+      variant: :outline,
+      class: secondary_action_button_class,
+      name: "finish_chain_without_save",
+      value: "1",
+      data: workflow_finishing_data
+    ) do
       I18n.t("actions.finish_chain_without_save")
     end
   end
@@ -111,5 +130,11 @@ class Views::Transactions::FormActions < Views::Base
 
   def secondary_action_button_class
     secondary_submit_row_button_class
+  end
+
+  def workflow_finishing_data
+    return {} unless canonical_navigation
+
+    { turbo_frame: "_top", turbo_action: "replace" }
   end
 end

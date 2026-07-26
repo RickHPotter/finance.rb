@@ -1084,7 +1084,9 @@ RSpec.describe "CashTransactions", type: :request do
 
       created_cash_transaction = CashTransaction.last
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
+      follow_redirect!
+      expect(request.path).to eq(new_cash_transaction_path)
       expect(response.body).to include("Chain Creating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
       expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_cash_transaction.id}"/)
@@ -1122,7 +1124,9 @@ RSpec.describe "CashTransactions", type: :request do
              headers: turbo_stream_headers
       end.not_to change(CashTransaction, :count)
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
+      follow_redirect!
+      expect(request.path).to eq(cash_transactions_path)
       expect(response.body).to include("month_year_container_202604")
       expect(response.body).to include("cash_transaction%5Bcash_installment_ids%5D")
       expect(response.body).not_to include("Chain Creating")
@@ -1194,7 +1198,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       created_cash_transaction = CashTransaction.last
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
       expect(created_cash_transaction.categories).to contain_exactly(category, extra_category)
       expect(created_cash_transaction.entities).to contain_exactly(entity, extra_entity)
     end
@@ -1305,7 +1309,7 @@ RSpec.describe "CashTransactions", type: :request do
              headers: turbo_stream_headers
       end.to change(PiggyBank, :count).by(1).and change(CashTransaction, :count).by(1)
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
       expect(grouped_return.reload).to have_attributes(date: original_date, price: 7_000)
       expect(grouped_return.piggy_bank_return_links.count).to eq(2)
       expect(grouped_return.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 7_000, false ] ])
@@ -1364,7 +1368,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
 
       created_cash_transaction = user.cash_transactions.where(description: "Duplicated exchange cash transaction",
                                                               user_bank_account_id: user_bank_account.id).order(:id).last
@@ -1619,7 +1623,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       created_transaction = receiver.main_context.cash_transactions.order(:id).last
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(created_transaction.categories.pluck(:category_name)).to include("BORROW RETURN")
       expect(created_transaction.reference_transactable_type).to eq("CashTransaction")
       expect(created_transaction.reference_transactable_id).to eq(999)
@@ -1834,12 +1838,11 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(
         edit_cash_transaction_path(
           id: receiver_transaction,
-          cash_transaction: { source_message_id: update_message.id },
-          format: :turbo_stream
+          cash_transaction: { source_message_id: update_message.id }
         )
       )
       expect(response.body).not_to include(
-        new_cash_transaction_path(cash_transaction: { source_message_id: update_message.id }, format: :turbo_stream)
+        new_cash_transaction_path(cash_transaction: { source_message_id: update_message.id })
       )
 
       sender_transaction.destroy
@@ -1848,7 +1851,7 @@ RSpec.describe "CashTransactions", type: :request do
       get conversation_path(conversation, message_filter: "all")
 
       expect(response.body).to include(
-        cash_transaction_path(id: receiver_transaction, format: :turbo_stream, message_id: destroy_message.id)
+        cash_transaction_path(id: receiver_transaction, message_id: destroy_message.id)
       )
       expect(receiver_transaction.reload).to be_present
     end
@@ -1971,7 +1974,7 @@ RSpec.describe "CashTransactions", type: :request do
       get conversation_path(conversation, message_filter: "all")
 
       expect(response.body).to include(
-        cash_transaction_path(id: receiver_transaction, format: :turbo_stream, message_id: destroy_message.id)
+        cash_transaction_path(id: receiver_transaction, message_id: destroy_message.id)
       )
     end
   end
@@ -2016,9 +2019,9 @@ RSpec.describe "CashTransactions", type: :request do
 
       put cash_transaction_path(@existing_cash_transaction), params: cash_transaction.params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
-      expect(response.body).not_to include(I18n.t("notification.not_updateda", model: CashTransaction.model_name.human))
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(cash_transactions_path)
+      expect(flash[:notice]).to eq(I18n.t("notification.updateda", model: CashTransaction.model_name.human))
       expect(@existing_cash_transaction.reload.description).to eq(original_description)
     end
 
@@ -2342,7 +2345,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       put cash_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.cash_installments.find_by!(number: 1).date.to_date).to eq(Date.new(2026, 4, 1))
     end
 
@@ -2401,7 +2404,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       put cash_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.cash_installments.find_by!(number: 1)).not_to be_paid
     end
 
@@ -2482,7 +2485,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       put cash_transaction_path(exchange_return), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(exchange_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -1_500, true ], [ -1_000, false ] ])
       expect(entity_transaction.reload.exchanges.order(:number).pluck(:price)).to eq([ -1_500, -1_000 ])
     end
@@ -2525,7 +2528,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       put cash_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.price).to eq(3500)
       expect(locked_transaction.cash_installments.order(:number).pluck(:price)).to eq([ 1500, 1000, 1000 ])
     end
@@ -2584,7 +2587,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(exchange_return.reload.cash_installments.count).to eq(1)
       expect(exchange_return.reload.cash_installments.order(:number).pluck(:number, :price)).to eq([ [ 1, -3_000 ] ])
       expect(entity_transaction.reload.exchanges.count).to eq(1)
@@ -3082,7 +3085,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       conversation = Conversation.for_users([ receiver.id, sender.id ]).assistant.order(:id).last
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
       expect(sender_transaction.cash_installments.first.reload).not_to be_paid
       expect(conversation).to be_present
@@ -3144,7 +3147,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(Message.where(body: "notification:paid_state")).to be_empty
       expect(receiver_transaction.reload.cash_installments.first).to be_paid
     end
@@ -3239,7 +3242,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       message = Message.where(body: "notification:update").order(:id).last
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(message.user).to eq(user)
       expect(message.conversation.users).to match_array([ user, receiver ])
       expect(JSON.parse(message.headers)).to include(
@@ -3495,7 +3498,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(receiver_return.reload.reference_transactable).to eq(sender_return)
       expect(receiver_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -4_000, true ], [ -4_000, true ], [ -4_000, false ] ])
     end
@@ -3661,7 +3664,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(receiver_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -3_000, true ], [ -1_500, true ], [ -1_500, false ] ])
     end
 
@@ -3759,7 +3762,7 @@ RSpec.describe "CashTransactions", type: :request do
       sign_out user
       sign_in receiver
 
-      get edit_cash_transaction_path(receiver_return, cash_transaction: { source_message_id: update_message.id }), headers: turbo_stream_headers
+      get edit_cash_transaction_path(receiver_return, cash_transaction: { source_message_id: update_message.id })
       document = Nokogiri::HTML.fragment(response.body)
       reference_type_input = document.at_css('input[name="cash_transaction[reference_transactable_type]"]')
       reference_id_input = document.at_css('input[name="cash_transaction[reference_transactable_id]"]')
@@ -3889,7 +3892,7 @@ RSpec.describe "CashTransactions", type: :request do
       sign_out user
       sign_in receiver
 
-      get edit_cash_transaction_path(receiver_exchange, cash_transaction: { source_message_id: update_message.id }), headers: turbo_stream_headers
+      get edit_cash_transaction_path(receiver_exchange, cash_transaction: { source_message_id: update_message.id })
       document = Nokogiri::HTML.fragment(response.body)
       rendered_exchange_numbers = document.css("input.exchange_number").reject do |input|
         input["name"].to_s.include?("NEW_NESTED_RECORD")
@@ -4118,7 +4121,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(receiver_exchange.reload.entity_transactions.first.exchanges.order(:number).pluck(:price)).to eq([ -12_000, -8_000 ])
     end
 
@@ -4291,7 +4294,7 @@ RSpec.describe "CashTransactions", type: :request do
         }, headers: turbo_stream_headers
       end.not_to change(Message.where(body: "notification:update"), :count)
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(sender_return.reload.reference_transactable).to eq(card_transaction)
       expect(source_message.reload.applied_at).to be_present
       expect(receiver_return.reload.reference_transactable).to eq(sender_return)
@@ -4431,7 +4434,7 @@ RSpec.describe "CashTransactions", type: :request do
       message = Message.where(body: "notification:update").order(:id).last
       replay = JSON.parse(message.headers).fetch("replay")
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(message.user).to eq(receiver)
       expect(message.reference_transactable).to eq(sender_return)
       expect(message.conversation.users).to match_array([ receiver, user ])
@@ -4564,7 +4567,7 @@ RSpec.describe "CashTransactions", type: :request do
         delete cash_transaction_path(locked_transaction, historical_correction_confirmation: true), headers: turbo_stream_headers
       end.to change(CashTransaction, :count).by(-1)
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
     end
 
     it "returns unprocessable_entity when destroying a borrow return linked to a shared-return parent" do
