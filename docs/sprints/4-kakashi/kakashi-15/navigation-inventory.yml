@@ -26,7 +26,7 @@ center_container_replacements:
     slice: 4
 legacy_history_shim:
   path: app/javascript/controllers/application.js
-  classification: remove
+  classification: removed
   slice: 10
   markers:
     - HISTORY MANAGEMENT

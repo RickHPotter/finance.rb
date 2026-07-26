@@ -36,13 +36,13 @@ RSpec.describe "Turbo navigation inventory", type: :service do
     end
   end
 
-  it "keeps the obsolete custom history shim classified for removal" do
+  it "keeps the obsolete custom history shim removed" do
     history_shim = inventory.fetch("legacy_history_shim")
     source = Rails.root.join(history_shim.fetch("path")).read
 
-    expect(history_shim.fetch("classification")).to eq("remove")
+    expect(history_shim.fetch("classification")).to eq("removed")
     expect(history_shim.fetch("slice")).to eq(10)
-    expect(source).to include(*history_shim.fetch("markers"))
+    expect(source).not_to include(*history_shim.fetch("markers"))
   end
 
   def occurrences_for(pattern)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Investments::Form < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::Investments::Form < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::HiddenFieldTag

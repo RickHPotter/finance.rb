@@ -31,12 +31,11 @@ class Views::Categories::Category < Views::Base
       data: { id: category.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        # <<<<<<< HEAD
         CategoryBadge(
           category:,
           href: category_path(category, return_to:),
           id: "show_category_#{category.id}",
-          class: "px-4 whitespace-nowrap border-0 rounded-sm shadow-md hover:opacity-85",
+          class: "whitespace-nowrap px-4 shadow-md",
           data: { turbo_frame: "_top", turbo_prefetch: false }
         )
       end

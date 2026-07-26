@@ -19,11 +19,11 @@ pt-BR:
       category_transaction:
         one: Categoria de Transação
         other: Categorias de Transação
-        attributes:
-          category_transaction:
-            id: ID
-            transactable: Transacionável
-            transactable_id: ID da Transacionável
-            transactable_type: Tipo da Transacionável
-            category: Categoria
-            category_id: ID da Categoria
+    attributes:
+      category_transaction:
+        id: ID
+        transactable: Transacionável
+        transactable_id: ID da Transacionável
+        transactable_type: Tipo da Transacionável
+        category: Categoria
+        category_id: ID da Categoria

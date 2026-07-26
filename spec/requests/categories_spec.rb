@@ -149,12 +149,14 @@ RSpec.describe "Categories", type: :request do
       end.not_to change(Category, :count)
 
       document = Nokogiri::HTML5.fragment(response.body)
-      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='new_category'] template form")
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("4.48:1", "#000000")
       expect(document.css("turbo-stream[action='update'][target='notification']").size).to eq(1)
       expect(document.css("turbo-stream[action='append'][target='notification']")).not_to be_empty
+      expect(document.at_css("turbo-stream[target='center_container']")).to be_nil
+      expect(rendered_form).to be_present
       expect(rendered_form.at_css("#category_text_colour_mode_manual[checked]")).to be_present
       expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#ffffff")
       expect(rendered_form.at_css("input[name='category[text_colour]']")["value"]).to eq("#777777")
@@ -172,9 +174,11 @@ RSpec.describe "Categories", type: :request do
       }, headers: turbo_stream_headers
 
       document = Nokogiri::HTML5.fragment(response.body)
-      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='new_category'] template form")
 
       expect(response).to have_http_status(:unprocessable_content)
+      expect(document.at_css("turbo-stream[target='center_container']")).to be_nil
+      expect(rendered_form).to be_present
       expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#abcd")
       expect(rendered_form.css("[style]").pluck("style")).not_to include(a_string_including("#abcd"))
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class InvestmentsController < ApplicationController # rubocop:disable Metrics/ClassLength
+class InvestmentsController < ApplicationController
   include TabsConcern
 
   before_action :set_investment, only: %i[edit update destroy]
