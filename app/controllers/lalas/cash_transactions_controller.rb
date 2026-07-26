@@ -7,10 +7,7 @@ class Lalas::CashTransactionsController < LalasController
   def index
     build_index_context(lala_context.cash_installments)
 
-    respond_to do |format|
-      format.html { render Views::Lalas::CashTransactions::Index.new(index_context: @index_context) }
-      format.turbo_stream { set_tabs(active_menu: :cash, active_sub_menu: :pix) }
-    end
+    render Views::Lalas::CashTransactions::Index.new(index_context: @index_context)
   end
 
   def month_year

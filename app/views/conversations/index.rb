@@ -53,7 +53,7 @@ class Views::Conversations::Index < Views::Base
     link_to(
       filter_path_for(filter),
       class: filter_badge_class(filter, selected),
-      data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do
       model_attribute(Conversation, filter)
     end
@@ -85,7 +85,7 @@ class Views::Conversations::Index < Views::Base
     link_to(
       conversation_path(conversation),
       class: conversation_card_class(conversation),
-      data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do
       div(class: "flex items-start justify-between gap-3") do
         div(class: "flex min-w-0 items-center gap-3") do

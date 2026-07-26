@@ -185,7 +185,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
                 href: showable_transaction_link,
                 size: :sm,
                 class: "shrink-0 min-w-40 justify-center text-black bg-white hover:bg-stone-50 border border-black/20 px-4 py-2 font-medium shadow-sm",
-                data: { turbo_frame: "_top", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
+                data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
               ) do
                 span(class: "truncate block max-w-full leading-tight") { I18n.t("actions.edit") }
               end
@@ -234,7 +234,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end
@@ -245,7 +245,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end

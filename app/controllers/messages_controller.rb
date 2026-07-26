@@ -9,7 +9,7 @@ class MessagesController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream
-      format.html { redirect_to @conversation }
+      format.html { redirect_to @conversation, status: :see_other }
     end
   end
 
@@ -20,7 +20,9 @@ class MessagesController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream
-      format.html { redirect_to conversation_path(@conversation, message_filter: params[:message_filter], message_side: params[:message_side]) }
+      format.html do
+        redirect_to conversation_path(@conversation, message_filter: params[:message_filter], message_side: params[:message_side]), status: :see_other
+      end
     end
   end
 

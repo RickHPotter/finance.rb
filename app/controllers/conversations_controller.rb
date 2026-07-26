@@ -21,23 +21,18 @@ class ConversationsController < ApplicationController
     @messages = filtered_messages(@conversation)
     @conversation.messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
 
-    respond_to do |format|
-      format.html do
-        render Views::Conversations::Show.new(
-          conversation: @conversation,
-          messages: @messages,
-          active_message_filter: @active_message_filter,
-          active_message_sides: @active_message_sides
-        )
-      end
-      format.turbo_stream
-    end
+    render Views::Conversations::Show.new(
+      conversation: @conversation,
+      messages: @messages,
+      active_message_filter: @active_message_filter,
+      active_message_sides: @active_message_sides
+    )
   end
 
   def create
     @conversation = Conversation.create!(conversation_params.merge(scenario_key: current_context.scenario_key))
 
-    redirect_to @conversation
+    redirect_to @conversation, status: :see_other
   end
 
   private

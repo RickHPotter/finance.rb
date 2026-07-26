@@ -36,7 +36,12 @@ class Views::Lalas::CashTransactions::IndexSearchForm < Views::Base
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+              data: {
+                controller: "reactive-form price-mask",
+                action: "submit->price-mask#removeMasks",
+                turbo_frame: "_top",
+                turbo_action: "replace"
+              } do |form|
       div class: "mb-6 flex gap-4 flex-wrap" do
         render Views::Shared::MonthYearSelector.new(
           current_user:,

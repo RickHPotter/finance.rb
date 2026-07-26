@@ -24,12 +24,6 @@ center_container_replacements:
     expected_occurrences: 1
     classification: in_place_stream
     slice: 4
-  - paths:
-      - app/views/conversations/show.turbo_stream.erb
-    expected_occurrences: 1
-    classification: top_level_drive
-    slice: 9
-
 legacy_history_shim:
   path: app/javascript/controllers/application.js
   classification: remove
