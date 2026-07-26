@@ -3,15 +3,17 @@
 class Views::Entities::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::DOMID
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :current_user, :entity
+  attr_reader :current_user, :entity, :return_to
 
-  def initialize(current_user:, entity:)
+  def initialize(current_user:, entity:, return_to: "/entities")
     @current_user = current_user
     @entity = entity
+    @return_to = return_to
   end
 
   def view_template
@@ -20,6 +22,7 @@ class Views::Entities::Form < Views::Base
 
       form_with(model: entity, url: form_url, id: :form, class: "contents text-black", data: { controller: "reactive-form" }) do |form|
         form.hidden_field :user_id, value: current_user.id
+        hidden_field_tag :return_to, return_to
 
         div(class: "w-full mb-6") do
           form.text_field(
@@ -47,7 +50,11 @@ class Views::Entities::Form < Views::Base
 
         div(class: "flex w-full flex-col gap-3") do
           div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(entity))}") { action_message(:submit) }
+            Button(
+              type: :submit,
+              class: "w-64 #{submit_button_class(form_action_mode(entity))}",
+              data: { turbo_frame: "_top", turbo_action: "replace" }
+            ) { action_message(:submit) }
 
             if entity.persisted? && !entity.built_in?
               Button(
@@ -55,8 +62,8 @@ class Views::Entities::Form < Views::Base
                 type: :submit,
                 variant: :outline,
                 class: "w-64 #{destroy_button_class}",
-                link: entity_path(entity),
-                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+                link: entity_path(entity, return_to:),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top", turbo_action: "replace" }
               ) { action_message(:destroy) }
             end
           end

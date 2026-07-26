@@ -24,14 +24,6 @@ center_container_replacements:
     expected_occurrences: 1
     classification: in_place_stream
     slice: 4
-  - glob: app/views/categories/*.turbo_stream.erb
-    expected_occurrences: 8
-    classification: top_level_drive
-    slice: 5
-  - glob: app/views/entities/*.turbo_stream.erb
-    expected_occurrences: 8
-    classification: top_level_drive
-    slice: 5
   - glob: app/views/user_bank_accounts/*.turbo_stream.erb
     expected_occurrences: 9
     classification: top_level_drive

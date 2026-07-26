@@ -33,9 +33,9 @@ class Views::Entities::Index < Views::Base
 
       link_to(
         action_model(:newa, Entity),
-        new_entity_path,
+        new_entity_path(return_to: index_context[:return_to]),
         class: index_new_button_class,
-        data: { turbo_frame: "_top" }
+        data: { turbo_frame: "_top", turbo_action: "replace" }
       )
     end
   end
@@ -72,7 +72,7 @@ class Views::Entities::Index < Views::Base
 
               if entities.present?
                 entities.each do |record|
-                  render Views::Entities::Entity.new(entity: record, mobile: false)
+                  render Views::Entities::Entity.new(entity: record, mobile: false, return_to: index_context[:return_to])
                 end
               else
                 div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
@@ -96,7 +96,7 @@ class Views::Entities::Index < Views::Base
             div(class: "mb-8", data: { datatable_target: "table" }) do
               if entities.present?
                 entities.each do |record|
-                  render Views::Entities::Entity.new(entity: record, mobile: true)
+                  render Views::Entities::Entity.new(entity: record, mobile: true, return_to: index_context[:return_to])
                 end
               else
                 div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
@@ -105,10 +105,10 @@ class Views::Entities::Index < Views::Base
           end
 
           link_to(
-            new_entity_path,
+            new_entity_path(return_to: index_context[:return_to]),
             style: "margin: 30px",
             class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
-            data: { turbo_frame: "_top" }
+            data: { turbo_frame: "_top", turbo_action: "replace" }
           ) { cached_icon(:bigger_plus) }
         end
       end

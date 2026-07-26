@@ -10,11 +10,12 @@ class Views::Entities::Entity < Views::Base
   include CacheHelper
   include TranslateHelper
 
-  attr_reader :entity, :mobile
+  attr_reader :entity, :mobile, :return_to
 
-  def initialize(entity:, mobile: false)
+  def initialize(entity:, mobile: false, return_to: nil)
     @entity = entity
     @mobile = mobile
+    @return_to = return_to
   end
 
   def view_template
@@ -33,7 +34,7 @@ class Views::Entities::Entity < Views::Base
     ) do
       div(class: "px-2 py-3 flex items-center justify-center") { image_tag asset_path("avatars/#{entity.avatar_name}"), class: "size-7 rounded-full" }
       div(class: "col-span-2 px-2 py-3 text-center font-lekton font-semibold") do
-        link_to entity_path(entity),
+        link_to entity_path(entity, return_to:),
                 id: "show_entity_#{entity.id}",
                 class: "px-4 whitespace-nowrap hover:underline",
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
@@ -85,22 +86,22 @@ class Views::Entities::Entity < Views::Base
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
-          link_to(edit_entity_path(entity), id: "edit_entity_#{entity.id}",
-                                            class: action_button_class,
-                                            title: action_message(:edit),
-                                            aria: { label: action_message(:edit) },
-                                            data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
+          link_to(edit_entity_path(entity, return_to:), id: "edit_entity_#{entity.id}",
+                                                        class: action_button_class,
+                                                        title: action_message(:edit),
+                                                        aria: { label: action_message(:edit) },
+                                                        data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           unless entity.built_in?
             LinkWithConfirmation(
               id: entity.id,
               icon: :destroy,
               link_params: {
-                href: entity_path(entity),
+                href: entity_path(entity, return_to:),
                 size: :xs,
                 id: "delete_entity_#{entity.id}",
                 class: destructive_action_button_class,
-                data: { turbo_method: :delete }
+                data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
               }
             )
           end
@@ -116,9 +117,9 @@ class Views::Entities::Entity < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             image_tag asset_path("avatars/#{entity.avatar_name}"), class: "w-6 h-6 rounded-full"
-            link_to(entity.name, entity_path(entity), id: "show_entity_#{entity.id}",
-                                                      class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                      data: { turbo_frame: "_top", turbo_prefetch: false })
+            link_to(entity.name, entity_path(entity, return_to:), id: "show_entity_#{entity.id}",
+                                                                  class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                                  data: { turbo_frame: "_top", turbo_prefetch: false })
           end
 
           status_badge

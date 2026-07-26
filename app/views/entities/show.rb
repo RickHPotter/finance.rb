@@ -7,10 +7,11 @@ class Views::Entities::Show < Views::Base
 
   include TranslateHelper
 
-  attr_reader :entity
+  attr_reader :entity, :return_to
 
-  def initialize(entity:)
+  def initialize(entity:, return_to: "/entities")
     @entity = entity
+    @return_to = return_to
   end
 
   def view_template
@@ -45,8 +46,8 @@ class Views::Entities::Show < Views::Base
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
-        dashboard_action(action_message(:edit), edit_entity_path(entity), variant: :edit)
-        dashboard_action(action_message(:index), entities_path, variant: :outline)
+        dashboard_action(action_message(:edit), edit_entity_path(entity, return_to:), variant: :edit)
+        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -162,11 +163,11 @@ class Views::Entities::Show < Views::Base
       id: "entity_dashboard_destroy_#{entity.id}",
       text: action_message(:destroy),
       link_params: {
-        href: entity_path(entity),
+        href: entity_path(entity, return_to:),
         variant: :destructive,
         id: "delete_entity_#{entity.id}",
         class: dashboard_action_class(:destroy),
-        data: { turbo_method: :delete, turbo_frame: "_top" }
+        data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
   end

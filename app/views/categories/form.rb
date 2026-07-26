@@ -3,15 +3,17 @@
 class Views::Categories::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::DOMID
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :current_user, :category
+  attr_reader :current_user, :category, :return_to
 
-  def initialize(current_user:, category:)
+  def initialize(current_user:, category:, return_to: "/categories")
     @current_user = current_user
     @category = category
+    @return_to = return_to
   end
 
   def view_template
@@ -35,6 +37,7 @@ class Views::Categories::Form < Views::Base
         }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
+        hidden_field_tag :return_to, return_to
 
         div(class: "w-full mb-6") do
           form.text_field(
@@ -63,7 +66,11 @@ class Views::Categories::Form < Views::Base
 
         div(class: "flex w-full flex-col gap-3") do
           div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(category))}") { action_message(:submit) }
+            Button(
+              type: :submit,
+              class: "w-64 #{submit_button_class(form_action_mode(category))}",
+              data: { turbo_frame: "_top", turbo_action: "replace" }
+            ) { action_message(:submit) }
 
             if category.persisted? && category.built_in == false
               Button(
@@ -71,8 +78,8 @@ class Views::Categories::Form < Views::Base
                 type: :submit,
                 variant: :outline,
                 class: "w-64 #{destroy_button_class}",
-                link: category_path(category),
-                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+                link: category_path(category, return_to:),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top", turbo_action: "replace" }
               ) { action_message(:destroy) }
             end
           end

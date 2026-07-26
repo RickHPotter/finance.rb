@@ -57,7 +57,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       user_card_id: params[:user_card_id] || current_user.user_cards.active.order(:user_card_name).first.id,
       date: Time.zone.now
     )
-    @card_transaction.entity_transactions.build(entity_id: card_transaction_params[:entity_id]) if card_transaction_params[:entity_id]
+    seed_transaction_associations
     @card_transaction.build_month_year
     @chain_context = current_chain_context(mode: "create")
     set_return_to
@@ -251,6 +251,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def seed_transaction_associations
+    @card_transaction.category_transactions.build(category_id: card_transaction_params[:category_id]) if card_transaction_params[:category_id]
+    @card_transaction.entity_transactions.build(entity_id: card_transaction_params[:entity_id]) if card_transaction_params[:entity_id]
+  end
 
   def render_top_level(view)
     respond_to do |format|
