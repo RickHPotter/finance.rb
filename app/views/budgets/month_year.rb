@@ -3,15 +3,16 @@
 class Views::Budgets::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :budgets, :total_amount, :category_colour_display_mode
+  attr_reader :mobile, :month_year, :month_year_str, :budgets, :total_amount, :category_colour_display_mode, :return_to
 
-  def initialize(mobile:, month_year:, month_year_str:, budgets:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
+  def initialize(mobile:, month_year:, month_year_str:, budgets:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil) # rubocop:disable Metrics/ParameterLists
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @budgets = budgets
     @total_amount = budgets.sum(:remaining_value)
     @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
+    @return_to = return_to
   end
 
   def view_template
@@ -30,7 +31,7 @@ class Views::Budgets::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         if budgets.present?
-          render Views::Budgets::Budgets.new(mobile:, budgets:, category_colour_display_mode:)
+          render Views::Budgets::Budgets.new(mobile:, budgets:, category_colour_display_mode:, return_to:)
         else
           div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-700 dark:text-slate-100") { I18n.t(:rows_not_found) }
         end
@@ -58,7 +59,7 @@ class Views::Budgets::MonthYear < Views::Base
           )
 
           if budgets.present?
-            render Views::Budgets::Budgets.new(mobile:, budgets:, category_colour_display_mode:)
+            render Views::Budgets::Budgets.new(mobile:, budgets:, category_colour_display_mode:, return_to:)
           else
             div(class: "py-2 text-lg dark:text-slate-100") { I18n.t(:rows_not_found) }
           end

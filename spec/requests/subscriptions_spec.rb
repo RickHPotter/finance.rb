@@ -230,8 +230,8 @@ RSpec.describe "Subscriptions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(I18n.t("notification.created", model: Subscription.model_name.human))
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(subscriptions_path)
       expect(Subscription.order(:id).last.description).to eq("Past gym plan")
     end
 
@@ -378,7 +378,7 @@ RSpec.describe "Subscriptions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
       expect(subscription.reload.description).to eq("Netflix Premium")
       expect(subscription.comment).to eq("Shared subscription note")
       expect(locked_transaction.reload.description).to eq("Netflix Premium")
@@ -422,7 +422,7 @@ RSpec.describe "Subscriptions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
       expect(subscription.reload.description).to eq("Bill updated")
       expect(subscription.comment).to eq("Updated note")
       expect(transaction.reload.description).to eq("Bill updated")

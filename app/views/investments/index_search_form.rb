@@ -95,10 +95,10 @@ class Views::Investments::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
-        link_to new_investment_path(format: :turbo_stream),
+        link_to new_investment_path(return_to: index_context[:return_to]),
                 id: "new_card_transaction",
                 class: index_new_button_class,
-                data: { turbo_frame: "_top", turbo_prefetch: false } do
+                data: { turbo_frame: "_top", turbo_action: "replace", turbo_prefetch: false } do
           span { action_message(:new) }
           span { pluralise_model(Investment, 1) }
         end

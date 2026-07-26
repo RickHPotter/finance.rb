@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Views::Investments::Edit < Views::Base
-  def initialize(current_user:, investment:)
+  def initialize(current_user:, investment:, return_to: "/investments")
     @current_user = current_user
     @investment = investment
+    @return_to = return_to
   end
 
   def view_template
@@ -13,7 +14,7 @@ class Views::Investments::Edit < Views::Base
         badge_class: form_badge_class(:edit),
         skeleton_view: Views::Investments::FormSubmissionSkeleton
       ) do
-        render Views::Investments::Form.new(current_user: @current_user, investment: @investment)
+        render Views::Investments::Form.new(current_user: @current_user, investment: @investment, return_to: @return_to)
       end
     end
   end

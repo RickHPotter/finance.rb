@@ -7,14 +7,14 @@ class Views::Budgets::Budgets < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :budgets, :show_rows_not_found, :category_colour_display_mode
+  attr_reader :mobile, :budgets, :show_rows_not_found, :category_colour_display_mode, :return_to
 
-  def initialize(mobile:, budgets:, show_rows_not_found: true,
-                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
+  def initialize(mobile:, budgets:, show_rows_not_found: true, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil)
     @mobile = mobile
     @budgets = budgets
     @show_rows_not_found = show_rows_not_found
     @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
+    @return_to = return_to
   end
 
   def view_template
@@ -60,7 +60,7 @@ class Views::Budgets::Budgets < Views::Base
           div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               link_to "#{pluralise_model(budget, 1).upcase}: #{from_cent_based_to_float(budget.value, 'R$')}",
-                      edit_budget_path(budget),
+                      edit_budget_path(budget, return_to:),
                       id: "edit_budget_#{budget.id}",
                       class: "truncate text-md underline underline-offset-[3px]",
                       data: { turbo_frame: "_top" }
@@ -121,7 +121,7 @@ class Views::Budgets::Budgets < Views::Base
 
         div(class: "col-span-4 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2") do
           link_to "#{pluralise_model(budget, 1).upcase}: #{from_cent_based_to_float(budget.value, 'R$')}",
-                  edit_budget_path(budget),
+                  edit_budget_path(budget, return_to:),
                   id: "edit_budget_#{budget.id}",
                   class: "flex-1 truncate text-md underline underline-offset-[3px]",
                   data: { turbo_frame: "_top" }
@@ -302,8 +302,8 @@ class Views::Budgets::Budgets < Views::Base
 
       PopoverContent(class: "z-40 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
-          action_menu_link(action_message(:analyse), budget_path(budget), id: "analyse_budget_#{budget.id}")
-          action_menu_link(action_message(:duplicate), duplicate_budget_path(budget), id: "duplicate_budget_#{budget.id}")
+          action_menu_link(action_message(:analyse), budget_path(budget, return_to:), id: "analyse_budget_#{budget.id}")
+          action_menu_link(action_message(:duplicate), duplicate_budget_path(budget, return_to:), id: "duplicate_budget_#{budget.id}")
           action_menu_destroy_link(budget)
         end
       end
@@ -323,7 +323,7 @@ class Views::Budgets::Budgets < Views::Base
       id: "budget_menu_destroy_#{budget.id}",
       text: action_message(:destroy),
       link_params: {
-        href: budget_path(budget),
+        href: budget_path(budget, return_to:),
         variant: :ghost,
         id: "delete_budget_#{budget.id}",
         class: action_menu_item_class,

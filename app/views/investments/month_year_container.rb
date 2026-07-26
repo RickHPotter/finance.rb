@@ -6,7 +6,8 @@ class Views::Investments::MonthYearContainer < Views::Base
               :user_bank_account_id,
               :investment_type_id,
               :active_month_years,
-              :url_lambda
+              :url_lambda,
+              :return_to
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -14,6 +15,7 @@ class Views::Investments::MonthYearContainer < Views::Base
     @user_bank_account_id = index_context[:user_bank_account_id]
     @investment_type_id = index_context[:investment_type_id]
     @active_month_years = index_context[:active_month_years]
+    @return_to = index_context[:return_to]
   end
 
   def view_template
@@ -21,7 +23,8 @@ class Views::Investments::MonthYearContainer < Views::Base
       active_month_years:,
       custom_params: {
         investment: { id: investment_id, user_bank_account_id:, investment_type_id: }.compact_blank,
-        search_term:
+        search_term:,
+        return_to:
       },
       path_lambda: ->(params) { month_year_investments_path(params) }
     )

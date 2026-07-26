@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Views::Budgets::Edit < Views::Base
-  def initialize(current_user:, budget:)
+  def initialize(current_user:, budget:, return_to: "/budgets")
     @current_user = current_user
     @budget = budget
+    @return_to = return_to
   end
 
   def view_template
@@ -13,7 +14,7 @@ class Views::Budgets::Edit < Views::Base
         badge_class: form_badge_class(:edit),
         skeleton_view: Views::Budgets::FormSubmissionSkeleton
       ) do
-        render Views::Budgets::Form.new(current_user: @current_user, budget: @budget)
+        render Views::Budgets::Form.new(current_user: @current_user, budget: @budget, return_to: @return_to)
       end
     end
   end

@@ -7,10 +7,11 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   include TranslateHelper
 
-  attr_reader :budget
+  attr_reader :budget, :return_to
 
-  def initialize(budget:)
+  def initialize(budget:, return_to: "/budgets")
     @budget = budget
+    @return_to = return_to
   end
 
   def view_template
@@ -43,8 +44,8 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "Budget", item_id: budget.id), variant: :outline)
-        dashboard_action(action_message(:edit), edit_budget_path(budget), variant: :edit)
-        dashboard_action(action_message(:duplicate), duplicate_budget_path(budget), variant: :duplicate)
+        dashboard_action(action_message(:edit), edit_budget_path(budget, return_to:), variant: :edit)
+        dashboard_action(action_message(:duplicate), duplicate_budget_path(budget, return_to:), variant: :duplicate)
         destroy_action
       end
     end
@@ -243,7 +244,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
       id: budget.id,
       text: action_message(:destroy),
       link_params: {
-        href: budget_path(budget),
+        href: budget_path(budget, return_to:),
         variant: :destructive,
         id: "delete_budget_#{budget.id}",
         class: dashboard_action_class(:destroy),

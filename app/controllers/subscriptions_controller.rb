@@ -11,20 +11,15 @@ class SubscriptionsController < ApplicationController
   def index
     build_index_context
     @subscriptions = subscriptions_scope
+    @index_context[:return_to] = subscription_navigation_return_param(request.fullpath)
 
-    respond_to do |format|
-      format.html { render Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)
   end
 
   def new
     @subscription = current_context.subscriptions.new(user: current_user)
-
-    respond_to do |format|
-      format.html { render Views::Subscriptions::New.new(current_user:, subscription: @subscription) }
-      format.turbo_stream
-    end
+    set_return_to
+    render_top_level Views::Subscriptions::New.new(current_user:, subscription: @subscription, return_to: @return_to)
   end
 
   def create
@@ -34,10 +29,8 @@ class SubscriptionsController < ApplicationController
   end
 
   def edit
-    respond_to do |format|
-      format.html { render Views::Subscriptions::Edit.new(current_user:, subscription: @subscription) }
-      format.turbo_stream
-    end
+    set_return_to
+    render_top_level Views::Subscriptions::Edit.new(current_user:, subscription: @subscription, return_to: @return_to)
   end
 
   def update
@@ -47,22 +40,34 @@ class SubscriptionsController < ApplicationController
   end
 
   def destroy
+    set_return_to
     @subscription.destroy if @subscription.can_be_destroyed?
-    load_subscriptions
 
-    respond_to do |format|
-      format.html do
-        if @subscription.destroyed?
-          redirect_to subscriptions_path, notice: notification_model(:destroyed, Subscription)
-        else
-          redirect_to subscriptions_path, alert: notification_model(:not_destroyed, Subscription)
-        end
-      end
-      format.turbo_stream
+    if @subscription.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyed, Subscription), status: :see_other
+    else
+      redirect_to @return_to, alert: notification_model(:not_destroyed, Subscription), status: :see_other
     end
   end
 
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def set_return_to
+    @return_to = subscription_navigation_destination(params[:return_to])
+  end
+
+  def subscription_navigation_destination(raw)
+    Navigation::Subscriptions.new(raw:, fallback: subscriptions_path, current_user:, current_context:).destination
+  end
+
+  def subscription_navigation_return_param(raw)
+    destination = subscription_navigation_destination(raw)
+    destination unless destination == subscriptions_path
+  end
 
   def set_subscription_tabs
     set_tabs(active_menu: :cash, active_sub_menu: :subscription)
@@ -109,22 +114,20 @@ class SubscriptionsController < ApplicationController
   end
 
   def handle_save(view_name)
+    set_return_to
     if @subscription.save
-      load_subscriptions
-
-      respond_to do |format|
-        format.html { redirect_to subscriptions_path, notice: notification_model(view_name == :new ? :created : :updated, Subscription) }
-        format.turbo_stream
-      end
+      redirect_to @return_to,
+                  notice: notification_model(view_name == :new ? :created : :updated, Subscription),
+                  status: :see_other
     else
       normalize_failed_subscription_save!
 
       respond_to do |format|
         format.html do
           if view_name == :new
-            render(Views::Subscriptions::New.new(current_user:, subscription: @subscription))
+            render(Views::Subscriptions::New.new(current_user:, subscription: @subscription, return_to: @return_to), status: :unprocessable_content)
           else
-            render(Views::Subscriptions::Edit.new(current_user:, subscription: @subscription), status: :unprocessable_content)
+            render(Views::Subscriptions::Edit.new(current_user:, subscription: @subscription, return_to: @return_to), status: :unprocessable_content)
           end
         end
         format.turbo_stream do

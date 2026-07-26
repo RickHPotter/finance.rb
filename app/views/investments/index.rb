@@ -23,10 +23,12 @@ class Views::Investments::Index < Views::Base
                 render IndexSearchForm.new(index_context:, mobile:)
               end
 
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :id, :user_bank_account_id, :investment_type_id, :active_month_years))
+              render MonthYearContainer.new(
+                index_context: index_context.slice(:search_term, :id, :user_bank_account_id, :investment_type_id, :active_month_years, :return_to)
+              )
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_investment_path(format: :turbo_stream))
+            render Views::Shared::MobileFloatingNav.new(new_href: new_investment_path(return_to: index_context[:return_to]))
           end
         end
       end

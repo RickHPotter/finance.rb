@@ -8,11 +8,9 @@ class BudgetsController < ApplicationController
 
   def index
     build_index_context
+    @index_context[:return_to] = budget_navigation_return_param(request.fullpath)
 
-    respond_to do |format|
-      format.html { render Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile)
   end
 
   def month_year
@@ -23,20 +21,25 @@ class BudgetsController < ApplicationController
 
     budgets = Logic::Budgets.find_by_ref_month_year_by_params(current_context, month, year, budget_params.merge(search_budget_params.slice(:search_term)))
 
-    render Views::Budgets::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, budgets:, category_colour_display_mode:)
+    render Views::Budgets::MonthYear.new(
+      mobile: @mobile,
+      month_year:,
+      month_year_str:,
+      budgets:,
+      category_colour_display_mode:,
+      return_to: budget_navigation_return_param(params[:return_to])
+    )
   end
 
   def show
-    render Views::Budgets::Show.new(budget: @budget)
+    set_return_to
+    render_top_level Views::Budgets::Show.new(budget: @budget, return_to: @return_to)
   end
 
   def new
     @budget = current_context.budgets.new(user: current_user)
-
-    respond_to do |format|
-      format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
-      format.turbo_stream
-    end
+    set_return_to
+    render_top_level Views::Budgets::New.new(current_user:, budget: @budget, return_to: @return_to)
   end
 
   def create
@@ -46,19 +49,14 @@ class BudgetsController < ApplicationController
   end
 
   def edit
-    respond_to do |format|
-      format.html { render Views::Budgets::Edit.new(current_user:, budget: @budget) }
-      format.turbo_stream
-    end
+    set_return_to
+    render_top_level Views::Budgets::Edit.new(current_user:, budget: @budget, return_to: @return_to)
   end
 
   def duplicate
     @budget = current_context.budgets.duplicate(params[:id])
-
-    respond_to do |format|
-      format.html { render Views::Budgets::New.new(current_user:, budget: @budget) }
-      format.turbo_stream { render Views::Budgets::New.new(current_user:, budget: @budget) }
-    end
+    set_return_to
+    render_top_level Views::Budgets::New.new(current_user:, budget: @budget, return_to: @return_to)
   end
 
   def update
@@ -68,10 +66,17 @@ class BudgetsController < ApplicationController
   end
 
   def destroy
+    set_return_to
     @budget.destroy
-    build_index_context
 
-    respond_to(&:turbo_stream)
+    if @budget.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyed, Budget), status: :see_other
+    else
+      respond_to do |format|
+        format.html { render Views::Budgets::Show.new(budget: @budget, return_to: @return_to), status: :unprocessable_content }
+        format.turbo_stream { render :destroy, status: :unprocessable_content }
+      end
+    end
   end
 
   def bulk_update
@@ -94,21 +99,13 @@ class BudgetsController < ApplicationController
   end
 
   def handle_save
-    if @budget.valid?
-      load_based_on_save
-      build_index_context
-      set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
-    end
+    set_return_to
+    return render_budget_failure unless @budget.valid?
 
-    respond_to(&:turbo_stream)
-  end
-
-  def load_based_on_save
-    min_date = current_context.cash_installments.minimum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    max_date = current_context.cash_installments.maximum("MAKE_DATE(installments.year, installments.month, 1)") || Time.zone.today
-    @years = (min_date.year..max_date.year)
-    @default_year = @budget.year
-    @active_month_years = [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ]
+    set_tabs(active_menu: :cash, active_sub_menu: :pix) if @budget.active?
+    redirect_to budget_save_destination,
+                notice: notification_model(action_name == "create" ? :created : :updated, Budget),
+                status: :see_other
   end
 
   def build_index_context
@@ -125,6 +122,46 @@ class BudgetsController < ApplicationController
   end
 
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def render_budget_failure
+    view =
+      if action_name == "create"
+        Views::Budgets::New.new(current_user:, budget: @budget, return_to: @return_to)
+      else
+        Views::Budgets::Edit.new(current_user:, budget: @budget, return_to: @return_to)
+      end
+
+    respond_to do |format|
+      format.html { render view, status: :unprocessable_content }
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def budget_save_destination
+    return @return_to unless @budget.active?
+
+    cash_transactions_path(
+      default_year: @budget.year,
+      active_month_years: [ Date.new(@budget.year, @budget.month, 1).strftime("%Y%m").to_i ].to_json
+    )
+  end
+
+  def set_return_to
+    @return_to = budget_navigation_destination(params[:return_to])
+  end
+
+  def budget_navigation_destination(raw)
+    Navigation::Budgets.new(raw:, fallback: budgets_path, current_user:, current_context:).destination
+  end
+
+  def budget_navigation_return_param(raw)
+    destination = budget_navigation_destination(raw)
+    destination unless destination == budgets_path
+  end
 
   def set_budget_tabs
     set_tabs(active_menu: :cash, active_sub_menu: :budget)
@@ -207,9 +244,13 @@ class BudgetsController < ApplicationController
 
     uri = URI.parse(raw_return_path)
     return nil if uri.host.present? || uri.scheme.present?
-    return nil unless [ budgets_path, cash_transactions_path ].include?(uri.path)
+    return budget_navigation_destination(raw_return_path) if uri.path == budgets_path
+    if uri.path == cash_transactions_path
+      return Navigation::CashTransactions.new(raw: raw_return_path, fallback: cash_transactions_path, current_user:,
+                                              current_context:).destination
+    end
 
-    uri.to_s
+    nil
   rescue URI::InvalidURIError
     nil
   end

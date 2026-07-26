@@ -198,7 +198,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment_type_id }
 
       link_to cash_transaction.description,
-              investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
+              investments_path(investment:, default_year:, active_month_years:),
               class:,
               title: cash_transaction.comment,
               data: { turbo_frame: "_top", turbo_prefetch: false }

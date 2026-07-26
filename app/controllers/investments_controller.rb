@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class InvestmentsController < ApplicationController
+class InvestmentsController < ApplicationController # rubocop:disable Metrics/ClassLength
   include TabsConcern
 
   before_action :set_investment, only: %i[edit update destroy]
@@ -8,11 +8,9 @@ class InvestmentsController < ApplicationController
 
   def index
     build_index_context
+    @index_context[:return_to] = investment_navigation_return_param(request.fullpath)
 
-    respond_to do |format|
-      format.html { render Views::Investments::Index.new(index_context: @index_context, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)
   end
 
   def month_year
@@ -21,7 +19,14 @@ class InvestmentsController < ApplicationController
 
     investments = Logic::Investments.find_ref_month_year_by_params(current_context, investment_params, search_investment_params)
 
-    render Views::Investments::MonthYear.new(mobile: @mobile, month_year:, month_year_str:, investments:, current_user:)
+    render Views::Investments::MonthYear.new(
+      mobile: @mobile,
+      month_year:,
+      month_year_str:,
+      investments:,
+      current_user:,
+      return_to: investment_navigation_return_param(params[:return_to])
+    )
   end
 
   def new
@@ -39,11 +44,9 @@ class InvestmentsController < ApplicationController
     @investment.date += 1.day if next_day_duplicate_requested?
     @investment.duplicate = next_day_duplicate_requested?
     @chain_context = current_chain_context(mode: chain_mode_for_new_investment)
+    set_return_to
 
-    respond_to do |format|
-      format.html { render Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context) }
-      format.turbo_stream
-    end
+    render_top_level Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context, return_to: @return_to)
   end
 
   def duplicate
@@ -55,8 +58,9 @@ class InvestmentsController < ApplicationController
     @investment.month = @investment.date.month
     @investment.year = @investment.date.year
     @chain_context = current_chain_context(mode: "duplicate")
+    set_return_to
 
-    render Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context)
+    render_top_level Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context, return_to: @return_to)
   end
 
   def create
@@ -67,36 +71,39 @@ class InvestmentsController < ApplicationController
 
     @investment = Logic::Investments.create(investment_params.merge(user: current_user, context: current_context))
     @chain_context = current_chain_context
+    set_return_to
 
-    handle_chain_save_success if @investment&.errors&.empty?
+    return render_investment_failure if @investment.blank? || @investment.errors.any?
 
-    respond_to(&:turbo_stream)
+    redirect_to handle_chain_save_success, notice: notification_model(:created, Investment), status: :see_other
   end
 
   def edit
-    respond_to do |format|
-      format.html { render Views::Investments::Edit.new(current_user:, investment: @investment) }
-      format.turbo_stream
-    end
+    set_return_to
+    render_top_level Views::Investments::Edit.new(current_user:, investment: @investment, return_to: @return_to)
   end
 
   def update
     @investment = Logic::Investments.update(@investment, investment_params.merge(user: current_user, context: current_context))
+    set_return_to
 
-    load_based_on_save if @investment
+    return render_investment_failure if @investment.blank? || @investment.errors.any?
 
-    respond_to(&:turbo_stream)
+    redirect_to @return_to, notice: notification_model(:updated, Investment), status: :see_other
   end
 
   def destroy
+    set_return_to
     @investment.destroy
-    build_index_context
 
-    respond_to(&:turbo_stream)
-  end
-
-  def load_based_on_save
-    load_based_on_affected_investments(current_context.investments.where(id: @investment.id))
+    if @investment.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyed, Investment), status: :see_other
+    else
+      respond_to do |format|
+        format.html { render Views::Investments::Edit.new(current_user:, investment: @investment, return_to: @return_to), status: :unprocessable_content }
+        format.turbo_stream { render :destroy, status: :unprocessable_content }
+      end
+    end
   end
 
   def build_index_context # rubocop:disable Metrics/AbcSize
@@ -130,78 +137,51 @@ class InvestmentsController < ApplicationController
   def handle_chain_save_success
     created_record_ids = updated_chain_record_ids(@investment.id)
 
-    if continue_chain?
-      @chain_context = current_chain_context(record_ids: created_record_ids, checked: true)
-      @next_investment = next_investment_for_chain
-      return
-    end
+    return chain_continuation_destination(created_record_ids) if continue_chain?
+    return chain_index_destination(created_record_ids) if chain_workflow?
 
-    load_based_on_affected_investments(current_context.investments.where(id: created_record_ids))
+    @return_to
   end
 
   def handle_chain_finish_without_save
-    @finished_chain_without_save = true
-    @investment = current_context.investments.new
-    load_based_on_affected_investments(current_context.investments.where(id: current_chain_record_ids))
-
-    respond_to(&:turbo_stream)
+    set_return_to
+    redirect_to chain_index_destination(current_chain_record_ids), status: :see_other
   end
 
-  def load_based_on_affected_investments(investments)
-    investments = investments.to_a
-
-    if investments.empty?
-      build_index_context
-      return
-    end
-
-    active_month_years = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
-    index_filters = affected_investment_filters(investments)
-    count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, index_filters, search_investment_params)
-
-    @index_context = {
-      current_user:,
-      years: investment_years,
-      default_year: active_month_years.max.to_s.first(4).to_i,
-      active_month_years:,
-      **index_filters,
-      count_by_month_year:
+  def chain_continuation_destination(record_ids)
+    options = {
+      chain_mode: current_chain_context[:mode],
+      chain_record_ids: record_ids,
+      continue_chain: "1",
+      return_to: @return_to
     }
-  end
 
-  def affected_investment_filters(investments)
-    {
-      user_bank_account_id: investments.map(&:user_bank_account_id).compact.uniq,
-      investment_type_id: investments.map(&:investment_type_id).compact.uniq
-    }.compact_blank
-  end
-
-  def investment_years
-    min_date = current_context.investments.minimum("MAKE_DATE(year, month, 1)") || Time.zone.today
-    max_date = current_context.investments.maximum("MAKE_DATE(year, month, 1)") || Time.zone.today
-
-    (min_date.year..max_date.year)
-  end
-
-  def next_investment_for_chain
-    return duplicate_investment_sample(@investment, advance_date: next_day_duplicate_requested?) if current_chain_context[:mode] == "duplicate"
-
-    @investment.dup.tap do |investment|
-      investment.description = investment.price = nil
-      investment.date = Time.zone.now
-      investment.month = investment.date.month
-      investment.year = investment.date.year
+    if current_chain_context[:mode] == "duplicate" && !next_day_duplicate_requested?
+      duplicate_investment_path(@investment, **options)
+    else
+      new_investment_path(
+        investment: @investment.slice(:user_bank_account_id, :investment_type_id),
+        next_day: ("1" if next_day_duplicate_requested?),
+        **options
+      )
     end
   end
 
-  def duplicate_investment_sample(existing_investment, advance_date: false)
-    existing_investment.dup.tap do |investment|
-      investment.duplicate = true
-      investment.price = 0
-      investment.date = advance_date ? existing_investment.date + 1.day : existing_investment.date
-      investment.month = investment.date.month
-      investment.year = investment.date.year
-    end
+  def chain_index_destination(record_ids)
+    investments = current_context.investments.where(id: record_ids)
+    return @return_to if investments.empty?
+
+    months = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
+    destination = investments_path(
+      default_year: months.max.to_s.first(4).to_i,
+      active_month_years: months.to_json,
+      investment: {
+        id: investments.ids,
+        user_bank_account_id: investments.pluck(:user_bank_account_id).compact.uniq,
+        investment_type_id: investments.pluck(:investment_type_id).compact.uniq
+      }
+    )
+    investment_navigation_destination(destination)
   end
 
   def current_chain_context(mode: nil, record_ids: current_chain_record_ids, checked: continue_chain_requested?)
@@ -213,7 +193,13 @@ class InvestmentsController < ApplicationController
   end
 
   def current_chain_record_ids
-    Array(params[:chain_record_ids]).compact_blank.map(&:to_i)
+    raw_ids = Array(params[:chain_record_ids]).compact_blank.map(&:to_s)
+    return [] if raw_ids.size > Navigation::State::MAX_VALUES
+    return [] unless raw_ids.all? { |id| id.match?(/\A[1-9]\d*\z/) }
+
+    ids = raw_ids.map(&:to_i).uniq
+    owned_ids = current_context.investments.where(id: ids).ids
+    owned_ids.sort == ids.sort ? ids : []
   end
 
   def updated_chain_record_ids(current_record_id)
@@ -230,7 +216,40 @@ class InvestmentsController < ApplicationController
 
   def finish_chain_without_save_requested? = ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
 
+  def chain_workflow? = current_chain_record_ids.any? || params[:chain_mode].present?
+
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def render_investment_failure
+    view =
+      if action_name == "create"
+        Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context, return_to: @return_to)
+      else
+        Views::Investments::Edit.new(current_user:, investment: @investment, return_to: @return_to)
+      end
+
+    respond_to do |format|
+      format.html { render view, status: :unprocessable_content }
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def set_return_to
+    @return_to = investment_navigation_destination(params[:return_to])
+  end
+
+  def investment_navigation_destination(raw)
+    Navigation::Investments.new(raw:, fallback: investments_path, current_user:, current_context:).destination
+  end
+
+  def investment_navigation_return_param(raw)
+    destination = investment_navigation_destination(raw)
+    destination unless destination == investments_path
+  end
 
   def next_day_duplicate_requested? = ActiveModel::Type::Boolean.new.cast(params[:next_day])
 

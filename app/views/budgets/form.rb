@@ -12,11 +12,12 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :budget, :entities
+  attr_reader :current_user, :budget, :entities, :return_to
 
-  def initialize(current_user:, budget:)
+  def initialize(current_user:, budget:, return_to: "/budgets")
     @current_user = current_user
     @budget = budget
+    @return_to = return_to
 
     set_categories
     set_entities
@@ -36,6 +37,7 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
+        hidden_field_tag :return_to, return_to
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,     entities_json,   disabled: true, data: { reactive_form_target: :entityIcons }
 
@@ -364,10 +366,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def persisted_actions_row
     div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}",
+             data: { turbo_frame: "_top", turbo_action: "replace" }) { action_message(:submit) }
 
       Button(
-        link: duplicate_budget_path(budget),
+        link: duplicate_budget_path(budget, return_to:),
         class: "min-w-64 #{duplicate_button_class}",
         data: { turbo_frame: "_top" }
       ) do
@@ -378,11 +381,11 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
         id: budget.id,
         text: action_message(:destroy),
         link_params: {
-          href: budget_path(budget),
+          href: budget_path(budget, return_to:),
           id: "delete_budget_#{budget.id}",
           variant: :outline,
           class: "min-w-64 #{destroy_button_class}",
-          data: { turbo_method: :delete }
+          data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
         }
       )
 
@@ -392,7 +395,8 @@ class Views::Budgets::Form < Views::Base # rubocop:disable Metrics/ClassLength
 
   def new_record_actions_row
     div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}") { action_message(:submit) }
+      Button(type: :submit, class: "min-w-64 #{submit_button_class(form_action_mode(budget))}",
+             data: { turbo_frame: "_top", turbo_action: "replace" }) { action_message(:submit) }
     end
   end
 

@@ -1,26 +1,6 @@
 version: 1
 
 format_turbo_stream_links:
-  - path: app/views/budgets/index.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 4
-  - path: app/views/budgets/index_search_form.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 4
-  - path: app/views/cash_installments/index.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 4
-  - path: app/views/investments/index.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 4
-  - path: app/views/investments/index_search_form.rb
-    occurrences: 1
-    classification: top_level_drive
-    slice: 4
   - path: app/views/messages/message.rb
     occurrences: 1
     classification: in_place_stream
@@ -43,18 +23,6 @@ center_container_replacements:
       - app/controllers/budgets_controller.rb
     expected_occurrences: 1
     classification: in_place_stream
-    slice: 4
-  - glob: app/views/budgets/*.turbo_stream.erb
-    expected_occurrences: 10
-    classification: top_level_drive
-    slice: 4
-  - glob: app/views/investments/*.turbo_stream.erb
-    expected_occurrences: 10
-    classification: top_level_drive
-    slice: 4
-  - glob: app/views/subscriptions/*.turbo_stream.erb
-    expected_occurrences: 5
-    classification: top_level_drive
     slice: 4
   - glob: app/views/categories/*.turbo_stream.erb
     expected_occurrences: 8

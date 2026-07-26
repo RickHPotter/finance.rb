@@ -215,6 +215,9 @@ RSpec.describe "Investments", type: :request do
 
       created_investment = Investment.last
 
+      expect(response).to have_http_status(:see_other)
+      get URI.parse(response.location).request_uri, headers: html_headers
+
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Chain Creating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
@@ -298,6 +301,9 @@ RSpec.describe "Investments", type: :request do
       created_investment = Investment.order(:id).last
 
       expect(created_investment.date.to_date).to eq(Date.new(2026, 3, 24))
+      expect(response).to have_http_status(:see_other)
+      get URI.parse(response.location).request_uri, headers: html_headers
+
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Chain Duplicating")
 
@@ -338,12 +344,9 @@ RSpec.describe "Investments", type: :request do
         }, headers: turbo_stream_headers
       end.not_to change(Investment, :count)
 
-      expect(response).to have_http_status(:success)
-      expect(response.body).not_to include("investment%5Bid%5D")
-      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
-      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
-      expect(response.body).to include("202603")
-      expect(response.body).not_to include("Chain Creating")
+      expect(response).to have_http_status(:see_other)
+      destination = URI.parse(response.location).request_uri
+      expect(destination).to include("investment%5Bid%5D", "investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "202603")
     end
 
     it "creates an investment" do
@@ -362,10 +365,8 @@ RSpec.describe "Investments", type: :request do
         }, headers: turbo_stream_headers
       end.to change(Investment, :count).by(1)
 
-      expect(response.body).not_to include("investment%5Bid%5D")
-      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
-      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
-      expect(response.body).to include("202603")
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(investments_path)
     end
   end
 
@@ -387,9 +388,8 @@ RSpec.describe "Investments", type: :request do
       }, headers: turbo_stream_headers
 
       expect(investment.reload.description).to eq("Updated Investment")
-      expect(response.body).not_to include("investment%5Bid%5D")
-      expect(response.body).to include("investment%5Buser_bank_account_id%5D%5B%5D=#{user_bank_account.id}")
-      expect(response.body).to include("investment%5Binvestment_type_id%5D%5B%5D=#{investment_type.id}")
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(investments_path)
     end
 
     it "shows generic and detailed failure notifications when update validation fails" do
