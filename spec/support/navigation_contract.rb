@@ -6,7 +6,7 @@ module NavigationContractHelpers
   end
 
   def turbo_frame_headers(frame_id)
-    turbo_stream_headers.merge("TURBO_FRAME" => frame_id)
+    turbo_stream_headers.merge("Turbo-Frame" => frame_id)
   end
 end
 

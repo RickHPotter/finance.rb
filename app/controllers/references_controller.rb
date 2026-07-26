@@ -5,6 +5,7 @@ class ReferencesController < ApplicationController
 
   before_action :set_user_card, only: %i[index edit update merge perform_merge]
   before_action :set_reference, only: %i[edit update merge]
+  before_action :set_return_to, only: %i[edit update merge perform_merge]
   before_action :set_reference_tabs
 
   def index
@@ -13,36 +14,57 @@ class ReferencesController < ApplicationController
   end
 
   def edit
-    render Views::References::Edit.new(reference: @reference, user_card: @user_card)
+    render_top_level Views::References::Edit.new(reference: @reference, user_card: @user_card, return_to: @return_to)
   end
 
   def update
     @reference.skip_reference_closing_date_calculation = true
 
     if @reference.update(reference_params)
-      redirect_to edit_user_card_path(@user_card)
+      redirect_to user_card_edit_destination, status: :see_other
     else
-      render Views::References::Edit.new(reference: @reference, user_card: @user_card), status: :unprocessable_content
+      render_top_level Views::References::Edit.new(reference: @reference, user_card: @user_card, return_to: @return_to),
+                       status: :unprocessable_content
     end
   end
 
   def merge
-    render Views::References::Merge.new(reference: @reference, user_card: @user_card)
+    render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to)
   end
 
   def perform_merge
     source_reference_date = "#{merge_reference_params[:source_reference_date]}-01"
     target_reference_date = "#{merge_reference_params[:target_reference_date]}-01"
-    @reference = @user_card.find_or_create_reference_for(source_reference_date.to_date, context: current_context)
+    source_date = source_reference_date.to_date
+    @reference = current_context.references.find_by(user_card: @user_card, year: source_date.year, month: source_date.month) ||
+                 current_context.references.new(user_card: @user_card, reference_date: source_date)
 
     if Logic::References.merge(@user_card, source_reference_date, target_reference_date, context: current_context)
-      redirect_to edit_user_card_path(@user_card)
+      redirect_to user_card_edit_destination, status: :see_other
     else
-      render Views::References::Merge.new(reference: @reference, user_card: @user_card), status: :unprocessable_content
+      render_top_level Views::References::Merge.new(reference: @reference, user_card: @user_card, return_to: @return_to),
+                       status: :unprocessable_content
     end
   end
 
   private
+
+  def render_top_level(view, status: :ok)
+    respond_to do |format|
+      format.html { render view, status: }
+      format.turbo_stream { render view, formats: :html, content_type: "text/html", status: }
+    end
+  end
+
+  def set_return_to
+    @return_to = Navigation::UserCards.new(raw: params[:return_to], fallback: user_cards_path, current_user:).destination
+  end
+
+  def user_card_edit_destination
+    return edit_user_card_path(@user_card) if @return_to == user_cards_path
+
+    edit_user_card_path(@user_card, return_to: @return_to)
+  end
 
   def set_reference_tabs
     set_tabs(active_menu: :data, active_sub_menu: :user_card)

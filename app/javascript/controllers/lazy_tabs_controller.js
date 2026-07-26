@@ -2,7 +2,11 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["tab", "panel"]
-  static values = { current: String }
+  static values = {
+    current: String,
+    urlSync: { type: Boolean, default: false },
+    urlParam: { type: String, default: "tab" }
+  }
 
   connect() {
     if (this.hasCurrentValue && this.currentValue === "") return
@@ -13,7 +17,9 @@ export default class extends Controller {
 
   select(event) {
     event.preventDefault()
-    this.show(event.currentTarget.dataset.lazyTabsName)
+    const name = event.currentTarget.dataset.lazyTabsName
+    this.show(name)
+    this.syncUrl(name)
   }
 
   show(name) {
@@ -44,5 +50,13 @@ export default class extends Controller {
     if (!frame || frame.getAttribute("src")) return
 
     frame.setAttribute("src", frame.dataset.lazyTabsLazySrc)
+  }
+
+  syncUrl(name) {
+    if (!this.urlSyncValue) return
+
+    const url = new URL(window.location.href)
+    url.searchParams.set(this.urlParamValue, name)
+    window.history.replaceState(window.history.state, "", url)
   }
 }

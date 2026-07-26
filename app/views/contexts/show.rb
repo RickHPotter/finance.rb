@@ -61,16 +61,16 @@ class Views::Contexts::Show < Views::Base
               button_to(
                 archive_context_path(display_context),
                 method: :patch,
-                form: { data: { turbo: false } },
-                data: { turbo: false, turbo_prefetch: false },
+                form: { data: { turbo_frame: "_top", turbo_action: "replace" } },
+                data: { turbo_prefetch: false },
                 class: archive_button_class
               ) { I18n.t("contexts.show.archive") }
             elsif display_context.derived?
               button_to(
                 unarchive_context_path(display_context),
                 method: :patch,
-                form: { data: { turbo: false } },
-                data: { turbo: false, turbo_prefetch: false },
+                form: { data: { turbo_frame: "_top", turbo_action: "replace" } },
+                data: { turbo_prefetch: false },
                 class: "inline-flex min-w-40 items-center justify-center rounded-md border border-emerald-500 bg-emerald-100 px-4 py-2 " \
                        "text-center text-sm font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-500 hover:text-white"
               ) { I18n.t("contexts.show.unarchive") }
@@ -85,7 +85,7 @@ class Views::Contexts::Show < Views::Base
                   id: "delete_context_#{display_context.id}",
                   variant: :outline,
                   class: "min-w-40 #{destroy_button_class}",
-                  data: { turbo_method: :delete, turbo_frame: "_top" }
+                  data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
                 }
               )
             end
@@ -94,8 +94,9 @@ class Views::Contexts::Show < Views::Base
               button_to(
                 switch_context_path(display_context),
                 method: :patch,
-                form: { data: { turbo: false } },
-                data: { turbo: false, turbo_prefetch: false },
+                params: { return_to: contexts_path },
+                form: { data: { turbo_frame: "_top", turbo_action: "replace" } },
+                data: { turbo_prefetch: false },
                 class: "inline-flex min-w-40 items-center justify-center rounded-md border border-sky-900 bg-sky-500 px-4 py-2 " \
                        "text-center text-sm font-semibold text-white shadow-sm transition hover:border-sky-500 hover:bg-sky-100 hover:text-sky-900"
               ) { I18n.t("contexts.show.switch") }

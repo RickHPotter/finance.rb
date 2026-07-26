@@ -29,11 +29,6 @@ center_container_replacements:
     expected_occurrences: 1
     classification: top_level_drive
     slice: 9
-  - paths:
-      - app/views/static/donation.turbo_stream.erb
-    expected_occurrences: 1
-    classification: top_level_drive
-    slice: 7
 
 legacy_history_shim:
   path: app/javascript/controllers/application.js

@@ -54,8 +54,9 @@ class Views::Shared::AppFooter < Views::Base
           active = current_context&.id == context.id
           button_to switch_context_path(context),
                     method: :patch,
-                    form: { data: { turbo: false } },
-                    data: { turbo: false, turbo_prefetch: false },
+                    params: { return_to: request.fullpath },
+                    form: { data: { turbo_frame: "_top", turbo_action: "replace" } },
+                    data: { turbo_prefetch: false },
                     class: context_button_class(active) do
             plain context.name
           end

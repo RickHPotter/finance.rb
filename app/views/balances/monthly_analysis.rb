@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class Views::Balances::MonthlyAnalysis < Views::Base
+  attr_reader :month
+
+  def initialize(month: Time.zone.today.strftime("%Y-%m"))
+    @month = month
+  end
+
   def view_template
     turbo_frame_tag :balances_monthly_analysis_content do
       section(
@@ -49,7 +55,7 @@ class Views::Balances::MonthlyAnalysis < Views::Base
         input(
           id: "balances_monthly_analysis_month",
           type: :month,
-          value: Time.zone.today.strftime("%Y-%m"),
+          value: month,
           aria: { label: I18n.t("balances.monthly_analysis.title") },
           class: "min-w-0 flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 sm:w-40 " \
                  "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100",

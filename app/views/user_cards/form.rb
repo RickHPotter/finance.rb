@@ -142,12 +142,12 @@ class Views::UserCards::Form < Views::Base
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_closing_date, format: :short) }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_date, format: :short) }
                   div(class: "flex items-center justify-center") do
-                    link_to(edit_user_card_reference_path(user_card, reference),
+                    link_to(edit_user_card_reference_path(user_card, reference, **reference_return_options),
                             class: "text-blue-600 hover:text-blue-800 dark:text-cyan-300 dark:hover:text-cyan-200 mx-2", data: { turbo_frame: "_top" }) do
                       cached_icon(:pencil)
                     end
                     link_to(
-                      merge_user_card_references_path(user_card, id: reference.id),
+                      merge_user_card_references_path(user_card, id: reference.id, **reference_return_options),
                       class: "text-gray-700 hover:text-gray-800 dark:text-slate-300 dark:hover:text-slate-100 mx-2",
                       data: { turbo_frame: "_top" }
                     ) do
@@ -184,5 +184,11 @@ class Views::UserCards::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  def reference_return_options
+    return {} if return_to == "/user_cards"
+
+    { return_to: }
   end
 end

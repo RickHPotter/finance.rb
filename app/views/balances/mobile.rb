@@ -5,6 +5,13 @@ class Views::Balances::Mobile < Views::Base
 
   include Views::Balances::AnalysisTabs
 
+  attr_reader :tab, :month
+
+  def initialize(tab: "overview", month: Time.zone.today.strftime("%Y-%m"))
+    @tab = tab
+    @month = month
+  end
+
   def view_template
     turbo_frame_tag :center_container do
       div(class: mobile_shell_class) do
@@ -15,7 +22,15 @@ class Views::Balances::Mobile < Views::Base
           end
         end
 
-        div(class: "pt-2", data: { controller: "lazy-tabs", lazy_tabs_current_value: "overview" }) do
+        div(
+          class: "pt-2",
+          data: {
+            controller: "lazy-tabs",
+            lazy_tabs_current_value: tab,
+            lazy_tabs_url_sync_value: true,
+            lazy_tabs_url_param_value: "tab"
+          }
+        ) do
           render_analysis_tabs
 
           div(id: "balances_overview_panel", role: :tabpanel, data: { lazy_tabs_target: "panel", lazy_tabs_name: "overview" }) do
@@ -34,7 +49,7 @@ class Views::Balances::Mobile < Views::Base
 
           div(id: "balances_monthly_analysis_panel", role: :tabpanel, class: "hidden px-4 pb-4",
               data: { lazy_tabs_target: "panel", lazy_tabs_name: "monthly_analysis" }) do
-            turbo_frame_tag :balances_monthly_analysis_content, data: { lazy_tabs_lazy_src: monthly_analysis_balances_path } do
+            turbo_frame_tag :balances_monthly_analysis_content, data: { lazy_tabs_lazy_src: monthly_analysis_balances_path(month:) } do
               analysis_loading_state
             end
           end
