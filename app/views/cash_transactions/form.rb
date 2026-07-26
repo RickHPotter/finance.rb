@@ -94,7 +94,7 @@ class Views::CashTransactions::Form < Views::Base
             active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
 
             Link(
-              href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+              href: card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:),
               variant: :outline,
               class: "flex flex-col items-center text-center text-inherit #{submit_row_ghost_button_class}",
               data: { turbo_frame: "_top", turbo_prefetch: "false" }

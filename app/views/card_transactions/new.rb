@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class Views::CardTransactions::New < Views::Base
-  def initialize(current_user:, card_transaction:, chain_context: nil)
+  def initialize(current_user:, card_transaction:, chain_context: nil, return_to: "/card_transactions")
     @current_user = current_user
     @card_transaction = card_transaction
     @chain_context = chain_context
+    @return_to = return_to
   end
 
   def view_template
@@ -14,7 +15,12 @@ class Views::CardTransactions::New < Views::Base
         badge_class:,
         skeleton_view: Views::CardTransactions::FormSubmissionSkeleton
       ) do
-        render Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction, chain_context: @chain_context)
+        render Views::CardTransactions::Form.new(
+          current_user: @current_user,
+          card_transaction: @card_transaction,
+          chain_context: @chain_context,
+          return_to: @return_to
+        )
       end
     end
   end

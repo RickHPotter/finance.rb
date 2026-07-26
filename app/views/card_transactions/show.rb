@@ -7,10 +7,11 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   include TranslateHelper
 
-  attr_reader :card_transaction
+  attr_reader :card_transaction, :return_to
 
-  def initialize(card_transaction:)
+  def initialize(card_transaction:, return_to: "/card_transactions")
     @card_transaction = card_transaction
+    @return_to = return_to
   end
 
   def view_template
@@ -48,8 +49,8 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "CardTransaction", item_id: card_transaction.id), variant: :outline)
-        dashboard_action(action_message(:edit), edit_card_transaction_path(card_transaction), variant: :edit)
-        dashboard_action(action_message(:duplicate), duplicate_card_transaction_path(card_transaction), variant: :duplicate) if duplicate_allowed?
+        dashboard_action(action_message(:edit), edit_card_transaction_path(card_transaction, return_to:), variant: :edit)
+        dashboard_action(action_message(:duplicate), duplicate_card_transaction_path(card_transaction, return_to:), variant: :duplicate) if duplicate_allowed?
         destroy_action
         pay_in_advance_action
       end
@@ -254,7 +255,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       id: "card_transaction_dashboard_destroy_#{card_transaction.id}",
       text: action_message(:destroy),
       link_params: {
-        href: card_transaction_path(card_transaction),
+        href: card_transaction_path(card_transaction, return_to:),
         variant: :destructive,
         id: "delete_card_transaction_#{card_transaction.id}",
         class: dashboard_action_class(:destroy),

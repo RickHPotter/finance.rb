@@ -208,7 +208,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
 
       link_to cash_transaction.description,
-              card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+              card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:),
               class:,
               title: cash_transaction.comment,
               data: { turbo_frame: "_top", turbo_prefetch: false }

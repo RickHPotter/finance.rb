@@ -11,27 +11,24 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
     build_index_context(card_installments_for_selected_user_card)
+    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
 
     set_card_tabs
 
-    respond_to do |format|
-      format.html { render Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::CardTransactions::Index.new(index_context: @index_context, mobile: @mobile)
   end
 
   def search
     build_index_context(current_context.card_installments)
+    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
 
-    respond_to do |format|
-      format.html { render Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile)
   end
 
   def month_year
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
+    return_to = card_navigation_return_param(params[:return_to])
     user_card_id = card_transaction_params[:user_card_id].presence
     user_card = current_user.user_cards.find_by(id: user_card_id)
 
@@ -43,12 +40,15 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
       user_card:,
       card_installments:,
       current_context:,
-      category_colour_display_mode:
+      category_colour_display_mode:,
+      return_to:
     )
   end
 
   def show
-    render Views::CardTransactions::Show.new(card_transaction: @card_transaction)
+    set_return_to
+
+    render_top_level Views::CardTransactions::Show.new(card_transaction: @card_transaction, return_to: @return_to)
   end
 
   def new
@@ -60,20 +60,21 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @card_transaction.entity_transactions.build(entity_id: card_transaction_params[:entity_id]) if card_transaction_params[:entity_id]
     @card_transaction.build_month_year
     @chain_context = current_chain_context(mode: "create")
+    set_return_to
 
-    respond_to do |format|
-      format.html { render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction, chain_context: @chain_context) }
-      format.turbo_stream
-    end
+    render_top_level Views::CardTransactions::New.new(
+      current_user:,
+      card_transaction: @card_transaction,
+      chain_context: @chain_context,
+      return_to: @return_to
+    )
   end
 
   def edit
     @card_transaction = current_context.card_transactions.find(params[:id])
+    set_return_to
 
-    respond_to do |format|
-      format.html { render Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction) }
-      format.turbo_stream
-    end
+    render_top_level Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction, return_to: @return_to)
   end
 
   def create
@@ -113,24 +114,22 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def destroy
+    set_return_to
     @card_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
-    card_installment = CardInstallment.find_by(id: params[:card_installment_id]) || @card_transaction.card_installments.first
-
-    @user_card = @card_transaction.user_card
     earliest_installment = @card_transaction.card_installments.order(:date).first
     Audit::BulkMutation.update_columns!(@card_transaction, date: earliest_installment.date) if earliest_installment.present?
     destroyed = @card_transaction.destroy
 
     if destroyed
-      index
-      @index_context[:default_year] = card_installment.year
-      @index_context[:active_month_years] = [ Date.new(card_installment.year, card_installment.month).strftime("%Y%m").to_i ]
+      redirect_to @return_to,
+                  notice: notification_model(:destroyeda, CardTransaction),
+                  status: :see_other
+      return
     end
 
     respond_to do |format|
-      format.turbo_stream do
-        render :destroy, status: destroyed ? :ok : :unprocessable_content
-      end
+      format.html { render Views::CardTransactions::Show.new(card_transaction: @card_transaction, return_to: @return_to), status: :unprocessable_content }
+      format.turbo_stream { render :destroy, status: :unprocessable_content }
     end
   end
 
@@ -139,45 +138,60 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
     set_card_tabs
     @chain_context = current_chain_context(mode: "duplicate")
+    set_return_to
 
-    render Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction, chain_context: @chain_context)
+    render_top_level Views::CardTransactions::New.new(
+      current_user:,
+      card_transaction: @card_transaction,
+      chain_context: @chain_context,
+      return_to: @return_to
+    )
   end
 
   def handle_save
-    if params[:commit] == "Update"
-      @chain_context = current_chain_context
+    return render_local_update if params[:commit] == "Update"
 
-      respond_to do |format|
-        format.turbo_stream do
-          set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
+    saved = @card_transaction.save
+    normalize_failed_card_transaction_save! unless saved
+    @chain_context = current_chain_context
+    set_return_to
 
-          render turbo_stream: [
-            turbo_stream.update(
-              @card_transaction,
-              Views::CardTransactions::Form.new(current_user: @current_user, card_transaction: @card_transaction, chain_context: @chain_context)
-            ),
-            turbo_stream.update(:tabs, partial: "shared/tabs")
-          ], status: :ok
-        end
-      end
-    else
-      saved = @card_transaction.save
-      normalize_failed_card_transaction_save! unless saved
+    return render_successful_save if saved
 
-      if saved
-        notify_shared_return_counterpart_updates!
+    render_save_failure
+  end
+
+  def render_local_update
+    @chain_context = current_chain_context
+    set_return_to
+
+    respond_to do |format|
+      format.turbo_stream do
         set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
-        handle_chain_save_success
-      else
-        @chain_context = current_chain_context
-      end
 
-      respond_to do |format|
-        format.turbo_stream do
-          render action_name, status: saved ? :ok : :unprocessable_content
-        end
+        render turbo_stream: [
+          turbo_stream.update(
+            @card_transaction,
+            Views::CardTransactions::Form.new(
+              current_user: @current_user,
+              card_transaction: @card_transaction,
+              chain_context: @chain_context,
+              return_to: @return_to
+            )
+          ),
+          turbo_stream.update(:tabs, partial: "shared/tabs")
+        ], status: :ok
       end
     end
+  end
+
+  def render_successful_save
+    notify_shared_return_counterpart_updates!
+    set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name)
+
+    redirect_to handle_chain_save_success,
+                notice: notification_model(action_name == "create" ? :createda : :updateda, CardTransaction),
+                status: :see_other
   end
 
   def pay_in_advance
@@ -238,6 +252,52 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   private
 
+  def render_top_level(view)
+    respond_to do |format|
+      format.html { render view }
+    end
+  end
+
+  def render_save_failure
+    respond_to do |format|
+      format.html do
+        view =
+          if action_name == "create"
+            Views::CardTransactions::New.new(
+              current_user:,
+              card_transaction: @card_transaction,
+              chain_context: @chain_context,
+              return_to: @return_to
+            )
+          else
+            Views::CardTransactions::Edit.new(current_user:, card_transaction: @card_transaction, return_to: @return_to)
+          end
+
+        render view, status: :unprocessable_content
+      end
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def set_return_to
+    @return_to = card_navigation_destination(params[:return_to])
+  end
+
+  def card_navigation_destination(raw)
+    Navigation::CardTransactions.new(
+      raw:,
+      fallback: card_transactions_path,
+      current_user:,
+      current_context:
+    ).destination
+  end
+
+  def card_navigation_return_param(raw)
+    destination = card_navigation_destination(raw)
+
+    destination unless destination == card_transactions_path
+  end
+
   def card_advance_payment_window
     return if @user_card.blank?
 
@@ -283,7 +343,11 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def render_card_advance_failure(alert_message)
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: alert_message }), status: :unprocessable_content
+        render turbo_stream: turbo_stream.update(
+          :notification,
+          partial: "shared/flash",
+          locals: { notice: nil, alert: alert_message }
+        ), status: :unprocessable_content
       end
       format.html { render plain: alert_message, status: :unprocessable_content }
     end
@@ -315,15 +379,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def handle_chain_save_success
     created_record_ids = updated_chain_record_ids(@card_transaction.id)
 
-    if continue_chain?
-      @chain_context = current_chain_context(record_ids: created_record_ids, checked: true)
-      @next_card_transaction = next_card_transaction_for_chain
-      return
-    end
+    return chain_continuation_destination(created_record_ids) if continue_chain?
+    return chain_index_destination(created_record_ids) if chain_workflow?
 
-    index
-    @index_context[:user_card] = @card_transaction.user_card
-    apply_chain_index_context(record_ids: created_record_ids)
+    @return_to
   end
 
   def notify_shared_return_counterpart_updates!
@@ -368,38 +427,41 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_chain_finish_without_save
-    @finished_chain_without_save = true
-    index
-    @index_context[:user_card] = @card_transaction.user_card if @card_transaction.user_card.present?
-    apply_chain_index_context(record_ids: current_chain_record_ids)
+    set_return_to
+    redirect_to chain_index_destination(current_chain_record_ids), status: :see_other
+  end
 
-    respond_to do |format|
-      format.turbo_stream { render :create, status: :ok }
+  def chain_continuation_destination(record_ids)
+    options = {
+      chain_mode: current_chain_context[:mode],
+      chain_record_ids: record_ids,
+      continue_chain: "1",
+      return_to: @return_to
+    }
+
+    if current_chain_context[:mode] == "duplicate"
+      duplicate_card_transaction_path(@card_transaction, **options)
+    else
+      new_card_transaction_path(user_card_id: @card_transaction.user_card_id, **options)
     end
   end
 
-  def apply_chain_index_context(record_ids:)
+  def chain_index_destination(record_ids)
     card_transactions = current_context.card_transactions.includes(:card_installments).where(id: record_ids)
-    installment_ids = card_transactions.flat_map { |transaction| transaction.card_installments.pluck(:id) }.uniq
+    installment_ids = card_transactions.flat_map { |transaction| transaction.card_installments.map(&:id) }.uniq
     active_month_years = card_transactions.flat_map do |transaction|
       transaction.card_installments.map { |installment| Date.new(installment.year, installment.month).strftime("%Y%m").to_i }
     end.uniq
+    return @return_to if installment_ids.empty?
 
-    @index_context[:card_installment_ids] = installment_ids
-    @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
-    @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
-  end
+    destination = card_transactions_path(
+      user_card_id: @card_transaction.user_card_id,
+      active_month_years: active_month_years.to_json,
+      default_year: active_month_years.max.to_s.first(4).to_i,
+      card_transaction: { card_installment_ids: installment_ids }
+    )
 
-  def next_card_transaction_for_chain
-    if current_chain_context[:mode] == "duplicate"
-      build_duplicate_card_transaction(@card_transaction.id)
-    else
-      current_context.card_transactions.new(
-        user: current_user,
-        user_card_id: @card_transaction.user_card_id || current_user.user_cards.active.order(:user_card_name).first.id,
-        date: Time.zone.now
-      ).tap(&:build_month_year)
-    end
+    card_navigation_destination(destination)
   end
 
   def build_duplicate_card_transaction(id)
@@ -418,7 +480,14 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def current_chain_record_ids
-    Array(params[:chain_record_ids]).compact_blank.map(&:to_i)
+    raw_ids = Array(params[:chain_record_ids]).compact_blank.map(&:to_s)
+    return [] if raw_ids.size > Navigation::State::MAX_VALUES
+    return [] unless raw_ids.all? { |id| id.match?(/\A[1-9]\d*\z/) }
+
+    ids = raw_ids.map(&:to_i).uniq
+    owned_ids = current_context.card_transactions.where(id: ids).ids
+
+    owned_ids.sort == ids.sort ? ids : []
   end
 
   def updated_chain_record_ids(current_record_id)
@@ -439,6 +508,10 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def finish_chain_without_save_requested?
     ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
+  end
+
+  def chain_workflow?
+    current_chain_record_ids.any? || params[:chain_mode].present?
   end
 
   def card_tab_name_for_state

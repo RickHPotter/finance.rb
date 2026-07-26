@@ -39,7 +39,8 @@ class Views::CardTransactions::Index < Views::Base
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
                                                                                :exchange_bound_type,
-                                                                               :user_card, :active_month_years, :sort, :direction, :order_by))
+                                                                               :user_card, :active_month_years, :sort, :direction, :order_by,
+                                                                               :return_to))
 
               BulkActionBar(
                 selected_label: action_message(:selected),
@@ -62,7 +63,7 @@ class Views::CardTransactions::Index < Views::Base
               )
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_card_transaction_path(user_card_id: user_card&.id, format: :turbo_stream))
+            render Views::Shared::MobileFloatingNav.new(new_href: new_card_transaction_path(user_card_id: user_card&.id, return_to: index_context[:return_to]))
           end
         end
       end
