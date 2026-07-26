@@ -216,7 +216,8 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
 
   def apply_form
     form_with(url: admin_audit_operation_rollback_preview_path(preview.operation), method: :post,
-              class: "mt-3 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700") do |form|
+              class: "mt-3 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700",
+              data: { turbo_frame: "_top", turbo_action: "replace" }) do |form|
       form.hidden_field(:apply_token, value: preview.apply_token, id: "audit_rollback_apply_token")
       if preview.confirmation_required?
         label(class: "inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200") do

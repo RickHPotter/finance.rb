@@ -23,7 +23,11 @@ class Views::HealthCheck::Checks::FindingBase < Views::Base
 
         div(class: "flex shrink-0 flex-wrap items-center gap-2") do
           capability_controls
-          a(href:, class: open_link_class, data: { turbo_frame: "_top" }) { I18n.t("health_check.details.open_record") } if href.present?
+          if href.present?
+            a(href:, class: open_link_class, data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }) do
+              I18n.t("health_check.details.open_record")
+            end
+          end
         end
       end
 

@@ -74,7 +74,12 @@ class Views::AuditOperations::Index < Views::Base
         p(class: "mt-2 text-xs text-slate-500 dark:text-slate-400") { operation_context(operation) }
       end
 
-      link_to(I18n.t("actions.show"), audit_operation_path(operation), class: LINK_CLASS)
+      link_to(
+        I18n.t("actions.show"),
+        audit_operation_path(operation),
+        class: LINK_CLASS,
+        data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+      )
     end
   end
 

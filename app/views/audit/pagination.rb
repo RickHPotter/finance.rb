@@ -33,8 +33,12 @@ class Views::Audit::Pagination < Views::Base
       span(class: "#{classes} cursor-not-allowed border-slate-200 text-slate-400 dark:border-slate-800 dark:text-slate-600") { label }
     else
       query = filters.merge(page: target_page).compact_blank.to_query
-      link_to(label, "#{url}?#{query}",
-              class: "#{classes} border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800")
+      link_to(
+        label,
+        "#{url}?#{query}",
+        class: "#{classes} border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800",
+        data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+      )
     end
   end
 end
