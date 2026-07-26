@@ -33,9 +33,9 @@ class Views::UserCards::Index < Views::Base
 
       link_to(
         action_model(:new, UserCard),
-        new_user_card_path,
+        new_user_card_path(return_to: index_context[:return_to]),
         class: index_new_button_class,
-        data: { turbo_frame: "_top" }
+        data: { turbo_frame: "_top", turbo_action: "replace" }
       )
     end
   end
@@ -66,7 +66,7 @@ class Views::UserCards::Index < Views::Base
 
               if user_cards.present?
                 user_cards.each do |record|
-                  render Views::UserCards::UserCard.new(user_card: record, mobile: false)
+                  render Views::UserCards::UserCard.new(user_card: record, mobile: false, return_to: index_context[:return_to])
                 end
               else
                 div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
@@ -90,7 +90,7 @@ class Views::UserCards::Index < Views::Base
             div(class: "mb-8", data: { datatable_target: "table" }) do
               if user_cards.present?
                 user_cards.each do |record|
-                  render Views::UserCards::UserCard.new(user_card: record, mobile: true)
+                  render Views::UserCards::UserCard.new(user_card: record, mobile: true, return_to: index_context[:return_to])
                 end
               else
                 div(class: resource_empty_row_class) { I18n.t(:rows_not_found) }
@@ -99,10 +99,10 @@ class Views::UserCards::Index < Views::Base
           end
 
           link_to(
-            new_user_card_path,
+            new_user_card_path(return_to: index_context[:return_to]),
             style: "margin: 30px",
             class: "fixed bottom-0 right-0 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform",
-            data: { turbo_frame: "_top" }
+            data: { turbo_frame: "_top", turbo_action: "replace" }
           ) { cached_icon(:bigger_plus) }
         end
       end

@@ -11,16 +11,19 @@ class UserBankAccountsController < ApplicationController
   def index
     build_index_context
     @user_bank_accounts = user_bank_accounts_scope
-    render Views::UserBankAccounts::Index.new(user_bank_accounts: @user_bank_accounts, index_context: @index_context, mobile: @mobile)
+    @index_context[:return_to] = user_bank_account_navigation_return_param(request.fullpath)
+    render_top_level Views::UserBankAccounts::Index.new(user_bank_accounts: @user_bank_accounts, index_context: @index_context, mobile: @mobile)
   end
 
   def new
     @user_bank_account = current_user.user_bank_accounts.new
-    render Views::UserBankAccounts::New.new(current_user:, user_bank_account: @user_bank_account, banks: @banks)
+    set_return_to
+    render_top_level Views::UserBankAccounts::New.new(current_user:, user_bank_account: @user_bank_account, banks: @banks, return_to: @return_to)
   end
 
   def show
-    render Views::UserBankAccounts::Show.new(user_bank_account: @user_bank_account)
+    set_return_to
+    render_top_level Views::UserBankAccounts::Show.new(user_bank_account: @user_bank_account, return_to: @return_to)
   end
 
   def create
@@ -30,7 +33,8 @@ class UserBankAccountsController < ApplicationController
   end
 
   def edit
-    render Views::UserBankAccounts::Edit.new(current_user:, user_bank_account: @user_bank_account, banks: @banks)
+    set_return_to
+    render_top_level Views::UserBankAccounts::Edit.new(current_user:, user_bank_account: @user_bank_account, banks: @banks, return_to: @return_to)
   end
 
   def update
@@ -40,21 +44,73 @@ class UserBankAccountsController < ApplicationController
   end
 
   def destroy
+    set_return_to
     @user_bank_account.destroy if @user_bank_account.cash_transactions.empty?
 
-    respond_to(&:turbo_stream)
+    if @user_bank_account.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyeda, UserBankAccount), status: :see_other
+    else
+      redirect_to @return_to, alert: user_bank_account_destroy_failure_notification, status: :see_other
+    end
   end
 
   def handle_save
-    if @user_bank_account.valid? && @user_bank_account.active?
+    set_return_to
+    return render_user_bank_account_failure unless @user_bank_account.valid?
+
+    if @user_bank_account.active?
       @cash_transaction = Logic::CashTransactions.create_from(user_bank_account: @user_bank_account)
       set_tabs(active_menu: :cash, active_sub_menu: :pix)
     end
 
-    respond_to(&:turbo_stream)
+    redirect_to user_bank_account_save_destination,
+                notice: notification_model(action_name == "create" ? :createda : :updateda, UserBankAccount),
+                status: :see_other
   end
 
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def render_user_bank_account_failure
+    view =
+      if action_name == "create"
+        Views::UserBankAccounts::New.new(current_user:, user_bank_account: @user_bank_account, banks: @banks, return_to: @return_to)
+      else
+        Views::UserBankAccounts::Edit.new(current_user:, user_bank_account: @user_bank_account, banks: @banks, return_to: @return_to)
+      end
+
+    respond_to do |format|
+      format.html { render view, status: :unprocessable_content }
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def user_bank_account_save_destination
+    return @return_to if @cash_transaction.blank?
+
+    new_cash_transaction_path(user_bank_account_id: @user_bank_account.id)
+  end
+
+  def set_return_to
+    @return_to = user_bank_account_navigation_destination(params[:return_to])
+  end
+
+  def user_bank_account_navigation_destination(raw)
+    Navigation::UserBankAccounts.new(raw:, fallback: user_bank_accounts_path, current_user:).destination
+  end
+
+  def user_bank_account_navigation_return_param(raw)
+    destination = user_bank_account_navigation_destination(raw)
+    destination unless destination == user_bank_accounts_path
+  end
+
+  def user_bank_account_destroy_failure_notification
+    @user_bank_account.errors.full_messages.to_sentence.presence ||
+      notification_model(:not_destroyed_because_has_transactionsa, UserBankAccount)
+  end
 
   def build_index_context
     @index_context = {
@@ -72,7 +128,7 @@ class UserBankAccountsController < ApplicationController
     if @index_context[:search_term].present?
       search_term = "%#{@index_context[:search_term].strip}%"
       scope = scope.where(
-        "user_bank_account_name ILIKE :search OR agency_number ILIKE :search OR account_number ILIKE :search",
+        "user_bank_account_name ILIKE :search OR agency_number::text ILIKE :search OR account_number::text ILIKE :search",
         search: search_term
       )
     end

@@ -7,10 +7,11 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
   include TranslateHelper
 
-  attr_reader :user_bank_account
+  attr_reader :user_bank_account, :return_to
 
-  def initialize(user_bank_account:)
+  def initialize(user_bank_account:, return_to: "/user_bank_accounts")
     @user_bank_account = user_bank_account
+    @return_to = return_to
   end
 
   def view_template
@@ -45,8 +46,8 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserBankAccount", item_id: user_bank_account.id), variant: :outline)
-        dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account), variant: :edit)
-        dashboard_action(action_message(:index), user_bank_accounts_path, variant: :outline)
+        dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account, return_to:), variant: :edit)
+        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -233,11 +234,11 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
       id: "user_bank_account_dashboard_destroy_#{user_bank_account.id}",
       text: action_message(:destroy),
       link_params: {
-        href: user_bank_account_path(user_bank_account),
+        href: user_bank_account_path(user_bank_account, return_to:),
         variant: :destructive,
         id: "delete_user_bank_account_#{user_bank_account.id}",
         class: dashboard_action_class(:destroy),
-        data: { turbo_method: :delete, turbo_frame: "_top" }
+        data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
   end

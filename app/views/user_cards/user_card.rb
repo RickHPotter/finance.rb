@@ -8,11 +8,12 @@ class Views::UserCards::UserCard < Views::Base
   include CacheHelper
   include TranslateHelper
 
-  attr_reader :user_card, :mobile
+  attr_reader :user_card, :mobile, :return_to
 
-  def initialize(user_card:, mobile: false)
+  def initialize(user_card:, mobile: false, return_to: nil)
     @user_card = user_card
     @mobile = mobile
+    @return_to = return_to
   end
 
   def view_template
@@ -33,7 +34,7 @@ class Views::UserCards::UserCard < Views::Base
       data: { id: user_card.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        link_to user_card_path(user_card),
+        link_to user_card_path(user_card, return_to:),
                 id: "show_user_card_#{user_card.id}",
                 class: "px-4 whitespace-nowrap hover:underline",
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
@@ -82,21 +83,21 @@ class Views::UserCards::UserCard < Views::Base
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
-          link_to(edit_user_card_path(user_card), id: "edit_user_card_#{user_card.id}",
-                                                  class: action_button_class,
-                                                  title: action_message(:edit),
-                                                  aria: { label: action_message(:edit) },
-                                                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
+          link_to(edit_user_card_path(user_card, return_to:), id: "edit_user_card_#{user_card.id}",
+                                                              class: action_button_class,
+                                                              title: action_message(:edit),
+                                                              aria: { label: action_message(:edit) },
+                                                              data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           LinkWithConfirmation(
             id: user_card.id,
             icon: :destroy,
             link_params: {
-              href: user_card_path(user_card),
+              href: user_card_path(user_card, return_to:),
               size: :xs,
               id: "delete_user_card_#{user_card.id}",
               class: destructive_action_button_class,
-              data: { turbo_method: :delete }
+              data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
             }
           )
         end
@@ -114,9 +115,9 @@ class Views::UserCards::UserCard < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :credit_card
-            link_to(brand_and_name, user_card_path(user_card), id: "show_user_card_#{user_card.id}",
-                                                               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
-                                                               data: { turbo_frame: "_top", turbo_prefetch: false })
+            link_to(brand_and_name, user_card_path(user_card, return_to:), id: "show_user_card_#{user_card.id}",
+                                                                           class: "text-lg font-semibold text-black underline underline-offset-[3px]",
+                                                                           data: { turbo_frame: "_top", turbo_prefetch: false })
           end
           status_badge
         end
