@@ -1,0 +1,134 @@
+version: 1
+
+format_turbo_stream_links:
+  - path: app/views/budgets/index.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 4
+  - path: app/views/budgets/index_search_form.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 4
+  - path: app/views/card_installments/index.rb
+    occurrences: 2
+    classification: top_level_drive
+    slice: 3
+  - path: app/views/card_transactions/index.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 3
+  - path: app/views/card_transactions/index_search_form.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 3
+  - path: app/views/cash_installments/index.rb
+    occurrences: 2
+    classification: top_level_drive
+    slice: 2
+  - path: app/views/cash_transactions/form.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 2
+  - path: app/views/cash_transactions/index.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 2
+  - path: app/views/cash_transactions/index_search_form.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 2
+  - path: app/views/investments/index.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 4
+  - path: app/views/investments/index_search_form.rb
+    occurrences: 1
+    classification: top_level_drive
+    slice: 4
+  - path: app/views/messages/message.rb
+    occurrences: 4
+    classification: top_level_drive
+    slice: 9
+
+center_container_replacements:
+  - paths:
+      - app/controllers/cash_installments_controller.rb
+      - app/controllers/cash_transactions_controller.rb
+    expected_occurrences: 5
+    classification: in_place_stream
+    slice: 2
+  - paths:
+      - app/controllers/card_transactions_controller.rb
+      - app/views/card_transactions/pay_in_advance.turbo_stream.erb
+    expected_occurrences: 3
+    classification: in_place_stream
+    slice: 3
+  - paths:
+      - app/controllers/budgets_controller.rb
+    expected_occurrences: 1
+    classification: in_place_stream
+    slice: 4
+  - glob: app/views/cash_transactions/*.turbo_stream.erb
+    expected_occurrences: 10
+    classification: top_level_drive
+    slice: 2
+  - paths:
+      - app/views/card_transactions/create.turbo_stream.erb
+      - app/views/card_transactions/destroy.turbo_stream.erb
+      - app/views/card_transactions/edit.turbo_stream.erb
+      - app/views/card_transactions/index.turbo_stream.erb
+      - app/views/card_transactions/new.turbo_stream.erb
+      - app/views/card_transactions/search.turbo_stream.erb
+      - app/views/card_transactions/update.turbo_stream.erb
+    expected_occurrences: 11
+    classification: top_level_drive
+    slice: 3
+  - glob: app/views/budgets/*.turbo_stream.erb
+    expected_occurrences: 10
+    classification: top_level_drive
+    slice: 4
+  - glob: app/views/investments/*.turbo_stream.erb
+    expected_occurrences: 10
+    classification: top_level_drive
+    slice: 4
+  - glob: app/views/subscriptions/*.turbo_stream.erb
+    expected_occurrences: 5
+    classification: top_level_drive
+    slice: 4
+  - glob: app/views/categories/*.turbo_stream.erb
+    expected_occurrences: 8
+    classification: top_level_drive
+    slice: 5
+  - glob: app/views/entities/*.turbo_stream.erb
+    expected_occurrences: 8
+    classification: top_level_drive
+    slice: 5
+  - glob: app/views/user_bank_accounts/*.turbo_stream.erb
+    expected_occurrences: 9
+    classification: top_level_drive
+    slice: 6
+  - glob: app/views/user_cards/*.turbo_stream.erb
+    expected_occurrences: 9
+    classification: top_level_drive
+    slice: 6
+  - paths:
+      - app/views/conversations/show.turbo_stream.erb
+    expected_occurrences: 1
+    classification: top_level_drive
+    slice: 9
+  - paths:
+      - app/views/static/donation.turbo_stream.erb
+    expected_occurrences: 1
+    classification: top_level_drive
+    slice: 7
+
+legacy_history_shim:
+  path: app/javascript/controllers/application.js
+  classification: remove
+  slice: 10
+  markers:
+    - HISTORY MANAGEMENT
+    - currentFrameUrl
+    - historyStack
+    - updateHistory
+    - 'url.searchParams.set("format", "turbo_stream")'
