@@ -36,7 +36,8 @@ continues at its canonical next-form URL.
 
 Decision: a validated explicit return destination when supplied, otherwise the
 resource family's documented index or show destination. The choice is visible in the
-controller/action contract.
+controller/action contract. Cash transaction update preserves its current post-save
+workflow and goes to the canonical cash index.
 
 ### D8. Where does destroy success go?
 
@@ -83,6 +84,38 @@ friendship architecture. KAKASHI-13 later builds on the contract.
 Decision: no. Current route parameters and browser history are corrected without
 expanding public-sharing or authorization scope.
 
+### D17. How does a successful Turbo submission remove the stale form entry?
+
+Decision: the workflow-finishing submitter targets `_top` and declares Turbo action
+`replace`; the controller responds with `303` to a canonical GET that resolves as HTML.
+Request status alone is insufficient—the browser URL and history are acceptance
+criteria.
+
+### D18. Does the entire cash/card form target `_top`?
+
+Decision: no. Cash and card forms have a hidden `Update` submission that refreshes
+calculated installments/billing state. `_top`/`replace` belongs on visible
+workflow-finishing submitters, while hidden reactive `Update` remains a bounded stream.
+
+### D19. May a redirected top-level GET return `index.turbo_stream`?
+
+Decision: no. Unsafe Turbo submissions advertise stream support, so a final
+top-level stream can update `center_container` while leaving the submitted form URL
+behind. A successful canonical redirect must resolve to the destination's HTML screen.
+
+### D20. What happens to the custom JavaScript history manager?
+
+Decision: retire it. Native Turbo Drive is the only browser-history authority after
+the routes migrate. The existing `currentFrameUrl`/`historyStack` code targets obsolete
+`/v1` paths and injects the stream format that KAKASHI-15 is removing.
+
+### D21. Must non-Turbo Back history exactly match Turbo replacement history?
+
+Decision: no. The non-JavaScript fallback must use canonical Post/Redirect/Get and
+avoid resubmission, but the server cannot remove a previously committed `/new` or
+`/edit` GET entry from native browser history. The replace-history assertion is for the
+Turbo-enabled workflow.
+
 ## Core Request Matrix
 
 | Scenario | Expected result |
@@ -94,12 +127,28 @@ expanding public-sharing or authorization scope.
 | successful non-Turbo create | same `303` location |
 | successful update | `303` explicit return/index/show location |
 | successful destroy | `303` return/index location |
+| redirected top-level GET | HTML screen; never top-level index stream |
 | failed create | `422`, entered new form values |
 | failed update | `422`, entered edit form values |
 | failed destroy | controlled `422`/redirect per resource, no false success |
 | nested frame request | bounded matching frame/stream, not full application document |
 | direct deep link | correct full screen and URL |
 | refresh | same resource and state |
+
+## Primary Cash Acceptance Matrix
+
+| Journey | Expected result |
+| --- | --- |
+| `/cash_transactions` -> New | `/cash_transactions/new`, full new screen |
+| new -> successful Save | `303`, then HTML cash index at `/cash_transactions` |
+| new -> failed Save | `422`, entered form retained at `/cash_transactions/new` |
+| `/cash_transactions/:id/edit` -> successful Save | `303`, then HTML cash index at `/cash_transactions` |
+| edit -> failed Save | `422`, entered form retained at `/cash_transactions/:id/edit` |
+| Back after successful create/update | preceding non-form screen, never successful submitted form |
+| Forward after successful create/update | canonical cash index without resubmission |
+| visible Save/Finish submitter | `_top` plus Turbo action `replace` |
+| hidden reactive `Update` submitter | local frame/stream; URL and history unchanged |
+| final index response negotiation | `text/html`, not a `center_container` replacement stream |
 
 ## Navigation-State Security Matrix
 
@@ -137,6 +186,7 @@ expanding public-sharing or authorization scope.
 | index filters -> show -> Back | filtered index restored |
 | direct show -> related dashboard | each URL matches screen |
 | browser refresh anywhere | server renders same screen |
+| non-Turbo successful save | `303` Post/Redirect/Get; no resubmission warning |
 
 ## Cash/Card Chain Matrix
 
@@ -167,6 +217,8 @@ expanding public-sharing or authorization scope.
 | Health Check run completes | dashboard/check URL unchanged |
 | stream requests top-level view accidentally | regression failure |
 | stream inserts `<html>`/full layout in frame | regression failure |
+| redirected CRUD request ends in index stream | regression failure even if index looks correct |
+| reactive transaction `Update` | local stream; no top-level navigation |
 
 ## Resource Matrix
 
@@ -205,4 +257,6 @@ There are no blocking V1 product decisions. During each resource slice, the exac
 successful update destination (show versus index) must preserve that resource's
 current user workflow and be recorded in its request examples. A cross-resource
 destination that changes product behavior requires explicit review rather than being
-hidden in the navigation helper.
+hidden in the navigation helper. Cash transactions are already resolved: successful
+create and update finish at the canonical cash index, with validated explicit index
+state when the workflow intentionally narrows the result.

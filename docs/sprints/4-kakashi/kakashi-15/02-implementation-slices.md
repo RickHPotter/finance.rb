@@ -8,6 +8,10 @@
 - Inventory and classify an action before removing its Turbo Stream response.
 - Every slice adds request coverage for Turbo and non-Turbo behavior.
 - Browser/system coverage verifies the address bar and history, not only visible HTML.
+- A successful top-level mutation is not complete until the redirected GET resolves as
+  HTML and the final browser URL matches it.
+- On hybrid transaction forms, target only workflow-finishing submitters at `_top`;
+  preserve hidden reactive `Update` submissions as local streams.
 - Run `bin/rubocop -A` after every edit batch and `bin/ci` at completion.
 
 ## Slice 1: Baseline and Navigation-State Primitive
@@ -20,7 +24,12 @@ Deliver:
 - safe navigation-state/return destination value object
 - shared request examples for redirect status, location, failure status, and frame
   boundaries
-- initial browser harness for URL, Back, Forward, and refresh assertions
+- initial Selenium/Capybara feature harness under `spec/features` for URL, Back, Forward,
+  refresh, and final-screen assertions
+- characterization and deletion plan for the obsolete `/v1`
+  `currentFrameUrl`/`historyStack` JavaScript shim
+- shared submitter contract for `_top` plus `replace` without changing local reactive
+  submitters
 
 Coverage:
 
@@ -30,6 +39,9 @@ Coverage:
 - foreign context/resource identifiers rejected
 - deterministic canonical fallback
 - Turbo Frame request never receives a full document unexpectedly
+- top-level redirect destination negotiates HTML even when the unsafe request advertises
+  Turbo Stream support
+- replacement history is proven in a real browser, not inferred from response markup
 
 Suggested commit:
 
@@ -50,19 +62,26 @@ Deliver:
 - explicit filtered/month return state
 - URL-correct chain create/duplicate/finish behavior
 - correct cross-navigation to related card records
+- visible Create/Save/Finish/Destroy submitters use `_top`/`replace`; the hidden reactive
+  `Update` submitter remains local
+- obsolete cash top-level index/new/edit/create/update/destroy stream routing is removed
+  once no classified caller requires it
 
 Coverage:
 
 - direct deep links and refresh
-- index -> new -> save -> canonical index URL
+- `/cash_transactions -> /cash_transactions/new -> save -> /cash_transactions`
+- `/cash_transactions/:id/edit -> save -> /cash_transactions`
+- final index response is HTML and the address bar never remains `/new` or `/edit`
 - failed create stays `/cash_transactions/new`
-- edit success/failure
+- failed update stays `/cash_transactions/:id/edit`
 - destroy success/failure
 - cancel
 - duplicate
 - multi-record chain and finish-without-save
 - Back/Forward after each successful path
 - Turbo and non-Turbo submissions
+- hidden reactive `Update` refreshes form calculations without changing URL/history
 
 Suggested commit:
 
@@ -82,6 +101,7 @@ Deliver:
 - URL-correct chain behavior
 - classification of pay-in-advance and inline form updates as in-place actions
 - correct cross-navigation to cash/source records
+- submitter-level `_top`/`replace` behavior matching cash transactions
 
 Coverage:
 
@@ -260,6 +280,8 @@ Deliver:
 - unused top-level `.turbo_stream.erb` removal
 - removal of obsolete `format: :turbo_stream` links
 - final `center_container` target audit
+- removal of the legacy `/v1` history shim and its manual `format=turbo_stream`
+  injection
 - representative cross-resource browser journey
 - Turbo cache/restore handling for destroyed resources
 - completed English and Portuguese navigation/validation copy
