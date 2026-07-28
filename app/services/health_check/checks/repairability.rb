@@ -32,14 +32,24 @@ module HealthCheck::Checks::Repairability
   end
 
   def card_projection_targets(scope:, rows:)
-    target_ids = rows.flat_map do |row|
-      Array(row[:actual_rows]).filter_map { |actual| actual[:cash_transaction_id] }
+    target_ids = rows.filter_map do |row|
+      row_target_ids = Array(row[:actual_rows]).filter_map { |actual| actual[:cash_transaction_id] }.uniq
+      row_target_ids.first if row_target_ids.one?
     end.uniq
 
-    scope.context.cash_transactions
-         .includes(:cash_installments, :categories, :exchanges)
-         .where(id: target_ids)
-         .index_by(&:id)
+    targets = scope.context.cash_transactions
+                   .includes(:cash_installments, :categories)
+                   .where(id: target_ids)
+                   .to_a
+    preload_projection_target_exchanges(targets)
+    targets.index_by(&:id)
+  end
+
+  def preload_projection_target_exchanges(targets)
+    candidates = targets.select do |target|
+      target.exchange_return? && target.cash_installments.none?(&:paid?)
+    end
+    ActiveRecord::Associations::Preloader.new(records: candidates, associations: :exchanges).call
   end
 
   def safe_projection_target?(target)

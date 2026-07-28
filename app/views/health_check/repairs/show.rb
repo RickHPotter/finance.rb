@@ -2,18 +2,21 @@
 
 class Views::HealthCheck::Repairs::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::TurboStreamFrom
 
-  attr_reader :entry, :result, :workspace_scope
+  attr_reader :entry, :result, :summary, :workspace_scope
 
-  def initialize(entry:, result:, workspace_scope:)
+  def initialize(entry:, result:, summary:, workspace_scope:)
     @entry = entry
     @result = result
+    @summary = summary
     @workspace_scope = workspace_scope
   end
 
   def view_template
     turbo_frame_tag "center_container" do
       main(class: "w-full px-2 py-2 sm:px-3") do
+        turbo_stream_from HealthCheck::Stream.for(workspace_scope)
         section(id: "health_check_repair_result", class: result_panel_class) do
           p(class: "text-xs font-semibold uppercase tracking-[0.18em]") { I18n.t("health_check.repairs.result.eyebrow") }
           h1(class: "mt-2 text-2xl font-bold") { I18n.t("health_check.repairs.result.states.#{result.status}.title") }
@@ -22,6 +25,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
           operation_details if result.operation_id.present?
           action_links
         end
+        div(class: "mt-3") { render Views::HealthCheck::Dashboard::CheckCard.new(summary:, scope: workspace_scope) }
       end
     end
   end
@@ -34,6 +38,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
       metadata(I18n.t("health_check.repairs.result.changed"), result.changed_count)
       metadata(I18n.t("health_check.repairs.result.rerun"), rerun_label)
       metadata(I18n.t("health_check.repairs.result.duplicate"), I18n.t("health_check.repairs.result.boolean.#{result.duplicate?}"))
+      metadata(I18n.t("health_check.scope.connections"), workspace_connection_label)
     end
   end
 
@@ -84,6 +89,12 @@ class Views::HealthCheck::Repairs::Show < Views::Base
     return {} if workspace_scope.all_connections?
 
     { connected_user_id: workspace_scope.connected_user.id }
+  end
+
+  def workspace_connection_label
+    return I18n.t("health_check.scope.all_connections") if workspace_scope.all_connections?
+
+    workspace_scope.connected_user.full_name
   end
 
   def result_panel_class

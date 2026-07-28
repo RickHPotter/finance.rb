@@ -116,7 +116,14 @@ RSpec.describe "Health Check details", type: :request do
     }
 
     next_link = Nokogiri::HTML(response.body).css("nav a").find { |node| node.text.include?(I18n.t("navigation.next")) }
+    document = Nokogiri::HTML(response.body)
+    stream_source = document.at_css("turbo-cable-stream-source")
     query = Rack::Utils.parse_nested_query(URI.parse(next_link["href"]).query)
+    expect(response.body).to include(connected_user.full_name)
+    expect(Turbo::StreamsChannel.verified_stream_name(stream_source["signed-stream-name"])).to eq(
+      HealthCheck::Stream.name(user_id: admin.id, context_id: admin.main_context.id, connected_user_id: connected_user.id)
+    )
+    expect(document.at_css("#health_check_check_exchange_return")).to be_present
     expect(next_link["data-turbo-action"]).to eq("advance")
     expect(next_link["data-turbo-frame"]).to eq("_top")
     expect(query).to include(

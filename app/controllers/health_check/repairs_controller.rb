@@ -15,8 +15,9 @@ class HealthCheck::RepairsController < HealthCheck::BaseController
       token: params[:apply_token],
       confirmed: params[:repair_confirmation]
     ).call
+    summary = HealthCheck::DashboardSnapshot.new(scope: workspace_scope).summaries.find { |candidate| candidate.entry == entry }
 
-    render Views::HealthCheck::Repairs::Show.new(entry:, result:, workspace_scope:), status: response_status(result)
+    render Views::HealthCheck::Repairs::Show.new(entry:, result:, summary:, workspace_scope:), status: response_status(result)
   end
 
   private

@@ -45,12 +45,26 @@ class Logic::ExchangeReturnAudit # rubocop:disable Metrics/ClassLength
                          .exchange_return
                          .includes(
                            :cash_installments,
-                           exchanges: { entity_transaction: [ :entity, { transactable: [ :card_installments, { entity_transactions: :entity } ] } ] }
+                           exchanges: { entity_transaction: [ :entity, { transactable: { entity_transactions: :entity } } ] }
                          )
                          .order(date: :desc, id: :desc)
     scope = scope.where(id: transaction_ids) if transaction_ids.present?
 
-    status_filter == "paid" ? scope.where(paid: true) : scope.where(paid: false)
+    records = status_filter == "paid" ? scope.where(paid: true).to_a : scope.where(paid: false).to_a
+    preload_source_card_installments(records) if card_bound_projection_enabled?
+    records
+  end
+
+  def preload_source_card_installments(cash_transactions)
+    card_transactions = cash_transactions
+                        .flat_map(&:exchanges)
+                        .select(&:card_bound?)
+                        .select(&:monetary?)
+                        .filter_map { |exchange| exchange.entity_transaction&.transactable }
+                        .grep(CardTransaction)
+                        .uniq
+
+    ActiveRecord::Associations::Preloader.new(records: card_transactions, associations: :card_installments).call
   end
 
   def build_row(cash_transaction, include_clean: false)
@@ -478,7 +492,7 @@ class Logic::ExchangeReturnAudit # rubocop:disable Metrics/ClassLength
       .where(conversation_participants: { user_id: current_user.id })
       .where(body: [ "notification:create", "notification:update" ], superseded_by_id: nil)
       .where.not(headers: [ nil, "" ])
-      .includes(:conversation, :reference_transactable)
+      .includes(:reference_transactable)
       .order(created_at: :desc, id: :desc)
   end
 

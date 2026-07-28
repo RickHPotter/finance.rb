@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::Subscriptions::Subscription < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::Subscriptions::Subscription < Views::Base
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::DOMID
 

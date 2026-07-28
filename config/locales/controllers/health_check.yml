@@ -11,6 +11,8 @@ en:
       context: "Context"
       connections: "Connections"
       all_connections: "All connected users"
+      filter: "Connected-user scope"
+      apply: "Change scope"
     groups:
       financial_integrity:
         title: "Financial Integrity"
@@ -345,6 +347,8 @@ pt-BR:
       context: "Contexto"
       connections: "Conexões"
       all_connections: "Todos os usuários conectados"
+      filter: "Escopo de usuário conectado"
+      apply: "Alterar escopo"
     groups:
       financial_integrity:
         title: "Integridade Financeira"
@@ -454,7 +458,7 @@ pt-BR:
         proposed_changes: "Alterações propostas"
         recorded_total: "Total registrado"
         installments_total: "Total das parcelas"
-        exchange_total: "Total dos câmbios"
+        exchange_total: "Total dos empréstimos"
         allocation_findings: "Problemas de alocação"
         card_total: "Total do cartão"
         expected_total: "Total esperado"
@@ -526,7 +530,7 @@ pt-BR:
       canonical_reference:
         title: "Prévia do reparo de referência canônica"
       source_allocation:
-        title: "Prévia da alocação de Retorno de Câmbio"
+        title: "Prévia da alocação de Acerto Empréstimo"
       projection:
         title: "Prévia do reparo da projeção do cartão"
       convert_to_reimbursement:
@@ -609,17 +613,17 @@ pt-BR:
       enqueue_failed: "%{check} não pôde ser enfileirada."
     checks:
       exchange_trio:
-        title: "Trio de Câmbio e Cadeia de Referências"
-        description: "Verifica a topologia de câmbio entre usuários conectados e as referências canônicas das transações."
+        title: "Trio de Empréstimos e Cadeia de Referências"
+        description: "Verifica a topologia de empréstimos entre usuários conectados e as referências canônicas das transações."
       exchange_return:
-        title: "Integridade de Retorno de Câmbio"
+        title: "Integridade de Acerto Empréstimo"
         description: "Verifica totais, alocações, origens vinculadas e projeções de repetição dos retornos."
       card_exchange_projection:
-        title: "Projeções de Câmbio Vinculadas ao Cartão"
-        description: "Verifica as linhas de câmbio do pagador contra as projeções atuais das parcelas do cartão."
+        title: "Projeções de Empréstimos Vinculadas ao Cartão"
+        description: "Verifica as linhas de empréstimo do pagador contra as projeções atuais das parcelas do cartão."
       misplaced_exchange_intent:
         title: "Intenção Incorreta de Empréstimo/Reembolso"
-        description: "Encontra origens de câmbio cuja intenção persistida diverge do comportamento financeiro."
+        description: "Encontra origens de empréstimo cuja intenção persistida diverge do comportamento financeiro."
       piggy_bank:
         title: "Integridade do Cofrinho"
         description: "Verifica relacionamentos de aportes, projeções de retorno, avaliações e parcelas."

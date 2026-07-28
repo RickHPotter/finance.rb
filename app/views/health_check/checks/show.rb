@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::HealthCheck::Checks::Show < Views::Base
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::TurboStreamFrom
 
   FINDING_COMPONENTS = {
     "exchange_trio" => Views::HealthCheck::Checks::ExchangeTrioFinding,
@@ -25,8 +26,10 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
   def view_template
     turbo_frame_tag "center_container" do
       main(class: "w-full px-2 py-2 sm:px-3") do
+        turbo_stream_from HealthCheck::Stream.for(workspace_scope)
         header_section
         timing_and_scope
+        div(class: "mt-3") { render Views::HealthCheck::Dashboard::CheckCard.new(summary:, scope: workspace_scope) }
         filters if page.present?
         detail_content
       end
@@ -62,9 +65,10 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
 
   def timing_and_scope
     section(class: "mt-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
-      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-4") do
+      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-5") do
         metadata(I18n.t("health_check.scope.administrator"), scope.user.full_name)
         metadata(I18n.t("health_check.scope.context"), scope.context.name)
+        metadata(I18n.t("health_check.scope.connections"), workspace_connection_label)
         metadata(I18n.t("health_check.details.latest_summary"), last_summary_label)
         metadata(I18n.t("health_check.details.live_evaluated"), live_evaluated_label)
       end
@@ -225,6 +229,12 @@ class Views::HealthCheck::Checks::Show < Views::Base # rubocop:disable Metrics/C
     return {} if workspace_scope.all_connections?
 
     { connected_user_id: workspace_scope.connected_user.id }
+  end
+
+  def workspace_connection_label
+    return I18n.t("health_check.scope.all_connections") if workspace_scope.all_connections?
+
+    workspace_scope.connected_user.full_name
   end
 
   def select_class

@@ -71,8 +71,13 @@ RSpec.describe "Health Check repair apply", type: :request do
     patch apply_path, params: { apply_token: "signed-token", repair_confirmation: "1" }
 
     document = Nokogiri::HTML(response.body)
+    stream_source = document.at_css("turbo-cable-stream-source")
     expect(response).to have_http_status(:success)
     expect(document.at_css("#health_check_repair_result")).to be_present
+    expect(document.at_css("#health_check_check_exchange_trio")).to be_present
+    expect(Turbo::StreamsChannel.verified_stream_name(stream_source["signed-stream-name"])).to eq(
+      HealthCheck::Stream.name(user_id: admin.id, context_id: admin.main_context.id, connected_user_id: nil)
+    )
     expect(response.body).to include(operation.id)
     expect(document.css("a").map { |node| node["href"] }).to include(audit_operation_path(operation))
   end

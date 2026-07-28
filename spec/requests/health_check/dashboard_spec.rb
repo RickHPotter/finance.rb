@@ -57,6 +57,7 @@ RSpec.describe "Health Check dashboard", type: :request do
 
     expect(response).to have_http_status(:success)
     expect(response.body).to include(I18n.t("health_check.title", locale: :"pt-BR"))
+    expect(response.body).to include("Integridade de Acerto Empréstimo")
     expect(response.body).to include(I18n.t("health_check.checks.piggy_bank.title", locale: :"pt-BR"))
     expect(response.body).to include(I18n.t("health_check.reasons.never_run", locale: :"pt-BR"))
   end
@@ -83,10 +84,22 @@ RSpec.describe "Health Check dashboard", type: :request do
     get healthcheck_path, params: { connected_user_id: connected_user.id }
 
     document = Nokogiri::HTML(response.body)
+    selector = document.at_css("#health_check_connected_user_id")
     expect(response).to have_http_status(:success)
     expect(response.body).to include(connected_user.full_name)
+    expect(selector).to be_present
+    expect(selector.at_css("option[selected][value='#{connected_user.id}']")).to be_present
+    expect(selector.css("option").map(&:text)).to include(I18n.t("health_check.scope.all_connections"), connected_user.full_name)
     expect(document.at_css("#health_check_status_exchange_return").text.strip).to eq(I18n.t("health_check.states.healthy"))
     expect(document.at_css("#health_check_status_exchange_trio").text.strip).to eq(I18n.t("health_check.states.warning"))
+  end
+
+  it "renders no connected-user selector when the administrator has no connections" do
+    sign_in admin
+
+    get healthcheck_path
+
+    expect(Nokogiri::HTML(response.body).at_css("#health_check_connection_scope_form")).to be_nil
   end
 
   it "renders a never-run dashboard without evaluating details or enqueuing work" do

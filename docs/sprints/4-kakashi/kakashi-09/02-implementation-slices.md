@@ -330,7 +330,10 @@ Acceptance criteria:
 - CI-covered models, concerns, and requests remain green
 - Health Check job specs do not depend on inline-only execution
 - no cross-context, cross-user, or cross-stream data appears
-- no repair can bypass preview, confirmation, authorization, or auditing
+- no Health Check repair can bypass preview, confirmation, administrator authorization,
+  or auditing
+- the owner-authorized cash-transaction projection fix remains the documented V1
+  exception outside Health Check and continues through the extracted service
 - summary cards render without evaluating detail collections
 - large result pages remain bounded and deterministic
 

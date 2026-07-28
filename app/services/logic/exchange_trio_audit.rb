@@ -174,7 +174,17 @@ module Logic
       return false unless source_transaction.respond_to?(:context)
       return source_transaction.context_id == current_context.id if source_transaction.user_id == current_user.id
 
-      source_transaction.context&.scenario_key == current_context.scenario_key
+      source_context_scenario_key(source_transaction.context_id) == current_context.scenario_key
+    end
+
+    def source_context_scenario_key(context_id)
+      source_context_scenario_keys.fetch(context_id) do
+        source_context_scenario_keys[context_id] = Context.where(id: context_id).pick(:scenario_key)
+      end
+    end
+
+    def source_context_scenario_keys
+      @source_context_scenario_keys ||= {}
     end
 
     def receiver_context_for(receiver, scenario_key)

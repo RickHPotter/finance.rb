@@ -82,7 +82,7 @@ module Logic
 
     def source_transactions
       @source_transactions ||= CashTransaction
-                               .includes(:cash_installments, :categories, entity_transactions: :entity)
+                               .includes(:cash_installments, :categories, :entity_transactions)
                                .where(user_id: visible_source_user_ids, id: source_rows.keys)
                                .index_by(&:id)
     end
@@ -122,7 +122,10 @@ module Logic
     end
 
     def entity_rows_for(source)
-      source.entity_transactions.map do |entity_transaction|
+      entity_transactions = source.entity_transactions.to_a
+      ActiveRecord::Associations::Preloader.new(records: entity_transactions, associations: :entity).call
+
+      entity_transactions.map do |entity_transaction|
         {
           id: entity_transaction.id,
           entity_name: entity_transaction.entity&.entity_name,

@@ -490,7 +490,9 @@ Check contract:
 
 Repair workflow:
 
-- make dry-run preview the default for every destructive or structural correction
+- make dry-run preview the default for every Health Check destructive or structural
+  correction; preserve the existing owner-authorized cash-transaction projection fix
+  as an explicit V1 exception outside the administrator workspace
 - show the records, references, values, and paid-history implications before applying
   a repair
 - require explicit confirmation and authorization for apply actions
@@ -498,8 +500,9 @@ Repair workflow:
   controller
 - rerun the affected check after apply and update its summary/detail state through
   Turbo
-- link every repair to its KAKASHI-08 audit operation so the cause and result remain
-  traceable and an eligible compensating rollback can be considered
+- link every Health Check repair to its KAKASHI-08 audit operation so the cause and
+  result remain traceable and an eligible compensating rollback can be considered;
+  the owner projection-fix exception remains audited through its ordinary web mutation
 - provide clear partial-failure reporting; never present a mixed result as fully healthy
 
 Architecture hardening:

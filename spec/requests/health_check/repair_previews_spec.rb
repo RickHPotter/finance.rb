@@ -100,6 +100,7 @@ RSpec.describe "Health Check repair previews", type: :request do
 
     back_link = Nokogiri::HTML(response.body).css("a").find { |node| node.text.include?(I18n.t("health_check.repairs.preview.back")) }
     query = Rack::Utils.parse_nested_query(URI.parse(back_link["href"]).query)
+    expect(response.body).to include(connected_user.full_name)
     expect(query).to include("connected_user_id" => connected_user.id.to_s)
   end
 

@@ -35,6 +35,12 @@ class HealthCheck::Scope
     connected_user.nil?
   end
 
+  def connected_users
+    User.where(id: user.entities.that_are_users.select(:entity_user_id))
+        .order(:first_name, :last_name, :id)
+        .to_a
+  end
+
   def scenario_key
     context.scenario_key
   end

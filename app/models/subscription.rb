@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Subscription < ApplicationRecord # rubocop:disable Metrics/ClassLength
+class Subscription < ApplicationRecord
   # @extends ..................................................................
   self.table_name = "finance_subscriptions"
 

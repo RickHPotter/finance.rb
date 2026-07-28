@@ -53,9 +53,10 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
 
   def scope_section
     section(class: panel_class("mt-3")) do
-      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-4") do
+      dl(class: "grid gap-2 sm:grid-cols-2 lg:grid-cols-5") do
         metadata(I18n.t("health_check.scope.administrator"), preview.scope.user.full_name)
         metadata(I18n.t("health_check.scope.context"), preview.scope.context.name)
+        metadata(I18n.t("health_check.scope.connections"), workspace_connection_label)
         metadata(I18n.t("health_check.repairs.preview.finding"), "##{preview.finding_id}")
         metadata(I18n.t("health_check.repairs.preview.state"), I18n.t("health_check.repairs.states.#{preview.state}"))
       end
@@ -202,6 +203,12 @@ class Views::HealthCheck::RepairPreviews::Show < Views::Base
     return {} if workspace_scope.all_connections?
 
     { connected_user_id: workspace_scope.connected_user.id }
+  end
+
+  def workspace_connection_label
+    return I18n.t("health_check.scope.all_connections") if workspace_scope.all_connections?
+
+    workspace_scope.connected_user.full_name
   end
 
   def state_panel_class

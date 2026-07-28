@@ -22,7 +22,11 @@ not replace their financial rules with a second implementation.
   rendering path.
 - Rails' process-level `GET /up` endpoint remains unchanged and separate.
 - The Health Check workspace, its check endpoints, Naming Convention maintenance, and
-  every repair endpoint are administrator-only.
+  its repair endpoints are administrator-only.
+- The existing owner-authorized cash-transaction card-projection fix remains available
+  outside Health Check as an explicit V1 exception. It reuses the extracted canonical
+  repair service and ordinary KAKASHI-08 web auditing, but does not require the Health
+  Check preview token or administrator role.
 - Non-admin users retain their KAKASHI-08 audit-history permissions. Health Check
   authorization must not narrow record-history access.
 - The workspace is scoped to the signed-in administrator and the administrator's
@@ -442,7 +446,9 @@ Other findings in a partly repairable check remain read-only with a reason.
 
 ### Preview
 
-Preview is mandatory and read-only. It returns a normalized
+Preview is mandatory and read-only for repairs initiated from Health Check. The
+existing owner-authorized cash-transaction projection fix is the sole V1 exception and
+remains outside this route contract. A Health Check preview returns a normalized
 `HealthCheck::RepairPreview` with:
 
 - check key and repair key

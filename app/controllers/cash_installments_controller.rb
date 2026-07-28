@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CashInstallmentsController < ApplicationController # rubocop:disable Metrics/ClassLength
+class CashInstallmentsController < ApplicationController
   include TranslateHelper
 
   before_action :set_cash_installment, only: %i[pay]

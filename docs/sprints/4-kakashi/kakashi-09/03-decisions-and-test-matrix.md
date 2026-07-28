@@ -122,8 +122,13 @@ finding.
 
 ### D20. Is preview optional for a small repair?
 
-Decision: no. Every structural correction requires a read-only preview, explicit
-confirmation, a signed token, and current-state revalidation.
+Decision: no for repairs initiated from Health Check. Every Health Check structural
+correction requires a read-only preview, explicit confirmation, a signed token, and
+current-state revalidation.
+
+The existing owner-authorized cash-transaction card-projection fix remains outside
+Health Check as the sole V1 exception. It continues to use the extracted repair service
+and ordinary KAKASHI-08 web auditing without becoming administrator-only.
 
 ### D21. How are stale previews handled?
 
@@ -193,6 +198,7 @@ update every consumer, including balances.
 | unauthenticated `/healthcheck` | Devise authentication flow |
 | non-admin `/healthcheck` | `404` |
 | non-admin check/run/preview/apply route | `404` |
+| owning non-admin direct card-projection fix | remains available outside Health Check |
 | admin `/healthcheck` | `200` |
 | non-admin navigation | no Health Check item |
 | admin navigation | Health Check item points to `/healthcheck` |

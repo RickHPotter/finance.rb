@@ -364,7 +364,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     total_price = desired_rows.sum { |row| row[:price] }
     now = Time.current
 
-    desired_rows.each do |row| # rubocop:disable Metrics/BlockLength
+    desired_rows.each do |row|
       exchange = existing_by_number.delete(row[:number])
 
       if exchange.present?

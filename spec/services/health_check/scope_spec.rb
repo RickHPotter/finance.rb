@@ -31,6 +31,20 @@ RSpec.describe HealthCheck::Scope do
     expect(scope.to_h[:connected_user_id]).to eq(connected_user.id)
   end
 
+  it "lists selectable connected users once in name order" do
+    zulu = create(:user, :random, first_name: "Zulu", last_name: "Person")
+    alpha = create(:user, :random, first_name: "Alpha", last_name: "Person")
+    unrelated = create(:user, :random, first_name: "Hidden", last_name: "Person")
+    user.entities.create!(entity_name: "ZULU", entity_user: zulu)
+    user.entities.create!(entity_name: "ALPHA", entity_user: alpha)
+    user.entities.create!(entity_name: "ALPHA AGAIN", entity_user: alpha)
+
+    scope = described_class.new(user:, context:)
+
+    expect(scope.connected_users).to eq([ alpha, zulu ])
+    expect(scope.connected_users).not_to include(unrelated)
+  end
+
   it "exposes the selected scenario key" do
     derived_context = create(:context, user:)
     scope = described_class.new(user:, context: derived_context)

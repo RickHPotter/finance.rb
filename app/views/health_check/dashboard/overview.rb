@@ -32,6 +32,7 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
       end
 
       scope_summary
+      connection_scope_selector
     end
   end
 
@@ -56,6 +57,38 @@ class Views::HealthCheck::Dashboard::Overview < Views::Base
         scope_value(I18n.t("health_check.scope.connections"), connection_label)
       end
     end
+  end
+
+  def connection_scope_selector
+    return if connected_users.empty?
+
+    form(
+      action: healthcheck_path,
+      method: "get",
+      id: "health_check_connection_scope_form",
+      class: "mt-3 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-end dark:border-slate-700 dark:bg-slate-900",
+      data: { turbo_frame: "_top", turbo_action: "advance" }
+    ) do
+      label(class: "min-w-0 flex-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300") do
+        span { I18n.t("health_check.scope.filter") }
+        select(
+          name: "connected_user_id",
+          id: "health_check_connected_user_id",
+          class: "mt-1 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-900 " \
+                 "dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+        ) do
+          option(value: "", selected: scope.all_connections?) { I18n.t("health_check.scope.all_connections") }
+          connected_users.each do |connected_user|
+            option(value: connected_user.id, selected: scope.connected_user&.id == connected_user.id) { connected_user.full_name }
+          end
+        end
+      end
+      button(type: "submit", class: run_button_class) { I18n.t("health_check.scope.apply") }
+    end
+  end
+
+  def connected_users
+    @connected_users ||= scope.connected_users
   end
 
   def run_all_action
