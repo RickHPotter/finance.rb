@@ -15,10 +15,10 @@ class Views::Balances::Mobile < Views::Base
           end
         end
 
-        div(class: "pt-2", data: { controller: "naming-tabs", naming_tabs_current_value: "overview" }) do
+        div(class: "pt-2", data: { controller: "lazy-tabs", lazy_tabs_current_value: "overview" }) do
           render_analysis_tabs
 
-          div(id: "balances_overview_panel", role: :tabpanel, data: { naming_tabs_target: "panel", naming_tabs_name: "overview" }) do
+          div(id: "balances_overview_panel", role: :tabpanel, data: { lazy_tabs_target: "panel", lazy_tabs_name: "overview" }) do
             div(
               class: "space-y-5",
               data: {
@@ -33,8 +33,8 @@ class Views::Balances::Mobile < Views::Base
           end
 
           div(id: "balances_monthly_analysis_panel", role: :tabpanel, class: "hidden px-4 pb-4",
-              data: { naming_tabs_target: "panel", naming_tabs_name: "monthly_analysis" }) do
-            turbo_frame_tag :balances_monthly_analysis_content, data: { naming_tabs_lazy_src: monthly_analysis_balances_path } do
+              data: { lazy_tabs_target: "panel", lazy_tabs_name: "monthly_analysis" }) do
+            turbo_frame_tag :balances_monthly_analysis_content, data: { lazy_tabs_lazy_src: monthly_analysis_balances_path } do
               analysis_loading_state
             end
           end

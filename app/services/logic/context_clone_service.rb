@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Logic
-  class ContextCloneService # rubocop:disable Metrics/ClassLength
+  class ContextCloneService
     def initialize(source_context:, name:, description: nil, scenario_key: nil)
       @source_context = source_context
       @user = source_context.user

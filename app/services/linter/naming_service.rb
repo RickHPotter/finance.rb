@@ -4,9 +4,9 @@ module Linter
   class NamingService < Base
     attr_reader :cash_transactions, :user
 
-    def initialize(cash_transactions: [], user: nil, dry_run: false, locale: nil)
+    def initialize(cash_transactions: nil, user: nil, dry_run: false, locale: nil)
       super(dry_run:, locale:)
-      @cash_transactions = Array(cash_transactions).compact
+      @cash_transactions = cash_transactions.nil? ? nil : Array(cash_transactions).compact
       @user = user
     end
 

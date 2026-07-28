@@ -882,10 +882,10 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def special_labels
     [
-      (I18n.t("naming_conventions.conventions.investment") if cash_transaction.investment?),
-      (I18n.t("naming_conventions.conventions.card_payment") if cash_transaction.card_payment?),
-      (I18n.t("naming_conventions.conventions.card_advance") if cash_transaction.card_advance?),
-      (I18n.t("naming_conventions.conventions.exchange_return") if cash_transaction.exchange_return?),
+      (I18n.t("health_check.naming_conventions.conventions.investment") if cash_transaction.investment?),
+      (I18n.t("health_check.naming_conventions.conventions.card_payment") if cash_transaction.card_payment?),
+      (I18n.t("health_check.naming_conventions.conventions.card_advance") if cash_transaction.card_advance?),
+      (I18n.t("health_check.naming_conventions.conventions.exchange_return") if cash_transaction.exchange_return?),
       (I18n.t("dashboards.cash_transactions.borrow_return") if cash_transaction.borrow_return?)
     ].compact
   end

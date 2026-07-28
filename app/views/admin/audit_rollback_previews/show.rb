@@ -3,6 +3,7 @@
 class Views::Admin::AuditRollbackPreviews::Show < Views::Base
   LINK_CLASS = "inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold " \
                "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+  NAVIGATION_DATA = { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }.freeze
 
   include Phlex::Rails::Helpers::LinkTo
   include Phlex::Rails::Helpers::FormWith
@@ -15,7 +16,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         header_section
         preview_summary
         global_issues
@@ -28,17 +29,20 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
       div(class: "min-w-0") do
         p(class: "text-xs font-semibold uppercase text-sky-700 dark:text-sky-300") { I18n.t("audit.rollback.preview") }
         h1(class: "mt-1 wrap-break-word font-mono text-lg font-bold text-slate-950 sm:text-xl dark:text-slate-100") { preview.operation.id }
       end
-      link_to(I18n.t("navigation.back"), audit_operation_path(preview.operation), class: LINK_CLASS)
+      div(class: "flex flex-wrap gap-2") do
+        link_to(I18n.t("tabs.health_check"), healthcheck_path, id: "audit_health_check_link", class: LINK_CLASS, data: NAVIGATION_DATA)
+        link_to(I18n.t("navigation.back"), audit_operation_path(preview.operation), class: LINK_CLASS, data: NAVIGATION_DATA)
+      end
     end
   end
 
   def preview_summary
-    section(class: "grid gap-3 border-b border-slate-200 py-5 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-700") do
+    section(class: "grid gap-2 border-b border-slate-200 py-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-700") do
       summary_value(I18n.t("audit.rollback.fields.state"), I18n.t("audit.rollback.states.#{preview.state}"))
       summary_value(I18n.t("audit.rollback.fields.records"), preview.rows.size)
       summary_value(I18n.t("audit.rollback.fields.owners"), preview.affected_owner_ids.join(", "))
@@ -75,7 +79,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
   end
 
   def preview_rows
-    div(class: "space-y-4 py-5") do
+    div(class: "space-y-3 py-3") do
       preview.rows.each { |row| preview_row(row) }
     end
   end
@@ -83,7 +87,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
   def preview_row(row)
     presenter = Audit::VersionPresenter.new(row.transition.versions.first)
     article(id: "audit_rollback_row_#{row.record_type}_#{row.item_id}",
-            class: "rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900") do
+            class: "rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
       row_header(row, presenter)
       issue_list(row.support_issues, tone: :unsupported) if row.support_issues.present?
       issue_list(row.prohibitions, tone: :prohibited) if row.prohibitions.present?
@@ -175,9 +179,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
     end
   end
 
-  def value_cell_class
-    "max-w-72 wrap-break-word px-2 py-2 font-mono text-xs text-slate-600 dark:text-slate-300"
-  end
+  def value_cell_class = "max-w-72 wrap-break-word px-2 py-2 font-mono text-xs text-slate-600 dark:text-slate-300"
 
   def dependency_list(row)
     return if row.dependencies.empty?
@@ -214,7 +216,7 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
 
   def apply_form
     form_with(url: admin_audit_operation_rollback_preview_path(preview.operation), method: :post,
-              class: "mt-5 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700") do |form|
+              class: "mt-3 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700") do |form|
       form.hidden_field(:apply_token, value: preview.apply_token, id: "audit_rollback_apply_token")
       if preview.confirmation_required?
         label(class: "inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200") do

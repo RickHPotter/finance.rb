@@ -94,8 +94,8 @@ application.register("mobile-scroll-nav", MobileScrollNavController)
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
 
-import NamingTabsController from "./naming_tabs_controller"
-application.register("naming-tabs", NamingTabsController)
+import LazyTabsController from "./lazy_tabs_controller"
+application.register("lazy-tabs", LazyTabsController)
 
 import NestedFormController from "./nested_form_controller"
 application.register("nested-form", NestedFormController)

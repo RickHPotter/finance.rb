@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Views::CashTransactions::IndexSearchForm < Views::Base # rubocop:disable Metrics/ClassLength
+class Views::CashTransactions::IndexSearchForm < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::LinkTo
   include TranslateHelper

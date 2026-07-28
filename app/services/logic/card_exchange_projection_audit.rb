@@ -67,7 +67,7 @@ class Logic::CardExchangeProjectionAudit
   end
 
   def expected_rows_for(card_transaction)
-    card_transaction.card_installments.order(:number, :date).map do |installment|
+    card_transaction.card_installments.sort_by { |installment| [ installment.number, installment.date, installment.id ] }.map do |installment|
       {
         number: installment.number,
         month: installment.month,

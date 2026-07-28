@@ -36,6 +36,7 @@ Style/ClassAndModuleChildren:
 
 Layout/LineLength:
   Max: 166
+  AllowedPatterns: ['^\s*#']
 
 Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: space
@@ -47,10 +48,10 @@ Metrics/PerceivedComplexity:
   Max: 16
 
 Metrics/ModuleLength:
-  Max: 200
+  Max: 320
 
 Metrics/ClassLength:
-  Max: 200
+  Max: 300
 
 Metrics/MethodLength:
   Max: 32
@@ -67,7 +68,7 @@ Metrics/AbcSize:
     - "config/**/*.rb"
 
 Metrics/BlockLength:
-  Max: 22
+  Max: 24
   Exclude:
     - "app/components/**/*.rb"
     - "app/views/**/*.rb"

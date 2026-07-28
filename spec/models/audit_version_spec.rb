@@ -168,7 +168,6 @@ RSpec.describe AuditVersion, type: :model do
   end
 end
 
-# rubocop:disable Layout/LineLength
 # == Schema Information
 #
 # Table name: audit_versions
@@ -202,4 +201,3 @@ end
 #
 #  fk_rails_...  (operation_id => audit_operations.id) ON DELETE => restrict
 #
-# rubocop:enable Layout/LineLength

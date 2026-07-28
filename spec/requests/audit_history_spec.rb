@@ -75,6 +75,41 @@ RSpec.describe "Audit history", type: :request do
     expect(response).to have_http_status(:success)
     expect(response.body).to include(own_operation.id)
     expect(response.body).not_to include(foreign_operation.id)
+    expect(Nokogiri::HTML(response.body).at_css("#audit_health_check_link")).to be_nil
+  end
+
+  it "renders both audit indexes with the compact application header and no Health Check button" do
+    create_version(owner: user, item_id: 101, description: "Audited correction")
+    sign_in admin
+
+    [ audit_operations_path, audit_versions_path ].each do |path|
+      get path
+
+      document = Nokogiri::HTML(response.body)
+      audit_tab = document.at_css("a[role='tab'][href='#{audit_operations_path}']")
+      workspace_classes = document.at_css("turbo-frame#center_container > main")["class"].split
+      header = document.at_css("turbo-frame#center_container > main > header")
+      expect(response).to have_http_status(:success)
+      expect(document.at_css("#audit_health_check_link")).to be_nil
+      expect(audit_tab["aria-selected"]).to eq("true")
+      expect(workspace_classes).to include("m-1", "rounded-lg", "bg-white", "overflow-hidden")
+      expect(workspace_classes).not_to include("mx-auto", "max-w-7xl", "py-4", "sm:px-5")
+      expect(header.at_css("h1")["class"].split).to include("text-sm", "uppercase")
+    end
+  end
+
+  it "keeps the canonical Health Check return on an individual audit operation" do
+    create_version(owner: user, item_id: 101, description: "Audited correction")
+    sign_in admin
+
+    get audit_operation_path(operation)
+
+    document = Nokogiri::HTML(response.body)
+    link = document.at_css("#audit_health_check_link")
+    expect(response).to have_http_status(:success)
+    expect(link["href"]).to eq(healthcheck_path)
+    expect(link["data-turbo-frame"]).to eq("_top")
+    expect(link["data-turbo-action"]).to eq("advance")
   end
 
   it "returns not found when an ordinary user cannot see any version in the operation" do

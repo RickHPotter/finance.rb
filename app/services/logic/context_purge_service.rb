@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Logic
-  class ContextPurgeService # rubocop:disable Metrics/ClassLength
+  class ContextPurgeService
     LOCK_NAMESPACE = 4_291
 
     class UnauthorizedContextAccessError < StandardError; end

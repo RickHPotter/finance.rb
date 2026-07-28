@@ -46,8 +46,16 @@ RSpec.describe "Admin audit rollback previews", type: :request do
 
     get admin_audit_operation_rollback_preview_path(operation)
 
+    document = Nokogiri::HTML(response.body)
+    link = document.at_css("#audit_health_check_link")
+    workspace_classes = document.at_css("turbo-frame#center_container > main")["class"].split
     expect(response).to have_http_status(:success)
     expect(response.body).to include("audit_rollback_preview_digest", "audit_rollback_apply_token", "Corrected transaction", "Original transaction")
+    expect(link["href"]).to eq(healthcheck_path)
+    expect(link["data-turbo-frame"]).to eq("_top")
+    expect(link["data-turbo-action"]).to eq("advance")
+    expect(workspace_classes).to include("w-full", "px-2", "py-2", "sm:px-3")
+    expect(workspace_classes).not_to include("mx-auto", "max-w-7xl")
     expect(AuditVersion.count).to eq(version_count)
     expect(AuditOperation.count).to eq(operation_count)
     expect(transaction.reload.description).to eq("Corrected transaction")

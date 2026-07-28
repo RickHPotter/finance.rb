@@ -1,0 +1,667 @@
+en:
+  health_check:
+    title: "Health Check"
+    description: "Review the latest financial integrity results for the selected context."
+    overview:
+      title: "Overview"
+      description: "Latest persisted result for each registered check. Finding details are evaluated only when opened."
+    scope:
+      title: "Current scope"
+      administrator: "Administrator"
+      context: "Context"
+      connections: "Connections"
+      all_connections: "All connected users"
+      filter: "Connected-user scope"
+      apply: "Change scope"
+    groups:
+      financial_integrity:
+        title: "Financial Integrity"
+        description: "Checks that verify transaction relationships, allocations, projections, and stored-value integrity."
+    maintenance:
+      title: "Maintenance"
+      description: "Operational helpers are kept separate from financial health results."
+      naming:
+        title: "Naming Convention"
+        description: "Preview transaction naming suggestions without changing health status counts."
+        action: "Open preview"
+    naming_conventions:
+      refresh_preview: "Refresh Preview"
+      preview_again: "Preview Again"
+      no_changes_found: "No naming convention changes were found."
+      no_changes_applied: "No naming convention changes were applied."
+      will_update:
+        one: "1 record will be updated."
+        other: "%{count} records will be updated."
+      did_update:
+        one: "1 record updated."
+        other: "%{count} records updated."
+      confirmation: "I reviewed every proposed description and explicitly confirm these naming changes."
+      apply: "Apply reviewed naming changes"
+      conventions:
+        investment: "Investment"
+        exchange_return: "Lend Return"
+        card_payment: "Card Payment"
+        card_advance: "Card Advance"
+      group:
+        card_transaction: "CardTransaction"
+        installments_count: "installments_count"
+        exchanges_count: "exchanges_count"
+        entity: "entity"
+      result:
+        states:
+          applied:
+            title: "Naming changes committed"
+          rejected:
+            title: "Naming changes rejected"
+          failed:
+            title: "Naming changes failed safely"
+        reasons:
+          authorization_denied: "Administrator authorization is required."
+          invalid_token: "The preview token is invalid, tampered with, or expired. Request a fresh preview."
+          confirmation_required: "Explicit confirmation is required before applying naming changes."
+          token_actor_mismatch: "The preview belongs to another administrator."
+          token_context_mismatch: "The selected context changed after preview."
+          stale_preview: "Naming candidates changed after preview. Nothing was overwritten."
+          validation_failed: "A required naming mutation failed. Every change was rolled back."
+          unexpected_failure: "Naming changes failed safely. No partial mutation was committed."
+        audit: "Open audit operation"
+    actions:
+      run_all: "Run all checks"
+      running_all: "Checks running"
+      run: "Run"
+      rerun: "Rerun"
+      running: "Running"
+      details: "Open details"
+    details:
+      eyebrow: "Live diagnostic details"
+      back: "Back to Health Check"
+      open_record: "Open record"
+      latest_summary: "Latest summary"
+      live_evaluated: "Live details evaluated"
+      live_notice: "These live details were evaluated after the latest persisted summary. Rerun the check to refresh its summary counts."
+      apply_filters: "Apply filters"
+      filters:
+        status: "Payment status"
+        issue: "Issue"
+        all_issues: "All issues"
+        per_page: "Rows per page"
+      statuses:
+        pending: "Pending"
+        paid: "Paid"
+      states:
+        empty:
+          title: "No current findings"
+          description: "The live diagnostic returned no rows for these filters. The latest persisted summary was not changed."
+        unavailable:
+          title: "Details unavailable"
+          description: "This detail provider is not available yet."
+        failed:
+          title: "Details could not be evaluated"
+          description: "The live diagnostic failed safely. No financial finding payload or internal error was displayed."
+      capabilities:
+        repairable: "Preview available"
+        read_only: "Read only"
+      unavailable_reasons:
+        diagnostic_only: "This finding is diagnostic-only in the current repair contract."
+        owner_only: "Only the transaction owner can repair this finding."
+        paid_history: "Repair is unavailable because paid history must be preserved."
+        ambiguous_projection: "The projection has more than one possible repair target."
+        no_canonical_change: "No supported canonical reference change is available."
+        finding_not_current: "The finding is no longer current. Return to details and evaluate it again."
+        planned_changes_not_resolvable: "The proposed references no longer match the current records."
+        non_cash_transaction_target: "This reference target is not supported by the repair contract."
+        unsupported_reference_target_type: "The proposed reference type is not supported."
+        multiple_middle_candidates: "The reference chain has more than one possible middle transaction."
+        missing_middle: "The reference chain does not have a resolvable middle transaction."
+      fields:
+        intent: "Intent"
+        message: "Message"
+        conversation: "Conversation"
+        proposed_changes: "Proposed changes"
+        recorded_total: "Recorded total"
+        installments_total: "Installments total"
+        exchange_total: "Exchange total"
+        allocation_findings: "Allocation findings"
+        card_total: "Card total"
+        expected_total: "Expected total"
+        actual_total: "Actual total"
+        projected_rows: "Projected rows"
+        transaction_total: "Transaction total"
+        entity_return_total: "Entity return total"
+        delta: "Delta"
+        affected_messages: "Affected messages"
+        principal: "Principal"
+        valuation_delta: "Valuation delta"
+      issues:
+        misplaced_exchange_intent: "Loan intent disagrees with the current financial behavior"
+      issue_codes:
+        exchange_trio:
+          multiple_middle_candidates: "Multiple sender exchange-return options"
+          missing_middle: "Missing sender exchange return"
+          missing_receiver_reference: "Missing receiver-side local transaction"
+          missing_receiver_exchange_return: "Missing receiver exchange return"
+          source_reference_should_be_blank: "Source transaction should not reference another transaction"
+          middle_reference_missing: "Sender exchange return is missing its source reference"
+          middle_reference_mismatch: "Sender exchange return points to the wrong parent"
+          middle_candidate_reference_missing: "A sender exchange-return option is missing its source reference"
+          middle_candidate_reference_mismatch: "A sender exchange-return option points to the wrong parent"
+          middle_candidate_reference_should_be_blank: "A sender exchange-return option should not point to another transaction"
+          receiver_shared_return_reference_missing: "Receiver borrow return is missing its sender exchange-return reference"
+          receiver_shared_return_reference_mismatch: "Receiver borrow return points to the wrong parent"
+          receiver_exchange_reference_missing: "Receiver exchange is missing its sender exchange-return reference"
+          receiver_exchange_reference_mismatch: "Receiver exchange points to the wrong parent"
+          receiver_exchange_return_reference_missing: "Receiver exchange return is missing its receiver exchange reference"
+          receiver_exchange_return_reference_mismatch: "Receiver exchange return points to the wrong parent"
+          receiver_exchange_return_reference_should_be_blank: "Receiver exchange return should not point to a different parent"
+        exchange_return:
+          installments_total_mismatch: "Cash total differs from installments"
+          exchange_rows_total_mismatch: "Cash total differs from exchange rows"
+          stale_linked_source_rows: "Linked source aggregates are stale"
+          source_allocation_mismatch: "Source entity allocation is incomplete"
+          missing_moi_allocation: "Missing MOI allocation for the self-share"
+          entity_allocation_mismatch: "Entity allocation does not match the transaction total"
+          message_replay_payload_mismatch: "Assistant replay payload differs from the local transaction"
+          card_bound_bill_projection_mismatch: "Card-bound exchange row differs from the current card bill"
+          missing_card_installment: "Source card installment is missing"
+          card_bound_bill_bucket_mismatch: "Card-bound exchange row is in a stale bill month"
+          card_bound_bill_price_mismatch: "Card-bound exchange row has a stale amount"
+          card_bound_bill_merge_target: "This target projection should absorb stale card-bound rows"
+        card_exchange_projection:
+          payer_exchange_total_mismatch: "Payer exchanges differ from declared payer total"
+          projection_shape_mismatch: "Payer exchanges do not match installment projection"
+          duplicate_projection_buckets: "Payer exchanges repeat a projection bucket"
+          source_allocation_mismatch: "Source entity allocation is incomplete"
+          missing_moi_allocation: "Missing MOI allocation for the self-share"
+          entity_allocation_mismatch: "Entity allocation does not match the transaction total"
+        piggy_bank:
+          missing_return: "Contribution has no return"
+          wrong_category: "Return category is incorrect"
+          missing_contributions: "Return has no contributions"
+          user_context_mismatch: "User or context does not match"
+          entity_mismatch: "Bank entity does not match"
+          duplicate_contribution_ownership: "Source has duplicate contribution links"
+          incompatible_sources: "Grouped sources are incompatible"
+          grouped_principal_drift: "Projected total does not match principal and valuations"
+          valuation_profit_drift: "Valuation delta is not reflected in the return"
+          source_return_amount_drift: "Unpaid installment total is incorrect"
+          illegal_installment_collapse: "Partial-payment remainder is incorrect"
+      pagination:
+        label: "Finding pages"
+        summary: "Page %{page} of %{pages} · %{count} findings"
+    repairs:
+      canonical_reference:
+        title: "Canonical reference repair preview"
+      source_allocation:
+        title: "Exchange Return allocation preview"
+      projection:
+        title: "Card projection repair preview"
+      convert_to_reimbursement:
+        title: "Reimbursement intent conversion preview"
+      actions:
+        preview: "Preview repair"
+        match_percentage: "Preview matching percentage"
+        corrected_value: "Preview corrected value"
+      states:
+        previewable: "Ready for review"
+        read_only: "Apply unavailable"
+        prohibited: "Repair prohibited"
+      preview:
+        eyebrow: "Read-only repair preview"
+        description: "%{check} finding #%{finding_id}. No financial data has been changed."
+        back: "Back to findings"
+        finding: "Finding"
+        state: "Preview state"
+        state_descriptions:
+          previewable: "The current finding has one supported change plan. Review every value before applying it in the next step."
+          read_only: "The current finding can be inspected, but the repair contract does not allow it to be applied."
+          prohibited: "A financial safety rule prohibits this repair."
+        changes: "Proposed changes"
+        no_changes: "No supported changes are available for the current state."
+        before: "Before"
+        after: "After"
+        references: "Affected references"
+        warnings: "Warnings and remaining implications"
+        paid_history: "Paid-history implications"
+        digest: "Deterministic preview digest"
+        token_notice: "The signed preview token expires after 15 minutes and contains only bounded identifiers and this digest."
+        confirmation: "I reviewed every proposed change and explicitly confirm this repair."
+        apply: "Apply reviewed repair"
+      result:
+        eyebrow: "Repair result"
+        states:
+          applied:
+            title: "Repair committed"
+            description: "The reviewed repair was committed atomically and linked to its audit operation. The affected check is rerunning independently."
+          rejected:
+            title: "Repair rejected"
+          failed:
+            title: "Repair failed safely"
+        reasons:
+          authorization_denied: "Administrator authorization is required."
+          invalid_token: "The preview token is invalid, tampered with, or expired. Request a fresh preview."
+          confirmation_required: "Explicit confirmation is required before applying a repair."
+          token_actor_mismatch: "The preview belongs to another administrator."
+          token_context_mismatch: "The selected context changed after preview."
+          token_connection_mismatch: "The connected-user scope changed after preview."
+          token_check_mismatch: "The preview belongs to another health check."
+          token_repair_mismatch: "The preview belongs to another repair."
+          finding_not_current: "The finding is no longer current. Request a fresh preview."
+          stale_preview: "Relevant financial data changed after preview. Nothing was overwritten."
+          preview_not_applyable: "The current finding is no longer eligible for this repair."
+          validation_failed: "A validation or required mutation failed. The entire repair was rolled back."
+          unexpected_failure: "The repair failed safely. No partial financial mutation was committed."
+        operation: "Audit operation"
+        changed: "Audited changes"
+        rerun: "Affected check"
+        duplicate: "Repeated request"
+        boolean:
+          "true": "Yes — original result returned"
+          "false": "No"
+        rerun_queued: "Queued for verification"
+        rerun_already_running: "Already running"
+        rerun_enqueue_failed: "Rerun unavailable"
+        rerun_unavailable: "Rerun unavailable"
+        back: "Back to findings"
+        audit: "Open audit operation"
+    runs:
+      queued:
+        one: "Queued 1 health check."
+        other: "Queued %{count} health checks."
+      already_running: "All eligible checks are already queued or running."
+      enqueue_failed: "One or more health checks could not be queued."
+    check_runs:
+      queued: "Queued %{check}."
+      already_running: "%{check} is already queued or running."
+      enqueue_failed: "%{check} could not be queued."
+    checks:
+      exchange_trio:
+        title: "Exchange Trio and Reference Chain"
+        description: "Verifies connected-user exchange topology and canonical transaction references."
+      exchange_return:
+        title: "Exchange Return Integrity"
+        description: "Verifies return totals, allocations, linked sources, and replay projections."
+      card_exchange_projection:
+        title: "Card-bound Exchange Projections"
+        description: "Verifies payer exchange rows against current card installment projections."
+      misplaced_exchange_intent:
+        title: "Misplaced Loan/Reimbursement Intent"
+        description: "Finds exchange sources whose persisted intent disagrees with their financial behavior."
+      piggy_bank:
+        title: "Piggy Bank Integrity"
+        description: "Verifies contribution relationships, return projections, valuations, and installments."
+    states:
+      healthy: "Healthy"
+      warning: "Warning"
+      failing: "Failing"
+      running: "Running"
+      unavailable: "Unavailable"
+    reasons:
+      never_run: "Never run"
+      unavailable: "The latest run is unavailable."
+      adapter_unavailable: "This check is not available yet."
+      admin_required: "Administrator access changed before the check started."
+      user_not_found: "The administrator account is no longer available."
+      context_not_found: "The selected context is no longer available."
+      context_mismatch: "The selected context no longer belongs to this administrator."
+      context_archived: "The selected context was archived before the check started."
+      connected_user_not_found: "The selected connected user is no longer available."
+      connected_user_invalid: "The connected-user scope is invalid."
+      connected_user_unrelated: "The selected user is no longer connected to this administrator."
+      unsupported_locale: "The requested locale is no longer supported."
+      check_unregistered: "This check is no longer registered."
+      unexpected_connected_user: "This check does not support a connected-user scope."
+      invalid_result: "The check returned an invalid result."
+      execution_failed: "The check could not complete."
+      enqueue_failed: "The check could not be queued."
+    fields:
+      status: "Status"
+      affected: "Affected"
+      failures: "Failures"
+      warnings: "Warnings"
+      repairable: "Repairable"
+      read_only: "Read only"
+      last_run: "Last run"
+      duration: "Duration"
+      scope: "Scope"
+    scopes:
+      context: "Selected context"
+      context_with_connections: "Selected context and connected users"
+    values:
+      no_value: "—"
+      milliseconds: "%{count} ms"
+      repair_available: "Supported repairs available"
+      diagnostic_only: "Diagnostic only"
+
+pt-BR:
+  health_check:
+    title: "Verificação de Saúde"
+    description: "Revise os resultados mais recentes de integridade financeira para o contexto selecionado."
+    overview:
+      title: "Visão Geral"
+      description: "Resultado persistido mais recente de cada verificação registrada. Os detalhes são avaliados somente quando abertos."
+    scope:
+      title: "Escopo atual"
+      administrator: "Administrador"
+      context: "Contexto"
+      connections: "Conexões"
+      all_connections: "Todos os usuários conectados"
+      filter: "Escopo de usuário conectado"
+      apply: "Alterar escopo"
+    groups:
+      financial_integrity:
+        title: "Integridade Financeira"
+        description: "Verificações de relacionamentos, alocações, projeções e integridade de valores armazenados."
+    maintenance:
+      title: "Manutenção"
+      description: "Ferramentas operacionais permanecem separadas dos resultados de saúde financeira."
+      naming:
+        title: "Convenção de Nomes"
+        description: "Visualize sugestões de nomes de transações sem alterar os indicadores de saúde."
+        action: "Abrir prévia"
+    naming_conventions:
+      refresh_preview: "Atualizar Prévia"
+      preview_again: "Visualizar Novamente"
+      no_changes_found: "Nenhuma mudança de convenção de nomenclatura foi encontrada."
+      no_changes_applied: "Nenhuma mudança de convenção de nomenclatura foi aplicada."
+      will_update:
+        one: "1 registro será atualizado."
+        other: "%{count} registros serão atualizados."
+      did_update:
+        one: "1 registro atualizado."
+        other: "%{count} registros atualizados."
+      confirmation: "Revisei cada descrição proposta e confirmo explicitamente estas mudanças de nomenclatura."
+      apply: "Aplicar mudanças de nomenclatura revisadas"
+      conventions:
+        investment: "Investimento"
+        exchange_return: "Acerto Empréstimo"
+        card_payment: "Pagamento de Cartão"
+        card_advance: "Adiantamento de Cartão"
+      group:
+        card_transaction: "Transação de Cartão"
+        installments_count: "quantidade_de_parcelas"
+        exchanges_count: "quantidade_de_trocas"
+        entity: "entidade"
+      result:
+        states:
+          applied:
+            title: "Mudanças de nomenclatura confirmadas"
+          rejected:
+            title: "Mudanças de nomenclatura rejeitadas"
+          failed:
+            title: "Mudanças de nomenclatura falharam com segurança"
+        reasons:
+          authorization_denied: "É necessária autorização de administrador."
+          invalid_token: "O token da prévia é inválido, foi alterado ou expirou. Solicite uma nova prévia."
+          confirmation_required: "É necessária confirmação explícita antes de aplicar mudanças de nomenclatura."
+          token_actor_mismatch: "A prévia pertence a outro administrador."
+          token_context_mismatch: "O contexto selecionado mudou após a prévia."
+          stale_preview: "Os candidatos de nomenclatura mudaram após a prévia. Nada foi sobrescrito."
+          validation_failed: "Uma mudança obrigatória falhou. Todas as alterações foram revertidas."
+          unexpected_failure: "As mudanças falharam com segurança. Nenhuma alteração parcial foi confirmada."
+        audit: "Abrir operação de auditoria"
+    actions:
+      run_all: "Executar todas"
+      running_all: "Verificações em execução"
+      run: "Executar"
+      rerun: "Executar novamente"
+      running: "Executando"
+      details: "Abrir detalhes"
+    details:
+      eyebrow: "Detalhes do diagnóstico ao vivo"
+      back: "Voltar à Verificação de Saúde"
+      open_record: "Abrir registro"
+      latest_summary: "Resumo mais recente"
+      live_evaluated: "Detalhes ao vivo avaliados"
+      live_notice: "Estes detalhes ao vivo foram avaliados após o resumo persistido mais recente. Execute novamente para atualizar os totais do resumo."
+      apply_filters: "Aplicar filtros"
+      filters:
+        status: "Estado do pagamento"
+        issue: "Problema"
+        all_issues: "Todos os problemas"
+        per_page: "Linhas por página"
+      statuses:
+        pending: "Pendente"
+        paid: "Pago"
+      states:
+        empty:
+          title: "Nenhum problema atual"
+          description: "O diagnóstico ao vivo não retornou linhas para estes filtros. O resumo persistido mais recente não foi alterado."
+        unavailable:
+          title: "Detalhes indisponíveis"
+          description: "Este provedor de detalhes ainda não está disponível."
+        failed:
+          title: "Não foi possível avaliar os detalhes"
+          description: "O diagnóstico ao vivo falhou com segurança. Nenhum dado financeiro ou erro interno foi exibido."
+      capabilities:
+        repairable: "Prévia disponível"
+        read_only: "Somente leitura"
+      unavailable_reasons:
+        diagnostic_only: "Este problema é somente diagnóstico no contrato de reparo atual."
+        owner_only: "Somente o proprietário da transação pode reparar este problema."
+        paid_history: "O reparo está indisponível porque o histórico pago deve ser preservado."
+        ambiguous_projection: "A projeção possui mais de um possível destino de reparo."
+        no_canonical_change: "Nenhuma alteração canônica de referência compatível está disponível."
+        finding_not_current: "O problema não está mais atual. Volte aos detalhes e avalie-o novamente."
+        planned_changes_not_resolvable: "As referências propostas não correspondem mais aos registros atuais."
+        non_cash_transaction_target: "Este destino de referência não é compatível com o contrato de reparo."
+        unsupported_reference_target_type: "O tipo de referência proposto não é compatível."
+        multiple_middle_candidates: "A cadeia de referências possui mais de uma possível transação intermediária."
+        missing_middle: "A cadeia de referências não possui uma transação intermediária resolvível."
+      fields:
+        intent: "Intenção"
+        message: "Mensagem"
+        conversation: "Conversa"
+        proposed_changes: "Alterações propostas"
+        recorded_total: "Total registrado"
+        installments_total: "Total das parcelas"
+        exchange_total: "Total dos empréstimos"
+        allocation_findings: "Problemas de alocação"
+        card_total: "Total do cartão"
+        expected_total: "Total esperado"
+        actual_total: "Total atual"
+        projected_rows: "Linhas projetadas"
+        transaction_total: "Total da transação"
+        entity_return_total: "Total de retorno das entidades"
+        delta: "Diferença"
+        affected_messages: "Mensagens afetadas"
+        principal: "Principal"
+        valuation_delta: "Variação de avaliação"
+      issues:
+        misplaced_exchange_intent: "A intenção de empréstimo diverge do comportamento financeiro atual"
+      issue_codes:
+        exchange_trio:
+          multiple_middle_candidates: "Há múltiplas opções de retorno de empréstimo no remetente"
+          missing_middle: "Falta o retorno de empréstimo do remetente"
+          missing_receiver_reference: "Falta a transação local do destinatário"
+          missing_receiver_exchange_return: "Falta o retorno de empréstimo do destinatário"
+          source_reference_should_be_blank: "A transação de origem não deveria referenciar outra transação"
+          middle_reference_missing: "O retorno de empréstimo do remetente está sem referência para a origem"
+          middle_reference_mismatch: "O retorno de empréstimo do remetente aponta para o pai errado"
+          middle_candidate_reference_missing: "Uma opção de retorno de empréstimo no remetente está sem referência para a origem"
+          middle_candidate_reference_mismatch: "Uma opção de retorno de empréstimo no remetente aponta para o pai errado"
+          middle_candidate_reference_should_be_blank: "Uma opção de retorno de empréstimo no remetente não deveria apontar para outra transação"
+          receiver_shared_return_reference_missing: "O retorno de reembolso do destinatário está sem referência para o retorno de empréstimo do remetente"
+          receiver_shared_return_reference_mismatch: "O retorno de reembolso do destinatário aponta para o pai errado"
+          receiver_exchange_reference_missing: "O empréstimo do destinatário está sem referência para o retorno de empréstimo do remetente"
+          receiver_exchange_reference_mismatch: "O empréstimo do destinatário aponta para o pai errado"
+          receiver_exchange_return_reference_missing: "O retorno de empréstimo do destinatário está sem referência para o empréstimo do destinatário"
+          receiver_exchange_return_reference_mismatch: "O retorno de empréstimo do destinatário aponta para o pai errado"
+          receiver_exchange_return_reference_should_be_blank: "O retorno de empréstimo do destinatário não deveria apontar para um pai diferente"
+        exchange_return:
+          installments_total_mismatch: "O total da transação diverge das parcelas"
+          exchange_rows_total_mismatch: "O total da transação diverge das linhas de empréstimo/reembolso"
+          stale_linked_source_rows: "Os agregados das origens estão desatualizados"
+          source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+          missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+          entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"
+          message_replay_payload_mismatch: "A repetição do assistente diverge da transação local"
+          card_bound_bill_projection_mismatch: "A linha vinculada ao cartão diverge da fatura atual do cartão"
+          missing_card_installment: "A parcela do cartão de origem não existe mais"
+          card_bound_bill_bucket_mismatch: "A linha vinculada ao cartão está em um mês de fatura desatualizado"
+          card_bound_bill_price_mismatch: "A linha vinculada ao cartão está com valor desatualizado"
+          card_bound_bill_merge_target: "Esta projeção de destino deveria absorver linhas vinculadas ao cartão desatualizadas"
+        card_exchange_projection:
+          payer_exchange_total_mismatch: "As linhas pagadoras divergem do total declarado para os pagadores"
+          projection_shape_mismatch: "As linhas pagadoras não batem com a projeção das parcelas"
+          duplicate_projection_buckets: "As linhas pagadoras repetem uma fatura de projeção"
+          source_allocation_mismatch: "A alocação por entidade da origem está incompleta"
+          missing_moi_allocation: "Falta a alocação do MOI para a parte própria"
+          entity_allocation_mismatch: "A alocação por entidade não fecha com o total da transação"
+        piggy_bank:
+          missing_return: "Aporte sem retorno"
+          wrong_category: "Categoria do retorno incorreta"
+          missing_contributions: "Retorno sem aportes"
+          user_context_mismatch: "Usuário ou contexto divergente"
+          entity_mismatch: "Entidade bancária divergente"
+          duplicate_contribution_ownership: "Origem com vínculos de aporte duplicados"
+          incompatible_sources: "Origens agrupadas incompatíveis"
+          grouped_principal_drift: "Total projetado diverge do principal e das valorizações"
+          valuation_profit_drift: "Valorização não refletida no retorno"
+          source_return_amount_drift: "Total das parcelas não pagas incorreto"
+          illegal_installment_collapse: "Saldo após pagamento parcial incorreto"
+      pagination:
+        label: "Páginas de problemas"
+        summary: "Página %{page} de %{pages} · %{count} problemas"
+    repairs:
+      canonical_reference:
+        title: "Prévia do reparo de referência canônica"
+      source_allocation:
+        title: "Prévia da alocação de Acerto Empréstimo"
+      projection:
+        title: "Prévia do reparo da projeção do cartão"
+      convert_to_reimbursement:
+        title: "Prévia da conversão da intenção para reembolso"
+      actions:
+        preview: "Visualizar reparo"
+        match_percentage: "Visualizar percentual correspondente"
+        corrected_value: "Visualizar valor corrigido"
+      states:
+        previewable: "Pronto para revisão"
+        read_only: "Aplicação indisponível"
+        prohibited: "Reparo proibido"
+      preview:
+        eyebrow: "Prévia de reparo somente leitura"
+        description: "Problema #%{finding_id} de %{check}. Nenhum dado financeiro foi alterado."
+        back: "Voltar aos problemas"
+        finding: "Problema"
+        state: "Estado da prévia"
+        state_descriptions:
+          previewable: "O problema atual possui um plano de alterações compatível. Revise todos os valores antes de aplicá-lo na próxima etapa."
+          read_only: "O problema atual pode ser inspecionado, mas o contrato de reparo não permite sua aplicação."
+          prohibited: "Uma regra de segurança financeira proíbe este reparo."
+        changes: "Alterações propostas"
+        no_changes: "Nenhuma alteração compatível está disponível para o estado atual."
+        before: "Antes"
+        after: "Depois"
+        references: "Referências afetadas"
+        warnings: "Alertas e implicações restantes"
+        paid_history: "Implicações no histórico pago"
+        digest: "Resumo determinístico da prévia"
+        token_notice: "O token assinado da prévia expira após 15 minutos e contém somente identificadores limitados e este resumo."
+        confirmation: "Revisei todas as alterações propostas e confirmo explicitamente este reparo."
+        apply: "Aplicar reparo revisado"
+      result:
+        eyebrow: "Resultado do reparo"
+        states:
+          applied:
+            title: "Reparo confirmado"
+            description: "O reparo revisado foi confirmado atomicamente e vinculado à sua operação de auditoria. A verificação afetada está sendo executada novamente."
+          rejected:
+            title: "Reparo rejeitado"
+          failed:
+            title: "O reparo falhou com segurança"
+        reasons:
+          authorization_denied: "A autorização de administrador é obrigatória."
+          invalid_token: "O token da prévia é inválido, foi alterado ou expirou. Solicite uma nova prévia."
+          confirmation_required: "A confirmação explícita é obrigatória antes de aplicar o reparo."
+          token_actor_mismatch: "A prévia pertence a outro administrador."
+          token_context_mismatch: "O contexto selecionado mudou após a prévia."
+          token_connection_mismatch: "O escopo de usuário conectado mudou após a prévia."
+          token_check_mismatch: "A prévia pertence a outra verificação de saúde."
+          token_repair_mismatch: "A prévia pertence a outro reparo."
+          finding_not_current: "O problema não está mais atual. Solicite uma nova prévia."
+          stale_preview: "Dados financeiros relevantes mudaram após a prévia. Nada foi sobrescrito."
+          preview_not_applyable: "O problema atual não é mais elegível para este reparo."
+          validation_failed: "Uma validação ou alteração obrigatória falhou. O reparo inteiro foi revertido."
+          unexpected_failure: "O reparo falhou com segurança. Nenhuma alteração financeira parcial foi confirmada."
+        operation: "Operação de auditoria"
+        changed: "Alterações auditadas"
+        rerun: "Verificação afetada"
+        duplicate: "Solicitação repetida"
+        boolean:
+          "true": "Sim — resultado original retornado"
+          "false": "Não"
+        rerun_queued: "Enfileirada para verificação"
+        rerun_already_running: "Já está em execução"
+        rerun_enqueue_failed: "Nova execução indisponível"
+        rerun_unavailable: "Nova execução indisponível"
+        back: "Voltar aos problemas"
+        audit: "Abrir operação de auditoria"
+    runs:
+      queued:
+        one: "1 verificação de saúde foi enfileirada."
+        other: "%{count} verificações de saúde foram enfileiradas."
+      already_running: "Todas as verificações elegíveis já estão enfileiradas ou em execução."
+      enqueue_failed: "Uma ou mais verificações não puderam ser enfileiradas."
+    check_runs:
+      queued: "%{check} foi enfileirada."
+      already_running: "%{check} já está enfileirada ou em execução."
+      enqueue_failed: "%{check} não pôde ser enfileirada."
+    checks:
+      exchange_trio:
+        title: "Trio de Empréstimos e Cadeia de Referências"
+        description: "Verifica a topologia de empréstimos entre usuários conectados e as referências canônicas das transações."
+      exchange_return:
+        title: "Integridade de Acerto Empréstimo"
+        description: "Verifica totais, alocações, origens vinculadas e projeções de repetição dos retornos."
+      card_exchange_projection:
+        title: "Projeções de Empréstimos Vinculadas ao Cartão"
+        description: "Verifica as linhas de empréstimo do pagador contra as projeções atuais das parcelas do cartão."
+      misplaced_exchange_intent:
+        title: "Intenção Incorreta de Empréstimo/Reembolso"
+        description: "Encontra origens de empréstimo cuja intenção persistida diverge do comportamento financeiro."
+      piggy_bank:
+        title: "Integridade do Cofrinho"
+        description: "Verifica relacionamentos de aportes, projeções de retorno, avaliações e parcelas."
+    states:
+      healthy: "Saudável"
+      warning: "Alerta"
+      failing: "Falhando"
+      running: "Executando"
+      unavailable: "Indisponível"
+    reasons:
+      never_run: "Nunca executada"
+      unavailable: "A execução mais recente está indisponível."
+      adapter_unavailable: "Esta verificação ainda não está disponível."
+      admin_required: "O acesso de administrador mudou antes do início da verificação."
+      user_not_found: "A conta do administrador não está mais disponível."
+      context_not_found: "O contexto selecionado não está mais disponível."
+      context_mismatch: "O contexto selecionado não pertence mais a este administrador."
+      context_archived: "O contexto selecionado foi arquivado antes do início da verificação."
+      connected_user_not_found: "O usuário conectado selecionado não está mais disponível."
+      connected_user_invalid: "O escopo de usuário conectado é inválido."
+      connected_user_unrelated: "O usuário selecionado não está mais conectado a este administrador."
+      unsupported_locale: "O idioma solicitado não é mais compatível."
+      check_unregistered: "Esta verificação não está mais registrada."
+      unexpected_connected_user: "Esta verificação não aceita um escopo de usuário conectado."
+      invalid_result: "A verificação retornou um resultado inválido."
+      execution_failed: "A verificação não pôde ser concluída."
+      enqueue_failed: "A verificação não pôde ser enfileirada."
+    fields:
+      status: "Estado"
+      affected: "Afetados"
+      failures: "Falhas"
+      warnings: "Alertas"
+      repairable: "Reparáveis"
+      read_only: "Somente leitura"
+      last_run: "Última execução"
+      duration: "Duração"
+      scope: "Escopo"
+    scopes:
+      context: "Contexto selecionado"
+      context_with_connections: "Contexto selecionado e usuários conectados"
+    values:
+      no_value: "—"
+      milliseconds: "%{count} ms"
+      repair_available: "Reparos compatíveis disponíveis"
+      diagnostic_only: "Somente diagnóstico"

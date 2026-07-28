@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
+class Message < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include TranslateHelper

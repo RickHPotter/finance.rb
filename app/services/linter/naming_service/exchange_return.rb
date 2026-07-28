@@ -6,7 +6,7 @@ module Linter
 
     def initialize(cash_transactions:, user: nil, dry_run: false, locale: nil)
       super(dry_run:, locale:)
-      @cash_transactions = cash_transactions.presence || user&.cash_transactions&.exchange_return || CashTransaction.none
+      @cash_transactions = cash_transactions.nil? ? (user&.cash_transactions&.exchange_return || CashTransaction.none) : cash_transactions
       @user = user
     end
 

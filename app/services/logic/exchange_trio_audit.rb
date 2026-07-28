@@ -2,10 +2,11 @@
 
 module Logic
   class ExchangeTrioAudit # rubocop:disable Metrics/ClassLength
-    attr_reader :connected_user_id, :current_user
+    attr_reader :connected_user_id, :current_context, :current_user
 
-    def initialize(current_user: nil, connected_user_id: nil)
+    def initialize(current_user: nil, current_context: nil, connected_user_id: nil)
       @current_user = current_user
+      @current_context = current_context
       @connected_user_id = connected_user_id.presence&.to_i
     end
 
@@ -35,11 +36,37 @@ module Logic
     def visible_conversation_scope
       return @visible_conversation_scope if defined?(@visible_conversation_scope)
 
-      scope = Conversation.assistant.joins(:conversation_participants)
-                          .where(conversation_participants: { user_id: current_user.id })
-      scope = scope.for_users([ current_user.id, connected_user_id ]) if connected_user_id.present?
+      scope = Conversation.assistant.where(id: current_user_conversation_ids)
+      scope = if connected_user_id.present?
+                connected_user_allowed? ? scope.for_users([ current_user.id, connected_user_id ]) : scope.none
+              else
+                scope.where(id: connected_relationship_conversation_ids)
+              end
+      scope = scope.for_scenario(current_context.scenario_key) if current_context.present?
+      scope = scope.where(id: two_party_conversation_ids)
 
       @visible_conversation_scope = scope.distinct
+    end
+
+    def two_party_conversation_ids
+      ConversationParticipant.group(:conversation_id).having("COUNT(*) = 2").select(:conversation_id)
+    end
+
+    def current_user_conversation_ids
+      ConversationParticipant.where(user_id: current_user.id).select(:conversation_id)
+    end
+
+    def connected_relationship_conversation_ids
+      participant_ids = [ current_user.id, *current_user.entities.that_are_users.pluck(:entity_user_id) ]
+
+      ConversationParticipant.where(user_id: participant_ids)
+                             .group(:conversation_id)
+                             .having("COUNT(DISTINCT user_id) = 2")
+                             .select(:conversation_id)
+    end
+
+    def connected_user_allowed?
+      current_user.entities.that_are_users.exists?(entity_user_id: connected_user_id)
     end
 
     def build_row(message)
@@ -120,6 +147,7 @@ module Logic
 
       source_transaction = source_transaction_for(message.reference_transactable)
       return if source_transaction.blank?
+      return unless source_context_visible?(source_transaction)
       return unless linked_to_receiver?(source_transaction, receiver)
 
       source_intent = exchange_intent_for(message, source_transaction, receiver_context:)
@@ -139,6 +167,24 @@ module Logic
         source_intent:,
         status: nil
       }
+    end
+
+    def source_context_visible?(source_transaction)
+      return true if current_context.blank?
+      return false unless source_transaction.respond_to?(:context)
+      return source_transaction.context_id == current_context.id if source_transaction.user_id == current_user.id
+
+      source_context_scenario_key(source_transaction.context_id) == current_context.scenario_key
+    end
+
+    def source_context_scenario_key(context_id)
+      source_context_scenario_keys.fetch(context_id) do
+        source_context_scenario_keys[context_id] = Context.where(id: context_id).pick(:scenario_key)
+      end
+    end
+
+    def source_context_scenario_keys
+      @source_context_scenario_keys ||= {}
     end
 
     def receiver_context_for(receiver, scenario_key)

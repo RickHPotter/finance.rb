@@ -19,7 +19,8 @@ en:
     subscription: Subscriptions
     balance: Balance
     context: Contexts
-    settings: Settings
+    health_check: Health Check
+    audit: Audit
 
 pt-BR:
   tabs:
@@ -42,4 +43,5 @@ pt-BR:
     subscription: Assinaturas
     balance: Saldo
     context: Contextos
-    settings: Ajustes
+    health_check: Verificação de Saúde
+    audit: Auditoria

@@ -85,4 +85,13 @@ RSpec.describe Audit::VersionQuery do
 
     expect(described_class.new(reader: user, filters: { item_type: "User" }).call.records).to be_empty
   end
+
+  it "does not preload operations when the result only needs operation identifiers" do
+    version = create_version(operation:, owner: user)
+
+    result = described_class.new(reader: user).call
+
+    expect(result.records).to eq([ version ])
+    expect(result.records.first.association(:operation)).not_to be_loaded
+  end
 end

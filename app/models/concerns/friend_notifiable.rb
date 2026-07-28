@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Shared functionality for models that can produce Installments.
-module FriendNotifiable # rubocop:disable Metrics/ModuleLength
+module FriendNotifiable
   extend ActiveSupport::Concern
 
   include TranslateHelper

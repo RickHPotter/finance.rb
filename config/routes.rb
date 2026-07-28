@@ -128,6 +128,23 @@ Rails.application.routes.draw do
   resources :audit_operations, only: %i[index show]
   resources :audit_versions, only: :index
   get "audit_records/:item_type/:item_id", to: "audit_versions#index", defaults: { record_filter: true }, as: :record_audit_versions
+  get "healthcheck", to: "health_check/dashboard#show", as: :healthcheck
+  post "healthcheck/runs", to: "health_check/runs#create", as: :healthcheck_runs
+  get "healthcheck/checks/:check_key", to: "health_check/checks#show", as: :healthcheck_check
+  post "healthcheck/checks/:check_key/run", to: "health_check/check_runs#create", as: :healthcheck_check_run
+  post "healthcheck/checks/:check_key/repairs/:repair_key/preview",
+       to: "health_check/repair_previews#create",
+       as: :healthcheck_repair_preview
+  patch "healthcheck/checks/:check_key/repairs/:repair_key",
+        to: "health_check/repairs#update",
+        as: :healthcheck_repair
+  match "healthcheck/maintenance/naming-convention/preview",
+        to: "health_check/naming_conventions#preview",
+        via: %i[get post],
+        as: :preview_healthcheck_naming_convention
+  patch "healthcheck/maintenance/naming-convention",
+        to: "health_check/naming_conventions#update",
+        as: :healthcheck_naming_convention
   resource :settings, only: :show
 
   resources :conversations, only: %i[index show create] do
@@ -140,30 +157,11 @@ Rails.application.routes.draw do
 
   resources :push_subscriptions, only: :create
 
-  resource :naming_convention, only: [] do
-    get :preview
-    post :preview
-    patch :update
-  end
-
   namespace :admin do
     get :data_backup, to: "backups#data_backup"
 
     resources :audit_operations, only: [] do
       resource :rollback_preview, only: %i[show create], controller: "audit_rollback_previews"
-    end
-
-    resource :settings, only: [] do
-      get :exchange_audit
-      get :exchange_return_audit_misplaced_loans
-      get :exchange_return_audit
-      get :exchange_return_audit_issue_bucket
-      get :card_exchange_projection_audit
-      get :piggy_bank_audit
-      patch :apply_exchange_audit
-      patch :convert_exchange_audit_loan_intent
-      patch :convert_misplaced_loan
-      patch :mark_exchange_return_source_as_fee
     end
   end
 

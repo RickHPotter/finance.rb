@@ -2,10 +2,11 @@
 
 module Logic
   class MisplacedLoanExchangeAudit
-    attr_reader :connected_user_id, :current_user
+    attr_reader :connected_user_id, :current_context, :current_user
 
-    def initialize(current_user:, connected_user_id: nil)
+    def initialize(current_user:, current_context: nil, connected_user_id: nil)
       @current_user = current_user
+      @current_context = current_context
       @connected_user_id = connected_user_id.presence&.to_i
     end
 
@@ -25,17 +26,11 @@ module Logic
       raise ActiveRecord::RecordNotFound if row.blank?
 
       source = source_transactions.fetch(row[:source_id])
+      raise ActiveRecord::RecordNotFound unless source.user_id == current_user.id
+
       message_ids = row[:message_ids]
 
-      CashTransaction.transaction do
-        source.update!(friend_notification_intent: "reimbursement")
-        rewrite_message_intents!(message_ids)
-      end
-
-      {
-        source_id: source.id,
-        updated_message_count: message_ids.size
-      }
+      Logic::MisplacedExchangeIntentRepair.new(source:, message_ids:).call
     end
 
     def convert_exchange_audit_issue!(source_id:)
@@ -47,16 +42,10 @@ module Logic
 
       message_ids = source.active_notification_messages.pluck(:id)
 
-      CashTransaction.transaction do
-        source.update!(friend_notification_intent: "reimbursement")
-        rewrite_message_intents!(message_ids)
-      end
-
-      {
+      Logic::MisplacedExchangeIntentRepair.new(source:, message_ids:).call.merge(
         status: "converted",
-        source_id: source.id,
-        updated_message_count: message_ids.size
-      }
+        source_id: source.id
+      )
     end
 
     private
@@ -83,19 +72,26 @@ module Logic
     def current_user_source_loan_row?(row)
       row[:intent] == "loan" &&
         row.dig(:source, :type) == "CashTransaction" &&
-        row.dig(:source, :user_id).to_i == current_user.id
+        visible_source_user_ids.include?(row.dig(:source, :user_id).to_i)
     end
 
     def exchange_rows
-      scope = Logic::ExchangeTrioAudit.new(current_user:, connected_user_id:).call
+      scope = Logic::ExchangeTrioAudit.new(current_user:, current_context:, connected_user_id:).call
       Logic::ExchangeAuditSelectionProjector.new(rows: scope).call
     end
 
     def source_transactions
       @source_transactions ||= CashTransaction
-                               .includes(:cash_installments, :categories, entity_transactions: :entity)
-                               .where(user_id: current_user.id, id: source_rows.keys)
+                               .includes(:cash_installments, :categories, :entity_transactions)
+                               .where(user_id: visible_source_user_ids, id: source_rows.keys)
                                .index_by(&:id)
+    end
+
+    def visible_source_user_ids
+      @visible_source_user_ids ||= [
+        current_user.id,
+        *(connected_user_id.present? ? [ connected_user_id ] : current_user.entities.that_are_users.pluck(:entity_user_id))
+      ].uniq
     end
 
     def build_row(source, rows)
@@ -106,6 +102,7 @@ module Logic
       latest_message = latest_message_for(rows)
       {
         source_id: source.id,
+        source_user_id: source.user_id,
         description: source.description,
         date: source.date,
         month_year: source.month_year,
@@ -125,7 +122,10 @@ module Logic
     end
 
     def entity_rows_for(source)
-      source.entity_transactions.map do |entity_transaction|
+      entity_transactions = source.entity_transactions.to_a
+      ActiveRecord::Associations::Preloader.new(records: entity_transactions, associations: :entity).call
+
+      entity_transactions.map do |entity_transaction|
         {
           id: entity_transaction.id,
           entity_name: entity_transaction.entity&.entity_name,
@@ -149,23 +149,6 @@ module Logic
         body: message.preview_body,
         created_at: message.created_at
       }
-    end
-
-    def rewrite_message_intents!(message_ids)
-      Message.where(id: message_ids).find_each do |message|
-        headers = parsed_headers_for(message)
-        next if headers.blank?
-
-        headers["intent"] = "reimbursement" if headers.key?("intent")
-        headers["replay"]["intent"] = "reimbursement" if headers["replay"].is_a?(Hash)
-        message.update!(headers: headers.to_json)
-      end
-    end
-
-    def parsed_headers_for(message)
-      JSON.parse(message.headers.to_s)
-    rescue JSON::ParserError
-      nil
     end
   end
 end

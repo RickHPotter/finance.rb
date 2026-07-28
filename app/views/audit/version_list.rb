@@ -16,7 +16,7 @@ class Views::Audit::VersionList < Views::Base
       return
     end
 
-    div(class: "space-y-3") do
+    div(class: "space-y-2") do
       versions.each { |version| version_row(version) }
     end
   end
@@ -26,8 +26,8 @@ class Views::Audit::VersionList < Views::Base
   def version_row(version)
     presenter = Audit::VersionPresenter.new(version)
 
-    article(id: "audit_version_#{version.id}", class: "rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900") do
-      div(class: "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between") do
+    article(id: "audit_version_#{version.id}", class: "rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900") do
+      div(class: "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between") do
         div(class: "min-w-0") do
           div(class: "flex flex-wrap items-center gap-2") do
             event_badge(version.event)
@@ -57,16 +57,16 @@ class Views::Audit::VersionList < Views::Base
     values << "#{I18n.t('audit.fields.context')}: ##{version.context_id}" if version.context_id.present?
     values << "#{I18n.t('audit.fields.version')}: ##{version.id}"
 
-    p(class: "mt-3 text-xs text-slate-500 dark:text-slate-400") { values.join(" | ") }
+    p(class: "mt-2 text-xs text-slate-500 dark:text-slate-400") { values.join(" | ") }
   end
 
   def changes_table(presenter)
     if presenter.changes.empty?
-      p(class: "mt-4 text-sm text-slate-500 dark:text-slate-400") { I18n.t("audit.empty.changes") }
+      p(class: "mt-3 text-sm text-slate-500 dark:text-slate-400") { I18n.t("audit.empty.changes") }
       return
     end
 
-    div(class: "mt-4 overflow-x-auto") do
+    div(class: "mt-3 overflow-x-auto") do
       table(class: "w-full min-w-[36rem] text-left text-sm") do
         thead(class: "border-b border-slate-200 text-xs uppercase text-slate-500 dark:border-slate-700 dark:text-slate-400") do
           tr do
@@ -89,7 +89,7 @@ class Views::Audit::VersionList < Views::Base
   end
 
   def raw_disclosure(presenter)
-    details(class: "mt-4 border-t border-slate-100 pt-3 dark:border-slate-800") do
+    details(class: "mt-3 border-t border-slate-100 pt-2 dark:border-slate-800") do
       summary(class: "cursor-pointer text-sm font-semibold text-slate-600 dark:text-slate-300") { I18n.t("audit.raw.title") }
       pre(class: "mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-emerald-200") do
         JSON.pretty_generate(presenter.raw_payload)

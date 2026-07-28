@@ -26,7 +26,7 @@ class AuditOperationsController < ApplicationController
   private
 
   def set_audit_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :settings)
+    set_tabs(active_menu: :hub, active_sub_menu: :audit)
   end
 
   def audit_filter_params

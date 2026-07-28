@@ -675,7 +675,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def special_labels
     [
-      (I18n.t("naming_conventions.conventions.card_advance") if card_transaction.card_advance_category?),
+      (I18n.t("health_check.naming_conventions.conventions.card_advance") if card_transaction.card_advance_category?),
       (model_attribute(CardTransaction, :subscription_id) if card_transaction.subscription.present?)
     ].compact
   end

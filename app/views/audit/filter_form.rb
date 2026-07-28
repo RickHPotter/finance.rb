@@ -19,10 +19,10 @@ class Views::Audit::FilterForm < Views::Base
   end
 
   def view_template
-    details(open: active_filters?, class: "border-b border-slate-200 pb-4 dark:border-slate-700") do
+    details(open: active_filters?, class: "border-b border-slate-200 pb-3 dark:border-slate-700") do
       summary(class: "cursor-pointer text-sm font-semibold text-slate-700 dark:text-slate-200") { I18n.t("audit.filters.title") }
 
-      form_with(url:, method: :get, class: "mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4") do |form|
+      form_with(url:, method: :get, class: "mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4") do |form|
         select_field(form, :item_type, item_type_options) unless record_filter
         input_field(form, :item_id, type: :number) unless record_filter
         input_field(form, :operation_id)

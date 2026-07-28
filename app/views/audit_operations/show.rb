@@ -17,7 +17,7 @@ class Views::AuditOperations::Show < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "mx-auto w-full max-w-7xl px-3 py-4 sm:px-5") do
+      main(class: "w-full px-2 py-2 sm:px-3") do
         header_section
         operation_summary
         render Views::Audit::VersionList.new(versions: page.records, current_user:)
@@ -29,22 +29,36 @@ class Views::AuditOperations::Show < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
+    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
       div(class: "min-w-0") do
         p(class: "text-xs font-semibold uppercase text-sky-700 dark:text-sky-300") { I18n.t("audit.operations.operation") }
         h1(class: "mt-1 wrap-break-word font-mono text-lg font-bold text-slate-950 sm:text-xl dark:text-slate-100") { operation.id }
       end
       div(class: "flex flex-wrap gap-2") do
+        if current_user.admin?
+          link_to(
+            I18n.t("tabs.health_check"),
+            healthcheck_path,
+            id: "audit_health_check_link",
+            class: LINK_CLASS,
+            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+          )
+        end
         if current_user.admin? && !operation.source_rollback? && operation.rollback_of_operation_id.blank?
           link_to(I18n.t("audit.rollback.preview"), admin_audit_operation_rollback_preview_path(operation), class: LINK_CLASS)
         end
-        link_to(I18n.t("navigation.back"), audit_operations_path, class: LINK_CLASS)
+        link_to(
+          I18n.t("navigation.back"),
+          audit_operations_path,
+          class: LINK_CLASS,
+          data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+        )
       end
     end
   end
 
   def operation_summary
-    section(class: "grid gap-3 border-b border-slate-200 py-5 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-700") do
+    section(class: "grid gap-2 border-b border-slate-200 py-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-700") do
       summary_value(I18n.t("audit.fields.source"), I18n.t("audit.sources.#{operation.source}", default: operation.source.humanize))
       summary_value(I18n.t("audit.fields.result"), I18n.t("audit.results.#{operation.result}"))
       summary_value(I18n.t("audit.fields.created_at"), I18n.l(operation.created_at, format: :short))
