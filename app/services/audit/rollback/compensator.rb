@@ -16,30 +16,49 @@ class Audit::Rollback::Compensator
   end
 
   def call
-    parent_groups.sort.each do |(record_type, item_id), rows|
-      compensate_parent(record_type:, item_id:, rows:)
-    end
+    execution_plan.ordered_rows.each { |row| compensate_row(row) }
     ensure_every_action_handled!
     impact
   end
 
   private
 
-  def parent_groups
-    @parent_groups ||= preview.rows.each_with_object({}) do |row, groups|
-      parent_key = parent_key_for(row)
-      groups[parent_key] ||= []
-      groups[parent_key] << row
+  def execution_plan
+    preview.execution_plan || raise(CompensationError, "rollback dependency graph is invalid")
+  end
+
+  def compensate_row(row)
+    return if handled_keys.include?(row.key)
+    return mark_handled(row) if row.action == "none"
+
+    if row.record_type.in?(TRANSACTION_TYPES | INSTALLMENT_TYPES)
+      compensate_transaction_group(row)
+    else
+      row.adapter.compensate!(impact:, confirmed:)
+      mark_handled(row)
     end
   end
 
-  def parent_key_for(row)
+  def compensate_transaction_group(row)
+    record_type, item_id = transaction_parent_key(row)
+    rows = transaction_group_rows(record_type:, item_id:)
+    compensate_parent(record_type:, item_id:, rows:)
+  end
+
+  def transaction_parent_key(row)
     return [ row.record_type, row.item_id ] if row.record_type.in?(TRANSACTION_TYPES)
 
     dependency = row.dependencies.find { |candidate| candidate.relationship == "parent" }
     raise CompensationError, "installment parent is unavailable" unless dependency
 
     [ dependency.record_type, dependency.item_id ]
+  end
+
+  def transaction_group_rows(record_type:, item_id:)
+    preview.rows.select do |candidate|
+      (candidate.record_type.in?(TRANSACTION_TYPES) && candidate.record_type == record_type && candidate.item_id == item_id) ||
+        (candidate.record_type.in?(INSTALLMENT_TYPES) && transaction_parent_key(candidate) == [ record_type, item_id ])
+    end
   end
 
   def compensate_parent(record_type:, item_id:, rows:)

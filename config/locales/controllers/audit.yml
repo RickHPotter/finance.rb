@@ -52,6 +52,7 @@ en:
         external: "External"
       issues:
         operation_has_no_versions: "The operation has no financial versions"
+        invalid_dependency_graph: "The rollback dependency graph is invalid"
         operation_has_no_compensation: "The operation has no net compensation to apply"
         target_not_committed: "Only committed operations can be rolled back"
         rollback_target_not_supported: "Rollback operations cannot be rollback targets"
@@ -209,6 +210,7 @@ pt-BR:
         external: "Externa"
       issues:
         operation_has_no_versions: "A operação não possui versões financeiras"
+        invalid_dependency_graph: "O grafo de dependências da reversão é inválido"
         operation_has_no_compensation: "A operação não possui compensação líquida para aplicar"
         target_not_committed: "Somente operações confirmadas podem ser revertidas"
         rollback_target_not_supported: "Operações de reversão não podem ser alvos de reversão"

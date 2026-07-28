@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Audit::Rollback::Adapters::Base
+  class CompensationNotImplementedError < StandardError; end
+
   DERIVED_ATTRIBUTES = %w[created_at updated_at].freeze
 
   attr_reader :transition, :operation_keys, :transitions
@@ -63,6 +65,10 @@ class Audit::Rollback::Adapters::Base
 
   def post_compensation_attributes
     {}
+  end
+
+  def compensate!(**)
+    raise CompensationNotImplementedError, "#{record_type} does not implement standalone compensation"
   end
 
   def differences
