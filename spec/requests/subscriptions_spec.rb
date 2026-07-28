@@ -95,7 +95,7 @@ RSpec.describe "Subscriptions", type: :request do
       get subscriptions_path
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("background: #123456")
+      expect(response.body).to include("background-color: #123456", "color: #ffffff")
       expect(response.body).to include(category.name)
     end
   end

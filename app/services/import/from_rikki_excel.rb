@@ -120,7 +120,8 @@ module Import
 
     def set_category_colours
       @user.categories.find_each do |category|
-        category.update(colour: RIKKI_COLOURS[category.category_name]) if RIKKI_COLOURS.key?(category.category_name)
+        colour_key = RIKKI_COLOURS[category.category_name]
+        category.update(colour: COLOURS.dig(colour_key, :hex)) if colour_key
       end
     end
 

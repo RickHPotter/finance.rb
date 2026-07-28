@@ -13,7 +13,7 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
   describe "ordinary movement" do
     it "reconciles selected-month cash and card installments across deterministic bundles" do
       transport = create(:category, user:, category_name: "TRANSPORT", colour: "#dc2626")
-      food = create(:category, user:, category_name: "FOOD", colour: "#16a34a")
+      food = create(:category, user:, category_name: "FOOD", colour: "#ffffff", text_colour_mode: "manual", text_colour: "#767676")
       bruno = create(:entity, user:, entity_name: "BRUNO")
       ana = create(:entity, user:, entity_name: "ANA")
 
@@ -24,11 +24,30 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       expect(payload.dig(:ordinary, :income)).to include(total: 123.45)
       expect(payload.dig(:ordinary, :outcome)).to include(total: 45.67)
       expect(payload.dig(:ordinary, :income, :categories)).to contain_exactly(
-        include(key: "categories:#{food.id}", label: "FOOD", amount: 123.45, color: "#16a34a")
+        include(
+          key: "categories:#{food.id}",
+          label: "FOOD",
+          amount: 123.45,
+          background: "#ffffff",
+          foreground: "#767676",
+          segments: [ { id: food.id, label: "FOOD", background: "#ffffff", foreground: "#767676" } ]
+        )
       )
       expect(payload.dig(:ordinary, :outcome, :categories)).to contain_exactly(
-        include(key: "categories:#{food.id}+#{transport.id}", label: "FOOD + TRANSPORT", amount: 45.67, color: "#78716c")
+        include(
+          key: "categories:#{food.id}+#{transport.id}",
+          label: "FOOD + TRANSPORT",
+          amount: 45.67,
+          background: CategoryColours::Presentation.neutral.background,
+          foreground: CategoryColours::Presentation.neutral.foreground,
+          segments: contain_exactly(
+            { id: food.id, label: "FOOD", background: "#ffffff", foreground: "#767676" },
+            { id: transport.id, label: "TRANSPORT", background: "#dc2626", foreground: "#ffffff" }
+          )
+        )
       )
+      expect(payload.dig(:ordinary, :income, :categories) + payload.dig(:ordinary, :outcome, :categories))
+        .to all(satisfy { |bundle| !bundle.key?(:color) && !bundle.key?(:colour) })
       expect(payload.dig(:ordinary, :outcome, :entities)).to contain_exactly(
         include(key: "entities:#{ana.id}+#{bruno.id}", label: "ANA + BRUNO", amount: 45.67)
       )
@@ -38,8 +57,15 @@ RSpec.describe Logic::Finder::MonthlyAnalysisJson do
       create_cash_transaction(price: -2_501, categories: [], entities: [])
 
       expect(payload.dig(:ordinary, :outcome, :categories)).to contain_exactly(
-        include(key: "category:unassigned", label: I18n.t("balances.monthly_analysis.unassigned"), amount: 25.01)
+        include(
+          key: "category:unassigned",
+          label: I18n.t("balances.monthly_analysis.unassigned"),
+          amount: 25.01,
+          background: CategoryColours::Presentation.neutral.background,
+          foreground: CategoryColours::Presentation.neutral.foreground
+        )
       )
+      expect(payload.dig(:ordinary, :outcome, :categories).sole).not_to include(:color, :colour)
       expect(payload.dig(:ordinary, :outcome, :entities)).to contain_exactly(
         include(key: "entity:unassigned", label: I18n.t("balances.monthly_analysis.unassigned"), amount: 25.01)
       )

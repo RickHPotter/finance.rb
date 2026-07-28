@@ -201,11 +201,11 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
         div(class: "mt-3 flex flex-wrap justify-center gap-2") do
           if label == model_attribute(Budget, :categories)
             records.each do |category|
-              span(
-                class: "flex min-h-12 items-center justify-center break-words rounded-sm border border-black px-2 py-1 text-center text-sm text-black",
-                style: "background: #{category.hex_colour}",
-                title: category.category_name
-              ) { category.category_name }
+              CategoryBadge(
+                category:,
+                class: "min-h-12 break-words px-2 py-1 text-center text-sm",
+                title: category.name
+              )
             end
           else
             records.each do |entity|

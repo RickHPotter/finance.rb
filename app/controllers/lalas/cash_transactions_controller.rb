@@ -20,7 +20,13 @@ class Lalas::CashTransactionsController < LalasController
 
     cash_installments, = Logic::CashTransactions.find_by_ref_month_year(lala_context, external_cash_transaction_params, search_cash_transaction_params)
 
-    render Views::Lalas::CashTransactions::MonthYear.new(mobile:, month_year:, month_year_str:, cash_installments:)
+    render Views::Lalas::CashTransactions::MonthYear.new(
+      mobile:,
+      month_year:,
+      month_year_str:,
+      cash_installments:,
+      category_colour_display_mode: CategoryColours::DisplayMode.for(user)
+    )
   end
 
   def build_index_context(cash_installments) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength

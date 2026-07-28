@@ -108,7 +108,8 @@ class Views::CashTransactions::Form < Views::Base
 
   def categories_json
     current_user.categories.to_h do |c|
-      [ c.id, c.hex_colour ]
+      presentation = CategoryColours::Presentation.for(c)
+      [ c.id, { background_colour: presentation.background, text_colour: presentation.foreground } ]
     end.to_json
   end
 
@@ -251,7 +252,8 @@ class Views::CashTransactions::Form < Views::Base
     render Views::Transactions::CardBoundTransactionsSheet.new(
       label: I18n.t("activerecord.attributes.exchange.card_bound"),
       installments:,
-      user_card_id: cash_transaction.user_card_id
+      user_card_id: cash_transaction.user_card_id,
+      category_colour_display_mode: CategoryColours::DisplayMode.for(current_user)
     )
   end
 
@@ -259,7 +261,11 @@ class Views::CashTransactions::Form < Views::Base
     transactions = standalone_exchange_transactions(exchanges)
     return if transactions.empty?
 
-    render Views::Transactions::StandaloneTransactionsSheet.new(transactions:, transaction_class:)
+    render Views::Transactions::StandaloneTransactionsSheet.new(
+      transactions:,
+      transaction_class:,
+      category_colour_display_mode: CategoryColours::DisplayMode.for(current_user)
+    )
   end
 
   def standalone_exchange_transactions(exchanges)

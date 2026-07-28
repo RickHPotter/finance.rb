@@ -190,6 +190,7 @@ RSpec.describe "Budgets", type: :request do
 
   describe "[ #show ]" do
     it "renders a context-scoped dashboard with summary, definition, consumption, and actions" do
+      category.update!(colour: "#4b5563")
       cash_transaction = create(
         :cash_transaction,
         user:,
@@ -229,6 +230,7 @@ RSpec.describe "Budgets", type: :request do
       expect(response.body).to include(cash_transaction_path(cash_transaction))
       expect(response.body).to include("delete_budget_#{budget.id}")
       expect(response.body).to include(category.name)
+      expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
     end
 
     it "shows Available for expense budgets that still have room remaining" do
@@ -427,6 +429,68 @@ RSpec.describe "Budgets", type: :request do
       expect(analyse_link["href"]).to eq(budget_path(budget))
       expect(duplicate_link["href"]).to eq(duplicate_budget_path(budget))
       expect(action_button).to be_present
+    end
+
+    it "renders single and multiple allocations through either category display mode" do
+      dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
+      dark_single_category = create(:category, user:, category_name: "MAINTENANCE", colour: "#4b5563")
+      light_category = create(:category, user:, category_name: "ASSINATURA", colour: "#f1f5f9")
+      single_category = create(:category, user:, category_name: "TRANSPORT", colour: "#ffffff")
+      single_budget = create(
+        :budget,
+        user:,
+        month: 3,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category: single_category) ]
+      )
+      dark_single_budget = create(
+        :budget,
+        user:,
+        month: 3,
+        year: 2026,
+        budget_categories: [ build(:budget_category, category: dark_single_category) ]
+      )
+      multiple_budget = create(
+        :budget,
+        user:,
+        month: 3,
+        year: 2026,
+        budget_categories: [
+          build(:budget_category, category: dark_category),
+          build(:budget_category, category: light_category)
+        ]
+      )
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("badges_only")
+
+      get month_year_budgets_path, params: { month_year: "202603" }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      single_row = document.at_css("[data-row-kind='budget'][data-id='#{single_budget.id}']")
+      dark_single_row = document.at_css("[data-row-kind='budget'][data-id='#{dark_single_budget.id}']")
+      multiple_row = document.at_css("[data-row-kind='budget'][data-id='#{multiple_budget.id}']")
+
+      expect(response).to have_http_status(:success)
+      expect(single_row["data-category-display-mode"]).to eq("badges_only")
+      expect(single_row["data-category-multiple"]).to eq("false")
+      expect(single_row["style"]).to be_blank
+      expect(single_row.at_css('[data-category-colour="true"]')["style"]).to include("background-color: #ffffff", "color: #000000")
+      expect(dark_single_row.at_css('[data-category-colour="true"]')["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(multiple_row["style"]).to be_blank
+      expect(multiple_row.text).to include("LEISURE", "ASSINATURA")
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("row_coloured")
+
+      get month_year_budgets_path, params: { month_year: "202603" }
+
+      coloured_document = Nokogiri::HTML.fragment(response.body)
+      coloured_single_row = coloured_document.at_css("[data-row-kind='budget'][data-id='#{single_budget.id}']")
+      coloured_multiple_row = coloured_document.at_css("[data-row-kind='budget'][data-id='#{multiple_budget.id}']")
+
+      expect(coloured_single_row["style"]).to include("background-color: #ffffff", "color: #000000")
+      expect(coloured_multiple_row["data-category-primary-id"]).to eq(dark_category.id.to_s)
+      expect(coloured_multiple_row["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(coloured_multiple_row.text).to include("LEISURE", "ASSINATURA")
     end
   end
 

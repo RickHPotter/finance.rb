@@ -14,7 +14,7 @@ module Views
       end
 
       def view_template
-        colour = category_transaction&.category&.hex_colour
+        presentation = CategoryColours::Presentation.for(category_transaction&.category)
 
         div(
           class: "nested-form-wrapper #{'hidden' if category_transaction.marked_for_destruction?}",
@@ -24,16 +24,16 @@ module Views
             span(class: "flex items-center text-sm font-medium text-black") do
               div(
                 class: "category_container flex min-h-12 items-center justify-center rounded-sm border border-black px-2 py-1 text-sm " \
-                       "text-black dark:rounded-md dark:border-slate-700 dark:text-black dark:shadow-sm dark:ring-1 dark:ring-slate-950/40",
-                style: "background: #{colour}"
+                       "dark:rounded-md dark:shadow-sm dark:ring-1 dark:ring-slate-950/40",
+                style: presentation.inline_style
               ) do
                 span(class: "categories_category_name text-nowrap") { category_transaction&.category&.name }
 
                 unless transactable.is_a?(CashTransaction) && (transactable.card_payment? || transactable.card_advance? || transactable.exchange_return?)
                   button(
                     type: :button,
-                    class: "ms-2 inline-flex items-center rounded-xs bg-transparent p-1 text-sm text-black hover:bg-gray-800 hover:text-gray-200 " \
-                           "dark:text-slate-950 dark:hover:bg-slate-950/40 dark:hover:text-slate-100",
+                    class: "ms-2 inline-flex items-center rounded-xs bg-transparent p-1 text-sm text-current " \
+                           "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current",
                     aria_label: "Remove",
                     data: { action: "click->reactive-form#removeCategory" }
                   ) do

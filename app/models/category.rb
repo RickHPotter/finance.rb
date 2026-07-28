@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Category < ApplicationRecord
+  COLOUR_HEX_PATTERN = /\A#[0-9a-f]{6}\z/
+
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
@@ -18,15 +20,21 @@ class Category < ApplicationRecord
   # @validations ..............................................................
   validates :category_name, presence: true, uniqueness: { scope: :user_id }
   validates :colour, presence: true
+  validates :colour, format: { with: COLOUR_HEX_PATTERN }, allow_blank: true
   validates :built_in, inclusion: { in: [ true, false ] }
+  validates :text_colour, presence: true, if: :text_colour_manual?
+  validates :text_colour, format: { with: COLOUR_HEX_PATTERN }, allow_blank: true, if: :text_colour_manual?
+  validate :manual_text_colour_has_sufficient_contrast
 
   # @callbacks ................................................................
-  before_validation :set_built_in
+  before_validation :set_built_in, :normalize_colour_values
 
   # @scopes ...................................................................
   scope :built_in, -> { where(built_in: true) }
 
   # @additional_config ........................................................
+  enum :text_colour_mode, { automatic: "automatic", manual: "manual" }, default: :automatic, prefix: :text_colour, validate: true
+
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
 
@@ -37,9 +45,15 @@ class Category < ApplicationRecord
   end
 
   def hex_colour
-    return colour if colour.start_with?("#")
+    colour
+  end
 
-    COLOURS.dig(colour, :hex)
+  def resolved_text_colour
+    colour_contrast&.foreground
+  end
+
+  def colour_contrast_ratio
+    colour_contrast&.ratio
   end
 
   def name
@@ -71,6 +85,46 @@ class Category < ApplicationRecord
   end
 
   # @private_instance_methods .................................................
+
+  private
+
+  def normalize_colour_values
+    self.colour = normalize_colour(colour)
+
+    if text_colour_automatic?
+      self.text_colour = nil
+    elsif text_colour.present?
+      self.text_colour = normalize_colour(text_colour)
+    end
+  end
+
+  def normalize_colour(value)
+    CategoryColours::Contrast.normalize(value)
+  rescue CategoryColours::Contrast::InvalidColour
+    value
+  end
+
+  def manual_text_colour_has_sufficient_contrast
+    return unless text_colour_manual?
+
+    assessment = colour_contrast
+    return if assessment.nil? || assessment.passing?
+
+    errors.add(
+      :text_colour,
+      :insufficient_contrast,
+      ratio: assessment.ratio_label,
+      minimum: "#{Kernel.format('%.2f', CategoryColours::Contrast::MINIMUM_RATIO)}:1",
+      suggestion: assessment.suggested_foreground
+    )
+  end
+
+  def colour_contrast
+    contrast = CategoryColours::Contrast.new(colour)
+    text_colour_manual? ? contrast.assess(text_colour) : contrast.automatic_assessment
+  rescue CategoryColours::Contrast::InvalidColour
+    nil
+  end
 end
 
 # == Schema Information
@@ -86,7 +140,9 @@ end
 #  cash_transactions_count :integer          default(0), not null
 #  cash_transactions_total :integer          default(0), not null
 #  category_name           :string           not null, uniquely indexed => [user_id]
-#  colour                  :string           default("white"), not null
+#  colour                  :string           default("#f1f5f9"), not null
+#  text_colour             :string
+#  text_colour_mode        :string           default("automatic"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [category_name]

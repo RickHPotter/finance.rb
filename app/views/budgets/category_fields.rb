@@ -9,13 +9,14 @@ class Views::Budgets::CategoryFields < Views::Base
 
   def view_template
     budget_category = form.object
+    presentation = CategoryColours::Presentation.for(budget_category&.category)
 
     div(class: "nested-form-wrapper", data: { new_record: budget_category.new_record?, reactive_form_target: "categoryWrapper" }) do
       div(class: "flex w-full my-1") do
         span(class: "flex items-center text-sm font-medium text-black") do
           div(
-            class: "category_container flex min-h-12 items-center justify-center px-2 py-1 rounded-sm border border-black text-sm text-black dark:text-black",
-            style: "background: #{budget_category&.category&.hex_colour}"
+            class: "category_container flex min-h-12 items-center justify-center rounded-sm border px-2 py-1 text-sm",
+            style: presentation.inline_style
           ) do
             span(class: "categories_category_name text-nowrap", data: { dynamic_description_target: :category }) do
               budget_category&.category&.name
@@ -23,7 +24,8 @@ class Views::Budgets::CategoryFields < Views::Base
 
             button(
               type: :button,
-              class: "inline-flex items-center p-1 ms-2 text-sm text-black bg-transparent rounded-xs hover:bg-gray-800 hover:text-gray-200",
+              class: "ms-2 inline-flex items-center rounded-xs bg-transparent p-1 text-sm text-current " \
+                     "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current",
               aria_label: "Remove",
               data: { action: "reactive-form#removeCategory dynamic-description#updateDescription" }
             ) do

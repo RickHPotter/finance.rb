@@ -23,7 +23,7 @@ RSpec.describe "UserCards", type: :request do
       user_card = create(:user_card, user:, card:)
       scenario_context = create(:context, user:, name: "Scenario Card", source_context: user.main_context)
       main_category = create(:category, user:, category_name: "Main Food")
-      scenario_category = create(:category, user:, category_name: "Scenario Food")
+      scenario_category = create(:category, user:, category_name: "Scenario Food", colour: "#4b5563")
       main_entity = create(:entity, user:, entity_name: "Main Entity")
       scenario_entity = create(:entity, user:, entity_name: "Scenario Entity")
 
@@ -70,6 +70,21 @@ RSpec.describe "UserCards", type: :request do
       expect(response.body).not_to include("Main Food")
       expect(response.body).not_to include("Main Entity")
       expect(response.body).not_to include(I18n.l(Date.new(2026, 4, 12), format: :short))
+      expect(response.body).to include("background-color: #4b5563", "color: #ffffff")
+
+      entity_payload = interactive_dashboard_payloads(response.body).fetch("entity")
+      scenario_entity_entry = entity_payload.fetch("items").find { |entry| entry.fetch("name") == "Scenario Entity" }
+      scenario_category_item = scenario_entity_entry.fetch("groups").flat_map { |group| group.fetch("secondaryItems") }
+                                                                    .find { |item| item.fetch("memberIds").include?(scenario_category.id.to_s) }
+      expect(scenario_category_item.fetch("chartPresentation")).to eq(
+        "background" => CategoryColours::Presentation.neutral.background,
+        "foreground" => CategoryColours::Presentation.neutral.foreground
+      )
+      expect(scenario_category_item.fetch("swatches").size).to eq(2)
+      expect(scenario_category_item.fetch("swatches")).to include(
+        include("label" => "Scenario Food", "background" => "#4b5563", "foreground" => "#ffffff")
+      )
+      expect(scenario_category_item.fetch("swatchHexes")).to include("#4b5563")
     end
 
     it "includes future installment points in the interactive category dashboard payload" do

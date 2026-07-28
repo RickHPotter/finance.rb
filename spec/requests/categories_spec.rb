@@ -19,6 +19,18 @@ RSpec.describe "Categories", type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it "renders category links with the complete resolved pair" do
+      category = create(:category, user:, category_name: "Dark category", colour: "#4b5563")
+
+      get categories_path
+
+      document = response.parsed_body
+      badge = document.at_css("#show_category_#{category.id}")
+
+      expect(badge["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(badge["class"]).not_to include("hover:opacity")
+    end
   end
 
   describe "[ #show ]" do
@@ -63,35 +75,130 @@ RSpec.describe "Categories", type: :request do
     end
   end
 
+  describe "[ #new ]" do
+    it "renders the accessible colour controls and complete live preview surface" do
+      get new_category_path
+
+      document = response.parsed_body
+      form = document.at_css("form[data-controller~='category-colour-preview']")
+
+      expect(response).to have_http_status(:success)
+      expect(form).to be_present
+      expect(form.at_css("#category_text_colour_mode_automatic[checked]")).to be_present
+      expect(form.at_css("#category_text_colour_mode_manual")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='backgroundInput']")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='foregroundInput']")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='manualFields'][aria-hidden='true']")).to be_present
+      expect(form.css("[data-category-colour-preview-target='preview']").size).to eq(7)
+      expect(form.css("[data-preview-state]").pluck("data-preview-state")).to contain_exactly(
+        "normal", "normal", "normal", "hover", "focus", "selected", "disabled"
+      )
+    end
+  end
+
+  describe "[ #edit ]" do
+    it "renders persisted manual colours without hiding the foreground controls" do
+      category = create(:category, user:, colour: "#000000", text_colour_mode: "manual", text_colour: "#ffffff")
+
+      get edit_category_path(category)
+
+      document = response.parsed_body
+      form = document.at_css("form[data-controller~='category-colour-preview']")
+
+      expect(response).to have_http_status(:success)
+      expect(form.at_css("#category_text_colour_mode_manual[checked]")).to be_present
+      expect(form.at_css("[data-category-colour-preview-target='manualFields'][aria-hidden='false']")).to be_present
+      expect(form.at_css("input[name='category[text_colour]']")["value"]).to eq("#ffffff")
+      expect(form.at_css("[data-category-colour-preview-target='ratio']").text).to eq("21.00:1")
+    end
+  end
+
   describe "[ #create ]" do
-    it "creates a category" do
+    it "creates a category with a normalized manual text-colour preference" do
       expect do
         post categories_path, params: {
           category: {
             category_name: "Travel",
-            colour: "#123456",
+            colour: "FFFFFF",
+            text_colour_mode: "manual",
+            text_colour: "767676",
             active: true,
             user_id: user.id
           }
         }, headers: turbo_stream_headers
       end.to change(Category, :count).by(1)
+
+      category = user.categories.find_by!(category_name: "Travel")
+      expect(category.colour).to eq("#ffffff")
+      expect(category.text_colour_mode).to eq("manual")
+      expect(category.text_colour).to eq("#767676")
+    end
+
+    it "rejects an inaccessible manual colour while retaining inputs and stacking concrete feedback" do
+      expect do
+        post categories_path, params: {
+          category: {
+            category_name: "Unreadable",
+            colour: "#ffffff",
+            text_colour_mode: "manual",
+            text_colour: "#777777",
+            active: true,
+            user_id: user.id
+          }
+        }, headers: turbo_stream_headers
+      end.not_to change(Category, :count)
+
+      document = Nokogiri::HTML5.fragment(response.body)
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("4.48:1", "#000000")
+      expect(document.css("turbo-stream[action='update'][target='notification']").size).to eq(1)
+      expect(document.css("turbo-stream[action='append'][target='notification']")).not_to be_empty
+      expect(rendered_form.at_css("#category_text_colour_mode_manual[checked]")).to be_present
+      expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#ffffff")
+      expect(rendered_form.at_css("input[name='category[text_colour]']")["value"]).to eq("#777777")
+    end
+
+    it "retains malformed colour input without interpolating it into inline styles" do
+      post categories_path, params: {
+        category: {
+          category_name: "Malformed",
+          colour: "#abcd",
+          text_colour_mode: "automatic",
+          active: true,
+          user_id: user.id
+        }
+      }, headers: turbo_stream_headers
+
+      document = Nokogiri::HTML5.fragment(response.body)
+      rendered_form = document.at_css("turbo-stream[action='replace'][target='center_container'] template form")
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(rendered_form.at_css("input[name='category[colour]']")["value"]).to eq("#abcd")
+      expect(rendered_form.css("[style]").pluck("style")).not_to include(a_string_including("#abcd"))
     end
   end
 
   describe "[ #update ]" do
-    it "updates the record" do
-      category = create(:category, user:)
+    it "updates the record and clears a previous manual foreground in automatic mode" do
+      category = create(:category, user:, colour: "#000000", text_colour_mode: "manual", text_colour: "#ffffff")
 
       patch category_path(category), params: {
         category: {
           category_name: "Updated Category",
           colour: category.colour,
+          text_colour_mode: "automatic",
+          text_colour: "#ffffff",
           active: category.active,
           user_id: user.id
         }
       }, headers: turbo_stream_headers
 
-      expect(category.reload.category_name).to eq("Updated Category")
+      category.reload
+      expect(category.category_name).to eq("Updated Category")
+      expect(category.text_colour_mode).to eq("automatic")
+      expect(category.text_colour).to be_nil
     end
   end
 

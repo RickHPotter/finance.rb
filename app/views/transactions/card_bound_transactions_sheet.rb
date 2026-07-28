@@ -3,12 +3,13 @@
 class Views::Transactions::CardBoundTransactionsSheet < Views::Base
   include TranslateHelper
 
-  attr_reader :label, :installments, :user_card_id
+  attr_reader :label, :installments, :user_card_id, :category_colour_display_mode
 
-  def initialize(label:, installments:, user_card_id: nil)
+  def initialize(label:, installments:, user_card_id: nil, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @label = label
     @installments = installments
     @user_card_id = user_card_id
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -34,7 +35,8 @@ class Views::Transactions::CardBoundTransactionsSheet < Views::Base
               mobile: true,
               card_installments: month_installments,
               user_card_id:,
-              entity_links: false
+              entity_links: false,
+              category_colour_display_mode:
             )
           end
         end

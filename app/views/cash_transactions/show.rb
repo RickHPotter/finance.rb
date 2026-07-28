@@ -242,11 +242,11 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         div(class: "mt-3 flex flex-wrap justify-center gap-2") do
           if label == model_attribute(CashTransaction, :categories)
             categories.each do |category|
-              span(
-                class: "flex min-h-12 items-center justify-center break-words rounded-sm border border-black px-2 py-1 text-center text-sm text-black",
-                style: "background: #{category.hex_colour}",
+              CategoryBadge(
+                category:,
+                class: "min-h-12 break-words px-2 py-1 text-center text-sm",
                 title: category.name
-              ) { category.name }
+              )
             end
           else
             entities.each do |entity|

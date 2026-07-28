@@ -34,7 +34,7 @@ class Views::Entities::Popover < Views::Base
     else
       Popover(options: { placement: "top-end" }, class: mobile_popover_class) do
         PopoverTrigger(class: "w-full") do
-          button(type: :button, class: mobile_trigger_button_class) do
+          button(type: :button, class: mobile_trigger_button_class, data: { entity_colour: "true" }) do
             render_avatar_stack(items, avatar_class: mobile_trigger_avatar_class, limit: 3)
             span(class: mobile_trigger_label_class) { trigger_label }
           end
@@ -57,7 +57,7 @@ class Views::Entities::Popover < Views::Base
     else
       Popover(options: { placement: "bottom-end" }, class: "relative z-60 flex items-center justify-center overflow-visible") do
         PopoverTrigger(class: "w-full") do
-          button(type: :button, class: desktop_trigger_button_class) do
+          button(type: :button, class: desktop_trigger_button_class, data: { entity_colour: "true" }) do
             render_avatar_stack(items, avatar_class: "size-5", limit: 2)
             span { "+" }
           end
@@ -76,11 +76,11 @@ class Views::Entities::Popover < Views::Base
 
   def render_item(item, wrapper_class:, avatar_class:, name_class:)
     if item[:href].present? && item[:name_href].blank? && item[:info_component].blank?
-      Link(href: item[:href], size: :xs, class: wrapper_class, data: item[:data] || {}) do
+      Link(href: item[:href], size: :xs, class: wrapper_class, data: entity_badge_data(item[:data])) do
         render_item_content(item, avatar_class:, name_class:)
       end
     else
-      div(class: wrapper_class) do
+      div(class: wrapper_class, data: entity_badge_data) do
         render_item_content(item, avatar_class:, name_class:)
       end
     end
@@ -106,8 +106,12 @@ class Views::Entities::Popover < Views::Base
     if item[:info_component].present?
       div(class: item[:info_class]) { render item[:info_component] }
     elsif item[:info_class].present? && item[:info_text].present?
-      span(class: item[:info_class]) { item[:info_text] }
+      span(class: item[:info_class], data: { entity_info_text: "true" }) { item[:info_text] }
     end
+  end
+
+  def entity_badge_data(data = nil)
+    (data || {}).merge(entity_colour: "true")
   end
 
   def render_avatar_stack(items, avatar_class:, limit:)

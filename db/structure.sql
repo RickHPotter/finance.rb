@@ -70,8 +70,8 @@ CREATE TABLE public.audit_operations (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT audit_operations_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY (ARRAY[('committed'::character varying)::text, ('rejected'::character varying)::text, ('failed'::character varying)::text]))),
-    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text])))
+    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY ((ARRAY['committed'::character varying, 'rejected'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying])::text[])))
 );
 
 
@@ -94,9 +94,9 @@ CREATE TABLE public.audit_versions (
     mutation_source character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY (ARRAY[('create'::character varying)::text, ('update'::character varying)::text, ('destroy'::character varying)::text]))),
+    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY ((ARRAY['create'::character varying, 'update'::character varying, 'destroy'::character varying])::text[]))),
     CONSTRAINT audit_versions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text, ('shared_sync'::character varying)::text, ('projection_sync'::character varying)::text, ('reference_sync'::character varying)::text, ('piggy_bank_sync'::character varying)::text, ('balance_recalculation'::character varying)::text]))),
+    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying, 'shared_sync'::character varying, 'projection_sync'::character varying, 'reference_sync'::character varying, 'piggy_bank_sync'::character varying, 'balance_recalculation'::character varying])::text[]))),
     CONSTRAINT audit_versions_object_changes_size CHECK (((object_changes IS NULL) OR (octet_length((object_changes)::text) <= 262144))),
     CONSTRAINT audit_versions_object_size CHECK (((object IS NULL) OR (octet_length((object)::text) <= 262144)))
 );
@@ -398,14 +398,20 @@ CREATE TABLE public.categories (
     category_name character varying NOT NULL,
     built_in boolean DEFAULT false NOT NULL,
     active boolean DEFAULT true NOT NULL,
-    colour character varying DEFAULT 'white'::character varying NOT NULL,
+    colour character varying DEFAULT '#f1f5f9'::character varying NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_total integer DEFAULT 0 NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     cash_transactions_total integer DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    text_colour_mode character varying DEFAULT 'automatic'::character varying NOT NULL,
+    text_colour character varying,
+    CONSTRAINT categories_colour_hex_format CHECK (((colour)::text ~ '^#[0-9a-f]{6}$'::text)),
+    CONSTRAINT categories_text_colour_hex_format CHECK (((text_colour IS NULL) OR ((text_colour)::text ~ '^#[0-9a-f]{6}$'::text))),
+    CONSTRAINT categories_text_colour_mode_payload CHECK (((((text_colour_mode)::text = 'automatic'::text) AND (text_colour IS NULL)) OR (((text_colour_mode)::text = 'manual'::text) AND (text_colour IS NOT NULL)))),
+    CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY ((ARRAY['automatic'::character varying, 'manual'::character varying])::text[])))
 );
 
 
@@ -2820,6 +2826,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260725120000'),
 ('20260724120000'),
 ('20260724090000'),
 ('20260722090000'),

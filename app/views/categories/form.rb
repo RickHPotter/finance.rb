@@ -18,7 +18,22 @@ class Views::Categories::Form < Views::Base
     turbo_frame_tag dom_id(category) do
       form_url = category.persisted? ? category_path(category) : categories_path
 
-      form_with(model: category, url: form_url, id: :form, class: "contents text-black", data: { controller: "reactive-form" }) do |form|
+      form_with(
+        model: category,
+        url: form_url,
+        id: :form,
+        class: "contents text-black",
+        data: {
+          controller: "reactive-form category-colour-preview",
+          category_colour_preview_minimum_ratio_value: CategoryColours::Contrast::MINIMUM_RATIO,
+          category_colour_preview_passing_label_value: colour_translation(:passing),
+          category_colour_preview_failing_label_value: colour_translation(:failing),
+          category_colour_preview_invalid_label_value: colour_translation(:invalid),
+          category_colour_preview_suggestion_label_value: colour_translation(:suggestion),
+          category_colour_preview_fallback_label_value: colour_translation(:fallback_label),
+          action: "colour-picker:change->category-colour-preview#colourChanged"
+        }
+      ) do |form|
         form.hidden_field :user_id, value: current_user.id
 
         div(class: "w-full mb-6") do
@@ -29,13 +44,16 @@ class Views::Categories::Form < Views::Base
             autocomplete: :off,
             disabled: category.persisted? && category.built_in?,
             value: category&.name,
-            data: { controller: "blinking-placeholder", text: model_attribute(category, :category_name) }
+            data: {
+              controller: "blinking-placeholder",
+              text: model_attribute(category, :category_name),
+              category_colour_preview_target: "categoryNameInput",
+              action: "input->category-colour-preview#nameChanged"
+            }
           )
         end
 
-        div(class: "flex justify-center items-center mx-auto py-2") do
-          ColourPicker(form:, field: :colour)
-        end
+        CategoryColourAccessibilityFields(form:, category:)
 
         bold_label(form, :active)
 
@@ -63,5 +81,11 @@ class Views::Categories::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  private
+
+  def colour_translation(key)
+    I18n.t("categories.colour_accessibility.#{key}")
   end
 end

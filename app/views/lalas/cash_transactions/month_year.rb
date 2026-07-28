@@ -3,14 +3,16 @@
 class Views::Lalas::CashTransactions::MonthYear < Views::Base
   include TranslateHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :total_amount
+  attr_reader :mobile, :month_year, :month_year_str, :cash_installments, :total_amount, :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, month_year_str:, cash_installments:)
+  def initialize(mobile:, month_year:, month_year_str:, cash_installments:,
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str
     @cash_installments = cash_installments
     @total_amount = cash_installments.sum(&:price)
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -29,7 +31,7 @@ class Views::Lalas::CashTransactions::MonthYear < Views::Base
         render Views::Shared::MonthYearHeader.new(month_year_str:, total_amount:, mobile:)
 
         if cash_installments.present?
-          render Views::Lalas::CashInstallments::Index.new(mobile:, cash_installments:)
+          render Views::Lalas::CashInstallments::Index.new(mobile:, cash_installments:, category_colour_display_mode:)
         else
           div(class: "border-b border-slate-200 py-2 my-2 text-lg dark:border-slate-800 dark:text-slate-400") { I18n.t(:rows_not_found) }
         end
@@ -57,7 +59,7 @@ class Views::Lalas::CashTransactions::MonthYear < Views::Base
           )
 
           if cash_installments.present?
-            render Views::Lalas::CashInstallments::Index.new(mobile:, cash_installments:)
+            render Views::Lalas::CashInstallments::Index.new(mobile:, cash_installments:, category_colour_display_mode:)
           else
             div(class: "py-2 text-lg dark:text-slate-400") { I18n.t(:rows_not_found) }
           end

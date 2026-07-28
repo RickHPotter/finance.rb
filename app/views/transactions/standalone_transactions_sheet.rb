@@ -4,13 +4,13 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
   include Phlex::Rails::Helpers::LinkTo
 
   include TranslateHelper
-  include ColoursHelper
 
-  attr_reader :transactions, :transaction_class
+  attr_reader :transactions, :transaction_class, :category_colour_display_mode
 
-  def initialize(transactions:, transaction_class:)
+  def initialize(transactions:, transaction_class:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @transactions = transactions
     @transaction_class = transaction_class
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
@@ -44,9 +44,12 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
   end
 
   def render_transaction_card(transaction)
+    presentation = row_presentation(transaction)
+
     div(
-      class: "rounded-lg shadow-sm overflow-hidden my-2 border-2 border-slate-200",
-      style: "background-clip: padding-box; #{row_style(transaction)}"
+      class: [ "rounded-lg shadow-sm overflow-hidden my-2 border-2 border-slate-200", presentation.row_classes ].compact.join(" "),
+      style: presentation.row_style,
+      data: presentation.metadata
     ) do
       div(class: "p-4") do
         div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
@@ -73,9 +76,7 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
 
         div(class: "flex flex-wrap items-center gap-1") do
           categories_for(transaction).each do |category|
-            span(class: "px-2 py-1 flex items-center justify-center rounded-sm bg-transparent border border-black text-xs") do
-              category.name
-            end
+            CategoryBadge(category:, class: "px-2 py-1 text-xs")
           end
 
           render_mobile_entities(transaction)
@@ -139,12 +140,12 @@ class Views::Transactions::StandaloneTransactionsSheet < Views::Base
     month_dates.minmax
   end
 
-  def row_style(transaction)
-    solid_or_gradient_style(categories_for(transaction))
+  def row_presentation(transaction)
+    CategoryColours::RowPresentation.new(categories: categories_for(transaction), mode: category_colour_display_mode)
   end
 
   def categories_for(transaction)
-    transaction.category_transactions.sort_by(&:id).filter_map(&:category)
+    CategoryColours::Ordering.from_allocations(transaction.category_transactions)
   end
 
   def entity_transactions_for(transaction)

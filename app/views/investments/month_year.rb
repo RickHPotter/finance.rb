@@ -7,7 +7,7 @@ class Views::Investments::MonthYear < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_bg_colour
+  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_presentation
 
   def initialize(mobile:, month_year:, month_year_str:, investments:, current_user:)
     @month_year = month_year
@@ -16,7 +16,8 @@ class Views::Investments::MonthYear < Views::Base
     @investments = investments
     @total_amount = investments.sum(:price)
 
-    @investment_bg_colour = current_user.categories.built_in.find_by(category_name: "INVESTMENT").hex_colour
+    category = current_user.categories.built_in.find_by(category_name: "INVESTMENT")
+    @investment_presentation = CategoryColours::Presentation.for(category)
   end
 
   def view_template
@@ -84,12 +85,12 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "rounded-lg shadow-sm overflow-visible bg-slate-200 my-2 text-black hover:opacity-80 transition-all",
-          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
+          class: "rounded-lg shadow-sm overflow-visible my-2 transition-shadow hover:shadow-md",
+          style: investment_presentation.inline_style,
           data: { id: investment.id, datatable_target: :row }
         ) do
           div(class: "p-4") do
-            div(class: "flex items-center justify-between gap-4 w-full text-black text-sm font-semibold") do
+            div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
               div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
                 link_to investment.description,
                         edit_investment_path(investment),
@@ -135,8 +136,8 @@ class Views::Investments::MonthYear < Views::Base
     investments.each do |investment|
       turbo_frame_tag dom_id investment do
         div(
-          class: "grid grid-cols-8 bg-linear-to-r text-black hover:opacity-80 transition-all",
-          style: "background-clip: padding-box; background-color: #{investment_bg_colour}",
+          class: "grid grid-cols-8 transition-shadow hover:shadow-md",
+          style: investment_presentation.inline_style,
           data: { id: investment.id, datatable_target: :row }
         ) do
           div(class: "flex items-center justify-between gap-2 rounded-sm pl-4") do

@@ -5,7 +5,6 @@ class Views::Entities::Show < Views::Base
   include Phlex::Rails::Helpers::ImageTag
   include Phlex::Rails::Helpers::AssetPath
 
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :entity
@@ -289,10 +288,13 @@ class Views::Entities::Show < Views::Base
   end
 
   def ensure_counterpart_entry!(entries, category_record)
+    presentation = CategoryColours::Presentation.for(category_record)
+
     entries[category_record.id] ||= {
       id: category_record.id.to_s,
       name: category_record.name,
-      colour: category_record.hex_colour,
+      colour: presentation.background,
+      **presentation.chart_payload,
       totalsBySource: Hash.new(0)
     }
   end
@@ -303,6 +305,8 @@ class Views::Entities::Show < Views::Base
         id: entry[:id],
         name: entry[:name],
         colour: entry[:colour],
+        background: entry[:background],
+        foreground: entry[:foreground],
         totalsBySource: entry[:totalsBySource]
       }.compact
     end
@@ -314,7 +318,9 @@ class Views::Entities::Show < Views::Base
         id: entry[:id],
         name: entry[:name],
         total: entry[:total],
-        colour: entry[:colour]
+        colour: entry[:colour],
+        background: entry[:background],
+        foreground: entry[:foreground]
       }.compact
     end
   end

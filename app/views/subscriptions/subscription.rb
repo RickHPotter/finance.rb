@@ -5,7 +5,6 @@ class Views::Subscriptions::Subscription < Views::Base
   include Phlex::Rails::Helpers::DOMID
 
   include CacheHelper
-  include ColoursHelper
   include TranslateHelper
 
   attr_reader :subscription, :mobile
@@ -209,7 +208,7 @@ class Views::Subscriptions::Subscription < Views::Base
     subscription.categories.map do |category|
       {
         name: category.name,
-        style: category_badge_style(category)
+        style: CategoryColours::Presentation.for(category).inline_style
       }
     end
   end
@@ -237,11 +236,5 @@ class Views::Subscriptions::Subscription < Views::Base
     span(class: "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide #{colour}") do
       subscription.status.humanize
     end
-  end
-
-  def category_badge_style(category)
-    colour = category.hex_colour || "#000000"
-
-    "background: #{colour}; #{auto_text_color(colour)}"
   end
 end

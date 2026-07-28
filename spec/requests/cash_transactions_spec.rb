@@ -4709,6 +4709,82 @@ RSpec.describe "CashTransactions", type: :request do
       expect(pay_action.text).to include(CashInstallment.human_attribute_name(:pay))
     end
 
+    it "uses the normal row surface and renders two incompatible categories as readable pills" do
+      dark_category = create(:category, user:, category_name: "LEISURE", colour: "#4b5563")
+      light_category = user.built_in_category("SUBSCRIPTION")
+      light_category.update!(colour: "#f1f5f9")
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        description: "Contrasting category bundle",
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year,
+        cash_installments: [
+          build(:cash_installment, number: 1, date: Time.zone.today, month: Time.zone.today.month, year: Time.zone.today.year, paid: false)
+        ]
+      )
+      transaction.category_transactions.create!(category: dark_category)
+      transaction.category_transactions.create!(category: light_category)
+      installment = transaction.cash_installments.first
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("badges_only")
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      row = document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      row_background = row.at_css("[data-row-background]")
+      category_names = [ light_category.name, dark_category.name ]
+      category_pills = row.css("[data-datatable-target='category'] span").select { |pill| category_names.include?(pill.text) }
+
+      expect(response).to have_http_status(:success)
+      expect(row["class"]).to include("text-slate-900", "dark:text-slate-100")
+      expect(row["data-category-multiple"]).to eq("true")
+      expect(row["style"]).to be_blank
+      expect(row_background["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(category_pills.map(&:text)).to eq(category_names)
+      expect(category_pills).to all(satisfy { |pill| pill["data-category-colour"] == "true" })
+      expect(category_pills.find { |pill| pill.text == "LEISURE" }["style"]).to include("background-color: #4b5563", "color: #ffffff")
+      expect(category_pills.find { |pill| pill.text == light_category.name }["style"]).to include("background-color: #f1f5f9", "color: #000000")
+      expect(row.text).not_to include("+1")
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        force_mobile: true,
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      mobile_document = Nokogiri::HTML.fragment(response.body)
+      mobile_row = mobile_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+      mobile_pills = mobile_row.css("[data-datatable-target='category'] span").select { |pill| category_names.include?(pill.text) }
+
+      expect(mobile_row["class"]).to include("bg-white", "dark:bg-slate-900")
+      expect(mobile_row["style"]).to be_blank
+      expect(mobile_pills.map(&:text)).to eq(category_names)
+      expect(mobile_row.text).not_to include("+1")
+
+      allow(CategoryColours::DisplayMode).to receive(:for).and_return("row_coloured")
+
+      get month_year_cash_transactions_path, params: {
+        month_year: Time.zone.today.strftime("%Y%m"),
+        cash_transaction: { user_bank_account_id: user_bank_account.id }
+      }
+
+      coloured_document = Nokogiri::HTML.fragment(response.body)
+      coloured_row = coloured_document.at_css("[data-datatable-target='row'][data-id='#{installment.id}']")
+
+      expect(coloured_row["data-category-display-mode"]).to eq("row_coloured")
+      expect(coloured_row["data-category-primary-id"]).to eq(light_category.id.to_s)
+      expect(coloured_row["style"]).to include("background-color: #f1f5f9", "color: #000000")
+      expect(coloured_row.text).to include(dark_category.name, light_category.name)
+    end
+
     it "does not render row-menu destroy for investment-derived cash rows" do
       transaction = create(
         :cash_transaction,

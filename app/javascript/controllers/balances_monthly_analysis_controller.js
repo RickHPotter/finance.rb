@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip } from "chart.js"
+import { resolveCategoryChartPresentation } from "../lib/category_chart_presentation.mjs"
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
 
@@ -158,7 +159,9 @@ export default class extends Controller {
     const list = this[`${name}ListTarget`]
     const normalizedEntries = (entries || []).map((entry) => ({ ...entry, amount: Math.abs(Number(entry.amount) || 0) }))
 
-    this.renderRankedList(list, normalizedEntries, color)
+    const presentations = normalizedEntries.map((entry) => this.entryPresentation(entry, color))
+
+    this.renderRankedList(list, normalizedEntries, presentations)
     this.destroyChart(name)
 
     if (normalizedEntries.length === 0) {
@@ -172,7 +175,14 @@ export default class extends Controller {
       type: "bar",
       data: {
         labels: normalizedEntries.map((entry) => entry.label),
-        datasets: [{ data: normalizedEntries.map((entry) => entry.amount), backgroundColor: color, borderRadius: 4, barThickness: 18 }]
+        datasets: [{
+          data: normalizedEntries.map((entry) => entry.amount),
+          backgroundColor: presentations.map((presentation) => presentation.background),
+          borderColor: presentations.map((presentation) => presentation.foreground),
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 18
+        }]
       },
       options: {
         indexAxis: "y",
@@ -205,7 +215,7 @@ export default class extends Controller {
     }))
   }
 
-  renderRankedList(list, entries, color) {
+  renderRankedList(list, entries, presentations) {
     list.replaceChildren()
     if (entries.length === 0) {
       list.appendChild(this.emptyListItem())
@@ -217,11 +227,12 @@ export default class extends Controller {
       row.className = "flex min-w-0 items-start justify-between gap-3 border-t border-stone-100 pt-2 text-sm dark:border-slate-800"
 
       const label = document.createElement("span")
-      label.className = "min-w-0 break-words text-stone-700 dark:text-slate-300"
+      label.className = "min-w-0 break-words rounded-md border px-2 py-1 font-semibold"
       label.title = entry.label
       label.textContent = `${index + 1}. ${entry.label}`
-      label.style.borderInlineStart = `3px solid ${color}`
-      label.style.paddingInlineStart = "0.5rem"
+      label.style.backgroundColor = presentations[index].background
+      label.style.color = presentations[index].foreground
+      label.style.borderColor = presentations[index].foreground
 
       const amount = document.createElement("span")
       amount.className = "shrink-0 font-semibold text-stone-900 dark:text-slate-100"
@@ -230,6 +241,10 @@ export default class extends Controller {
       row.append(label, amount)
       list.appendChild(row)
     })
+  }
+
+  entryPresentation(entry, fallbackBackground) {
+    return resolveCategoryChartPresentation(entry, fallbackBackground)
   }
 
   renderTransfers(transfers) {

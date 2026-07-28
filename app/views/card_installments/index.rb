@@ -6,41 +6,46 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   include TranslateHelper
   include CacheHelper
-  include ColoursHelper
 
-  attr_reader :mobile, :card_installments, :user_card_id, :entity_links
+  attr_reader :mobile, :card_installments, :user_card_id, :entity_links, :category_colour_display_mode
 
-  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true)
+  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true,
+                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @card_installments = card_installments
     @user_card_id = user_card_id
     @entity_links = entity_links
+    @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
   end
 
   def view_template
     if mobile
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(card_transaction)
 
-        render_mobile_card_installment(card_installment, card_transaction, style)
+        render_mobile_card_installment(card_installment, card_transaction, presentation)
       end
     else
       card_installments.each do |card_installment|
         card_transaction = card_installment.card_transaction
-        style = solid_or_gradient_style(card_transaction.category_transactions.order(:id).map(&:category))
+        presentation = row_presentation(card_transaction)
 
-        render_card_installment(card_installment, card_transaction, style)
+        render_card_installment(card_installment, card_transaction, presentation)
       end
     end
   end
 
-  def render_mobile_card_installment(card_installment, card_transaction, style)
+  def render_mobile_card_installment(card_installment, card_transaction, presentation)
     turbo_frame_tag dom_id card_installment do
       div(
-        class: "rounded-lg shadow-sm overflow-visible my-2",
-        style: "background-clip: padding-box; #{style}",
-        data: { id: card_installment.id, datatable_target: :row, action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection" }
+        class: [ "rounded-lg shadow-sm overflow-visible my-2", presentation.row_classes ].compact.join(" "),
+        style: presentation.row_style,
+        data: {
+          id: card_installment.id,
+          datatable_target: :row,
+          action: "mousedown->datatable#preventRangeSelection click->datatable#toggleCardSelection"
+        }.merge(presentation.metadata)
       ) do
         render_row_checkbox(card_installment, card_transaction, mobile: true)
 
@@ -132,17 +137,16 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
     )
   end
 
-  def render_card_installment(card_installment, card_transaction, style)
+  def render_card_installment(card_installment, card_transaction, presentation)
     turbo_frame_tag dom_id card_installment do
-      text_style = auto_text_color(card_transaction.category_transactions.order(:id).map(&:category).first&.hex_colour)
-
       div(
         class: [
           "group relative z-0 grid grid-cols-12 transition-all hover:z-40",
           "[&>*:not([data-row-background])]:relative [&>*:not([data-row-background])]:z-10",
-          "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]"
-        ].join(" "),
-        style: text_style,
+          "[&.exchange-sheet-active>*:not([data-row-background])]:z-[60]",
+          presentation.row_classes
+        ].compact.join(" "),
+        style: presentation.row_style,
         draggable: true,
         data: { id: card_installment.id,
                 datatable_target: :row,
@@ -151,12 +155,15 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
                   "dragstart->datatable#start",
                   "dragover->datatable#activate",
                   "drop->datatable#drop"
-                ].join(" ") }
+                ].join(" ") }.merge(presentation.metadata)
       ) do
         div(
-          class: "pointer-events-none absolute inset-0 z-0 transition-all duration-150 " \
-                 "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
-          style: "background-clip: padding-box; #{style}",
+          class: [
+            "pointer-events-none absolute inset-0 z-0 transition-all duration-150",
+            "group-hover:ring-2 group-hover:ring-slate-700/80 group-hover:ring-inset",
+            presentation.background_classes
+          ].compact.join(" "),
+          style: presentation.row_style,
           data: { row_background: true }
         )
 
@@ -349,12 +356,20 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def card_category_popover_items(card_transaction)
-    card_transaction.category_transactions.sort_by(&:id).filter_map(&:category).map do |category|
+    categories_for(card_transaction).map do |category|
       {
         name: category.name,
-        style: "border-color: black"
+        style: CategoryColours::Presentation.for(category).inline_style
       }
     end
+  end
+
+  def categories_for(card_transaction)
+    CategoryColours::Ordering.from_allocations(card_transaction.category_transactions)
+  end
+
+  def row_presentation(card_transaction)
+    CategoryColours::RowPresentation.new(categories: categories_for(card_transaction), mode: category_colour_display_mode)
   end
 
   def render_row_checkbox(card_installment, card_transaction, mobile: false, wrapper_class: nil)

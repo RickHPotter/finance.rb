@@ -134,6 +134,26 @@ body::-webkit-scrollbar { /* WebKit */
   color-scheme: dark;
 }
 
+[data-category-display-mode] {
+  --category-row-foreground: var(--color-slate-900);
+  --category-row-info-foreground: var(--color-zinc-900);
+}
+
+.dark [data-category-display-mode] {
+  --category-row-foreground: var(--color-slate-100);
+  --category-row-info-foreground: var(--color-slate-300);
+}
+
+[data-category-display-mode] [data-entity-colour="true"] {
+  color: var(--category-row-foreground) !important;
+  border-color: var(--category-row-foreground) !important;
+}
+
+[data-category-display-mode] [data-entity-info-text="true"],
+[data-category-display-mode] [data-entity-info-text="true"] * {
+  color: var(--category-row-info-foreground) !important;
+}
+
 .dark .installment_date::-webkit-datetime-edit,
 .dark .installment_date::-webkit-datetime-edit-fields-wrapper,
 .dark .installment_date::-webkit-datetime-edit-text,

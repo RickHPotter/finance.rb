@@ -1,4 +1,30 @@
 en:
+  categories:
+    colour_accessibility:
+      heading: Accessible category colours
+      description: Choose a background and let the application guarantee readable category text.
+      background: Background colour
+      background_hint: Used by category chips, rows, dashboards, and charts.
+      automatic: Automatic
+      automatic_hint: Selects whichever of black or white has stronger contrast.
+      manual: Manual
+      manual_hint: Uses your foreground only when it reaches the minimum contrast.
+      manual_foreground: Manual text colour
+      manual_foreground_hint: Must reach WCAG AA contrast against the background.
+      contrast: "Contrast:"
+      passing: Passes WCAG AA
+      failing: Does not pass WCAG AA
+      invalid: Enter a valid opaque hex colour
+      suggestion: "Accessible suggestion:"
+      fallback_label: Category preview
+      light_preview: Light canvas
+      dark_preview: Dark canvas
+      states: Interaction states
+      normal: Normal
+      hover: Hover
+      focus: Focus
+      selected: Selected
+      disabled: Disabled
   activerecord:
     models:
       category:
@@ -8,6 +34,9 @@ en:
       category:
         id: ID
         category_name: Category Name
+        colour: Background colour
+        text_colour_mode: Text colour mode
+        text_colour: Text colour
         active: Active
         status: Status
         user_id: User
@@ -29,8 +58,40 @@ en:
         piggy_bank: Piggy Bank
         piggy_bank_return: Piggy Bank Return
         subscription: Subscription
+    errors:
+      models:
+        category:
+          attributes:
+            text_colour:
+              insufficient_contrast: "must have at least %{minimum} contrast against the background (measured %{ratio}; try %{suggestion})"
 
 pt-BR:
+  categories:
+    colour_accessibility:
+      heading: Cores acessíveis da categoria
+      description: Escolha um fundo e deixe o aplicativo garantir um texto legível para a categoria.
+      background: Cor de fundo
+      background_hint: Usada em etiquetas, linhas, painéis e gráficos da categoria.
+      automatic: Automática
+      automatic_hint: Seleciona preto ou branco, usando a opção com maior contraste.
+      manual: Manual
+      manual_hint: Usa a cor escolhida somente quando ela atinge o contraste mínimo.
+      manual_foreground: Cor manual do texto
+      manual_foreground_hint: Deve atingir o contraste WCAG AA com o fundo.
+      contrast: "Contraste:"
+      passing: Atende ao WCAG AA
+      failing: Não atende ao WCAG AA
+      invalid: Digite uma cor hexadecimal opaca válida
+      suggestion: "Sugestão acessível:"
+      fallback_label: Prévia da categoria
+      light_preview: Fundo claro
+      dark_preview: Fundo escuro
+      states: Estados de interação
+      normal: Normal
+      hover: Ao passar o cursor
+      focus: Foco
+      selected: Selecionada
+      disabled: Desativada
   activerecord:
     models:
       category:
@@ -40,6 +101,9 @@ pt-BR:
       category:
         id: ID
         category_name: Nome da Categoria
+        colour: Cor de fundo
+        text_colour_mode: Modo da cor do texto
+        text_colour: Cor do texto
         active: Ativo
         status: Status
         user_id: Usuário
@@ -61,3 +125,9 @@ pt-BR:
         piggy_bank: Cofrinho
         piggy_bank_return: Retorno do Cofrinho
         subscription: Assinatura
+    errors:
+      models:
+        category:
+          attributes:
+            text_colour:
+              insufficient_contrast: "deve ter contraste mínimo de %{minimum} com o fundo (medido %{ratio}; tente %{suggestion})"
