@@ -320,8 +320,12 @@ Delivery status:
 - V1 is a complete PR boundary: persistent auditing, authorized history, guarded
   preview/apply infrastructure, ordinary cash/card transaction and installment
   adapters, and conservative price-only card-payment projection rollback
-- KAKASHI-08 remains unfinished as a feature until a future V2 PR adds every remaining
-  audited record-family adapter and completes the generated financial graph coverage
+- V2 is the active completion boundary: add adapters for `CategoryTransaction`,
+  `EntityTransaction`, `Budget`, `Investment`, `Subscription`, `Exchange`, `Reference`,
+  `UserCard`, `UserBankAccount`, and `PiggyBank`
+- audit and compensate `BudgetCategory` and `BudgetEntity` as internal Budget graph
+  companions so allocation membership is restored with the Budget
+- complete the generated transaction/installment graphs that depend on those families
 - V1 operations containing an unsupported family or graph remain safely read-only;
   there is no partial or forced rollback
 

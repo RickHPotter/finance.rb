@@ -140,6 +140,7 @@ versions must not contribute names, prices, counts, filter options, or paginatio
 | user card | direct user | totals and reference-date sync | V2 adapter required |
 | user bank account | direct user | totals and context purge | V2 adapter required |
 | budget | direct user/context | bulk budget updates | V2 adapter required |
+| budget category/entity joins | parent budget | nested and bulk allocation writes | V2 companion adapters required |
 | subscription | direct user/context | price synchronization | V2 adapter required |
 | investment | direct user/context | Piggy Bank profit synchronization | V2 adapter required |
 | Piggy Bank | source/return transaction | projection link writes | V2 adapter required |
