@@ -1,12 +1,8 @@
-<% if @cash_transaction.errors.empty? %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, CashTransaction) }) %>
-
-  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)) %>
-<% else %>
-  <% failure_notifications_for(@cash_transaction, :not_updateda, CashTransaction).each_with_index do |alert, index| %>
-    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
-  <% end %>
-
-  <%= turbo_stream.replace(:center_container, Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction)) %>
+<% failure_notifications_for(@cash_transaction, :not_updateda, CashTransaction).each_with_index do |alert, index| %>
+  <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { notice: nil, alert: }) %>
 <% end %>
+
+<%= turbo_stream.replace(
+      @cash_transaction,
+      Views::CashTransactions::Form.new(current_user:, cash_transaction: @cash_transaction, return_to: @return_to)
+    ) %>

@@ -185,7 +185,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
                 href: showable_transaction_link,
                 size: :sm,
                 class: "shrink-0 min-w-40 justify-center text-black bg-white hover:bg-stone-50 border border-black/20 px-4 py-2 font-medium shadow-sm",
-                data: { turbo_frame: "_top", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
+                data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
               ) do
                 span(class: "truncate block max-w-full leading-tight") { I18n.t("actions.edit") }
               end
@@ -231,10 +231,10 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_edit_action(reference_transactable, action_button_key)
     Link(
-      href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }, format: :turbo_stream),
+      href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end
@@ -242,10 +242,10 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_create_action(action_button_key)
     Link(
-      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, format: :turbo_stream),
+      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end
@@ -275,11 +275,12 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_destroy_action(reference_transactable)
     Link(
-      href: cash_transaction_path(id: reference_transactable, format: :turbo_stream, message_id: message.id),
+      href: cash_transaction_path(id: reference_transactable, message_id: message.id),
       size: :xs,
       class: "mt-3 flex flex-col items-center text-center text-black bg-red-500 hover:bg-red-600 p-3 rounded-xs font-medium shadow",
       data: {
         turbo_method: :delete,
+        turbo_action: "replace",
         turbo_confirm: "Are you sure you want to destroy this transaction: #{reference_transactable.description}?",
         turbo_frame: "_top",
         turbo_prefetch: "false",

@@ -3,17 +3,19 @@
 class Views::Subscriptions::Form < Views::Base
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::HiddenFieldTag
   include Views::Transactions
 
   include TranslateHelper
   include ComponentsHelper
   include ContextHelper
 
-  attr_reader :current_user, :subscription
+  attr_reader :current_user, :subscription, :return_to
 
-  def initialize(current_user:, subscription:)
+  def initialize(current_user:, subscription:, return_to: "/subscriptions")
     @current_user = current_user
     @subscription = subscription
+    @return_to = return_to
 
     set_categories
     set_entities
@@ -29,6 +31,7 @@ class Views::Subscriptions::Form < Views::Base
                   data: { action: "input->subscription-transactions#recalculatePrice" }) do |form|
           div(class: "flex flex-1 flex-col") do
             form.hidden_field :user_id, value: current_user.id
+            hidden_field_tag :return_to, return_to
             form.hidden_field :price, value: subscription.price, data: { subscription_transactions_target: "totalPriceInput" }
 
             render Views::Transactions::FormIntroFields.new(
@@ -74,7 +77,8 @@ class Views::Subscriptions::Form < Views::Base
             div(class: "pt-4 grid w-full grid-cols-1 items-center justify-items-center gap-2 sm:grid-flow-col sm:auto-cols-fr") do
               Button(
                 type: :submit,
-                class: "w-64 #{submit_button_class(form_action_mode(subscription))}"
+                class: "w-64 #{submit_button_class(form_action_mode(subscription))}",
+                data: { turbo_frame: "_top", turbo_action: "replace" }
               ) { action_message(:submit) }
 
               if subscription.persisted? && subscription.can_be_destroyed?
@@ -82,9 +86,9 @@ class Views::Subscriptions::Form < Views::Base
                   id: "delete_subscription_#{subscription.id}",
                   type: :submit,
                   variant: :destructive,
-                  link: subscription_path(subscription),
+                  link: subscription_path(subscription, return_to:),
                   class: "w-64 #{destroy_button_class}",
-                  data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+                  data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top", turbo_action: "replace" }
                 ) { action_message(:destroy) }
               end
             end

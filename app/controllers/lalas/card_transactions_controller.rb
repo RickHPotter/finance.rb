@@ -11,10 +11,7 @@ class Lalas::CardTransactionsController < LalasController
     build_index_context(card_installments_scope)
     set_tabs(active_menu: :card, active_sub_menu: @user_card&.user_card_name || :search)
 
-    respond_to do |format|
-      format.html { render Views::Lalas::CardTransactions::Index.new(index_context: @index_context) }
-      format.turbo_stream
-    end
+    render Views::Lalas::CardTransactions::Index.new(index_context: @index_context)
   end
 
   def month_year

@@ -8,11 +8,12 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
   include CacheHelper
   include TranslateHelper
 
-  attr_reader :user_bank_account, :mobile
+  attr_reader :user_bank_account, :mobile, :return_to
 
-  def initialize(user_bank_account:, mobile: false)
+  def initialize(user_bank_account:, mobile: false, return_to: nil)
     @user_bank_account = user_bank_account
     @mobile = mobile
+    @return_to = return_to
   end
 
   def view_template
@@ -30,7 +31,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
       data: { id: user_bank_account.id, datatable_target: :row }
     ) do
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
-        link_to user_bank_account_path(user_bank_account),
+        link_to user_bank_account_path(user_bank_account, return_to:),
                 class: "user_bank_account_description px-4 whitespace-nowrap hover:underline",
                 data: { turbo_frame: "_top", turbo_prefetch: false } do
           user_bank_account.pretty_label
@@ -67,21 +68,21 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
-          link_to(edit_user_bank_account_path(user_bank_account), id: "edit_user_bank_account_#{user_bank_account.id}",
-                                                                  class: action_button_class,
-                                                                  title: action_message(:edit),
-                                                                  aria: { label: action_message(:edit) },
-                                                                  data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
+          link_to(edit_user_bank_account_path(user_bank_account, return_to:), id: "edit_user_bank_account_#{user_bank_account.id}",
+                                                                              class: action_button_class,
+                                                                              title: action_message(:edit),
+                                                                              aria: { label: action_message(:edit) },
+                                                                              data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           LinkWithConfirmation(
             id: user_bank_account.id,
             icon: :destroy,
             link_params: {
-              href: user_bank_account_path(user_bank_account),
+              href: user_bank_account_path(user_bank_account, return_to:),
               size: :xs,
               id: "delete_user_bank_account_#{user_bank_account.id}",
               class: destructive_action_button_class,
-              data: { turbo_method: :delete }
+              data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
             }
           )
         end
@@ -99,7 +100,7 @@ class Views::UserBankAccounts::UserBankAccount < Views::Base
 
             link_to(
               user_bank_account.user_bank_account_name,
-              user_bank_account_path(user_bank_account),
+              user_bank_account_path(user_bank_account, return_to:),
               id: "show_user_bank_account_#{user_bank_account.id}",
               class: "text-lg font-semibold text-black underline underline-offset-[3px]",
               data: { turbo_frame: "_top" }

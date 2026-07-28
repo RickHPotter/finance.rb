@@ -55,7 +55,7 @@ class Views::HealthCheck::Checks::Show < Views::Base
         )
         link_to(
           I18n.t("health_check.actions.rerun"),
-          healthcheck_check_run_path(entry.key, **workspace_scope_query),
+          healthcheck_check_run_path(entry.key, **rerun_query),
           class: primary_button_class,
           data: { turbo_method: :post, turbo_frame: "center_container", turbo_prefetch: false }
         )
@@ -102,6 +102,18 @@ class Views::HealthCheck::Checks::Show < Views::Base
     return if workspace_scope.all_connections?
 
     input(type: "hidden", name: "connected_user_id", value: workspace_scope.connected_user.id)
+  end
+
+  def rerun_query
+    query = workspace_scope_query.merge(return_to: "check")
+    return query if page.blank?
+
+    query.merge(
+      page: page.number,
+      per_page: page.per_page,
+      status_filter: page.filters["status_filter"],
+      issue_filter: page.filters["issue_filter"]
+    ).compact_blank
   end
 
   def status_filter_field

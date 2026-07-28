@@ -1,19 +1,8 @@
-<% if @finished_chain_without_save %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-  <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
-<% elsif @investment.errors.empty? %>
-  <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:created, Investment) }) %>
-
-  <% if @next_investment.present? %>
-    <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @next_investment, chain_context: @chain_context)) %>
-  <% else %>
-    <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
-  <% end %>
-<% else %>
-  <% failure_notifications_for(@investment, :not_created, Investment).each_with_index do |alert, index| %>
-    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
-  <% end %>
-
-  <%= turbo_stream.replace(:center_container, Views::Investments::New.new(current_user:, investment: @investment, chain_context: @chain_context)) %>
+<% failure_notifications_for(@investment, :not_created, Investment).each_with_index do |alert, index| %>
+  <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { notice: nil, alert: }) %>
 <% end %>
+
+<%= turbo_stream.replace(
+      @investment,
+      Views::Investments::Form.new(current_user:, investment: @investment, chain_context: @chain_context, return_to: @return_to)
+    ) %>

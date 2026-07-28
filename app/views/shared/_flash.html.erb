@@ -34,7 +34,7 @@
                 <%= button_to alert_payload[:action][:label],
                               alert_payload[:action][:href],
                               method: alert_payload[:action][:method],
-                              form: { data: { turbo_stream: true } },
+                              form: { data: { turbo_stream: true, turbo_frame: "_top", turbo_action: "replace" } },
                               class: "inline-flex items-center rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200 dark:border-amber-500/60 dark:bg-amber-900/60 dark:text-amber-100 dark:hover:bg-amber-800" %>
               </div>
             <% end %>

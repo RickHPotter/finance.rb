@@ -45,7 +45,12 @@ class Views::AuditOperations::Show < Views::Base
           )
         end
         if current_user.admin? && !operation.source_rollback? && operation.rollback_of_operation_id.blank?
-          link_to(I18n.t("audit.rollback.preview"), admin_audit_operation_rollback_preview_path(operation), class: LINK_CLASS)
+          link_to(
+            I18n.t("audit.rollback.preview"),
+            admin_audit_operation_rollback_preview_path(operation),
+            class: LINK_CLASS,
+            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+          )
         end
         link_to(
           I18n.t("navigation.back"),

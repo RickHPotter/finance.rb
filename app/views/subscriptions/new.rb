@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class Views::Subscriptions::New < Views::Base
-  attr_reader :current_user, :subscription
+  attr_reader :current_user, :subscription, :return_to
 
-  def initialize(current_user:, subscription:)
+  def initialize(current_user:, subscription:, return_to: "/subscriptions")
     @current_user = current_user
     @subscription = subscription
+    @return_to = return_to
   end
 
   def view_template
@@ -16,7 +17,7 @@ class Views::Subscriptions::New < Views::Base
         skeleton_view: Views::Subscriptions::FormSubmissionSkeleton
       ) do
         div(class: "flex min-h-[calc(100svh-22rem)] flex-col") do
-          render Views::Subscriptions::Form.new(current_user:, subscription:)
+          render Views::Subscriptions::Form.new(current_user:, subscription:, return_to:)
         end
       end
     end

@@ -7,10 +7,11 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   include TranslateHelper
 
-  attr_reader :user_card
+  attr_reader :user_card, :return_to
 
-  def initialize(user_card:)
+  def initialize(user_card:, return_to: "/user_cards")
     @user_card = user_card
+    @return_to = return_to
   end
 
   def view_template
@@ -47,8 +48,8 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserCard", item_id: user_card.id), variant: :outline)
-        dashboard_action(action_message(:edit), edit_user_card_path(user_card), variant: :edit)
-        dashboard_action(action_message(:index), user_cards_path, variant: :outline)
+        dashboard_action(action_message(:edit), edit_user_card_path(user_card, return_to:), variant: :edit)
+        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -292,11 +293,11 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
       id: "user_card_dashboard_destroy_#{user_card.id}",
       text: action_message(:destroy),
       link_params: {
-        href: user_card_path(user_card),
+        href: user_card_path(user_card, return_to:),
         variant: :destructive,
         id: "delete_user_card_#{user_card.id}",
         class: dashboard_action_class(:destroy),
-        data: { turbo_method: :delete, turbo_frame: "_top" }
+        data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
   end

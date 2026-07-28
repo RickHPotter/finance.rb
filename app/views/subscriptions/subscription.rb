@@ -7,11 +7,12 @@ class Views::Subscriptions::Subscription < Views::Base
   include CacheHelper
   include TranslateHelper
 
-  attr_reader :subscription, :mobile
+  attr_reader :subscription, :mobile, :return_to
 
-  def initialize(subscription:, mobile: false)
+  def initialize(subscription:, mobile: false, return_to: nil)
     @subscription = subscription
     @mobile = mobile
+    @return_to = return_to
   end
 
   def view_template
@@ -55,7 +56,7 @@ class Views::Subscriptions::Subscription < Views::Base
       div(class: "col-span-1 flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
           link_to(
-            edit_subscription_path(subscription),
+            edit_subscription_path(subscription, return_to:),
             id: "edit_subscription_#{subscription.id}",
             class: action_button_class,
             title: action_message(:edit),
@@ -79,7 +80,7 @@ class Views::Subscriptions::Subscription < Views::Base
       div(class: "border-b border-slate-200 bg-sky-50/70 px-4 py-5 text-center dark:border-slate-700 dark:bg-slate-800/70") do
         link_to(
           subscription.description,
-          edit_subscription_path(subscription),
+          edit_subscription_path(subscription, return_to:),
           id: "edit_subscription_#{subscription.id}",
           class: "block text-lg font-semibold text-slate-900 underline underline-offset-[3px] dark:text-slate-100",
           data: { turbo_frame: "_top" }
@@ -145,7 +146,7 @@ class Views::Subscriptions::Subscription < Views::Base
       id: subscription.id,
       icon: :destroy,
       link_params: {
-        href: subscription_path(subscription),
+        href: subscription_path(subscription, return_to:),
         size: :xs,
         id: "delete_subscription_#{subscription.id}",
         class: destructive_action_button_class,

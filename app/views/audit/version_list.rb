@@ -39,9 +39,9 @@ class Views::Audit::VersionList < Views::Base
 
         div(class: "flex flex-wrap gap-2") do
           link_to(I18n.t("audit.actions.operation"), audit_operation_path(version.operation_id),
-                  class: compact_link_class, data: { turbo_frame: "_top", turbo_prefetch: false })
+                  class: compact_link_class, data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false })
           link_to(I18n.t("audit.actions.record_history"), record_audit_versions_path(item_type: record_route_type(version), item_id: version.item_id),
-                  class: compact_link_class, data: { turbo_frame: "_top", turbo_prefetch: false })
+                  class: compact_link_class, data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false })
         end
       end
 

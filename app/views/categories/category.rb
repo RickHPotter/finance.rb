@@ -8,11 +8,12 @@ class Views::Categories::Category < Views::Base
   include CacheHelper
   include TranslateHelper
 
-  attr_reader :category, :mobile
+  attr_reader :category, :mobile, :return_to
 
-  def initialize(category:, mobile: false)
+  def initialize(category:, mobile: false, return_to: nil)
     @category = category
     @mobile = mobile
+    @return_to = return_to
   end
 
   def view_template
@@ -32,7 +33,7 @@ class Views::Categories::Category < Views::Base
       div(class: "col-span-2 px-3 py-3 flex items-center mx-auto font-lekton font-semibold") do
         CategoryBadge(
           category:,
-          href: category_path(category),
+          href: category_path(category, return_to:),
           id: "show_category_#{category.id}",
           class: "whitespace-nowrap px-4 shadow-md",
           data: { turbo_frame: "_top", turbo_prefetch: false }
@@ -83,22 +84,22 @@ class Views::Categories::Category < Views::Base
 
       div(class: "flex items-center justify-center px-2 py-3") do
         div(class: "flex items-center justify-end gap-1") do
-          link_to(edit_category_path(category), id: "edit_category_#{category.id}",
-                                                class: action_button_class,
-                                                title: action_message(:edit),
-                                                aria: { label: action_message(:edit) },
-                                                data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
+          link_to(edit_category_path(category, return_to:), id: "edit_category_#{category.id}",
+                                                            class: action_button_class,
+                                                            title: action_message(:edit),
+                                                            aria: { label: action_message(:edit) },
+                                                            data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           if category.built_in == false
             LinkWithConfirmation(
               id: category.id,
               icon: :destroy,
               link_params: {
-                href: category_path(category),
+                href: category_path(category, return_to:),
                 size: :xs,
                 id: "delete_category_#{category.id}",
                 class: destructive_action_button_class,
-                data: { turbo_method: :delete }
+                data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
               }
             )
           end
@@ -115,9 +116,9 @@ class Views::Categories::Category < Views::Base
         div(class: "flex items-center justify-between") do
           div(class: "flex items-center space-x-3") do
             cached_icon :category
-            link_to(category.name, category_path(category), id: "show_category_#{category.id}",
-                                                            class: "text-lg font-semibold underline underline-offset-[3px]",
-                                                            data: { turbo_frame: "_top", turbo_prefetch: false })
+            link_to(category.name, category_path(category, return_to:), id: "show_category_#{category.id}",
+                                                                        class: "text-lg font-semibold underline underline-offset-[3px]",
+                                                                        data: { turbo_frame: "_top", turbo_prefetch: false })
           end
 
           status_badge

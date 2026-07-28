@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class Views::Investments::New < Views::Base
-  def initialize(current_user:, investment:, chain_context: nil)
+  def initialize(current_user:, investment:, chain_context: nil, return_to: "/investments")
     @current_user = current_user
     @investment = investment
     @chain_context = chain_context
+    @return_to = return_to
   end
 
   def view_template
@@ -14,7 +15,12 @@ class Views::Investments::New < Views::Base
         badge_class:,
         skeleton_view: Views::Investments::FormSubmissionSkeleton
       ) do
-        render Views::Investments::Form.new(current_user: @current_user, investment: @investment, chain_context: @chain_context)
+        render Views::Investments::Form.new(
+          current_user: @current_user,
+          investment: @investment,
+          chain_context: @chain_context,
+          return_to: @return_to
+        )
       end
     end
   end

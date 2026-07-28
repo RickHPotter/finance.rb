@@ -1,16 +1,5 @@
-<% if @category.errors.empty? %>
-  <% if @category.active? && @card_transaction %>
-    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-    <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:updateda, Category) }) %>
-
-    <%= turbo_stream.replace(:center_container, Views::CardTransactions::New.new(current_user:, card_transaction: @card_transaction)) %>
-  <% else %>
-    <%= turbo_stream.replace(:center_container, Views::Categories::Index.new(categories: @categories, mobile: @mobile)) %>
-  <% end %>
-<% else %>
-  <% failure_notifications_for(@category, :not_updateda, Category).each_with_index do |alert, index| %>
-    <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { alert: }) %>
-  <% end %>
-
-  <%= turbo_stream.replace(:center_container, Views::Categories::Edit.new(current_user:, category: @category)) %>
+<% failure_notifications_for(@category, :not_updateda, Category).each_with_index do |alert, index| %>
+  <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { notice: nil, alert: }) %>
 <% end %>
+
+<%= turbo_stream.replace(@category, Views::Categories::Form.new(current_user:, category: @category, return_to: @return_to)) %>

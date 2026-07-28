@@ -521,6 +521,12 @@ RSpec.describe "CardTransactions", type: :request do
 
       created_card_transaction = CardTransaction.last
 
+      expect(response).to have_http_status(:see_other)
+      continuation_path = URI.parse(response.location).request_uri
+      expect(continuation_path).to start_with(new_card_transaction_path)
+
+      get continuation_path, headers: html_headers
+
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Chain Creating")
       expect(response.body).to match(/name="chain_mode"[^>]*value="create"/)
@@ -578,10 +584,10 @@ RSpec.describe "CardTransactions", type: :request do
       expected_month_year = format("%<year>04d%<month>02d", year: existing_card_transaction.card_installments.first.year,
                                                             month: existing_card_transaction.card_installments.first.month)
 
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include("month_year_container_#{expected_month_year}")
-      expect(response.body).to include("/card_transactions?user_card_id=#{user_card_one.id}")
-      expect(response.body).not_to include("Chain Creating")
+      expect(response).to have_http_status(:see_other)
+      destination = URI.parse(response.location).request_uri
+      expect(destination).to include("active_month_years", expected_month_year)
+      expect(destination).to include("user_card_id=#{user_card_one.id}")
     end
 
     it "keeps duplicate chain controls checked on hidden update submits" do
@@ -651,7 +657,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       created_card_transaction = CardTransaction.last
 
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:see_other)
       expect(created_card_transaction.categories).to contain_exactly(exchange_category, extra_category)
       expect(created_card_transaction.entities).to contain_exactly(entity_one, extra_entity)
     end
@@ -1534,7 +1540,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.card_installments.find_by!(number: 1).date.to_date).to eq(Date.new(2026, 3, 25))
     end
 
@@ -1576,7 +1582,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.price).to eq(-3500)
       expect(locked_transaction.card_installments.order(:number).pluck(:price)).to eq([ -1500, -1000, -1000 ])
     end
@@ -1659,7 +1665,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       put card_transaction_path(transaction), params: params.params, headers: turbo_stream_headers
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(future_installment.reload.price).to eq(-1003)
       expect(future_installment.cash_transaction).to eq(future_invoice)
       expect(future_invoice.reload.paid_history?).to be(false)
@@ -1743,7 +1749,7 @@ RSpec.describe "CardTransactions", type: :request do
 
       replay = Message.where(body: "notification:update").order(:id).last.replay_payload
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
       expect(replay.fetch("cash_installments_attributes")).to include(
         a_hash_including("number" => 1, "paid" => true),
         a_hash_including("number" => 2, "paid" => false),
@@ -1959,7 +1965,7 @@ RSpec.describe "CardTransactions", type: :request do
         ), headers: turbo_stream_headers
       end.to change(CardTransaction, :count).by(-1)
 
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:see_other)
     end
 
     it "returns unprocessable_content when destroying a card advance with a locked linked cash transaction" do

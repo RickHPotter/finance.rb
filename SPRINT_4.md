@@ -915,6 +915,12 @@ Locked V1 direction:
 - redirect successful create, update, and destroy submissions to an explicit canonical
   destination with `303 See Other`; replace the submitted form history entry so Back
   does not reopen a stale successful form
+- treat `/cash_transactions/new -> successful save -> cash index` and
+  `/cash_transactions/:id/edit -> successful save -> cash index` as the first acceptance
+  paths: the index may remain the existing post-save screen, but the address bar must
+  become the canonical `/cash_transactions` URL with any intentional index state
+- put `_top`/`replace` semantics on the submitters that finish a top-level mutation;
+  hybrid transaction forms keep their hidden reactive `Update` submitter local
 - preserve index filters, month/card selection, context, and safe return destinations
   through an allowlisted navigation-state contract rather than the incidental current
   browser URL
@@ -924,6 +930,8 @@ Locked V1 direction:
   resource families in bounded slices with request and browser regression coverage
 - keep `center_container` as a stable layout/frame boundary only where existing
   rendering requires it; its presence must not imply that links should target it
+- retire the obsolete custom `currentFrameUrl`/`historyStack` browser-history shim once
+  native Turbo Drive restoration covers the migrated routes
 
 Navigation contract:
 
@@ -934,6 +942,8 @@ Navigation contract:
 - after successful create/update/destroy, use redirect/visit behavior that updates the
   address bar to the canonical destination instead of replacing `#center_container`
   while leaving `/new` or `/edit` behind
+- ensure the redirected top-level GET resolves to HTML, not an index Turbo Stream that
+  updates the body while suppressing Turbo Drive's location change
 - preserve index filter/month/context return state through explicit parameters or a
   small navigation-state contract, not through stale browser URLs
 - define consistent `advance`, `replace`, and restore behavior for create chains,

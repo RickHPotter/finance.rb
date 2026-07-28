@@ -1,7 +1,1 @@
-<% if @investment.destroyed? %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:destroyed, Investment) }) %>
-
-  <%= turbo_stream.replace(:center_container, Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)) %>
-<% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_destroyed, Investment) }) %>
-<% end %>
+<%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: nil, alert: notification_model(:not_destroyed, Investment) }) %>

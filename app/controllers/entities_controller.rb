@@ -11,12 +11,14 @@ class EntitiesController < ApplicationController
   def index
     build_index_context
     @entities = entities_scope
-    render Views::Entities::Index.new(entities: @entities, index_context: @index_context, mobile: @mobile)
+    @index_context[:return_to] = entity_navigation_return_param(request.fullpath)
+    render_top_level Views::Entities::Index.new(entities: @entities, index_context: @index_context, mobile: @mobile)
   end
 
   def new
     @entity = current_user.entities.new
-    render Views::Entities::New.new(current_user:, entity: @entity)
+    set_return_to
+    render_top_level Views::Entities::New.new(current_user:, entity: @entity, return_to: @return_to)
   end
 
   def create
@@ -26,11 +28,13 @@ class EntitiesController < ApplicationController
   end
 
   def show
-    render Views::Entities::Show.new(entity: @entity)
+    set_return_to
+    render_top_level Views::Entities::Show.new(entity: @entity, return_to: @return_to)
   end
 
   def edit
-    render Views::Entities::Edit.new(current_user:, entity: @entity)
+    set_return_to
+    render_top_level Views::Entities::Edit.new(current_user:, entity: @entity, return_to: @return_to)
   end
 
   def update
@@ -40,21 +44,71 @@ class EntitiesController < ApplicationController
   end
 
   def destroy
+    set_return_to
     @entity.destroy if destroyable_entity?
 
-    respond_to(&:turbo_stream)
+    if @entity.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyeda, Entity), status: :see_other
+    else
+      redirect_to @return_to, alert: entity_destroy_failure_notification, status: :see_other
+    end
   end
 
   def handle_save
-    if @entity.valid? && @entity.active?
+    set_return_to
+    return render_entity_failure unless @entity.valid?
+
+    if @entity.active?
       @card_transaction = Logic::CardTransactions.create_from(entity: @entity)
-      set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name || :search)
+      set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name || :search) if @card_transaction.present?
     end
 
-    respond_to(&:turbo_stream)
+    redirect_to entity_save_destination,
+                notice: notification_model(action_name == "create" ? :createda : :updateda, Entity),
+                status: :see_other
   end
 
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def render_entity_failure
+    view =
+      if action_name == "create"
+        Views::Entities::New.new(current_user:, entity: @entity, return_to: @return_to)
+      else
+        Views::Entities::Edit.new(current_user:, entity: @entity, return_to: @return_to)
+      end
+
+    respond_to do |format|
+      format.html { render view, status: :unprocessable_content }
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def entity_save_destination
+    return @return_to if @card_transaction.blank?
+
+    new_card_transaction_path(
+      user_card_id: @card_transaction.user_card_id,
+      card_transaction: { entity_id: @entity.id }
+    )
+  end
+
+  def set_return_to
+    @return_to = entity_navigation_destination(params[:return_to])
+  end
+
+  def entity_navigation_destination(raw)
+    Navigation::Entities.new(raw:, fallback: entities_path, current_user:).destination
+  end
+
+  def entity_navigation_return_param(raw)
+    destination = entity_navigation_destination(raw)
+    destination unless destination == entities_path
+  end
 
   def build_index_context
     @index_context = {
@@ -100,6 +154,12 @@ class EntitiesController < ApplicationController
 
   def destroyable_entity?
     !@entity.built_in? && @entity.card_transactions.empty? && @entity.cash_transactions.empty?
+  end
+
+  def entity_destroy_failure_notification
+    return notification_model(:not_destroyeda, Entity) if @entity.built_in?
+
+    @entity.errors.full_messages.to_sentence.presence || notification_model(:not_destroyed_because_has_transactionsa, Entity)
   end
 
   def search_params

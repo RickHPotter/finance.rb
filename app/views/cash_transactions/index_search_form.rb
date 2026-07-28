@@ -21,6 +21,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :sort, :direction,
               :user_bank_account_id, :categories, :entities,
               :count_by_month_year,
+              :return_to,
               :mobile
 
   def initialize(url:, index_context: {}, mobile: false)
@@ -49,6 +50,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @direction = index_context[:direction]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
+    @return_to = index_context[:return_to]
     @mobile = mobile
 
     set_all_categories
@@ -179,7 +181,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   def build_month_year_selector
     div class: "mb-6 flex gap-4 flex-wrap" do
       render Views::Shared::MonthYearSelector.new(current_user:, default_year:, years:, active_month_years:, count_by_month_year:) do
-        link_to new_cash_transaction_path(format: :turbo_stream),
+        link_to new_cash_transaction_path(return_to:),
                 id: "new_cash_transaction",
                 class: index_new_button_class,
                 data: { turbo_frame: "_top", turbo_prefetch: false } do

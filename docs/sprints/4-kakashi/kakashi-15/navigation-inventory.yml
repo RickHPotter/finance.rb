@@ -1,0 +1,36 @@
+version: 1
+
+format_turbo_stream_links:
+  - path: app/views/messages/message.rb
+    occurrences: 1
+    classification: in_place_stream
+    slice: 9
+
+center_container_replacements:
+  - paths:
+      - app/controllers/cash_installments_controller.rb
+      - app/controllers/cash_transactions_controller.rb
+    expected_occurrences: 5
+    classification: in_place_stream
+    slice: 2
+  - paths:
+      - app/controllers/card_transactions_controller.rb
+      - app/views/card_transactions/pay_in_advance.turbo_stream.erb
+    expected_occurrences: 3
+    classification: in_place_stream
+    slice: 3
+  - paths:
+      - app/controllers/budgets_controller.rb
+    expected_occurrences: 1
+    classification: in_place_stream
+    slice: 4
+legacy_history_shim:
+  path: app/javascript/controllers/application.js
+  classification: removed
+  slice: 10
+  markers:
+    - HISTORY MANAGEMENT
+    - currentFrameUrl
+    - historyStack
+    - updateHistory
+    - 'url.searchParams.set("format", "turbo_stream")'

@@ -12,12 +12,13 @@ class Views::CardTransactions::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :card_transaction, :chain_context
+  attr_reader :current_user, :card_transaction, :chain_context, :return_to
 
-  def initialize(current_user:, card_transaction:, chain_context: nil)
+  def initialize(current_user:, card_transaction:, chain_context: nil, return_to: "/card_transactions")
     @current_user = current_user
     @card_transaction = card_transaction
     @chain_context = chain_context
+    @return_to = return_to
 
     set_cards
     set_user_cards
@@ -50,6 +51,7 @@ class Views::CardTransactions::Form < Views::Base
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate
+        hidden_field_tag :return_to, return_to
 
         hidden_field_tag :category_colours, categories_json, disabled: true, data: { reactive_form_target: :categoryColours }
         hidden_field_tag :entity_icons,     entities_json,   disabled: true, data: { reactive_form_target: :entityIcons }
@@ -79,11 +81,12 @@ class Views::CardTransactions::Form < Views::Base
         end
         render Views::Transactions::FormActions.new(
           transaction: card_transaction,
-          destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction) : nil,
+          destroy_href: card_transaction.persisted? ? card_transaction_path(card_transaction, return_to:) : nil,
           destroy_id: card_transaction.persisted? ? "delete_card_transaction_#{card_transaction.id}" : nil,
-          duplicate_href: card_transaction.persisted? ? duplicate_card_transaction_path(card_transaction) : nil,
+          duplicate_href: card_transaction.persisted? ? duplicate_card_transaction_path(card_transaction, return_to:) : nil,
           confirmation_submit: historical_correction_confirmation_submit_for(card_transaction, :card_transaction),
-          chain_context:
+          chain_context:,
+          canonical_navigation: true
         )
 
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }

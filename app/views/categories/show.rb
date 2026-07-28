@@ -6,10 +6,11 @@ class Views::Categories::Show < Views::Base
 
   include TranslateHelper
 
-  attr_reader :category
+  attr_reader :category, :return_to
 
-  def initialize(category:)
+  def initialize(category:, return_to: "/categories")
     @category = category
+    @return_to = return_to
   end
 
   def view_template
@@ -42,8 +43,8 @@ class Views::Categories::Show < Views::Base
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
-        dashboard_action(action_message(:edit), edit_category_path(category), variant: :edit)
-        dashboard_action(action_message(:index), categories_path, variant: :outline)
+        dashboard_action(action_message(:edit), edit_category_path(category, return_to:), variant: :edit)
+        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
@@ -160,11 +161,11 @@ class Views::Categories::Show < Views::Base
       id: "category_dashboard_destroy_#{category.id}",
       text: action_message(:destroy),
       link_params: {
-        href: category_path(category),
+        href: category_path(category, return_to:),
         variant: :destructive,
         id: "delete_category_#{category.id}",
         class: dashboard_action_class(:destroy),
-        data: { turbo_method: :delete, turbo_frame: "_top" }
+        data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
       }
     )
   end

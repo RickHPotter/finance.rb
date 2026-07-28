@@ -198,7 +198,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       investment = { user_bank_account_id: cash_transaction.user_bank_account_id, investment_type_id: cash_transaction.investment_type_id }
 
       link_to cash_transaction.description,
-              investments_path(investment:, default_year:, active_month_years:, format: :turbo_stream),
+              investments_path(investment:, default_year:, active_month_years:),
               class:,
               title: cash_transaction.comment,
               data: { turbo_frame: "_top", turbo_prefetch: false }
@@ -208,13 +208,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       active_month_years = "[#{Date.new(card_.year, card_.month).strftime('%Y%m')}]"
 
       link_to cash_transaction.description,
-              card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:, format: :turbo_stream),
+              card_transactions_path(user_card_id: cash_transaction.user_card_id, default_year:, active_month_years:),
               class:,
               title: cash_transaction.comment,
               data: { turbo_frame: "_top", turbo_prefetch: false }
     else
       link_to cash_transaction.description,
-              edit_cash_transaction_path(cash_transaction),
+              edit_cash_transaction_path(cash_transaction, return_to: index_context[:return_to]),
               id: "edit_cash_transaction_#{cash_transaction.id}",
               class:,
               title: cash_transaction.comment,
@@ -237,13 +237,15 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
       PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
-          action_menu_link(action_message(:analyse), cash_transaction_path(cash_transaction))
+          action_menu_link(action_message(:analyse), cash_transaction_path(cash_transaction, return_to: index_context[:return_to]))
           action_menu_button(model_attribute(cash_installment, :pay), modal_id: "cashInstallmentModal_#{cash_installment.id}") if payable
           action_menu_report_payment_failure(cash_transaction) if cash_transaction.return_failure_reportable?
           if cash_transaction.card_payment?
             action_menu_button(model_attribute(cash_installment, :change_date), modal_id: "cashInstallmentModal_#{cash_installment.id}")
           end
-          action_menu_link(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction)) if cash_transaction.can_be_destroyed?
+          if cash_transaction.can_be_destroyed?
+            action_menu_link(action_message(:duplicate), duplicate_cash_transaction_path(cash_transaction, return_to: index_context[:return_to]))
+          end
           action_menu_destroy_link(cash_transaction) if cash_transaction.can_be_destroyed?
         end
       end
@@ -283,13 +285,14 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       id: "cash_transaction_menu_destroy_#{cash_transaction.id}",
       text: action_message(:destroy),
       link_params: {
-        href: cash_transaction_path(cash_transaction),
+        href: cash_transaction_path(cash_transaction, return_to: index_context[:return_to]),
         id: "delete_cash_transaction_#{cash_transaction.id}",
         variant: :ghost,
         class: action_menu_item_class,
         data: {
           turbo_method: :delete,
-          turbo_frame: "_top"
+          turbo_frame: "_top",
+          turbo_action: "replace"
         }
       }
     )
@@ -398,7 +401,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       {
         name: entity.entity_name,
         avatar_name: avatar_name || entity.avatar_name,
-        name_href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }),
+        name_href: new_cash_transaction_path(cash_transaction: { entity_id: entity.id }, return_to: index_context[:return_to]),
         name_data: { turbo_frame: "_top", turbo_prefetch: "false" },
         info_class: "entity_exchanges_info text-xs leading-tight",
         info_component: exchange_info_component(entity_transaction)

@@ -55,7 +55,7 @@ class Views::HealthCheck::Repairs::Show < Views::Base
           I18n.t("health_check.repairs.result.audit"),
           audit_operation_path(result.operation_id),
           class: primary_button_class,
-          data: { turbo_frame: "_top", turbo_prefetch: false }
+          data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
         )
       end
     end

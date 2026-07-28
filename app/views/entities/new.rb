@@ -5,17 +5,18 @@ class Views::Entities::New < Views::Base
 
   include TranslateHelper
 
-  attr_reader :current_user, :entity
+  attr_reader :current_user, :entity, :return_to
 
-  def initialize(current_user:, entity:)
+  def initialize(current_user:, entity:, return_to: "/entities")
     @current_user = current_user
     @entity = entity
+    @return_to = return_to
   end
 
   def view_template
     turbo_frame_tag :center_container do
       render Views::Shared::FormShell.new(badge_text: I18n.t("gerund.new"), badge_class: form_badge_class(:new)) do
-        render Views::Entities::Form.new(current_user:, entity:)
+        render Views::Entities::Form.new(current_user:, entity:, return_to:)
       end
     end
   end

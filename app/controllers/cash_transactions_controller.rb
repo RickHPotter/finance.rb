@@ -9,11 +9,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def index
     build_index_context(current_context.cash_installments)
+    @index_context[:return_to] = cash_navigation_return_param(request.fullpath)
 
-    respond_to do |format|
-      format.html { render Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile) }
-      format.turbo_stream
-    end
+    render_top_level Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)
   end
 
   def month_year
@@ -33,7 +31,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def show
-    render Views::CashTransactions::Show.new(cash_transaction: @cash_transaction)
+    set_return_to
+
+    render_top_level Views::CashTransactions::Show.new(cash_transaction: @cash_transaction, return_to: @return_to)
   end
 
   def new
@@ -41,11 +41,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
     handle_params
     @chain_context = current_chain_context(mode: "create")
+    set_return_to
 
-    respond_to do |format|
-      format.html { render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context) }
-      format.turbo_stream
-    end
+    render_top_level Views::CashTransactions::New.new(
+      current_user:,
+      cash_transaction: @cash_transaction,
+      chain_context: @chain_context,
+      return_to: @return_to
+    )
   end
 
   def edit
@@ -58,11 +61,9 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                                        )
                                        .find(params[:id])
     handle_params
+    set_return_to
 
-    respond_to do |format|
-      format.html { render Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction) }
-      format.turbo_stream
-    end
+    render_top_level Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction, return_to: @return_to)
   end
 
   def create
@@ -93,6 +94,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def destroy
+    set_return_to
     @cash_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
     @user_bank_account = @cash_transaction.user_bank_account
     Audit::BulkMutation.update_columns!(@cash_transaction, date: @cash_transaction.cash_installments.order(:date).first.date)
@@ -100,21 +102,32 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
     if destroyed
       mark_source_message_applied
-      index
+      redirect_to @return_to,
+                  notice: notification_model(:destroyeda, CashTransaction),
+                  status: :see_other
+      return
     end
 
     respond_to do |format|
-      format.turbo_stream do
-        render :destroy, status: destroyed ? :ok : :unprocessable_content
+      format.html do
+        render Views::CashTransactions::Show.new(cash_transaction: @cash_transaction, return_to: @return_to),
+               status: :unprocessable_content
       end
+      format.turbo_stream { render :destroy, status: :unprocessable_content }
     end
   end
 
   def duplicate
     @cash_transaction = build_duplicate_cash_transaction(params[:id])
     @chain_context = current_chain_context(mode: "duplicate")
+    set_return_to
 
-    render Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction, chain_context: @chain_context)
+    render_top_level Views::CashTransactions::New.new(
+      current_user:,
+      cash_transaction: @cash_transaction,
+      chain_context: @chain_context,
+      return_to: @return_to
+    )
   end
 
   def report_payment_failure
@@ -482,13 +495,37 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     saved = @cash_transaction.save
     normalize_failed_cash_transaction_save!
     @chain_context = current_chain_context
+    set_return_to
 
-    handle_successful_save if saved
+    unless saved
+      render_save_failure
+      return
+    end
 
+    destination = handle_successful_save
+    redirect_to destination,
+                notice: notification_model(action_name == "create" ? :createda : :updateda, CashTransaction),
+                status: :see_other
+  end
+
+  def render_save_failure
     respond_to do |format|
-      format.turbo_stream do
-        render action_name, status: saved ? :ok : :unprocessable_content
+      format.html do
+        view =
+          if action_name == "create"
+            Views::CashTransactions::New.new(
+              current_user:,
+              cash_transaction: @cash_transaction,
+              chain_context: @chain_context,
+              return_to: @return_to
+            )
+          else
+            Views::CashTransactions::Edit.new(current_user:, cash_transaction: @cash_transaction, return_to: @return_to)
+          end
+
+        render view, status: :unprocessable_content
       end
+      format.turbo_stream { render action_name, status: :unprocessable_content }
     end
   end
 
@@ -564,12 +601,18 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def render_update_form
     @chain_context = current_chain_context
+    set_return_to
 
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.update(
           @cash_transaction,
-          Views::CashTransactions::Form.new(current_user: @current_user, cash_transaction: @cash_transaction, chain_context: @chain_context)
+          Views::CashTransactions::Form.new(
+            current_user:,
+            cash_transaction: @cash_transaction,
+            chain_context: @chain_context,
+            return_to: @return_to
+          )
         ), status: :ok
       end
     end
@@ -591,64 +634,55 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def handle_chain_save_success
     created_record_ids = updated_chain_record_ids(@cash_transaction.id)
 
-    if continue_chain?
-      @chain_context = current_chain_context(record_ids: created_record_ids, checked: true)
-      @next_cash_transaction = next_cash_transaction_for_chain
-      return
-    end
+    return chain_continuation_destination(created_record_ids) if continue_chain?
+    return chain_index_destination(created_record_ids) if chain_workflow?
 
-    index
-    ensure_index_context!
-    @index_context[:user_bank_account_id] = []
-    apply_chain_index_context(record_ids: created_record_ids)
+    @return_to
   end
 
   def handle_chain_finish_without_save
-    @finished_chain_without_save = true
-    index
-    ensure_index_context!
-    @index_context[:user_bank_account_id] = []
-    apply_chain_index_context(record_ids: current_chain_record_ids)
+    set_return_to
+    redirect_to chain_index_destination(current_chain_record_ids), status: :see_other
+  end
 
-    respond_to do |format|
-      format.turbo_stream { render :create, status: :ok }
+  def chain_continuation_destination(record_ids)
+    options = {
+      chain_mode: current_chain_context[:mode],
+      chain_record_ids: record_ids,
+      continue_chain: "1",
+      return_to: @return_to
+    }
+
+    if current_chain_context[:mode] == "duplicate"
+      duplicate_cash_transaction_path(@cash_transaction, **options)
+    else
+      new_cash_transaction_path(**options)
     end
+  end
+
+  def chain_index_destination(record_ids)
+    transactions = current_context.cash_transactions.includes(:cash_installments).where(id: record_ids)
+    installment_ids = transactions.flat_map { |transaction| transaction.cash_installments.map(&:id) }.uniq
+    active_month_years = transactions.flat_map { |transaction| active_month_years_for(transaction) }.uniq
+    return @return_to if installment_ids.empty?
+
+    destination = cash_transactions_path(
+      active_month_years: active_month_years.to_json,
+      default_year: active_month_years.max.to_s.first(4).to_i,
+      cash_transaction: { cash_installment_ids: installment_ids }
+    )
+
+    cash_navigation_destination(destination)
   end
 
   def active_month_years_for(cash_transaction)
     cash_transaction.cash_installments.map { |installment| Date.new(installment.year, installment.month).strftime("%Y%m").to_i }.uniq
   end
 
-  def apply_chain_index_context(record_ids:)
-    cash_transactions = current_context.cash_transactions.includes(:cash_installments).where(id: record_ids)
-    installment_ids = cash_transactions.flat_map { |transaction| transaction.cash_installments.pluck(:id) }.uniq
-    active_month_years = cash_transactions.flat_map { |transaction| active_month_years_for(transaction) }.uniq
-
-    @index_context[:cash_installment_ids] = installment_ids
-    @index_context[:active_month_years] = active_month_years.presence || @index_context[:active_month_years]
-    @index_context[:default_year] = active_month_years.max.to_s.first(4).to_i if active_month_years.present?
-  end
-
-  def ensure_index_context!
-    return if @index_context.present? && @index_context[:current_user].present?
-
-    build_index_context(current_context.cash_installments)
-  end
-
-  def next_cash_transaction_for_chain
-    if current_chain_context[:mode] == "duplicate"
-      build_duplicate_cash_transaction(@cash_transaction.id)
-    else
-      current_context.cash_transactions.new(
-        user: current_user,
-        user_bank_account_id: current_user.user_bank_accounts.active.first&.id,
-        date: Time.zone.now
-      )
-    end
-  end
-
   def build_duplicate_cash_transaction(id)
-    CashTransaction.duplicate(id).tap do |cash_transaction|
+    source = current_context.cash_transactions.find(id)
+
+    CashTransaction.duplicate(source.id).tap do |cash_transaction|
       cash_transaction.price = 0
       cash_transaction.cash_installments.each { |installment| installment.price = 0 }
     end
@@ -663,7 +697,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def current_chain_record_ids
-    Array(params[:chain_record_ids]).compact_blank.map(&:to_i)
+    raw_ids = Array(params[:chain_record_ids]).compact_blank.map(&:to_s)
+    return [] if raw_ids.size > Navigation::State::MAX_VALUES
+    return [] unless raw_ids.all? { |id| id.match?(/\A[1-9]\d*\z/) }
+
+    ids = raw_ids.map(&:to_i).uniq
+    owned_ids = current_context.cash_transactions.where(id: ids).ids
+
+    owned_ids.sort == ids.sort ? ids : []
   end
 
   def updated_chain_record_ids(current_record_id)
@@ -684,6 +725,10 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def finish_chain_without_save_requested?
     ActiveModel::Type::Boolean.new.cast(params[:finish_chain_without_save])
+  end
+
+  def chain_workflow?
+    current_chain_record_ids.present? || continue_chain_requested? || finish_chain_requested?
   end
 
   def create_shared_paid_state_message(conversation:, counterpart_user:, notification:)
@@ -792,6 +837,31 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   private
+
+  def render_top_level(view)
+    respond_to do |format|
+      format.html { render view }
+    end
+  end
+
+  def set_return_to
+    @return_to = cash_navigation_destination(params[:return_to])
+  end
+
+  def cash_navigation_destination(raw)
+    Navigation::CashTransactions.new(
+      raw:,
+      fallback: cash_transactions_path,
+      current_user:,
+      current_context:
+    ).destination
+  end
+
+  def cash_navigation_return_param(raw)
+    destination = cash_navigation_destination(raw)
+
+    destination unless destination == cash_transactions_path
+  end
 
   def set_cash_tabs
     set_tabs(active_menu: :cash, active_sub_menu: :pix)
@@ -950,7 +1020,8 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       skip_budgets: search_cash_transaction_params[:skip_budgets],
       sort:,
       direction:,
-      force_mobile: mobile
+      force_mobile: mobile,
+      return_to: cash_navigation_return_param(params[:return_to])
     }
   end
 

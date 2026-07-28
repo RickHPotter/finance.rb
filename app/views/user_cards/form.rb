@@ -4,17 +4,19 @@ class Views::UserCards::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::DOMID
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include CacheHelper
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :current_user, :user_card, :cards
+  attr_reader :current_user, :user_card, :cards, :return_to
 
-  def initialize(current_user:, user_card:, cards:)
+  def initialize(current_user:, user_card:, cards:, return_to: "/user_cards")
     @current_user = current_user
     @user_card = user_card
     @cards = cards
+    @return_to = return_to
   end
 
   def view_template
@@ -29,6 +31,7 @@ class Views::UserCards::Form < Views::Base
         data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" }
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
+        hidden_field_tag :return_to, return_to
 
         div(class: "w-full mb-6") do
           form.text_field(
@@ -139,12 +142,12 @@ class Views::UserCards::Form < Views::Base
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_closing_date, format: :short) }
                   div(class: "px-1 flex items-center justify-center mx-auto") { I18n.l(reference.reference_date, format: :short) }
                   div(class: "flex items-center justify-center") do
-                    link_to(edit_user_card_reference_path(user_card, reference),
+                    link_to(edit_user_card_reference_path(user_card, reference, **reference_return_options),
                             class: "text-blue-600 hover:text-blue-800 dark:text-cyan-300 dark:hover:text-cyan-200 mx-2", data: { turbo_frame: "_top" }) do
                       cached_icon(:pencil)
                     end
                     link_to(
-                      merge_user_card_references_path(user_card, id: reference.id),
+                      merge_user_card_references_path(user_card, id: reference.id, **reference_return_options),
                       class: "text-gray-700 hover:text-gray-800 dark:text-slate-300 dark:hover:text-slate-100 mx-2",
                       data: { turbo_frame: "_top" }
                     ) do
@@ -159,7 +162,11 @@ class Views::UserCards::Form < Views::Base
 
         div(class: "flex w-full flex-col gap-3") do
           div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(user_card))}") { action_message(:submit) }
+            Button(
+              type: :submit,
+              class: "w-64 #{submit_button_class(form_action_mode(user_card))}",
+              data: { turbo_frame: "_top", turbo_action: "replace" }
+            ) { action_message(:submit) }
 
             if user_card.persisted?
               Button(
@@ -167,8 +174,8 @@ class Views::UserCards::Form < Views::Base
                 type: :submit,
                 variant: :outline,
                 class: "w-64 #{destroy_button_class}",
-                link: user_card_path(user_card),
-                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+                link: user_card_path(user_card, return_to:),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top", turbo_action: "replace" }
               ) { action_message(:destroy) }
             end
           end
@@ -177,5 +184,11 @@ class Views::UserCards::Form < Views::Base
         form.submit "Update", class: "opacity-0 pointer-events-none", data: { reactive_form_target: :updateButton }
       end
     end
+  end
+
+  def reference_return_options
+    return {} if return_to == "/user_cards"
+
+    { return_to: }
   end
 end

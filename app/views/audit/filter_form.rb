@@ -22,7 +22,12 @@ class Views::Audit::FilterForm < Views::Base
     details(open: active_filters?, class: "border-b border-slate-200 pb-3 dark:border-slate-700") do
       summary(class: "cursor-pointer text-sm font-semibold text-slate-700 dark:text-slate-200") { I18n.t("audit.filters.title") }
 
-      form_with(url:, method: :get, class: "mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4") do |form|
+      form_with(
+        url:,
+        method: :get,
+        class: "mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4",
+        data: { turbo_frame: "_top", turbo_action: "advance" }
+      ) do |form|
         select_field(form, :item_type, item_type_options) unless record_filter
         input_field(form, :item_id, type: :number) unless record_filter
         input_field(form, :operation_id)
@@ -40,7 +45,12 @@ class Views::Audit::FilterForm < Views::Base
         div(class: "flex items-end gap-2") do
           form.submit(I18n.t("actions.search"),
                       class: "min-h-10 flex-1 rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-950")
-          link_to(I18n.t("filters.summary.clear"), url, class: CLEAR_CLASS)
+          link_to(
+            I18n.t("filters.summary.clear"),
+            url,
+            class: CLEAR_CLASS,
+            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+          )
         end
       end
     end

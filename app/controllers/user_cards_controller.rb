@@ -11,12 +11,14 @@ class UserCardsController < ApplicationController
   def index
     build_index_context
     @user_cards = user_cards_scope
-    render Views::UserCards::Index.new(user_cards: @user_cards, index_context: @index_context, mobile: @mobile)
+    @index_context[:return_to] = user_card_navigation_return_param(request.fullpath)
+    render_top_level Views::UserCards::Index.new(user_cards: @user_cards, index_context: @index_context, mobile: @mobile)
   end
 
   def new
     @user_card = current_user.user_cards.new
-    render Views::UserCards::New.new(current_user:, user_card: @user_card, cards: @cards)
+    set_return_to
+    render_top_level Views::UserCards::New.new(current_user:, user_card: @user_card, cards: @cards, return_to: @return_to)
   end
 
   def create
@@ -26,11 +28,13 @@ class UserCardsController < ApplicationController
   end
 
   def show
-    render Views::UserCards::Show.new(user_card: @user_card)
+    set_return_to
+    render_top_level Views::UserCards::Show.new(user_card: @user_card, return_to: @return_to)
   end
 
   def edit
-    render Views::UserCards::Edit.new(current_user:, user_card: @user_card, cards: @cards)
+    set_return_to
+    render_top_level Views::UserCards::Edit.new(current_user:, user_card: @user_card, cards: @cards, return_to: @return_to)
   end
 
   def update
@@ -40,18 +44,28 @@ class UserCardsController < ApplicationController
   end
 
   def destroy
+    set_return_to
     @user_card.destroy if @user_card.card_transactions.empty?
 
-    respond_to(&:turbo_stream)
+    if @user_card.destroyed?
+      redirect_to @return_to, notice: notification_model(:destroyed, UserCard), status: :see_other
+    else
+      redirect_to @return_to, alert: user_card_destroy_failure_notification, status: :see_other
+    end
   end
 
   def handle_save
-    if @user_card.valid? && @user_card.active?
+    set_return_to
+    return render_user_card_failure unless @user_card.valid?
+
+    if @user_card.active?
       @card_transaction = Logic::CardTransactions.create_from(user_card: @user_card)
       set_tabs(active_menu: :card, active_sub_menu: @card_transaction.user_card.user_card_name || :search)
     end
 
-    respond_to(&:turbo_stream)
+    redirect_to user_card_save_destination,
+                notice: notification_model(action_name == "create" ? :created : :updated, UserCard),
+                status: :see_other
   end
 
   def reference_date
@@ -63,6 +77,47 @@ class UserCardsController < ApplicationController
   end
 
   private
+
+  def render_top_level(view)
+    respond_to { |format| format.html { render view } }
+  end
+
+  def render_user_card_failure
+    view =
+      if action_name == "create"
+        Views::UserCards::New.new(current_user:, user_card: @user_card, cards: @cards, return_to: @return_to)
+      else
+        Views::UserCards::Edit.new(current_user:, user_card: @user_card, cards: @cards, return_to: @return_to)
+      end
+
+    respond_to do |format|
+      format.html { render view, status: :unprocessable_content }
+      format.turbo_stream { render action_name, status: :unprocessable_content }
+    end
+  end
+
+  def user_card_save_destination
+    return @return_to if @card_transaction.blank?
+
+    new_card_transaction_path(user_card_id: @user_card.id)
+  end
+
+  def set_return_to
+    @return_to = user_card_navigation_destination(params[:return_to])
+  end
+
+  def user_card_navigation_destination(raw)
+    Navigation::UserCards.new(raw:, fallback: user_cards_path, current_user:).destination
+  end
+
+  def user_card_navigation_return_param(raw)
+    destination = user_card_navigation_destination(raw)
+    destination unless destination == user_cards_path
+  end
+
+  def user_card_destroy_failure_notification
+    @user_card.errors.full_messages.to_sentence.presence || notification_model(:not_destroyed_because_has_transactions, UserCard)
+  end
 
   def build_index_context
     @index_context = {

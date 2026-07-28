@@ -23,10 +23,25 @@ RSpec.describe "Balances", type: :request do
       document = Nokogiri::HTML.fragment(response.body)
       analysis_frame = document.at_css("turbo-frame#balances_monthly_analysis_content")
       expect(analysis_frame["src"]).to be_nil
-      expect(analysis_frame["data-lazy-tabs-lazy-src"]).to eq(monthly_analysis_balances_path)
+      expect(analysis_frame["data-lazy-tabs-lazy-src"]).to eq(
+        monthly_analysis_balances_path(month: Time.zone.today.strftime("%Y-%m"))
+      )
       expect(document.at_css("[data-controller='lazy-tabs']")).to be_present
       expect(response.body).not_to include("naming-tabs")
       expect(response.body).not_to include("data-controller=\"balances-monthly-analysis\"")
+    end
+
+    it "renders a refreshable selected tab and month" do
+      get balances_path(tab: "monthly_analysis", month: "2026-05")
+
+      document = Nokogiri::HTML.fragment(response.body)
+      tabs = document.at_css("[data-controller='lazy-tabs']")
+      analysis_frame = document.at_css("turbo-frame#balances_monthly_analysis_content")
+
+      expect(response).to have_http_status(:ok)
+      expect(tabs["data-lazy-tabs-current-value"]).to eq("monthly_analysis")
+      expect(tabs.key?("data-lazy-tabs-url-sync-value")).to be(true)
+      expect(analysis_frame["data-lazy-tabs-lazy-src"]).to eq(monthly_analysis_balances_path(month: "2026-05"))
     end
   end
 
@@ -46,6 +61,15 @@ RSpec.describe "Balances", type: :request do
       expect(analysis["data-balances-monthly-analysis-currency-value"]).to eq("BRL")
       expect(JSON.parse(analysis["data-balances-monthly-analysis-labels-value"])).to include("retry" => "Retry")
       expect(document.css("canvas[data-balances-monthly-analysis-target$='Canvas']").size).to eq(4)
+    end
+
+    it "restores the selected month inside the lazy frame" do
+      get monthly_analysis_balances_path(month: "2026-05")
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(response).to have_http_status(:ok)
+      expect(document.at_css("#balances_monthly_analysis_month")["value"]).to eq("2026-05")
     end
 
     it "renders Portuguese configuration from the signed-in user" do

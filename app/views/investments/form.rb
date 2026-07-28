@@ -10,12 +10,13 @@ class Views::Investments::Form < Views::Base
   include CacheHelper
   include ContextHelper
 
-  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types, :chain_context
+  attr_reader :current_user, :user_card, :investment, :user_bank_accounts, :investment_types, :chain_context, :return_to
 
-  def initialize(current_user:, investment:, chain_context: nil)
+  def initialize(current_user:, investment:, chain_context: nil, return_to: "/investments")
     @current_user = current_user
     @investment = investment
     @chain_context = chain_context
+    @return_to = return_to
 
     set_user_bank_accounts
     set_investment_types
@@ -41,6 +42,7 @@ class Views::Investments::Form < Views::Base
       ) do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :duplicate
+        hidden_field_tag :return_to, return_to
 
         div(class: "mb-6 w-full") do
           form.text_field :description,
@@ -119,22 +121,24 @@ class Views::Investments::Form < Views::Base
             end
 
             div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-              Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(investment))}") { action_message(:submit) }
+              Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(investment))}",
+                     data: { turbo_frame: "_top", turbo_action: "replace" }) { action_message(:submit) }
 
               unless investment.persisted?
-                Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain", value: "1") do
+                Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain", value: "1",
+                       data: { turbo_frame: "_top", turbo_action: "replace" }) do
                   action_message(:finish_chain)
                 end
 
                 Button(type: :submit, variant: :outline, class: secondary_action_button_class, name: "finish_chain_without_save",
-                       value: "1") do
+                       value: "1", data: { turbo_frame: "_top", turbo_action: "replace" }) do
                   action_message(:finish_chain_without_save)
                 end
               end
 
               if investment.persisted?
                 Button(
-                  link: duplicate_investment_path(investment),
+                  link: duplicate_investment_path(investment, return_to:),
                   class: "min-w-64 #{duplicate_button_class}",
                   data: { turbo_frame: "_top" }
                 ) do
@@ -145,11 +149,11 @@ class Views::Investments::Form < Views::Base
                   id: investment.id,
                   text: action_message(:destroy),
                   link_params: {
-                    href: investment_path(investment),
+                    href: investment_path(investment, return_to:),
                     id: "delete_investment_#{investment.id}",
                     variant: :outline,
                     class: "min-w-64 #{destroy_button_class}",
-                    data: { turbo_method: :delete }
+                    data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
                   }
                 )
               end

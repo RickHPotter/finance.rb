@@ -1,14 +1,13 @@
-<% if @user_bank_account.errors.empty? %>
-  <% if @user_bank_account.active? && @cash_transaction %>
-    <%= turbo_stream.update(:tabs, partial: "shared/tabs") %>
-    <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: notification_model(:createda, UserBankAccount) }) %>
-
-    <%= turbo_stream.replace(:center_container, Views::CashTransactions::New.new(current_user:, cash_transaction: @cash_transaction)) %>
-  <% else %>
-    <%= turbo_stream.replace(:center_container, Views::UserBankAccounts::Index.new(user_bank_accounts: @user_bank_accounts, mobile: @mobile)) %>
-  <% end %>
-<% else %>
-  <%= turbo_stream.update(:notification, partial: "shared/flash", locals: { alert: notification_model(:not_createda, UserBankAccount) }) %>
-
-  <%= turbo_stream.replace(:center_container, Views::UserBankAccounts::New.new(current_user:, user_bank_account: @user_bank_account, banks: @banks)) %>
+<% failure_notifications_for(@user_bank_account, :not_createda, UserBankAccount).each_with_index do |alert, index| %>
+  <%= turbo_stream.public_send(index.zero? ? :update : :append, :notification, partial: "shared/flash", locals: { notice: nil, alert: }) %>
 <% end %>
+
+<%= turbo_stream.replace(
+      @user_bank_account,
+      Views::UserBankAccounts::Form.new(
+        current_user:,
+        user_bank_account: @user_bank_account,
+        banks: @banks,
+        return_to: @return_to
+      )
+    ) %>

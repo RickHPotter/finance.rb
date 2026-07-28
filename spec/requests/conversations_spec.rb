@@ -337,10 +337,9 @@ RSpec.describe "Conversations", type: :request do
       patch switch_context_path(derived_context)
       get conversation_path(derived_conversation, message_filter: "all")
 
-      expect(response.body).to include(new_cash_transaction_path(cash_transaction: { source_message_id: derived_conversation.messages.last.id },
-                                                                 format: :turbo_stream))
+      expect(response.body).to include(new_cash_transaction_path(cash_transaction: { source_message_id: derived_conversation.messages.last.id }))
       expect(response.body).not_to include(
-        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: derived_conversation.messages.last.id }, format: :turbo_stream)
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: derived_conversation.messages.last.id })
       )
     end
 
@@ -402,10 +401,10 @@ RSpec.describe "Conversations", type: :request do
       get conversation_path(conversation, message_filter: "all")
 
       expect(response.body).to include(
-        new_cash_transaction_path(cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+        new_cash_transaction_path(cash_transaction: { source_message_id: latest_update.id })
       )
       expect(response.body).not_to include(
-        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id }, format: :turbo_stream)
+        edit_cash_transaction_path(id: local_reference, cash_transaction: { source_message_id: latest_update.id })
       )
       expect(response.body).to include(Message.human_attribute_name(:create))
     end

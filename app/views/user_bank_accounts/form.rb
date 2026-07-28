@@ -3,16 +3,18 @@
 class Views::UserBankAccounts::Form < Views::Base
   include Phlex::Rails::Helpers::FormWith
   include Phlex::Rails::Helpers::DOMID
+  include Phlex::Rails::Helpers::HiddenFieldTag
 
   include TranslateHelper
   include ComponentsHelper
 
-  attr_reader :current_user, :user_bank_account, :banks
+  attr_reader :current_user, :user_bank_account, :banks, :return_to
 
-  def initialize(current_user:, user_bank_account:, banks:)
+  def initialize(current_user:, user_bank_account:, banks:, return_to: "/user_bank_accounts")
     @current_user = current_user
     @user_bank_account = user_bank_account
     @banks = banks
+    @return_to = return_to
   end
 
   def view_template
@@ -21,6 +23,7 @@ class Views::UserBankAccounts::Form < Views::Base
 
       form_with(model: user_bank_account, url: form_url, id: :form, class: "contents text-black", data: { controller: "reactive-form" }) do |form|
         form.hidden_field :user_id, value: current_user.id
+        hidden_field_tag :return_to, return_to
 
         div(class: "w-full mb-6") do
           form.text_field(
@@ -64,7 +67,11 @@ class Views::UserBankAccounts::Form < Views::Base
 
         div(class: "flex w-full flex-col gap-3") do
           div(class: "grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr items-center justify-items-center gap-2 mx-auto w-full") do
-            Button(type: :submit, class: "w-64 #{submit_button_class(form_action_mode(user_bank_account))}") { action_message(:submit) }
+            Button(
+              type: :submit,
+              class: "w-64 #{submit_button_class(form_action_mode(user_bank_account))}",
+              data: { turbo_frame: "_top", turbo_action: "replace" }
+            ) { action_message(:submit) }
 
             if user_bank_account.persisted?
               Button(
@@ -72,8 +79,8 @@ class Views::UserBankAccounts::Form < Views::Base
                 type: :submit,
                 variant: :outline,
                 class: "w-64 #{destroy_button_class}",
-                link: user_bank_account_path(user_bank_account),
-                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure") }
+                link: user_bank_account_path(user_bank_account, return_to:),
+                data: { turbo_method: :delete, turbo_confirm: I18n.t("confirmation.sure"), turbo_frame: "_top", turbo_action: "replace" }
               ) { action_message(:destroy) }
             end
           end

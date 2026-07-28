@@ -97,7 +97,7 @@ class Views::CashTransactions::Index < Views::Base
               render_budget_bulk_action_bar
             end
 
-            render Views::Shared::MobileFloatingNav.new(new_href: new_cash_transaction_path(format: :turbo_stream))
+            render Views::Shared::MobileFloatingNav.new(new_href: new_cash_transaction_path(return_to: index_context[:return_to]))
           end
         end
       end

@@ -11,7 +11,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
               :from_date, :to_date,
               :paid, :pending, :paid_state,
               :user_bank_account_id, :active_month_years, :default_year,
-              :skip_budgets, :sort, :direction, :force_mobile
+              :skip_budgets, :sort, :direction, :force_mobile, :return_to
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -39,6 +39,7 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
     @sort = index_context[:sort]
     @direction = index_context[:direction]
     @force_mobile = index_context[:force_mobile]
+    @return_to = index_context[:return_to]
   end
 
   def view_template
@@ -71,7 +72,8 @@ class Views::CashTransactions::MonthYearContainer < Views::Base
         skip_budgets:,
         sort:,
         direction:,
-        force_mobile:
+        force_mobile:,
+        return_to:
       },
       path_lambda: ->(params) { month_year_cash_transactions_path(params) }
     )

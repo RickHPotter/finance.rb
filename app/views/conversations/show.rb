@@ -138,7 +138,7 @@ class Views::Conversations::Show < Views::Base
     Link(
       href: conversation_path(conversation, message_filter: filter, message_side: active_message_sides),
       class: message_filter_badge_class(selected),
-      data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do
       model_attribute(conversation, filter)
     end
@@ -151,7 +151,7 @@ class Views::Conversations::Show < Views::Base
     Link(
       href: conversation_path(conversation, message_filter: active_message_filter, message_side: next_sides),
       class: message_side_badge_class(side, selected),
-      data: { turbo_frame: "_top", turbo_prefetch: "false" }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do
       model_attribute(conversation, side)
     end

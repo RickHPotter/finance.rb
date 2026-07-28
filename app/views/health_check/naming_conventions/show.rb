@@ -67,7 +67,7 @@ class Views::HealthCheck::NamingConventions::Show < Views::Base
       I18n.t("health_check.naming_conventions.result.audit"),
       audit_operation_path(result.operation_id),
       class: "mt-3 inline-flex min-h-10 items-center rounded-md border border-current/30 px-3 py-2 text-sm font-bold",
-      data: { turbo_frame: "_top", turbo_prefetch: false }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
     )
   end
 

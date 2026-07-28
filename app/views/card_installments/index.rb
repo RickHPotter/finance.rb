@@ -7,15 +7,15 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :card_installments, :user_card_id, :entity_links, :category_colour_display_mode
+  attr_reader :mobile, :card_installments, :user_card_id, :entity_links, :category_colour_display_mode, :return_to
 
-  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true,
-                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
+  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil) # rubocop:disable Metrics/ParameterLists
     @mobile = mobile
     @card_installments = card_installments
     @user_card_id = user_card_id
     @entity_links = entity_links
     @category_colour_display_mode = CategoryColours::DisplayMode.resolve(category_colour_display_mode)
+    @return_to = return_to
   end
 
   def view_template
@@ -54,7 +54,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
               if user_card_id.nil?
                 link_to card_transaction.user_card.user_card_name,
-                        card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
+                        card_transactions_path(user_card_id: card_transaction.user_card_id),
                         class: "px-2 py-1 flex items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
                         data: { turbo_frame: "_top", turbo_prefetch: false }
               end
@@ -105,8 +105,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
       PopoverContent(class: "z-60 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
-          action_menu_link(action_message(:analyse), card_transaction_path(card_transaction))
-          action_menu_link(action_message(:duplicate), duplicate_card_transaction_path(card_transaction)) unless card_transaction.card_advance_category?
+          action_menu_link(action_message(:analyse), card_transaction_path(card_transaction, return_to:))
+          action_menu_link(action_message(:duplicate), duplicate_card_transaction_path(card_transaction, return_to:)) unless card_transaction.card_advance_category?
           action_menu_destroy_link(card_installment, card_transaction) if card_transaction.can_be_destroyed?
         end
       end
@@ -125,7 +125,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
       id: "card_transaction_menu_destroy_#{card_transaction.id}_#{card_installment.id}",
       text: action_message(:destroy),
       link_params: {
-        href: card_transaction_path(card_transaction, card_installment_id: card_installment.id),
+        href: card_transaction_path(card_transaction, card_installment_id: card_installment.id, return_to:),
         variant: :ghost,
         id: "delete_card_transaction_#{card_transaction.id}_#{card_installment.id}",
         class: action_menu_item_class,
@@ -177,7 +177,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
             if user_card_id.nil?
               link_to card_transaction.user_card.user_card_name,
-                      card_transactions_path(user_card_id: card_transaction.user_card_id, format: :turbo_stream),
+                      card_transactions_path(user_card_id: card_transaction.user_card_id),
                       class: "px-2 py-1 ml-2 flex-1 items-center justify-center rounded-sm bg-blue-800 border border-slate-200 text-slate-200",
                       data: { turbo_frame: "_top", turbo_prefetch: false }
             end
@@ -204,7 +204,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
             render_analyse_link(card_transaction)
 
             link_to(
-              duplicate_card_transaction_path(card_transaction),
+              duplicate_card_transaction_path(card_transaction, return_to:),
               class: action_button_class,
               title: action_message(:duplicate),
               aria: { label: action_message(:duplicate) },
@@ -217,7 +217,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               id: "#{card_transaction.id}_#{card_installment.id}",
               icon: :destroy,
               link_params: {
-                href: card_transaction_path(card_transaction, card_installment_id: card_installment.id),
+                href: card_transaction_path(card_transaction, card_installment_id: card_installment.id, return_to:),
                 size: :xs,
                 id: "delete_card_transaction_#{card_transaction.id}_#{card_installment.id}",
                 class: destructive_action_button_class,
@@ -231,7 +231,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   end
 
   def render_analyse_link(card_transaction, mobile: false)
-    link_to card_transaction_path(card_transaction),
+    link_to card_transaction_path(card_transaction, return_to:),
             class: analyse_link_class(mobile),
             title: action_message(:analyse),
             aria: { label: action_message(:analyse) },
@@ -266,7 +266,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   def render_description_link(card_transaction, class:)
     link_to card_transaction.description,
-            edit_card_transaction_path(card_transaction),
+            edit_card_transaction_path(card_transaction, return_to:),
             id: "edit_card_transaction_#{card_transaction.id}",
             class:,
             title: card_transaction.comment,
@@ -324,7 +324,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
   def entity_popover_items(card_transaction)
     entities_for(card_transaction).map do |entity_transaction|
       entity = entity_transaction.entity
-      href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }) : nil
+      href = entity_links ? new_card_transaction_path(user_card_id:, card_transaction: { entity_id: entity.id }, return_to:) : nil
 
       {
         name: entity.entity_name,

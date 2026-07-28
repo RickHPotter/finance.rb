@@ -57,6 +57,7 @@ export default class extends Controller {
     this.payload = null
     this.themeObserver = new MutationObserver(() => this.redrawCharts())
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    this.syncNavigationState()
     this.load()
   }
 
@@ -75,7 +76,10 @@ export default class extends Controller {
   }
 
   changeMonth() {
-    if (this.validMonth(this.monthInputTarget.value)) this.load()
+    if (!this.validMonth(this.monthInputTarget.value)) return
+
+    this.syncNavigationState()
+    this.load()
   }
 
   retry() {
@@ -88,7 +92,16 @@ export default class extends Controller {
 
     const next = new Date(year, month - 1 + offset, 1)
     this.monthInputTarget.value = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`
+    this.syncNavigationState()
     this.load()
+  }
+
+  syncNavigationState() {
+    if (!this.validMonth(this.monthInputTarget.value)) return
+
+    const url = new URL(window.location.href)
+    url.searchParams.set("month", this.monthInputTarget.value)
+    window.history.replaceState(window.history.state, "", url)
   }
 
   async load() {
