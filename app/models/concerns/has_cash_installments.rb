@@ -44,6 +44,6 @@ module HasCashInstallments
   #
   def update_cash_transaction_count
     cash_installments_count = cash_installments.count
-    cash_installments.each { |i| i.update_columns(cash_installments_count:) }
+    cash_installments.each { |installment| Audit::BulkMutation.update_columns!(installment, cash_installments_count:) }
   end
 end

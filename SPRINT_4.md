@@ -315,11 +315,20 @@ This feature is distinct from the existing exchange audit services. Existing aud
 detect inconsistencies in the current graph; persistent auditing records the history
 that produced that graph.
 
+Delivery status:
+
+- V1 is a complete PR boundary: persistent auditing, authorized history, guarded
+  preview/apply infrastructure, ordinary cash/card transaction and installment
+  adapters, and conservative price-only card-payment projection rollback
+- KAKASHI-08 remains unfinished as a feature until a future V2 PR adds every remaining
+  audited record-family adapter and completes the generated financial graph coverage
+- V1 operations containing an unsupported family or graph remain safely read-only;
+  there is no partial or forced rollback
+
 Foundation:
 
-- adopt an established Rails record-versioning library after confirming Rails 8.1 and
-  Ruby 4 compatibility; prefer a version model that supports immutable changesets and
-  reification rather than building callback serialization from scratch
+- adopt PaperTrail 17 with a custom version class, PostgreSQL JSONB payloads, immutable
+  operation/version tables, and explicit Rails 8.1/Ruby 4 compatibility coverage
 - store create, update, and destroy events in an append-only audit table
 - capture actor user, context, request ID, operation ID, timestamp, record type/ID,
   event type, before/after changes, and an application-defined mutation source
@@ -377,7 +386,24 @@ Operational requirements:
 - add request and model coverage for actor/context capture, grouped operations,
   create/update/destroy history, failed-save rollback, conflict detection, paid-history
   denial, successful compensation, and balance recalculation
-- provide an admin-only first release; user-facing history can be considered separately
+- allow administrators to inspect every user's history and allow other users to inspect
+  only versions they own; keep rollback admin-only
+
+Locked data policy:
+
+- auditing begins at deployment with no synthetic backfill for existing records
+- retain audit operations and versions indefinitely with no deletion UI or routine purge
+- treat rollback as operation-wide; do not compensate one record from a cascading
+  operation in isolation
+
+References:
+
+- [audit data and operation contract](docs/sprints/4-kakashi/kakashi-08/01-audit-data-and-operation-contract.md)
+- [guarded rollback contract](docs/sprints/4-kakashi/kakashi-08/02-guarded-rollback-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-08/03-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-08/04-decisions-and-test-matrix.md)
+- [deployment and operations](docs/sprints/4-kakashi/kakashi-08/06-deployment-and-operations.md)
+- [V2 complete rollback adapter coverage](docs/sprints/4-kakashi/kakashi-08/07-v2-complete-rollback-adapters.md)
 
 Explicitly out of scope:
 

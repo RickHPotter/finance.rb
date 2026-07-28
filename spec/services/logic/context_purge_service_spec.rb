@@ -104,6 +104,68 @@ RSpec.describe Logic::ContextPurgeService do
       expect(derived_context.cash_transactions.exists?).to be(true)
     end
 
+    it "retains destruction evidence for callback-bypassed financial rows" do
+      PaperTrail.request(enabled: false) do
+        create(:cash_transaction, user:, context: derived_context, user_bank_account:).tap do |record|
+          record.categories = [ derived_category ]
+          record.entities = [ derived_entity ]
+          record.save!
+        end
+
+        card_transaction = create(:card_transaction, user:, context: derived_context, user_card:)
+        create(:exchange, entity_transaction: card_transaction.entity_transactions.first)
+        create(:reference, user_card:, context: derived_context, month: 1, year: 2030, reference_date: Date.new(2030, 1, 12))
+        create(:budget, user:, context: derived_context, budget_categories: [ build(:budget_category, category: derived_category) ])
+        create(:subscription, user:, context: derived_context, description: "Derived subscription")
+        create(:investment, user:, context: derived_context, user_bank_account:, investment_type: create(:investment_type, :random))
+
+        source = build(
+          :cash_transaction,
+          user:,
+          context: derived_context,
+          user_bank_account:,
+          description: "Derived Piggy Bank",
+          price: -5_000,
+          cash_installments: [ build(:cash_installment, number: 1, price: -5_000, date: Time.zone.now) ],
+          category_transactions: [ CategoryTransaction.new(category: user.built_in_category("PIGGY BANK")) ],
+          entity_transactions: [ EntityTransaction.new(entity: derived_entity, price: 0, price_to_be_returned: 0, is_payer: false) ],
+          piggy_bank: PiggyBank.new(return_price: 5_000, return_date: 3.months.from_now)
+        )
+        source.save!
+      end
+
+      cash_transaction_ids = derived_context.cash_transactions.ids
+      card_transaction_ids = derived_context.card_transactions.ids
+      entity_transaction_ids = EntityTransaction.where(transactable_type: %w[CashTransaction CardTransaction],
+                                                       transactable_id: cash_transaction_ids + card_transaction_ids).ids
+      expected_ids = {
+        "CashTransaction" => cash_transaction_ids,
+        "CardTransaction" => card_transaction_ids,
+        "Installment" => derived_context.cash_installments.ids + derived_context.card_installments.ids,
+        "CategoryTransaction" => CategoryTransaction.where(transactable_type: %w[CashTransaction CardTransaction Investment Subscription]).where(
+          transactable_id: cash_transaction_ids + card_transaction_ids + derived_context.investments.ids + derived_context.subscriptions.ids
+        ).ids,
+        "EntityTransaction" => entity_transaction_ids,
+        "Exchange" => Exchange.where(entity_transaction_id: entity_transaction_ids).ids,
+        "Reference" => derived_context.references.ids,
+        "Budget" => derived_context.budgets.ids,
+        "Subscription" => derived_context.subscriptions.ids,
+        "Investment" => derived_context.investments.ids,
+        "PiggyBank" => PiggyBank.where(source_cash_transaction_id: cash_transaction_ids).ids
+      }
+
+      Audit::Operation.run(actor: user, context: derived_context, source: :web) do
+        described_class.new(context: derived_context, user:).call
+      end
+
+      versions = AuditVersion.where(context_id: derived_context.id, event: :destroy)
+      expected_ids.each do |item_type, item_ids|
+        expect(versions.where(item_type:, item_id: item_ids).count).to eq(item_ids.count)
+      end
+      expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
+      expect(versions.pluck(:context_id).uniq).to eq([ derived_context.id ])
+    end
+
     private
 
     def align_card_and_cash_transaction_ids

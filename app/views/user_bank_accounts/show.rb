@@ -45,6 +45,7 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserBankAccount", item_id: user_bank_account.id), variant: :outline)
         dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account), variant: :edit)
         dashboard_action(action_message(:index), user_bank_accounts_path, variant: :outline)
         destroy_action

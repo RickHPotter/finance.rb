@@ -42,6 +42,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
       end
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
+        dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "Budget", item_id: budget.id), variant: :outline)
         dashboard_action(action_message(:edit), edit_budget_path(budget), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_budget_path(budget), variant: :duplicate)
         destroy_action

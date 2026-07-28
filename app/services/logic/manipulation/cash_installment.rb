@@ -14,7 +14,7 @@ module Logic
         new_cash_installment = create_new_installment(date, price)
         update_subsequent_installments(new_cash_installment)
 
-        @cash_transaction.cash_installments.update_all(cash_installments_count: @cash_transaction.cash_installments.count)
+        Audit::BulkMutation.update_all!(@cash_transaction.cash_installments, cash_installments_count: @cash_transaction.cash_installments.count)
         @cash_transaction.sync_exchange_projection_back_to_source! if @cash_transaction.exchange_return?
       end
 
@@ -35,7 +35,7 @@ module Logic
         subsequent_installments = cash_installments.where(number: [ new_cash_installment.number.. ]).where.not(id: new_cash_installment.id)
 
         subsequent_installments.each do |ci|
-          ci.update_columns(number: ci.number + 1)
+          Audit::BulkMutation.update_columns!(ci, number: ci.number + 1)
         end
       end
     end

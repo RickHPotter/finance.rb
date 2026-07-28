@@ -29,10 +29,12 @@ module Import
     end
 
     def import
-      log_with do
-        create_user(user_hash)
-        @card_transaction_creator_service.run
-        @cash_transaction_creator_service.run
+      Audit::Operation.run(source: :import, metadata: { importer: self.class.name }) do
+        log_with do
+          create_user(user_hash)
+          @card_transaction_creator_service.run
+          @cash_transaction_creator_service.run
+        end
       end
     end
   end

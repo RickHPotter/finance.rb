@@ -121,7 +121,7 @@ class CardInstallment < Installment
   # @return [void].
   #
   def check_paid_situation
-    card_transaction.update_columns(paid: card_transaction.card_installments.where(paid: false).empty?)
+    Audit::BulkMutation.update_columns!(card_transaction, paid: card_transaction.card_installments.where(paid: false).empty?)
   end
 end
 

@@ -2,9 +2,13 @@
 
 class Installment < ApplicationRecord
   # @extends ..................................................................
+
   # @includes .................................................................
   include HasMonthYear
   include HasStartingPrice
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[balance order_id cash_installments_count card_installments_count]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :locked

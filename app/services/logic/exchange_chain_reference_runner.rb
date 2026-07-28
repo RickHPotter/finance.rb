@@ -12,6 +12,12 @@ class Logic::ExchangeChainReferenceRunner
   end
 
   def call
+    Audit::Operation.with_mutation_source(:reference_sync) { result }
+  end
+
+  private
+
+  def result
     {
       dry_run:,
       candidate_count: candidates.size,
@@ -23,8 +29,6 @@ class Logic::ExchangeChainReferenceRunner
       skipped:
     }
   end
-
-  private
 
   def audit
     @audit ||= Logic::ExchangeChainReferenceAudit.new(rows:, source_transaction_ids:, middle_overrides:, receiver_overrides:)
@@ -119,11 +123,10 @@ class Logic::ExchangeChainReferenceRunner
         change[:transaction].lock!
         transaction = change[:transaction]
 
-        transaction.update_columns(
-          reference_transactable_type: change[:target_reference]&.class&.name,
-          reference_transactable_id: change[:target_reference]&.id,
-          updated_at: timestamp
-        )
+        Audit::BulkMutation.update_columns!(transaction,
+                                            reference_transactable_type: change[:target_reference]&.class&.name,
+                                            reference_transactable_id: change[:target_reference]&.id,
+                                            updated_at: timestamp)
       end
     end
   end

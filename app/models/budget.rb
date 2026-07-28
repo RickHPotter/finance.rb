@@ -4,6 +4,9 @@ class Budget < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
   include HasActive
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[balance order_id remaining_value]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :recalculate_balance, :duplicate

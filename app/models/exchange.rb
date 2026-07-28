@@ -8,6 +8,9 @@ class Exchange < ApplicationRecord
   include HasMonthYear
   include HasStartingPrice
   include ExchangeCashTransactable
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[exchanges_count]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :locked, :replay_paid_state

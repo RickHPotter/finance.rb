@@ -14,6 +14,24 @@ RSpec.describe Message, type: :model do
     end
     let(:reference_transaction) { create(:cash_transaction, user: sender, user_bank_account: create(:user_bank_account, user: sender, bank: create(:bank, :random))) }
 
+    it "captures only a persisted causal audit operation" do
+      operation = nil
+      linked_message = nil
+
+      Audit::Operation.run(actor: sender, context: sender.main_context, source: :web) do
+        operation = Audit::Operation.ensure_persisted!
+        linked_message = described_class.create!(conversation:, user: sender, body: "Linked notification")
+      end
+
+      unlinked_message = nil
+      Audit::Operation.run(actor: sender, context: sender.main_context, source: :web) do
+        unlinked_message = described_class.create!(conversation:, user: sender, body: "Ordinary message")
+      end
+
+      expect(linked_message.audit_operation).to eq(operation)
+      expect(unlinked_message.audit_operation_id).to be_nil
+    end
+
     it "classifies header-bearing messages as transaction notifications" do
       message = described_class.create!(
         conversation:,
@@ -594,6 +612,7 @@ end
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
+#  audit_operation_id          :uuid             indexed
 #  conversation_id             :bigint           not null, indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
@@ -602,6 +621,7 @@ end
 # Indexes
 #
 #  index_messages_on_applied_at              (applied_at)
+#  index_messages_on_audit_operation_id      (audit_operation_id)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
@@ -609,6 +629,7 @@ end
 #
 # Foreign Keys
 #
+#  fk_rails_...  (audit_operation_id => audit_operations.id) ON DELETE => restrict
 #  fk_rails_...  (conversation_id => conversations.id)
 #  fk_rails_...  (superseded_by_id => messages.id)
 #  fk_rails_...  (user_id => users.id)

@@ -6,6 +6,9 @@ class EntityTransaction < ApplicationRecord
 
   # @includes .................................................................
   include HasExchanges
+  include FinancialAuditable
+
+  audits_financial_changes skip: %i[exchanges_count]
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................

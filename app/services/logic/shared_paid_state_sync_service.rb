@@ -22,6 +22,12 @@ module Logic
     end
 
     def call
+      Audit::Operation.with_mutation_source(:shared_sync) { synchronize_paid_state }
+    end
+
+    private
+
+    def synchronize_paid_state
       return false unless syncable?
       return create_counterpart_structure_update_message if counterpart_structure_update_required?
 
@@ -44,8 +50,6 @@ module Logic
 
       true
     end
-
-    private
 
     attr_reader :force_notify
 
@@ -352,7 +356,7 @@ module Logic
     def sync_counterpart_transaction_state!
       transaction = counterpart_installment.cash_transaction
 
-      transaction.update_columns(paid: transaction.cash_installments.where(paid: false).none?)
+      Audit::BulkMutation.update_columns!(transaction, paid: transaction.cash_installments.where(paid: false).none?)
       return unless transaction.exchange_return?
 
       counterpart_installment.send(:sync_mirrored_exchange_settlement!)

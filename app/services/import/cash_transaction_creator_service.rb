@@ -105,7 +105,7 @@ module Import
     def add_card_payment(user, transaction, params)
       cash_transaction = user.main_context.cash_transactions.joins(:categories).find_by(params)
       cash_transaction.update(date: transaction[:date], imported: true)
-      cash_transaction.cash_installments.first.update_columns(date: transaction[:date])
+      Audit::BulkMutation.update_columns!(cash_transaction.cash_installments.first, date: transaction[:date])
 
       reference_date = transaction[:date]
       reference = cash_transaction.user_card.references.find_or_create_by(transaction.slice(:month, :year).merge(context: user.main_context))
@@ -130,7 +130,7 @@ module Import
 
       card_transaction = card_transactions.one? ? card_transactions.first : card_transactions.find_by(transaction.slice(:date))
       card_transaction.update(date: transaction[:date], imported: true)
-      card_transaction.card_installments.first.update_columns(date: transaction[:date])
+      Audit::BulkMutation.update_columns!(card_transaction.card_installments.first, date: transaction[:date])
     end
   end
 end

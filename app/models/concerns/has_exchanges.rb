@@ -42,7 +42,7 @@ module HasExchanges
     exchanges.each do |exchange|
       next if exchange.exchanges_count == exchanges_count
 
-      exchange.update_columns(exchanges_count:)
+      Audit::BulkMutation.update_columns!(exchange, exchanges_count:)
     end
   end
 end

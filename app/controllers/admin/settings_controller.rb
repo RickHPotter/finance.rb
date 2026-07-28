@@ -153,6 +153,10 @@ class Admin::SettingsController < ApplicationController # rubocop:disable Metric
 
   private
 
+  def audit_operation_source
+    :admin_repair
+  end
+
   def require_admin!
     return if current_user&.admin?
 

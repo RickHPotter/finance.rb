@@ -4,7 +4,29 @@
 module CashTransactable
   extend ActiveSupport::Concern
 
+  module ProjectionAuditSource
+    protected
+
+    def attach_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def fix_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+
+    def update_or_destroy_cash_transaction(...)
+      Audit::Operation.with_mutation_source(:projection_sync) { super }
+    end
+  end
+
   included do
+    prepend ProjectionAuditSource
+
     # @security (i.e. attr_accessible) ........................................
     attr_accessor :previous_cash_transaction_id
 
@@ -78,9 +100,9 @@ module CashTransactable
     if remaining_transactables.any?
       new_price = remaining_transactables.sum(:price)
       new_comment = remaining_transactables.first.comment
-      previous_cash_transaction.update_columns(price: new_price, comment: new_comment)
+      Audit::BulkMutation.update_columns!(previous_cash_transaction, price: new_price, comment: new_comment)
       if previous_cash_transaction.cash_installments.any?
-        previous_cash_transaction.cash_installments.first.update_columns(price: new_price)
+        Audit::BulkMutation.update_columns!(previous_cash_transaction.cash_installments.first, price: new_price)
 
         Logic::RecalculateBalancesService.new(
           user:,
@@ -106,8 +128,8 @@ module CashTransactable
   # @return [void].
   #
   def update_cash_transaction
-    cash_transaction.update_columns(description: cash_transaction_description, price: full_price, comment:)
-    cash_transaction.cash_installments.first.update_columns(price: full_price)
+    Audit::BulkMutation.update_columns!(cash_transaction, description: cash_transaction_description, price: full_price, comment:)
+    Audit::BulkMutation.update_columns!(cash_transaction.cash_installments.first, price: full_price)
   end
 
   # Updates or destroys the associated `cash_transaction` based on `self`s count.
@@ -269,7 +291,7 @@ module CashTransactable
     destroyed = record.destroy
     return if destroyed || protect_paid_cash_transaction_projection?
 
-    Installment.where(cash_transaction_id: record.id).delete_all
-    CashTransaction.where(id: record.id).delete_all
+    Audit::BulkMutation.delete_all!(CashInstallment.where(cash_transaction_id: record.id))
+    Audit::BulkMutation.delete_all!(CashTransaction.where(id: record.id))
   end
 end

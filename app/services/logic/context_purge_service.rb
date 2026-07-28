@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Logic
-  class ContextPurgeService
+  class ContextPurgeService # rubocop:disable Metrics/ClassLength
     LOCK_NAMESPACE = 4_291
 
     class UnauthorizedContextAccessError < StandardError; end
@@ -93,11 +93,15 @@ module Logic
     end
 
     def delete_dependents!
-      Exchange.where(entity_transaction_id: @entity_transaction_ids).or(Exchange.where(cash_transaction_id: @cash_transaction_ids)).delete_all
+      Audit::BulkMutation.delete_all!(Exchange.where(entity_transaction_id: @entity_transaction_ids).or(Exchange.where(cash_transaction_id: @cash_transaction_ids)))
 
-      Installment.where(card_transaction_id: @card_transaction_ids).or(Installment.where(cash_transaction_id: @cash_transaction_ids)).delete_all
+      Audit::BulkMutation.delete_all!(CashInstallment.where(cash_transaction_id: @cash_transaction_ids))
+      Audit::BulkMutation.delete_all!(CardInstallment.where(card_transaction_id: @card_transaction_ids))
 
-      Investment.where(id: @investment_ids).delete_all
+      Audit::BulkMutation.delete_all!(Investment.where(id: @investment_ids))
+      piggy_banks = PiggyBank.where(source_cash_transaction_id: @cash_transaction_ids)
+                             .or(PiggyBank.where(return_cash_transaction_id: @cash_transaction_ids))
+      Audit::BulkMutation.delete_all!(piggy_banks)
 
       BudgetCategory.where(budget_id: @budget_ids).delete_all
       BudgetEntity.where(budget_id: @budget_ids).delete_all
@@ -105,14 +109,14 @@ module Logic
       delete_category_transactions!
       delete_entity_transactions!
 
-      Reference.where(context_id: context.id).delete_all
+      Audit::BulkMutation.delete_all!(Reference.where(context_id: context.id))
     end
 
     def delete_parents!
-      CardTransaction.where(id: @card_transaction_ids).delete_all
-      CashTransaction.where(id: @cash_transaction_ids).delete_all
-      Budget.where(id: @budget_ids).delete_all
-      Subscription.where(id: @subscription_ids).delete_all
+      Audit::BulkMutation.delete_all!(CardTransaction.where(id: @card_transaction_ids))
+      Audit::BulkMutation.delete_all!(CashTransaction.where(id: @cash_transaction_ids))
+      Audit::BulkMutation.delete_all!(Budget.where(id: @budget_ids))
+      Audit::BulkMutation.delete_all!(Subscription.where(id: @subscription_ids))
       Context.where(id: context.id).delete_all
     end
 
@@ -128,18 +132,17 @@ module Logic
       end
 
       UserCard.where(id: @affected_user_card_ids.uniq).find_each do |user_card|
-        user_card.update_columns(card_transactions_count: user_card.card_transactions.count)
+        Audit::BulkMutation.update_columns!(user_card, card_transactions_count: user_card.card_transactions.count)
       end
 
       UserBankAccount.where(id: @affected_user_bank_account_ids.uniq).find_each do |user_bank_account|
-        user_bank_account.update_columns(cash_transactions_count: user_bank_account.cash_transactions.count)
+        Audit::BulkMutation.update_columns!(user_bank_account, cash_transactions_count: user_bank_account.cash_transactions.count)
       end
 
       Subscription.where(id: @affected_subscription_ids.uniq).find_each do |subscription|
-        subscription.update_columns(
-          card_transactions_count: subscription.card_transactions.count,
-          cash_transactions_count: subscription.cash_transactions.count
-        )
+        Audit::BulkMutation.update_columns!(subscription,
+                                            card_transactions_count: subscription.card_transactions.count,
+                                            cash_transactions_count: subscription.cash_transactions.count)
       end
     end
 
@@ -164,11 +167,11 @@ module Logic
     end
 
     def delete_category_transactions!
-      polymorphic_category_transactions_scope.delete_all
+      Audit::BulkMutation.delete_all!(polymorphic_category_transactions_scope)
     end
 
     def delete_entity_transactions!
-      EntityTransaction.where(id: @entity_transaction_ids).delete_all
+      Audit::BulkMutation.delete_all!(EntityTransaction.where(id: @entity_transaction_ids))
     end
 
     def polymorphic_category_transactions_scope

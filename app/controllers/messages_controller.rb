@@ -26,6 +26,17 @@ class MessagesController < ApplicationController
 
   private
 
+  def audit_operation_source
+    action_name == "apply" ? :actionable_message : super
+  end
+
+  def audit_parent_operation_id
+    return super unless action_name == "apply"
+
+    conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
+    conversation.messages.find(params[:id]).audit_operation_id
+  end
+
   def message_params
     params.require(:message).permit(:body)
   end

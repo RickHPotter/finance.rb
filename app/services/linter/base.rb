@@ -37,7 +37,7 @@ module Linter
         [ attribute, record.public_send(attribute) ]
       end
 
-      record.update_columns(changed_attributes) unless dry_run
+      Audit::BulkMutation.update_columns!(record, changed_attributes) unless dry_run
 
       {
         record: record_payload(record),
