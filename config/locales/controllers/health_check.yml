@@ -65,8 +65,6 @@ en:
           validation_failed: "A required naming mutation failed. Every change was rolled back."
           unexpected_failure: "Naming changes failed safely. No partial mutation was committed."
         audit: "Open audit operation"
-    history:
-      action: "Audit history"
     actions:
       run_all: "Run all checks"
       running_all: "Checks running"
@@ -401,8 +399,6 @@ pt-BR:
           validation_failed: "Uma mudança obrigatória falhou. Todas as alterações foram revertidas."
           unexpected_failure: "As mudanças falharam com segurança. Nenhuma alteração parcial foi confirmada."
         audit: "Abrir operação de auditoria"
-    history:
-      action: "Histórico de auditoria"
     actions:
       run_all: "Executar todas"
       running_all: "Verificações em execução"

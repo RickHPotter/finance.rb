@@ -93,7 +93,8 @@ module TabsConcern
 
     return unless current_user.admin?
 
-    @hub_tab << Item.new(t("tabs.health_check"), :cog, healthcheck_path, @active_sub_menu == :health_check)
+    @hub_tab << Item.new(t("tabs.health_check"), :cog,             healthcheck_path, @active_sub_menu == :health_check)
+    @hub_tab << Item.new(t("tabs.audit"),        :pencil_on_paper, audit_operations_path, @active_sub_menu == :audit)
   end
 
   def set_main_sublinks

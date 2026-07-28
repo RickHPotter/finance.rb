@@ -62,6 +62,6 @@ class Admin::AuditRollbackPreviewsController < ApplicationController
   end
 
   def set_audit_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :health_check)
+    set_tabs(active_menu: :hub, active_sub_menu: :audit)
   end
 end

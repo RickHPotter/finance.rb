@@ -20,6 +20,7 @@ en:
     balance: Balance
     context: Contexts
     health_check: Health Check
+    audit: Audit
 
 pt-BR:
   tabs:
@@ -43,3 +44,4 @@ pt-BR:
     balance: Saldo
     context: Contextos
     health_check: Verificação de Saúde
+    audit: Auditoria

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Views::AuditVersions::Index < Views::Base
-  LINK_CLASS = "inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold " \
-               "text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+  HEADER_LINK_CLASS = "inline-flex min-h-8 items-center justify-center rounded-md border border-stone-300 px-3 py-1.5 text-xs font-semibold " \
+                      "text-stone-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
 
   include Phlex::Rails::Helpers::LinkTo
 
@@ -17,11 +17,13 @@ class Views::AuditVersions::Index < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      main(class: "w-full px-2 py-2 sm:px-3") do
+      main(class: "#{compact_crud_shell_class} overflow-hidden") do
         header_section
-        render Views::Audit::FilterForm.new(url: filter_url, filters:, current_user:, record_filter:)
-        render Views::Audit::VersionList.new(versions: page.records, current_user:)
-        render Views::Audit::Pagination.new(page:, filters:, url: filter_url)
+        div(class: "px-3 md:px-4") do
+          render Views::Audit::FilterForm.new(url: filter_url, filters:, current_user:, record_filter:)
+          render Views::Audit::VersionList.new(versions: page.records, current_user:)
+          render Views::Audit::Pagination.new(page:, filters:, url: filter_url)
+        end
       end
     end
   end
@@ -29,27 +31,14 @@ class Views::AuditVersions::Index < Views::Base
   private
 
   def header_section
-    header(class: "flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between dark:border-slate-700") do
-      div do
-        h1(class: "text-2xl font-black text-slate-950 sm:text-3xl dark:text-slate-100") { page_title }
-      end
-      div(class: "flex flex-wrap gap-2") do
-        if current_user.admin?
-          link_to(
-            I18n.t("tabs.health_check"),
-            healthcheck_path,
-            id: "audit_health_check_link",
-            class: LINK_CLASS,
-            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
-          )
-        end
-        link_to(
-          I18n.t("audit.actions.operations"),
-          audit_operations_path,
-          class: LINK_CLASS,
-          data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
-        )
-      end
+    header(class: "#{compact_crud_header_class} gap-3") do
+      h1(class: compact_crud_title_class) { page_title }
+      link_to(
+        I18n.t("audit.actions.operations"),
+        audit_operations_path,
+        class: HEADER_LINK_CLASS,
+        data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
+      )
     end
   end
 

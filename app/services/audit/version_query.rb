@@ -108,7 +108,7 @@ class Audit::VersionQuery
     per_page = DEFAULT_PER_PAGE unless per_page.positive?
     per_page = [ per_page, MAX_PER_PAGE ].min
     total_count = scope.count
-    records = scope.offset((page_number - 1) * per_page).limit(per_page).includes(:operation).to_a
+    records = scope.offset((page_number - 1) * per_page).limit(per_page).to_a
 
     Audit::Page.new(records:, number: page_number, per_page:, total_count:)
   end
