@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class Audit::Rollback::State
+  # Existing JSONB audit payloads use Active Support's default millisecond precision.
+  # Conflict checks cannot safely compare precision that the immutable snapshot did not retain.
+  AUDIT_DATETIME_PRECISION = 3
+
   class << self
     def normalize(record_type, attributes)
       return nil if attributes.nil?
@@ -22,7 +26,7 @@ class Audit::Rollback::State
 
       cast_value = type&.cast(value)
       case type&.type
-      when :datetime then cast_value&.utc&.iso8601(6)
+      when :datetime then normalize_datetime(cast_value)
       when :date then cast_value&.iso8601
       when :boolean then ActiveModel::Type::Boolean.new.cast(value)
       when :integer then cast_value.to_i
@@ -35,10 +39,14 @@ class Audit::Rollback::State
 
     def normalize_scalar(value)
       case value
-      when Time, DateTime, ActiveSupport::TimeWithZone then value.utc.iso8601(6)
+      when Time, DateTime, ActiveSupport::TimeWithZone then normalize_datetime(value)
       when Date then value.iso8601
       else value
       end
+    end
+
+    def normalize_datetime(value)
+      value&.utc&.iso8601(AUDIT_DATETIME_PRECISION)
     end
 
     def sort_recursively(value)

@@ -3,7 +3,9 @@
 class Audit::Rollback::Attributes
   class << self
     def for(adapter)
-      adapter.before_state.to_h.except("id", *ignored_attributes(adapter))
+      attributes = adapter.before_state.to_h
+      attributes = attributes.slice(*adapter.transition.net_changed_attributes) if adapter.action == "update"
+      attributes.except("id", *ignored_attributes(adapter))
     end
 
     def comparable_for(row)

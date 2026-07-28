@@ -36,6 +36,14 @@ class Audit::Rollback::Transition
     versions.all? { |version| version.owner_id == owner_id && version.context_id == context_id }
   end
 
+  def net_changed_attributes
+    return [] if before_state.nil? || expected_after_state.nil?
+
+    (before_state.keys | expected_after_state.keys).reject do |attribute|
+      before_state[attribute] == expected_after_state[attribute]
+    end.sort
+  end
+
   private
 
   def initial_before_state

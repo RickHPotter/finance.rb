@@ -185,6 +185,7 @@ rollbackable. Audit read coverage may ship earlier.
 | multiple versions for one record | one net compensation row |
 | create then destroy in one operation | visible no-op compensation |
 | current attribute diverged | conflicted; apply disabled |
+| live datetime has sub-millisecond precision absent from the immutable JSONB snapshot | compare at retained millisecond precision; do not report a false conflict |
 | expected live row missing | conflicted |
 | expected destroyed row recreated later | conflicted |
 | later dependent exists | conflicted or prohibited |
@@ -205,6 +206,7 @@ rollbackable. Audit read coverage may ship earlier.
 | prohibited financial reversal | rejected even for admin |
 | duplicate apply request | original result returned; no second compensation |
 | successful compensation | original history untouched; rollback linked and versioned |
+| price-only card edit with complete generated card-payment projections | restore card and generated cash aggregates atomically without rewriting unchanged dates |
 | unexpected exception | no partial records/versions; failed attempt recorded |
 | recalculation failure | complete rollback |
 | rollback of rollback target | read-only in V1 |

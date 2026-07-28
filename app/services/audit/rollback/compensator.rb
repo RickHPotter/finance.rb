@@ -88,6 +88,7 @@ class Audit::Rollback::Compensator
 
     prepare_parent(parent)
     parent.save!
+    restore_post_compensation_attributes(parent_row, parent)
     mark_handled(parent_row, *installment_rows)
   end
 
@@ -126,6 +127,13 @@ class Audit::Rollback::Compensator
   def prepare_parent(parent)
     parent.historical_correction_confirmation = confirmed
     parent.skip_post_commit_financial_recalculation = true
+  end
+
+  def restore_post_compensation_attributes(parent_row, parent)
+    return unless parent_row
+
+    attributes = parent_row.adapter.post_compensation_attributes
+    Audit::BulkMutation.update_columns!(parent, attributes) if attributes.present?
   end
 
   def mark_handled(*rows)

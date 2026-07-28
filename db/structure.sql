@@ -70,8 +70,8 @@ CREATE TABLE public.audit_operations (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT audit_operations_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY (ARRAY[('committed'::character varying)::text, ('rejected'::character varying)::text, ('failed'::character varying)::text]))),
-    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text])))
+    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY ((ARRAY['committed'::character varying, 'rejected'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying])::text[])))
 );
 
 
@@ -94,9 +94,9 @@ CREATE TABLE public.audit_versions (
     mutation_source character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY (ARRAY[('create'::character varying)::text, ('update'::character varying)::text, ('destroy'::character varying)::text]))),
+    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY ((ARRAY['create'::character varying, 'update'::character varying, 'destroy'::character varying])::text[]))),
     CONSTRAINT audit_versions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text, ('shared_sync'::character varying)::text, ('projection_sync'::character varying)::text, ('reference_sync'::character varying)::text, ('piggy_bank_sync'::character varying)::text, ('balance_recalculation'::character varying)::text]))),
+    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying, 'shared_sync'::character varying, 'projection_sync'::character varying, 'reference_sync'::character varying, 'piggy_bank_sync'::character varying, 'balance_recalculation'::character varying])::text[]))),
     CONSTRAINT audit_versions_object_changes_size CHECK (((object_changes IS NULL) OR (octet_length((object_changes)::text) <= 262144))),
     CONSTRAINT audit_versions_object_size CHECK (((object IS NULL) OR (octet_length((object)::text) <= 262144)))
 );
@@ -127,8 +127,8 @@ ALTER SEQUENCE public.audit_versions_id_seq OWNED BY public.audit_versions.id;
 
 CREATE TABLE public.banks (
     id bigint NOT NULL,
-    bank_code integer NOT NULL,
     bank_name character varying NOT NULL,
+    bank_code integer NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -192,8 +192,8 @@ ALTER SEQUENCE public.budget_categories_id_seq OWNED BY public.budget_categories
 CREATE TABLE public.budget_entities (
     id bigint NOT NULL,
     budget_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     entity_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -223,21 +223,21 @@ ALTER SEQUENCE public.budget_entities_id_seq OWNED BY public.budget_entities.id;
 
 CREATE TABLE public.budgets (
     id bigint NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    balance integer,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    description character varying NOT NULL,
-    first_installment_only boolean DEFAULT false NOT NULL,
-    inclusive boolean DEFAULT false NOT NULL,
-    month integer NOT NULL,
     order_id integer,
-    remaining_value integer NOT NULL,
-    starting_value integer NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL,
+    description character varying NOT NULL,
+    month integer NOT NULL,
+    year integer NOT NULL,
     value integer NOT NULL,
-    year integer NOT NULL
+    starting_value integer NOT NULL,
+    remaining_value integer NOT NULL,
+    balance integer,
+    inclusive boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    user_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    first_installment_only boolean DEFAULT false NOT NULL,
+    context_id bigint NOT NULL
 );
 
 
@@ -266,25 +266,25 @@ ALTER SEQUENCE public.budgets_id_seq OWNED BY public.budgets.id;
 
 CREATE TABLE public.card_transactions (
     id bigint NOT NULL,
-    advance_cash_transaction_id bigint,
-    card_installments_count integer DEFAULT 0 NOT NULL,
-    comment text,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    date timestamp(6) without time zone NOT NULL,
     description character varying NOT NULL,
-    imported boolean DEFAULT false,
+    comment text,
+    date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
-    paid boolean DEFAULT false,
-    price integer NOT NULL,
-    reference_transactable_id bigint,
-    reference_transactable_type character varying,
+    year integer NOT NULL,
     starting_price integer NOT NULL,
-    subscription_id bigint,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_card_id bigint NOT NULL,
+    price integer NOT NULL,
+    paid boolean DEFAULT false,
+    imported boolean DEFAULT false,
+    card_installments_count integer DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
-    year integer NOT NULL
+    user_card_id bigint NOT NULL,
+    advance_cash_transaction_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    reference_transactable_type character varying,
+    reference_transactable_id bigint,
+    subscription_id bigint,
+    context_id bigint NOT NULL
 );
 
 
@@ -313,8 +313,8 @@ ALTER SEQUENCE public.card_transactions_id_seq OWNED BY public.card_transactions
 
 CREATE TABLE public.cards (
     id bigint NOT NULL,
-    bank_id bigint NOT NULL,
     card_name character varying NOT NULL,
+    bank_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -345,28 +345,28 @@ ALTER SEQUENCE public.cards_id_seq OWNED BY public.cards.id;
 
 CREATE TABLE public.cash_transactions (
     id bigint NOT NULL,
-    cash_installments_count integer DEFAULT 0 NOT NULL,
-    cash_transaction_type character varying,
-    comment text,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    date timestamp(6) without time zone NOT NULL,
     description character varying NOT NULL,
-    friend_notification_intent character varying,
-    imported boolean DEFAULT false,
-    investment_type_id bigint,
+    comment text,
+    date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
-    paid boolean DEFAULT false,
-    price integer NOT NULL,
-    reference_transactable_id bigint,
-    reference_transactable_type character varying,
+    year integer NOT NULL,
     starting_price integer NOT NULL,
-    subscription_id bigint,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_bank_account_id bigint,
-    user_card_id bigint,
+    price integer NOT NULL,
+    paid boolean DEFAULT false,
+    imported boolean DEFAULT false,
+    cash_transaction_type character varying,
+    cash_installments_count integer DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
-    year integer NOT NULL
+    user_card_id bigint,
+    user_bank_account_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    reference_transactable_type character varying,
+    reference_transactable_id bigint,
+    investment_type_id bigint,
+    subscription_id bigint,
+    context_id bigint NOT NULL,
+    friend_notification_intent character varying
 );
 
 
@@ -395,17 +395,17 @@ ALTER SEQUENCE public.cash_transactions_id_seq OWNED BY public.cash_transactions
 
 CREATE TABLE public.categories (
     id bigint NOT NULL,
-    active boolean DEFAULT true NOT NULL,
+    category_name character varying NOT NULL,
     built_in boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    colour character varying DEFAULT 'white'::character varying NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_total integer DEFAULT 0 NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     cash_transactions_total integer DEFAULT 0 NOT NULL,
-    category_name character varying NOT NULL,
-    colour character varying DEFAULT 'white'::character varying NOT NULL,
+    user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -435,9 +435,9 @@ ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
 CREATE TABLE public.category_transactions (
     id bigint NOT NULL,
     category_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    transactable_id bigint NOT NULL,
     transactable_type character varying NOT NULL,
+    transactable_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -467,16 +467,16 @@ ALTER SEQUENCE public.category_transactions_id_seq OWNED BY public.category_tran
 
 CREATE TABLE public.contexts (
     id bigint NOT NULL,
-    archived_at timestamp(6) without time zone,
-    cloned_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
+    user_id bigint NOT NULL,
+    source_context_id bigint,
+    name character varying NOT NULL,
     description text,
     main boolean DEFAULT false NOT NULL,
-    name character varying NOT NULL,
-    scenario_key character varying,
-    source_context_id bigint,
+    cloned_at timestamp(6) without time zone,
+    archived_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    scenario_key character varying
 );
 
 
@@ -506,9 +506,9 @@ ALTER SEQUENCE public.contexts_id_seq OWNED BY public.contexts.id;
 CREATE TABLE public.conversation_participants (
     id bigint NOT NULL,
     conversation_id bigint NOT NULL,
+    user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -538,9 +538,9 @@ ALTER SEQUENCE public.conversation_participants_id_seq OWNED BY public.conversat
 CREATE TABLE public.conversations (
     id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
     kind character varying DEFAULT 'human'::character varying NOT NULL,
-    scenario_key character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    scenario_key character varying
 );
 
 
@@ -569,18 +569,18 @@ ALTER SEQUENCE public.conversations_id_seq OWNED BY public.conversations.id;
 
 CREATE TABLE public.entities (
     id bigint NOT NULL,
+    entity_name character varying NOT NULL,
     active boolean DEFAULT true NOT NULL,
     avatar_name character varying DEFAULT 'people/0.png'::character varying NOT NULL,
-    built_in boolean DEFAULT false NOT NULL,
     card_transactions_count integer DEFAULT 0 NOT NULL,
     card_transactions_total integer DEFAULT 0 NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     cash_transactions_total integer DEFAULT 0 NOT NULL,
+    user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    entity_name character varying NOT NULL,
-    entity_user_id bigint,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    entity_user_id bigint,
+    built_in boolean DEFAULT false NOT NULL
 );
 
 
@@ -609,17 +609,17 @@ ALTER SEQUENCE public.entities_id_seq OWNED BY public.entities.id;
 
 CREATE TABLE public.entity_transactions (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    entity_id bigint NOT NULL,
-    exchanges_count integer DEFAULT 0 NOT NULL,
     is_payer boolean DEFAULT false NOT NULL,
-    loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
     price integer DEFAULT 0 NOT NULL,
     price_to_be_returned integer DEFAULT 0 NOT NULL,
-    status integer DEFAULT 0 NOT NULL,
-    transactable_id bigint NOT NULL,
+    exchanges_count integer DEFAULT 0 NOT NULL,
+    entity_id bigint NOT NULL,
     transactable_type character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    transactable_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL
 );
 
 
@@ -649,17 +649,17 @@ ALTER SEQUENCE public.entity_transactions_id_seq OWNED BY public.entity_transact
 CREATE TABLE public.exchanges (
     id bigint NOT NULL,
     bound_type character varying DEFAULT 'standalone'::character varying NOT NULL,
+    exchange_type integer DEFAULT 0 NOT NULL,
+    number integer DEFAULT 1 NOT NULL,
+    starting_price integer NOT NULL,
+    price integer NOT NULL,
+    exchanges_count integer DEFAULT 0 NOT NULL,
+    entity_transaction_id bigint NOT NULL,
     cash_transaction_id bigint,
     created_at timestamp(6) without time zone NOT NULL,
-    date timestamp(6) without time zone NOT NULL,
-    entity_transaction_id bigint NOT NULL,
-    exchange_type integer DEFAULT 0 NOT NULL,
-    exchanges_count integer DEFAULT 0 NOT NULL,
-    month integer NOT NULL,
-    number integer DEFAULT 1 NOT NULL,
-    price integer NOT NULL,
-    starting_price integer NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    date timestamp(6) without time zone NOT NULL,
+    month integer NOT NULL,
     year integer NOT NULL
 );
 
@@ -689,16 +689,16 @@ ALTER SEQUENCE public.exchanges_id_seq OWNED BY public.exchanges.id;
 
 CREATE TABLE public.finance_subscriptions (
     id bigint NOT NULL,
-    card_transactions_count integer DEFAULT 0 NOT NULL,
-    cash_transactions_count integer DEFAULT 0 NOT NULL,
-    comment text,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
+    user_id bigint NOT NULL,
     description character varying NOT NULL,
     price integer DEFAULT 0 NOT NULL,
+    comment text,
     status character varying DEFAULT 'active'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    cash_transactions_count integer DEFAULT 0 NOT NULL,
+    card_transactions_count integer DEFAULT 0 NOT NULL,
+    context_id bigint NOT NULL
 );
 
 
@@ -727,24 +727,24 @@ ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subsc
 
 CREATE TABLE public.installments (
     id bigint NOT NULL,
+    order_id integer,
+    number integer NOT NULL,
+    date timestamp(6) without time zone NOT NULL,
+    date_year integer GENERATED ALWAYS AS (EXTRACT(year FROM date)) STORED NOT NULL,
+    date_month integer GENERATED ALWAYS AS (EXTRACT(month FROM date)) STORED NOT NULL,
+    month integer NOT NULL,
+    year integer NOT NULL,
+    starting_price integer NOT NULL,
+    price integer NOT NULL,
     balance integer,
+    paid boolean DEFAULT false,
+    installment_type character varying NOT NULL,
     card_installments_count integer DEFAULT 0,
-    card_transaction_id bigint,
     cash_installments_count integer DEFAULT 0,
+    card_transaction_id bigint,
     cash_transaction_id bigint,
     created_at timestamp(6) without time zone NOT NULL,
-    date timestamp(6) without time zone NOT NULL,
-    date_month integer GENERATED ALWAYS AS (EXTRACT(month FROM date)) STORED NOT NULL,
-    date_year integer GENERATED ALWAYS AS (EXTRACT(year FROM date)) STORED NOT NULL,
-    installment_type character varying NOT NULL,
-    month integer NOT NULL,
-    number integer NOT NULL,
-    order_id integer,
-    paid boolean DEFAULT false,
-    price integer NOT NULL,
-    starting_price integer NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    year integer NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -773,10 +773,10 @@ ALTER SEQUENCE public.installments_id_seq OWNED BY public.installments.id;
 
 CREATE TABLE public.investment_types (
     id bigint NOT NULL,
+    investment_type_name_fallback character varying NOT NULL,
+    investment_type_code character varying,
     built_in boolean DEFAULT false NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    investment_type_code character varying,
-    investment_type_name_fallback character varying NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -806,19 +806,19 @@ ALTER SEQUENCE public.investment_types_id_seq OWNED BY public.investment_types.i
 
 CREATE TABLE public.investments (
     id bigint NOT NULL,
-    cash_transaction_id bigint,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    date timestamp(6) without time zone NOT NULL,
     description character varying,
-    investment_type_id bigint NOT NULL,
+    date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
-    piggy_bank_return_cash_transaction_id bigint,
+    year integer NOT NULL,
     price integer NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_bank_account_id bigint NOT NULL,
     user_id bigint NOT NULL,
-    year integer NOT NULL
+    user_bank_account_id bigint NOT NULL,
+    cash_transaction_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    investment_type_id bigint NOT NULL,
+    context_id bigint NOT NULL,
+    piggy_bank_return_cash_transaction_id bigint
 );
 
 
@@ -847,17 +847,17 @@ ALTER SEQUENCE public.investments_id_seq OWNED BY public.investments.id;
 
 CREATE TABLE public.messages (
     id bigint NOT NULL,
-    applied_at timestamp(6) without time zone,
-    body text,
     conversation_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
+    user_id bigint NOT NULL,
+    body text,
     headers text,
     read_at timestamp(6) without time zone,
-    reference_transactable_id bigint,
-    reference_transactable_type character varying,
-    superseded_by_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL,
+    superseded_by_id bigint,
+    reference_transactable_type character varying,
+    reference_transactable_id bigint,
+    applied_at timestamp(6) without time zone,
     audit_operation_id uuid
 );
 
@@ -887,11 +887,11 @@ ALTER SEQUENCE public.messages_id_seq OWNED BY public.messages.id;
 
 CREATE TABLE public.piggy_banks (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
+    source_cash_transaction_id bigint NOT NULL,
     return_cash_transaction_id bigint,
     return_date timestamp(6) without time zone NOT NULL,
     return_price integer NOT NULL,
-    source_cash_transaction_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT piggy_banks_return_price_positive CHECK ((return_price > 0))
 );
@@ -922,14 +922,14 @@ ALTER SEQUENCE public.piggy_banks_id_seq OWNED BY public.piggy_banks.id;
 
 CREATE TABLE public."references" (
     id bigint NOT NULL,
-    context_id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
+    user_card_id bigint NOT NULL,
     month integer NOT NULL,
+    year integer NOT NULL,
     reference_closing_date date NOT NULL,
     reference_date date NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_card_id bigint NOT NULL,
-    year integer NOT NULL
+    context_id bigint NOT NULL
 );
 
 
@@ -967,12 +967,12 @@ CREATE TABLE public.schema_migrations (
 
 CREATE TABLE public.subscriptions (
     id bigint NOT NULL,
-    auth text,
-    created_at timestamp(6) without time zone NOT NULL,
+    user_id bigint NOT NULL,
     endpoint text,
     p256dh text,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_id bigint NOT NULL
+    auth text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1001,17 +1001,17 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 CREATE TABLE public.user_bank_accounts (
     id bigint NOT NULL,
+    user_bank_account_name character varying,
+    agency_number integer,
     account_number integer,
     active boolean DEFAULT true NOT NULL,
-    agency_number integer,
     balance integer DEFAULT 0 NOT NULL,
-    bank_id bigint NOT NULL,
     cash_transactions_count integer DEFAULT 0 NOT NULL,
     cash_transactions_total integer DEFAULT 0 NOT NULL,
+    user_id bigint NOT NULL,
+    bank_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_bank_account_name character varying,
-    user_id bigint NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1040,18 +1040,18 @@ ALTER SEQUENCE public.user_bank_accounts_id_seq OWNED BY public.user_bank_accoun
 
 CREATE TABLE public.user_cards (
     id bigint NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    card_id bigint NOT NULL,
-    card_transactions_count integer DEFAULT 0 NOT NULL,
-    card_transactions_total integer DEFAULT 0 NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    credit_limit integer NOT NULL,
+    user_card_name character varying NOT NULL,
     days_until_due_date integer NOT NULL,
     due_date_day integer DEFAULT 1 NOT NULL,
     min_spend integer NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    user_card_name character varying NOT NULL,
-    user_id bigint NOT NULL
+    credit_limit integer NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    card_transactions_count integer DEFAULT 0 NOT NULL,
+    card_transactions_total integer DEFAULT 0 NOT NULL,
+    user_id bigint NOT NULL,
+    card_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1080,21 +1080,21 @@ ALTER SEQUENCE public.user_cards_id_seq OWNED BY public.user_cards.id;
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    admin boolean DEFAULT false NOT NULL,
-    confirmation_sent_at timestamp(6) without time zone,
-    confirmation_token character varying,
-    confirmed_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
     email character varying DEFAULT ''::character varying NOT NULL,
     encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    reset_password_token character varying,
+    reset_password_sent_at timestamp(6) without time zone,
+    remember_created_at timestamp(6) without time zone,
+    confirmation_token character varying,
+    unconfirmed_email character varying,
+    confirmed_at timestamp(6) without time zone,
+    confirmation_sent_at timestamp(6) without time zone,
     first_name character varying NOT NULL,
     last_name character varying NOT NULL,
     locale character varying NOT NULL,
-    remember_created_at timestamp(6) without time zone,
-    reset_password_sent_at timestamp(6) without time zone,
-    reset_password_token character varying,
-    unconfirmed_email character varying,
-    updated_at timestamp(6) without time zone NOT NULL
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    admin boolean DEFAULT false NOT NULL
 );
 
 
@@ -2689,11 +2689,17 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260712122000'),
 ('20260712121000'),
 ('20260712120000'),
+('20260709131000'),
 ('20260709130000'),
 ('20260709120000'),
+('20260707120000'),
 ('20260525000000'),
 ('20260503160000'),
+('20260425000000'),
+('20260403165007'),
 ('20260403153000'),
+('20260401120224'),
+('20260328192811'),
 ('20260324000000'),
 ('20260323133000'),
 ('20260323130000'),
@@ -2706,17 +2712,39 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260321183000'),
 ('20260321150000'),
 ('20260318000000'),
+('20260316163500'),
+('20260315090000'),
+('20260314203000'),
 ('20260314180000'),
+('20260313235900'),
+('20260313220000'),
 ('20260310120000'),
+('20260219151238'),
+('20251123130000'),
+('20250923225859'),
+('20250923225733'),
 ('20250904140109'),
+('20250830000001'),
 ('20250829000001'),
+('20250827003554'),
+('20250825183512'),
+('20250825183444'),
+('20250801105224'),
+('20250801000001'),
 ('20250303000001'),
+('20250303000000'),
+('20250227155642'),
+('20250227155638'),
+('20250227155441'),
 ('20250220000003'),
 ('20250220000002'),
 ('20250220000001'),
 ('20240501000003'),
 ('20240501000002'),
 ('20240501000001'),
+('20240500000003'),
+('20240500000002'),
+('20240500000001'),
 ('20231206000011'),
 ('20231206000010'),
 ('20231206000009'),
@@ -2728,6 +2756,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20231206000003'),
 ('20231206000002'),
 ('20231206000001'),
+('20231206000000'),
 ('20231200000003'),
 ('20231200000002'),
 ('20231200000001');

@@ -53,6 +53,31 @@ RSpec.describe "Admin audit rollback previews", type: :request do
     expect(transaction.reload.description).to eq("Corrected transaction")
   end
 
+  it "visually identifies unsupported rows and omits the apply form" do
+    AuditVersion.create!(
+      operation:,
+      owner_id: user.id,
+      context_id: context.id,
+      item_type: "Budget",
+      item_subtype: "Budget",
+      item_id: 49,
+      event: :update,
+      mutation_source: :web,
+      object: { "id" => 49, "user_id" => user.id, "context_id" => context.id, "value" => -100 },
+      object_changes: { "value" => [ -100, -200 ] },
+      metadata: {}
+    )
+    sign_in admin
+
+    get admin_audit_operation_rollback_preview_path(operation)
+
+    document = Nokogiri::HTML(response.body)
+    unsupported_notice = document.at_css("[data-audit-rollback-issue-tone='unsupported']")
+    expect(response).to have_http_status(:success)
+    expect(unsupported_notice["class"]).to include("border-orange-400", "bg-orange-100")
+    expect(document.at_css("#audit_rollback_apply_token")).to be_nil
+  end
+
   it "shows the preview control to admins on operation detail" do
     sign_in admin
 

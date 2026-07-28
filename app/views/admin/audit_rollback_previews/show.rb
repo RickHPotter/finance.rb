@@ -122,12 +122,14 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
 
   def issue_list(issues, tone:)
     colors = {
-      unsupported: "border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200",
+      unsupported: "border-orange-400 bg-orange-100 text-orange-950 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-100",
       prohibited: "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200",
       conflict: "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
       requirement: "border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200"
     }
-    ul(class: "mt-3 space-y-1 rounded-md border p-3 text-sm #{colors.fetch(tone)}") do
+    ul(class: "mt-3 space-y-1 rounded-md border p-3 text-sm #{colors.fetch(tone)}",
+       role: "alert",
+       data: { audit_rollback_issue_tone: tone }) do
       issues.each do |issue|
         li do
           plain I18n.t("audit.rollback.issues.#{issue.code}")

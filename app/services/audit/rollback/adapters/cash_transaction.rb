@@ -5,11 +5,15 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     cash_transaction_type friend_notification_intent investment_type_id reference_transactable_id
     reference_transactable_type subscription_id user_card_id
   ].freeze
+  CARD_PAYMENT_PROJECTION_ATTRIBUTES = %w[cash_transaction_type user_card_id].freeze
+  CARD_PAYMENT_PROJECTION_CHANGES = %w[comment price].freeze
+  CARD_PAYMENT_INSTALLMENT_CHANGES = %w[price].freeze
   DERIVED_ATTRIBUTES = (Audit::Rollback::Adapters::Base::DERIVED_ATTRIBUTES + %w[cash_installments_count]).freeze
   CASH_RECALCULATIONS = %w[cash_installment_order cash_balance user_bank_account_totals].freeze
 
   def support_issues
     attributes = SPECIAL_GRAPH_ATTRIBUTES.select { |attribute| historical_state[attribute].present? }
+    attributes -= CARD_PAYMENT_PROJECTION_ATTRIBUTES if supported_card_payment_projection_update?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
     issues
@@ -27,6 +31,12 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     CASH_RECALCULATIONS
   end
 
+  def post_compensation_attributes
+    return {} unless supported_card_payment_projection_update?
+
+    { "description" => before_state["description"] }
+  end
+
   private
 
   def ignored_attributes
@@ -42,6 +52,52 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
       candidate.record_type == "CashInstallment" &&
         candidate.before_state&.fetch("cash_transaction_id", nil) == item_id
     end
+  end
+
+  def supported_card_payment_projection_update?
+    return false unless action == "update"
+    return false unless historical_state["cash_transaction_type"] == "CardInstallment"
+    return false if historical_state["user_card_id"].blank?
+    return false unless transition.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_PROJECTION_CHANGES) }
+    return false unless projection_cash_installment_transition_supported?
+
+    projection_card_installment_transitions.any? do |installment_transition|
+      card_payment_installment_transition_supported?(installment_transition)
+    end
+  end
+
+  def projection_cash_installment_transition_supported?
+    transitions.any? do |candidate|
+      candidate.record_type == "CashInstallment" &&
+        candidate.action == "update" &&
+        transaction_id(candidate) == item_id &&
+        candidate.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_INSTALLMENT_CHANGES) }
+    end
+  end
+
+  def projection_card_installment_transitions
+    transitions.select do |candidate|
+      candidate.record_type == "CardInstallment" && transaction_id(candidate) == item_id
+    end
+  end
+
+  def card_payment_installment_transition_supported?(installment_transition)
+    return false unless installment_transition.action == "update"
+    return false unless installment_transition.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_INSTALLMENT_CHANGES) }
+
+    state = installment_transition.expected_after_state || installment_transition.before_state || {}
+    card_transaction_transition = transitions.find do |candidate|
+      candidate.record_type == "CardTransaction" && candidate.item_id == state["card_transaction_id"]
+    end
+    return false unless card_transaction_transition&.action == "update"
+
+    card_transaction_state = card_transaction_transition.expected_after_state || card_transaction_transition.before_state || {}
+    card_transaction_state["user_card_id"] == historical_state["user_card_id"]
+  end
+
+  def transaction_id(candidate)
+    state = candidate.expected_after_state || candidate.before_state || {}
+    state["cash_transaction_id"]
   end
 
   def paid_history?

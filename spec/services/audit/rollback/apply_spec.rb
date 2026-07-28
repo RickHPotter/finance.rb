@@ -24,7 +24,7 @@ RSpec.describe Audit::Rollback::Apply do
     end
   end
 
-  def create_card_transaction
+  def create_card_transaction(installment_prices: [ -5_000 ])
     card = create(:user_card, :random, user:)
     PaperTrail.request(enabled: false) do
       create(
@@ -33,9 +33,11 @@ RSpec.describe Audit::Rollback::Apply do
         context:,
         user_card: card,
         description: "Current card transaction",
-        price: -5_000,
+        price: installment_prices.sum,
         date: Date.new(2026, 7, 19),
-        card_installments: [ build(:card_installment, price: -5_000, number: 1, paid: false) ],
+        card_installments: installment_prices.each_with_index.map do |price, index|
+          build(:card_installment, price:, number: index + 1, paid: false)
+        end,
         category_transactions: [],
         entity_transactions: []
       )
@@ -155,6 +157,75 @@ RSpec.describe Audit::Rollback::Apply do
       card_transactions_count: 1,
       card_transactions_total: transaction.price
     )
+  end
+
+  it "restores a card price edit and its generated card-payment cash projections without rewriting precise dates" do
+    transaction = I18n.with_locale(:en) do
+      create_card_transaction(installment_prices: [ -1_100, -1_100, -1_100 ])
+    end
+    projection_dates = transaction.card_installments.to_h do |installment|
+      [ installment.cash_transaction_id, installment.cash_transaction.cash_installments.sole.date ]
+    end
+    projection_descriptions = transaction.card_installments.to_h do |installment|
+      [ installment.cash_transaction_id, installment.cash_transaction.description ]
+    end
+    audited_operation = nil
+
+    I18n.with_locale(:en) do
+      Audit::Operation.run(actor: user, context:, source: :web) do
+        transaction.assign_attributes(
+          price: -300,
+          card_installments_attributes: transaction.card_installments.map do |installment|
+            { id: installment.id, price: -100 }
+          end
+        )
+        transaction.save!
+        audited_operation = Audit::Operation.ensure_persisted!
+      end
+    end
+
+    preview = Audit::Rollback::Preview.new(operation: audited_operation, actor: admin)
+    incomplete_operation = AuditOperation.create!(source: :web, result: :committed, actor_id: user.id, context_id: context.id)
+    audited_operation.audit_versions.where.not(item_subtype: "CashInstallment").find_each do |version|
+      AuditVersion.create!(
+        version.attributes.except("id", "operation_id", "created_at").merge("operation_id" => incomplete_operation.id)
+      )
+    end
+    incomplete_preview = Audit::Rollback::Preview.new(operation: incomplete_operation, actor: admin)
+    result = I18n.with_locale(:"pt-BR") do
+      described_class.new(
+        operation: audited_operation,
+        actor: admin,
+        context: admin.main_context,
+        request_id: SecureRandom.uuid,
+        token: preview.apply_token,
+        confirmed: false
+      ).call
+    end
+
+    expect(audited_operation.audit_versions.pluck(:item_subtype)).to include(
+      "CardTransaction",
+      "CardInstallment",
+      "CashTransaction",
+      "CashInstallment"
+    )
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.flat_map(&:conflicts)).to be_empty
+    expect(preview.rows.flat_map(&:support_issues)).to be_empty
+    expect(incomplete_preview).to have_attributes(state: "read_only")
+    expect(incomplete_preview.rows.select { |row| row.record_type == "CashTransaction" }.flat_map(&:support_issues)).not_to be_empty
+    expect(result).to have_attributes(status: "applied", duplicate: false)
+    expect(transaction.reload.price).to eq(-3_300)
+    expect(transaction.card_installments.order(:number).pluck(:price)).to eq([ -1_100, -1_100, -1_100 ])
+
+    transaction.card_installments.each do |installment|
+      projection = installment.cash_transaction.reload
+      expect(projection.price).to eq(projection.card_installments.sum(:price))
+      expect(projection.description).to eq(projection_descriptions.fetch(projection.id))
+      expect(projection.cash_installments.sole.price).to eq(projection.price)
+      expect(projection.cash_installments.sole.date).to eq(projection_dates.fetch(projection.id))
+      expect(projection.cash_installments.sole.date.usec).to eq(999_999)
+    end
   end
 
   it "recreates a destroyed aggregate with its original identities" do

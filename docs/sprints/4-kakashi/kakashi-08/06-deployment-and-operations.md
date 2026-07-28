@@ -9,6 +9,13 @@ contains only ordinary cash/card transactions and their installments. Generated
 exchange, advance, shared-return, subscription, investment, and Piggy Bank graphs stay
 read-only until their complete graph adapter is implemented and covered.
 
+Price-only card edits may update their existing generated card-payment cash projections
+in the same operation. Those projection updates are rollbackable only when the linked
+card transaction, card installments, projection cash transactions, and projection cash
+installments are present, ownership is consistent, routing is unchanged, and the
+generated rows changed only their canonical aggregate price/comment fields. Projection
+creation, destruction, cycle moves, or rerouting remain read-only.
+
 There is no audit backfill. Row counts begin at zero when the storage migration is
 applied, and records created before deployment have no synthetic history.
 

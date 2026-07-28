@@ -69,6 +69,35 @@ RSpec.describe Audit::Rollback::Preview do
     expect(conflicted_preview.digest).not_to eq(original_preview.digest)
   end
 
+  it "compares live datetimes at the precision retained by existing JSONB audit snapshots" do
+    precise_date = Time.zone.local(2026, 8, 10).end_of_day
+    PaperTrail.request(enabled: false) { transaction.update_column(:date, precise_date) }
+    before = transaction.attributes.except(*CashTransaction.paper_trail_options.fetch(:skip)).merge(
+      "description" => "Previous description",
+      "date" => precise_date.as_json
+    )
+    AuditVersion.create!(
+      operation:,
+      owner_id: user.id,
+      context_id: context.id,
+      item_type: "CashTransaction",
+      item_subtype: "CashTransaction",
+      item_id: transaction.id,
+      event: :update,
+      mutation_source: :web,
+      object: before,
+      object_changes: { "description" => [ "Previous description", transaction.description ] },
+      metadata: { "user_bank_account_id" => account.id }
+    )
+
+    preview = described_class.new(operation:, actor: admin)
+
+    expect(precise_date.usec).to eq(999_999)
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.sole).to have_attributes(conflicts: [])
+    expect(preview.rows.sole.adapter.restore_attributes).to eq("description" => "Previous description")
+  end
+
   it "ignores declared derived counters during current-state comparison" do
     create_update_version
     original_digest = described_class.new(operation:, actor: admin).digest

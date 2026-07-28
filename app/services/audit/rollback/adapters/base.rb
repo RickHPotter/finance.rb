@@ -61,6 +61,10 @@ class Audit::Rollback::Adapters::Base
     Audit::Rollback::Attributes.for(self)
   end
 
+  def post_compensation_attributes
+    {}
+  end
+
   def differences
     return @differences if defined?(@differences)
     return @differences = {} if expected_after_state.nil? || current_state.nil?

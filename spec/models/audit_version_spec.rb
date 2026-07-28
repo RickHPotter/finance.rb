@@ -182,6 +182,25 @@ end
 #  object          :jsonb
 #  object_changes  :jsonb
 #  whodunnit       :string
+#  created_at      :datetime         not null, indexed => [context_id], indexed => [event], indexed => [item_type, item_id], indexed => [mutation_source], indexed => [owner_id]
+#  context_id      :bigint           indexed => [created_at]
+#  item_id         :bigint           not null, indexed => [item_type, created_at]
+#  operation_id    :uuid             not null, indexed => [id]
+#  owner_id        :bigint           not null, indexed => [created_at]
+#
+# Indexes
+#
+#  index_audit_versions_on_context_id_and_created_at             (context_id,created_at)
+#  index_audit_versions_on_event_and_created_at                  (event,created_at)
+#  index_audit_versions_on_item_type_and_item_id_and_created_at  (item_type,item_id,created_at)
+#  index_audit_versions_on_mutation_source_and_created_at        (mutation_source,created_at)
+#  index_audit_versions_on_operation_id_and_id                   (operation_id,id)
+#  index_audit_versions_on_owner_id_and_created_at               (owner_id,created_at)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (operation_id => audit_operations.id) ON DELETE => restrict
+#
 # rubocop:disable Layout/LineLength
 #  created_at      :datetime         not null, indexed => [context_id], indexed => [event], indexed => [item_type, item_id], indexed => [mutation_source], indexed => [owner_id]
 # rubocop:enable Layout/LineLength
