@@ -10,6 +10,23 @@ the UI must label that state explicitly.
 Do not enable broad `has_paper_trail` coverage in one commit. Each model family must
 pass ownership, direct-SQL, destruction, payload, and callback-recursion checks first.
 
+## V1 and V2 Delivery Boundary
+
+The first KAKASHI-08 PR completes V1, not the entire feature. V1 delivers the immutable
+audit foundation, authorized history, operation-wide preview/apply machinery, and a
+deliberately narrow rollback registry for ordinary cash/card transactions and their
+installments. It also supports the conservative price-only card edit case when all
+existing card-payment projection rows are present and only canonical aggregate fields
+changed.
+
+KAKASHI-08 remains unfinished until a future V2 PR completes the audited-family and
+generated-graph rollback coverage. V1 must be mergeable and deployable on its own:
+unsupported operations remain visible but read-only, and neither partial rollback nor
+a force option is introduced.
+
+The V2 inventory, dependency order, and completion gate are defined in
+[V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md).
+
 ## Slice 1: Prove the PaperTrail foundation
 
 1. Add PaperTrail 17 and lock its supported version range.

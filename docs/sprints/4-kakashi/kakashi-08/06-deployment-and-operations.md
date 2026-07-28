@@ -16,6 +16,11 @@ installments are present, ownership is consistent, routing is unchanged, and the
 generated rows changed only their canonical aggregate price/comment fields. Projection
 creation, destruction, cycle moves, or rerouting remain read-only.
 
+This is the accepted V1 deployment boundary, not the final KAKASHI-08 scope. The future
+V2 PR must add the ten audited families absent from the registry and complete the
+generated financial graph cases listed in
+[V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md).
+
 There is no audit backfill. Row counts begin at zero when the storage migration is
 applied, and records created before deployment have no synthetic history.
 

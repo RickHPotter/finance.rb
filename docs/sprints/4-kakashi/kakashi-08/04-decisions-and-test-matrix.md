@@ -129,23 +129,25 @@ versions must not contribute names, prices, counts, filter options, or paginatio
 
 ## Model Coverage Matrix
 
-| Family | Ownership source | Direct-SQL gate | Rollback adapter |
+| Family | Ownership source | Direct-SQL gate | Rollback status |
 | --- | --- | --- | --- |
-| cash/card transaction | direct user/context | controller, import, projection writes | required |
-| cash/card installment STI | parent transaction | count, paid-state, deletion writes | required |
-| category allocation | polymorphic transactable | bulk/category transfer paths | required |
-| entity allocation | polymorphic transactable | exchange/status repair paths | required |
-| exchange | entity transactable | projection rebuild and unlink paths | required |
-| reference | user card plus direct context | merge/resynchronization writes | required |
-| user card | direct user | totals and reference-date sync | required |
-| user bank account | direct user | totals and context purge | required |
-| budget | direct user/context | bulk budget updates | required |
-| subscription | direct user/context | price synchronization | required |
-| investment | direct user/context | Piggy Bank profit synchronization | required |
-| Piggy Bank | source/return transaction | projection link writes | required |
+| cash/card transaction | direct user/context | controller, import, projection writes | V1 registered; generated/special graphs remain V2 |
+| cash/card installment STI | parent transaction | count, paid-state, deletion writes | V1 registered; generated lifecycle and routing remain V2 |
+| category allocation | polymorphic transactable | bulk/category transfer paths | V2 adapter required |
+| entity allocation | polymorphic transactable | exchange/status repair paths | V2 adapter required |
+| exchange | entity transactable | projection rebuild and unlink paths | V2 adapter required |
+| reference | user card plus direct context | merge/resynchronization writes | V2 adapter required |
+| user card | direct user | totals and reference-date sync | V2 adapter required |
+| user bank account | direct user | totals and context purge | V2 adapter required |
+| budget | direct user/context | bulk budget updates | V2 adapter required |
+| subscription | direct user/context | price synchronization | V2 adapter required |
+| investment | direct user/context | Piggy Bank profit synchronization | V2 adapter required |
+| Piggy Bank | source/return transaction | projection link writes | V2 adapter required |
 
-"Required" means the family must have an adapter before operations containing it are
-rollbackable. Audit read coverage may ship earlier.
+V1 is complete when unsupported operations are reported accurately and remain
+operation-wide read-only. KAKASHI-08 is complete only after the V2 adapter and graph
+coverage gate in [V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md)
+passes. Audit read coverage is already independent from rollback eligibility.
 
 ## Callback-Bypass Matrix
 

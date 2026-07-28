@@ -315,6 +315,16 @@ This feature is distinct from the existing exchange audit services. Existing aud
 detect inconsistencies in the current graph; persistent auditing records the history
 that produced that graph.
 
+Delivery status:
+
+- V1 is a complete PR boundary: persistent auditing, authorized history, guarded
+  preview/apply infrastructure, ordinary cash/card transaction and installment
+  adapters, and conservative price-only card-payment projection rollback
+- KAKASHI-08 remains unfinished as a feature until a future V2 PR adds every remaining
+  audited record-family adapter and completes the generated financial graph coverage
+- V1 operations containing an unsupported family or graph remain safely read-only;
+  there is no partial or forced rollback
+
 Foundation:
 
 - adopt PaperTrail 17 with a custom version class, PostgreSQL JSONB payloads, immutable
@@ -393,6 +403,7 @@ References:
 - [implementation slices](docs/sprints/4-kakashi/kakashi-08/03-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-08/04-decisions-and-test-matrix.md)
 - [deployment and operations](docs/sprints/4-kakashi/kakashi-08/06-deployment-and-operations.md)
+- [V2 complete rollback adapter coverage](docs/sprints/4-kakashi/kakashi-08/07-v2-complete-rollback-adapters.md)
 
 Explicitly out of scope:
 
