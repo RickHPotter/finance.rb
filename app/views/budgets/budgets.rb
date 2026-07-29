@@ -138,7 +138,7 @@ class Views::Budgets::Budgets < Views::Base
         end
 
         div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
-          div(class: "p-1 rounded-md shadow-sm border border-white") do
+          div(class: "p-1 rounded-md shadow-sm border border-current") do
             from_cent_based_to_float(budget.balance, "R$")
           end
         end
@@ -253,10 +253,10 @@ class Views::Budgets::Budgets < Views::Base
 
       unless mobile
         span(
-          class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
-              peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
-              peer-focus:ring-2 peer-focus:ring-blue-300 dark:border-slate-500 dark:bg-slate-900 dark:peer-checked:border-sky-500
-              dark:peer-checked:bg-sky-600 dark:peer-focus:ring-sky-500/50 size-4"
+          class: "flex size-4 items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+              peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white peer-focus:ring-2 peer-focus:ring-blue-300
+              dark:border-slate-300 dark:bg-slate-950 dark:text-transparent dark:peer-checked:border-cyan-300
+              dark:peer-checked:bg-cyan-400 dark:peer-checked:text-slate-950 dark:peer-focus:ring-cyan-300/60"
         ) do
           span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
         end
@@ -273,7 +273,7 @@ class Views::Budgets::Budgets < Views::Base
 
   def rule_chip(rule, enabled)
     span(
-      class: "max-w-full truncate rounded-sm border border-white/40 bg-white/10 px-1 py-0.5 text-2xs font-semibold uppercase text-white/90",
+      class: "max-w-full truncate rounded-sm border border-current bg-transparent px-1 py-0.5 text-2xs font-semibold uppercase text-current",
       title: I18n.t("dashboards.budgets.rules.#{rule}.#{enabled ? 'enabled' : 'disabled'}")
     ) do
       rule_chip_acronym(rule, enabled)

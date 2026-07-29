@@ -130,13 +130,26 @@ class Budget < ApplicationRecord
   def set_recalculate_balance
     return if [ false, true ].include?(recalculate_balance)
 
-    self.recalculate_balance = changes.slice(:price, :remaining_value, :month, :year, :first_installment_only).present?
+    self.recalculate_balance = %i[value remaining_value month year first_installment_only].any? do |attribute|
+      will_save_change_to_attribute?(attribute)
+    end
   end
 
   def update_cash_balance
     Logic::RecalculateBalancesService.new(user:, context:, year:, month:).call and return if destroyed?
 
-    Logic::RecalculateBalancesService.new(user:, context:, year: changes[:year]&.min || year, month: changes[:month]&.min || month).call
+    recalculation_start = balance_recalculation_start
+    Logic::RecalculateBalancesService.new(user:, context:, year: recalculation_start.year, month: recalculation_start.month).call
+  end
+
+  def balance_recalculation_start
+    previous_year, current_year = previous_changes.fetch("year", [ year, year ])
+    previous_month, current_month = previous_changes.fetch("month", [ month, month ])
+
+    [
+      Date.new(previous_year || year, previous_month || month, 1),
+      Date.new(current_year || year, current_month || month, 1)
+    ].min
   end
 
   def presence_of_categories_or_entities
