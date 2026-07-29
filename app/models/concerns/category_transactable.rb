@@ -15,6 +15,7 @@ module CategoryTransactable
 
     # @callbacks ..............................................................
     before_destroy :remember_categories, if: -> { respond_to?(:category_transactions) }, prepend: true
+    after_commit :clear_original_categories
   end
 
   # @public_class_methods .....................................................
@@ -61,5 +62,9 @@ module CategoryTransactable
 
   def remember_categories
     self.original_categories = category_transactions.pluck(:category_id).sort
+  end
+
+  def clear_original_categories
+    self.original_categories = nil
   end
 end

@@ -15,6 +15,7 @@ module EntityTransactable
 
     # @callbacks ..............................................................
     before_destroy :remember_entities, if: -> { respond_to?(:entity_transactions) }, prepend: true
+    after_commit :clear_original_entities
   end
 
   # @public_class_methods .....................................................
@@ -63,5 +64,9 @@ module EntityTransactable
 
   def remember_entities
     self.original_entities = entity_transactions.pluck(:entity_id).sort
+  end
+
+  def clear_original_entities
+    self.original_entities = nil
   end
 end

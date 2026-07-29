@@ -577,7 +577,7 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 20), Date.new(2026, 5, 20) ])).to be(true)
       expect(transaction.can_change_installment_structure?(proposed_dates: [ Date.new(2026, 4, 20) ])).to be(true)
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 3, 10) ])).to be(false)
-      expect(transaction.can_change_allocation?).to be(false)
+      expect(transaction.can_change_allocation?).to be(true)
       expect(transaction.can_destroy_with_history?).to be(false)
     end
 
@@ -608,7 +608,7 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.can_destroy_with_history?).to be(true)
     end
 
-    it "blocks category allocation changes once paid history exists" do
+    it "allows category allocation corrections once paid history exists" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
       category = create(:category, user:, category_name: "FOOD")
@@ -632,9 +632,50 @@ RSpec.describe CashTransaction, type: :model do
       )
 
       transaction.categories = [ replacement_category ]
+      transaction.assign_attributes(description: "Corrected allocation", comment: "Metadata correction", date: transaction.date + 1.day)
+      transaction.cash_installments_attributes = transaction.cash_installments.map do |installment|
+        {
+          id: installment.id,
+          number: installment.number,
+          price: installment.price,
+          date: installment.date + 1.day,
+          month: installment.month,
+          year: installment.year,
+          paid: installment.paid
+        }
+      end
 
+      expect(transaction.can_change_allocation?).to be(true)
+      expect(transaction).to be_valid
+    end
+
+    it "does not let an allocation correction bypass a paid price rewrite" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      category = create(:category, user:, category_name: "FOOD")
+      replacement_category = create(:category, user:, category_name: "TRANSPORT")
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Unsafe combined correction",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        category_transactions_attributes: [
+          { category_id: category.id }
+        ],
+        installments_attributes: [
+          { number: 1, price: 3000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true }
+        ]
+      )
+
+      transaction.categories = [ replacement_category ]
+      transaction.price = 3500
+
+      expect(transaction.can_change_allocation?).to be(false)
       expect(transaction).to be_invalid
-      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.allocation_locked_after_payment"))
+      expect(transaction.errors.details[:base]).to include(error: :allocation_locked_after_payment)
     end
 
     it "allows allocation changes after paid history when the transaction is in the subscription flow" do
