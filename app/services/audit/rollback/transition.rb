@@ -47,7 +47,9 @@ class Audit::Rollback::Transition
   private
 
   def initial_before_state
-    return nil if versions.first.event_create?
+    create_index = versions.index(&:event_create?)
+    destroy_index = versions.index(&:event_destroy?)
+    return nil if create_index && (destroy_index.nil? || create_index < destroy_index)
 
     versions.first.object&.to_h
   end

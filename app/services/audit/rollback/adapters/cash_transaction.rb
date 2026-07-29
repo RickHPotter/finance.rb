@@ -16,6 +16,8 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     attributes = SPECIAL_GRAPH_ATTRIBUTES.select { |attribute| historical_state[attribute].present? }
     attributes -= CARD_PAYMENT_PROJECTION_ATTRIBUTES if supported_card_payment_graph?
     attributes.delete("subscription_id") if supported_subscription_graph?
+    attributes -= %w[cash_transaction_type investment_type_id] if supported_investment_graph?
+    attributes -= %w[cash_transaction_type reference_transactable_id reference_transactable_type] if supported_investment_valuation_graph?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
     issues
@@ -57,6 +59,31 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
 
   def supported_subscription_graph?
     subscription_transition.present?
+  end
+
+  def supported_investment_graph?
+    return false unless historical_state["cash_transaction_type"] == "Investment"
+
+    transitions.any? do |candidate|
+      next false unless candidate.record_type == "Investment"
+
+      states = [ candidate.before_state, candidate.expected_after_state ].compact
+      candidate.owner_id == owner_id && candidate.context_id == context_id &&
+        states.any? { |state| state["cash_transaction_id"] == item_id }
+    end
+  end
+
+  def supported_investment_valuation_graph?
+    return false unless historical_state["cash_transaction_type"] == "PiggyBank"
+    return false unless transition.net_changed_attributes.all? { |attribute| attribute.in?(%w[paid price starting_price]) }
+
+    transitions.any? do |candidate|
+      next false unless candidate.record_type == "Investment"
+
+      states = [ candidate.before_state, candidate.expected_after_state ].compact
+      candidate.owner_id == owner_id && candidate.context_id == context_id &&
+        states.any? { |state| state["piggy_bank_return_cash_transaction_id"] == item_id }
+    end
   end
 
   def subscription_dependencies

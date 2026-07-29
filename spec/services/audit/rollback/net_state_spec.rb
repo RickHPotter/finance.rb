@@ -44,4 +44,28 @@ RSpec.describe Audit::Rollback::NetState do
 
     expect(transition).to have_attributes(action: "none", before_state: nil, expected_after_state: nil, event_sequence: %w[create destroy])
   end
+
+  it "treats callback updates recorded before a create version as part of that creation" do
+    create_version(
+      item_id: 9,
+      event: :update,
+      object: { "id" => 9, "description" => "Generated", "paid" => nil },
+      changes: { "paid" => [ nil, true ] }
+    )
+    create_version(
+      item_id: 9,
+      event: :create,
+      object: nil,
+      changes: { "id" => [ nil, 9 ], "description" => [ nil, "Generated" ], "paid" => [ nil, true ] }
+    )
+
+    transition = described_class.new(versions: operation.audit_versions).call.sole
+
+    expect(transition).to have_attributes(
+      action: "destroy",
+      before_state: nil,
+      event_sequence: %w[update create]
+    )
+    expect(transition.expected_after_state).to include("id" => 9, "description" => "Generated", "paid" => true)
+  end
 end

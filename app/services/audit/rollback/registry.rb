@@ -14,7 +14,8 @@ class Audit::Rollback::Registry
     "Reference" => Audit::Rollback::Adapters::Reference,
     "UserCard" => Audit::Rollback::Adapters::UserCard,
     "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount,
-    "Subscription" => Audit::Rollback::Adapters::Subscription
+    "Subscription" => Audit::Rollback::Adapters::Subscription,
+    "Investment" => Audit::Rollback::Adapters::Investment
   }.freeze
 
   class << self

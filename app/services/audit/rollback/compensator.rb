@@ -190,6 +190,7 @@ class Audit::Rollback::Compensator
   def prepare_parent(parent)
     parent.historical_correction_confirmation = confirmed
     parent.skip_post_commit_financial_recalculation = true
+    parent.piggy_bank_projection_write = true if parent.is_a?(CashTransaction) && parent.cash_transaction_type == "PiggyBank"
   end
 
   def restore_post_compensation_attributes(parent_row, parent)
