@@ -141,12 +141,15 @@ export default class extends Controller {
 
   prepareBulkAction(event) {
     const kind = event.currentTarget.dataset.bulkIdsKind || "installment"
-    const selectedIds = this.selectedIds(kind)
-    const selectionData = this.selectedSelectionData(kind)
-    const selectedRowCount = this.selectedCheckboxes().length
+    const selectionKind = event.currentTarget.dataset.bulkSelectionKind || "installment"
+    const selected = this.selectedCheckboxes().filter((checkbox) => this.selectionKind(checkbox) === selectionKind)
+    const selectedIds = this.selectedIds(kind, selected)
+    const selectionData = this.selectedSelectionData(kind, selected)
+    const selectedRowCount = selected.length
 
     this.element.querySelectorAll("[data-bulk-ids-input]").forEach(input => {
       if ((input.dataset.bulkIdsKind || "installment") !== kind) return
+      if ((input.dataset.bulkSelectionKind || "installment") !== selectionKind) return
       input.value = selectedIds.join(",")
     })
 
@@ -157,6 +160,7 @@ export default class extends Controller {
 
     this.element.querySelectorAll("[data-bulk-selected-row-count-input]").forEach(input => {
       if ((input.dataset.bulkIdsKind || "installment") !== kind) return
+      if ((input.dataset.bulkSelectionKind || "installment") !== selectionKind) return
       input.value = String(selectedRowCount)
     })
 
@@ -280,8 +284,9 @@ export default class extends Controller {
     if (shiftKey && currentIndex !== -1 && anchorIndex !== -1) {
       const start = Math.min(anchorIndex, currentIndex)
       const finish = Math.max(anchorIndex, currentIndex)
+      const selectionKind = this.selectionKind(checkbox)
 
-      visibleCheckboxes.slice(start, finish + 1).forEach((candidate) => {
+      visibleCheckboxes.slice(start, finish + 1).filter((candidate) => this.selectionKind(candidate) === selectionKind).forEach((candidate) => {
         candidate.checked = checked
         this.updateRowSelectionState(candidate.closest("[data-datatable-target='row']"), checked)
       })
@@ -336,8 +341,8 @@ export default class extends Controller {
     return row && row.style.display !== "none"
   }
 
-  selectedIds(kind) {
-    const values = this.selectedCheckboxes().map((checkbox) => {
+  selectedIds(kind, selected = this.selectedCheckboxes()) {
+    const values = selected.map((checkbox) => {
       if (kind === "record") return checkbox.dataset.bulkRecordId
 
       return checkbox.value
@@ -346,8 +351,8 @@ export default class extends Controller {
     return [...new Set(values)]
   }
 
-  selectedSelectionData(kind) {
-    return this.selectedCheckboxes().map((checkbox) => this.selectionDataFor(checkbox, kind)).filter(Boolean)
+  selectedSelectionData(kind, selected = this.selectedCheckboxes()) {
+    return selected.map((checkbox) => this.selectionDataFor(checkbox, kind)).filter(Boolean)
   }
 
   syncActionButtons(selected) {

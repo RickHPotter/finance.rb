@@ -80,11 +80,47 @@ RSpec.describe AllocationMutations::CategoryMutator do
       budget_categories: [ build(:budget_category, category: source) ]
     )
     plan = category_plan(budget, :switch, source_id: source.id, destination_id: destination.id)
+    expect(Logic::RecalculateBalancesService).not_to receive(:new)
 
     impact = described_class.new(plan:).call
 
     expect(budget.reload.categories).to contain_exactly(destination)
     expect(impact.reference_months).to eq([ Date.new(2026, 7, 1) ])
+  end
+
+  it "recalculates from the Budget month when changed criteria alter its persisted remaining value" do
+    matching_transaction = create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      date: Date.new(2026, 7, 10),
+      month: 7,
+      year: 2026,
+      price: -2_000,
+      cash_installments: [ build(:cash_installment, price: -2_000, number: 1) ],
+      category_transactions: []
+    )
+    matching_transaction.category_transactions.create!(category: destination)
+    budget = create(
+      :budget,
+      user:,
+      context: user.main_context,
+      month: 7,
+      year: 2026,
+      value: -10_000,
+      budget_categories: [ build(:budget_category, category: source) ]
+    )
+    plan = category_plan(budget, :switch, source_id: source.id, destination_id: destination.id)
+    expect(Logic::RecalculateBalancesService).to receive(:new).with(
+      user:,
+      context: user.main_context,
+      year: 2026,
+      month: 7
+    ).and_call_original
+
+    described_class.new(plan:).call
+
+    expect(budget.reload.remaining_value).to eq(-8_000)
   end
 
   it "refuses to apply no-op and conflict plans" do

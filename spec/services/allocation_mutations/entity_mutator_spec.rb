@@ -101,6 +101,7 @@ RSpec.describe AllocationMutations::EntityMutator do
       budget_entities: [ build(:budget_entity, entity: source) ]
     )
     plan = entity_plan(budget, :switch, source_id: source.id, destination_id: destination.id)
+    expect(Logic::RecalculateBalancesService).not_to receive(:new)
 
     impact = described_class.new(plan:).call
 

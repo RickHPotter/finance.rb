@@ -212,4 +212,114 @@ RSpec.describe "Allocation mutations" do
     expect(response.body).to include('target="center_container"', CGI.escapeHTML(return_to))
     expect(card_transaction.reload.categories).to contain_exactly(destination)
   end
+
+  it "renders isolated Budget allocation controls on both Budget surfaces" do
+    get budgets_path
+
+    expect(response).to have_http_status(:ok)
+    budget_document = Nokogiri::HTML5(response.body)
+    budget_modal_id = Components::AllocationMutationInterface.modal_id("budget")
+    budget_modal = budget_document.at_css("##{budget_modal_id}")
+    expect(budget_modal).to be_present
+    expect(budget_modal.at_css("input[name='allocation_mutation[owner_type]']")["value"]).to eq("Budget")
+    expect(budget_document.at_css("[data-modal-target='#{budget_modal_id}'][data-bulk-selection-kind='budget']")).to be_present
+
+    get cash_transactions_path
+
+    expect(response).to have_http_status(:ok)
+    cash_document = Nokogiri::HTML5(response.body)
+    expect(cash_document.at_css("##{budget_modal_id}")).to be_present
+    expect(cash_document.at_css("##{Components::AllocationMutationInterface.modal_id('installment')}")).to be_present
+  end
+
+  it "refreshes a filtered Budget index after applying a criteria switch" do
+    source = create(:category, user:, category_name: "SOURCE")
+    budget = create(
+      :budget,
+      user:,
+      context:,
+      year: 2026,
+      month: 7,
+      budget_categories: [ build(:budget_category, category: source) ]
+    )
+    return_to = budgets_path(
+      active_month_years: [ 202_607 ],
+      search_term: budget.description,
+      budget: { category_id: [ source.id ] }
+    )
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "Budget",
+        owner_ids: [ budget.id ],
+        selected_row_count: 1,
+        return_to:,
+        action: {
+          allocation_type: "category",
+          operation: "switch",
+          source_id: source.id,
+          destination_id: destination.id
+        }
+      }
+    }, as: :json
+    token = response.parsed_body.fetch("apply_token")
+
+    post apply_allocation_mutations_path,
+         params: { apply_token: token, mode: "strict", allocation_confirmation: "1", return_to: },
+         headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.location).to be_nil
+    expect(response.body).to include(
+      'target="center_container"',
+      Components::AllocationMutationInterface.modal_id("budget"),
+      CGI.escapeHTML(return_to)
+    )
+    expect(budget.reload.categories).to contain_exactly(destination)
+  end
+
+  it "returns an embedded Budget apply to the filtered Cash index for Turbo and HTML" do
+    source = create(:category, user:, category_name: "EMBEDDED SOURCE")
+    budget = create(
+      :budget,
+      user:,
+      context:,
+      year: 2026,
+      month: 7,
+      budget_categories: [ build(:budget_category, category: source) ]
+    )
+    return_to = cash_transactions_path(active_month_years: [ 202_607 ], skip_budgets: "0")
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "Budget",
+        owner_ids: [ budget.id ],
+        selected_row_count: 1,
+        return_to:,
+        action: {
+          allocation_type: "category",
+          operation: "add",
+          destination_id: destination.id
+        }
+      }
+    }, as: :json
+    token = response.parsed_body.fetch("apply_token")
+
+    post apply_allocation_mutations_path,
+         params: { apply_token: token, mode: "strict", allocation_confirmation: "1", return_to: },
+         headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(
+      'target="center_container"',
+      Components::AllocationMutationInterface.modal_id("budget"),
+      Components::AllocationMutationInterface.modal_id("installment"),
+      CGI.escapeHTML(return_to)
+    )
+
+    post apply_allocation_mutations_path,
+         params: { apply_token: token, mode: "strict", allocation_confirmation: "1", return_to: }
+
+    expect(response).to redirect_to(return_to)
+    expect(response).to have_http_status(:see_other)
+    expect(budget.reload.categories).to contain_exactly(source, destination)
+  end
 end

@@ -71,7 +71,7 @@ class AllocationMutations::EntityMutator
 
   def prepare_owner_recalculation
     owner.original_entities = plan.entity_ids_before if owner.respond_to?(:original_entities=)
-    owner.recalculate_balance = true if owner.is_a?(Budget)
+    owner.recalculate_balance = nil if owner.is_a?(Budget)
   end
 
   def entity_allocations

@@ -137,13 +137,19 @@ module Components
           data: {
             allocation_mutation_target: "ownerIds",
             bulk_ids_input: true,
-            bulk_ids_kind: "record"
+            bulk_ids_kind: "record",
+            bulk_selection_kind: selection_kind
           }
         )
         form.hidden_field(
           "allocation_mutation[selected_row_count]",
           value: "0",
-          data: { allocation_mutation_target: "rowCount", bulk_selected_row_count_input: true, bulk_ids_kind: "record" }
+          data: {
+            allocation_mutation_target: "rowCount",
+            bulk_selected_row_count_input: true,
+            bulk_ids_kind: "record",
+            bulk_selection_kind: selection_kind
+          }
         )
         form.hidden_field("allocation_mutation[return_to]", value: return_to)
         form.hidden_field(

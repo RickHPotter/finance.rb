@@ -41,6 +41,12 @@ class Views::CashTransactions::Index < Views::Base
                 owner_type: "CashTransaction",
                 return_to: index_context[:return_to].presence || request.fullpath
               )
+              render AllocationMutationInterface.new(
+                current_user:,
+                owner_type: "Budget",
+                return_to: index_context[:return_to].presence || request.fullpath,
+                selection_kind: "budget"
+              )
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
@@ -159,7 +165,8 @@ class Views::CashTransactions::Index < Views::Base
           title: I18n.t("bulk_actions.budgets.destroy_title"),
           label: action_message(:destroy),
           data: { action: "click->datatable#submitBulkAction", bulk_form_id: "bulk_budget_destroy_form" }
-        }
+        },
+        AllocationMutationInterface.bulk_action(selection_kind: "budget")
       ]
     )
   end

@@ -36,6 +36,8 @@ RSpec.describe Components::AllocationMutationInterface, type: :component do
     expect(values).not_to include(user.built_in_category("INVESTMENT").id.to_s, user.built_in_entity.id.to_s, friend.id.to_s)
     expect(document.at_css("input[data-allocation-mutation-target='ownerIds']")["name"]).to eq("allocation_mutation[owner_ids][]")
     expect(document.at_css("input[data-allocation-mutation-target='rowCount']")["name"]).to eq("allocation_mutation[selected_row_count]")
+    expect(document.at_css("input[data-allocation-mutation-target='ownerIds']")["data-bulk-selection-kind"]).to eq("installment")
+    expect(document.at_css("input[data-allocation-mutation-target='rowCount']")["data-bulk-selection-kind"]).to eq("installment")
     expect(document.at_css("form")["action"]).to eq(Rails.application.routes.url_helpers.preview_allocation_mutations_path)
   end
 

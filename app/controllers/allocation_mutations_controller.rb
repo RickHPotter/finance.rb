@@ -30,7 +30,7 @@ class AllocationMutationsController < ApplicationController
 
   def turbo_streams_for(result)
     streams = []
-    refresh = transaction_index_refresh(result)
+    refresh = index_refresh(result)
     streams << if refresh
                  turbo_stream.replace(:center_container, refresh)
                else
@@ -47,17 +47,26 @@ class AllocationMutationsController < ApplicationController
     streams
   end
 
-  def transaction_index_refresh(result)
+  def index_refresh(result)
     return unless result.applied?
-    return unless token_selection&.fetch("owner_type", nil).in?(%w[CashTransaction CardTransaction])
 
-    AllocationMutations::TransactionIndexRefresh.new(
-      actor: current_user,
-      context: current_context,
-      owner_type: token_selection.fetch("owner_type"),
-      destination: allocation_return_path,
-      mobile: @mobile
-    ).view
+    case token_selection&.fetch("owner_type", nil)
+    when "CashTransaction", "CardTransaction"
+      AllocationMutations::TransactionIndexRefresh.new(
+        actor: current_user,
+        context: current_context,
+        owner_type: token_selection.fetch("owner_type"),
+        destination: allocation_return_path,
+        mobile: @mobile
+      ).view
+    when "Budget"
+      AllocationMutations::BudgetIndexRefresh.new(
+        actor: current_user,
+        context: current_context,
+        destination: allocation_return_path,
+        mobile: @mobile
+      ).view
+    end
   rescue StandardError => e
     Rails.error.report(e, handled: true, severity: :warning, context: { component: "allocation_mutation_index_refresh" })
     nil
@@ -103,10 +112,19 @@ class AllocationMutationsController < ApplicationController
       when "CardTransaction"
         Navigation::CardTransactions.new(raw:, fallback: card_transactions_path, current_user:, current_context:).destination
       when "Budget"
-        Navigation::Budgets.new(raw:, fallback: budgets_path, current_user:, current_context:).destination
+        budget_allocation_return_path(raw)
       else
         Navigation::CashTransactions.new(raw:, fallback: cash_transactions_path, current_user:, current_context:).destination
       end
+  end
+
+  def budget_allocation_return_path(raw)
+    uri = URI.parse(raw.presence || budgets_path)
+    return Navigation::CashTransactions.new(raw:, fallback: cash_transactions_path, current_user:, current_context:).destination if uri.path == cash_transactions_path
+
+    Navigation::Budgets.new(raw:, fallback: budgets_path, current_user:, current_context:).destination
+  rescue URI::InvalidURIError
+    budgets_path
   end
 
   def token_selection
