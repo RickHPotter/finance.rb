@@ -248,14 +248,20 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   end
 
   def card_payment_installment_transition_supported?(installment_transition)
-    return false unless installment_transition.action == "update"
+    return false unless installment_transition.action.in?(%w[destroy recreate update])
     return false unless installment_transition.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_INSTALLMENT_CHANGES) }
+    return false unless installment_transition.owner_id == owner_id && installment_transition.context_id == context_id
 
     state = installment_transition.expected_after_state || installment_transition.before_state || {}
+    matching_card_payment_parent?(installment_transition, state["card_transaction_id"])
+  end
+
+  def matching_card_payment_parent?(installment_transition, card_transaction_id)
     card_transaction_transition = transitions.find do |candidate|
-      candidate.record_type == "CardTransaction" && candidate.item_id == state["card_transaction_id"]
+      candidate.record_type == "CardTransaction" && candidate.item_id == card_transaction_id
     end
-    return false unless card_transaction_transition&.action == "update"
+    return false unless card_transaction_transition&.action == installment_transition.action
+    return false unless card_transaction_transition.owner_id == owner_id && card_transaction_transition.context_id == context_id
 
     card_transaction_state = card_transaction_transition.expected_after_state || card_transaction_transition.before_state || {}
     card_transaction_state["user_card_id"] == historical_state["user_card_id"]

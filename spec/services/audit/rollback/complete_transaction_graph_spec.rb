@@ -76,6 +76,29 @@ RSpec.describe "Complete transaction graph rollback" do
     expect(advance.reload).to have_attributes(cash_transaction_type: "CardTransaction")
   end
 
+  it "uncreates a card transaction and restores its existing card-payment projection" do
+    user_card = PaperTrail.request(enabled: false) { create(:user_card, :random, user:) }
+    transaction_date = Date.new(2027, 3, 25)
+    baseline = PaperTrail.request(enabled: false) do
+      create(:card_transaction, user:, context:, user_card:, date: transaction_date, price: -5_000)
+    end
+    projection = baseline.card_installments.sole.cash_transaction
+    projection_before = projection.slice(:price, :comment)
+    created_transaction = nil
+    operation = audited_operation do
+      created_transaction = create(:card_transaction, user:, context:, user_card:, date: transaction_date, price: -2_300)
+    end
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.flat_map(&:support_issues)).to be_empty
+    expect(result).to have_attributes(status: "applied")
+    expect(CardTransaction.exists?(created_transaction.id)).to be(false)
+    expect(CardInstallment.where(card_transaction_id: created_transaction.id)).to be_empty
+    expect(projection.reload).to have_attributes(projection_before)
+  end
+
   it "keeps an unknown future generated transaction shape read-only" do
     transaction = PaperTrail.request(enabled: false) { create(:cash_transaction, user:, context:) }
     PaperTrail.request(enabled: false) { transaction.update_column(:cash_transaction_type, "FutureProjection") }
