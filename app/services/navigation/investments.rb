@@ -9,6 +9,7 @@ module Navigation
       investment: {
         id: :scalar_or_array,
         investment_type_id: :scalar_or_array,
+        piggy_bank_return_cash_transaction_id: :scalar_or_array,
         user_bank_account_id: :scalar_or_array
       }
     }.freeze
@@ -26,6 +27,7 @@ module Navigation
         id_scopes: {
           "investment.id" => current_context.investments,
           "investment.investment_type_id" => InvestmentType.all,
+          "investment.piggy_bank_return_cash_transaction_id" => current_context.cash_transactions.piggy_bank_return,
           "investment.user_bank_account_id" => current_user.user_bank_accounts
         }
       )

@@ -535,6 +535,31 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to include("checked")
     end
 
+    it "keeps complete month counts after a regular create submission" do
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+      first_transaction = CardTransaction.order(:id).last
+      sign_in user
+
+      return_to = card_transactions_path(user_card_id: user_card_one.id)
+      post card_transactions_path,
+           params: card_transaction.params.merge(chain_mode: "create", return_to:),
+           headers: turbo_stream_headers
+
+      second_transaction = CardTransaction.order(:id).last
+      month_year = second_transaction.card_installments.first.date.strftime("%Y%m")
+
+      expect(response).to have_http_status(:see_other)
+      expect(response.location).not_to include("card_installment_ids")
+
+      get URI.parse(response.location).request_uri, headers: html_headers
+
+      document = Nokogiri::HTML.fragment(response.body)
+      month_button = document.at_css("[data-month-year='#{month_year}']")
+
+      expect(first_transaction.card_installments.first.date.strftime("%Y%m")).to eq(month_year)
+      expect(month_button["data-count"]).to eq("2")
+    end
+
     it "shows generic and detailed failure notifications when create validation fails" do
       expect do
         post card_transactions_path,

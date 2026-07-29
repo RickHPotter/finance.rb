@@ -130,7 +130,7 @@ export default class extends Controller {
 
     if (this.dateInputTarget.validationMessage) return
 
-    this.hiddenInputTarget.form?.requestSubmit()
+    this.submitForm()
   }
 
   handleKeydown(event) {
@@ -146,7 +146,15 @@ export default class extends Controller {
 
     if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) return
 
-    this.hiddenInputTarget.form?.requestSubmit()
+    this.submitForm()
+  }
+
+  submitForm() {
+    const form = this.hiddenInputTarget.form
+    if (!form) return
+
+    const submitter = form.querySelector('button[type="submit"]:not([disabled]), input[type="submit"]:not([disabled])')
+    form.requestSubmit(submitter || undefined)
   }
 
   syncVisibleFromHidden() {

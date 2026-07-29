@@ -516,7 +516,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def chain_workflow?
-    current_chain_record_ids.any? || params[:chain_mode].present?
+    current_chain_record_ids.present? || continue_chain_requested? || finish_chain_requested?
   end
 
   def card_tab_name_for_state
