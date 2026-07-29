@@ -11,6 +11,13 @@ rollback adapter or an unsupported generated graph has a readable preview but no
 action. V2 expands that safe boundary; it does not add partial rollback, conflict
 override, or a force option.
 
+Implementation of all eleven V2 slices was completed on 2026-07-28. The registry now
+contains every concrete audited financial family in this document, known generated
+graphs have focused preview/apply coverage, and unknown future transaction graph shapes
+continue to fail closed. The automated completion gate is recorded below; the deployed
+revision's manual acceptance operation IDs remain an environment-specific release
+record.
+
 ## V2 Objective
 
 Add a rollback adapter for every audited financial record family and support the
@@ -337,3 +344,18 @@ KAKASHI-08 may be marked complete only when:
 
 Audit history availability alone does not satisfy this gate. V1 remains a valid,
 deployable foundation while V2 is pending.
+
+## Automated Completion Record
+
+- Slices 1–11 are implemented with one conventional commit per slice.
+- Registry coverage discovers the concrete `FinancialAuditable` model inventory and
+  fails when a model or adapter is missing.
+- Both supported locales contain every adapter recalculation label and every
+  graph-specific conflict introduced by V2.
+- Transaction-graph coverage proves a canonical cross-transaction reference and a
+  card advance can be previewed and applied, while an unknown generated type remains
+  read-only.
+- The focused rollback and affected transaction/UI suite passed with 168 examples,
+  `yarn build` completed successfully, and `bin/ci` passed on the final tree with 985
+  examples, 738 Ruby files and 102 ERB files clean, no vulnerable gems, and zero
+  Brakeman warnings.

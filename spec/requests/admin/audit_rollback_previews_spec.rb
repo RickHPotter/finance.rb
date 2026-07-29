@@ -69,13 +69,13 @@ RSpec.describe "Admin audit rollback previews", type: :request do
       operation:,
       owner_id: user.id,
       context_id: context.id,
-      item_type: "Subscription",
-      item_subtype: "Subscription",
+      item_type: "Category",
+      item_subtype: "Category",
       item_id: 49,
       event: :update,
       mutation_source: :web,
-      object: { "id" => 49, "user_id" => user.id, "context_id" => context.id, "value" => -100 },
-      object_changes: { "value" => [ -100, -200 ] },
+      object: { "id" => 49, "user_id" => user.id, "category_name" => "Unsupported category" },
+      object_changes: { "category_name" => [ "Unsupported category", "Unknown category" ] },
       metadata: {}
     )
     sign_in admin
