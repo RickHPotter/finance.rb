@@ -3,7 +3,8 @@
 class Audit::Rollback::Impact
   attr_reader :owner_contexts, :earliest_dates, :cash_transaction_ids, :card_transaction_ids,
               :user_bank_account_ids, :user_card_ids, :cash_category_ids, :card_category_ids,
-              :cash_entity_ids, :card_entity_ids, :budget_ids, :budget_category_ids, :budget_entity_ids
+              :cash_entity_ids, :card_entity_ids, :budget_ids, :budget_category_ids, :budget_entity_ids,
+              :subscription_ids
 
   def initialize(preview:)
     @owner_contexts = Set.new
@@ -19,6 +20,7 @@ class Audit::Rollback::Impact
     @budget_ids = Set.new
     @budget_category_ids = Set.new
     @budget_entity_ids = Set.new
+    @subscription_ids = Set.new
     preview.rows.each { |row| capture_row(row) }
   end
 
@@ -71,6 +73,7 @@ class Audit::Rollback::Impact
     when "Budget" then budget_ids << row.item_id
     when "BudgetCategory" then capture_budget_category(state)
     when "BudgetEntity" then capture_budget_entity(state)
+    when "Subscription" then subscription_ids << row.item_id
     end
   end
 
@@ -110,6 +113,7 @@ class Audit::Rollback::Impact
   def capture_routing_ids(state)
     user_bank_account_ids << state["user_bank_account_id"] if state["user_bank_account_id"]
     user_card_ids << state["user_card_id"] if state["user_card_id"]
+    subscription_ids << state["subscription_id"] if state["subscription_id"]
   end
 
   def capture_date(context_id, state)

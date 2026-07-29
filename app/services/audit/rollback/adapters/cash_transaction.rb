@@ -6,8 +6,8 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     reference_transactable_type subscription_id user_card_id
   ].freeze
   CARD_PAYMENT_PROJECTION_ATTRIBUTES = %w[cash_transaction_type user_card_id].freeze
-  CARD_PAYMENT_PROJECTION_CHANGES = %w[comment price].freeze
-  CARD_PAYMENT_INSTALLMENT_CHANGES = %w[price].freeze
+  CARD_PAYMENT_PROJECTION_CHANGES = %w[comment description price].freeze
+  CARD_PAYMENT_INSTALLMENT_CHANGES = %w[price starting_price].freeze
   REFERENCE_DATE_SYNC_CHANGES = %w[date].freeze
   DERIVED_ATTRIBUTES = (Audit::Rollback::Adapters::Base::DERIVED_ATTRIBUTES + %w[cash_installments_count]).freeze
   CASH_RECALCULATIONS = %w[cash_installment_order cash_balance user_bank_account_totals].freeze
@@ -15,17 +15,17 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   def support_issues
     attributes = SPECIAL_GRAPH_ATTRIBUTES.select { |attribute| historical_state[attribute].present? }
     attributes -= CARD_PAYMENT_PROJECTION_ATTRIBUTES if supported_card_payment_graph?
+    attributes.delete("subscription_id") if supported_subscription_graph?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
     issues
   end
 
   def dependencies
-    return [] if current_record.nil?
-
-    @dependencies ||= dependent_identities.map do |record_type, dependent_id|
+    dependencies = dependent_identities.map do |record_type, dependent_id|
       dependency(record_type:, item_id: dependent_id, relationship: :dependent)
-    end.sort_by(&:key)
+    end
+    @dependencies = [ *dependencies, *subscription_dependencies ].sort_by(&:key)
   end
 
   def recalculations
@@ -52,6 +52,26 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     transitions.select do |candidate|
       candidate.record_type == "CashInstallment" &&
         candidate.before_state&.fetch("cash_transaction_id", nil) == item_id
+    end
+  end
+
+  def supported_subscription_graph?
+    subscription_transition.present?
+  end
+
+  def subscription_dependencies
+    return [] unless subscription_transition
+
+    [ dependency(record_type: "Subscription", item_id: subscription_transition.item_id, relationship: :parent) ]
+  end
+
+  def subscription_transition
+    return @subscription_transition if defined?(@subscription_transition)
+
+    subscription_id = historical_state["subscription_id"]
+    @subscription_transition = transitions.find do |candidate|
+      candidate.record_type == "Subscription" && candidate.item_id == subscription_id &&
+        candidate.owner_id == owner_id && candidate.context_id == context_id
     end
   end
 

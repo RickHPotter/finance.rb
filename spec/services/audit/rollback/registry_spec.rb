@@ -16,7 +16,8 @@ RSpec.describe Audit::Rollback::Registry do
       "BudgetEntity",
       "Reference",
       "UserCard",
-      "UserBankAccount"
+      "UserBankAccount",
+      "Subscription"
     )
     expect(described_class::ADAPTERS).to eq(
       "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
@@ -30,11 +31,12 @@ RSpec.describe Audit::Rollback::Registry do
       "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,
       "Reference" => Audit::Rollback::Adapters::Reference,
       "UserCard" => Audit::Rollback::Adapters::UserCard,
-      "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount
+      "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount,
+      "Subscription" => Audit::Rollback::Adapters::Subscription
     )
   end
 
-  it "keeps audit capture enabled for a family without a rollback adapter" do
+  it "registers Subscription audit operations for rollback" do
     user = create(:user, :random)
     admin = create(:user, :random, admin: true)
     operation = nil
@@ -45,7 +47,7 @@ RSpec.describe Audit::Rollback::Registry do
     end
 
     expect(operation.audit_versions.where(item_type: "Subscription", event: :create)).to exist
-    expect(Audit::Rollback::Preview.new(operation:, actor: admin)).to have_attributes(state: "read_only")
-    expect(described_class.supported_types).not_to include("Subscription")
+    expect(Audit::Rollback::Preview.new(operation:, actor: admin)).to have_attributes(state: "previewable")
+    expect(described_class.supported_types).to include("Subscription")
   end
 end

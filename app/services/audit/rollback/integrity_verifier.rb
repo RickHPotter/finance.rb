@@ -14,6 +14,7 @@ class Audit::Rollback::IntegrityVerifier
     preview.rows.each { |row| verify_row(row) }
     verify_transaction_counts
     verify_routing_totals
+    verify_subscription_totals
     true
   end
 
@@ -75,6 +76,17 @@ class Audit::Rollback::IntegrityVerifier
     end
     UserCard.where(id: impact.user_card_ids).find_each do |card|
       verify_cache(card, :card_transactions, :card_transactions_count, :card_transactions_total)
+    end
+  end
+
+  def verify_subscription_totals
+    Subscription.unscoped.where(id: impact.subscription_ids).find_each do |subscription|
+      expected_price = subscription.cash_transactions.sum(:price) + subscription.card_transactions.sum(:price)
+      next if subscription.cash_transactions_count == subscription.cash_transactions.count &&
+              subscription.card_transactions_count == subscription.card_transactions.count &&
+              subscription.price == expected_price
+
+      raise IntegrityError, "Subscription ##{subscription.id} totals are stale"
     end
   end
 

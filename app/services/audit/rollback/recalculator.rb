@@ -12,6 +12,7 @@ class Audit::Rollback::Recalculator
     recalculate_card_transactions
     recalculate_routing_totals
     recalculate_allocation_totals
+    recalculate_subscriptions
     recalculate_budgets
     recalculate_balances
   end
@@ -80,6 +81,17 @@ class Audit::Rollback::Recalculator
     Budget.unscoped.where(id: impact.budget_ids).find_each do |budget|
       budget.recalculate_balance = false
       budget.save!
+    end
+  end
+
+  def recalculate_subscriptions
+    Subscription.unscoped.where(id: impact.subscription_ids).find_each do |subscription|
+      Audit::BulkMutation.update_columns!(
+        subscription,
+        cash_transactions_count: subscription.cash_transactions.count,
+        card_transactions_count: subscription.card_transactions.count,
+        price: subscription.cash_transactions.sum(:price) + subscription.card_transactions.sum(:price)
+      )
     end
   end
 
