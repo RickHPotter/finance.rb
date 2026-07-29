@@ -73,6 +73,20 @@ RSpec.describe "Categories", type: :request do
       expect(counterpart_payload.fetch("filterOptions").pluck("label")).to include("Bank Account: 99PAY", "User Card: 99PAY")
       expect(counterpart_payload.fetch("entries").pluck("name")).to include("Scenario Entity")
     end
+
+    it "sums transactions with duplicate prices independently" do
+      category = create(:category, user:, category_name: "DUPLICATE PRICES")
+      user_card = user.user_cards.find_by!(user_card_name: "99PAY")
+      cash_transactions = create_list(:cash_transaction, 2, user:, context: user.main_context, user_bank_account:, price: -2_000)
+      card_transactions = create_list(:card_transaction, 2, user:, context: user.main_context, user_card:, price: -3_000)
+      cash_transactions.each { |transaction| create(:category_transaction, transactable: transaction, category:) }
+      card_transactions.each { |transaction| create(:category_transaction, transactable: transaction, category:) }
+
+      get category_path(category)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("R$ -40.00", "R$ -60.00")
+    end
   end
 
   describe "[ #new ]" do

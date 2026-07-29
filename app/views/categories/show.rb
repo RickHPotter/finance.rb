@@ -211,11 +211,13 @@ class Views::Categories::Show < Views::Base
   end
 
   def scoped_cash_transactions
-    @scoped_cash_transactions ||= current_context.cash_transactions.joins(:categories).where(categories: { id: category.id }).distinct
+    allocation_ids = CategoryTransaction.where(category_id: category.id, transactable_type: "CashTransaction").select(:transactable_id)
+    @scoped_cash_transactions ||= current_context.cash_transactions.where(id: allocation_ids)
   end
 
   def scoped_card_transactions
-    @scoped_card_transactions ||= current_context.card_transactions.joins(:categories).where(categories: { id: category.id }).distinct
+    allocation_ids = CategoryTransaction.where(category_id: category.id, transactable_type: "CardTransaction").select(:transactable_id)
+    @scoped_card_transactions ||= current_context.card_transactions.where(id: allocation_ids)
   end
 
   def scoped_cash_transactions_for_payload
