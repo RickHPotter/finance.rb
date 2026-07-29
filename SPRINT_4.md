@@ -995,6 +995,35 @@ References:
 Goal: remove the blanket post-payment category/entity lock and provide safe, consistent
 single and bulk allocation tools for cash transactions, card transactions, and budgets.
 
+Locked V1 direction:
+
+- paid history no longer blocks a descriptive allocation correction when transaction
+  price, installment prices, installment structure, and every reference month/year stay
+  unchanged
+- description, comment, and same-reference-period date changes may accompany that
+  correction without an extra confirmation
+- the existing paid-history confirmation/rejection contract continues to govern
+  monetary, installment, payment-state, account/card/reference, and reference-period
+  changes
+- normal forms retain the rich entity workflow, including payer removal/replacement
+  through explicit nested rows and domain coordination
+- bulk Add Entity creates a neutral non-payer row with zero price, zero return, and no
+  exchanges
+- bulk Remove Entity and Switch Entity accept only a completely neutral source row;
+  payer, monetary, return-bearing, exchange-bearing, built-in-self, and friend-backed
+  allocations are form/domain-only
+- category bulk actions are idempotent and protect structural built-in families
+- cash/card installment selections are deduplicated to unique parent transactions for
+  allocation planning, and preview displays both counts
+- strict all-selected apply is the default; an explicit eligible-only apply is offered
+  only when the safe subset is independent from every conflict
+- preview is read-only, apply replans under lock, and each apply is one atomic
+  KAKASHI-08 operation
+- descriptive transaction allocation changes refresh counters and budget matching but
+  do not recalculate financial balances
+- KAKASHI-16 provides the allocation policy/planner/mutator foundation required by
+  KAKASHI-18
+
 Allocation rules:
 
 - allow descriptive category and entity corrections after payment while preserving
@@ -1039,6 +1068,12 @@ Coverage:
 - cover paid and unpaid rows, mixed eligibility, duplicate destinations, built-in
   categories, exchange/Piggy Bank entities, subscriptions, budgets, context isolation,
   rollback, audit events, and Turbo row refresh
+
+References:
+
+- [allocation mutation contract](docs/sprints/4-kakashi/kakashi-16/01-allocation-mutation-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-16/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-16/03-decisions-and-test-matrix.md)
 
 ### KAKASHI-17: Complete and harden resource dashboards
 
