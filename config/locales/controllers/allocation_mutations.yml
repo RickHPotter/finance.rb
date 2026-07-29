@@ -1,0 +1,122 @@
+en:
+  allocation_mutations:
+    actions:
+      category:
+        add: "Add category %{destination}"
+        remove: "Remove category %{source}"
+        switch: "Switch category %{source} to %{destination}"
+      entity:
+        add: "Add entity %{destination}"
+        remove: "Remove entity %{source}"
+        switch: "Switch entity %{source} to %{destination}"
+    preview:
+      eyebrow: "Bulk allocation"
+      title: "Review allocation changes"
+      reasons: "Planning results"
+      counts:
+        selected_rows: "Selected rows"
+        unique_owners: "Unique records"
+        affected: "Affected"
+        noops: "No change"
+        conflicts: "Conflicts"
+      apply:
+        strict: "Apply all"
+        eligible_only: "Apply eligible only"
+    reasons:
+      ready: "Ready to apply"
+      destination_present: "Destination is already assigned"
+      source_absent: "Source is not assigned"
+      same_category: "Source and destination categories are the same"
+      same_entity: "Source and destination entities are the same"
+      category_not_owned: "Category does not belong to your account"
+      category_inactive: "Category is inactive"
+      category_protected: "Built-in category must use its domain workflow"
+      subscription_owned_category: "Category is managed by a Subscription"
+      entity_not_owned: "Entity does not belong to your account"
+      entity_inactive: "Entity is inactive"
+      entity_protected: "Self and friend identities must use the form workflow"
+      entity_allocation_not_neutral: "Entity has a payer, value, return, or exchange role"
+      structural_category_allocation: "Category belongs to an inseparable structural workflow"
+      structural_entity_allocation: "Entity belongs to an inseparable structural workflow"
+      subscription_owned_entity: "Entity is managed by a Subscription"
+      invalid_final_state: "The resulting Budget would be invalid"
+    apply:
+      applied: "Allocation changes were applied."
+      operation: "Audit operation: %{operation_id}"
+      states:
+        applied: "Changes applied"
+        rejected: "Nothing was changed"
+        failed: "The operation failed"
+      reasons:
+        confirmation_required: "Confirm the preview before applying it."
+        invalid_mode: "The requested apply mode is invalid."
+        invalid_token: "The preview token is invalid, tampered with, or expired."
+        token_actor_mismatch: "This preview belongs to another user."
+        token_context_mismatch: "This preview belongs to another context."
+        selection_not_current: "The selected records are no longer available in this context."
+        stale_preview: "Allocations changed after preview. Request a fresh preview."
+        strict_apply_unavailable: "Apply all is unavailable because the preview has conflicts or no affected records."
+        eligible_only_unavailable: "The eligible subset cannot be separated safely from the conflicts."
+        validation_failed: "The allocation change no longer satisfies its validations."
+        unexpected_failure: "The allocation operation could not be completed."
+pt-BR:
+  allocation_mutations:
+    actions:
+      category:
+        add: "Adicionar categoria %{destination}"
+        remove: "Remover categoria %{source}"
+        switch: "Trocar categoria %{source} por %{destination}"
+      entity:
+        add: "Adicionar entidade %{destination}"
+        remove: "Remover entidade %{source}"
+        switch: "Trocar entidade %{source} por %{destination}"
+    preview:
+      eyebrow: "Alocação em massa"
+      title: "Revise as alterações de alocação"
+      reasons: "Resultados do planejamento"
+      counts:
+        selected_rows: "Linhas selecionadas"
+        unique_owners: "Registros únicos"
+        affected: "Afetados"
+        noops: "Sem alteração"
+        conflicts: "Conflitos"
+      apply:
+        strict: "Aplicar tudo"
+        eligible_only: "Aplicar somente elegíveis"
+    reasons:
+      ready: "Pronto para aplicar"
+      destination_present: "O destino já está atribuído"
+      source_absent: "A origem não está atribuída"
+      same_category: "As categorias de origem e destino são iguais"
+      same_entity: "As entidades de origem e destino são iguais"
+      category_not_owned: "A categoria não pertence à sua conta"
+      category_inactive: "A categoria está inativa"
+      category_protected: "A categoria interna deve usar seu fluxo de domínio"
+      subscription_owned_category: "A categoria é gerenciada por uma Assinatura"
+      entity_not_owned: "A entidade não pertence à sua conta"
+      entity_inactive: "A entidade está inativa"
+      entity_protected: "Identidades próprias e de amigos devem usar o formulário"
+      entity_allocation_not_neutral: "A entidade possui papel de pagador, valor, retorno ou câmbio"
+      structural_category_allocation: "A categoria pertence a um fluxo estrutural inseparável"
+      structural_entity_allocation: "A entidade pertence a um fluxo estrutural inseparável"
+      subscription_owned_entity: "A entidade é gerenciada por uma Assinatura"
+      invalid_final_state: "O Orçamento resultante seria inválido"
+    apply:
+      applied: "As alterações de alocação foram aplicadas."
+      operation: "Operação de auditoria: %{operation_id}"
+      states:
+        applied: "Alterações aplicadas"
+        rejected: "Nada foi alterado"
+        failed: "A operação falhou"
+      reasons:
+        confirmation_required: "Confirme a prévia antes de aplicá-la."
+        invalid_mode: "O modo de aplicação solicitado é inválido."
+        invalid_token: "O token da prévia é inválido, foi alterado ou expirou."
+        token_actor_mismatch: "Esta prévia pertence a outro usuário."
+        token_context_mismatch: "Esta prévia pertence a outro contexto."
+        selection_not_current: "Os registros selecionados não estão mais disponíveis neste contexto."
+        stale_preview: "As alocações mudaram após a prévia. Solicite uma nova prévia."
+        strict_apply_unavailable: "Aplicar tudo está indisponível porque a prévia possui conflitos ou nenhum registro afetado."
+        eligible_only_unavailable: "Os registros elegíveis não podem ser separados dos conflitos com segurança."
+        validation_failed: "A alteração de alocação não atende mais às validações."
+        unexpected_failure: "Não foi possível concluir a operação de alocação."
