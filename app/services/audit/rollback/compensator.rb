@@ -114,6 +114,12 @@ class Audit::Rollback::Compensator
     raise CompensationError, "installment parent is missing" unless parent
 
     impact.capture_transaction(parent)
+    if direct_generated_parent_update?(parent, parent_row, installment_rows, allocation_rows)
+      Audit::BulkMutation.update_columns!(parent, parent_row.adapter.restore_attributes)
+      restore_post_compensation_attributes(parent_row, parent)
+      return mark_handled(parent_row)
+    end
+
     parent.assign_attributes(parent_row.adapter.restore_attributes) if parent_row&.action == "update"
     apply_installment_changes(parent, installment_rows)
     apply_allocation_changes(parent, allocation_rows)
@@ -185,6 +191,14 @@ class Audit::Rollback::Compensator
 
   def nested_associations(parent)
     [ installment_association(parent), :category_transactions, :entity_transactions ]
+  end
+
+  def direct_generated_parent_update?(parent, parent_row, installment_rows, allocation_rows)
+    parent.is_a?(CardTransaction) &&
+      parent.advance_cash_transaction_id.present? &&
+      parent_row&.action == "update" &&
+      installment_rows.empty? &&
+      allocation_rows.empty?
   end
 
   def prepare_parent(parent)
