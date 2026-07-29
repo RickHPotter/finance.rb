@@ -6,7 +6,7 @@ module EntityTransactable
 
   included do
     # @security (i.e. attr_accessible) ........................................
-    attr_accessor :original_entities
+    attr_accessor :original_entities, :submitted_entity_transaction_attributes
 
     # @relationships ...........................................................
     has_many :entity_transactions, as: :transactable, dependent: :destroy
@@ -21,6 +21,7 @@ module EntityTransactable
   # @public_class_methods .....................................................
   def entity_transactions_attributes=(attrs)
     self.original_entities = entity_transactions.pluck(:entity_id).sort
+    self.submitted_entity_transaction_attributes = attrs.deep_dup
     super
   end
 
@@ -68,5 +69,6 @@ module EntityTransactable
 
   def clear_original_entities
     self.original_entities = nil
+    self.submitted_entity_transaction_attributes = nil
   end
 end

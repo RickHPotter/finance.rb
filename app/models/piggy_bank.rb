@@ -114,6 +114,7 @@ class PiggyBank < ApplicationRecord
       existing = return_transaction.entity_transactions.first
       if existing
         existing.assign_attributes(entity: source_entity, price: 0, price_to_be_returned: 0)
+        existing.save! if existing.changed?
       else
         return_transaction.entity_transactions.build(entity: source_entity, price: 0, price_to_be_returned: 0, is_payer: false)
       end
