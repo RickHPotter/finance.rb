@@ -18,6 +18,7 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     attributes.delete("subscription_id") if supported_subscription_graph?
     attributes -= %w[cash_transaction_type investment_type_id] if supported_investment_graph?
     attributes -= %w[cash_transaction_type reference_transactable_id reference_transactable_type] if supported_investment_valuation_graph?
+    attributes -= %w[cash_transaction_type reference_transactable_id reference_transactable_type user_card_id] if supported_exchange_graph?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
     issues
@@ -83,6 +84,18 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
       states = [ candidate.before_state, candidate.expected_after_state ].compact
       candidate.owner_id == owner_id && candidate.context_id == context_id &&
         states.any? { |state| state["piggy_bank_return_cash_transaction_id"] == item_id }
+    end
+  end
+
+  def supported_exchange_graph?
+    return false unless historical_state["cash_transaction_type"] == "Exchange"
+
+    transitions.any? do |candidate|
+      next false unless candidate.record_type == "Exchange"
+
+      states = [ candidate.before_state, candidate.expected_after_state ].compact
+      candidate.owner_id == owner_id && candidate.context_id == context_id &&
+        states.any? { |state| state["cash_transaction_id"] == item_id }
     end
   end
 
