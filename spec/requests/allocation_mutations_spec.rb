@@ -70,6 +70,60 @@ RSpec.describe "Allocation mutations" do
     )
   end
 
+  it "renders the shared allocation launcher on Cash and Card transaction indexes" do
+    user_card = create(:user_card, user:)
+
+    get cash_transactions_path
+
+    expect(response).to have_http_status(:ok)
+    cash_document = Nokogiri::HTML5(response.body)
+    expect(cash_document.at_css("##{Components::AllocationMutationInterface.modal_id('installment')}")).to be_present
+    cash_launcher = cash_document.at_css("[data-modal-target='#{Components::AllocationMutationInterface.modal_id('installment')}']")
+    expect(cash_launcher).to be_present
+    expect(cash_launcher["data-allocation-mutation-launch"]).to eq("true")
+
+    get card_transactions_path(user_card_id: user_card.id)
+
+    expect(response).to have_http_status(:ok)
+    card_document = Nokogiri::HTML5(response.body)
+    expect(card_document.at_css("##{Components::AllocationMutationInterface.modal_id('installment')}")).to be_present
+    card_launcher = card_document.at_css("[data-modal-target='#{Components::AllocationMutationInterface.modal_id('installment')}']")
+    expect(card_launcher).to be_present
+    expect(card_launcher["data-allocation-mutation-launch"]).to eq("true")
+  end
+
+  it "counts repeated selected installments once as a paid CardTransaction owner" do
+    user_card = create(:user_card, user:)
+    card_transaction = create(
+      :card_transaction,
+      user:,
+      context:,
+      user_card:,
+      category_transactions: []
+    )
+    card_transaction.card_installments.first.update_column(:paid, true)
+
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "CardTransaction",
+        owner_ids: [ card_transaction.id, card_transaction.id ],
+        selected_row_count: 2,
+        action: {
+          allocation_type: "category",
+          operation: "add",
+          destination_id: destination.id
+        }
+      }
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body).to include(
+      "selected_row_count" => 2,
+      "unique_owner_count" => 1,
+      "affected_count" => 1
+    )
+  end
+
   it "does not reveal owners outside the current context" do
     foreign_user = create(:user, :random)
     foreign = create(
@@ -112,13 +166,50 @@ RSpec.describe "Allocation mutations" do
 
     expect(response).to have_http_status(:ok)
     expect(response.media_type).to eq("text/vnd.turbo-stream.html")
-    expect(response.body).to include('target="allocation_mutation_preview"', 'target="notification"')
+    expect(response.body).to include('target="center_container"', 'target="notification"')
+    expect(response.body).to include(Components::AllocationMutationInterface.modal_id("installment"))
 
     post apply_allocation_mutations_path,
          params: { apply_token: "#{token}tampered", mode: "strict", allocation_confirmation: "1" },
          headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
     expect(response).to have_http_status(:unprocessable_content)
+    expect(response.body).to include('target="allocation_mutation_preview"')
     expect(response.body).to include(I18n.t("allocation_mutations.apply.reasons.invalid_token"))
+  end
+
+  it "refreshes the selected Card index state after Turbo apply without changing its URL" do
+    user_card = create(:user_card, user:)
+    card_transaction = create(
+      :card_transaction,
+      user:,
+      context:,
+      user_card:,
+      category_transactions: []
+    )
+    return_to = card_transactions_path(user_card_id: user_card.id, active_month_years: [ 202_607 ], sort: "description", direction: "desc")
+    post preview_allocation_mutations_path, params: {
+      allocation_mutation: {
+        owner_type: "CardTransaction",
+        owner_ids: [ card_transaction.id ],
+        selected_row_count: 1,
+        return_to:,
+        action: {
+          allocation_type: "category",
+          operation: "add",
+          destination_id: destination.id
+        }
+      }
+    }, as: :json
+    token = response.parsed_body.fetch("apply_token")
+
+    post apply_allocation_mutations_path,
+         params: { apply_token: token, mode: "strict", allocation_confirmation: "1", return_to: },
+         headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.location).to be_nil
+    expect(response.body).to include('target="center_container"', CGI.escapeHTML(return_to))
+    expect(card_transaction.reload.categories).to contain_exactly(destination)
   end
 end

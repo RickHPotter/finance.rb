@@ -35,6 +35,11 @@ class Views::CardTransactions::Index < Views::Base
                 index_context:,
                 subscriptions: available_subscriptions
               )
+              render AllocationMutationInterface.new(
+                current_user:,
+                owner_type: "CardTransaction",
+                return_to: index_context[:return_to].presence || request.fullpath
+              )
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
@@ -58,7 +63,8 @@ class Views::CardTransactions::Index < Views::Base
                       modal_target: "cardTransactionsAddToSubscriptionModal",
                       modal_toggle: "cardTransactionsAddToSubscriptionModal"
                     }
-                  }
+                  },
+                  AllocationMutationInterface.bulk_action(selection_kind: "installment")
                 ]
               )
             end

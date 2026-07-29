@@ -16,7 +16,7 @@ module Components
       %i[entity switch]
     ].freeze
 
-    attr_reader :current_user, :owner_type, :return_to
+    attr_reader :current_user, :owner_type, :return_to, :selection_kind
 
     def self.bulk_action(selection_kind:)
       {
@@ -27,17 +27,22 @@ module Components
         label: I18n.t("allocation_mutations.interface.launch"),
         data: {
           action: "click->datatable#prepareBulkAction",
-          modal_target: MODAL_ID,
-          modal_toggle: MODAL_ID,
-          allocation_mutation_launch: true
+          modal_target: modal_id(selection_kind),
+          modal_toggle: modal_id(selection_kind),
+          allocation_mutation_launch: "true"
         }
       }
     end
 
-    def initialize(current_user:, owner_type:, return_to:)
+    def self.modal_id(selection_kind)
+      "#{MODAL_ID}_#{selection_kind.to_s.parameterize(separator: '_')}"
+    end
+
+    def initialize(current_user:, owner_type:, return_to:, selection_kind: "installment")
       @current_user = current_user
       @owner_type = owner_type.to_s
       @return_to = return_to
+      @selection_kind = selection_kind.to_s
     end
 
     def view_template
@@ -49,7 +54,7 @@ module Components
         }
       ) do
         ModalShell(
-          id: MODAL_ID,
+          id: modal_id,
           title: I18n.t("allocation_mutations.interface.title"),
           options: modal_options
         ) do
@@ -72,10 +77,14 @@ module Components
         content_class: "max-h-[92svh] w-full overflow-y-auto rounded-b-none rounded-t-2xl p-4 sm:max-w-3xl sm:rounded-lg sm:p-6",
         close_label: I18n.t("allocation_mutations.interface.close"),
         close_button_data: {
-          modal_hide: MODAL_ID,
+          modal_hide: modal_id,
           action: "click->allocation-mutation#close"
         }
       }
+    end
+
+    def modal_id
+      self.class.modal_id(selection_kind)
     end
 
     def configuration

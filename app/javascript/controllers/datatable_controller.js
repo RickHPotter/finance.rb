@@ -161,7 +161,8 @@ export default class extends Controller {
     })
 
     if (this.datasetBoolean(event.currentTarget.dataset.allocationMutationLaunch)) {
-      const interfaceElement = this.element.querySelector("[data-allocation-mutation-interface]")
+      const modalElement = document.getElementById(event.currentTarget.dataset.modalTarget)
+      const interfaceElement = modalElement?.closest("[data-allocation-mutation-interface]")
       const controller = interfaceElement && this.application.getControllerForElementAndIdentifier(interfaceElement, "allocation-mutation")
       controller?.loadSelection({ ownerIds: selectedIds, selectedRowCount, selectionData })
     }

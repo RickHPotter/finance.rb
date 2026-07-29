@@ -25,17 +25,42 @@ class AllocationMutationsController < ApplicationController
   private
 
   def render_turbo_result(result)
-    render turbo_stream: [
-      turbo_stream.replace(
-        "allocation_mutation_preview",
-        Views::AllocationMutations::Result.new(result:, frame_only: true)
-      ),
-      turbo_stream.update(
-        :notification,
-        partial: "shared/flash",
-        locals: result.applied? ? { notice: result_message(result) } : { alert: result_message(result) }
-      )
-    ], status: response_status(result)
+    render turbo_stream: turbo_streams_for(result), status: response_status(result)
+  end
+
+  def turbo_streams_for(result)
+    streams = []
+    refresh = transaction_index_refresh(result)
+    streams << if refresh
+                 turbo_stream.replace(:center_container, refresh)
+               else
+                 turbo_stream.replace(
+                   "allocation_mutation_preview",
+                   Views::AllocationMutations::Result.new(result:, frame_only: true)
+                 )
+               end
+    streams << turbo_stream.update(
+      :notification,
+      partial: "shared/flash",
+      locals: result.applied? ? { notice: result_message(result) } : { alert: result_message(result) }
+    )
+    streams
+  end
+
+  def transaction_index_refresh(result)
+    return unless result.applied?
+    return unless token_selection&.fetch("owner_type", nil).in?(%w[CashTransaction CardTransaction])
+
+    AllocationMutations::TransactionIndexRefresh.new(
+      actor: current_user,
+      context: current_context,
+      owner_type: token_selection.fetch("owner_type"),
+      destination: allocation_return_path,
+      mobile: @mobile
+    ).view
+  rescue StandardError => e
+    Rails.error.report(e, handled: true, severity: :warning, context: { component: "allocation_mutation_index_refresh" })
+    nil
   end
 
   def redirect_after_apply(result)
@@ -68,17 +93,20 @@ class AllocationMutationsController < ApplicationController
   end
 
   def allocation_return_path
+    return @allocation_return_path if defined?(@allocation_return_path)
+
     owner_type = token_selection&.fetch("owner_type", nil)
     raw = params[:return_to].presence
 
-    case owner_type
-    when "CardTransaction"
-      Navigation::CardTransactions.new(raw:, fallback: card_transactions_path, current_user:, current_context:).destination
-    when "Budget"
-      Navigation::Budgets.new(raw:, fallback: budgets_path, current_user:, current_context:).destination
-    else
-      Navigation::CashTransactions.new(raw:, fallback: cash_transactions_path, current_user:, current_context:).destination
-    end
+    @allocation_return_path =
+      case owner_type
+      when "CardTransaction"
+        Navigation::CardTransactions.new(raw:, fallback: card_transactions_path, current_user:, current_context:).destination
+      when "Budget"
+        Navigation::Budgets.new(raw:, fallback: budgets_path, current_user:, current_context:).destination
+      else
+        Navigation::CashTransactions.new(raw:, fallback: cash_transactions_path, current_user:, current_context:).destination
+      end
   end
 
   def token_selection

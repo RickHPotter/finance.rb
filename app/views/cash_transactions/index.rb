@@ -36,6 +36,11 @@ class Views::CashTransactions::Index < Views::Base
                 index_context:,
                 subscriptions: available_subscriptions
               )
+              render AllocationMutationInterface.new(
+                current_user:,
+                owner_type: "CashTransaction",
+                return_to: index_context[:return_to].presence || request.fullpath
+              )
               render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
@@ -90,7 +95,8 @@ class Views::CashTransactions::Index < Views::Base
                       modal_target: "cashTransactionsAddToSubscriptionModal",
                       modal_toggle: "cashTransactionsAddToSubscriptionModal"
                     }
-                  }
+                  },
+                  AllocationMutationInterface.bulk_action(selection_kind: "installment")
                 ]
               )
               render_budget_bulk_forms

@@ -7,13 +7,13 @@ RSpec.describe Components::AllocationMutationInterface, type: :component do
 
   it "renders all six keyboard-accessible actions and the responsive dialog contract" do
     document = render_component
-    dialog = document.at_css("##{described_class::MODAL_ID}")
+    dialog = document.at_css("##{described_class.modal_id('installment')}")
     action_buttons = document.css("button[data-allocation-action-key]")
 
     expect(dialog).to be_present
     expect(dialog["role"]).to eq("dialog")
     expect(dialog["aria-modal"]).to eq("true")
-    expect(dialog["aria-labelledby"]).to eq("#{described_class::MODAL_ID}_title")
+    expect(dialog["aria-labelledby"]).to eq("#{described_class.modal_id('installment')}_title")
     expect(action_buttons.map { |button| button["data-allocation-action-key"] }).to contain_exactly(
       "category_add",
       "category_remove",
@@ -49,9 +49,9 @@ RSpec.describe Components::AllocationMutationInterface, type: :component do
     )
     expect(action[:data]).to include(
       action: "click->datatable#prepareBulkAction",
-      modal_target: described_class::MODAL_ID,
-      modal_toggle: described_class::MODAL_ID,
-      allocation_mutation_launch: true
+      modal_target: described_class.modal_id("transaction"),
+      modal_toggle: described_class.modal_id("transaction"),
+      allocation_mutation_launch: "true"
     )
   end
 
