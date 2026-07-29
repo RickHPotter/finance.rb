@@ -7,7 +7,7 @@ class Views::Investments::MonthYear < Views::Base
   include TranslateHelper
   include CacheHelper
 
-  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_presentation, :investment_bg_colour, :return_to
+  attr_reader :mobile, :month_year, :month_year_str, :investments, :total_amount, :investment_presentation, :return_to
 
   def initialize(mobile:, month_year:, month_year_str:, investments:, **options)
     @month_year = month_year
@@ -18,7 +18,6 @@ class Views::Investments::MonthYear < Views::Base
 
     category = options.fetch(:current_user).categories.built_in.find_by(category_name: "INVESTMENT")
     @investment_presentation = CategoryColours::Presentation.for(category)
-    @investment_bg_colour = category.hex_colour
 
     @return_to = options[:return_to]
   end
