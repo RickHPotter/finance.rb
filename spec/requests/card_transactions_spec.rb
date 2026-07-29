@@ -519,6 +519,14 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "returns a regular submission to the selected user card" do
+      post card_transactions_path,
+           params: card_transaction.params.merge(return_to: card_transactions_path),
+           headers: turbo_stream_headers
+
+      expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
+    end
+
     it "continues a create chain with the created ids tracked in the next form" do
       expect do
         post card_transactions_path,
@@ -1421,6 +1429,16 @@ RSpec.describe "CardTransactions", type: :request do
       @existing_card_transaction = CardTransaction.last
 
       sign_in user
+    end
+
+    it "returns a regular submission to the selected user card" do
+      card_transaction.use_base(@existing_card_transaction)
+
+      put card_transaction_path(@existing_card_transaction),
+          params: card_transaction.params.merge(return_to: card_transactions_path),
+          headers: turbo_stream_headers
+
+      expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
     end
 
     it "updates the record to have a non_paying entity" do
