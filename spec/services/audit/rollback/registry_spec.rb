@@ -14,7 +14,9 @@ RSpec.describe Audit::Rollback::Registry do
       "Budget",
       "BudgetCategory",
       "BudgetEntity",
-      "Reference"
+      "Reference",
+      "UserCard",
+      "UserBankAccount"
     )
     expect(described_class::ADAPTERS).to eq(
       "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
@@ -26,7 +28,9 @@ RSpec.describe Audit::Rollback::Registry do
       "Budget" => Audit::Rollback::Adapters::Budget,
       "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
       "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,
-      "Reference" => Audit::Rollback::Adapters::Reference
+      "Reference" => Audit::Rollback::Adapters::Reference,
+      "UserCard" => Audit::Rollback::Adapters::UserCard,
+      "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount
     )
   end
 

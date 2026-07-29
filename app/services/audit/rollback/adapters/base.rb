@@ -23,7 +23,7 @@ class Audit::Rollback::Adapters::Base
     @prohibitions ||= [].tap do |issues|
       issues << issue(:inconsistent_version_ownership) unless transition.ownership_consistent?
       issues << issue(:unknown_owner) unless User.exists?(id: owner_id)
-      issues << issue(:unknown_context) unless Context.exists?(id: context_id, user_id: owner_id)
+      issues << issue(:unknown_context) unless valid_context?
     end
   end
 
@@ -145,6 +145,16 @@ class Audit::Rollback::Adapters::Base
     ownership = Audit::OwnershipResolver.resolve!(current_record)
     ownership.owner_id != owner_id || ownership.context_id != context_id
   rescue Audit::OwnershipResolver::UnsupportedRecordError, Audit::OwnershipResolver::UnresolvableOwnershipError
+    true
+  end
+
+  def valid_context?
+    return !context_required? if context_id.nil?
+
+    Context.exists?(id: context_id, user_id: owner_id)
+  end
+
+  def context_required?
     true
   end
 

@@ -11,7 +11,9 @@ class Audit::Rollback::Registry
     "Budget" => Audit::Rollback::Adapters::Budget,
     "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
     "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,
-    "Reference" => Audit::Rollback::Adapters::Reference
+    "Reference" => Audit::Rollback::Adapters::Reference,
+    "UserCard" => Audit::Rollback::Adapters::UserCard,
+    "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount
   }.freeze
 
   class << self

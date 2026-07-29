@@ -30,10 +30,16 @@ class Audit::Rollback::Recalculator
 
   def recalculate_card_payment_projection(transaction)
     return unless transaction.cash_transaction_type == "CardInstallment"
-    return if transaction.card_installments.none?
+
+    projection = transaction.card_installments.first
+    return unless projection
 
     price = transaction.card_installments.sum(:price)
-    Audit::BulkMutation.update_columns!(transaction, price:)
+    Audit::BulkMutation.update_columns!(
+      transaction,
+      price:,
+      comment: projection.comment
+    )
     Audit::BulkMutation.update_all!(transaction.cash_installments, price:)
   end
 
@@ -78,7 +84,7 @@ class Audit::Rollback::Recalculator
   end
 
   def recalculate_balances
-    impact.owner_contexts.sort.each do |owner_id, context_id|
+    impact.owner_contexts.select(&:last).sort.each do |owner_id, context_id|
       context = Context.find_by(id: context_id, user_id: owner_id)
       next unless context
 

@@ -20,7 +20,6 @@ class Audit::Rollback::Adapters::Reference < Audit::Rollback::Adapters::Base
 
   def conflicts
     super.tap do |issues|
-      issues << issue(:reference_merge_routing_conflict) if reference_merge?
       next unless conflicting_records.present?
       next if conflicting_records.all? { |record| replacement_transition_for(record)&.action == "destroy" }
 
@@ -78,16 +77,6 @@ class Audit::Rollback::Adapters::Reference < Audit::Rollback::Adapters::Base
 
   def replacement_transition_for(record)
     transitions.find { |candidate| candidate.record_type == "Reference" && candidate.item_id == record.id }
-  end
-
-  def reference_merge?
-    reference_actions = transitions.select { |candidate| candidate.record_type == "Reference" }.map(&:action).sort
-    return false unless reference_actions == %w[recreate update]
-
-    transitions.any? do |candidate|
-      candidate.record_type == "CardInstallment" &&
-        candidate.net_changed_attributes.include?("cash_transaction_id")
-    end
   end
 
   def recreate_reference!

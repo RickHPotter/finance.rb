@@ -140,7 +140,7 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
     expect(invoice.cash_installments.sole.reload.date.iso8601(3)).to eq(original_installment_date.iso8601(3))
   end
 
-  it "reports the neighboring reference merge routing conflict precisely" do
+  it "restores a neighboring reference merge and its invoice routing graph" do
     march_reference = PaperTrail.request(enabled: false) do
       create(
         :reference,
@@ -163,19 +163,20 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
         reference_closing_date: Date.new(2026, 4, 5)
       )
     end
+    original_april_closing_date = april_reference.reference_closing_date
     march_invoice = create_invoice(march_reference, price: -1_000)
     april_invoice = create_invoice(april_reference, price: -1_200)
     operation = audited_operation do
       expect(Logic::References.merge(user_card, "2026-03-01", "2026-04-01", context:)).to be_truthy
     end
 
-    preview = Audit::Rollback::Preview.new(operation:, actor: admin)
+    preview, result = apply(operation)
 
-    expect(preview).to have_attributes(state: "conflicted")
-    expect(preview.rows.select { |row| row.record_type == "Reference" }.flat_map(&:conflicts).map(&:code)).to include("reference_merge_routing_conflict")
-    expect(Reference).not_to exist(march_reference.id)
-    expect(april_reference.reload.reference_closing_date).to eq(march_reference.reference_closing_date)
-    expect(CashTransaction).not_to exist(march_invoice.id)
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(Reference).to exist(march_reference.id)
+    expect(april_reference.reload.reference_closing_date).to eq(original_april_closing_date)
+    expect(CashTransaction).to exist(march_invoice.id)
     expect(CashTransaction).to exist(april_invoice.id)
   end
 end

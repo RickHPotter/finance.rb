@@ -35,7 +35,7 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   def post_compensation_attributes
     return {} unless supported_card_payment_projection_update?
 
-    { "description" => before_state["description"] }
+    before_state.slice("description", "comment")
   end
 
   private
