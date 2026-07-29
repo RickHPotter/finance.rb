@@ -143,6 +143,7 @@ export default class extends Controller {
     const kind = event.currentTarget.dataset.bulkIdsKind || "installment"
     const selectedIds = this.selectedIds(kind)
     const selectionData = this.selectedSelectionData(kind)
+    const selectedRowCount = this.selectedCheckboxes().length
 
     this.element.querySelectorAll("[data-bulk-ids-input]").forEach(input => {
       if ((input.dataset.bulkIdsKind || "installment") !== kind) return
@@ -153,6 +154,17 @@ export default class extends Controller {
       if ((input.dataset.bulkIdsKind || "installment") !== kind) return
       input.value = JSON.stringify(selectionData)
     })
+
+    this.element.querySelectorAll("[data-bulk-selected-row-count-input]").forEach(input => {
+      if ((input.dataset.bulkIdsKind || "installment") !== kind) return
+      input.value = String(selectedRowCount)
+    })
+
+    if (this.datasetBoolean(event.currentTarget.dataset.allocationMutationLaunch)) {
+      const interfaceElement = this.element.querySelector("[data-allocation-mutation-interface]")
+      const controller = interfaceElement && this.application.getControllerForElementAndIdentifier(interfaceElement, "allocation-mutation")
+      controller?.loadSelection({ ownerIds: selectedIds, selectedRowCount, selectionData })
+    }
 
     const modalId = event.currentTarget.dataset.modalTarget
     if (!modalId) return
@@ -201,6 +213,15 @@ export default class extends Controller {
 
   selectedCheckboxes() {
     return this.visibleCheckboxes().filter(checkbox => checkbox.checked)
+  }
+
+  clearSelection() {
+    this.checkboxTargets.forEach((checkbox) => {
+      checkbox.checked = false
+      this.updateRowSelectionState(checkbox.closest("[data-datatable-target='row']"), false)
+    })
+    this.lastSelectedCheckbox = null
+    this.syncBulkBars()
   }
 
   selectedCheckboxesFor(monthGroup) {

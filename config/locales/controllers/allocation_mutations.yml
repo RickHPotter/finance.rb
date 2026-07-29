@@ -1,5 +1,29 @@
 en:
   allocation_mutations:
+    interface:
+      launch: "Allocations"
+      launch_title: "Bulk edit categories or entities"
+      title: "Edit allocations"
+      description: "Choose one allocation action, review the affected records, and apply only the signed server preview."
+      action_label: "Action"
+      source: "Source"
+      destination: "Destination"
+      choose_category: "Choose a category"
+      choose_entity: "Choose an entity"
+      category_term: "categories"
+      entity_term: "entities"
+      preview: "Preview changes"
+      loading: "Planning the selected records…"
+      empty_selection: "Select at least one record before opening allocation actions."
+      back: "Change action"
+      close: "Close allocation editor"
+      actions:
+        category_add: "Add category"
+        category_remove: "Remove category"
+        category_switch: "Switch category"
+        entity_add: "Add entity"
+        entity_remove: "Remove entity"
+        entity_switch: "Switch entity"
     actions:
       category:
         add: "Add category %{destination}"
@@ -61,6 +85,30 @@ en:
         unexpected_failure: "The allocation operation could not be completed."
 pt-BR:
   allocation_mutations:
+    interface:
+      launch: "Alocações"
+      launch_title: "Editar categorias ou entidades em massa"
+      title: "Editar alocações"
+      description: "Escolha uma ação de alocação, revise os registros afetados e aplique somente a prévia assinada pelo servidor."
+      action_label: "Ação"
+      source: "Origem"
+      destination: "Destino"
+      choose_category: "Escolha uma categoria"
+      choose_entity: "Escolha uma entidade"
+      category_term: "categorias"
+      entity_term: "entidades"
+      preview: "Pré-visualizar alterações"
+      loading: "Planejando os registros selecionados…"
+      empty_selection: "Selecione pelo menos um registro antes de abrir as ações de alocação."
+      back: "Alterar ação"
+      close: "Fechar editor de alocações"
+      actions:
+        category_add: "Adicionar categoria"
+        category_remove: "Remover categoria"
+        category_switch: "Trocar categoria"
+        entity_add: "Adicionar entidade"
+        entity_remove: "Remover entidade"
+        entity_switch: "Trocar entidade"
     actions:
       category:
         add: "Adicionar categoria %{destination}"

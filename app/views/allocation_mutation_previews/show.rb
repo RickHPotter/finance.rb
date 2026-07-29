@@ -2,6 +2,7 @@
 
 class Views::AllocationMutationPreviews::Show < Views::Base
   include Phlex::Rails::Helpers::FormWith
+  include Phlex::Rails::Helpers::LinkTo
 
   attr_reader :preview, :return_to
 
@@ -20,13 +21,17 @@ class Views::AllocationMutationPreviews::Show < Views::Base
   private
 
   def preview_frame
-    turbo_frame_tag "allocation_mutation_preview" do
+    turbo_frame_tag(
+      "allocation_mutation_preview",
+      data: { allocation_mutation_target: "previewFrame" }
+    ) do
       section(class: "rounded-lg border border-slate-200 bg-white p-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100") do
         header_section
         action_section
         counts_section
         reasons_section
         apply_actions
+        back_button
       end
     end
   end
@@ -72,7 +77,18 @@ class Views::AllocationMutationPreviews::Show < Views::Base
       preview.reason_groups.each do |group|
         article(class: reason_class(group[:status])) do
           p(class: "text-sm font-semibold") { "#{group[:label]} · #{group[:count]}" }
-          p(class: "mt-1 text-xs opacity-80") { group[:owners].map { |owner| owner[:label] }.join(", ") }
+          ul(class: "mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs opacity-80") do
+            group[:owners].each do |owner|
+              li do
+                link_to(
+                  owner[:label],
+                  owner[:path],
+                  class: "underline decoration-current/40 underline-offset-2 hover:decoration-current",
+                  data: { turbo_frame: "_top", turbo_prefetch: false }
+                )
+              end
+            end
+          end
         end
       end
     end
@@ -82,6 +98,37 @@ class Views::AllocationMutationPreviews::Show < Views::Base
     div(class: "mt-3 flex flex-wrap gap-2") do
       apply_form(:strict, "strict") if preview.strict_apply_available?
       apply_form(:eligible_only, "eligible_only") if preview.eligible_only_available?
+    end
+  end
+
+  def back_button
+    return standalone_back_link unless @frame_only
+
+    button(
+      type: :button,
+      class: "mt-3 min-h-10 rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
+             "dark:border-slate-700 dark:hover:bg-slate-800",
+      data: { action: "click->allocation-mutation#backToForm" }
+    ) do
+      I18n.t("allocation_mutations.interface.back")
+    end
+  end
+
+  def standalone_back_link
+    link_to(
+      I18n.t("allocation_mutations.interface.back"),
+      canonical_index_path,
+      class: "mt-3 inline-flex min-h-10 items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
+             "dark:border-slate-700 dark:hover:bg-slate-800",
+      data: { turbo_frame: "_top", turbo_prefetch: false }
+    )
+  end
+
+  def canonical_index_path
+    case preview.owner_type
+    when "CardTransaction" then card_transactions_path
+    when "Budget" then budgets_path
+    else cash_transactions_path
     end
   end
 

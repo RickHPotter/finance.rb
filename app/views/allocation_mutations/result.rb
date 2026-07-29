@@ -17,8 +17,17 @@ class Views::AllocationMutations::Result < Views::Base
   private
 
   def result_frame
-    turbo_frame_tag "allocation_mutation_preview" do
-      section(class: result_class) do
+    turbo_frame_tag(
+      "allocation_mutation_preview",
+      data: { allocation_mutation_target: "previewFrame" }
+    ) do
+      section(
+        class: result_class,
+        data: {
+          allocation_mutation_applied: result.applied?.to_s,
+          allocation_mutation_owner_ids: result.impacts.map(&:owner_id).uniq.sort.to_json
+        }
+      ) do
         h1(class: "text-lg font-bold") { result_title }
         p(class: "mt-1 text-sm") { result_description }
         if result.operation.present?
@@ -26,6 +35,7 @@ class Views::AllocationMutations::Result < Views::Base
             I18n.t("allocation_mutations.apply.operation", operation_id: result.operation.id)
           end
         end
+        retry_button unless result.applied?
       end
     end
   end
@@ -41,6 +51,16 @@ class Views::AllocationMutations::Result < Views::Base
       "allocation_mutations.apply.reasons.#{result.reason_code}",
       default: I18n.t("allocation_mutations.apply.reasons.unexpected_failure")
     )
+  end
+
+  def retry_button
+    button(
+      type: :button,
+      class: "mt-3 min-h-10 rounded-md border border-current/30 px-4 py-2 text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5",
+      data: { action: "click->allocation-mutation#backToForm" }
+    ) do
+      I18n.t("allocation_mutations.interface.back")
+    end
   end
 
   def result_class
