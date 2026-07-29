@@ -13,6 +13,7 @@ class Views::Investments::IndexSearchForm < Views::Base
               :default_year, :years, :active_month_years, :search_term,
               :user_bank_account_id,
               :investment_type_id,
+              :piggy_bank_return_cash_transaction_id,
               :user_bank_accounts,
               :investment_types,
               :count_by_month_year,
@@ -27,6 +28,7 @@ class Views::Investments::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @user_bank_account_id = index_context[:user_bank_account_id]
     @investment_type_id = index_context[:investment_type_id]
+    @piggy_bank_return_cash_transaction_id = index_context[:piggy_bank_return_cash_transaction_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @mobile = mobile
 
@@ -41,6 +43,10 @@ class Views::Investments::IndexSearchForm < Views::Base
               method: :get,
               class: "w-full",
               data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+      Array(piggy_bank_return_cash_transaction_id).each do |cash_transaction_id|
+        input(type: :hidden, name: "investment[piggy_bank_return_cash_transaction_id][]", value: cash_transaction_id)
+      end
+
       build_month_year_selector
 
       div(class: "flex items-center gap-2") do

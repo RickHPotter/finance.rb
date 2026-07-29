@@ -307,6 +307,8 @@ Explicitly out of scope:
 - Issues:
   - [#51](https://github.com/RickHPotter/finance.rb/issues/51)
 
+Status: complete as of 2026-07-29.
+
 Goal: record who changed financial data, what changed, when it changed, and which
 application operation caused it, so debugging no longer depends only on current state
 and selected mistakes can be reversed safely.
@@ -320,10 +322,15 @@ Delivery status:
 - V1 is a complete PR boundary: persistent auditing, authorized history, guarded
   preview/apply infrastructure, ordinary cash/card transaction and installment
   adapters, and conservative price-only card-payment projection rollback
-- KAKASHI-08 remains unfinished as a feature until a future V2 PR adds every remaining
-  audited record-family adapter and completes the generated financial graph coverage
-- V1 operations containing an unsupported family or graph remain safely read-only;
-  there is no partial or forced rollback
+- V2 is the completed final boundary: adapters cover `CategoryTransaction`,
+  `EntityTransaction`, `Budget`, `Investment`, `Subscription`, `Exchange`, `Reference`,
+  `UserCard`, `UserBankAccount`, and `PiggyBank`
+- `BudgetCategory` and `BudgetEntity` are audited and compensated as internal Budget graph
+  companions so allocation membership is restored with the Budget
+- known generated transaction/installment graphs that depend on those families are
+  covered by deterministic preview and atomic compensation
+- unknown future graph shapes remain safely read-only; there is no partial or forced
+  rollback
 
 Foundation:
 
@@ -409,6 +416,8 @@ Explicitly out of scope:
 
 - arbitrary database time travel
 - bypassing validations or financial safety guards
+- audit and rollback coverage for the user-level `Category` and `Entity` master records
+- audit and rollback coverage for `Context` lifecycle, clone, archive, and purge roots
 - automatic rollback based only on a failed health check
 - storing secrets, encrypted credentials, session data, or unrelated authentication
   payloads in changesets

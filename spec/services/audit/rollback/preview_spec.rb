@@ -115,8 +115,8 @@ RSpec.describe Audit::Rollback::Preview do
       operation:,
       owner_id: user.id,
       context_id: context.id,
-      item_type: "Budget",
-      item_subtype: "Budget",
+      item_type: "Category",
+      item_subtype: "Category",
       item_id: 77,
       event: :update,
       mutation_source: :web,
@@ -128,7 +128,7 @@ RSpec.describe Audit::Rollback::Preview do
     preview = described_class.new(operation:, actor: admin)
 
     expect(preview.state).to eq("read_only")
-    expect(preview.rows.find { |row| row.record_type == "Budget" }.support_issues.map(&:code)).to eq([ "unsupported_record_type" ])
+    expect(preview.rows.find { |row| row.record_type == "Category" }.support_issues.map(&:code)).to eq([ "unsupported_record_type" ])
   end
 
   it "reports paid history as an explicit confirmation requirement" do

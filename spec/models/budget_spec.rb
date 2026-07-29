@@ -74,6 +74,51 @@ RSpec.describe Budget, type: :model do
 
       expect(budget).to be_valid
     end
+
+    it "recalculates balances from the previous month when moving a budget forward" do
+      budget = create(:budget, month: 8, year: 2026)
+      recalculator = instance_double(Logic::RecalculateBalancesService, call: true)
+      allow(Logic::RecalculateBalancesService).to receive(:new).and_return(recalculator)
+
+      budget.update!(month: 9)
+
+      expect(Logic::RecalculateBalancesService).to have_received(:new).with(
+        user: budget.user,
+        context: budget.context,
+        year: 2026,
+        month: 8
+      )
+    end
+
+    it "recalculates balances from the new month when moving a budget backward" do
+      budget = create(:budget, month: 8, year: 2026)
+      recalculator = instance_double(Logic::RecalculateBalancesService, call: true)
+      allow(Logic::RecalculateBalancesService).to receive(:new).and_return(recalculator)
+
+      budget.update!(month: 7)
+
+      expect(Logic::RecalculateBalancesService).to have_received(:new).with(
+        user: budget.user,
+        context: budget.context,
+        year: 2026,
+        month: 7
+      )
+    end
+
+    it "recalculates balances from the new month when moving a budget backward across years" do
+      budget = create(:budget, month: 2, year: 2027)
+      recalculator = instance_double(Logic::RecalculateBalancesService, call: true)
+      allow(Logic::RecalculateBalancesService).to receive(:new).and_return(recalculator)
+
+      budget.update!(month: 7, year: 2026)
+
+      expect(Logic::RecalculateBalancesService).to have_received(:new).with(
+        user: budget.user,
+        context: budget.context,
+        year: 2026,
+        month: 7
+      )
+    end
   end
 end
 

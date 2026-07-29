@@ -16,10 +16,10 @@ class Views::Static::Calculator < Views::Base
       SheetContent(
         side: :middle,
         no_blur: true,
-        class: "rounded-2xl m-1 text-black select-none",
+        class: "overflow-hidden rounded-2xl bg-gray-900 m-1 text-black select-none dark:bg-gray-900",
         data: { controller: :drag }
       ) do
-        div(class: "flex justify-start items-center bg-white") do
+        div(class: "flex justify-start items-center bg-gray-900 text-gray-300") do
           div(data: { drag_target: :handle }) do
             div(class: "pointer-events-none") do
               cached_icon(:expand)

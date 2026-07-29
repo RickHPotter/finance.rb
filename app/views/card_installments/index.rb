@@ -392,9 +392,10 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
         unless mobile
           span(
-            class: "flex items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all dark:border-slate-500 dark:bg-slate-900
-                peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white
-                peer-focus:ring-2 peer-focus:ring-blue-300 size-4"
+            class: "flex size-4 items-center justify-center rounded-full border border-zinc-700 bg-white shadow-sm transition-all
+                peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white peer-focus:ring-2 peer-focus:ring-blue-300
+                dark:border-slate-300 dark:bg-slate-950 dark:text-transparent dark:peer-checked:border-cyan-300
+                dark:peer-checked:bg-cyan-400 dark:peer-checked:text-slate-950 dark:peer-focus:ring-cyan-300/60"
           ) do
             span(class: "text-2xs font-bold opacity-0 transition-opacity peer-checked:opacity-100") { "✓" }
           end

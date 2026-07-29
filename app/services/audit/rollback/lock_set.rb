@@ -1,12 +1,27 @@
 # frozen_string_literal: true
 
 class Audit::Rollback::LockSet
-  LOCKABLE_TYPES = %w[CashTransaction CardTransaction CashInstallment CardInstallment].freeze
+  LOCKABLE_TYPES = %w[
+    CashTransaction CardTransaction CashInstallment CardInstallment CategoryTransaction EntityTransaction
+    Budget BudgetCategory BudgetEntity Reference UserCard UserBankAccount Subscription Investment Exchange PiggyBank
+  ].freeze
   LOCK_ORDER = {
     "CashTransaction" => 0,
     "CardTransaction" => 1,
     "CashInstallment" => 2,
-    "CardInstallment" => 3
+    "CardInstallment" => 3,
+    "CategoryTransaction" => 4,
+    "EntityTransaction" => 5,
+    "Budget" => 6,
+    "BudgetCategory" => 7,
+    "BudgetEntity" => 8,
+    "Reference" => 9,
+    "UserCard" => 10,
+    "UserBankAccount" => 11,
+    "Subscription" => 12,
+    "Investment" => 13,
+    "Exchange" => 14,
+    "PiggyBank" => 15
   }.freeze
 
   attr_reader :preview
@@ -39,8 +54,14 @@ class Audit::Rollback::LockSet
     impact = routing_impact
     UserBankAccount.where(id: impact.user_bank_account_ids).order(:id).lock.load
     UserCard.where(id: impact.user_card_ids).order(:id).lock.load
-    Category.where(id: impact.cash_category_ids | impact.card_category_ids).order(:id).lock.load
-    Entity.where(id: impact.cash_entity_ids | impact.card_entity_ids).order(:id).lock.load
+    lock_allocation_records(impact)
+  end
+
+  def lock_allocation_records(impact)
+    category_ids = impact.cash_category_ids | impact.card_category_ids | impact.budget_category_ids
+    entity_ids = impact.cash_entity_ids | impact.card_entity_ids | impact.budget_entity_ids
+    Category.where(id: category_ids).order(:id).lock.load
+    Entity.where(id: entity_ids).order(:id).lock.load
   end
 
   def lock_contexts
@@ -54,7 +75,7 @@ class Audit::Rollback::LockSet
       end
       preview.rows.each do |row|
         row.dependencies.each do |dependency|
-          identities << [ dependency.record_type, dependency.item_id ] if dependency.record_type.in?(%w[CashTransaction CardTransaction])
+          identities << [ dependency.record_type, dependency.item_id ] if dependency.record_type.in?(LOCKABLE_TYPES)
         end
       end
       identities.uniq.sort_by { |record_type, item_id| [ LOCK_ORDER.fetch(record_type), item_id ] }

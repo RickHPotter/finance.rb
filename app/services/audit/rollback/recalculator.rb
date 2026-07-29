@@ -12,6 +12,8 @@ class Audit::Rollback::Recalculator
     recalculate_card_transactions
     recalculate_routing_totals
     recalculate_allocation_totals
+    recalculate_subscriptions
+    recalculate_budgets
     recalculate_balances
   end
 
@@ -19,11 +21,27 @@ class Audit::Rollback::Recalculator
 
   def recalculate_cash_transactions
     CashTransaction.unscoped.where(id: impact.cash_transaction_ids).find_each do |transaction|
+      recalculate_card_payment_projection(transaction)
       count = transaction.cash_installments.count
       paid = count.positive? && transaction.cash_installments.where(paid: false).none?
       Audit::BulkMutation.update_columns!(transaction, cash_installments_count: count, paid:)
       Audit::BulkMutation.update_all!(transaction.cash_installments, cash_installments_count: count)
     end
+  end
+
+  def recalculate_card_payment_projection(transaction)
+    return unless transaction.cash_transaction_type == "CardInstallment"
+
+    projection = transaction.card_installments.first
+    return unless projection
+
+    price = transaction.card_installments.sum(:price)
+    Audit::BulkMutation.update_columns!(
+      transaction,
+      price:,
+      comment: projection.comment
+    )
+    Audit::BulkMutation.update_all!(transaction.cash_installments, price:)
   end
 
   def recalculate_card_transactions
@@ -59,8 +77,26 @@ class Audit::Rollback::Recalculator
     Entity.where(id: impact.card_entity_ids).find_each(&:update_card_transactions_count_and_total)
   end
 
+  def recalculate_budgets
+    Budget.unscoped.where(id: impact.budget_ids).find_each do |budget|
+      budget.recalculate_balance = false
+      budget.save!
+    end
+  end
+
+  def recalculate_subscriptions
+    Subscription.unscoped.where(id: impact.subscription_ids).find_each do |subscription|
+      Audit::BulkMutation.update_columns!(
+        subscription,
+        cash_transactions_count: subscription.cash_transactions.count,
+        card_transactions_count: subscription.card_transactions.count,
+        price: subscription.cash_transactions.sum(:price) + subscription.card_transactions.sum(:price)
+      )
+    end
+  end
+
   def recalculate_balances
-    impact.owner_contexts.sort.each do |owner_id, context_id|
+    impact.owner_contexts.select(&:last).sort.each do |owner_id, context_id|
       context = Context.find_by(id: context_id, user_id: owner_id)
       next unless context
 

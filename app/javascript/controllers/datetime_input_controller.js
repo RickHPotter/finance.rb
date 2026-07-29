@@ -5,6 +5,7 @@ export default class extends Controller {
   static values = {
     invalidTimeMessage: String,
     readonly: Boolean,
+    suppressReactiveRefreshOnEnter: Boolean,
     minDatetime: String,
     minDatetimeMessage: String,
     maxDatetime: String,
@@ -130,7 +131,7 @@ export default class extends Controller {
 
     if (this.dateInputTarget.validationMessage) return
 
-    this.hiddenInputTarget.form?.requestSubmit()
+    this.submitFormFromEnter(event.currentTarget)
   }
 
   handleKeydown(event) {
@@ -146,7 +147,26 @@ export default class extends Controller {
 
     if (this.dateInputTarget.validationMessage || this.timeValidationMessagePresent()) return
 
-    this.hiddenInputTarget.form?.requestSubmit()
+    this.submitFormFromEnter(event.currentTarget)
+  }
+
+  submitFormFromEnter(visibleInput) {
+    const form = this.hiddenInputTarget.form
+    if (!form) return
+
+    if (this.suppressReactiveRefreshOnEnterValue) {
+      form.dataset.skipNextReactiveSubmit = "true"
+      visibleInput.dispatchEvent(new Event("change", { bubbles: true }))
+    }
+
+    this.submitForm(form)
+  }
+
+  submitForm(form = this.hiddenInputTarget.form) {
+    if (!form) return
+
+    const submitter = form.querySelector('button[type="submit"]:not([disabled]), input[type="submit"]:not([disabled])')
+    form.requestSubmit(submitter || undefined)
   }
 
   syncVisibleFromHidden() {

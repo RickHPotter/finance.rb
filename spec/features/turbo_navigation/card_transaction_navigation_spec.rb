@@ -60,6 +60,25 @@ RSpec.describe "Card transaction Turbo navigation", type: :feature do
     refresh_browser_at(expected_path)
   end
 
+  it "submits an edit once when pressing Enter from the time input" do
+    return_to = card_transactions_path(user_card_id: user_card.id)
+    edit_path = edit_card_transaction_path(card_transaction, return_to:)
+    expected_path = Navigation::CardTransactions.new(
+      raw: return_to,
+      fallback: card_transactions_path,
+      current_user: user,
+      current_context: user.main_context
+    ).destination
+
+    visit edit_path
+    time_input = find("#card_transaction_date_time_input")
+    time_input.set("13:45")
+    time_input.send_keys(:enter)
+
+    expect_browser_path(expected_path)
+    expect(card_transaction.reload.date.strftime("%H:%M")).to eq("13:45")
+  end
+
   it "keeps the canonical edit URL and entered form when validation fails" do
     edit_path = edit_card_transaction_path(card_transaction, return_to: card_transactions_path(user_card_id: user_card.id))
     visit edit_path

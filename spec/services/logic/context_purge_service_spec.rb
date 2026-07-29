@@ -149,6 +149,8 @@ RSpec.describe Logic::ContextPurgeService do
         "Exchange" => Exchange.where(entity_transaction_id: entity_transaction_ids).ids,
         "Reference" => derived_context.references.ids,
         "Budget" => derived_context.budgets.ids,
+        "BudgetCategory" => BudgetCategory.where(budget_id: derived_context.budgets.ids).ids,
+        "BudgetEntity" => BudgetEntity.where(budget_id: derived_context.budgets.ids).ids,
         "Subscription" => derived_context.subscriptions.ids,
         "Investment" => derived_context.investments.ids,
         "PiggyBank" => PiggyBank.where(source_cash_transaction_id: cash_transaction_ids).ids

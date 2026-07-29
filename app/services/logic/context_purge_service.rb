@@ -103,8 +103,8 @@ module Logic
                              .or(PiggyBank.where(return_cash_transaction_id: @cash_transaction_ids))
       Audit::BulkMutation.delete_all!(piggy_banks)
 
-      BudgetCategory.where(budget_id: @budget_ids).delete_all
-      BudgetEntity.where(budget_id: @budget_ids).delete_all
+      Audit::BulkMutation.delete_all!(BudgetCategory.where(budget_id: @budget_ids))
+      Audit::BulkMutation.delete_all!(BudgetEntity.where(budget_id: @budget_ids))
 
       delete_category_transactions!
       delete_entity_transactions!

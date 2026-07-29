@@ -346,7 +346,112 @@ RSpec.describe "Investments", type: :request do
 
       expect(response).to have_http_status(:see_other)
       destination = URI.parse(response.location).request_uri
-      expect(destination).to include("investment%5Bid%5D", "investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "202603")
+      expect(destination).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D", "202603")
+      expect(destination).not_to include("investment%5Bid%5D")
+    end
+
+    it "shows every investment in the duplicated account, type, and reference month" do
+      existing_investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Existing grouped investment",
+        price: 1000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+
+      post investments_path, params: {
+        chain_mode: "duplicate",
+        investment: {
+          description: "New grouped investment",
+          price: 1200,
+          date: Date.new(2026, 3, 14),
+          month: 3,
+          year: 2026,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(response.location).to include("investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D")
+      expect(response.location).not_to include("investment%5Bid%5D")
+
+      get URI.parse(response.location).request_uri, headers: html_headers
+
+      document = Nokogiri::HTML.fragment(response.body)
+      frame_path = document.at_css("#month_year_container_202603")["src"]
+      get frame_path, headers: html_headers
+
+      expect(response.body).to include(existing_investment.description, "New grouped investment")
+    end
+
+    it "shows every valuation for the duplicated Piggy Bank return and reference month" do
+      piggy_bank_return = create_piggy_bank_return
+      other_piggy_bank_return = create_piggy_bank_return
+      existing_valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        description: "Existing Piggy Bank valuation",
+        price: 500,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+      create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: other_piggy_bank_return,
+        description: "Other Piggy Bank valuation",
+        price: 400,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026
+      )
+
+      post investments_path, params: {
+        chain_mode: "duplicate",
+        investment: {
+          description: "New Piggy Bank valuation",
+          price: 300,
+          date: Date.new(2026, 3, 14),
+          month: 3,
+          year: 2026,
+          user_id: user.id,
+          user_bank_account_id: user_bank_account.id,
+          investment_type_id: investment_type.id,
+          piggy_bank_return_cash_transaction_id: piggy_bank_return.id
+        }
+      }, headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:see_other)
+      expect(response.location).to include("investment%5Bpiggy_bank_return_cash_transaction_id%5D")
+      expect(response.location).not_to include("investment%5Bid%5D", "investment%5Buser_bank_account_id%5D", "investment%5Binvestment_type_id%5D")
+
+      get URI.parse(response.location).request_uri, headers: html_headers
+
+      document = Nokogiri::HTML.fragment(response.body)
+      frame_path = document.at_css("#month_year_container_202603")["src"]
+      expect(frame_path).to include(piggy_bank_return.id.to_s)
+
+      get frame_path, headers: html_headers
+
+      row_text = Nokogiri::HTML.fragment(response.body).css("[data-datatable-target='row']").map(&:text).join(" ")
+
+      expect(row_text).to include(existing_valuation.description, "New Piggy Bank valuation")
+      expect(row_text).not_to include("Other Piggy Bank valuation")
     end
 
     it "creates an investment" do

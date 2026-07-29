@@ -3,7 +3,7 @@
 class Audit::Rollback::Preview
   STATES = %w[previewable read_only conflicted prohibited].freeze
 
-  attr_reader :operation, :actor, :rows, :global_issues, :digest, :apply_token
+  attr_reader :operation, :actor, :rows, :global_issues, :digest, :apply_token, :execution_plan
 
   def initialize(operation:, actor:)
     @operation = operation
@@ -14,6 +14,7 @@ class Audit::Rollback::Preview
       adapter = Audit::Rollback::Registry.build(transition:, operation_keys:, transitions:)
       Audit::Rollback::PreviewRow.new(transition:, adapter:)
     end
+    @execution_plan = build_execution_plan
     @global_issues = build_global_issues
     @digest = Digest::SHA256.hexdigest(Audit::Rollback::State.canonical_json(digest_payload))
     @apply_token = Audit::Rollback::PreviewToken.generate(operation_id: operation.id, digest:, actor_id: actor.id)
@@ -60,11 +61,19 @@ class Audit::Rollback::Preview
 
   def build_global_issues
     issues = []
+    issues << @dependency_graph_issue if @dependency_graph_issue
     issues << issue(:operation_has_no_versions) if rows.empty?
     issues << issue(:operation_has_no_compensation) if rows.present? && rows.all? { |row| row.action == "none" }
     issues << issue(:target_not_committed) unless operation.result_committed?
     issues << issue(:rollback_target_not_supported) if operation.source_rollback? || operation.rollback_of_operation_id.present?
     issues
+  end
+
+  def build_execution_plan
+    Audit::Rollback::ExecutionPlan.new(rows:).tap(&:ordered_rows)
+  rescue Audit::Rollback::ExecutionPlan::InvalidGraphError => e
+    @dependency_graph_issue = issue(:invalid_dependency_graph, reason: e.code, keys: e.keys)
+    nil
   end
 
   def issue(code, details = {})

@@ -8,7 +8,7 @@ class Installment < ApplicationRecord
   include HasStartingPrice
   include FinancialAuditable
 
-  audits_financial_changes skip: %i[balance order_id cash_installments_count card_installments_count]
+  audits_financial_changes skip: %i[balance order_id cash_installments_count card_installments_count date_month date_year]
 
   # @security (i.e. attr_accessible) ..........................................
   attr_accessor :locked

@@ -15,7 +15,7 @@ the complete initial financial model scope.
 | import services | canonical imported transaction and installment dates and paid state | `Audit::BulkMutation` preserves import source and before-state |
 | budget bulk update | active state, budget period, and other permitted canonical fields | each selected budget is versioned before the bulk write |
 | linter and admin repairs | any allowlisted repair attribute on an audited model | `Audit::BulkMutation` versions audited records and preserves legacy direct writes for out-of-scope records |
-| context clone | callback-free copies of every audited model | `Audit::BulkMutation.insert!` creates equivalent create versions; unaudited context and join rows remain direct inserts |
+| context clone | callback-free copies of every audited model | `Audit::BulkMutation.insert!` creates equivalent create versions; the unaudited `Context` root remains a direct insert |
 | context purge | callback-free deletion of every audited row in the context | rows are loaded and versioned before deletion; Piggy Bank links are deleted before their transactions |
 | Piggy Bank projection | return routing ID changes | `Audit::BulkMutation` records the canonical link change under `piggy_bank_sync` |
 | exchange chain repair | polymorphic reference routing | `Audit::BulkMutation` records the canonical reference change under `reference_sync` |
@@ -31,7 +31,7 @@ is explicitly skipped from version payloads:
 - counter-cache maintenance: transaction, installment, and exchange counts
 - `Subscription#refresh_price!`: aggregate subscription price
 - context-purge counter refresh: account, card, and subscription counts
-- category/entity count and total refresh: models outside the initial audit scope
+- category/entity count and total refresh: models outside the completed audit scope
 
 Changing any of these paths to write a canonical attribute requires routing it through
 `Audit::BulkMutation` and adding a regression spec.
@@ -40,11 +40,12 @@ Changing any of these paths to write a canonical attribute requires routing it t
 
 - user locale selection
 - conversation/message read and supersession state
-- `Context`, `BudgetCategory`, and `BudgetEntity` clone/purge rows
-- category and entity cached totals
+- `Context` lifecycle, clone, archive, and purge root writes
+- user-level `Category` and `Entity` records, including their cached totals
 
-These models are not part of the KAKASHI-08 initial financial audit scope. Their direct
-writes must be reconsidered if a later slice adds them to that scope.
+These records remain intentional exclusions from the completed KAKASHI-08 scope.
+`BudgetCategory` and `BudgetEntity` are audited V2 companions and therefore no longer
+belong to this exclusion list.
 
 ## Metadata Allowlist
 

@@ -82,6 +82,8 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).not_to include("hw-combobox")
 
       document = Nokogiri::HTML.fragment(response.body)
+      transaction_date = document.at_css("#card_transaction_date")
+      transaction_datetime_wrapper = transaction_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
       installment_dates = document.css("input.installment_date")
       active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
@@ -91,6 +93,11 @@ RSpec.describe "CardTransactions", type: :request do
       expect(active_installment_date["name"]).to eq("card_transaction[card_installments_attributes][0][date]")
       expect(active_installment_date["data-reactive-form-target"]).to eq("dateInput")
       expect(active_installment_date["data-action"]).to be_nil
+      expect(transaction_datetime_wrapper["data-datetime-input-suppress-reactive-refresh-on-enter-value"]).to eq("true")
+      expect(transaction_datetime_wrapper.at_css("#card_transaction_date_date_input")["data-action"]).to include(
+        "change->reactive-form#updateInstallmentsDates",
+        "blur->reactive-form#requestSubmit"
+      )
       expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present
@@ -512,6 +519,14 @@ RSpec.describe "CardTransactions", type: :request do
   end
 
   describe "[ #create ]" do
+    it "returns a regular submission to the selected user card" do
+      post card_transactions_path,
+           params: card_transaction.params.merge(return_to: card_transactions_path),
+           headers: turbo_stream_headers
+
+      expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
+    end
+
     it "continues a create chain with the created ids tracked in the next form" do
       expect do
         post card_transactions_path,
@@ -533,6 +548,31 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).to match(/name="chain_record_ids\[\]"[^>]*value="#{created_card_transaction.id}"/)
       expect(response.body).to include('name="continue_chain" value="1"')
       expect(response.body).to include("checked")
+    end
+
+    it "keeps complete month counts after a regular create submission" do
+      post card_transactions_path, params: card_transaction.params, headers: turbo_stream_headers
+      first_transaction = CardTransaction.order(:id).last
+      sign_in user
+
+      return_to = card_transactions_path(user_card_id: user_card_one.id)
+      post card_transactions_path,
+           params: card_transaction.params.merge(chain_mode: "create", return_to:),
+           headers: turbo_stream_headers
+
+      second_transaction = CardTransaction.order(:id).last
+      month_year = second_transaction.card_installments.first.date.strftime("%Y%m")
+
+      expect(response).to have_http_status(:see_other)
+      expect(response.location).not_to include("card_installment_ids")
+
+      get URI.parse(response.location).request_uri, headers: html_headers
+
+      document = Nokogiri::HTML.fragment(response.body)
+      month_button = document.at_css("[data-month-year='#{month_year}']")
+
+      expect(first_transaction.card_installments.first.date.strftime("%Y%m")).to eq(month_year)
+      expect(month_button["data-count"]).to eq("2")
     end
 
     it "shows generic and detailed failure notifications when create validation fails" do
@@ -1389,6 +1429,16 @@ RSpec.describe "CardTransactions", type: :request do
       @existing_card_transaction = CardTransaction.last
 
       sign_in user
+    end
+
+    it "returns a regular submission to the selected user card" do
+      card_transaction.use_base(@existing_card_transaction)
+
+      put card_transaction_path(@existing_card_transaction),
+          params: card_transaction.params.merge(return_to: card_transactions_path),
+          headers: turbo_stream_headers
+
+      expect(response).to redirect_to(card_transactions_path(user_card_id: user_card_one.id))
     end
 
     it "updates the record to have a non_paying entity" do

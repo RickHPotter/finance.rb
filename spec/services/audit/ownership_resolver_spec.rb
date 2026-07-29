@@ -44,6 +44,13 @@ RSpec.describe Audit::OwnershipResolver do
     expect_ownership(Exchange.new(entity_transaction:))
   end
 
+  it "inherits Budget allocation ownership from the Budget" do
+    budget = Budget.new(user_id: owner_id, context_id:)
+
+    expect_ownership(BudgetCategory.new(budget:))
+    expect_ownership(BudgetEntity.new(budget:))
+  end
+
   it "resolves reference ownership through its user card" do
     reference = Reference.new(user_card: UserCard.new(user_id: owner_id), context_id:)
 

@@ -13,6 +13,8 @@ class Audit::VersionMetadata
     "UserCard" => %w[card_id],
     "UserBankAccount" => %w[bank_id],
     "Budget" => [],
+    "BudgetCategory" => %w[budget_id category_id],
+    "BudgetEntity" => %w[budget_id entity_id],
     "Subscription" => [],
     "Investment" => %w[user_bank_account_id investment_type_id cash_transaction_id piggy_bank_return_cash_transaction_id],
     "PiggyBank" => %w[source_cash_transaction_id return_cash_transaction_id]

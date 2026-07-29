@@ -25,7 +25,7 @@ RSpec.describe FinancialAuditable, type: :model do
     expected_skips = {
       CashTransaction => %w[cash_installments_count],
       CardTransaction => %w[card_installments_count],
-      Installment => %w[balance order_id cash_installments_count card_installments_count],
+      Installment => %w[balance order_id date_month date_year cash_installments_count card_installments_count],
       CategoryTransaction => [],
       EntityTransaction => %w[exchanges_count],
       Exchange => %w[exchanges_count],

@@ -52,6 +52,32 @@ RSpec.describe "Finance resource navigation state" do
     expect(rejected.destination).to eq("/investments")
   end
 
+  it "retains owned Piggy Bank return filters and rejects foreign returns" do
+    piggy_bank_return = create(:cash_transaction, user:, context:, user_bank_account: bank_account)
+    piggy_bank_return.update_column(:cash_transaction_type, "PiggyBank")
+    foreign_user = create(:user, :random)
+    foreign_account = create(:user_bank_account, :random, user: foreign_user)
+    foreign_return = create(:cash_transaction, user: foreign_user, context: foreign_user.main_context, user_bank_account: foreign_account)
+    foreign_return.update_column(:cash_transaction_type, "PiggyBank")
+
+    accepted = Navigation::Investments.new(
+      raw: "/investments?investment[piggy_bank_return_cash_transaction_id]=#{piggy_bank_return.id}",
+      fallback: "/investments",
+      current_user: user,
+      current_context: context
+    )
+    rejected = Navigation::Investments.new(
+      raw: "/investments?investment[piggy_bank_return_cash_transaction_id]=#{foreign_return.id}",
+      fallback: "/investments",
+      current_user: user,
+      current_context: context
+    )
+
+    expect(accepted).to be_accepted
+    expect(accepted.destination).to include(piggy_bank_return.id.to_s)
+    expect(rejected.destination).to eq("/investments")
+  end
+
   it "retains owned subscription filters while stripping unrelated form data" do
     state = Navigation::Subscriptions.new(
       raw: "/subscriptions?search_term=gym&subscription[category_id][]=#{category.id}" \

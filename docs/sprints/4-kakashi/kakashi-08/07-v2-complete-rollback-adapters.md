@@ -2,14 +2,21 @@
 
 ## Status and PR Boundary
 
-The KAKASHI-08 V1 PR is complete and may ship independently. KAKASHI-08 remains
-unfinished as a feature until a future V2 PR completes the rollback coverage in this
-document.
+KAKASHI-08 V2 is complete and is the final feature boundary. It covers the ten
+previously missing public adapters plus the internal Budget allocation companions
+required to restore a Budget graph.
 
 V1 intentionally fails closed. An operation containing a record family with no
 rollback adapter or an unsupported generated graph has a readable preview but no apply
 action. V2 expands that safe boundary; it does not add partial rollback, conflict
 override, or a force option.
+
+Implementation of all eleven V2 slices was completed on 2026-07-28. The registry now
+contains every concrete audited financial family in this document, known generated
+graphs have focused preview/apply coverage, and unknown future transaction graph shapes
+continue to fail closed. KAKASHI-08 was closed on 2026-07-29. The automated completion
+record is retained below; deployed-revision operation IDs remain environment-specific
+release evidence rather than repository documentation.
 
 ## V2 Objective
 
@@ -20,7 +27,7 @@ and routing, obey paid-history rules, and run canonical recalculation and integr
 checks atomically.
 
 The literal V1 warning `This record family has no rollback adapter` remains expected
-for these ten audited families:
+for these ten audited families and must be removed by V2:
 
 1. `CategoryTransaction`
 2. `EntityTransaction`
@@ -32,6 +39,10 @@ for these ten audited families:
 8. `Subscription`
 9. `Investment`
 10. `PiggyBank`
+
+`BudgetCategory` and `BudgetEntity` are not separate product features, but they must
+join the audited and rollbackable set in V2. A Budget snapshot without its category
+and entity membership is not a complete financial state.
 
 ## Complete Audited-Family Inventory
 
@@ -48,6 +59,8 @@ for these ten audited families:
 | `UserCard` | audited, no adapter | add routing, billing-reference, merge/resync, and destruction safety |
 | `UserBankAccount` | audited, no adapter | add account routing, context purge, total recalculation, and destruction safety |
 | `Budget` | audited, no adapter | add budget lifecycle compensation and canonical match/recalculation |
+| `BudgetCategory` | not audited separately | audit and compensate as a Budget-owned allocation companion |
+| `BudgetEntity` | not audited separately | audit and compensate as a Budget-owned allocation companion |
 | `Subscription` | audited, no adapter | add subscription lifecycle and generated transaction graph compensation |
 | `Investment` | audited, no adapter | add investment lifecycle and generated cash/Piggy Bank projection compensation |
 | `PiggyBank` | audited, no adapter | add source, contribution, return, investment, and projection compensation |
@@ -78,27 +91,93 @@ The existing price-only card edit is the V1 exception: it is eligible only when 
 complete existing projection graph is present, routing is unchanged, and generated
 rows changed only their canonical aggregate price/comment fields.
 
-## Proposed V2 Delivery Order
+## V2 Delivery Rules
 
-### Slice 1: Common transaction companions
+Each slice registers a family only after its complete acceptance matrix passes. Merely
+adding an adapter class is not enough. Until registration, the existing read-only
+preview remains the correct behavior.
 
-Add `CategoryTransaction`, `EntityTransaction`, and `Budget` adapters. These families
-are present in common transaction create/update/destroy operations and currently make
-otherwise reconstructable operations read-only.
+The compensator must be generalized before adding families. V1 groups everything under
+cash/card transaction parents and assumes every non-parent row is an installment.
+V2 must instead build a deterministic dependency plan from adapter declarations and
+execute parent-before-child recreation/update and child-before-parent destruction.
+
+Every slice ends with focused model/service/request coverage, `bin/rubocop -A`, and one
+conventional commit. No slice may introduce partial apply or a force path.
+
+## V2 Implementation Slices
+
+### Slice 1: Generalize dependency planning and compensation
+
+Replace the transaction-specific compensator grouping with a generic execution plan
+that can handle independent roots, nested companions, and cross-family operation
+graphs without weakening the V1 transaction behavior.
+
+Acceptance:
+
+- adapters declare stable parent/dependent edges and compensation hooks
+- recreation/update order is parent before child; destruction order is child before
+  parent
+- cycles, missing required parents, duplicate keys, and unhandled rows fail closed
+- one adapter failure rolls back all business mutations and new audit versions
+- the existing cash/card/installment rollback suite remains green unchanged
+
+Commit: `refactor: generalize audit rollback compensation`
+
+### Slice 2: Transaction allocations
+
+Add `CategoryTransaction` and `EntityTransaction` adapters. These families are present
+in common transaction create/update/destroy operations and currently make otherwise
+reconstructable operations read-only.
 
 Acceptance:
 
 - create, update, and destroy compensation is dependency ordered
 - allocation uniqueness and ownership remain valid
-- budget matches and totals are recalculated through canonical services
-- a complete ordinary cash and card operation containing allocations/budget versions
-  can preview and apply atomically
+- category/entity totals are recalculated through canonical services
+- `EntityTransaction` waits for its parent transaction and orders `Exchange`
+  dependents correctly
+- ordinary cash and card operations containing allocations preview and apply atomically
 
-### Slice 2: Card-payment lifecycle and routing
+Commit: `feat: rollback transaction allocations`
 
-Add `Reference`, `UserCard`, and `UserBankAccount` adapters, then complete card
-transaction/installment support for creation, destruction, billing-cycle moves,
-user-card changes, card advances, and generated cash payment projections.
+### Slice 3: Budget graphs
+
+Add the `Budget` adapter and make `BudgetCategory`/`BudgetEntity` audited companion
+families with their own dependency declarations.
+
+Acceptance:
+
+- create/update/destroy restores Budget attributes and exact category/entity membership
+- nested allocation writes share the Budget operation and immutable ownership/context
+- uniqueness checks run against the final planned graph rather than a half-restored
+  intermediate state
+- derived balance, remaining value, ordering, and monthly balances are recalculated
+  canonically
+- later conflicting Budget/allocation activity blocks apply
+
+Commit: `feat: rollback complete budget graphs`
+
+### Slice 4: References
+
+Add the `Reference` adapter and cover ordinary lifecycle, billing-date changes,
+generated references, merge/move, and resynchronization operations.
+
+Acceptance:
+
+- unique card/context/month/year and reference-date keys are checked before apply
+- reference callbacks do not duplicate or misdate card-payment projections
+- merge/move/resynchronization restores the complete included graph or fails with a
+  precise conflict
+- paid invoice history remains confirmation-gated or prohibited
+
+Commit: `feat: rollback billing references`
+
+### Slice 5: Cards, accounts, and card-payment routing
+
+Add `UserCard` and `UserBankAccount` adapters, then complete the routing portions of
+card transaction/installment compensation, including billing-cycle moves, user-card
+changes, card advances, and generated cash payment projections.
 
 Acceptance:
 
@@ -110,19 +189,38 @@ Acceptance:
 - paid card history remains confirmation-gated or prohibited according to the locked
   rollback contract
 
-### Slice 3: Recurring and investment graphs
+Commit: `feat: rollback card and account routing`
 
-Add `Subscription` and `Investment` adapters, including their generated transaction,
-installment, price synchronization, and cash projection operations.
+### Slice 6: Subscription graphs
+
+Add the `Subscription` adapter and cover its allocations, generated cash/card
+transactions, installments, routing metadata, and price synchronization.
 
 Acceptance:
 
 - source and generated records compensate as one operation
 - recurrence/routing metadata is restored without duplicating future records
-- investment totals and projections are recalculated from canonical sources
+- derived transaction counts and subscription price are recalculated from canonical
+  linked transactions
 - later dependent activity produces a conflict instead of being overwritten
 
-### Slice 4: Exchanges and cross-user graphs
+Commit: `feat: rollback subscription graphs`
+
+### Slice 7: Investment graphs
+
+Add the `Investment` adapter and cover its generated cash projection, account routing,
+and Piggy Bank linkage where present.
+
+Acceptance:
+
+- source and generated cash projection compensate as one operation
+- account and context ownership are preserved
+- totals and projections are recalculated from canonical sources
+- later projection, account, or Piggy Bank activity blocks stale apply
+
+Commit: `feat: rollback investment graphs`
+
+### Slice 8: Exchanges and cross-user graphs
 
 Add the `Exchange` adapter and cover local exchanges, shared exchanges, generated
 returns, unlink/rebuild operations, and actionable-message graphs.
@@ -134,7 +232,9 @@ Acceptance:
 - shared returns and reference projections remain canonical
 - missing counterpart or later counterpart activity blocks apply with a precise reason
 
-### Slice 5: Piggy Bank graphs
+Commit: `feat: rollback exchange graphs`
+
+### Slice 9: Piggy Bank graphs
 
 Add the `PiggyBank` adapter and cover source transactions, contributions, returns,
 investments, and linked projections.
@@ -146,7 +246,26 @@ Acceptance:
 - later withdrawals, returns, or paid history produce explicit conflicts/prohibitions
 - recalculation and integrity verification run before commit
 
-### Slice 6: Registry and graph completion hardening
+Commit: `feat: rollback piggy bank graphs`
+
+### Slice 10: Complete transaction and installment graph support
+
+Close the remaining V1 restrictions in `CashTransaction`, `CardTransaction`,
+`CashInstallment`, and `CardInstallment` now that every companion family has a
+registered adapter.
+
+Acceptance:
+
+- transaction create/destroy restores complete installment, allocation, exchange,
+  subscription, investment, Piggy Bank, reference, advance, and payment graphs
+- date/billing-cycle/user-card changes restore generated routing and projections
+- paid-history rules are evaluated across the entire graph
+- complete known graphs no longer emit `unsupported_transaction_graph`
+- unknown future graph shapes remain read-only
+
+Commit: `feat: complete transaction graph rollback`
+
+### Slice 11: Registry, UI, and completion hardening
 
 Remove family-level read-only warnings only after the corresponding adapter passes its
 full matrix. Exercise real operations from the UI and canonical services, not only
@@ -154,7 +273,8 @@ synthetic version fixtures.
 
 Acceptance:
 
-- `Audit::Rollback::Registry.supported_types` contains all concrete audited types
+- `Audit::Rollback::Registry.supported_types` contains all concrete audited types,
+  including the two Budget companion types
 - an operation composed of the documented audited families never becomes read-only
   solely because a family lacks an adapter
 - documented generated graphs no longer fail only with
@@ -162,6 +282,11 @@ Acceptance:
 - unknown future graph shapes still fail closed
 - one failing record, callback, recalculation, or integrity check rolls back the entire
   compensating operation and its versions
+- preview/apply UI copy describes graph conflicts and confirmation requirements in
+  both locales
+- the focused suite, affected domain suites, `yarn build`, and `bin/ci` pass
+
+Commit: `spec: harden complete financial rollback coverage`
 
 ## Adapter Completion Checklist
 
@@ -217,5 +342,20 @@ KAKASHI-08 may be marked complete only when:
 - the focused rollback suite, affected domain suites, CI scope, and `bin/ci` pass
 - the manual acceptance set is recorded for the deployed revision
 
-Audit history availability alone does not satisfy this gate. V1 remains a valid,
-deployable foundation while V2 is pending.
+The completed V2 boundary satisfies this gate. Audit history availability alone would
+not have been sufficient without the adapter and generated-graph coverage.
+
+## Automated Completion Record
+
+- Slices 1–11 are implemented with one conventional commit per slice.
+- Registry coverage discovers the concrete `FinancialAuditable` model inventory and
+  fails when a model or adapter is missing.
+- Both supported locales contain every adapter recalculation label and every
+  graph-specific conflict introduced by V2.
+- Transaction-graph coverage proves a canonical cross-transaction reference and a
+  card advance can be previewed and applied, while an unknown generated type remains
+  read-only.
+- The focused rollback and affected transaction/UI suite passed with 168 examples,
+  `yarn build` completed successfully, and `bin/ci` passed on the final tree with 985
+  examples, 738 Ruby files and 102 ERB files clean, no vulnerable gems, and zero
+  Brakeman warnings.

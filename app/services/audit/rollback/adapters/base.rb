@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Audit::Rollback::Adapters::Base
+  class CompensationNotImplementedError < StandardError; end
+
   DERIVED_ATTRIBUTES = %w[created_at updated_at].freeze
 
   attr_reader :transition, :operation_keys, :transitions
@@ -21,7 +23,7 @@ class Audit::Rollback::Adapters::Base
     @prohibitions ||= [].tap do |issues|
       issues << issue(:inconsistent_version_ownership) unless transition.ownership_consistent?
       issues << issue(:unknown_owner) unless User.exists?(id: owner_id)
-      issues << issue(:unknown_context) unless Context.exists?(id: context_id, user_id: owner_id)
+      issues << issue(:unknown_context) unless valid_context?
     end
   end
 
@@ -65,6 +67,15 @@ class Audit::Rollback::Adapters::Base
     {}
   end
 
+  def compensate!(**)
+    case action
+    when "destroy" then destroy_record!
+    when "recreate" then recreate_record!
+    when "update" then update_record!
+    else raise CompensationNotImplementedError, "#{record_type} cannot compensate action #{action}"
+    end
+  end
+
   def differences
     return @differences if defined?(@differences)
     return @differences = {} if expected_after_state.nil? || current_state.nil?
@@ -81,6 +92,20 @@ class Audit::Rollback::Adapters::Base
   end
 
   private
+
+  def destroy_record!
+    live_record&.destroy! || raise(ActiveRecord::RecordNotFound, "#{record_type} #{item_id} is missing")
+  end
+
+  def recreate_record!
+    record_class.new(restore_attributes.merge("id" => item_id)).save!
+  end
+
+  def update_record!
+    raise ActiveRecord::RecordNotFound, "#{record_type} #{item_id} is missing" unless live_record
+
+    live_record.update!(restore_attributes)
+  end
 
   def current_record
     return @current_record if defined?(@current_record)
@@ -120,6 +145,16 @@ class Audit::Rollback::Adapters::Base
     ownership = Audit::OwnershipResolver.resolve!(current_record)
     ownership.owner_id != owner_id || ownership.context_id != context_id
   rescue Audit::OwnershipResolver::UnsupportedRecordError, Audit::OwnershipResolver::UnresolvableOwnershipError
+    true
+  end
+
+  def valid_context?
+    return !context_required? if context_id.nil?
+
+    Context.exists?(id: context_id, user_id: owner_id)
+  end
+
+  def context_required?
     true
   end
 

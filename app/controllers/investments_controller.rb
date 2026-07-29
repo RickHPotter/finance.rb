@@ -118,6 +118,7 @@ class InvestmentsController < ApplicationController
     investment_ids = [ investment_params[:id] ].flatten&.compact_blank
     user_bank_account_id = [ investment_params[:user_bank_account_id] ].flatten&.compact_blank
     investment_type_id = [ investment_params[:investment_type_id] ].flatten&.compact_blank
+    piggy_bank_return_cash_transaction_id = [ investment_params[:piggy_bank_return_cash_transaction_id] ].flatten&.compact_blank
 
     count_by_month_year = Logic::Investments.find_count_based_on_search(current_context, investment_params, search_investment_params)
 
@@ -130,6 +131,7 @@ class InvestmentsController < ApplicationController
       id: investment_ids,
       user_bank_account_id:,
       investment_type_id:,
+      piggy_bank_return_cash_transaction_id:,
       count_by_month_year:
     }
   end
@@ -172,16 +174,26 @@ class InvestmentsController < ApplicationController
     return @return_to if investments.empty?
 
     months = investments.map { |investment| Date.new(investment.year, investment.month).strftime("%Y%m").to_i }.uniq
+    filters = affected_investment_filters(investments)
     destination = investments_path(
       default_year: months.max.to_s.first(4).to_i,
       active_month_years: months.to_json,
-      investment: {
-        id: investments.ids,
-        user_bank_account_id: investments.pluck(:user_bank_account_id).compact.uniq,
-        investment_type_id: investments.pluck(:investment_type_id).compact.uniq
-      }
+      investment: filters
     )
     investment_navigation_destination(destination)
+  end
+
+  def affected_investment_filters(investments)
+    piggy_bank_return_ids = investments.where.not(piggy_bank_return_cash_transaction_id: nil)
+                                       .distinct
+                                       .pluck(:piggy_bank_return_cash_transaction_id)
+    all_piggy_bank_returns = !investments.where(piggy_bank_return_cash_transaction_id: nil).exists?
+    return { piggy_bank_return_cash_transaction_id: piggy_bank_return_ids } if piggy_bank_return_ids.present? && all_piggy_bank_returns
+
+    {
+      user_bank_account_id: investments.distinct.pluck(:user_bank_account_id).compact,
+      investment_type_id: investments.distinct.pluck(:investment_type_id).compact
+    }.compact_blank
   end
 
   def current_chain_context(mode: nil, record_ids: current_chain_record_ids, checked: continue_chain_requested?)
@@ -275,7 +287,7 @@ class InvestmentsController < ApplicationController
 
     ret_params.permit(
       :description, :price, :date, :month, :year, :user_id, :user_bank_account_id, :investment_type_id, :piggy_bank_return_cash_transaction_id,
-      user_bank_account_id: [], investment_type_id: [], id: []
+      user_bank_account_id: [], investment_type_id: [], piggy_bank_return_cash_transaction_id: [], id: []
     )
   end
 end

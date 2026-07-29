@@ -38,7 +38,7 @@ RSpec.describe "Card transaction navigation", type: :request do
   context "with a Turbo workflow-finishing create" do
     subject(:perform_request) { post card_transactions_path, params: transaction_params, headers: turbo_stream_headers }
 
-    let(:expected_destination) { card_transactions_path }
+    let(:expected_destination) { card_transactions_path(user_card_id: user_card.id) }
 
     it_behaves_like "a canonical top-level mutation redirect"
   end
@@ -46,7 +46,7 @@ RSpec.describe "Card transaction navigation", type: :request do
   context "with a non-Turbo create" do
     subject(:perform_request) { post card_transactions_path, params: transaction_params, headers: html_headers }
 
-    let(:expected_destination) { card_transactions_path }
+    let(:expected_destination) { card_transactions_path(user_card_id: user_card.id) }
 
     it_behaves_like "a canonical top-level mutation redirect"
   end

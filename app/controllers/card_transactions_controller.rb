@@ -286,6 +286,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def set_return_to
     @return_to = card_navigation_destination(params[:return_to])
+    @return_to = card_transactions_path(user_card_id: @card_transaction.user_card_id) if @return_to == card_transactions_path && @card_transaction.user_card_id
   end
 
   def card_navigation_destination(raw)
@@ -516,7 +517,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def chain_workflow?
-    current_chain_record_ids.any? || params[:chain_mode].present?
+    current_chain_record_ids.present? || continue_chain_requested? || finish_chain_requested?
   end
 
   def card_tab_name_for_state

@@ -115,6 +115,11 @@ export default class extends Controller {
   }
 
   requestSubmit({ target }) {
+    if (this.element.dataset.skipNextReactiveSubmit === "true") {
+      delete this.element.dataset.skipNextReactiveSubmit
+      return
+    }
+
     const hasValue = isPresent(target.value) || (target.dataset.value && isPresent(target.querySelector(target.dataset.value).value))
 
     if (hasValue) {

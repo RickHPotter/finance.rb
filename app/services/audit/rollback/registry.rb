@@ -5,7 +5,19 @@ class Audit::Rollback::Registry
     "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
     "CardTransaction" => Audit::Rollback::Adapters::CardTransaction,
     "CashInstallment" => Audit::Rollback::Adapters::Installment,
-    "CardInstallment" => Audit::Rollback::Adapters::Installment
+    "CardInstallment" => Audit::Rollback::Adapters::Installment,
+    "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
+    "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
+    "Budget" => Audit::Rollback::Adapters::Budget,
+    "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
+    "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity,
+    "Reference" => Audit::Rollback::Adapters::Reference,
+    "UserCard" => Audit::Rollback::Adapters::UserCard,
+    "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount,
+    "Subscription" => Audit::Rollback::Adapters::Subscription,
+    "Investment" => Audit::Rollback::Adapters::Investment,
+    "Exchange" => Audit::Rollback::Adapters::Exchange,
+    "PiggyBank" => Audit::Rollback::Adapters::PiggyBank
   }.freeze
 
   class << self

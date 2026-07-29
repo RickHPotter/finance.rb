@@ -24,7 +24,15 @@ class Views::Investments::Index < Views::Base
               end
 
               render MonthYearContainer.new(
-                index_context: index_context.slice(:search_term, :id, :user_bank_account_id, :investment_type_id, :active_month_years, :return_to)
+                index_context: index_context.slice(
+                  :search_term,
+                  :id,
+                  :user_bank_account_id,
+                  :investment_type_id,
+                  :piggy_bank_return_cash_transaction_id,
+                  :active_month_years,
+                  :return_to
+                )
               )
             end
 

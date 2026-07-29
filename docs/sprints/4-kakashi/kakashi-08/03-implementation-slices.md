@@ -12,17 +12,17 @@ pass ownership, direct-SQL, destruction, payload, and callback-recursion checks 
 
 ## V1 and V2 Delivery Boundary
 
-The first KAKASHI-08 PR completes V1, not the entire feature. V1 delivers the immutable
+The first KAKASHI-08 PR completed V1, not the entire feature. V1 delivered the immutable
 audit foundation, authorized history, operation-wide preview/apply machinery, and a
 deliberately narrow rollback registry for ordinary cash/card transactions and their
 installments. It also supports the conservative price-only card edit case when all
 existing card-payment projection rows are present and only canonical aggregate fields
 changed.
 
-KAKASHI-08 remains unfinished until a future V2 PR completes the audited-family and
-generated-graph rollback coverage. V1 must be mergeable and deployable on its own:
-unsupported operations remain visible but read-only, and neither partial rollback nor
-a force option is introduced.
+V2 subsequently completed the audited-family and generated-graph rollback coverage,
+closing KAKASHI-08 on 2026-07-29. The V1 boundary remains documented because it was
+independently mergeable and deployable: unsupported operations stayed visible but
+read-only, and neither partial rollback nor a force option was introduced.
 
 The V2 inventory, dependency order, and completion gate are defined in
 [V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md).
