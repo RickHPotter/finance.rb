@@ -35,8 +35,9 @@ class Audit::Rollback::Compensator
     if row.record_type.in?(TRANSACTION_TYPES | INSTALLMENT_TYPES)
       compensate_transaction_group(row)
     else
-      row.adapter.compensate!(impact:, confirmed:)
+      additionally_handled_keys = row.adapter.compensate!(impact:, confirmed:, rows: preview.rows, handled_keys:)
       mark_handled(row)
+      handled_keys.merge(Array(additionally_handled_keys))
     end
   end
 

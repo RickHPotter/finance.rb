@@ -7,7 +7,10 @@ class Audit::Rollback::Registry
     "CashInstallment" => Audit::Rollback::Adapters::Installment,
     "CardInstallment" => Audit::Rollback::Adapters::Installment,
     "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
-    "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction
+    "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
+    "Budget" => Audit::Rollback::Adapters::Budget,
+    "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
+    "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity
   }.freeze
 
   class << self

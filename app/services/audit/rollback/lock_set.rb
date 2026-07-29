@@ -3,6 +3,7 @@
 class Audit::Rollback::LockSet
   LOCKABLE_TYPES = %w[
     CashTransaction CardTransaction CashInstallment CardInstallment CategoryTransaction EntityTransaction
+    Budget BudgetCategory BudgetEntity
   ].freeze
   LOCK_ORDER = {
     "CashTransaction" => 0,
@@ -10,7 +11,10 @@ class Audit::Rollback::LockSet
     "CashInstallment" => 2,
     "CardInstallment" => 3,
     "CategoryTransaction" => 4,
-    "EntityTransaction" => 5
+    "EntityTransaction" => 5,
+    "Budget" => 6,
+    "BudgetCategory" => 7,
+    "BudgetEntity" => 8
   }.freeze
 
   attr_reader :preview
@@ -43,8 +47,14 @@ class Audit::Rollback::LockSet
     impact = routing_impact
     UserBankAccount.where(id: impact.user_bank_account_ids).order(:id).lock.load
     UserCard.where(id: impact.user_card_ids).order(:id).lock.load
-    Category.where(id: impact.cash_category_ids | impact.card_category_ids).order(:id).lock.load
-    Entity.where(id: impact.cash_entity_ids | impact.card_entity_ids).order(:id).lock.load
+    lock_allocation_records(impact)
+  end
+
+  def lock_allocation_records(impact)
+    category_ids = impact.cash_category_ids | impact.card_category_ids | impact.budget_category_ids
+    entity_ids = impact.cash_entity_ids | impact.card_entity_ids | impact.budget_entity_ids
+    Category.where(id: category_ids).order(:id).lock.load
+    Entity.where(id: entity_ids).order(:id).lock.load
   end
 
   def lock_contexts

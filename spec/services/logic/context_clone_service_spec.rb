@@ -28,7 +28,7 @@ RSpec.describe Logic::ContextCloneService do
       end
 
       versions = AuditVersion.where(context_id: cloned_context.id)
-      expect(versions.where(event: :create).pluck(:item_type)).to contain_exactly("Subscription", "Budget")
+      expect(versions.where(event: :create).pluck(:item_type)).to contain_exactly("Subscription", "Budget", "BudgetCategory")
       expect(versions.pluck(:mutation_source).uniq).to eq([ "projection_sync" ])
       expect(versions.pluck(:owner_id).uniq).to eq([ user.id ])
     end

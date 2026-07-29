@@ -12,6 +12,7 @@ class Audit::Rollback::Recalculator
     recalculate_card_transactions
     recalculate_routing_totals
     recalculate_allocation_totals
+    recalculate_budgets
     recalculate_balances
   end
 
@@ -57,6 +58,13 @@ class Audit::Rollback::Recalculator
     Category.where(id: impact.card_category_ids).find_each(&:update_card_transactions_count_and_total)
     Entity.where(id: impact.cash_entity_ids).find_each(&:update_cash_transactions_count_and_total)
     Entity.where(id: impact.card_entity_ids).find_each(&:update_card_transactions_count_and_total)
+  end
+
+  def recalculate_budgets
+    Budget.unscoped.where(id: impact.budget_ids).find_each do |budget|
+      budget.recalculate_balance = false
+      budget.save!
+    end
   end
 
   def recalculate_balances

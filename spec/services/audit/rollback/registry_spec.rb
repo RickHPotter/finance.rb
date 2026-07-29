@@ -10,7 +10,10 @@ RSpec.describe Audit::Rollback::Registry do
       "CashInstallment",
       "CardInstallment",
       "CategoryTransaction",
-      "EntityTransaction"
+      "EntityTransaction",
+      "Budget",
+      "BudgetCategory",
+      "BudgetEntity"
     )
     expect(described_class::ADAPTERS).to eq(
       "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
@@ -18,7 +21,10 @@ RSpec.describe Audit::Rollback::Registry do
       "CashInstallment" => Audit::Rollback::Adapters::Installment,
       "CardInstallment" => Audit::Rollback::Adapters::Installment,
       "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
-      "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction
+      "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction,
+      "Budget" => Audit::Rollback::Adapters::Budget,
+      "BudgetCategory" => Audit::Rollback::Adapters::BudgetCategory,
+      "BudgetEntity" => Audit::Rollback::Adapters::BudgetEntity
     )
   end
 
@@ -28,12 +34,12 @@ RSpec.describe Audit::Rollback::Registry do
     operation = nil
 
     Audit::Operation.run(actor: user, context: user.main_context, source: :web) do
-      create(:budget, user:, context: user.main_context)
+      create(:subscription, user:, context: user.main_context)
       operation = Audit::Operation.ensure_persisted!
     end
 
-    expect(operation.audit_versions.where(item_type: "Budget", event: :create)).to exist
+    expect(operation.audit_versions.where(item_type: "Subscription", event: :create)).to exist
     expect(Audit::Rollback::Preview.new(operation:, actor: admin)).to have_attributes(state: "read_only")
-    expect(described_class.supported_types).not_to include("Budget")
+    expect(described_class.supported_types).not_to include("Subscription")
   end
 end
