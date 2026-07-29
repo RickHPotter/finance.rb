@@ -42,6 +42,7 @@ RSpec.describe AllocationMutations::EntityMutator do
     plan = entity_plan(transaction, :add, destination_id: destination.id)
 
     impact = described_class.new(plan:).call
+    AllocationMutations::ImpactRecalculator.new(actor: user, context: user.main_context, impacts: [ impact ]).call
 
     allocation = transaction.reload.entity_transactions.sole
     expect(allocation).to have_attributes(

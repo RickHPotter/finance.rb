@@ -75,6 +75,86 @@ RSpec.describe AllocationMutations::Apply do
       "affected_count" => 2,
       "preview_digest" => current_preview.digest
     )
+    expect(result.operation.metadata.to_json.bytesize).to be < 2.kilobytes
+    expect(result.operation.metadata.values).to all(satisfy { |value| value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value.in?([ true, false ]) })
+  end
+
+  it "does not run ledger balance recalculation for a descriptive transaction allocation" do
+    owner = transaction("Descriptive correction")
+    current_preview = preview(owners: [ owner ], action: category_action)
+    expect(Logic::RecalculateBalancesService).not_to receive(:new)
+
+    result = apply(current_preview)
+
+    expect(result).to be_applied
+    expect(owner.reload.categories).to contain_exactly(destination)
+  end
+
+  it "consolidates changed Budget criteria into one earliest-month balance recalculation" do
+    account = create(:user_bank_account, :random, user:)
+    [ 7, 8 ].each do |month|
+      matching_transaction = create(
+        :cash_transaction,
+        user:,
+        context:,
+        user_bank_account: account,
+        date: Date.new(2026, month, 10),
+        month:,
+        year: 2026,
+        price: -2_000,
+        cash_installments: [ build(:cash_installment, price: -2_000, number: 1) ],
+        category_transactions: []
+      )
+      matching_transaction.category_transactions.create!(category: destination)
+    end
+    budgets = [ 7, 8 ].map do |month|
+      create(
+        :budget,
+        user:,
+        context:,
+        month:,
+        year: 2026,
+        value: -10_000,
+        budget_categories: [ build(:budget_category, category: source) ]
+      )
+    end
+    current_preview = preview(
+      owners: budgets,
+      action: category_action(operation: :switch, source_id: source.id, destination_id: destination.id)
+    )
+    expect(Logic::RecalculateBalancesService).to receive(:new).once.with(
+      user:,
+      context:,
+      year: 2026,
+      month: 7
+    ).and_call_original
+
+    result = apply(current_preview)
+
+    expect(result).to be_applied
+    expect(budgets.map { |budget| budget.reload.remaining_value }).to eq([ -8_000, -8_000 ])
+  end
+
+  it "skips balance recalculation when Budget criteria leave persisted balance inputs unchanged" do
+    budget = create(
+      :budget,
+      user:,
+      context:,
+      month: 7,
+      year: 2026,
+      value: -10_000,
+      budget_categories: [ build(:budget_category, category: source) ]
+    )
+    current_preview = preview(
+      owners: [ budget ],
+      action: category_action(operation: :switch, source_id: source.id, destination_id: destination.id)
+    )
+    expect(Logic::RecalculateBalancesService).not_to receive(:new)
+
+    result = apply(current_preview)
+
+    expect(result).to be_applied
+    expect(budget.reload).to have_attributes(remaining_value: -10_000)
   end
 
   it "allows strict application with no-ops and mutates only affected owners" do

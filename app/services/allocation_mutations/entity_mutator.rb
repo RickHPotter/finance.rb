@@ -24,6 +24,7 @@ class AllocationMutations::EntityMutator
   def call
     raise IneligiblePlan, "entity mutation requires an eligible plan" unless plan.eligible?
 
+    balance_inputs_before = budget_balance_inputs
     owner.transaction do
       validate_current_state!
       apply_operation
@@ -34,7 +35,8 @@ class AllocationMutations::EntityMutator
     AllocationMutations::Impact.build(
       owner:,
       entity_ids_before: plan.entity_ids_before,
-      entity_ids_after: plan.entity_ids_after
+      entity_ids_after: plan.entity_ids_after,
+      balance_recalculation_required: balance_inputs_before.present? && balance_inputs_before != budget_balance_inputs
     )
   end
 
@@ -71,7 +73,16 @@ class AllocationMutations::EntityMutator
 
   def prepare_owner_recalculation
     owner.original_entities = plan.entity_ids_before if owner.respond_to?(:original_entities=)
-    owner.recalculate_balance = nil if owner.is_a?(Budget)
+    if owner.is_a?(Budget)
+      owner.recalculate_balance = false
+    else
+      owner.skip_allocation_impact_recalculation = true
+      owner.skip_post_commit_financial_recalculation = true
+    end
+  end
+
+  def budget_balance_inputs
+    [ owner.value, owner.remaining_value ] if owner.is_a?(Budget)
   end
 
   def entity_allocations

@@ -327,3 +327,20 @@ Suggested commit:
 spec: harden allocation mutation workflows
 ```
 
+## Delivery Status
+
+KAKASHI-16 is complete through Slice 10.
+
+- Slices 1–5 established the policy, paid-history form envelope, coordinated rich-form
+  path, and category/entity mutators.
+- Slice 6 added signed preview/apply, deterministic locking, stale-state protection,
+  strict/eligible-only modes, idempotency, and one root audit operation.
+- Slices 7–9 delivered the shared responsive interface and Cash, Card, Budget, and
+  embedded-Cash Budget integrations without changing canonical index URLs.
+- Slice 10 consolidated allocation counters and affected-Budget refreshes, proved that
+  descriptive transaction allocation changes skip ledger recalculation, consolidated
+  changed Budget criteria at the earliest affected month, and verified rollback for
+  `CategoryTransaction`, `EntityTransaction`, `BudgetCategory`, and `BudgetEntity`.
+
+Manual verification remains the release gate for responsive interaction and real-data
+structural-family behavior; the automated contract is complete.

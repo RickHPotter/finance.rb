@@ -16,6 +16,7 @@ class AllocationMutations::CategoryMutator
   def call
     raise IneligiblePlan, "category mutation requires an eligible plan" unless plan.eligible?
 
+    balance_inputs_before = budget_balance_inputs
     owner.transaction do
       validate_current_state!
       apply_operation
@@ -26,7 +27,8 @@ class AllocationMutations::CategoryMutator
     AllocationMutations::Impact.build(
       owner:,
       category_ids_before: plan.category_ids_before,
-      category_ids_after: plan.category_ids_after
+      category_ids_after: plan.category_ids_after,
+      balance_recalculation_required: balance_inputs_before.present? && balance_inputs_before != budget_balance_inputs
     )
   end
 
@@ -61,7 +63,16 @@ class AllocationMutations::CategoryMutator
 
   def prepare_owner_recalculation
     owner.original_categories = plan.category_ids_before if owner.respond_to?(:original_categories=)
-    owner.recalculate_balance = nil if owner.is_a?(Budget)
+    if owner.is_a?(Budget)
+      owner.recalculate_balance = false
+    else
+      owner.skip_allocation_impact_recalculation = true
+      owner.skip_post_commit_financial_recalculation = true
+    end
+  end
+
+  def budget_balance_inputs
+    [ owner.value, owner.remaining_value ] if owner.is_a?(Budget)
   end
 
   def category_allocations

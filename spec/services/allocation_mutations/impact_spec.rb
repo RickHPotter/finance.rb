@@ -13,7 +13,8 @@ RSpec.describe AllocationMutations::Impact do
       category_ids_before: [ 8, 3, 8 ],
       category_ids_after: [ 5, 8 ],
       entity_ids_before: [ 4 ],
-      entity_ids_after: [ 4 ]
+      entity_ids_after: [ 4 ],
+      balance_recalculation_required: false
     )
 
     expect(impact).to have_attributes(

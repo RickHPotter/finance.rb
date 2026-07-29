@@ -8,21 +8,23 @@ AllocationMutations::Impact = Data.define(
   :category_ids_after,
   :entity_ids_before,
   :entity_ids_after,
-  :reference_months
+  :reference_months,
+  :balance_recalculation_required
 ) do
   class << self
-    def build(owner:, category_ids_before: nil, category_ids_after: nil, entity_ids_before: nil, entity_ids_after: nil)
+    def build(owner:, **attributes)
       adapter = AllocationMutations::OwnerAdapter.for(owner)
 
       new(
         owner_type: adapter.owner_type,
         owner_id: adapter.id,
         context_id: adapter.context.id,
-        category_ids_before: category_ids_before || adapter.category_ids,
-        category_ids_after: category_ids_after || adapter.category_ids,
-        entity_ids_before: entity_ids_before || adapter.entity_ids,
-        entity_ids_after: entity_ids_after || adapter.entity_ids,
-        reference_months: adapter.reference_months
+        category_ids_before: attributes[:category_ids_before] || adapter.category_ids,
+        category_ids_after: attributes[:category_ids_after] || adapter.category_ids,
+        entity_ids_before: attributes[:entity_ids_before] || adapter.entity_ids,
+        entity_ids_after: attributes[:entity_ids_after] || adapter.entity_ids,
+        reference_months: adapter.reference_months,
+        balance_recalculation_required: attributes.fetch(:balance_recalculation_required, false)
       )
     end
   end
@@ -36,7 +38,8 @@ AllocationMutations::Impact = Data.define(
       category_ids_after: normalize_ids(attributes.fetch(:category_ids_after)),
       entity_ids_before: normalize_ids(attributes.fetch(:entity_ids_before)),
       entity_ids_after: normalize_ids(attributes.fetch(:entity_ids_after)),
-      reference_months: Array(attributes.fetch(:reference_months)).uniq.sort.freeze
+      reference_months: Array(attributes.fetch(:reference_months)).uniq.sort.freeze,
+      balance_recalculation_required: attributes.fetch(:balance_recalculation_required, false)
     )
   end
 

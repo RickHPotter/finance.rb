@@ -473,3 +473,15 @@ callbacks are not relied on accidentally or run once per row.
 - friendship redesign (KAKASHI-12)
 - dashboard completion (KAKASHI-17)
 
+## KAKASHI-18 Dependency Seam
+
+KAKASHI-18 may reuse the KAKASHI-16 action vocabulary, context-scoped owner loading,
+preview token, deterministic locking, strict/eligible-only application modes, bounded
+audit metadata, allocation-row rollback adapters, and impact recalculation registry.
+
+It must add a separate master-record merge/delete planner. A Category or Entity master
+operation cannot be represented as an ordinary allocation switch because it must also
+validate every referencing owner, remap all four allocation-row types, preserve
+built-in/friend/structural identities, resolve uniqueness collisions, and audit the
+master-record lifecycle itself. KAKASHI-16 therefore supplies the execution foundation
+without authorizing master-record mutation.

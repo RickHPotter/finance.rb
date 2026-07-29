@@ -36,6 +36,7 @@ RSpec.describe AllocationMutations::CategoryMutator do
     plan = category_plan(transaction, :add, destination_id: destination.id)
 
     impact = described_class.new(plan:).call
+    AllocationMutations::ImpactRecalculator.new(actor: user, context: user.main_context, impacts: [ impact ]).call
 
     expect(transaction.reload.categories).to contain_exactly(destination)
     expect(destination.reload).to have_attributes(card_transactions_count: 1, card_transactions_total: transaction.price)
@@ -118,7 +119,8 @@ RSpec.describe AllocationMutations::CategoryMutator do
       month: 7
     ).and_call_original
 
-    described_class.new(plan:).call
+    impact = described_class.new(plan:).call
+    AllocationMutations::ImpactRecalculator.new(actor: user, context: user.main_context, impacts: [ impact ]).call
 
     expect(budget.reload.remaining_value).to eq(-8_000)
   end

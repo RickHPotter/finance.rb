@@ -106,6 +106,7 @@ class AllocationMutations::Apply
       preview.plans.select(&:eligible?).each do |plan|
         impacts << mutator_class.new(plan:).call
       end
+      AllocationMutations::ImpactRecalculator.new(actor:, context:, impacts:).call
       operation = Audit::Operation.ensure_persisted!
     end
     result(status: :applied, operation:, impacts:)
