@@ -82,6 +82,8 @@ RSpec.describe "CardTransactions", type: :request do
       expect(response.body).not_to include("hw-combobox")
 
       document = Nokogiri::HTML.fragment(response.body)
+      transaction_date = document.at_css("#card_transaction_date")
+      transaction_datetime_wrapper = transaction_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
       installment_dates = document.css("input.installment_date")
       active_installment_date = installment_dates.find { |input| input["name"].exclude?("NEW_RECORD") }
       datetime_wrapper = active_installment_date.ancestors.find { |node| node["data-controller"] == "datetime-input" }
@@ -91,6 +93,11 @@ RSpec.describe "CardTransactions", type: :request do
       expect(active_installment_date["name"]).to eq("card_transaction[card_installments_attributes][0][date]")
       expect(active_installment_date["data-reactive-form-target"]).to eq("dateInput")
       expect(active_installment_date["data-action"]).to be_nil
+      expect(transaction_datetime_wrapper["data-datetime-input-suppress-reactive-refresh-on-enter-value"]).to eq("true")
+      expect(transaction_datetime_wrapper.at_css("#card_transaction_date_date_input")["data-action"]).to include(
+        "change->reactive-form#updateInstallmentsDates",
+        "blur->reactive-form#requestSubmit"
+      )
       expect(datetime_wrapper["data-datetime-input-readonly-value"]).to be_nil
       expect(datetime_wrapper.at_css("#installment_date_0_date_input")).to be_present
       expect(datetime_wrapper.at_css("#installment_date_0_time_input")).to be_present

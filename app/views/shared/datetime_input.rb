@@ -5,7 +5,8 @@ class Views::Shared::DatetimeInput < Views::Base
   include CacheHelper
 
   attr_reader :form, :field, :value, :id, :hidden_class, :hidden_data, :date_data, :time_data, :date_actions, :time_actions, :autofocus, :time_autofocus, :disabled,
-              :readonly, :compact, :min_datetime, :min_datetime_message, :max_datetime, :max_datetime_message, :show_time, :calendar
+              :readonly, :compact, :min_datetime, :min_datetime_message, :max_datetime, :max_datetime_message, :show_time, :calendar,
+              :suppress_reactive_refresh_on_enter
 
   def initialize(form:, field:, value:, id:, **options)
     @form = form
@@ -29,6 +30,7 @@ class Views::Shared::DatetimeInput < Views::Base
     @max_datetime_message = options.fetch(:max_datetime_message, nil)
     @show_time = options.fetch(:show_time, true)
     @calendar = options.fetch(:calendar, false)
+    @suppress_reactive_refresh_on_enter = options.fetch(:suppress_reactive_refresh_on_enter, false)
   end
 
   def view_template
@@ -39,6 +41,7 @@ class Views::Shared::DatetimeInput < Views::Base
         action: "datetime-input:refresh->datetime-input#refresh datetime-input:readonly->datetime-input#setReadonly",
         datetime_input_invalid_time_message_value: I18n.t("datetime_input.invalid_time"),
         datetime_input_readonly_value: readonly,
+        datetime_input_suppress_reactive_refresh_on_enter_value: suppress_reactive_refresh_on_enter.to_s,
         datetime_input_min_datetime_value: min_datetime&.strftime("%Y-%m-%dT%H:%M"),
         datetime_input_min_datetime_message_value: min_datetime_message || I18n.t("datetime_input.invalid_min"),
         datetime_input_max_datetime_value: max_datetime&.strftime("%Y-%m-%dT%H:%M"),
