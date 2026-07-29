@@ -55,6 +55,8 @@ en:
         invalid_dependency_graph: "The rollback dependency graph is invalid"
         allocation_key_taken: "The original allocation is now occupied by another record"
         incomplete_budget_graph: "The Budget allocation graph is incomplete"
+        reference_key_taken: "The original billing reference key is occupied by another record"
+        reference_merge_routing_conflict: "This reference merge also changes invoice routing and must wait for routing rollback support"
         operation_has_no_compensation: "The operation has no net compensation to apply"
         target_not_committed: "Only committed operations can be rolled back"
         rollback_target_not_supported: "Rollback operations cannot be rollback targets"
@@ -83,6 +85,7 @@ en:
         category_transaction_totals: "Category transaction totals"
         entity_transaction_totals: "Entity transaction totals"
         budget_remaining_value: "Budget remaining value"
+        reference_payment_dates: "Billing reference payment dates"
     operations:
       title: "Financial history"
       description: "Review committed financial operations and the record changes visible to your account."
@@ -218,6 +221,8 @@ pt-BR:
         invalid_dependency_graph: "O grafo de dependências da reversão é inválido"
         allocation_key_taken: "A alocação original está ocupada por outro registro"
         incomplete_budget_graph: "O grafo de alocações do orçamento está incompleto"
+        reference_key_taken: "A chave original da referência da fatura está ocupada por outro registro"
+        reference_merge_routing_conflict: "Esta união de referências também altera o roteamento da fatura e deve aguardar suporte à reversão de roteamento"
         operation_has_no_compensation: "A operação não possui compensação líquida para aplicar"
         target_not_committed: "Somente operações confirmadas podem ser revertidas"
         rollback_target_not_supported: "Operações de reversão não podem ser alvos de reversão"
@@ -246,6 +251,7 @@ pt-BR:
         category_transaction_totals: "Totais de transações da categoria"
         entity_transaction_totals: "Totais de transações da entidade"
         budget_remaining_value: "Valor restante do orçamento"
+        reference_payment_dates: "Datas de pagamento da referência da fatura"
     operations:
       title: "Histórico financeiro"
       description: "Revise operações financeiras confirmadas e as alterações de registros visíveis para a sua conta."

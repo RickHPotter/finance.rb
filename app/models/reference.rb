@@ -8,7 +8,7 @@ class Reference < ApplicationRecord
   audits_financial_changes
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :skip_reference_closing_date_calculation
+  attr_accessor :skip_reference_closing_date_calculation, :skip_card_payment_date_sync
 
   # @relationships ............................................................
   belongs_to :context, optional: false
@@ -23,7 +23,7 @@ class Reference < ApplicationRecord
   # @callbacks ................................................................
   before_validation :assign_default_context
   before_save :set_reference_closing_date
-  after_save :set_card_payment_date
+  after_save :set_card_payment_date, unless: :skip_card_payment_date_sync
 
   # @scopes ...................................................................
   # @additional_config ........................................................

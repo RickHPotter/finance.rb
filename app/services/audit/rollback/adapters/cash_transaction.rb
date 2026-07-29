@@ -8,12 +8,13 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   CARD_PAYMENT_PROJECTION_ATTRIBUTES = %w[cash_transaction_type user_card_id].freeze
   CARD_PAYMENT_PROJECTION_CHANGES = %w[comment price].freeze
   CARD_PAYMENT_INSTALLMENT_CHANGES = %w[price].freeze
+  REFERENCE_DATE_SYNC_CHANGES = %w[date].freeze
   DERIVED_ATTRIBUTES = (Audit::Rollback::Adapters::Base::DERIVED_ATTRIBUTES + %w[cash_installments_count]).freeze
   CASH_RECALCULATIONS = %w[cash_installment_order cash_balance user_bank_account_totals].freeze
 
   def support_issues
     attributes = SPECIAL_GRAPH_ATTRIBUTES.select { |attribute| historical_state[attribute].present? }
-    attributes -= CARD_PAYMENT_PROJECTION_ATTRIBUTES if supported_card_payment_projection_update?
+    attributes -= CARD_PAYMENT_PROJECTION_ATTRIBUTES if supported_card_payment_graph?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
     issues
@@ -66,6 +67,46 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     end
   end
 
+  def supported_card_payment_graph?
+    supported_card_payment_projection_update? || supported_reference_date_sync? || supported_reference_merge_graph?
+  end
+
+  def supported_reference_merge_graph?
+    return false unless historical_state["cash_transaction_type"] == "CardInstallment"
+    return false if historical_state["user_card_id"].blank?
+    return false unless reference_merge_transitions_supported?
+
+    case action
+    when "recreate" then historical_installments.present?
+    when "update" then transition.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_PROJECTION_CHANGES) }
+    else false
+    end
+  end
+
+  def reference_merge_transitions_supported?
+    reference_transitions = transitions.select { |candidate| candidate.record_type == "Reference" }
+    return false unless reference_transitions.map(&:action).sort == %w[recreate update]
+
+    states = reference_transitions.map { |candidate| candidate.before_state || candidate.expected_after_state || {} }
+    return false unless states.map { |state| state["user_card_id"] }.uniq == [ historical_state["user_card_id"] ]
+    return false unless reference_transitions.map(&:context_id).uniq == [ context_id ]
+
+    dates = states.map { |state| Date.new(state["year"], state["month"], 1) }.sort
+    dates.first.next_month == dates.last
+  rescue Date::Error, TypeError
+    false
+  end
+
+  def supported_reference_date_sync?
+    return false unless action == "update"
+    return false unless historical_state["cash_transaction_type"] == "CardInstallment"
+    return false if historical_state["user_card_id"].blank?
+    return false unless transition.net_changed_attributes.all? { |attribute| attribute.in?(REFERENCE_DATE_SYNC_CHANGES) }
+    return false unless projection_cash_installment_date_transition_supported?
+
+    transitions.any? { |candidate| reference_date_transition_supported?(candidate) }
+  end
+
   def projection_cash_installment_transition_supported?
     transitions.any? do |candidate|
       candidate.record_type == "CashInstallment" &&
@@ -73,6 +114,24 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
         transaction_id(candidate) == item_id &&
         candidate.net_changed_attributes.all? { |attribute| attribute.in?(CARD_PAYMENT_INSTALLMENT_CHANGES) }
     end
+  end
+
+  def projection_cash_installment_date_transition_supported?
+    transitions.any? do |candidate|
+      candidate.record_type == "CashInstallment" &&
+        candidate.action == "update" &&
+        transaction_id(candidate) == item_id &&
+        candidate.net_changed_attributes.all? { |attribute| attribute.in?(REFERENCE_DATE_SYNC_CHANGES) }
+    end
+  end
+
+  def reference_date_transition_supported?(candidate)
+    return false unless candidate.record_type == "Reference" && candidate.action == "update"
+
+    state = candidate.expected_after_state || candidate.before_state || {}
+    state.values_at("user_card_id", "month", "year") ==
+      historical_state.values_at("user_card_id", "month", "year") &&
+      candidate.context_id == context_id
   end
 
   def projection_card_installment_transitions

@@ -20,11 +20,21 @@ class Audit::Rollback::Recalculator
 
   def recalculate_cash_transactions
     CashTransaction.unscoped.where(id: impact.cash_transaction_ids).find_each do |transaction|
+      recalculate_card_payment_projection(transaction)
       count = transaction.cash_installments.count
       paid = count.positive? && transaction.cash_installments.where(paid: false).none?
       Audit::BulkMutation.update_columns!(transaction, cash_installments_count: count, paid:)
       Audit::BulkMutation.update_all!(transaction.cash_installments, cash_installments_count: count)
     end
+  end
+
+  def recalculate_card_payment_projection(transaction)
+    return unless transaction.cash_transaction_type == "CardInstallment"
+    return if transaction.card_installments.none?
+
+    price = transaction.card_installments.sum(:price)
+    Audit::BulkMutation.update_columns!(transaction, price:)
+    Audit::BulkMutation.update_all!(transaction.cash_installments, price:)
   end
 
   def recalculate_card_transactions

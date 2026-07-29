@@ -30,7 +30,10 @@ class Audit::Rollback::IntegrityVerifier
 
     expected = Audit::Rollback::Attributes.comparable_for(row)
     current = Audit::Rollback::State.normalize(row.record_type, record.attributes.slice(*expected.keys))
-    raise IntegrityError, "#{row.key} does not match its restored state" unless current == expected
+    unless current == expected
+      changed_attributes = expected.keys.reject { |attribute| expected[attribute] == current[attribute] }
+      raise IntegrityError, "#{row.key} does not match its restored state: #{changed_attributes.join(', ')}"
+    end
 
     ownership = Audit::OwnershipResolver.resolve!(record)
     return if ownership.owner_id == row.owner_id && ownership.context_id == row.context_id

@@ -5,6 +5,7 @@ class Audit::Rollback::Compensator
 
   TRANSACTION_TYPES = %w[CashTransaction CardTransaction].freeze
   INSTALLMENT_TYPES = %w[CashInstallment CardInstallment].freeze
+  ALLOCATION_TYPES = %w[CategoryTransaction EntityTransaction].freeze
 
   attr_reader :preview, :confirmed, :impact, :handled_keys
 
@@ -63,59 +64,65 @@ class Audit::Rollback::Compensator
 
   def transaction_group_rows(record_type:, item_id:)
     preview.rows.select do |candidate|
+      next false if handled_keys.include?(candidate.key)
+
       (candidate.record_type.in?(TRANSACTION_TYPES) && candidate.record_type == record_type && candidate.item_id == item_id) ||
-        (candidate.record_type.in?(INSTALLMENT_TYPES) && transaction_parent_key(candidate) == [ record_type, item_id ])
+        (candidate.record_type.in?(INSTALLMENT_TYPES) && transaction_parent_key(candidate) == [ record_type, item_id ]) ||
+        (candidate.record_type.in?(ALLOCATION_TYPES) && allocation_parent_key(candidate) == [ record_type, item_id ])
     end
   end
 
   def compensate_parent(record_type:, item_id:, rows:)
     parent_row = rows.find { |row| row.record_type == record_type && row.item_id == item_id }
     installment_rows = rows.select { |row| row.record_type.in?(INSTALLMENT_TYPES) }
+    allocation_rows = rows.select { |row| row.record_type.in?(ALLOCATION_TYPES) }
     action = parent_row&.action
 
     case action
-    when "destroy" then destroy_parent(parent_row, installment_rows)
-    when "recreate" then recreate_parent(parent_row, installment_rows)
-    else update_parent(record_type:, item_id:, parent_row:, installment_rows:)
+    when "destroy" then destroy_parent(parent_row, installment_rows, allocation_rows)
+    when "recreate" then recreate_parent(parent_row, installment_rows, allocation_rows)
+    else update_parent(record_type:, item_id:, parent_row:, installment_rows:, allocation_rows:)
     end
   end
 
-  def destroy_parent(parent_row, installment_rows)
+  def destroy_parent(parent_row, installment_rows, allocation_rows)
     parent = parent_row.adapter.live_record
     raise CompensationError, "rollback target is missing" unless parent
 
     impact.capture_transaction(parent)
     prepare_parent(parent)
     parent.destroy!
-    mark_handled(parent_row, *installment_rows)
+    mark_handled(parent_row, *installment_rows, *allocation_rows)
   end
 
-  def recreate_parent(parent_row, installment_rows)
+  def recreate_parent(parent_row, installment_rows, allocation_rows)
     parent = parent_row.record_type.constantize.new(parent_row.adapter.restore_attributes.merge("id" => parent_row.item_id))
     association = installment_association(parent)
     parent.public_send(association).target.clear
     installment_rows.select { |row| row.before_state.present? }.each do |row|
       parent.public_send(association).build(installment_attributes(row))
     end
+    allocation_rows.select { |row| row.before_state.present? }.each { |row| build_allocation(parent, row) }
     prepare_parent(parent)
     parent.save!
     impact.capture_transaction(parent)
-    mark_handled(parent_row, *installment_rows)
+    mark_handled(parent_row, *installment_rows, *allocation_rows)
   end
 
-  def update_parent(record_type:, item_id:, parent_row:, installment_rows:)
+  def update_parent(record_type:, item_id:, parent_row:, installment_rows:, allocation_rows:)
     parent = parent_row&.adapter&.live_record || record_type.constantize.unscoped.find_by(id: item_id)
     raise CompensationError, "installment parent is missing" unless parent
 
     impact.capture_transaction(parent)
     parent.assign_attributes(parent_row.adapter.restore_attributes) if parent_row&.action == "update"
     apply_installment_changes(parent, installment_rows)
-    return mark_handled(parent_row, *installment_rows) unless parent.changed? || nested_changes?(parent)
+    apply_allocation_changes(parent, allocation_rows)
+    return mark_handled(parent_row, *installment_rows, *allocation_rows) unless parent.changed? || nested_changes?(parent)
 
     prepare_parent(parent)
     parent.save!
     restore_post_compensation_attributes(parent_row, parent)
-    mark_handled(parent_row, *installment_rows)
+    mark_handled(parent_row, *installment_rows, *allocation_rows)
   end
 
   def apply_installment_changes(parent, rows)
@@ -142,12 +149,42 @@ class Audit::Rollback::Compensator
     row.adapter.restore_attributes.merge("id" => row.item_id, count_attribute => 1)
   end
 
+  def apply_allocation_changes(parent, rows)
+    rows.each do |row|
+      association = parent.public_send(allocation_association(row))
+      case row.action
+      when "update" then association.detect { |record| record.id == row.item_id }&.assign_attributes(row.adapter.restore_attributes)
+      when "destroy" then association.detect { |record| record.id == row.item_id }&.mark_for_destruction
+      when "recreate" then build_allocation(parent, row)
+      end
+    end
+  end
+
+  def build_allocation(parent, row)
+    parent.public_send(allocation_association(row)).build(row.adapter.restore_attributes.merge("id" => row.item_id))
+  end
+
+  def allocation_association(row)
+    row.record_type == "CategoryTransaction" ? :category_transactions : :entity_transactions
+  end
+
+  def allocation_parent_key(row)
+    dependency = row.dependencies.find { |candidate| candidate.relationship == "parent" && candidate.record_type.in?(TRANSACTION_TYPES) }
+    [ dependency&.record_type, dependency&.item_id ]
+  end
+
   def installment_association(parent)
     parent.is_a?(CashTransaction) ? :cash_installments : :card_installments
   end
 
   def nested_changes?(parent)
-    parent.public_send(installment_association(parent)).any? { |installment| installment.changed? || installment.marked_for_destruction? }
+    nested_associations(parent).any? do |association|
+      parent.public_send(association).any? { |record| record.changed? || record.marked_for_destruction? }
+    end
+  end
+
+  def nested_associations(parent)
+    [ installment_association(parent), :category_transactions, :entity_transactions ]
   end
 
   def prepare_parent(parent)
