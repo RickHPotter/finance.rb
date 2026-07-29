@@ -19,7 +19,8 @@ RSpec.describe Audit::Rollback::Registry do
       "UserBankAccount",
       "Subscription",
       "Investment",
-      "Exchange"
+      "Exchange",
+      "PiggyBank"
     )
     expect(described_class::ADAPTERS).to eq(
       "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
@@ -36,7 +37,8 @@ RSpec.describe Audit::Rollback::Registry do
       "UserBankAccount" => Audit::Rollback::Adapters::UserBankAccount,
       "Subscription" => Audit::Rollback::Adapters::Subscription,
       "Investment" => Audit::Rollback::Adapters::Investment,
-      "Exchange" => Audit::Rollback::Adapters::Exchange
+      "Exchange" => Audit::Rollback::Adapters::Exchange,
+      "PiggyBank" => Audit::Rollback::Adapters::PiggyBank
     )
   end
 
