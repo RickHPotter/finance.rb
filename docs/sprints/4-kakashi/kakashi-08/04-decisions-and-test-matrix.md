@@ -131,24 +131,23 @@ versions must not contribute names, prices, counts, filter options, or paginatio
 
 | Family | Ownership source | Direct-SQL gate | Rollback status |
 | --- | --- | --- | --- |
-| cash/card transaction | direct user/context | controller, import, projection writes | V1 registered; generated/special graphs remain V2 |
-| cash/card installment STI | parent transaction | count, paid-state, deletion writes | V1 registered; generated lifecycle and routing remain V2 |
-| category allocation | polymorphic transactable | bulk/category transfer paths | V2 adapter required |
-| entity allocation | polymorphic transactable | exchange/status repair paths | V2 adapter required |
-| exchange | entity transactable | projection rebuild and unlink paths | V2 adapter required |
-| reference | user card plus direct context | merge/resynchronization writes | V2 adapter required |
-| user card | direct user | totals and reference-date sync | V2 adapter required |
-| user bank account | direct user | totals and context purge | V2 adapter required |
-| budget | direct user/context | bulk budget updates | V2 adapter required |
-| budget category/entity joins | parent budget | nested and bulk allocation writes | V2 companion adapters required |
-| subscription | direct user/context | price synchronization | V2 adapter required |
-| investment | direct user/context | Piggy Bank profit synchronization | V2 adapter required |
-| Piggy Bank | source/return transaction | projection link writes | V2 adapter required |
+| cash/card transaction | direct user/context | controller, import, projection writes | V2 registered with known generated/special graphs |
+| cash/card installment STI | parent transaction | count, paid-state, deletion writes | V2 registered with generated lifecycle and routing |
+| category allocation | polymorphic transactable | bulk/category transfer paths | V2 registered |
+| entity allocation | polymorphic transactable | exchange/status repair paths | V2 registered |
+| exchange | entity transactable | projection rebuild and unlink paths | V2 registered |
+| reference | user card plus direct context | merge/resynchronization writes | V2 registered |
+| user card | direct user | totals and reference-date sync | V2 registered |
+| user bank account | direct user | totals and context purge | V2 registered |
+| budget | direct user/context | bulk budget updates | V2 registered |
+| budget category/entity joins | parent budget | nested and bulk allocation writes | V2 registered companions |
+| subscription | direct user/context | price synchronization | V2 registered |
+| investment | direct user/context | Piggy Bank profit synchronization | V2 registered |
+| Piggy Bank | source/return transaction | projection link writes | V2 registered |
 
-V1 is complete when unsupported operations are reported accurately and remain
-operation-wide read-only. KAKASHI-08 is complete only after the V2 adapter and graph
-coverage gate in [V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md)
-passes. Audit read coverage is already independent from rollback eligibility.
+KAKASHI-08 is complete. Every audited family has a registered adapter, known generated
+graphs pass the V2 coverage gate, and unknown future shapes remain operation-wide
+read-only. Audit read coverage remains independent from rollback eligibility.
 
 ## Callback-Bypass Matrix
 

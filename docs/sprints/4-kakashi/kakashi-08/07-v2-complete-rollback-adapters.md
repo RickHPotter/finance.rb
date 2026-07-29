@@ -2,9 +2,9 @@
 
 ## Status and PR Boundary
 
-The KAKASHI-08 V1 PR is complete and may ship independently. V2 is now the active
-KAKASHI-08 completion boundary and covers the ten confirmed missing public adapters
-plus the internal Budget allocation companions required to restore a Budget graph.
+KAKASHI-08 V2 is complete and is the final feature boundary. It covers the ten
+previously missing public adapters plus the internal Budget allocation companions
+required to restore a Budget graph.
 
 V1 intentionally fails closed. An operation containing a record family with no
 rollback adapter or an unsupported generated graph has a readable preview but no apply
@@ -14,9 +14,9 @@ override, or a force option.
 Implementation of all eleven V2 slices was completed on 2026-07-28. The registry now
 contains every concrete audited financial family in this document, known generated
 graphs have focused preview/apply coverage, and unknown future transaction graph shapes
-continue to fail closed. The automated completion gate is recorded below; the deployed
-revision's manual acceptance operation IDs remain an environment-specific release
-record.
+continue to fail closed. KAKASHI-08 was closed on 2026-07-29. The automated completion
+record is retained below; deployed-revision operation IDs remain environment-specific
+release evidence rather than repository documentation.
 
 ## V2 Objective
 
@@ -342,8 +342,8 @@ KAKASHI-08 may be marked complete only when:
 - the focused rollback suite, affected domain suites, CI scope, and `bin/ci` pass
 - the manual acceptance set is recorded for the deployed revision
 
-Audit history availability alone does not satisfy this gate. V1 remains a valid,
-deployable foundation while V2 is pending.
+The completed V2 boundary satisfies this gate. Audit history availability alone would
+not have been sufficient without the adapter and generated-graph coverage.
 
 ## Automated Completion Record
 

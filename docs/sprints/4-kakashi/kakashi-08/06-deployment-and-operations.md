@@ -3,22 +3,18 @@
 ## Rollout boundary
 
 Audit capture and rollback availability are separate controls. Every model in the
-initial audited scope continues to write `AuditOperation` and `AuditVersion` rows even
-when it has no entry in `Audit::Rollback::Registry`. The initial rollback registry
-contains only ordinary cash/card transactions and their installments. Generated
-exchange, advance, shared-return, subscription, investment, and Piggy Bank graphs stay
-read-only until their complete graph adapter is implemented and covered.
+completed audited scope writes `AuditOperation` and `AuditVersion` rows and has an
+entry in `Audit::Rollback::Registry`. Known exchange, advance, shared-return,
+subscription, investment, Piggy Bank, routing, and allocation graphs are covered by
+their complete adapters.
 
-Price-only card edits may update their existing generated card-payment cash projections
-in the same operation. Those projection updates are rollbackable only when the linked
-card transaction, card installments, projection cash transactions, and projection cash
-installments are present, ownership is consistent, routing is unchanged, and the
-generated rows changed only their canonical aggregate price/comment fields. Projection
-creation, destruction, cycle moves, or rerouting remain read-only.
+Unknown future graph shapes, exact-state conflicts, prohibited paid history, and
+incomplete dependent graphs remain read-only. Audit capture must remain enabled even
+when an individual adapter is withheld operationally; there is no partial rollback,
+conflict override, or force path.
 
-This is the accepted V1 deployment boundary, not the final KAKASHI-08 scope. The future
-V2 PR must add the ten audited families absent from the registry and complete the
-generated financial graph cases listed in
+V2 is the final KAKASHI-08 rollout boundary. Its family inventory and generated-graph
+completion record are documented in
 [V2 complete rollback adapter coverage](07-v2-complete-rollback-adapters.md).
 
 There is no audit backfill. Row counts begin at zero when the storage migration is
