@@ -35,7 +35,6 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
         h1(class: "mt-1 wrap-break-word font-mono text-lg font-bold text-slate-950 sm:text-xl dark:text-slate-100") { preview.operation.id }
       end
       div(class: "flex flex-wrap gap-2") do
-        link_to(I18n.t("tabs.health_check"), healthcheck_path, id: "audit_health_check_link", class: LINK_CLASS, data: NAVIGATION_DATA)
         link_to(I18n.t("navigation.back"), audit_operation_path(preview.operation), class: LINK_CLASS, data: NAVIGATION_DATA)
       end
     end

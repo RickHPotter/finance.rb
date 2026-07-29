@@ -47,13 +47,12 @@ RSpec.describe "Admin audit rollback previews", type: :request do
     get admin_audit_operation_rollback_preview_path(operation)
 
     document = Nokogiri::HTML(response.body)
-    link = document.at_css("#audit_health_check_link")
+    header = document.at_css("turbo-frame#center_container main > header")
     workspace_classes = document.at_css("turbo-frame#center_container > main")["class"].split
     expect(response).to have_http_status(:success)
     expect(response.body).to include("audit_rollback_preview_digest", "audit_rollback_apply_token", "Corrected transaction", "Original transaction")
-    expect(link["href"]).to eq(healthcheck_path)
-    expect(link["data-turbo-frame"]).to eq("_top")
-    expect(link["data-turbo-action"]).to eq("advance")
+    expect(document.at_css("#audit_health_check_link")).to be_nil
+    expect(header.text).not_to include(I18n.t("tabs.health_check"))
     apply_form = document.at_css("form[action='#{admin_audit_operation_rollback_preview_path(operation)}']")
     expect(apply_form["data-turbo-frame"]).to eq("_top")
     expect(apply_form["data-turbo-action"]).to eq("replace")

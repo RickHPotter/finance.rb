@@ -7,7 +7,7 @@ class Admin::AuditRollbackPreviewsController < ApplicationController
   before_action :set_audit_tabs
 
   def show
-    operation = AuditOperation.includes(:audit_versions).find_by(id: params[:audit_operation_id])
+    operation = AuditOperation.find_by(id: params[:audit_operation_id])
     unless operation
       record_rejection!(:operation_not_found)
       return head :not_found

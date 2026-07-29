@@ -35,15 +35,6 @@ class Views::AuditOperations::Show < Views::Base
         h1(class: "mt-1 wrap-break-word font-mono text-lg font-bold text-slate-950 sm:text-xl dark:text-slate-100") { operation.id }
       end
       div(class: "flex flex-wrap gap-2") do
-        if current_user.admin?
-          link_to(
-            I18n.t("tabs.health_check"),
-            healthcheck_path,
-            id: "audit_health_check_link",
-            class: LINK_CLASS,
-            data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: false }
-          )
-        end
         if current_user.admin? && !operation.source_rollback? && operation.rollback_of_operation_id.blank?
           link_to(
             I18n.t("audit.rollback.preview"),

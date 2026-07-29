@@ -98,18 +98,17 @@ RSpec.describe "Audit history", type: :request do
     end
   end
 
-  it "keeps the canonical Health Check return on an individual audit operation" do
+  it "omits Health Check controls from an individual audit operation" do
     create_version(owner: user, item_id: 101, description: "Audited correction")
     sign_in admin
 
     get audit_operation_path(operation)
 
     document = Nokogiri::HTML(response.body)
-    link = document.at_css("#audit_health_check_link")
+    header = document.at_css("turbo-frame#center_container main > header")
     expect(response).to have_http_status(:success)
-    expect(link["href"]).to eq(healthcheck_path)
-    expect(link["data-turbo-frame"]).to eq("_top")
-    expect(link["data-turbo-action"]).to eq("advance")
+    expect(document.at_css("#audit_health_check_link")).to be_nil
+    expect(header.text).not_to include(I18n.t("tabs.health_check"))
   end
 
   it "returns not found when an ordinary user cannot see any version in the operation" do
