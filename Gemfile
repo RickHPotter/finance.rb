@@ -21,6 +21,7 @@ gem "tailwindcss-rails"
 gem "turbo-rails"
 
 gem "image_processing"
+gem "ruby-vips", "~> 2.0", require: false
 
 # UI
 gem "phlex-rails"
