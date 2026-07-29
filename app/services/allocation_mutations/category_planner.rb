@@ -84,24 +84,16 @@ class AllocationMutations::CategoryPlanner
   end
 
   def validate_budget_final_state(category_ids_after)
-    if category_ids_after.empty? && adapter.entity_ids.empty?
-      return {
-        reason_code: :invalid_final_state,
-        details: { errors: [ I18n.t("activerecord.errors.models.budget.missing_categories_or_entities") ] }
-      }
-    end
-
-    candidate = Budget.new(owner.attributes.except("created_at", "updated_at"))
-    candidate.budget_categories.load
-    candidate.budget_entities.load
-    category_ids_after.each { |category_id| candidate.budget_categories.build(category_id:) }
-    adapter.entity_ids.each { |entity_id| candidate.budget_entities.build(entity_id:) }
-    candidate.id = owner.id
-    return if candidate.valid?
+    final_state = AllocationMutations::BudgetFinalState.new(
+      budget: owner,
+      category_ids: category_ids_after,
+      entity_ids: adapter.entity_ids
+    )
+    return if final_state.valid?
 
     {
       reason_code: :invalid_final_state,
-      details: { errors: candidate.errors.full_messages }
+      details: { errors: final_state.errors }
     }
   end
 
