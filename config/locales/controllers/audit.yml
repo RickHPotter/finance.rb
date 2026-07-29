@@ -53,6 +53,7 @@ en:
       issues:
         operation_has_no_versions: "The operation has no financial versions"
         invalid_dependency_graph: "The rollback dependency graph is invalid"
+        allocation_key_taken: "The original allocation is now occupied by another record"
         operation_has_no_compensation: "The operation has no net compensation to apply"
         target_not_committed: "Only committed operations can be rolled back"
         rollback_target_not_supported: "Rollback operations cannot be rollback targets"
@@ -68,7 +69,7 @@ en:
         expected_record_missing: "A record expected to exist is missing"
         current_state_changed: "Current audited values differ from the expected state"
         later_dependencies: "Later dependencies would be orphaned"
-        missing_parent_dependency: "The required parent transaction is missing"
+        missing_parent_dependency: "A required parent record is missing"
         historical_correction_confirmation: "Historical correction confirmation is required"
       recalculations:
         cash_installment_order: "Cash installment order"
@@ -211,6 +212,7 @@ pt-BR:
       issues:
         operation_has_no_versions: "A operação não possui versões financeiras"
         invalid_dependency_graph: "O grafo de dependências da reversão é inválido"
+        allocation_key_taken: "A alocação original está ocupada por outro registro"
         operation_has_no_compensation: "A operação não possui compensação líquida para aplicar"
         target_not_committed: "Somente operações confirmadas podem ser revertidas"
         rollback_target_not_supported: "Operações de reversão não podem ser alvos de reversão"
@@ -226,7 +228,7 @@ pt-BR:
         expected_record_missing: "Um registro que deveria existir está ausente"
         current_state_changed: "Os valores auditados atuais diferem do estado esperado"
         later_dependencies: "Dependências posteriores ficariam órfãs"
-        missing_parent_dependency: "A transação principal necessária está ausente"
+        missing_parent_dependency: "Um registro principal necessário está ausente"
         historical_correction_confirmation: "É necessária a confirmação de correção histórica"
       recalculations:
         cash_installment_order: "Ordem das parcelas em dinheiro"

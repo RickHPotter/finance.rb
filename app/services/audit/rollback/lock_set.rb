@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 class Audit::Rollback::LockSet
-  LOCKABLE_TYPES = %w[CashTransaction CardTransaction CashInstallment CardInstallment].freeze
+  LOCKABLE_TYPES = %w[
+    CashTransaction CardTransaction CashInstallment CardInstallment CategoryTransaction EntityTransaction
+  ].freeze
   LOCK_ORDER = {
     "CashTransaction" => 0,
     "CardTransaction" => 1,
     "CashInstallment" => 2,
-    "CardInstallment" => 3
+    "CardInstallment" => 3,
+    "CategoryTransaction" => 4,
+    "EntityTransaction" => 5
   }.freeze
 
   attr_reader :preview
@@ -54,7 +58,7 @@ class Audit::Rollback::LockSet
       end
       preview.rows.each do |row|
         row.dependencies.each do |dependency|
-          identities << [ dependency.record_type, dependency.item_id ] if dependency.record_type.in?(%w[CashTransaction CardTransaction])
+          identities << [ dependency.record_type, dependency.item_id ] if dependency.record_type.in?(LOCKABLE_TYPES)
         end
       end
       identities.uniq.sort_by { |record_type, item_id| [ LOCK_ORDER.fetch(record_type), item_id ] }

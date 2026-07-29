@@ -30,6 +30,7 @@ class Audit::Rollback::Compensator
   def compensate_row(row)
     return if handled_keys.include?(row.key)
     return mark_handled(row) if row.action == "none"
+    return if row.record_type.in?(INSTALLMENT_TYPES) && included_transaction_parent(row)
 
     if row.record_type.in?(TRANSACTION_TYPES | INSTALLMENT_TYPES)
       compensate_transaction_group(row)
@@ -52,6 +53,11 @@ class Audit::Rollback::Compensator
     raise CompensationError, "installment parent is unavailable" unless dependency
 
     [ dependency.record_type, dependency.item_id ]
+  end
+
+  def included_transaction_parent(row)
+    record_type, item_id = transaction_parent_key(row)
+    preview.rows.find { |candidate| candidate.record_type == record_type && candidate.item_id == item_id }
   end
 
   def transaction_group_rows(record_type:, item_id:)

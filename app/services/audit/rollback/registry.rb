@@ -5,7 +5,9 @@ class Audit::Rollback::Registry
     "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
     "CardTransaction" => Audit::Rollback::Adapters::CardTransaction,
     "CashInstallment" => Audit::Rollback::Adapters::Installment,
-    "CardInstallment" => Audit::Rollback::Adapters::Installment
+    "CardInstallment" => Audit::Rollback::Adapters::Installment,
+    "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
+    "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction
   }.freeze
 
   class << self

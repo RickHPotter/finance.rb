@@ -68,7 +68,12 @@ class Audit::Rollback::Adapters::Base
   end
 
   def compensate!(**)
-    raise CompensationNotImplementedError, "#{record_type} does not implement standalone compensation"
+    case action
+    when "destroy" then destroy_record!
+    when "recreate" then recreate_record!
+    when "update" then update_record!
+    else raise CompensationNotImplementedError, "#{record_type} cannot compensate action #{action}"
+    end
   end
 
   def differences
@@ -87,6 +92,20 @@ class Audit::Rollback::Adapters::Base
   end
 
   private
+
+  def destroy_record!
+    live_record&.destroy! || raise(ActiveRecord::RecordNotFound, "#{record_type} #{item_id} is missing")
+  end
+
+  def recreate_record!
+    record_class.new(restore_attributes.merge("id" => item_id)).save!
+  end
+
+  def update_record!
+    raise ActiveRecord::RecordNotFound, "#{record_type} #{item_id} is missing" unless live_record
+
+    live_record.update!(restore_attributes)
+  end
 
   def current_record
     return @current_record if defined?(@current_record)

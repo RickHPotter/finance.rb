@@ -63,6 +63,31 @@ class Audit::Rollback::Impact
     when "CardTransaction" then card_transaction_ids << row.item_id
     when "CashInstallment" then cash_transaction_ids << state["cash_transaction_id"] if state["cash_transaction_id"]
     when "CardInstallment" then card_transaction_ids << state["card_transaction_id"] if state["card_transaction_id"]
+    when "CategoryTransaction" then capture_category_allocation(state)
+    when "EntityTransaction" then capture_entity_allocation(state)
+    end
+  end
+
+  def capture_category_allocation(state)
+    capture_transactable(state)
+    case state["transactable_type"]
+    when "CashTransaction" then cash_category_ids << state["category_id"]
+    when "CardTransaction" then card_category_ids << state["category_id"]
+    end
+  end
+
+  def capture_entity_allocation(state)
+    capture_transactable(state)
+    case state["transactable_type"]
+    when "CashTransaction" then cash_entity_ids << state["entity_id"]
+    when "CardTransaction" then card_entity_ids << state["entity_id"]
+    end
+  end
+
+  def capture_transactable(state)
+    case state["transactable_type"]
+    when "CashTransaction" then cash_transaction_ids << state["transactable_id"]
+    when "CardTransaction" then card_transaction_ids << state["transactable_id"]
     end
   end
 

@@ -3,18 +3,22 @@
 require "rails_helper"
 
 RSpec.describe Audit::Rollback::Registry do
-  it "registers the initial ordinary transaction and installment families explicitly" do
+  it "registers transaction, installment, and allocation families explicitly" do
     expect(described_class.supported_types).to contain_exactly(
       "CashTransaction",
       "CardTransaction",
       "CashInstallment",
-      "CardInstallment"
+      "CardInstallment",
+      "CategoryTransaction",
+      "EntityTransaction"
     )
     expect(described_class::ADAPTERS).to eq(
       "CashTransaction" => Audit::Rollback::Adapters::CashTransaction,
       "CardTransaction" => Audit::Rollback::Adapters::CardTransaction,
       "CashInstallment" => Audit::Rollback::Adapters::Installment,
-      "CardInstallment" => Audit::Rollback::Adapters::Installment
+      "CardInstallment" => Audit::Rollback::Adapters::Installment,
+      "CategoryTransaction" => Audit::Rollback::Adapters::CategoryTransaction,
+      "EntityTransaction" => Audit::Rollback::Adapters::EntityTransaction
     )
   end
 
