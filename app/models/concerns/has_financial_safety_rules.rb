@@ -29,7 +29,7 @@ module HasFinancialSafetyRules
   end
 
   def can_change_allocation?
-    !paid_history? || subscription_allocation_bypass?
+    !paid_history? || subscription_allocation_bypass? || paid_history_write_envelope_safe?
   end
 
   def can_destroy_with_history?
@@ -50,6 +50,10 @@ module HasFinancialSafetyRules
     return false if relevant_category_ids.empty?
 
     user.categories.where(id: relevant_category_ids, category_name: "SUBSCRIPTION").exists?
+  end
+
+  def paid_history_write_envelope_safe?
+    AllocationMutations::PaidHistoryEnvelope.new(self).safe?
   end
 
   def persisted_subscription_category_ids

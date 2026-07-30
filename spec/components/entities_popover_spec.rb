@@ -41,6 +41,21 @@ RSpec.describe Views::Entities::Popover, type: :component do
     expect(document.at_css('button[data-entity-colour="true"]')).to be_present
   end
 
+  it "marks multi-entity content as a theme-coloured popover surface" do
+    document = render_component(
+      items: [
+        { name: "ANA", avatar_name: "people/0.png" },
+        { name: "BRUNO", avatar_name: "people/1.png" }
+      ],
+      mobile: false,
+      target_ids: [ 42, 43 ],
+      trigger_label: "",
+      variant: :cash
+    )
+
+    expect(document.at_css('[data-entity-popover-surface="true"]')).to be_present
+  end
+
   def render_component(**attributes)
     component = described_class.new(**attributes)
     allow(component).to receive(:asset_path) { |path| "/assets/#{path}" }

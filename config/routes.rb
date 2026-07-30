@@ -125,6 +125,8 @@ Rails.application.routes.draw do
   end
 
   resources :subscriptions, except: :show
+  post "allocation_mutations/preview", to: "allocation_mutation_previews#create", as: :preview_allocation_mutations
+  post "allocation_mutations/apply", to: "allocation_mutations#create", as: :apply_allocation_mutations
   resources :audit_operations, only: %i[index show]
   resources :audit_versions, only: :index
   get "audit_records/:item_type/:item_id", to: "audit_versions#index", defaults: { record_filter: true }, as: :record_audit_versions

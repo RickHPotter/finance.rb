@@ -17,6 +17,16 @@ RSpec.describe EntityTransaction, type: :model do
 
       it { should validate_uniqueness_of(:entity_id).scoped_to(:transactable_type, :transactable_id) }
       it { should validate_numericality_of(:loan_return_percentage).is_greater_than_or_equal_to(0) }
+
+      it "rejects unsupported persisted statuses" do
+        entity_transaction = create(:entity_transaction)
+
+        expect do
+          described_class.connection.execute(
+            "UPDATE entity_transactions SET status = 'unsupported' WHERE id = #{entity_transaction.id}"
+          )
+        end.to raise_error(ActiveRecord::StatementInvalid)
+      end
     end
 
     context "( associations )" do
@@ -28,7 +38,7 @@ RSpec.describe EntityTransaction, type: :model do
       hm_models.each { |model| it { should have_many(model) } }
       na_models.each { |model| it { should accept_nested_attributes_for(model) } }
 
-      it { should define_enum_for(:status).with_values(pending: 0, finished: 1) }
+      it { should define_enum_for(:status).with_values(pending: "pending", finished: "finished").backed_by_column_of_type(:string) }
     end
   end
 
@@ -53,7 +63,7 @@ end
 #  loan_return_percentage :decimal(10, 4)   default(100.0), not null
 #  price                  :integer          default(0), not null
 #  price_to_be_returned   :integer          default(0), not null
-#  status                 :integer          default("pending"), not null
+#  status                 :string           default("pending"), not null
 #  transactable_type      :string           not null, uniquely indexed => [entity_id, transactable_id], indexed => [transactable_id]
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null

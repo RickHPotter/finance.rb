@@ -11,6 +11,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include HasFinancialSafetyGuards
   include CategoryTransactable
   include EntityTransactable
+  include FormAllocationCoordinatable
   include HasSubscription
   include Budgetable
   include FriendNotifiable

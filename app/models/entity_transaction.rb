@@ -2,7 +2,7 @@
 
 class EntityTransaction < ApplicationRecord
   # @extends ..................................................................
-  enum :status, { pending: 0, finished: 1 }
+  enum :status, { pending: "pending", finished: "finished" }
 
   # @includes .................................................................
   include HasExchanges
@@ -74,7 +74,7 @@ end
 #  loan_return_percentage :decimal(10, 4)   default(100.0), not null
 #  price                  :integer          default(0), not null
 #  price_to_be_returned   :integer          default(0), not null
-#  status                 :integer          default("pending"), not null
+#  status                 :string           default("pending"), not null
 #  transactable_type      :string           not null, uniquely indexed => [entity_id, transactable_id], indexed => [transactable_id]
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null

@@ -11,6 +11,7 @@ class CardTransaction < ApplicationRecord
   include HasFinancialSafetyGuards
   include CategoryTransactable
   include EntityTransactable
+  include FormAllocationCoordinatable
   include HasSubscription
   include HasAdvancePayments
   include Budgetable

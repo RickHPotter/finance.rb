@@ -1551,11 +1551,11 @@ RSpec.describe "CardTransactions", type: :request do
       expect(locked_transaction.reload.card_installments.find_by!(number: 2).date.to_date).to eq(Date.new(2026, 4, 10))
     end
 
-    it "shows a confirmation path and then allows a same-cycle paid date correction" do
+    it "allows a same-cycle paid date correction without confirmation" do
       locked_transaction = create_card_transaction_with_paid_history(description: "Cycle correction request")
       first_installment = locked_transaction.card_installments.find_by!(number: 1)
 
-      base_params = {
+      put card_transaction_path(locked_transaction), params: {
         card_transaction: {
           description: locked_transaction.description,
           price: locked_transaction.price,
@@ -1577,18 +1577,7 @@ RSpec.describe "CardTransactions", type: :request do
             }
           ]
         }
-      }
-
-      put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
-
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.same_cycle_history_correction_confirmation_required"))
-      expect(response.body).to include(I18n.t("actions.confirm_historical_change"))
-      expect(response.body).to include('value="2026-03-25T00:00"')
-
-      base_params[:card_transaction][:historical_correction_confirmation] = true
-
-      put card_transaction_path(locked_transaction), params: base_params, headers: turbo_stream_headers
+      }, headers: turbo_stream_headers
 
       expect(response).to have_http_status(:see_other)
       expect(locked_transaction.reload.card_installments.find_by!(number: 1).date.to_date).to eq(Date.new(2026, 3, 25))

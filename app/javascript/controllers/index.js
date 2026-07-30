@@ -7,6 +7,9 @@ import { application } from "./application"
 import AutofocusController from "./autofocus_controller"
 application.register("autofocus", AutofocusController)
 
+import AllocationMutationController from "./allocation_mutation_controller"
+application.register("allocation-mutation", AllocationMutationController)
+
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
 

@@ -36,6 +36,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
     return unless persisted?
     return if respond_to?(:piggy_bank_projection_write) && piggy_bank_projection_write
     return unless paid_history? || paid_projection_target_rewrite_attempted?
+    return if paid_history_write_envelope_safe?
 
     add_allocation_history_error if allocation_changed_after_payment?
 
@@ -124,7 +125,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def allocation_changed_after_payment?
-    return false unless original_categories.present? || original_entities.present?
+    return false if original_categories.nil? && original_entities.nil?
 
     !can_change_allocation? && allocation_changed?
   end
@@ -232,19 +233,19 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   end
 
   def original_category_ids
-    Array(original_categories).presence || current_category_ids
+    original_categories.nil? ? current_category_ids : Array(original_categories).map(&:to_i).sort
   end
 
   def original_entity_ids
-    Array(original_entities).presence || current_entity_ids
+    original_entities.nil? ? current_entity_ids : Array(original_entities).map(&:to_i).sort
   end
 
   def current_category_ids
-    category_transactions.map(&:category_id).compact.sort
+    category_transactions.reject(&:marked_for_destruction?).filter_map(&:category_id).map(&:to_i).uniq.sort
   end
 
   def current_entity_ids
-    entity_transactions.map(&:entity_id).compact.sort
+    entity_transactions.reject(&:marked_for_destruction?).filter_map(&:entity_id).map(&:to_i).uniq.sort
   end
 
   def add_allocation_history_error

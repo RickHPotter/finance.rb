@@ -176,6 +176,31 @@ RSpec.describe Subscription, type: :model do
         expect(card_transaction.card_installments.first.starting_price).to eq(-1_100)
       end
 
+      it "coordinates allocation changes across linked transactions" do
+        subscription = create(:subscription)
+        original_category = create(:category, user: subscription.user, category_name: "STREAMING")
+        original_entity = create(:entity, user: subscription.user, entity_name: "PROVIDER")
+        subscription.categories << original_category
+        subscription.entities << original_entity
+        transaction = create(
+          :cash_transaction,
+          user: subscription.user,
+          context: subscription.context,
+          user_bank_account: create(:user_bank_account, :random, user: subscription.user)
+        )
+        subscription.attach_transactions!([ transaction ])
+        replacement_category = create(:category, user: subscription.user, category_name: "MEDIA")
+        replacement_entity = create(:entity, user: subscription.user, entity_name: "NEW PROVIDER")
+
+        subscription.reload
+        subscription.categories = [ replacement_category ]
+        subscription.entities = [ replacement_entity ]
+        subscription.save!
+
+        expect(transaction.reload.categories).to contain_exactly(replacement_category, subscription.user.built_in_category("SUBSCRIPTION"))
+        expect(transaction.entities).to contain_exactly(replacement_entity)
+      end
+
       it "preserves existing comments and appends the original description when attaching a cash transaction" do
         subscription = create(:subscription, description: "Gym", comment: "Subscription note")
         transaction = create(

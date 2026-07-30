@@ -9,7 +9,12 @@ en:
         card_transaction:
           attributes:
             base:
-              allocation_locked_after_payment: "Categories and entities cannot be changed after paid history exists."
+              allocation_locked_after_payment: "Allocation changes cannot be combined with protected paid-history changes."
+              allocation_category_not_owned: "Every selected category must belong to your account."
+              allocation_entity_not_owned: "Every selected entity must belong to your account."
+              entity_replacement_requires_destroy_and_add: "Replace an entity by removing the old row and adding a fully configured new row."
+              generated_allocation_category_required: "This generated transaction must retain its %{category} category."
+              subscription_allocation_managed: "Subscription allocations must be changed from the Subscription form."
               paid_history_locked: "Paid history is locked. Edit only future unpaid installments after the latest paid date."
               paid_amount_correction_confirmation_required: "This paid amount correction requires explicit confirmation."
               same_cycle_history_correction_confirmation_required: "This paid card transaction keeps the same ref month/year and requires explicit confirmation."
@@ -73,7 +78,12 @@ pt-BR:
         card_transaction:
           attributes:
             base:
-              allocation_locked_after_payment: "Categorias e entidades não podem ser alteradas depois que já existe histórico pago."
+              allocation_locked_after_payment: "Alterações de alocação não podem ser combinadas com alterações protegidas do histórico pago."
+              allocation_category_not_owned: "Todas as categorias selecionadas devem pertencer à sua conta."
+              allocation_entity_not_owned: "Todas as entidades selecionadas devem pertencer à sua conta."
+              entity_replacement_requires_destroy_and_add: "Substitua uma entidade removendo a linha antiga e adicionando uma nova linha completamente configurada."
+              generated_allocation_category_required: "Esta transação gerada deve manter a categoria %{category}."
+              subscription_allocation_managed: "As alocações da assinatura devem ser alteradas pelo formulário da Assinatura."
               paid_history_locked: "O histórico pago está travado. Edite apenas parcelas futuras e pendentes após a última data paga."
               paid_amount_correction_confirmation_required: "Esta correção de valor em histórico já pago exige confirmação explícita."
               same_cycle_history_correction_confirmation_required: "Esta transação de cartão paga mantém o mesmo ref mês/ano e exige confirmação explícita."

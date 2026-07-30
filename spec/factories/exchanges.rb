@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :exchange do
-    exchange_type { 0 }
+    exchange_type { "non_monetary" }
     price { 999 }
     date { Date.new(2023, 12, 16) }
     month { 12 }
@@ -11,13 +11,13 @@ FactoryBot.define do
     entity_transaction { custom_create(:entity_transaction, options: { is_payer: true }) }
 
     trait :different do
-      exchange_type { 1 }
+      exchange_type { "monetary" }
       price { 999 }
       entity_transaction { different_custom_create(:entity_transaction, options: { is_payer: true }) }
     end
 
     trait :random do
-      exchange_type { [ 0, 1 ].sample }
+      exchange_type { %w[non_monetary monetary].sample }
       price { Faker::Number.number(digits: 5) }
       entity_transaction { random_custom_create(:entity_transaction, options: { is_payer: true }) }
     end
@@ -32,7 +32,7 @@ end
 #  id                    :bigint           not null, primary key
 #  bound_type            :string           default("standalone"), not null
 #  date                  :datetime         not null
-#  exchange_type         :integer          default("non_monetary"), not null
+#  exchange_type         :string           default("non_monetary"), not null
 #  exchanges_count       :integer          default(0), not null
 #  month                 :integer          not null
 #  number                :integer          default(1), not null

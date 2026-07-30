@@ -5,6 +5,8 @@ module Budgetable
   extend ActiveSupport::Concern
 
   included do
+    attr_accessor :skip_allocation_impact_recalculation
+
     # @callbacks ..............................................................
     after_save :update_relevant_budgets
     after_destroy :update_relevant_budgets
@@ -41,7 +43,7 @@ module Budgetable
   end
 
   def update_relevant_budgets
-    return if persisted? && should_update_none?
+    return if skip_relevant_budget_update?
 
     relevant_categories = user.categories.where(id: original_categories + category_transactions.map(&:category_id))
     relevant_entities = user.entities.where(id: original_entities + entity_transactions.map(&:entity_id))
@@ -57,5 +59,9 @@ module Budgetable
     relevant_budgets.each do |budget|
       budget.update(recalculate_balance: false)
     end
+  end
+
+  def skip_relevant_budget_update?
+    skip_allocation_impact_recalculation || (persisted? && should_update_none?)
   end
 end

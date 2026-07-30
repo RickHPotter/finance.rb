@@ -20,6 +20,8 @@ module Components
           "hidden fixed top-0 right-0 left-0 z-[90] h-[calc(100%-1rem)] w-full items-center justify-center overflow-y-auto overflow-x-hidden bg-black/30 md:inset-0",
           options[:wrapper_class]
         ].compact.join(" "),
+        role: "dialog",
+        aria: { modal: "true", labelledby: "#{id}_title" },
         tabindex: "-1",
         data: options[:wrapper_data]
       ) do
@@ -31,7 +33,7 @@ module Components
           data: options[:content_data]
         ) do
           div(class: "flex") do
-            h1(class: "text-2xl mb-4 flex-1 text-start") { title }
+            h1(id: "#{id}_title", class: "text-2xl mb-4 flex-1 text-start") { title }
 
             button(
               type: :button,
@@ -39,7 +41,7 @@ module Components
               data: options[:close_button_data] || { modal_hide: id }
             ) do
               cached_icon(:little_x)
-              span(class: "sr-only") { "Close modal" }
+              span(class: "sr-only") { options[:close_label] || "Close modal" }
             end
           end
 

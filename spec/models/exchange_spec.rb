@@ -14,12 +14,26 @@ RSpec.describe Exchange, type: :model do
       %i[exchange_type number price].each do |attribute|
         it { should validate_presence_of(attribute) }
       end
+
+      it "rejects unsupported persisted exchange types" do
+        exchange = create(:exchange)
+
+        expect do
+          described_class.connection.execute(
+            "UPDATE exchanges SET exchange_type = 'unsupported' WHERE id = #{exchange.id}"
+          )
+        end.to raise_error(ActiveRecord::StatementInvalid)
+      end
     end
 
     context "( associations )" do
       it { should belong_to(:entity_transaction) }
       it { should belong_to(:cash_transaction).optional }
-      it { should define_enum_for(:exchange_type).with_values(non_monetary: 0, monetary: 1) }
+      it do
+        should define_enum_for(:exchange_type)
+          .with_values(non_monetary: "non_monetary", monetary: "monetary")
+          .backed_by_column_of_type(:string)
+      end
     end
   end
 
@@ -142,7 +156,7 @@ end
 #  id                    :bigint           not null, primary key
 #  bound_type            :string           default("standalone"), not null
 #  date                  :datetime         not null
-#  exchange_type         :integer          default("non_monetary"), not null
+#  exchange_type         :string           default("non_monetary"), not null
 #  exchanges_count       :integer          default(0), not null
 #  month                 :integer          not null
 #  number                :integer          default(1), not null

@@ -70,8 +70,8 @@ CREATE TABLE public.audit_operations (
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT audit_operations_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY ((ARRAY['committed'::character varying, 'rejected'::character varying, 'failed'::character varying])::text[]))),
-    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying])::text[])))
+    CONSTRAINT audit_operations_result CHECK (((result)::text = ANY (ARRAY[('committed'::character varying)::text, ('rejected'::character varying)::text, ('failed'::character varying)::text]))),
+    CONSTRAINT audit_operations_source CHECK (((source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text])))
 );
 
 
@@ -94,9 +94,9 @@ CREATE TABLE public.audit_versions (
     mutation_source character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY ((ARRAY['create'::character varying, 'update'::character varying, 'destroy'::character varying])::text[]))),
+    CONSTRAINT audit_versions_event CHECK (((event)::text = ANY (ARRAY[('create'::character varying)::text, ('update'::character varying)::text, ('destroy'::character varying)::text]))),
     CONSTRAINT audit_versions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
-    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY ((ARRAY['web'::character varying, 'api'::character varying, 'actionable_message'::character varying, 'admin_repair'::character varying, 'import'::character varying, 'background_job'::character varying, 'rollback'::character varying, 'console'::character varying, 'unknown'::character varying, 'shared_sync'::character varying, 'projection_sync'::character varying, 'reference_sync'::character varying, 'piggy_bank_sync'::character varying, 'balance_recalculation'::character varying])::text[]))),
+    CONSTRAINT audit_versions_mutation_source CHECK (((mutation_source)::text = ANY (ARRAY[('web'::character varying)::text, ('api'::character varying)::text, ('actionable_message'::character varying)::text, ('admin_repair'::character varying)::text, ('import'::character varying)::text, ('background_job'::character varying)::text, ('rollback'::character varying)::text, ('console'::character varying)::text, ('unknown'::character varying)::text, ('shared_sync'::character varying)::text, ('projection_sync'::character varying)::text, ('reference_sync'::character varying)::text, ('piggy_bank_sync'::character varying)::text, ('balance_recalculation'::character varying)::text]))),
     CONSTRAINT audit_versions_object_changes_size CHECK (((object_changes IS NULL) OR (octet_length((object_changes)::text) <= 262144))),
     CONSTRAINT audit_versions_object_size CHECK (((object IS NULL) OR (octet_length((object)::text) <= 262144)))
 );
@@ -411,7 +411,7 @@ CREATE TABLE public.categories (
     CONSTRAINT categories_colour_hex_format CHECK (((colour)::text ~ '^#[0-9a-f]{6}$'::text)),
     CONSTRAINT categories_text_colour_hex_format CHECK (((text_colour IS NULL) OR ((text_colour)::text ~ '^#[0-9a-f]{6}$'::text))),
     CONSTRAINT categories_text_colour_mode_payload CHECK (((((text_colour_mode)::text = 'automatic'::text) AND (text_colour IS NULL)) OR (((text_colour_mode)::text = 'manual'::text) AND (text_colour IS NOT NULL)))),
-    CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY ((ARRAY['automatic'::character varying, 'manual'::character varying])::text[])))
+    CONSTRAINT categories_text_colour_mode_values CHECK (((text_colour_mode)::text = ANY (ARRAY[('automatic'::character varying)::text, ('manual'::character varying)::text])))
 );
 
 
@@ -616,7 +616,7 @@ ALTER SEQUENCE public.entities_id_seq OWNED BY public.entities.id;
 CREATE TABLE public.entity_transactions (
     id bigint NOT NULL,
     is_payer boolean DEFAULT false NOT NULL,
-    status integer DEFAULT 0 NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
     price integer DEFAULT 0 NOT NULL,
     price_to_be_returned integer DEFAULT 0 NOT NULL,
     exchanges_count integer DEFAULT 0 NOT NULL,
@@ -625,7 +625,8 @@ CREATE TABLE public.entity_transactions (
     transactable_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL
+    loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL,
+    CONSTRAINT entity_transactions_status_values CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'finished'::character varying])::text[])))
 );
 
 
@@ -655,7 +656,7 @@ ALTER SEQUENCE public.entity_transactions_id_seq OWNED BY public.entity_transact
 CREATE TABLE public.exchanges (
     id bigint NOT NULL,
     bound_type character varying DEFAULT 'standalone'::character varying NOT NULL,
-    exchange_type integer DEFAULT 0 NOT NULL,
+    exchange_type character varying DEFAULT 'non_monetary'::character varying NOT NULL,
     number integer DEFAULT 1 NOT NULL,
     starting_price integer NOT NULL,
     price integer NOT NULL,
@@ -666,7 +667,8 @@ CREATE TABLE public.exchanges (
     updated_at timestamp(6) without time zone NOT NULL,
     date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
-    year integer NOT NULL
+    year integer NOT NULL,
+    CONSTRAINT exchanges_exchange_type_values CHECK (((exchange_type)::text = ANY ((ARRAY['non_monetary'::character varying, 'monetary'::character varying])::text[])))
 );
 
 
@@ -748,13 +750,13 @@ CREATE TABLE public.health_check_runs (
     error_code character varying(100),
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT health_check_runs_check_key CHECK (((check_key)::text = ANY ((ARRAY['exchange_trio'::character varying, 'exchange_return'::character varying, 'card_exchange_projection'::character varying, 'misplaced_exchange_intent'::character varying, 'piggy_bank'::character varying])::text[]))),
+    CONSTRAINT health_check_runs_check_key CHECK (((check_key)::text = ANY (ARRAY[('exchange_trio'::character varying)::text, ('exchange_return'::character varying)::text, ('card_exchange_projection'::character varying)::text, ('misplaced_exchange_intent'::character varying)::text, ('piggy_bank'::character varying)::text]))),
     CONSTRAINT health_check_runs_completed_outcome CHECK (((((execution_state)::text = 'completed'::text) AND (outcome IS NOT NULL)) OR (((execution_state)::text <> 'completed'::text) AND (outcome IS NULL)))),
     CONSTRAINT health_check_runs_counts_object CHECK ((jsonb_typeof(counts) = 'object'::text)),
     CONSTRAINT health_check_runs_counts_size CHECK ((octet_length((counts)::text) <= 4096)),
     CONSTRAINT health_check_runs_duration CHECK (((duration_ms IS NULL) OR (duration_ms >= 0))),
-    CONSTRAINT health_check_runs_execution_state CHECK (((execution_state)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying, 'completed'::character varying, 'unavailable'::character varying])::text[]))),
-    CONSTRAINT health_check_runs_outcome CHECK (((outcome IS NULL) OR ((outcome)::text = ANY ((ARRAY['healthy'::character varying, 'warning'::character varying, 'failing'::character varying])::text[]))))
+    CONSTRAINT health_check_runs_execution_state CHECK (((execution_state)::text = ANY (ARRAY[('queued'::character varying)::text, ('running'::character varying)::text, ('completed'::character varying)::text, ('unavailable'::character varying)::text]))),
+    CONSTRAINT health_check_runs_outcome CHECK (((outcome IS NULL) OR ((outcome)::text = ANY (ARRAY[('healthy'::character varying)::text, ('warning'::character varying)::text, ('failing'::character varying)::text]))))
 );
 
 
@@ -2826,6 +2828,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260730120000'),
 ('20260725120000'),
 ('20260724120000'),
 ('20260724090000'),

@@ -179,6 +179,7 @@ class Subscription < ApplicationRecord
   def sync_attached_transaction!(transaction, subscription_category:)
     original_description = transaction.description
 
+    transaction.subscription_allocation_sync = true
     transaction.user = user
     transaction.context = context if transaction.respond_to?(:context=)
     transaction.subscription = self
@@ -207,10 +208,12 @@ class Subscription < ApplicationRecord
   end
 
   def sync_transaction_categories(transaction, subscription_category)
+    transaction.subscription_allocation_sync = true
     transaction.categories = [ *categories, subscription_category ].compact.uniq(&:id)
   end
 
   def sync_transaction_entities(transaction)
+    transaction.subscription_allocation_sync = true
     transaction.entities = entities.to_a.uniq(&:id)
   end
 

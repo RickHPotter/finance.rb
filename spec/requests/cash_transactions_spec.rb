@@ -1334,6 +1334,27 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('<turbo-stream action="append" target="notification">')
     end
 
+    it "rejects a direct nested allocation for another user's entity with detailed feedback" do
+      other_user = create(:user, :random)
+      foreign_entity = create(:entity, user: other_user, entity_name: "FOREIGN ENTITY")
+      unsafe_params = cash_transaction.params.deep_merge(
+        cash_transaction: {
+          entity_transactions_attributes: [
+            { entity_id: foreign_entity.id, is_payer: false, price: 0, price_to_be_returned: 0, exchanges_attributes: [] }
+          ]
+        }
+      )
+
+      expect do
+        post cash_transactions_path, params: unsafe_params, headers: turbo_stream_headers
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.allocation_entity_not_owned"))
+      expect(response.body).to include('<turbo-stream action="update" target="notification">')
+      expect(response.body).to include('<turbo-stream action="append" target="notification">')
+    end
+
     it "ignores submitted exchanges_count and persists the real exchange counter cache" do
       exchange_category = user.built_in_category("EXCHANGE")
       receiver = create(:user, :random)

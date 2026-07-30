@@ -263,11 +263,11 @@ RSpec.describe CardTransaction, type: :model do
       expect(transaction.latest_paid_installment_date).to eq(Date.new(2026, 3, 10))
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 4, 10), Date.new(2026, 5, 10) ])).to be(true)
       expect(transaction.can_edit_unpaid_future_installments?([ Date.new(2026, 3, 10) ])).to be(false)
-      expect(transaction.can_change_allocation?).to be(false)
+      expect(transaction.can_change_allocation?).to be(true)
       expect(transaction.can_destroy_with_history?).to be(false)
     end
 
-    it "blocks category allocation changes once paid history exists" do
+    it "allows category allocation corrections once paid history exists" do
       user = create(:user)
       user_card = create(:user_card, user:)
       category = create(:category, user:, category_name: "FOOD")
@@ -291,9 +291,20 @@ RSpec.describe CardTransaction, type: :model do
       )
 
       transaction.categories = [ replacement_category ]
+      transaction.assign_attributes(description: "Corrected allocation", comment: "Metadata correction", date: transaction.date + 1.day)
+      transaction.card_installments_attributes = transaction.card_installments.map do |installment|
+        {
+          id: installment.id,
+          number: installment.number,
+          price: installment.price,
+          date: installment.date + 1.day,
+          month: installment.month,
+          year: installment.year
+        }
+      end
 
-      expect(transaction).to be_invalid
-      expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.card_transaction.attributes.base.allocation_locked_after_payment"))
+      expect(transaction.can_change_allocation?).to be(true)
+      expect(transaction).to be_valid
     end
 
     it "allows unpaid future installment edits after the latest paid boundary" do
