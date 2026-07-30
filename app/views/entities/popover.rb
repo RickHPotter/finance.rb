@@ -40,7 +40,7 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2"), data: { entity_popover_surface: "true" }) do
           div(class: mobile_multi_entity_list_class) do
             items.each do |item|
               render_item(item, wrapper_class: mobile_item_wrapper_class, avatar_class: "size-6", name_class: multi_entity_name_class)
@@ -63,7 +63,7 @@ class Views::Entities::Popover < Views::Base
           end
         end
 
-        PopoverContent(class: multi_entity_popover_content_class("mr-2")) do
+        PopoverContent(class: multi_entity_popover_content_class("mr-2"), data: { entity_popover_surface: "true" }) do
           div(class: desktop_multi_entity_list_class) do
             items.each do |item|
               render_item(item, wrapper_class: desktop_item_wrapper_class, avatar_class: "size-5", name_class: multi_entity_name_class)

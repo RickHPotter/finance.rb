@@ -154,6 +154,13 @@ body::-webkit-scrollbar { /* WebKit */
   color: var(--category-row-info-foreground) !important;
 }
 
+[data-category-display-mode] [data-entity-popover-surface="true"],
+[data-category-display-mode] [data-entity-popover-surface="true"] [data-entity-colour="true"],
+[data-category-display-mode] [data-entity-popover-surface="true"] [data-entity-info-text="true"],
+[data-category-display-mode] [data-entity-popover-surface="true"] [data-entity-info-text="true"] * {
+  color: hsl(var(--popover-foreground)) !important;
+}
+
 .dark .installment_date::-webkit-datetime-edit,
 .dark .installment_date::-webkit-datetime-edit-fields-wrapper,
 .dark .installment_date::-webkit-datetime-edit-text,
