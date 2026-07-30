@@ -2,7 +2,7 @@
 
 class Audit::Rollback::Adapters::EntityTransaction < Audit::Rollback::Adapters::Allocation
   ALLOCATION_FOREIGN_KEY = "entity_id"
-  DERIVED_ATTRIBUTES = (Audit::Rollback::Adapters::Base::DERIVED_ATTRIBUTES + %w[exchanges_count]).freeze
+  DERIVED_ATTRIBUTES = (Audit::Rollback::Adapters::Base::DERIVED_ATTRIBUTES + %w[exchanges_count status]).freeze
   ENTITY_RECALCULATIONS = %w[entity_transaction_totals cash_balance].freeze
 
   def dependencies

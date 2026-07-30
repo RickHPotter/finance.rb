@@ -69,6 +69,7 @@ RSpec.describe Audit::Rollback::Adapters::Exchange do
     expect(preview).to have_attributes(state: "previewable")
     expect(result).to have_attributes(status: "applied")
     expect(exchange.reload).to have_attributes(price: 1_000, starting_price: 1_000, cash_transaction_id: projection.id)
+    expect(exchange.entity_transaction.reload).to be_pending
     expect(projection.reload.price).to eq(1_000)
     expect(projection.cash_installments.sum(:price)).to eq(1_000)
   end
