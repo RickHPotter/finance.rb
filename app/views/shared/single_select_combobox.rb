@@ -56,14 +56,16 @@ class Views::Shared::SingleSelectCombobox < Views::Base
           end
 
           options.each do |label, value, option_data|
-            ComboboxItem(class: combobox_item_class) do
+            item_alias = option_data&.fetch(:alias, nil)
+            radio_option_data = option_data&.except(:alias) || {}
+            ComboboxItem(class: combobox_item_class, **(item_alias ? { data: { alias: item_alias } } : {})) do
               ComboboxRadio(
                 name:,
                 value:,
                 id: input_id_for(value),
                 checked: selected?(value),
                 disabled:,
-                data: radio_data(label, option_data || {})
+                data: radio_data(label, radio_option_data)
               )
               span { label }
             end

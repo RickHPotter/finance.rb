@@ -28,8 +28,8 @@ class Views::UserBankAccounts::Combobox < Views::Base
             span { action_message(:select_all) }
           end
 
-          user_bank_accounts.each do |user_bank_account_name, id|
-            ComboboxItem(class: combobox_item_class) do
+          user_bank_accounts.each do |user_bank_account_name, id, alias_data|
+            ComboboxItem(class: combobox_item_class, **(alias_data&.key?(:alias) ? { data: { alias: alias_data[:alias] } } : {})) do
               ComboboxCheckbox(
                 name:,
                 value: id,

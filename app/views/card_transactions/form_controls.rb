@@ -37,7 +37,7 @@ class Views::CardTransactions::FormControls < Views::Base
         data: { reactive_form_target: :userCardCombobox }) do
       render Views::Shared::SingleSelectCombobox.new(
         name: "card_transaction[user_card_id]",
-        options: user_cards.map { |label, value| [ label, value, {} ] },
+        options: user_cards.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
         selected_value: card_transaction.user_card_id,
         placeholder: model_attribute(card_transaction, :user_card_id),
         input_data: {

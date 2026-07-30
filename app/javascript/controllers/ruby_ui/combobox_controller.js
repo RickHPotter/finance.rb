@@ -213,14 +213,21 @@ export default class extends Controller {
       }
 
       const text = normalize(this.inputContent(input))
+      // Alias is pre-normalized server-side; no need to run normalize() on it.
+      const alias = input.parentElement.dataset.alias || ""
 
-      if (!filterTerm || text.indexOf(filterTerm) > -1) {
+      let tier = filterTerm ? rankTier(text, filterTerm) : 0
+      if (filterTerm && tier === Infinity && alias && alias.includes(filterTerm)) {
+        tier = 5
+      }
+
+      if (!filterTerm || tier < Infinity) {
         input.parentElement.classList.remove("hidden")
         resultCount++
         if (filterTerm) {
           rankedItems.push({
             element: input.parentElement,
-            tier: rankTier(text, filterTerm),
+            tier,
             originalIndex: this.originalItemOrder.get(input.parentElement) ?? 0
           })
         }
