@@ -992,8 +992,21 @@ References:
 - Issues:
   - [#60](https://github.com/RickHPotter/finance.rb/issues/60)
 
+Status: implementation and automated verification complete as of 2026-07-30;
+manual acceptance in progress.
+
 Goal: remove the blanket post-payment category/entity lock and provide safe, consistent
 single and bulk allocation tools for cash transactions, card transactions, and budgets.
+
+Delivery notes:
+
+- all ten implementation slices are complete
+- full CI passes with 1,011 examples and no failures
+- follow-up manual-test fixes cover entity-popover contrast and allocation-preview
+  modal controls
+- the string-enum migration establishes a clean audit baseline by intentionally
+  discarding incomplete legacy V1/V2 audit history; this is a one-time migration
+  action, not a change to the indefinite retention policy for new audit operations
 
 Locked V1 direction:
 

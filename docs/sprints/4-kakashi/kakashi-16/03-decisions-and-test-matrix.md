@@ -117,6 +117,22 @@ checks, followed by the same impact recalculation.
 
 Decision: no. That is KAKASHI-18, which reuses this feature's foundation.
 
+### D24. What happens to audit history during the enum-storage migration?
+
+Decision: establish a one-time clean audit baseline. Incomplete legacy V1/V2
+`AuditOperation` and `AuditVersion` rows are intentionally removed, and any Message
+references to those operations are cleared without deleting the Messages. This is a
+deployment migration, not a routine purge facility or a change to indefinite
+retention for new audit operations. Append-only database protection remains enabled
+after the reset.
+
+### D25. How are the remaining numeric enums persisted?
+
+Decision: `EntityTransaction.status` uses the strings `pending` and `finished`, while
+`Exchange.exchange_type` uses `non_monetary` and `monetary`. Both columns have database
+check constraints. Entity transaction status is derived state and is recomputed after
+Exchange rollback instead of restoring a potentially stale audited value.
+
 ## Operation Matrix
 
 | Action | Already satisfied | Ordinary eligible row | Structural/payer row |
@@ -261,6 +277,7 @@ Decision: no. That is KAKASHI-18, which reuses this feature's foundation.
 | rollback preview | allocation key/current-state conflicts reported |
 | rollback apply | original allocations restored atomically |
 | rollback recalculation | counters/budgets/projections refreshed |
+| 2026-07-30 deployment baseline | incomplete legacy V1/V2 history cleared once; subsequent operations retained |
 
 ## Recalculation Matrix
 
@@ -316,4 +333,3 @@ There are no blocking V1 product decisions. A structural family not listed here 
 default to conflict until its invariants and domain coordinator are explicitly covered;
 it must not be treated as ordinary merely because a current callback happens to permit
 the write.
-

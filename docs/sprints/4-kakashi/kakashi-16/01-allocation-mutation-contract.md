@@ -442,6 +442,17 @@ callbacks are not relied on accidentally or run once per row.
 - paid-history allocation corrections remain rollbackable subject to current-state
   conflicts
 
+Deployment baseline:
+
+- the 2026-07-30 enum-storage migration intentionally clears incomplete legacy V1/V2
+  audit operations and versions before new KAKASHI-16 history begins
+- the reset preserves application records, clears stale Message-to-operation
+  references, and restores append-only audit protection before the migration completes
+- this one-time reset does not introduce routine audit deletion or alter indefinite
+  retention for operations created after the baseline
+- `EntityTransaction.status` is derived from its exchange state and is recomputed
+  during rollback rather than restored from a stale audit snapshot
+
 ## Authorization and Context Isolation
 
 - load cash/card/budget owners through `current_context`

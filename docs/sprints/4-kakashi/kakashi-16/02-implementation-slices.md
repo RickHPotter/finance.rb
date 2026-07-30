@@ -329,7 +329,8 @@ spec: harden allocation mutation workflows
 
 ## Delivery Status
 
-KAKASHI-16 is complete through Slice 10.
+Implementation and automated verification are complete as of 2026-07-30. Manual
+acceptance remains in progress.
 
 - Slices 1–5 established the policy, paid-history form envelope, coordinated rich-form
   path, and category/entity mutators.
@@ -341,6 +342,15 @@ KAKASHI-16 is complete through Slice 10.
   descriptive transaction allocation changes skip ledger recalculation, consolidated
   changed Budget criteria at the earliest affected month, and verified rollback for
   `CategoryTransaction`, `EntityTransaction`, `BudgetCategory`, and `BudgetEntity`.
+- Manual-test hardening corrected entity-popover contrast across row themes, restored
+  the allocation modal close control, and aligned the preview footer actions.
+- `EntityTransaction.status` and `Exchange.exchange_type` are now string-backed enums
+  with database constraints. The migration also establishes a clean audit baseline by
+  clearing incomplete legacy V1/V2 operations while preserving application records
+  and leaving append-only protection enabled for all new audit history.
+- Full CI passes: RuboCop inspected 793 files, ERB lint inspected 102 files, RSpec ran
+  1,011 examples with no failures, Bundler Audit found no vulnerabilities, and
+  Brakeman reported no warnings.
 
-Manual verification remains the release gate for responsive interaction and real-data
-structural-family behavior; the automated contract is complete.
+Remaining release gate: finish responsive and real-data structural-family manual
+acceptance.
