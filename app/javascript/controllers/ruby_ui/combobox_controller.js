@@ -1,6 +1,22 @@
 import { Controller } from "@hotwired/stimulus";
 import { computePosition, autoUpdate, offset, flip } from "@floating-ui/dom";
 
+// Normalizes a string for consistent combobox search comparison:
+//   1. NFKD Unicode decomposition
+//   2. Strip combining diacritical marks (accents)
+//   3. Lowercase
+//   4. Collapse repeated whitespace and trim
+// Used by filterItems so that accented characters, case differences, and
+// extra whitespace never block a valid match.
+function normalize(str) {
+  return (str || "")
+    .normalize("NFKD")
+    .replace(/\p{Mn}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 // Connects to data-controller="ruby-ui--combobox"
 export default class extends Controller {
   static values = {
@@ -165,7 +181,7 @@ export default class extends Controller {
       return
     }
 
-    const filterTerm = this.searchInputTarget.value.toLowerCase()
+    const filterTerm = normalize(this.searchInputTarget.value)
 
     if (this.hasToggleAllTarget) {
       if (filterTerm) this.toggleAllTarget.parentElement.classList.add("hidden")
@@ -180,7 +196,7 @@ export default class extends Controller {
         return
       }
 
-      const text = this.inputContent(input).toLowerCase()
+      const text = normalize(this.inputContent(input))
 
       if (text.indexOf(filterTerm) > -1) {
         input.parentElement.classList.remove("hidden")
