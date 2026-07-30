@@ -87,8 +87,13 @@ export default class extends Controller {
     }
   }
 
-  close() {
+  close(event) {
     this.backToForm()
+
+    const modalElement = event.currentTarget.closest("[role='dialog']")
+    if (!modalElement) return
+
+    window.FlowbiteInstances?.getInstance("Modal", modalElement.id)?.hide()
   }
 
   beforeStreamRender(event) {

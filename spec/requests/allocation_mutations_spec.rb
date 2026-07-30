@@ -49,6 +49,10 @@ RSpec.describe "Allocation mutations" do
     expect(document.at_css("form[action='#{apply_allocation_mutations_path}']")).to be_present
     expect(document.at_css("input[name='apply_token']")["value"]).to be_present
     expect(document.at_css("input[name='mode']")["value"]).to eq("strict")
+    preview_actions = document.at_css('[data-allocation-mutation-preview-actions="true"]')
+    expect(preview_actions.at_css("a").text).to eq(I18n.t("allocation_mutations.interface.back"))
+    expect(preview_actions.at_css("form[action='#{apply_allocation_mutations_path}']")).to be_present
+    expect(preview_actions["class"]).to include("justify-between")
     expect(response.body).to include("2", "1", destination.name)
   end
 

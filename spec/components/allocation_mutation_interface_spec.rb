@@ -14,6 +14,8 @@ RSpec.describe Components::AllocationMutationInterface, type: :component do
     expect(dialog["role"]).to eq("dialog")
     expect(dialog["aria-modal"]).to eq("true")
     expect(dialog["aria-labelledby"]).to eq("#{described_class.modal_id('installment')}_title")
+    close_button = dialog.at_css("button[data-modal-hide='#{described_class.modal_id('installment')}']")
+    expect(close_button["data-action"]).to eq("click->allocation-mutation#close")
     expect(action_buttons.map { |button| button["data-allocation-action-key"] }).to contain_exactly(
       "category_add",
       "category_remove",

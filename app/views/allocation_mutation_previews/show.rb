@@ -30,8 +30,7 @@ class Views::AllocationMutationPreviews::Show < Views::Base
         action_section
         counts_section
         reasons_section
-        apply_actions
-        back_button
+        preview_actions
       end
     end
   end
@@ -94,10 +93,17 @@ class Views::AllocationMutationPreviews::Show < Views::Base
     end
   end
 
-  def apply_actions
-    div(class: "mt-3 flex flex-wrap gap-2") do
-      apply_form(:strict, "strict") if preview.strict_apply_available?
-      apply_form(:eligible_only, "eligible_only") if preview.eligible_only_available?
+  def preview_actions
+    div(
+      class: "mt-3 flex items-center justify-between gap-2",
+      data: { allocation_mutation_preview_actions: "true" }
+    ) do
+      back_button
+
+      div(class: "flex flex-wrap justify-end gap-2") do
+        apply_form(:strict, "strict") if preview.strict_apply_available?
+        apply_form(:eligible_only, "eligible_only") if preview.eligible_only_available?
+      end
     end
   end
 
@@ -106,7 +112,7 @@ class Views::AllocationMutationPreviews::Show < Views::Base
 
     button(
       type: :button,
-      class: "mt-3 min-h-10 rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
+      class: "min-h-10 rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
              "dark:border-slate-700 dark:hover:bg-slate-800",
       data: { action: "click->allocation-mutation#backToForm" }
     ) do
@@ -118,7 +124,7 @@ class Views::AllocationMutationPreviews::Show < Views::Base
     link_to(
       I18n.t("allocation_mutations.interface.back"),
       canonical_index_path,
-      class: "mt-3 inline-flex min-h-10 items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
+      class: "inline-flex min-h-10 items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-100 " \
              "dark:border-slate-700 dark:hover:bg-slate-800",
       data: { turbo_frame: "_top", turbo_prefetch: false }
     )
