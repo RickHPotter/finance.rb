@@ -40,7 +40,7 @@ class EntityMerges::Plan
     return false if outcome == :conflict
 
     if mode == :strict
-      conflict_rows.empty? && (transfer_rows.any? || collapse_rows.any?)
+      conflict_rows.empty?
     else
       eligible_only_available?
     end

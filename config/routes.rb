@@ -47,7 +47,12 @@ Rails.application.routes.draw do
       post :merge,         to: "category_merges#create"
     end
   end
-  resources :entities
+  resources :entities do
+    member do
+      post :merge_preview, to: "entity_merge_previews#create"
+      post :merge,         to: "entity_merges#create"
+    end
+  end
   resources :contexts, only: %i[index show new create destroy] do
     collection do
       get :dismiss

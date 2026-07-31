@@ -92,7 +92,16 @@ class Views::Entities::Entity < Views::Base
                                                         aria: { label: action_message(:edit) },
                                                         data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
-          unless entity.built_in?
+          unless entity.built_in? || entity.entity_user_id.present?
+            link_to(
+              merge_preview_entity_path(entity, entity_merge: { return_to: }),
+              id: "merge_entity_#{entity.id}",
+              class: merge_action_button_class,
+              title: I18n.t("entity_merges.preview.title", default: "Merge Entity"),
+              aria: { label: I18n.t("entity_merges.preview.title", default: "Merge Entity") },
+              data: { turbo_method: :post }
+            ) { cached_icon(:merge) }
+
             LinkWithConfirmation(
               id: entity.id,
               icon: :destroy,
@@ -204,6 +213,12 @@ class Views::Entities::Entity < Views::Base
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
       "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
       "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
+  end
+
+  def merge_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-orange-200 bg-orange-50 text-orange-700 " \
+      "shadow-sm transition hover:border-orange-600 hover:bg-orange-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-orange-300 dark:hover:border-orange-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
   end
 
   def destructive_action_button_class
