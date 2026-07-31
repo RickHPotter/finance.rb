@@ -131,6 +131,14 @@ class Views::Layouts::Application < Views::Base
                     else
                       "from-gray-600 via-gray-900 to-gray-900"
                     end
+    elsif Rails.env.development?
+      base_class << "bg-linear-to-r"
+
+      base_class << if current_user_is_rikki
+                      "from-indigo-900 via-zinc-950 to-zinc-950"
+                    else
+                      "from-blue-900 via-gray-900 to-gray-900"
+                    end
     else
       base_class << if current_user_is_rikki
                       "bg-zinc-950 text-white"

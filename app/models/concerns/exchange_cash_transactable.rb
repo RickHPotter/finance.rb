@@ -435,9 +435,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
     in_memory_exchanges = in_memory_entity_transaction_exchanges
     candidate_exchanges = merge_projection_exchange_candidates(in_memory_exchanges:, cash_transaction:, excluding:)
-    if !(excluding.present? && excluding == self) && candidate_exchanges.none? { |exchange| exchange.equal?(self) || (exchange.id.present? && exchange.id == id) }
-      candidate_exchanges << self
+    candidate_exchanges.reject! do |exchange|
+      (exchange.id.present? && exchange.id == id) || exchange.equal?(self)
     end
+    candidate_exchanges << self unless excluding.present? && excluding == self
 
     candidate_exchanges = candidate_exchanges.reject do |exchange|
       (excluding.present? && ((excluding.id.present? && exchange.id == excluding.id) || exchange.equal?(excluding))) || exchange.marked_for_destruction?
@@ -477,9 +478,12 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
 
   def rehome_card_bound_exchange_before_sync!
     previous_cash_transaction = cash_transaction
+
+    Audit::BulkMutation.update_columns!(self, cash_transaction_id: nil) if persisted?
+    self.cash_transaction = nil
+
     sync_remaining_card_bound_projection_exchanges!(previous_cash_transaction)
 
-    self.cash_transaction = nil
     create_cash_transaction
   end
 
@@ -487,7 +491,10 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
     remaining_exchanges = Exchange.where(cash_transaction_id: previous_cash_transaction.id).where.not(id:).to_a.map do |exchange|
       in_memory_entity_transaction_exchanges.find { |candidate| candidate.id == exchange.id } || exchange
     end
-    return if remaining_exchanges.empty?
+    if remaining_exchanges.empty?
+      delete_projection_cash_transaction(previous_cash_transaction)
+      return
+    end
 
     remaining_exchanges.first.send(
       :sync_projection_cash_transaction!,
