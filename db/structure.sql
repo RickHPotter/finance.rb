@@ -730,6 +730,40 @@ ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subsc
 
 
 --
+-- Name: friendships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.friendships (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    friend_id bigint NOT NULL,
+    state character varying DEFAULT 'pending'::character varying NOT NULL,
+    public_id character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: friendships_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.friendships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: friendships_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.friendships_id_seq OWNED BY public.friendships.id;
+
+
+--
 -- Name: health_check_runs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1226,7 +1260,8 @@ CREATE TABLE public.users (
     locale character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    admin boolean DEFAULT false NOT NULL
+    admin boolean DEFAULT false NOT NULL,
+    public_id character varying NOT NULL
 );
 
 
@@ -1366,6 +1401,13 @@ ALTER TABLE ONLY public.exchanges ALTER COLUMN id SET DEFAULT nextval('public.ex
 --
 
 ALTER TABLE ONLY public.finance_subscriptions ALTER COLUMN id SET DEFAULT nextval('public.finance_subscriptions_id_seq'::regclass);
+
+
+--
+-- Name: friendships id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships ALTER COLUMN id SET DEFAULT nextval('public.friendships_id_seq'::regclass);
 
 
 --
@@ -1609,6 +1651,14 @@ ALTER TABLE ONLY public.exchanges
 
 ALTER TABLE ONLY public.finance_subscriptions
     ADD CONSTRAINT finance_subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: friendships friendships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT friendships_pkey PRIMARY KEY (id);
 
 
 --
@@ -2242,6 +2292,34 @@ CREATE INDEX index_finance_subscriptions_on_user_id ON public.finance_subscripti
 
 
 --
+-- Name: index_friendships_on_friend_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendships_on_friend_id ON public.friendships USING btree (friend_id);
+
+
+--
+-- Name: index_friendships_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_friendships_on_public_id ON public.friendships USING btree (public_id);
+
+
+--
+-- Name: index_friendships_on_user_and_friend_canonical; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_friendships_on_user_and_friend_canonical ON public.friendships USING btree (LEAST(user_id, friend_id), GREATEST(user_id, friend_id));
+
+
+--
+-- Name: index_friendships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendships_on_user_id ON public.friendships USING btree (user_id);
+
+
+--
 -- Name: index_health_check_runs_on_connected_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2484,6 +2562,13 @@ CREATE UNIQUE INDEX index_users_on_confirmation_token ON public.users USING btre
 --
 
 CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
+
+
+--
+-- Name: index_users_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_public_id ON public.users USING btree (public_id);
 
 
 --
@@ -2876,11 +2961,27 @@ ALTER TABLE ONLY public.user_bank_accounts
 
 
 --
+-- Name: friendships fk_rails_d78dc9c7fd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT fk_rails_d78dc9c7fd FOREIGN KEY (friend_id) REFERENCES public.users(id);
+
+
+--
 -- Name: exchanges fk_rails_deee80dcd2; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.exchanges
     ADD CONSTRAINT fk_rails_deee80dcd2 FOREIGN KEY (entity_transaction_id) REFERENCES public.entity_transactions(id);
+
+
+--
+-- Name: friendships fk_rails_e3733b59b7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT fk_rails_e3733b59b7 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2962,6 +3063,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731214108'),
 ('20260731212727'),
 ('20260731212726'),
 ('20260730120000'),

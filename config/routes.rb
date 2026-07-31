@@ -10,6 +10,7 @@ Rails.application.routes.draw do
 
   resource :profile, only: %i[edit update]
   resource :preference, only: %i[update]
+  resources :friendships, param: :public_id, only: %i[index create update destroy]
 
   # devise_for :users, controllers: {
   #   confirmations: "users/confirmations"

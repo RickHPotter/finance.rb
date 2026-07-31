@@ -90,6 +90,8 @@ class Views::Shared::AppFooter < Views::Base
         method: :patch,
         params: { user_preference: { theme: next_theme } },
         title: "Switch theme",
+        id: "theme_toggle",
+        form_class: "inline",
         class: "rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 transition-colors hover:border-red-300 hover:text-red-600 " \
                "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-400 dark:hover:text-emerald-300"
       ) do
