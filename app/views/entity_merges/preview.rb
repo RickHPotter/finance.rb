@@ -128,6 +128,8 @@ class Views::EntityMerges::Preview < Views::Base
   end
 
   def apply_forms
+    return if plan.outcome == :conflict
+
     div(class: "mt-3 flex flex-col gap-2 sm:flex-row") do
       strict_apply_form if plan.conflict_rows.empty?
 
@@ -151,36 +153,31 @@ class Views::EntityMerges::Preview < Views::Base
   end
 
   def eligible_only_apply_form
-    # If the current mode is strict and they want to do eligible_only, they must preview it first?
-    # No, we can generate the token for the eligible_only plan on the fly if needed, or we just allow
-    # them to switch mode.
-    # Actually, the token covers the digest of the plan matching the mode.
-    # We should let them preview in eligible_only mode.
-    form_with(url: merge_preview_entity_path(source), method: :post, class: "flex-1") do |f|
-      f.hidden_field :"entity_merge[destination_id]", value: plan.destination.id
-      f.hidden_field :"entity_merge[return_to]", value: return_to
-      f.hidden_field :"entity_merge[mode]", value: "eligible_only"
+    if plan.mode != :eligible_only
+      form_with(url: merge_preview_entity_path(source), method: :post, class: "flex-1") do |f|
+        f.hidden_field :"entity_merge[destination_id]", value: plan.destination.id
+        f.hidden_field :"entity_merge[return_to]", value: return_to
+        f.hidden_field :"entity_merge[mode]", value: "eligible_only"
 
-      button(
-        type: "submit",
-        class: plan.mode == :eligible_only ? apply_eligible_button_class : switch_mode_button_class
-      ) do
-        I18n.t("entity_merges.preview.submit_apply_eligible", default: "Transfer eligible only")
+        button(
+          type: "submit",
+          class: switch_mode_button_class
+        ) do
+          I18n.t("entity_merges.preview.submit_apply_eligible", default: "Transfer eligible only")
+        end
       end
-    end
-
-    return unless plan.mode == :eligible_only
-
-    form_with(url: merge_entity_path(source), method: :post, class: "flex-1", data: { turbo_frame: "_top" }) do |f|
-      f.hidden_field :merge_token,  value: EntityMerges::PreviewToken.generate(plan)
-      f.hidden_field :return_to,    value: return_to
-      f.hidden_field :mode,         value: "eligible_only"
-      button(
-        type: "submit",
-        id: "apply_entity_merge_eligible_#{source.id}",
-        class: apply_eligible_button_class
-      ) do
-        I18n.t("entity_merges.preview.confirm_apply_eligible", default: "Confirm transfer")
+    else
+      form_with(url: merge_entity_path(source), method: :post, class: "flex-1", data: { turbo_frame: "_top" }) do |f|
+        f.hidden_field :merge_token,  value: EntityMerges::PreviewToken.generate(plan)
+        f.hidden_field :return_to,    value: return_to
+        f.hidden_field :mode,         value: "eligible_only"
+        button(
+          type: "submit",
+          id: "apply_entity_merge_eligible_#{source.id}",
+          class: apply_eligible_button_class
+        ) do
+          I18n.t("entity_merges.preview.confirm_apply_eligible", default: "Confirm partial transfer")
+        end
       end
     end
   end

@@ -41,6 +41,8 @@ class EntityMerges::Apply
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed
     result(status: :rejected, reason_code: :validation_failed)
   rescue StandardError => e
+    Rails.logger.error("💥 APPLY CRASH 💥: #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
     report(e)
     result(status: :failed, reason_code: :unexpected_failure)
   end
@@ -117,15 +119,14 @@ class EntityMerges::Apply
     ) do
       operation = Audit::Operation.ensure_persisted!
 
-      collapse_ids = plan.collapse_rows.map { |rp| rp.row.id }
+      collapse_et_ids = plan.collapse_rows.select { |rp| rp.row.is_a?(EntityTransaction) }.map { |rp| rp.row.id }
+      collapse_be_ids = plan.collapse_rows.select { |rp| rp.row.is_a?(BudgetEntity) }.map { |rp| rp.row.id }
       transfer_et_ids = plan.transfer_rows.select { |rp| rp.row.is_a?(EntityTransaction) }.map { |rp| rp.row.id }
       transfer_be_ids = plan.transfer_rows.select { |rp| rp.row.is_a?(BudgetEntity) }.map { |rp| rp.row.id }
 
       # Collapse
-      if collapse_ids.any?
-        EntityTransaction.where(id: collapse_ids).find_each(&:destroy!)
-        BudgetEntity.where(id: collapse_ids).find_each(&:destroy!)
-      end
+      EntityTransaction.where(id: collapse_et_ids).find_each(&:destroy!) if collapse_et_ids.any?
+      BudgetEntity.where(id: collapse_be_ids).find_each(&:destroy!) if collapse_be_ids.any?
 
       # Transfer
       Audit::BulkMutation.update_all!(EntityTransaction.where(id: transfer_et_ids), entity_id: destination.id) if transfer_et_ids.any?

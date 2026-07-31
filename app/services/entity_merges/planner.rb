@@ -76,10 +76,12 @@ class EntityMerges::Planner
 
   def classify_entity_transactions(transfer, collapse, conflict)
     # Preload exchanges to avoid N+1 during neutrality check
-    source.entity_transactions.includes(:exchanges).find_each do |et|
+    source.entity_transactions.includes(:exchanges, :transactable).find_each do |et|
       reason = transaction_conflict_reason(et)
       if reason
         conflict << row_plan(et, :conflict, reason)
+      elsif et.transactable.nil?
+        collapse << row_plan(et, :collapse)
       elsif destination_transaction_exists?(et)
         collapse << row_plan(et, :collapse)
       else

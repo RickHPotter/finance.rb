@@ -40,7 +40,18 @@ class Audit::OwnershipResolver
 
     def resolve_association(record, association)
       associated_record = record&.public_send(association)
-      raise UnresolvableOwnershipError, "#{association} is unavailable for #{record&.class&.name}" if associated_record.blank?
+
+      if associated_record.blank?
+        if record.respond_to?(:entity) && record.entity
+          return Ownership.new(owner_id: record.entity.user_id, context_id: nil)
+        elsif record.respond_to?(:category) && record.category
+          return Ownership.new(owner_id: record.category.user_id, context_id: nil)
+        elsif record.respond_to?(:budget) && record.budget
+          return Ownership.new(owner_id: record.budget.user_id, context_id: nil)
+        end
+
+        raise UnresolvableOwnershipError, "#{association} is unavailable for #{record&.class&.name}"
+      end
 
       resolve(associated_record)
     end
