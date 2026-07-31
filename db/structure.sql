@@ -585,8 +585,8 @@ CREATE TABLE public.entities (
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    entity_user_id bigint,
-    built_in boolean DEFAULT false NOT NULL
+    built_in boolean DEFAULT false NOT NULL,
+    friendship_id bigint
 );
 
 
@@ -2215,10 +2215,10 @@ CREATE INDEX index_conversations_on_scenario_key ON public.conversations USING b
 
 
 --
--- Name: index_entities_on_entity_user_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_entities_on_friendship_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_entities_on_entity_user_id ON public.entities USING btree (entity_user_id);
+CREATE INDEX index_entities_on_friendship_id ON public.entities USING btree (friendship_id);
 
 
 --
@@ -2817,6 +2817,14 @@ ALTER TABLE ONLY public.investments
 
 
 --
+-- Name: entities fk_rails_82c9adde2a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entities
+    ADD CONSTRAINT fk_rails_82c9adde2a FOREIGN KEY (friendship_id) REFERENCES public.friendships(id);
+
+
+--
 -- Name: budget_categories fk_rails_83cbbb6bcc; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2830,14 +2838,6 @@ ALTER TABLE ONLY public.budget_categories
 
 ALTER TABLE ONLY public.user_profiles
     ADD CONSTRAINT fk_rails_87a6352e58 FOREIGN KEY (user_id) REFERENCES public.users(id);
-
-
---
--- Name: entities fk_rails_8a74aa079f; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.entities
-    ADD CONSTRAINT fk_rails_8a74aa079f FOREIGN KEY (entity_user_id) REFERENCES public.users(id);
 
 
 --
@@ -3063,6 +3063,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731215015'),
 ('20260731214108'),
 ('20260731212727'),
 ('20260731212726'),

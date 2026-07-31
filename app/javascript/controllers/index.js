@@ -174,3 +174,6 @@ application.register("tab", TabController)
 
 import TextAreaAutogrowController from "./text_area_autogrow_controller"
 application.register("text-area-autogrow", TextAreaAutogrowController)
+
+import ThemeController from "./theme_controller"
+application.register("theme", ThemeController)

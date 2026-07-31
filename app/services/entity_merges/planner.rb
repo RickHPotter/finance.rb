@@ -45,9 +45,9 @@ class EntityMerges::Planner
   def validate_friend_guard
     # Merging friend-backed entity into a non-friend entity (or vice versa),
     # or merging friends that represent different users is a hard conflict.
-    return unless source.entity_user_id.present? || destination.entity_user_id.present?
+    return unless source.friendship_id.present? || destination.friendship_id.present?
 
-    return conflict(:cross_user_friend_entity) unless source.entity_user_id == destination.entity_user_id
+    return conflict(:cross_user_friend_entity) unless source.friendship_id == destination.friendship_id
 
     nil
   end

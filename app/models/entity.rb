@@ -9,7 +9,7 @@ class Entity < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
   belongs_to :user
-  belongs_to :entity_user, class_name: "User", optional: true
+  belongs_to :friendship, optional: true
 
   has_many :entity_transactions, dependent: :destroy
   has_many :card_transactions, through: :entity_transactions, source: :transactable, source_type: "CardTransaction"
@@ -21,13 +21,15 @@ class Entity < ApplicationRecord
   validate :prevent_deactivation_when_built_in
 
   # @callbacks ................................................................
+  before_validation :assign_friendship_if_needed
   before_validation :set_built_in
   before_destroy :prevent_destroy_when_built_in
 
   # @scopes ...................................................................
   scope :built_in, -> { where(built_in: true) }
-  scope :that_are_users, -> { where.not(entity_user_id: nil) }
-
+  scope :that_are_users, -> { where.not(friendship_id: nil) }
+  scope :where_entity_user_id, ->(id) { joins(:friendship).where("friendships.user_id = :id OR friendships.friend_id = :id", id: id) }
+  scope :where_entity_user, ->(user) { where_entity_user_id(user.id) }
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
@@ -36,6 +38,11 @@ class Entity < ApplicationRecord
   end
 
   def name
+    if friendship_id?
+      other_user = friendship.user_id == user_id ? friendship.friend : friendship.user
+      return other_user.profile.display_name if other_user&.profile
+    end
+
     return attributes["entity_name"] unless built_in?
 
     attribute_key = attributes["entity_name"].parameterize(separator: "_")
@@ -52,8 +59,46 @@ class Entity < ApplicationRecord
     update_columns(cash_transactions_count: cash_transactions.count, cash_transactions_total: cash_transactions.sum(:price))
   end
 
+  def entity_user_id
+    return nil unless friendship_id?
+
+    friendship.user_id == user_id ? friendship.friend_id : friendship.user_id
+  end
+
+  def entity_user_id=(id)
+    return if id.blank?
+
+    friend_user = User.find(id)
+    self.entity_user = friend_user
+  end
+
+  def entity_user
+    return nil unless friendship_id?
+
+    friendship.user_id == user_id ? friendship.friend : friendship.user
+  end
+
+  attr_accessor :entity_user_to_assign
+
+  def entity_user=(friend_user)
+    @entity_user_to_assign = friend_user
+  end
+
   # @protected_instance_methods ...............................................
   protected
+
+  def assign_friendship_if_needed
+    return unless @entity_user_to_assign.present?
+
+    user_id_val = user&.id || user_id
+    friend_id_val = @entity_user_to_assign.id
+
+    existing = nil
+    existing = Friendship.where(user_id: [ user_id_val, friend_id_val ], friend_id: [ user_id_val, friend_id_val ]).first if user_id_val && friend_id_val
+
+    self.friendship = existing || Friendship.new(user: user, friend: @entity_user_to_assign)
+    @entity_user_to_assign = nil
+  end
 
   def set_built_in
     self.built_in ||= false
@@ -93,17 +138,17 @@ end
 #  entity_name             :string           not null, uniquely indexed => [user_id]
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
-#  entity_user_id          :bigint           indexed
+#  friendship_id           :bigint           indexed
 #  user_id                 :bigint           not null, indexed, uniquely indexed => [entity_name]
 #
 # Indexes
 #
-#  index_entities_on_entity_user_id    (entity_user_id)
+#  index_entities_on_friendship_id     (friendship_id)
 #  index_entities_on_user_id           (user_id)
 #  index_entity_name_on_composite_key  (user_id,entity_name) UNIQUE
 #
 # Foreign Keys
 #
-#  fk_rails_...  (entity_user_id => users.id)
+#  fk_rails_...  (friendship_id => friendships.id)
 #  fk_rails_...  (user_id => users.id)
 #

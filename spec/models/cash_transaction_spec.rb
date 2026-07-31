@@ -945,7 +945,7 @@ RSpec.describe CashTransaction, type: :model do
         month: 3,
         year: 2026,
         category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE RETURN").id } ],
-        entity_transactions_attributes: [ { entity_id: sender.entities.that_are_users.find_by!(entity_user: receiver).id, is_payer: false, price: 0,
+        entity_transactions_attributes: [ { entity_id: sender.entities.that_are_users.where_entity_user(receiver).first!.id, is_payer: false, price: 0,
                                             price_to_be_returned: 0 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false } ]
       )
@@ -1048,7 +1048,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1116,7 +1116,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1175,7 +1175,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1232,7 +1232,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1261,7 +1261,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: false,
             price: 0,
             price_to_be_returned: 0
@@ -1313,7 +1313,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1342,7 +1342,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: false,
             price: 0,
             price_to_be_returned: 0
@@ -1401,7 +1401,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1473,7 +1473,7 @@ RSpec.describe CashTransaction, type: :model do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+            entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
             is_payer: true,
             price: -5_000,
             price_to_be_returned: -5_000,
@@ -1560,7 +1560,7 @@ RSpec.describe CashTransaction, type: :model do
           ],
           entity_transactions_attributes: [
             {
-              entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+              entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
               is_payer: true,
               price: -5_000,
               price_to_be_returned: -5_000,
@@ -1626,7 +1626,7 @@ RSpec.describe CashTransaction, type: :model do
           ],
           entity_transactions_attributes: [
             {
-              entity_id: rikki.entities.that_are_users.find_by(entity_user: gigi).id,
+              entity_id: rikki.entities.that_are_users.where_entity_user(gigi).first.id,
               is_payer: true,
               price: -5_000,
               price_to_be_returned: -5_000,

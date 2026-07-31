@@ -300,11 +300,8 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def counterpart_shared_return_user
-    entity_transactions.joins(:entity)
-                       .where.not(entities: { entity_user_id: nil })
-                       .where.not(entities: { entity_user_id: user_id })
-                       .pick("entities.entity_user_id")
-                       .then { |counterpart_user_id| User.find_by(id: counterpart_user_id) }
+    counterpart_id = entity_transactions.map(&:entity).compact.map(&:entity_user_id).compact.reject { |id| id == user_id }.first
+    User.find_by(id: counterpart_id) if counterpart_id
   end
 
   def can_be_destroyed?

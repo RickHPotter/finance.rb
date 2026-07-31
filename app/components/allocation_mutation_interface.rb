@@ -233,7 +233,7 @@ module Components
         if allocation_type == :category
           current_user.categories.active.where(built_in: false)
         else
-          current_user.entities.active.where(built_in: false, entity_user_id: nil)
+          current_user.entities.active.where(built_in: false, friendship_id: nil)
         end
 
       @allocation_options[allocation_type] = records.order(allocation_type == :category ? :category_name : :entity_name).map do |record|

@@ -5,9 +5,15 @@ class PreferencesController < ApplicationController
     preference = current_user.preference
 
     if preference.update(preference_params)
-      redirect_back fallback_location: root_path, status: :see_other
+      respond_to do |format|
+        format.html { redirect_back fallback_location: root_path, status: :see_other }
+        format.json { head :ok }
+      end
     else
-      redirect_back fallback_location: root_path, alert: "Could not update preference.", status: :see_other
+      respond_to do |format|
+        format.html { redirect_back fallback_location: root_path, alert: "Could not update preference.", status: :see_other }
+        format.json { head :unprocessable_entity }
+      end
     end
   end
 

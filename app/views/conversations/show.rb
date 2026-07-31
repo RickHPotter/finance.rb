@@ -65,7 +65,7 @@ class Views::Conversations::Show < Views::Base
   def conversation_avatar_name
     return "people/21.png" if conversation.assistant?
 
-    current_user.entities.that_are_users.find_by(entity_user: conversation.friend_for(current_user))&.avatar_name || "people/0.png"
+    current_user.entities.that_are_users.where_entity_user(conversation.friend_for(current_user)).first&.avatar_name || "people/0.png"
   end
 
   def messages_container_class

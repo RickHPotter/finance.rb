@@ -83,17 +83,18 @@ class Views::Shared::AppFooter < Views::Base
   def theme_toggle(class:)
     div(class:) do
       is_dark = rails_view_context.current_user&.preference&.theme == "dark"
-      next_theme = is_dark ? "light" : "dark"
 
-      button_to(
-        preference_path,
-        method: :patch,
-        params: { user_preference: { theme: next_theme } },
-        title: "Switch theme",
+      button(
         id: "theme_toggle",
-        form_class: "inline",
+        type: "button",
+        title: "Switch theme",
         class: "rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 transition-colors hover:border-red-300 hover:text-red-600 " \
-               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-400 dark:hover:text-emerald-300"
+               "dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-400 dark:hover:text-emerald-300",
+        data: {
+          controller: "theme",
+          action: "click->theme#toggle",
+          theme_update_url_value: preference_path
+        }
       ) do
         is_dark ? "Dark" : "Light"
       end

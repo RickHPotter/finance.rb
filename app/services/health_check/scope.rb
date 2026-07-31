@@ -36,7 +36,7 @@ class HealthCheck::Scope
   end
 
   def connected_users
-    User.where(id: user.entities.that_are_users.select(:entity_user_id))
+    User.where(id: user.entities.that_are_users.map(&:entity_user_id).uniq)
         .order(:first_name, :last_name, :id)
         .to_a
   end
@@ -69,7 +69,7 @@ class HealthCheck::Scope
 
     raise Invalid, :connected_user_not_found unless persisted_user?(connected_user)
     raise Invalid, :connected_user_invalid if connected_user.id == user.id
-    raise Invalid, :connected_user_unrelated unless user.entities.that_are_users.exists?(entity_user_id: connected_user.id)
+    raise Invalid, :connected_user_unrelated unless user.entities.that_are_users.where_entity_user_id(connected_user.id).exists?
   end
 
   def persisted_user?(candidate)

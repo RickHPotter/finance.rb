@@ -168,7 +168,7 @@ module FriendNotifiable
     end
 
     price = exchanges.pluck(:price).sum
-    friend_user.entities.that_are_users.find_by(entity_user: user).id
+    friend_user.entities.that_are_users.where_entity_user(user).first.id
 
     {
       id:,
@@ -179,7 +179,7 @@ module FriendNotifiable
       month:,
       year:,
       category_ids: friend_user.categories.find_by(category_name: "BORROW RETURN").id,
-      entity_ids: friend_user.entities.that_are_users.find_by(entity_user: user).id,
+      entity_ids: friend_user.entities.that_are_users.where_entity_user(user).first.id,
       cash_installments_attributes: exchanges
     }
   end
@@ -221,7 +221,7 @@ module FriendNotifiable
           is_payer: true,
           price: exchanges_price,
           price_to_be_returned: exchanges_price,
-          entity_id: friend_user.entities.that_are_users.find_by(entity_user: user).id,
+          entity_id: friend_user.entities.that_are_users.where_entity_user(user).first.id,
           exchanges_count: exchanges.count,
           exchanges_attributes:
         }
@@ -236,7 +236,7 @@ module FriendNotifiable
   end
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)
-    counterpart_entity_id = friend_user.entities.that_are_users.find_by(entity_user: user).id
+    counterpart_entity_id = friend_user.entities.that_are_users.where_entity_user(user).first.id
     paid_by_number = installments.order(:number, :date).index_by(&:number)
     cash_installments_attributes = exchanges.map do |exchange|
       exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: paid_by_number[exchange.number]&.paid || false)
@@ -359,7 +359,7 @@ module FriendNotifiable
     category_names = categories.pluck(:category_name)
     return true if (category_names - [ "EXCHANGE" ]).present?
 
-    counterpart_entity_id = user.entities.that_are_users.find_by(entity_user: friend_user)&.id
+    counterpart_entity_id = user.entities.that_are_users.where_entity_user(friend_user).first&.id
 
     entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
   end

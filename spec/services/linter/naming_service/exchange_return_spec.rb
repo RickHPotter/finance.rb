@@ -25,7 +25,7 @@ RSpec.describe Linter::NamingService::ExchangeReturn, type: :service do
       card_transaction.category_transactions.create!(category: user.built_in_category("EXCHANGE"))
       entity_transaction = card_transaction.entity_transactions.first
       entity_transaction.update!(
-        entity_id: user.entities.that_are_users.find_by!(entity_user: receiver).id,
+        entity_id: user.entities.that_are_users.where_entity_user(receiver).first!.id,
         price: -12_000,
         price_to_be_returned: -12_000,
         is_payer: true,

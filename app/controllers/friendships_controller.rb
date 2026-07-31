@@ -30,6 +30,7 @@ class FriendshipsController < ApplicationController
     if friendship.friend == current_user && friendship.pending?
       if params[:state] == "accepted"
         friendship.update!(state: "accepted")
+        Logic::Friendships::ReconcileEntityService.call(friendship:)
         flash[:notice] = "Friend request accepted."
       elsif params[:state] == "rejected"
         friendship.update!(state: "rejected")

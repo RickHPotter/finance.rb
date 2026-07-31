@@ -1039,7 +1039,7 @@ RSpec.describe "CashTransactions", type: :request do
         { category_id: sender.built_in_category("EXCHANGE RETURN").id }
       ],
       entity_transactions_attributes: [
-        { entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        { entity_id: sender.entities.that_are_users.where_entity_user(receiver).first.id, is_payer: false, price: 0, price_to_be_returned: 0 }
       ],
       cash_installments_attributes: [
         { number: 1, date: Date.new(2026, 3, 24), month: 3, year: 2026, price: -7_500, paid: true }
@@ -1454,7 +1454,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
       cash_transaction.entity_transactions = [ {
-        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        entity_id: user.entities.that_are_users.where_entity_user(other_user).first.id,
         price: -20_000,
         price_to_be_returned: -20_000,
         exchanges_attributes: [
@@ -1499,7 +1499,7 @@ RSpec.describe "CashTransactions", type: :request do
 
       cash_transaction.category_transactions = [ { category_id: user.built_in_category("EXCHANGE").id } ]
       cash_transaction.entity_transactions = [ {
-        entity_id: user.entities.that_are_users.find_by(entity_user: other_user).id,
+        entity_id: user.entities.that_are_users.where_entity_user(other_user).first.id,
         price: -20_000,
         price_to_be_returned: -20_000,
         exchanges_attributes: [
@@ -1784,7 +1784,7 @@ RSpec.describe "CashTransactions", type: :request do
         ],
         entity_transactions_attributes: [
           {
-            entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id,
+            entity_id: sender.entities.that_are_users.where_entity_user(receiver).first.id,
             is_payer: true,
             price: -20_000,
             price_to_be_returned: -20_000,
@@ -2941,7 +2941,7 @@ RSpec.describe "CashTransactions", type: :request do
           ],
           entity_transactions_attributes: [
             {
-              entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id,
+              entity_id: sender.entities.that_are_users.where_entity_user(receiver).first.id,
               is_payer: true,
               price: -7_500,
               price_to_be_returned: -7_500,
@@ -4210,7 +4210,7 @@ RSpec.describe "CashTransactions", type: :request do
           { category_id: receiver.built_in_category("BORROW RETURN").id }
         ],
         entity_transactions_attributes: [
-          { entity_id: receiver.entities.that_are_users.find_by!(entity_user: user).id, is_payer: false, price: 0, price_to_be_returned: 0 }
+          { entity_id: receiver.entities.that_are_users.where_entity_user(user).first!.id, is_payer: false, price: 0, price_to_be_returned: 0 }
         ],
         cash_installments_attributes: [
           { number: 1, date: Time.zone.local(2026, 4, 10, 0, 0, 0), month: 4, year: 2026, price: -3_000, paid: false },
@@ -4613,7 +4613,7 @@ RSpec.describe "CashTransactions", type: :request do
         month: 3,
         year: 2026,
         category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE RETURN").id } ],
-        entity_transactions_attributes: [ { entity_id: sender.entities.that_are_users.find_by!(entity_user: receiver).id, is_payer: false, price: 0,
+        entity_transactions_attributes: [ { entity_id: sender.entities.that_are_users.where_entity_user(receiver).first!.id, is_payer: false, price: 0,
                                             price_to_be_returned: 0 } ],
         cash_installments_attributes: [ { number: 1, date: Date.new(2026, 3, 10), month: 3, year: 2026, price: -1000, paid: false } ]
       )

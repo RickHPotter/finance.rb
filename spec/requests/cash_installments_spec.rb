@@ -39,7 +39,7 @@ RSpec.describe "CashInstallments", type: :request do
         { category_id: sender.built_in_category("EXCHANGE RETURN").id }
       ],
       entity_transactions_attributes: [
-        { entity_id: sender.entities.that_are_users.find_by(entity_user: receiver).id, is_payer: false, price: 0, price_to_be_returned: 0 }
+        { entity_id: sender.entities.that_are_users.where_entity_user(receiver).first.id, is_payer: false, price: 0, price_to_be_returned: 0 }
       ],
       cash_installments_attributes: [
         { number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false }
@@ -1061,7 +1061,7 @@ RSpec.describe "CashInstallments", type: :request do
         sender = user
         receiver = create(:user, :random)
         sender_shared_return, receiver_shared_return = create_shared_return_pair(sender:, receiver:, link_reference: false)
-        receiver_counterpart = receiver.entities.find_by!(entity_user: sender)
+        receiver_counterpart = receiver.entities.where_entity_user(sender).first!
 
         stale_old_return = create(
           :cash_transaction,
