@@ -25,7 +25,7 @@ class Message < ApplicationRecord
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
   after_create_commit :send_email, if: -> { Rails.env.production? }
-
+  after_create_commit :enqueue_auto_apply, if: -> { transaction_notification_message? && !transaction_destroy_notification_message? && !paid_state_sync_message? }
   # @scopes ...................................................................
   scope :unread, -> { where(read_at: nil) }
 
@@ -148,6 +148,10 @@ class Message < ApplicationRecord
   # @private_instance_methods .................................................
 
   private
+
+  def enqueue_auto_apply
+    ActionableMessageAutoApplyJob.perform_later(self)
+  end
 
   def assign_audit_operation
     operation_id = Audit::Current.operation_id

@@ -3,8 +3,14 @@
 class Friendship < ApplicationRecord
   # @extends ..................................................................
   # @includes .................................................................
+  include FinancialAuditable
+
+  audits_financial_changes
+
   # @security (i.e. attr_accessible) ..........................................
   enum :state, { pending: "pending", accepted: "accepted", rejected: "rejected", blocked: "blocked", removed: "removed" }, suffix: true
+
+  store_accessor :policies, :auto_accept_actionable_messages
 
   # @relationships ............................................................
   belongs_to :user
@@ -32,6 +38,7 @@ end
 # Database name: primary
 #
 #  id         :bigint           not null, primary key
+#  policies   :jsonb            not null
 #  state      :string           default("pending"), not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null

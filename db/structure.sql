@@ -740,7 +740,8 @@ CREATE TABLE public.friendships (
     state character varying DEFAULT 'pending'::character varying NOT NULL,
     public_id character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    policies jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -3063,6 +3064,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731233944'),
 ('20260731215015'),
 ('20260731214108'),
 ('20260731212727'),

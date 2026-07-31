@@ -7,7 +7,7 @@ class Audit::OwnershipResolver
   Ownership = Data.define(:owner_id, :context_id)
 
   DIRECT_CONTEXT_MODELS = %w[CashTransaction CardTransaction Budget Subscription Investment].freeze
-  DIRECT_USER_MODELS = %w[UserCard UserBankAccount].freeze
+  DIRECT_USER_MODELS = %w[UserCard UserBankAccount Friendship].freeze
 
   class << self
     def resolve!(record)

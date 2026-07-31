@@ -14,6 +14,7 @@ end
 # Database name: primary
 #
 #  id         :bigint           not null, primary key
+#  policies   :jsonb            not null
 #  state      :string           default("pending"), not null
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
