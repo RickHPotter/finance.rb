@@ -37,7 +37,7 @@ RSpec.describe "References", type: :request do
   end
 
   describe "[ #update ]" do
-    it "updates the reference and redirects to the user card edit page" do
+    it "updates the reference successfully" do
       patch user_card_reference_path(user_card, reference), params: {
         reference: {
           reference_closing_date: Date.new(2026, 3, 7),
@@ -329,6 +329,73 @@ RSpec.describe "References", type: :request do
       expect(main_invoice.reload.date).to eq(persisted_main_invoice_date)
       expect(main_invoice.cash_installments.first.reload.date).to eq(persisted_main_installment_date)
       expect(main_card_transaction.reload.context).to eq(user.main_context)
+    end
+
+    describe "KAKASHI-11: Reference Merge with Card-bound Exchanges" do
+      it "migrates source card-bound exchanges and syncs their projections into the target bucket" do
+        exchange_category = user.built_in_category("EXCHANGE")
+        card_payment_category = user.built_in_category("CARD PAYMENT")
+        user_card.update!(due_date_day: 12, days_until_due_date: 5)
+
+        source_reference = create(:reference, context: user.main_context, user_card:, month: 7, year: 2026, reference_date: Date.new(2026, 7, 12))
+        target_reference = create(:reference, context: user.main_context, user_card:, month: 8, year: 2026, reference_date: Date.new(2026, 8, 12))
+
+        source_invoice = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, user_card:, description: "July Invoice",
+                                                   cash_transaction_type: "CardInstallment", date: Date.new(2026, 7, 12), month: 7, year: 2026,
+                                                   price: -1000, paid: false, categories: [ card_payment_category ])
+        target_invoice = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, user_card:, description: "August Invoice",
+                                                   cash_transaction_type: "CardInstallment", date: Date.new(2026, 8, 12), month: 8, year: 2026,
+                                                   price: -1000, paid: false, categories: [ card_payment_category ])
+
+        source_card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, description: "July Purchase", date: Date.new(2026, 6, 10),
+                                                            month: 7, year: 2026, price: -2000, paid: false, categories: [ exchange_category ])
+        source_card_transaction.card_installments.first.update!(cash_transaction: source_invoice, month: 7, year: 2026)
+
+        target_card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:,
+                                                            description: "August Purchase", date: Date.new(2026, 7, 10),
+                                                            month: 8, year: 2026, price: -3000, paid: false, categories: [ exchange_category ])
+        target_card_transaction.card_installments.first.update!(cash_transaction: target_invoice, month: 8, year: 2026)
+
+        source_entity_transaction = source_card_transaction.entity_transactions.first
+        target_entity_transaction = target_card_transaction.entity_transactions.first
+        target_entity_transaction.update!(entity: source_entity_transaction.entity)
+
+        source_exchange = create(:exchange, entity_transaction: source_entity_transaction, exchange_type: "monetary", bound_type: :card_bound, month: 7, year: 2026,
+                                            date: Date.new(2026, 6, 10), price: 2000)
+        create(:exchange, entity_transaction: target_entity_transaction, exchange_type: "monetary", bound_type: :card_bound, month: 8, year: 2026,
+                          date: Date.new(2026, 7, 10), price: 3000)
+
+        expect(CashTransaction.where(cash_transaction_type: "Exchange", month: 7, year: 2026).count).to eq(1)
+        expect(CashTransaction.where(cash_transaction_type: "Exchange", month: 8, year: 2026).count).to eq(1)
+
+        source_projection_before = CashTransaction.find_by(cash_transaction_type: "Exchange", month: 7, year: 2026)
+        target_projection_before = CashTransaction.find_by(cash_transaction_type: "Exchange", month: 8, year: 2026)
+
+        expect(source_projection_before.price).to eq(2000)
+        expect(target_projection_before.price).to eq(3000)
+
+        post perform_merge_user_card_references_path(user_card), params: {
+          source_reference_date: "2026-07",
+          target_reference_date: "2026-08"
+        }
+
+        expect(response).to redirect_to(edit_user_card_path(user_card))
+
+        expect(Reference.exists?(source_reference.id)).to be(false)
+        expect(user_card.unpaid_invoices(context: user.main_context).find_by(month: 7, year: 2026)).to be_nil
+
+        expect(source_exchange.reload.month).to eq(8)
+        expect(source_exchange.year).to eq(2026)
+        expect(source_exchange.date.to_date).to eq(target_reference.reload.reference_date)
+
+        expect(CashTransaction.exists?(source_projection_before.id)).to be(false)
+        expect(CashTransaction.where(cash_transaction_type: "Exchange", month: 8, year: 2026).count).to eq(1)
+
+        target_projection_after = CashTransaction.find_by!(cash_transaction_type: "Exchange", month: 8, year: 2026)
+        expect(target_projection_after.price).to eq(5000)
+        expect(target_projection_after.cash_installments.first.price).to eq(5000)
+        expect(target_projection_after.cash_installments.count).to eq(1)
+      end
     end
   end
 end
