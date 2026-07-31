@@ -119,6 +119,8 @@ module HasAdvancePayments
       destroyed = cash_transaction.destroy
 
       unless destroyed
+        Audit::BulkMutation.delete_all!(CategoryTransaction.where(transactable_id: cash_transaction.id, transactable_type: "CashTransaction"))
+        Audit::BulkMutation.delete_all!(EntityTransaction.where(transactable_id: cash_transaction.id, transactable_type: "CashTransaction"))
         Audit::BulkMutation.delete_all!(CashInstallment.where(cash_transaction_id: cash_transaction.id))
         Audit::BulkMutation.delete_all!(CashTransaction.where(id: cash_transaction.id))
       end

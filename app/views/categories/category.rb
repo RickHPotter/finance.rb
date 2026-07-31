@@ -19,6 +19,7 @@ class Views::Categories::Category < Views::Base
   def view_template
     turbo_frame_tag dom_id(category) do
       mobile ? mobile_row : desktop_row
+      turbo_frame_tag "category_merge_preview_#{category.id}"
     end
   end
 
@@ -91,6 +92,15 @@ class Views::Categories::Category < Views::Base
                                                             data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           if category.built_in == false
+            link_to(
+              merge_preview_category_path(category, category_merge: { return_to: }),
+              id: "merge_category_#{category.id}",
+              class: merge_action_button_class,
+              title: I18n.t("category_merges.preview.title"),
+              aria: { label: I18n.t("category_merges.preview.title") },
+              data: { turbo_method: :post }
+            ) { cached_icon(:merge) }
+
             LinkWithConfirmation(
               id: category.id,
               icon: :destroy,
@@ -203,6 +213,12 @@ class Views::Categories::Category < Views::Base
     "inline-flex size-6 items-center justify-center rounded-sm border border-sky-200 bg-sky-50 text-sky-700 " \
       "shadow-sm transition hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
       "dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-slate-800 [&_svg]:size-4"
+  end
+
+  def merge_action_button_class
+    "inline-flex size-6 items-center justify-center rounded-sm border border-orange-200 bg-orange-50 text-orange-700 " \
+      "shadow-sm transition hover:border-orange-600 hover:bg-orange-600 hover:text-white dark:border-slate-600 dark:bg-slate-900 " \
+      "dark:text-orange-300 dark:hover:border-orange-500 dark:hover:bg-slate-800 [&_svg]:size-4 [&_svg]:!text-current"
   end
 
   def destructive_action_button_class

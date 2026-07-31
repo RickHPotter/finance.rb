@@ -41,8 +41,18 @@ Rails.application.routes.draw do
   end
 
   resources :user_bank_accounts
-  resources :categories
-  resources :entities
+  resources :categories do
+    member do
+      post :merge_preview, to: "category_merge_previews#create"
+      post :merge,         to: "category_merges#create"
+    end
+  end
+  resources :entities do
+    member do
+      post :merge_preview, to: "entity_merge_previews#create"
+      post :merge,         to: "entity_merges#create"
+    end
+  end
   resources :contexts, only: %i[index show new create destroy] do
     collection do
       get :dismiss

@@ -1,0 +1,67 @@
+en:
+  category_merges:
+    applied: "Category merged — source removed."
+    reasons:
+      same_category: "Source and destination are the same category."
+      source_not_found: "Source category not found."
+      destination_not_found: "Destination category not found."
+      source_inactive: "Source category is inactive and cannot be merged."
+      destination_inactive: "Destination category is inactive."
+      source_protected: "Source category is built-in and cannot be merged."
+      destination_protected: "Destination category is built-in and cannot be used as a destination."
+      stale_preview: "The plan expired or the categories changed — please preview again."
+      merge_ineligible: "This merge cannot be applied due to plan conflicts."
+      invalid_token: "Invalid or expired merge token."
+      missing_confirmation: "Merge confirmation is missing."
+      unexpected_failure: "An unexpected error occurred. Please try again."
+    preview:
+      title: "Merge category"
+      eyebrow: "Category merge"
+      destination_label: "Merge into"
+      choose_destination: "Choose a destination category"
+      submit_preview: "Preview merge"
+      submit_apply: "Merge and destroy source"
+      cancel: "Cancel"
+      outcome:
+        eligible: "Ready to apply"
+        noop: "No changes needed"
+        conflict: "Cannot apply — plan conflict"
+      counts:
+        transaction_reassign: "Transactions reassigned"
+        transaction_dedup: "Duplicate transactions removed"
+        budget_reassign: "Budget allocations reassigned"
+        budget_dedup: "Duplicate budget allocations removed"
+
+pt-BR:
+  category_merges:
+    applied: "Categoria mesclada — origem removida."
+    reasons:
+      same_category: "A origem e o destino são a mesma categoria."
+      source_not_found: "Categoria de origem não encontrada."
+      destination_not_found: "Categoria de destino não encontrada."
+      source_inactive: "A categoria de origem está inativa e não pode ser mesclada."
+      destination_inactive: "A categoria de destino está inativa."
+      source_protected: "A categoria de origem é embutida e não pode ser mesclada."
+      destination_protected: "A categoria de destino é embutida e não pode ser usada como destino."
+      stale_preview: "O plano expirou ou as categorias mudaram — pré-visualize novamente."
+      merge_ineligible: "Esta mescla não pode ser aplicada devido a conflitos no plano."
+      invalid_token: "Token de mescla inválido ou expirado."
+      missing_confirmation: "Confirmação de mescla ausente."
+      unexpected_failure: "Ocorreu um erro inesperado. Tente novamente."
+    preview:
+      title: "Mesclar categoria"
+      eyebrow: "Mescla de categoria"
+      destination_label: "Mesclar em"
+      choose_destination: "Escolha uma categoria de destino"
+      submit_preview: "Pré-visualizar mescla"
+      submit_apply: "Mesclar e remover origem"
+      cancel: "Cancelar"
+      outcome:
+        eligible: "Pronto para aplicar"
+        noop: "Nenhuma alteração necessária"
+        conflict: "Não é possível aplicar — conflito no plano"
+      counts:
+        transaction_reassign: "Transações reatribuídas"
+        transaction_dedup: "Transações duplicadas removidas"
+        budget_reassign: "Alocações de orçamento reatribuídas"
+        budget_dedup: "Alocações de orçamento duplicadas removidas"

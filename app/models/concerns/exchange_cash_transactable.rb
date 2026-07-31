@@ -460,6 +460,8 @@ module ExchangeCashTransactable # rubocop:disable Metrics/ModuleLength
   def delete_projection_cash_transaction(cash_transaction)
     return unless cash_transaction&.persisted?
 
+    Audit::BulkMutation.delete_all!(CategoryTransaction.where(transactable_id: cash_transaction.id, transactable_type: "CashTransaction"))
+    Audit::BulkMutation.delete_all!(EntityTransaction.where(transactable_id: cash_transaction.id, transactable_type: "CashTransaction"))
     Audit::BulkMutation.delete_all!(cash_transaction.cash_installments)
     Audit::BulkMutation.delete_all!(CashTransaction.where(id: cash_transaction.id))
   end

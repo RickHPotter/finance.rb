@@ -1193,6 +1193,12 @@ Coverage:
   duplicate joins, built-ins, structural conflicts, friend entities, context isolation,
   atomic rollback, counters, and audit history
 
+References:
+
+- [selector ranking and merge contract](docs/sprints/4-kakashi/kakashi-18/01-selector-ranking-and-merge-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-18/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-18/03-decisions-and-test-matrix.md)
+
 ### KAKASHI-19: Harden internal and external entity ledgers
 
 - Issues:

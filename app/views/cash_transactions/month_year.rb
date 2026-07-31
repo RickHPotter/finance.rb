@@ -6,8 +6,7 @@ class Views::CashTransactions::MonthYear < Views::Base
   attr_reader :mobile, :month_year, :month_year_date, :cash_installments, :budgets, :total_amount, :index_context, :frame_prefix,
               :category_colour_display_mode
 
-  def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {}, # rubocop:disable Metrics/ParameterLists
-                 category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
+  def initialize(mobile:, month_year:, cash_installments:, budgets:, index_context: {}, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT)
     @mobile = mobile
     @month_year = month_year
     @month_year_date = Date.parse("#{month_year[0..3]}-#{month_year[4..]}-01")

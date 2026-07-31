@@ -1,6 +1,36 @@
 import { Controller } from "@hotwired/stimulus";
 import { computePosition, autoUpdate, offset, flip } from "@floating-ui/dom";
 
+// Normalizes a string for consistent combobox search comparison:
+//   1. NFKD Unicode decomposition
+//   2. Strip combining diacritical marks (accents)
+//   3. Lowercase
+//   4. Collapse repeated whitespace and trim
+// Used by filterItems so that accented characters, case differences, and
+// extra whitespace never block a valid match.
+function normalize(str) {
+  return (str || "")
+    .normalize("NFKD")
+    .replace(/\p{Mn}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+// Returns the ranking tier of a normalized text string against a normalized
+// query. Lower tier = better match. Returns Infinity when there is no match.
+//   1 — exact:      text equals query exactly
+//   2 — starts-with: text begins with query
+//   3 — word-start: any whitespace-delimited word in text begins with query
+//   4 — substring:  text contains query anywhere
+function rankTier(text, query) {
+  if (text === query) { return 1 }
+  if (text.startsWith(query)) { return 2 }
+  if (text.split(/\s+/).some(word => word.startsWith(query))) { return 3 }
+  if (text.includes(query)) { return 4 }
+  return Infinity
+}
+
 // Connects to data-controller="ruby-ui--combobox"
 export default class extends Controller {
   static values = {
@@ -25,6 +55,7 @@ export default class extends Controller {
   connect() {
     this.updateTriggerContent()
     this.initializeOrderTracking()
+    this.captureOriginalItemOrder()
     this.openFrame = null
     this.closeFrame = null
     this.pointerDownInsidePopover = false
@@ -165,7 +196,7 @@ export default class extends Controller {
       return
     }
 
-    const filterTerm = this.searchInputTarget.value.toLowerCase()
+    const filterTerm = normalize(this.searchInputTarget.value)
 
     if (this.hasToggleAllTarget) {
       if (filterTerm) this.toggleAllTarget.parentElement.classList.add("hidden")
@@ -173,6 +204,7 @@ export default class extends Controller {
     }
 
     let resultCount = 0
+    const rankedItems = []
 
     this.inputTargets.forEach((input) => {
       if (input.parentElement.dataset.comboboxPermanentlyHidden === "true") {
@@ -180,15 +212,33 @@ export default class extends Controller {
         return
       }
 
-      const text = this.inputContent(input).toLowerCase()
+      const text = normalize(this.inputContent(input))
+      // Alias is pre-normalized server-side; no need to run normalize() on it.
+      const alias = input.parentElement.dataset.alias || ""
 
-      if (text.indexOf(filterTerm) > -1) {
+      let tier = filterTerm ? rankTier(text, filterTerm) : 0
+      if (filterTerm && tier === Infinity && alias && alias.includes(filterTerm)) {
+        tier = 5
+      }
+
+      if (!filterTerm || tier < Infinity) {
         input.parentElement.classList.remove("hidden")
         resultCount++
+        if (filterTerm) {
+          rankedItems.push({
+            element: input.parentElement,
+            tier,
+            originalIndex: this.originalItemOrder.get(input.parentElement) ?? 0
+          })
+        }
       } else {
         input.parentElement.classList.add("hidden")
       }
     })
+
+    if (filterTerm && rankedItems.length > 1) {
+      this.rankItems(rankedItems)
+    }
 
     this.emptyStateTarget.classList.toggle("hidden", resultCount !== 0)
     this.highlightFirstVisibleItem()
@@ -392,6 +442,25 @@ export default class extends Controller {
 
   isVisible(element) {
     return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length)
+  }
+
+  // Snapshots the server-rendered DOM position of every input's parent element
+  // so that `rankItems` can use it as a stable tie-breaker within the same tier.
+  // Called once in connect() after targets are registered.
+  captureOriginalItemOrder() {
+    this.originalItemOrder = new Map(
+      this.inputTargets.map((input, index) => [input.parentElement, index])
+    )
+  }
+
+  // Re-orders `items` (an array of { element, tier, originalIndex }) in the
+  // DOM by tier ascending, then by originalIndex ascending (stable sort).
+  // Only appends elements that already share the same parent list node.
+  rankItems(items) {
+    items.sort((a, b) => a.tier - b.tier || a.originalIndex - b.originalIndex)
+    const list = items[0]?.element.parentElement
+    if (!list) { return }
+    items.forEach(({ element }) => list.appendChild(element))
   }
 
   initializeOrderTracking() {

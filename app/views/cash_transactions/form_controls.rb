@@ -31,7 +31,7 @@ class Views::CashTransactions::FormControls < Views::Base
     div(id: "cash_transaction_user_bank_account_combobox", class: "combobox-shell w-full lg:w-[16%] lg:flex-none mb-3 wallet-icon") do
       render Views::Shared::SingleSelectCombobox.new(
         name: "cash_transaction[user_bank_account_id]",
-        options: user_bank_accounts.map { |label, value| [ label, value, {} ] },
+        options: user_bank_accounts.map { |label, value, alias_data| [ label, value, alias_data || {} ] },
         selected_value: cash_transaction.user_bank_account_id,
         placeholder: model_attribute(cash_transaction, :user_bank_account_id),
         input_data: {

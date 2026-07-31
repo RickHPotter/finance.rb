@@ -1,0 +1,64 @@
+# frozen_string_literal: true
+
+class CategoryMergePreviewsController < ApplicationController
+  include TabsConcern
+
+  before_action :set_source_category
+  before_action :set_basic_tabs
+
+  def create
+    @destinations = current_user.categories
+                                .where(active: true, built_in: false)
+                                .where.not(id: @source.id)
+                                .order(:category_name)
+
+    plan = CategoryMerges::Planner.new(
+      actor: current_user,
+      source_id: @source.id,
+      destination_id: merge_params[:destination_id]
+    ).call
+
+    respond_to do |format|
+      format.html { render Views::CategoryMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path) }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "category_merge_preview_#{@source.id}",
+          Views::CategoryMerges::Preview.new(source: @source, plan:, destinations: @destinations, return_to: return_to_path, frame_only: true)
+        )
+      end
+      format.json { render json: plan_payload(plan) }
+    end
+  rescue ActionController::ParameterMissing, ArgumentError
+    head :bad_request
+  end
+
+  private
+
+  def set_source_category
+    @source = current_user.categories.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    head :not_found
+  end
+
+  def merge_params
+    params.require(:category_merge).permit(:destination_id, :return_to)
+  end
+
+  def return_to_path
+    merge_params[:return_to].presence || categories_path
+  end
+
+  def plan_payload(plan)
+    {
+      outcome: plan.outcome,
+      transaction_reassign_count: plan.transaction_reassign_count,
+      transaction_dedup_count: plan.transaction_dedup_count,
+      budget_reassign_count: plan.budget_reassign_count,
+      budget_dedup_count: plan.budget_dedup_count
+    }
+  end
+
+  def set_basic_tabs
+    set_tabs(active_menu: :data, active_sub_menu: :category)
+  end
+end

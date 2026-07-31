@@ -5,7 +5,7 @@ class Views::Budgets::MonthYear < Views::Base
 
   attr_reader :mobile, :month_year, :month_year_str, :budgets, :total_amount, :category_colour_display_mode, :return_to
 
-  def initialize(mobile:, month_year:, month_year_str:, budgets:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil) # rubocop:disable Metrics/ParameterLists
+  def initialize(mobile:, month_year:, month_year_str:, budgets:, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil)
     @month_year = month_year
     @mobile = mobile
     @month_year_str = month_year_str

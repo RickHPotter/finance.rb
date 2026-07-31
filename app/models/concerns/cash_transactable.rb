@@ -291,6 +291,8 @@ module CashTransactable
     destroyed = record.destroy
     return if destroyed || protect_paid_cash_transaction_projection?
 
+    Audit::BulkMutation.delete_all!(CategoryTransaction.where(transactable_id: record.id, transactable_type: "CashTransaction"))
+    Audit::BulkMutation.delete_all!(EntityTransaction.where(transactable_id: record.id, transactable_type: "CashTransaction"))
     Audit::BulkMutation.delete_all!(CashInstallment.where(cash_transaction_id: record.id))
     Audit::BulkMutation.delete_all!(CashTransaction.where(id: record.id))
   end
