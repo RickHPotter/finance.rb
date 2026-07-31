@@ -7,6 +7,9 @@ class User < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
+  has_one :profile, class_name: "UserProfile", dependent: :destroy
+  has_one :preference, class_name: "UserPreference", dependent: :destroy
+
   has_many :card_transactions, dependent: :destroy
   has_many :card_installments, through: :card_transactions
   has_many :advance_cash_transactions, through: :card_transactions
@@ -50,6 +53,7 @@ class User < ApplicationRecord
   before_create :create_built_ins
   before_create :set_confirmed_at
   after_create :create_main_context
+  after_create :create_default_profile_and_preference!
 
   # @scopes ...................................................................
   # @additional_config ........................................................
@@ -103,6 +107,23 @@ class User < ApplicationRecord
   # @protected_instance_methods ...............................................
 
   protected
+
+  def create_default_profile_and_preference!
+    create_profile!(
+      display_name: [ first_name, last_name ].compact.join(" ").presence || email.split("@").first,
+      first_name:,
+      last_name:,
+      locale: locale || "en",
+      timezone: "UTC"
+    )
+
+    create_preference!(
+      theme: "system",
+      landing_page: "dashboard",
+      page_density: "comfortable",
+      date_time_presentation: "relative"
+    )
+  end
 
   def set_default_locale
     self.locale ||= I18n.locale

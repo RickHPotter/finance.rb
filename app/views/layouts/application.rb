@@ -23,10 +23,22 @@ class Views::Layouts::Application < Views::Base
         csrf_meta_tags
         csp_meta_tag
 
+        server_theme = rails_view_context.current_user&.preference&.theme || "system"
+
         javascript_tag(<<~JS)
           (() => {
             try {
-              document.documentElement.classList.toggle("dark", window.localStorage.getItem("finance.theme") === "dark");
+              const serverTheme = "#{server_theme}";
+              let dark = false;
+              if (serverTheme === "dark") {
+                dark = true;
+              } else if (serverTheme === "light") {
+                dark = false;
+              } else {
+                const local = window.localStorage.getItem("finance.theme");
+                dark = local === "dark" || (local === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+              }
+              document.documentElement.classList.toggle("dark", dark);
             } catch (_) {}
           })();
         JS

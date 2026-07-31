@@ -626,7 +626,7 @@ CREATE TABLE public.entity_transactions (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL,
-    CONSTRAINT entity_transactions_status_values CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'finished'::character varying])::text[])))
+    CONSTRAINT entity_transactions_status_values CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('finished'::character varying)::text])))
 );
 
 
@@ -668,7 +668,7 @@ CREATE TABLE public.exchanges (
     date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
     year integer NOT NULL,
-    CONSTRAINT exchanges_exchange_type_values CHECK (((exchange_type)::text = ANY ((ARRAY['non_monetary'::character varying, 'monetary'::character varying])::text[])))
+    CONSTRAINT exchanges_exchange_type_values CHECK (((exchange_type)::text = ANY (ARRAY[('non_monetary'::character varying)::text, ('monetary'::character varying)::text])))
 );
 
 
@@ -1133,6 +1133,80 @@ ALTER SEQUENCE public.user_cards_id_seq OWNED BY public.user_cards.id;
 
 
 --
+-- Name: user_preferences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_preferences (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    theme character varying DEFAULT 'system'::character varying NOT NULL,
+    landing_page character varying DEFAULT 'dashboard'::character varying NOT NULL,
+    active_context_id integer,
+    page_density character varying DEFAULT 'comfortable'::character varying NOT NULL,
+    date_time_presentation character varying DEFAULT 'relative'::character varying NOT NULL,
+    default_account_id integer,
+    default_card_id integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_preferences_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_preferences_id_seq OWNED BY public.user_preferences.id;
+
+
+--
+-- Name: user_profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_profiles (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    display_name character varying,
+    first_name character varying,
+    last_name character varying,
+    locale character varying DEFAULT 'en'::character varying NOT NULL,
+    timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_profiles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_profiles_id_seq OWNED BY public.user_profiles.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1362,6 +1436,20 @@ ALTER TABLE ONLY public.user_bank_accounts ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.user_cards ALTER COLUMN id SET DEFAULT nextval('public.user_cards_id_seq'::regclass);
+
+
+--
+-- Name: user_preferences id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences ALTER COLUMN id SET DEFAULT nextval('public.user_preferences_id_seq'::regclass);
+
+
+--
+-- Name: user_profiles id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles ALTER COLUMN id SET DEFAULT nextval('public.user_profiles_id_seq'::regclass);
 
 
 --
@@ -1609,6 +1697,22 @@ ALTER TABLE ONLY public.user_bank_accounts
 
 ALTER TABLE ONLY public.user_cards
     ADD CONSTRAINT user_cards_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_preferences user_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences
+    ADD CONSTRAINT user_preferences_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_pkey PRIMARY KEY (id);
 
 
 --
@@ -2355,6 +2459,20 @@ CREATE INDEX index_user_cards_on_user_id ON public.user_cards USING btree (user_
 
 
 --
+-- Name: index_user_preferences_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_preferences_on_user_id ON public.user_preferences USING btree (user_id);
+
+
+--
+-- Name: index_user_profiles_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_profiles_on_user_id ON public.user_profiles USING btree (user_id);
+
+
+--
 -- Name: index_users_on_confirmation_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2622,6 +2740,14 @@ ALTER TABLE ONLY public.budget_categories
 
 
 --
+-- Name: user_profiles fk_rails_87a6352e58; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT fk_rails_87a6352e58 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: entities fk_rails_8a74aa079f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2659,6 +2785,14 @@ ALTER TABLE ONLY public.exchanges
 
 ALTER TABLE ONLY public.card_transactions
     ADD CONSTRAINT fk_rails_9bf4edc382 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
+
+
+--
+-- Name: user_preferences fk_rails_a69bfcfd81; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences
+    ADD CONSTRAINT fk_rails_a69bfcfd81 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2828,6 +2962,8 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731212727'),
+('20260731212726'),
 ('20260730120000'),
 ('20260725120000'),
 ('20260724120000'),

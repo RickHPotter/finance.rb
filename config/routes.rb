@@ -8,6 +8,9 @@ Rails.application.routes.draw do
   devise_for :users
   patch "/locale", to: "users#update_locale", as: :update_locale
 
+  resource :profile, only: %i[edit update]
+  resource :preference, only: %i[update]
+
   # devise_for :users, controllers: {
   #   confirmations: "users/confirmations"
   # }
