@@ -109,7 +109,7 @@ class Views::CategoryMerges::Preview < Views::Base
 
   def apply_form
     div(class: "mt-3") do
-      form_with(url: merge_category_path(source), method: :post) do |f|
+      form_with(url: merge_category_path(source), method: :post, data: { turbo_frame: "_top" }) do |f|
         f.hidden_field :merge_token,  value: CategoryMerges::PreviewToken.generate(plan)
         f.hidden_field :return_to,    value: return_to
         button(

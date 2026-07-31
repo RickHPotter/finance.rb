@@ -136,7 +136,7 @@ class Views::EntityMerges::Preview < Views::Base
   end
 
   def strict_apply_form
-    form_with(url: merge_entity_path(source), method: :post, class: "flex-1") do |f|
+    form_with(url: merge_entity_path(source), method: :post, class: "flex-1", data: { turbo_frame: "_top" }) do |f|
       f.hidden_field :merge_token,  value: EntityMerges::PreviewToken.generate(plan)
       f.hidden_field :return_to,    value: return_to
       f.hidden_field :mode,         value: "strict"
@@ -171,7 +171,7 @@ class Views::EntityMerges::Preview < Views::Base
 
     return unless plan.mode == :eligible_only
 
-    form_with(url: merge_entity_path(source), method: :post, class: "flex-1") do |f|
+    form_with(url: merge_entity_path(source), method: :post, class: "flex-1", data: { turbo_frame: "_top" }) do |f|
       f.hidden_field :merge_token,  value: EntityMerges::PreviewToken.generate(plan)
       f.hidden_field :return_to,    value: return_to
       f.hidden_field :mode,         value: "eligible_only"

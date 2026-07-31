@@ -16,9 +16,15 @@ class CategoryMergesController < ApplicationController
     ).call
 
     respond_to do |format|
-      format.html { redirect_after_apply(result) }
-      format.turbo_stream { render_turbo_result(result) }
-      format.json { render json: result_payload(result), status: response_status(result) }
+      if result.applied?
+        format.html { redirect_after_apply(result) }
+        format.turbo_stream { redirect_after_apply(result) }
+        format.json { render json: result_payload(result), status: :ok }
+      else
+        format.html { redirect_after_apply(result) }
+        format.turbo_stream { render_turbo_result(result) }
+        format.json { render json: result_payload(result), status: response_status(result) }
+      end
     end
   end
 
@@ -41,17 +47,13 @@ class CategoryMergesController < ApplicationController
   end
 
   def turbo_streams_for(result)
-    notification_stream = turbo_stream.update(
-      :notification,
-      partial: "shared/flash",
-      locals: result.applied? ? { notice: result_message(result) } : { alert: result_message(result) }
-    )
-
-    if result.applied?
-      [ turbo_stream.action(:redirect, return_to_path), notification_stream ]
-    else
-      [ notification_stream ]
-    end
+    [
+      turbo_stream.update(
+        :notification,
+        partial: "shared/flash",
+        locals: { alert: result_message(result) }
+      )
+    ]
   end
 
   def result_message(result)

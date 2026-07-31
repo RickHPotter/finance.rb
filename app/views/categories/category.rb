@@ -19,6 +19,7 @@ class Views::Categories::Category < Views::Base
   def view_template
     turbo_frame_tag dom_id(category) do
       mobile ? mobile_row : desktop_row
+      turbo_frame_tag "category_merge_preview_#{category.id}"
     end
   end
 

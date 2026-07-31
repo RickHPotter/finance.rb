@@ -21,6 +21,7 @@ class Views::Entities::Entity < Views::Base
   def view_template
     turbo_frame_tag dom_id(entity) do
       mobile ? mobile_row : desktop_row
+      turbo_frame_tag "entity_merge_preview_#{entity.id}"
     end
   end
 
