@@ -91,6 +91,15 @@ class Views::Categories::Category < Views::Base
                                                             data: { turbo_frame: "_top", turbo_prefetch: false }) { cached_icon(:pencil) }
 
           if category.built_in == false
+            link_to(
+              merge_preview_category_path(category, category_merge: { return_to: }),
+              id: "merge_category_#{category.id}",
+              class: action_button_class,
+              title: I18n.t("category_merges.preview.title"),
+              aria: { label: I18n.t("category_merges.preview.title") },
+              data: { turbo_method: :post }
+            ) { cached_icon(:merge) }
+
             LinkWithConfirmation(
               id: category.id,
               icon: :destroy,

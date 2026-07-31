@@ -27,7 +27,15 @@ class CategoryMerges::Apply
     end
   end
 
-  Result = Data.define(:status, :reason_code, :operation, :plan)
+  Result = Data.define(:status, :reason_code, :operation, :plan) do
+    def applied?
+      status == :applied
+    end
+
+    def rejected?
+      status == :rejected
+    end
+  end
 
   attr_reader :actor, :context, :token, :request_id
 
