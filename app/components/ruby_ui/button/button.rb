@@ -2,7 +2,7 @@
 
 module RubyUI
   class Button < Base
-    def initialize(type: :button, variant: :outline, size: :md, icon: false, link: nil, **attrs) # rubocop:disable Metrics/ParameterLists
+    def initialize(type: :button, variant: :outline, size: :md, icon: false, link: nil, **attrs)
       @type = type
       @variant = variant.to_sym
       @size = size.to_sym

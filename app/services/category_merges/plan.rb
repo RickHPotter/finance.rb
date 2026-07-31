@@ -12,7 +12,7 @@ class CategoryMerges::Plan
               :transaction_reassign_count, :transaction_dedup_count,
               :budget_reassign_count, :budget_dedup_count
 
-  def initialize( # rubocop:disable Metrics/ParameterLists
+  def initialize(
     actor:, source:, destination:, outcome:,
     reason_code: nil, details: {},
     transaction_reassign_count: 0, transaction_dedup_count: 0,

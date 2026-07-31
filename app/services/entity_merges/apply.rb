@@ -105,9 +105,7 @@ class EntityMerges::Apply
   end
 
   def execute_merge!(plan)
-    source      = plan.source
-    destination = plan.destination
-    operation   = nil
+    operation = nil
 
     Audit::Operation.run(
       source: :web,
@@ -119,30 +117,49 @@ class EntityMerges::Apply
     ) do
       operation = Audit::Operation.ensure_persisted!
 
-      collapse_et_ids = plan.collapse_rows.select { |rp| rp.row.is_a?(EntityTransaction) }.map { |rp| rp.row.id }
-      collapse_be_ids = plan.collapse_rows.select { |rp| rp.row.is_a?(BudgetEntity) }.map { |rp| rp.row.id }
-      transfer_et_ids = plan.transfer_rows.select { |rp| rp.row.is_a?(EntityTransaction) }.map { |rp| rp.row.id }
-      transfer_be_ids = plan.transfer_rows.select { |rp| rp.row.is_a?(BudgetEntity) }.map { |rp| rp.row.id }
-
-      # Collapse
-      EntityTransaction.where(id: collapse_et_ids).find_each(&:destroy!) if collapse_et_ids.any?
-      BudgetEntity.where(id: collapse_be_ids).find_each(&:destroy!) if collapse_be_ids.any?
-
-      # Transfer
-      Audit::BulkMutation.update_all!(EntityTransaction.where(id: transfer_et_ids), entity_id: destination.id) if transfer_et_ids.any?
-      Audit::BulkMutation.update_all!(BudgetEntity.where(id: transfer_be_ids), entity_id: destination.id) if transfer_be_ids.any?
-
-      destination.update_cash_transactions_count_and_total
-      destination.update_card_transactions_count_and_total
-      source.update_cash_transactions_count_and_total
-      source.update_card_transactions_count_and_total
-
-      if !EntityTransaction.exists?(entity_id: source.id) && !BudgetEntity.exists?(entity_id: source.id)
-        source.destroy!
-      end
+      collapse_planned_rows(plan)
+      transfer_planned_rows(plan)
+      update_counters(plan.source, plan.destination)
+      cleanup_source(plan.source)
     end
 
     result(status: :applied, operation:, plan:)
+  end
+
+  def collapse_planned_rows(plan)
+    grouped = plan.collapse_rows.group_by { |rp| rp.row.class }
+
+    if (et_ids = grouped[EntityTransaction]&.map { |rp| rp.row.id })
+      EntityTransaction.where(id: et_ids).find_each(&:destroy!)
+    end
+
+    if (be_ids = grouped[BudgetEntity]&.map { |rp| rp.row.id })
+      BudgetEntity.where(id: be_ids).find_each(&:destroy!)
+    end
+  end
+
+  def transfer_planned_rows(plan)
+    grouped = plan.transfer_rows.group_by { |rp| rp.row.class }
+    dest_id = plan.destination.id
+
+    if (et_ids = grouped[EntityTransaction]&.map { |rp| rp.row.id })
+      Audit::BulkMutation.update_all!(EntityTransaction.where(id: et_ids), entity_id: dest_id)
+    end
+
+    if (be_ids = grouped[BudgetEntity]&.map { |rp| rp.row.id })
+      Audit::BulkMutation.update_all!(BudgetEntity.where(id: be_ids), entity_id: dest_id)
+    end
+  end
+
+  def update_counters(source, destination)
+    destination.update_cash_transactions_count_and_total
+    destination.update_card_transactions_count_and_total
+    source.update_cash_transactions_count_and_total
+    source.update_card_transactions_count_and_total
+  end
+
+  def cleanup_source(source)
+    source.destroy! unless EntityTransaction.exists?(entity_id: source.id) || BudgetEntity.exists?(entity_id: source.id)
   end
 
   def operation_metadata(plan)

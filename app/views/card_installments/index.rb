@@ -9,7 +9,7 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
 
   attr_reader :mobile, :card_installments, :user_card_id, :entity_links, :category_colour_display_mode, :return_to
 
-  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil) # rubocop:disable Metrics/ParameterLists
+  def initialize(mobile:, card_installments:, user_card_id:, entity_links: true, category_colour_display_mode: CategoryColours::DisplayMode::DEFAULT, return_to: nil)
     @mobile = mobile
     @card_installments = card_installments
     @user_card_id = user_card_id

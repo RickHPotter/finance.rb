@@ -109,12 +109,12 @@ class CategoryMerges::Apply
     operation   = nil
 
     Audit::Operation.run(
-      source:       :web,
+      source: :web,
       join_existing: false,
       actor:,
       context:,
       request_id:,
-      metadata:     operation_metadata(plan)
+      metadata: operation_metadata(plan)
     ) do
       # Pre-create the AuditOperation so BulkMutation's PaperTrail calls
       # always find a valid operation FK rather than triggering
@@ -133,16 +133,16 @@ class CategoryMerges::Apply
   # Handles CategoryTransaction deduplication then reassignment.
   def merge_transactions!(source, destination)
     dedup_scope = CategoryTransaction
-      .where(category: source)
-      .where(
-        "EXISTS (
+                  .where(category: source)
+                  .where(
+                    "EXISTS (
           SELECT 1 FROM category_transactions ct2
           WHERE ct2.category_id = ?
             AND ct2.transactable_type = category_transactions.transactable_type
             AND ct2.transactable_id   = category_transactions.transactable_id
         )",
-        destination.id
-      )
+                    destination.id
+                  )
 
     dedup_scope.find_each(&:destroy!)
     Audit::BulkMutation.update_all!(CategoryTransaction.where(category: source), category_id: destination.id)
@@ -151,13 +151,11 @@ class CategoryMerges::Apply
   # Handles BudgetCategory deduplication then reassignment.
   def merge_budget_categories!(source, destination)
     conflicting_budget_ids = BudgetCategory
-      .where(category: destination)
-      .where(budget_id: BudgetCategory.where(category: source).select(:budget_id))
-      .pluck(:budget_id)
+                             .where(category: destination)
+                             .where(budget_id: BudgetCategory.where(category: source).select(:budget_id))
+                             .pluck(:budget_id)
 
-    if conflicting_budget_ids.any?
-      BudgetCategory.where(category: source, budget_id: conflicting_budget_ids).find_each(&:destroy!)
-    end
+    BudgetCategory.where(category: source, budget_id: conflicting_budget_ids).find_each(&:destroy!) if conflicting_budget_ids.any?
 
     Audit::BulkMutation.update_all!(BudgetCategory.where(category: source), category_id: destination.id)
   end

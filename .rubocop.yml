@@ -75,6 +75,9 @@ Metrics/BlockLength:
     - "config/**/*.rb"
     - "spec/**/*"
 
+Metrics/ParameterLists:
+  Max: 10
+
 Lint/MissingSuper:
   Enabled: true
   Exclude:

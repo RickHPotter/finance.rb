@@ -76,37 +76,35 @@ class EntityMerges::Planner
 
   def classify_entity_transactions(transfer, collapse, conflict)
     # Preload exchanges to avoid N+1 during neutrality check
-    source.entity_transactions.includes(:exchanges, :transactable).find_each do |et|
-      reason = transaction_conflict_reason(et)
+    source.entity_transactions.includes(:exchanges, :transactable).find_each do |entity_transaction|
+      reason = transaction_conflict_reason(entity_transaction)
       if reason
-        conflict << row_plan(et, :conflict, reason)
-      elsif et.transactable.nil?
-        collapse << row_plan(et, :collapse)
-      elsif destination_transaction_exists?(et)
-        collapse << row_plan(et, :collapse)
+        conflict << row_plan(entity_transaction, :conflict, reason)
+      elsif entity_transaction.transactable.nil? || destination_transaction_exists?(entity_transaction)
+        collapse << row_plan(entity_transaction, :collapse)
       else
-        transfer << row_plan(et, :transfer)
+        transfer << row_plan(entity_transaction, :transfer)
       end
     end
   end
 
   def classify_budget_entities(transfer, collapse)
-    BudgetEntity.where(entity: source).find_each do |be|
-      if destination_budget_entity_exists?(be)
-        collapse << row_plan(be, :collapse)
+    BudgetEntity.where(entity: source).find_each do |budget_entity|
+      if destination_budget_entity_exists?(budget_entity)
+        collapse << row_plan(budget_entity, :collapse)
       else
-        transfer << row_plan(be, :transfer)
+        transfer << row_plan(budget_entity, :transfer)
       end
     end
   end
 
   # --- Conflict Rules ---------------------------------------------------------
 
-  def transaction_conflict_reason(et)
-    return :payer_entity if et.is_payer?
-    return :monetary_entity if et.price.to_i.nonzero? || et.price_to_be_returned.to_i.nonzero?
-    return :exchange_entity if et.exchanges.any?
-    return :piggy_bank_entity if piggy_bank_entity?(et)
+  def transaction_conflict_reason(entity_txn)
+    return :payer_entity if entity_txn.is_payer?
+    return :monetary_entity if entity_txn.price.to_i.nonzero? || entity_txn.price_to_be_returned.to_i.nonzero?
+    return :exchange_entity if entity_txn.exchanges.any?
+    return :piggy_bank_entity if piggy_bank_entity?(entity_txn)
 
     # If source is neutral (passed above checks), but destination is also present
     # on this transaction and is NON-NEUTRAL, it's fine. We just collapse the source.
@@ -119,28 +117,29 @@ class EntityMerges::Planner
     nil
   end
 
-  def piggy_bank_entity?(et)
+  def piggy_bank_entity?(entity_txn)
     # KAKASHI-18 contract: Source row is the Piggy Bank shared entity.
-    return false unless et.transactable.is_a?(CashTransaction)
-    et.transactable.piggy_bank_source? || et.transactable.piggy_bank_return?
+    return false unless entity_txn.transactable.is_a?(CashTransaction)
+
+    entity_txn.transactable.piggy_bank_source? || entity_txn.transactable.piggy_bank_return?
   end
 
-  def destination_transaction_exists?(et)
+  def destination_transaction_exists?(entity_txn)
     @dest_et_map ||= EntityTransaction
                      .where(entity: destination)
                      .pluck(:transactable_type, :transactable_id)
                      .to_set
 
-    @dest_et_map.include?([ et.transactable_type, et.transactable_id ])
+    @dest_et_map.include?([ entity_txn.transactable_type, entity_txn.transactable_id ])
   end
 
-  def destination_budget_entity_exists?(be)
+  def destination_budget_entity_exists?(budget_entity)
     @dest_be_map ||= BudgetEntity
                      .where(entity: destination)
                      .pluck(:budget_id)
                      .to_set
 
-    @dest_be_map.include?(be.budget_id)
+    @dest_be_map.include?(budget_entity.budget_id)
   end
 
   def row_plan(row, status, reason_code = nil)

@@ -6,7 +6,7 @@ module Components
 
     attr_reader :category, :href, :label, :presentation, :variant
 
-    def initialize(category:, href: nil, label: nil, variant: :badge, selected: false, disabled: false, **attrs) # rubocop:disable Metrics/ParameterLists
+    def initialize(category:, href: nil, label: nil, variant: :badge, selected: false, disabled: false, **attrs)
       raise ArgumentError, "invalid category badge variant" unless variant.in?(VARIANTS)
 
       @category = category

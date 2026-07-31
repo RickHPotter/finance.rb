@@ -9,7 +9,7 @@ class Views::CardTransactions::FormControls < Views::Base
 
   attr_reader :form, :card_transaction, :user_cards, :categories, :entities, :autofocus_target, :user_card_date
 
-  def initialize(form:, card_transaction:, user_cards:, categories:, entities:, autofocus_target:, user_card_date:) # rubocop:disable Metrics/ParameterLists
+  def initialize(form:, card_transaction:, user_cards:, categories:, entities:, autofocus_target:, user_card_date:)
     @form = form
     @card_transaction = card_transaction
     @user_cards = user_cards
