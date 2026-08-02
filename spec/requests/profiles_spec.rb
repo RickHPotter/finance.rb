@@ -11,7 +11,6 @@ RSpec.describe "Profiles", type: :request do
 
   describe "GET /profile/edit" do
     it "returns http success" do
-      pending "Not yet implemented"
       get "/profile/edit"
       expect(response).to have_http_status(:success)
     end
@@ -19,10 +18,22 @@ RSpec.describe "Profiles", type: :request do
 
   describe "PATCH /profile" do
     it "updates the profile and redirects" do
-      pending "Not yet implemented"
       patch "/profile", params: { user_profile: { display_name: "New Name" } }
       expect(response).to redirect_to(edit_profile_path)
       expect(user.profile.reload.display_name).to eq("New Name")
+    end
+
+    it "updates the user preference with new fields" do
+      patch "/profile", params: {
+        user_preference: {
+          exchange_default_bound_type: "card_bound",
+          row_color_mode: "row_coloured"
+        }
+      }
+      expect(response).to redirect_to(edit_profile_path)
+      preference = user.preference.reload
+      expect(preference.exchange_default_bound_type).to eq("card_bound")
+      expect(preference.row_color_mode).to eq("row_coloured")
     end
   end
 end
