@@ -74,21 +74,14 @@ module TabsConcern
   end
 
   def set_hub_sublinks
-    conversation_notification_type =
-      if current_user.received_messages
-                     .joins(:conversation)
-                     .where(conversations: { scenario_key: current_context.scenario_key })
-                     .unread
-                     .any?
-        1
-      else
-        0
-      end
+    conversation_notification_type = unread_conversation_notification_type
 
     @hub_tab = [
       Item.new(t("tabs.balance"),      :chart,    balances_path,        @active_sub_menu == :balance),
       Item.new(t("tabs.conversation"), :message,  conversations_path,   @active_sub_menu == :conversation, conversation_notification_type),
-      Item.new(t("tabs.context"),      :exchange, contexts_path,        @active_sub_menu == :context)
+      Item.new(t("tabs.context"),      :exchange,   contexts_path,        @active_sub_menu == :context),
+      Item.new(t("tabs.friendship"),   :user_group, friendships_path,     @active_sub_menu == :friendship),
+      Item.new(t("tabs.profile"),      :user,       edit_profile_path,    @active_sub_menu == :profile)
     ]
 
     return unless current_user.admin?
@@ -134,5 +127,14 @@ module TabsConcern
 
   def set_sub_tab
     @sub_tab = [ @data_tab, @card_tab, @cash_tab, @hub_tab ]
+  end
+
+  def unread_conversation_notification_type
+    has_unread = current_user.received_messages
+                             .joins(:conversation)
+                             .where(conversations: { scenario_key: current_context.scenario_key })
+                             .unread
+                             .any?
+    has_unread ? 1 : 0
   end
 end

@@ -21,6 +21,8 @@ en:
     context: Contexts
     health_check: Health Check
     audit: Audit
+    friendship: Friendships
+    profile: Profile
 
 pt-BR:
   tabs:
@@ -45,3 +47,5 @@ pt-BR:
     context: Contextos
     health_check: Verificação de Saúde
     audit: Auditoria
+    friendship: Amizades
+    profile: Perfil

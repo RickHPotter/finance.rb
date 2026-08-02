@@ -4,7 +4,7 @@ module Logic
   module Friendships
     class ReconcileEntityService
       def self.call(friendship:)
-        return unless friendship.accepted?
+        return unless friendship.accepted_state?
 
         [
           { owner: friendship.user, friend: friendship.friend },

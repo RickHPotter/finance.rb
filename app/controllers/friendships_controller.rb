@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
 class FriendshipsController < ApplicationController
+  include TabsConcern
+
+  before_action :set_basic_tabs
+
   def index
     @friendships = Friendship.where(user: current_user).or(Friendship.where(friend: current_user))
+    render Views::Friendships::Index.new(friendships: @friendships, current_user: current_user)
   end
 
   def create
@@ -26,25 +31,8 @@ class FriendshipsController < ApplicationController
   def update
     friendship = Friendship.where(user: current_user).or(Friendship.where(friend: current_user)).find_by!(public_id: params[:public_id])
 
-    # If the user is the recipient of the request (the "friend") and the state is pending, they can accept or reject
-    if friendship.friend == current_user && friendship.pending?
-      if params[:state] == "accepted"
-        friendship.update!(state: "accepted")
-        Logic::Friendships::ReconcileEntityService.call(friendship:)
-        flash[:notice] = "Friend request accepted."
-      elsif params[:state] == "rejected"
-        friendship.update!(state: "rejected")
-        flash[:notice] = "Friend request rejected."
-      end
-    end
-
-    # Either user can block
-    if params[:state] == "blocked"
-      # If blocked, we might want to store who blocked who. But the state is just "blocked".
-      # For now, just update the state.
-      friendship.update!(state: "blocked")
-      flash[:notice] = "User blocked."
-    end
+    handle_state_update(friendship) if params[:state].present?
+    handle_policy_update(friendship) if params[:friendship].present?
 
     redirect_back fallback_location: friendships_path
   end
@@ -55,5 +43,36 @@ class FriendshipsController < ApplicationController
     friendship.update!(state: "removed")
 
     redirect_back fallback_location: friendships_path, notice: "Friendship removed."
+  end
+
+  private
+
+  def set_basic_tabs
+    set_tabs(active_menu: :hub, active_sub_menu: :friendship)
+  end
+
+  def handle_state_update(friendship)
+    if friendship.friend == current_user && friendship.pending_state?
+      if params[:state] == "accepted"
+        friendship.update!(state: "accepted")
+        Logic::Friendships::ReconcileEntityService.call(friendship:)
+        flash[:notice] = "Friend request accepted."
+      elsif params[:state] == "rejected"
+        friendship.update!(state: "rejected")
+        flash[:notice] = "Friend request rejected."
+      end
+    end
+
+    return unless params[:state] == "blocked"
+
+    friendship.update!(state: "blocked")
+    flash[:notice] = "User blocked."
+  end
+
+  def handle_policy_update(friendship)
+    return unless friendship.accepted_state?
+
+    friendship.update!(params.require(:friendship).permit(:auto_accept_actionable_messages))
+    flash[:notice] = "Friendship policy updated."
   end
 end
