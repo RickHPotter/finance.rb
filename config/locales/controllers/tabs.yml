@@ -23,6 +23,7 @@ en:
     audit: Audit
     friendship: Friendships
     profile: Profile
+    me: Me
 
 pt-BR:
   tabs:
@@ -49,3 +50,4 @@ pt-BR:
     audit: Auditoria
     friendship: Amizades
     profile: Perfil
+    me: Eu

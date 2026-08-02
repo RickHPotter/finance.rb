@@ -38,7 +38,7 @@ class ConversationsController < ApplicationController
   private
 
   def set_conversation_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :conversation)
+    set_tabs(active_menu: :profile, active_sub_menu: :conversation)
   end
 
   def filtered_conversations

@@ -52,7 +52,7 @@ class ProfilesController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :profile)
+    set_tabs(active_menu: :profile, active_sub_menu: :me)
   end
 
   def profile_params

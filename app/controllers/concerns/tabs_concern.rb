@@ -29,6 +29,7 @@ module TabsConcern
     set_card_sublinks
     set_cash_sublinks
     set_hub_sublinks
+    set_profile_sublinks
     set_main_sublinks
 
     set_main_tab
@@ -74,14 +75,9 @@ module TabsConcern
   end
 
   def set_hub_sublinks
-    conversation_notification_type = unread_conversation_notification_type
-
     @hub_tab = [
-      Item.new(t("tabs.balance"),      :chart,    balances_path,        @active_sub_menu == :balance),
-      Item.new(t("tabs.conversation"), :message,  conversations_path,   @active_sub_menu == :conversation, conversation_notification_type),
-      Item.new(t("tabs.context"),      :exchange,   contexts_path,        @active_sub_menu == :context),
-      Item.new(t("tabs.friendship"),   :user_group, friendships_path,     @active_sub_menu == :friendship),
-      Item.new(t("tabs.profile"),      :user,       edit_profile_path,    @active_sub_menu == :profile)
+      Item.new(t("tabs.balance"), :chart,    balances_path, @active_sub_menu == :balance),
+      Item.new(t("tabs.context"), :exchange, contexts_path, @active_sub_menu == :context)
     ]
 
     return unless current_user.admin?
@@ -90,11 +86,22 @@ module TabsConcern
     @hub_tab << Item.new(t("tabs.audit"),        :pencil_on_paper, audit_operations_path, @active_sub_menu == :audit)
   end
 
+  def set_profile_sublinks
+    conversation_notification_type = unread_conversation_notification_type
+
+    @profile_tab = [
+      Item.new(t("tabs.me"),           :user,       edit_profile_path,  @active_sub_menu == :me),
+      Item.new(t("tabs.friendship"),   :user_group, friendships_path,   @active_sub_menu == :friendship),
+      Item.new(t("tabs.conversation"), :message,    conversations_path, @active_sub_menu == :conversation, conversation_notification_type)
+    ]
+  end
+
   def set_main_sublinks
     @bank_link = (@data_tab.find(&:default) || @data_tab.first).link
     @card_link = (@card_tab.find(&:default) || @card_tab.first).link
     @cash_link = (@cash_tab.find(&:default) || @cash_tab.first).link
     @hub_link  = (@hub_tab.find(&:default) || @hub_tab.first).link
+    @profile_link = (@profile_tab.find(&:default) || @profile_tab.first).link
   end
 
   def set_main_tab
@@ -121,12 +128,18 @@ module TabsConcern
                :light_bulb,
                @hub_link,
                @active_menu == :hub,
-               @hub_tab.map(&:notification_type).max)
+               @hub_tab.map(&:notification_type).max),
+
+      Item.new(t("tabs.profile"),
+               :user,
+               @profile_link,
+               @active_menu == :profile,
+               @profile_tab.map(&:notification_type).max)
     ]
   end
 
   def set_sub_tab
-    @sub_tab = [ @data_tab, @card_tab, @cash_tab, @hub_tab ]
+    @sub_tab = [ @data_tab, @card_tab, @cash_tab, @hub_tab, @profile_tab ]
   end
 
   def unread_conversation_notification_type

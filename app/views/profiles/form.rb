@@ -48,20 +48,25 @@ class Views::Profiles::Form < Views::Base
       h3(class: "text-lg font-bold mb-4") { "Preferences" }
 
       div(class: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6") do
-        render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [k.titleize, k] })
-        render_preference_select(form, :landing_page, UserPreference.landing_pages.keys.map { |k| [k.titleize, k] })
-        render_preference_select(form, :page_density, UserPreference.page_densities.keys.map { |k| [k.titleize, k] })
-        render_preference_select(form, :date_time_presentation, UserPreference.date_time_presentations.keys.map { |k| [k.titleize, k] })
-        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [k.titleize, k] })
-        render_preference_select(form, :row_color_mode, UserPreference.row_color_modes.keys.map { |k| [k.titleize, k] })
+        render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :landing_page, UserPreference.landing_pages.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :page_density, UserPreference.page_densities.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :date_time_presentation, UserPreference.date_time_presentations.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :row_color_mode, UserPreference.row_color_modes.keys.map { |k| [ k.titleize, k ] })
 
-        render_preference_select(form, :default_account_id, user_bank_accounts.map { |acc| [acc.user_bank_account_name, acc.id] }, include_blank: true)
-        render_preference_select(form, :default_card_id, user_cards.map { |card| [card.user_card_name, card.id] }, include_blank: true)
-        render_preference_select(form, :default_cash_transaction_user_bank_account_id, user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
+        render_preference_select(form, :default_account_id, user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
+        render_preference_select(form, :default_card_id, user_cards.map { |card| [ card.user_card_name, card.id ] }, include_blank: true)
+        render_preference_select(form, :default_cash_transaction_user_bank_account_id,
+                                 user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
       end
 
       div(class: "flex w-full flex-col gap-3 mt-4") do
-        button(type: :submit, class: "w-64 border-sky-900 bg-sky-500 text-white hover:border-sky-500 hover:bg-sky-100 hover:text-sky-900 rounded p-2") { "Update Profile" }
+        button(type: :submit,
+               class: "w-64 border-sky-900 bg-sky-500 text-white hover:border-sky-500 hover:bg-sky-100 " \
+                      "hover:text-sky-900 rounded p-2") do
+          "Update Profile"
+        end
       end
     end
   end
@@ -72,7 +77,9 @@ class Views::Profiles::Form < Views::Base
     div(class: "w-full") do
       form.label field, field.to_s.humanize.downcase, class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
       form.select field, options_list, { selected: preference.public_send(field), include_blank: include_blank },
-                  { name: "user_preference[#{field}]", class: "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-2 text-slate-900 dark:text-slate-100" }
+                  { name: "user_preference[#{field}]",
+                    class: "w-full bg-white dark:bg-slate-900 border border-slate-300 " \
+                           "dark:border-slate-700 rounded p-2 text-slate-900 dark:text-slate-100" }
     end
   end
 end

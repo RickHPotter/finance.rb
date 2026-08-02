@@ -48,7 +48,7 @@ class FriendshipsController < ApplicationController
   private
 
   def set_basic_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :friendship)
+    set_tabs(active_menu: :profile, active_sub_menu: :friendship)
   end
 
   def handle_state_update(friendship)
