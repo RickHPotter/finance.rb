@@ -17,7 +17,7 @@ class Views::Profiles::Form < Views::Base
   end
 
   def view_template
-    form_with(model: profile, url: profile_path, method: :patch, id: :profile_form, class: "contents text-slate-900 dark:text-slate-100") do |form|
+    form_with(model: profile, url: profile_path, method: :patch, id: :profile_form, data: { turbo: false }, class: "contents text-slate-900 dark:text-slate-100") do |form|
       div(class: "w-full mb-6") do
         form.label :display_name, "display name", class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
         form.text_field :user_profile_display_name, name: "user_profile[display_name]", value: profile&.display_name, class: outdoor_input_class, autofocus: true
@@ -49,7 +49,7 @@ class Views::Profiles::Form < Views::Base
 
       div(class: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6") do
         render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [ k.titleize, k ] })
-        render_preference_select(form, :landing_page, UserPreference.landing_pages.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :landing_page, landing_page_options)
         render_preference_select(form, :page_density, UserPreference.page_densities.keys.map { |k| [ k.titleize, k ] })
         render_preference_select(form, :date_time_presentation, UserPreference.date_time_presentations.keys.map { |k| [ k.titleize, k ] })
         render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ k.titleize, k ] })
@@ -81,5 +81,18 @@ class Views::Profiles::Form < Views::Base
                     class: "w-full bg-white dark:bg-slate-900 border border-slate-300 " \
                            "dark:border-slate-700 rounded p-2 text-slate-900 dark:text-slate-100" }
     end
+  end
+
+  def landing_page_options
+    options = [
+      ["Cash", "cash_transactions"],
+      ["Balance", "balance"]
+    ]
+
+    user_cards.each do |card|
+      options << ["Card: #{card.user_card_name}", "card_transactions_#{card.id}"]
+    end
+
+    options
   end
 end

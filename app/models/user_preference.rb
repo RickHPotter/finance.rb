@@ -5,7 +5,7 @@ class UserPreference < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   enum :theme, { system: "system", light: "light", dark: "dark" }, suffix: true
-  enum :landing_page, { dashboard: "dashboard", insights: "insights", contexts: "contexts" }, suffix: true
+
   enum :page_density, { compact: "compact", comfortable: "comfortable" }, suffix: true
   enum :date_time_presentation, { relative: "relative", absolute: "absolute" }, suffix: true
   enum :exchange_default_bound_type, { standalone: "standalone", card_bound: "card_bound" }, suffix: true

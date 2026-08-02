@@ -3,7 +3,7 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
-  root "cash_transactions#index"
+  root "home#index"
 
   devise_for :users
   patch "/locale", to: "users#update_locale", as: :update_locale
