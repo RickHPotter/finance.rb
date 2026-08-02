@@ -60,6 +60,7 @@ class User < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  delegate :display_name, to: :profile, allow_nil: true
 
   # Helper methods to return a full name based on `first_name` and `last_name`.
   #
@@ -105,6 +106,10 @@ class User < ApplicationRecord
     contexts.create!(name: "Main", main: true)
   end
 
+  def friendship_with(other_user)
+    Friendship.where(user_id: [ id, other_user.id ], friend_id: [ id, other_user.id ]).first
+  end
+
   # @protected_instance_methods ...............................................
 
   protected
@@ -120,9 +125,11 @@ class User < ApplicationRecord
 
     create_preference!(
       theme: "system",
-      landing_page: "dashboard",
-      page_density: "comfortable",
-      date_time_presentation: "relative"
+      landing_page: "cash_transactions",
+      exchange_default_bound_type: "standalone",
+      row_color_mode: "badges_only",
+      default_card_transaction_date_order: "card_installment_date",
+      default_cash_transaction_date_order: "cash_transaction_date"
     )
   end
 

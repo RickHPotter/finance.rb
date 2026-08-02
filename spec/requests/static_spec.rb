@@ -18,10 +18,10 @@ RSpec.describe "Static", type: :request do
     context "when logged in" do
       before { sign_in user }
 
-      it "renders successfully" do
+      it "redirects to landing page" do
         get root_path
 
-        expect(response).to have_http_status(:success)
+        expect(response).to have_http_status(:redirect)
       end
     end
   end

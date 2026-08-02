@@ -7,8 +7,17 @@ class UserProfile < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
 
+  before_validation :set_display_name
+
   # @validations ..............................................................
   validates :display_name, :locale, :timezone, presence: true
+
+  private
+
+  def set_display_name
+    self.display_name = "#{first_name} #{last_name}".strip
+    self.display_name = "User" if display_name.blank?
+  end
 end
 
 # == Schema Information

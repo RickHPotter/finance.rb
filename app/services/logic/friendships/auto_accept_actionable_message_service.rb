@@ -29,7 +29,7 @@ module Logic
         friend_user = message.conversation.conversation_participants.where.not(user_id: message.user_id).first&.user
         return false unless friend_user
 
-        friendship = message.user.friendships.find_by(friend: friend_user)
+        friendship = message.user.friendship_with(friend_user)
         [ "true", true ].include?(friendship&.auto_accept_actionable_messages)
       end
 

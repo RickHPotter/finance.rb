@@ -6,21 +6,19 @@ class UserPreference < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   enum :theme, { system: "system", light: "light", dark: "dark" }, suffix: true
 
-  enum :page_density, { compact: "compact", comfortable: "comfortable" }, suffix: true
-  enum :date_time_presentation, { relative: "relative", absolute: "absolute" }, suffix: true
   enum :exchange_default_bound_type, { standalone: "standalone", card_bound: "card_bound" }, suffix: true
   enum :row_color_mode, { badges_only: "badges_only", row_coloured: "row_coloured" }, suffix: true
+  enum :default_card_transaction_date_order, { card_installment_date: "card_installment_date", card_transaction_date: "card_transaction_date" }, suffix: true
+  enum :default_cash_transaction_date_order, { cash_installment_date: "cash_installment_date", cash_transaction_date: "cash_transaction_date" }, suffix: true
 
   # @relationships ............................................................
   belongs_to :user
   belongs_to :active_context, class_name: "Context", optional: true
-  belongs_to :default_account, class_name: "UserBankAccount", optional: true
-  belongs_to :default_card, class_name: "UserCard", optional: true
   belongs_to :default_cash_transaction_user_bank_account, class_name: "UserBankAccount", optional: true
 
   # @validations ..............................................................
-  validates :theme, :landing_page, :page_density, :date_time_presentation,
-            :exchange_default_bound_type, :row_color_mode, presence: true
+  validates :theme, :exchange_default_bound_type, :row_color_mode,
+            :default_card_transaction_date_order, :default_cash_transaction_date_order, presence: true
 end
 
 # == Schema Information

@@ -14,8 +14,16 @@ class Views::Profiles::Edit < Views::Base
 
   def view_template
     turbo_frame_tag :center_container do
-      render Views::Shared::FormShell.new(badge_text: "Edit Profile", badge_class: "bg-blue-100 text-blue-800") do
-        render Views::Profiles::Form.new(profile:, preference:, user_bank_accounts:, user_cards:)
+      div(class: compact_crud_shell_class) do
+        div(class: compact_crud_header_class) do
+          div(class: "flex flex-col items-start") do
+            h1(class: compact_crud_title_class) { "Profile and Preferences" }
+          end
+        end
+
+        div(class: "#{compact_crud_panel_class} space-y-6") do
+          render Views::Profiles::Form.new(profile:, preference:, user_bank_accounts:, user_cards:)
+        end
       end
     end
   end

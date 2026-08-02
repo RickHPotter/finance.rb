@@ -1177,15 +1177,13 @@ CREATE TABLE public.user_preferences (
     theme character varying DEFAULT 'system'::character varying NOT NULL,
     landing_page character varying DEFAULT 'dashboard'::character varying NOT NULL,
     active_context_id integer,
-    page_density character varying DEFAULT 'comfortable'::character varying NOT NULL,
-    date_time_presentation character varying DEFAULT 'relative'::character varying NOT NULL,
-    default_account_id integer,
-    default_card_id integer,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     exchange_default_bound_type character varying DEFAULT 'standalone'::character varying NOT NULL,
     row_color_mode character varying DEFAULT 'badges_only'::character varying NOT NULL,
-    default_cash_transaction_user_bank_account_id integer
+    default_cash_transaction_user_bank_account_id integer,
+    default_card_transaction_date_order character varying DEFAULT 'card_installment_date'::character varying NOT NULL,
+    default_cash_transaction_date_order character varying DEFAULT 'cash_transaction_date'::character varying NOT NULL
 );
 
 
@@ -3067,6 +3065,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260802160237'),
 ('20260802140257'),
 ('20260802140211'),
 ('20260731233944'),

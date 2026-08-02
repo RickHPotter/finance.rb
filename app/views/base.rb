@@ -24,6 +24,12 @@ module Views
       rails_view_context.current_context
     end
 
+    def current_user
+      return nil unless request&.env&.[]("warden").present?
+
+      rails_view_context.current_user
+    end
+
     def mobile?
       rails_view_context.instance_variable_get(:@mobile) || false
     end
