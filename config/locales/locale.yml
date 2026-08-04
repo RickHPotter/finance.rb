@@ -617,8 +617,8 @@ pt-BR:
           balance: "Balanço"
           card: "Cartão: %{name}"
         exchange_default_bound_type:
-          standalone: "Avulso"
-          card_bound: "Vinculado ao Cartão"
+          standalone: "Simples"
+          card_bound: "Cartão"
         row_color_mode:
           badges_only: "Somente Emblemas"
           row_coloured: "Linha Colorida"
