@@ -132,7 +132,7 @@ RSpec.describe "Budgets", type: :request do
     end
 
     it "localizes the edit form list menu and shows transaction counts without repeating the action" do
-      user.update!(locale: :"pt-BR")
+      user.profile.update!(locale: :"pt-BR")
       create(
         :cash_transaction,
         user:,
