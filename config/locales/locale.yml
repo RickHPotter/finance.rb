@@ -266,8 +266,19 @@ en:
       last_name: "last name"
       locale: "locale"
       timezone: "timezone"
+      sex: "sex"
+      theme: "theme"
+      landing_page: "landing page"
+      exchange_default_bound_type: "exchange default bound type"
+      row_color_mode: "row color mode"
+      default_card_transaction_date_order: "default card transaction date order"
+      default_cash_transaction_date_order: "default cash transaction date order"
       default_cash_account: "default cash transaction account"
       update: "Update Profile"
+      sex_options:
+        masculine: "Masculine"
+        feminine: "Feminine"
+        not_specified: "Would Rather Not Say"
   friendships:
     index:
       title: "Friendships Hub"
@@ -554,8 +565,19 @@ pt-BR:
       last_name: "sobrenome"
       locale: "idioma"
       timezone: "fuso horário"
+      sex: "sexo"
+      theme: "tema"
+      landing_page: "página inicial"
+      exchange_default_bound_type: "tipo de vínculo padrão para conversão"
+      row_color_mode: "modo de cor das linhas"
+      default_card_transaction_date_order: "ordem padrão de data (cartão)"
+      default_cash_transaction_date_order: "ordem padrão de data (dinheiro)"
       default_cash_account: "conta bancária padrão"
       update: "Atualizar Perfil"
+      sex_options:
+        masculine: "Masculino"
+        feminine: "Feminino"
+        not_specified: "Prefiro não dizer"
   friendships:
     index:
       title: "Central de Amizades"

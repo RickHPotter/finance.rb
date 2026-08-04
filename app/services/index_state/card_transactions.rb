@@ -34,8 +34,8 @@ module IndexState
 
     attr_reader :card_installments, :user_card, :transaction_filters, :search_filters, :selection_context
 
-    def self.resolve_sort(sort:, direction:, order_by:)
-      resolved_sort = sort.presence_in(VALID_SORTS) || LEGACY_ORDER_BY_TO_SORT[order_by] || DEFAULT_SORT
+    def self.resolve_sort(sort:, direction:, order_by:, default_sort: DEFAULT_SORT)
+      resolved_sort = sort.presence_in(VALID_SORTS) || LEGACY_ORDER_BY_TO_SORT[order_by] || default_sort
       resolved_direction = direction.presence_in(VALID_DIRECTIONS) || DEFAULT_DIRECTION
 
       [ resolved_sort, resolved_direction ]
@@ -77,7 +77,8 @@ module IndexState
       sort, direction = self.class.resolve_sort(
         sort: source_context[:sort],
         direction: source_context[:direction],
-        order_by: source_context[:order_by]
+        order_by: source_context[:order_by],
+        default_sort: current_user.preference&.default_card_transaction_date_order&.sub("card_", "") || DEFAULT_SORT
       )
 
       {

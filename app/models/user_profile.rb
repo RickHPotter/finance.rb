@@ -30,6 +30,7 @@ end
 #  first_name   :string
 #  last_name    :string
 #  locale       :string           default("en"), not null
+#  sex          :string           default("not_specified"), not null
 #  timezone     :string           default("UTC"), not null
 #  created_at   :datetime         not null
 #  updated_at   :datetime         not null

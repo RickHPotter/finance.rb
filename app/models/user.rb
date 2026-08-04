@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  attr_writer :first_name, :last_name, :locale
   # @relationships ............................................................
   has_one :profile, class_name: "UserProfile", dependent: :destroy
   has_one :preference, class_name: "UserPreference", dependent: :destroy
@@ -44,7 +45,8 @@ class User < ApplicationRecord
   has_many :push_subscriptions, class_name: "PushSubscription", dependent: :destroy
 
   # @validations ..............................................................
-  validates :first_name, :last_name, :email, presence: true
+  validates :email, presence: true
+  validates :first_name, :last_name, presence: true, on: :create
   validates :email, uniqueness: true
   validates :password, length: { in: 6..22 }
 
@@ -111,12 +113,31 @@ class User < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
+  
+  def first_name
+    profile&.first_name || @first_name
+  end
+
+  def last_name
+    profile&.last_name || @last_name
+  end
+
+  def locale
+    profile&.locale || @locale
+  end
+
+  def timezone
+    profile&.timezone || "UTC"
+  end
+
+  def theme
+    preference&.theme || "system"
+  end
 
   protected
 
   def create_default_profile_and_preference!
     create_profile!(
-      display_name: [ first_name, last_name ].compact.join(" ").presence || email.split("@").first,
       first_name:,
       last_name:,
       locale: locale || "en",
@@ -134,7 +155,7 @@ class User < ApplicationRecord
   end
 
   def set_default_locale
-    self.locale ||= I18n.locale
+    @locale ||= I18n.locale
   end
 
   # Creates built-in `categories` for given user.
@@ -184,9 +205,6 @@ end
 #  confirmed_at           :datetime
 #  email                  :string           default(""), not null, uniquely indexed
 #  encrypted_password     :string           default(""), not null
-#  first_name             :string           not null
-#  last_name              :string           not null
-#  locale                 :string           not null
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string           uniquely indexed

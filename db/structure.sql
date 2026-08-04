@@ -1219,7 +1219,8 @@ CREATE TABLE public.user_profiles (
     locale character varying DEFAULT 'en'::character varying NOT NULL,
     timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    sex character varying DEFAULT 'not_specified'::character varying NOT NULL
 );
 
 
@@ -1257,9 +1258,6 @@ CREATE TABLE public.users (
     unconfirmed_email character varying,
     confirmed_at timestamp(6) without time zone,
     confirmation_sent_at timestamp(6) without time zone,
-    first_name character varying NOT NULL,
-    last_name character varying NOT NULL,
-    locale character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     admin boolean DEFAULT false NOT NULL,
@@ -3065,6 +3063,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260804132347'),
 ('20260804131329'),
 ('20260802160237'),
 ('20260802140257'),

@@ -370,7 +370,9 @@ module Views
       end
 
       def inferred_bound_type
-        if entity_transaction.exchanges_count.to_i.zero? || entity_transaction.exchanges.first&.standalone?
+        if entity_transaction.exchanges_count.to_i.zero?
+          current_user.preference.exchange_default_bound_type.to_sym
+        elsif entity_transaction.exchanges.first&.standalone?
           :standalone
         else
           :card_bound

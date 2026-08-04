@@ -35,8 +35,8 @@ module IndexState
       :direction
     ].freeze
 
-    def self.resolve_sort(sort:, direction:)
-      resolved_sort = sort.presence_in(VALID_SORTS) || DEFAULT_SORT
+    def self.resolve_sort(sort:, direction:, default_sort: DEFAULT_SORT)
+      resolved_sort = sort.presence_in(VALID_SORTS) || default_sort
       resolved_direction = direction.presence_in(VALID_DIRECTIONS) || DEFAULT_DIRECTION
 
       [ resolved_sort, resolved_direction ]
@@ -83,7 +83,11 @@ module IndexState
 
     def resolved_state
       today_zn = Time.zone.today.beginning_of_month
-      sort, direction = self.class.resolve_sort(sort: source_context[:sort], direction: source_context[:direction])
+      sort, direction = self.class.resolve_sort(
+        sort: source_context[:sort],
+        direction: source_context[:direction],
+        default_sort: current_user.preference&.default_cash_transaction_date_order&.sub("cash_", "") || DEFAULT_SORT
+      )
 
       {
         today_zn:,
