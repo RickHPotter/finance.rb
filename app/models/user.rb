@@ -123,7 +123,7 @@ class User < ApplicationRecord
   end
 
   def locale
-    profile&.locale || I18n.locale
+    profile&.locale || @locale || "en"
   end
 
   def timezone

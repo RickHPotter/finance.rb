@@ -50,10 +50,10 @@ module Logic
                  .includes(cash_transaction: [
                              :categories,
                              :entities,
-                             :reference_transactable,
                              { category_transactions: :category },
                              { entity_transactions: :entity }
                            ])
+                 .preload(cash_transaction: :reference_transactable)
                  .where(options[:conditions])
                  .where(options[:search_term_condition])
 
