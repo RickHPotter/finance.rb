@@ -275,8 +275,6 @@ en:
       default_cash_transaction_date_order: "default cash transaction date order"
       default_cash_account: "default cash transaction account"
       update: "Update Profile"
-    update:
-      success: "Profile updated successfully"
       sex_options:
         masculine: "Masculine"
         feminine: "Feminine"
@@ -305,6 +303,8 @@ en:
         default_cash_transaction_date_order:
           cash_installment_date: "Cash Installment Date"
           cash_transaction_date: "Cash Transaction Date"
+    update:
+      success: "Profile updated successfully"
   friendships:
     index:
       title: "Friendships Hub"
@@ -600,8 +600,6 @@ pt-BR:
       default_cash_transaction_date_order: "ordem padrão de data (dinheiro)"
       default_cash_account: "conta bancária padrão"
       update: "Atualizar Perfil"
-    update:
-      success: "Perfil atualizado com sucesso"
       sex_options:
         masculine: "Masculino"
         feminine: "Feminino"
@@ -630,6 +628,8 @@ pt-BR:
         default_cash_transaction_date_order:
           cash_installment_date: "Data da Parcela"
           cash_transaction_date: "Data da Transação"
+    update:
+      success: "Perfil atualizado com sucesso"
   friendships:
     index:
       title: "Central de Amizades"

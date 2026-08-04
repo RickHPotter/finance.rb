@@ -7,6 +7,7 @@ class User < ApplicationRecord
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
   attr_writer :first_name, :last_name, :locale
+
   # @relationships ............................................................
   has_one :profile, class_name: "UserProfile", dependent: :destroy
   has_one :preference, class_name: "UserPreference", dependent: :destroy
@@ -113,7 +114,7 @@ class User < ApplicationRecord
   end
 
   # @protected_instance_methods ...............................................
-  
+
   def first_name
     profile&.first_name || @first_name
   end

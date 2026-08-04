@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   def update_locale
     if current_user
-      current_user.update_columns(locale: params[:locale])
+      current_user.profile.update_columns(locale: params[:locale])
     else
       I18n.locale = params[:locale]
     end
