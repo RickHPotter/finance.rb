@@ -17,26 +17,26 @@ class Views::Profiles::Form < Views::Base
   end
 
   def view_template
-    form_with(model: profile, url: profile_path, method: :patch, id: :profile_form, data: { turbo: false },
+    form_with(model: profile, url: profile_path, method: :patch, id: :profile_form, data: { turbo: false, controller: "profile-form" },
               class: "contents text-slate-900 dark:text-slate-100") do |form|
       div(class: "w-full mb-8") do
-        h2(class: "font-poetsen-one text-4xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider") { profile.display_name }
+        h2(class: "font-poetsen-one text-4xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider", data: { profile_form_target: "displayName" }) { profile.display_name }
       end
       div(class: "lg:flex lg:gap-2 w-full mb-3") do
         div(class: "w-full lg:w-1/2") do
           form.label :first_name, I18n.t("profiles.form.first_name"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
-          form.text_field :user_profile_first_name, name: "user_profile[first_name]", value: profile&.first_name, class: input_class_without_icon, autofocus: true
+          form.text_field :user_profile_first_name, name: "user_profile[first_name]", value: profile&.first_name, class: input_class_without_icon, autofocus: true, data: { profile_form_target: "firstName", action: "input->profile-form#updateDisplayName" }
         end
         div(class: "w-full lg:w-1/2") do
           form.label :last_name, I18n.t("profiles.form.last_name"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
-          form.text_field :user_profile_last_name, name: "user_profile[last_name]", value: profile&.last_name, class: input_class_without_icon
+          form.text_field :user_profile_last_name, name: "user_profile[last_name]", value: profile&.last_name, class: input_class_without_icon, data: { profile_form_target: "lastName", action: "input->profile-form#updateDisplayName" }
         end
       end
 
       div(class: "lg:flex lg:gap-2 w-full mb-6") do
         div(class: "w-full lg:w-1/3") do
           form.label :locale, I18n.t("profiles.form.locale"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
-          form.select :user_profile_locale, [ [ "English", "en" ], [ "Brazilian Portuguese", "pt-BR" ] ], { selected: profile&.locale },
+          form.select :user_profile_locale, [ [ I18n.t("profiles.form.options.locale.en"), "en" ], [ I18n.t("profiles.form.options.locale.pt_br"), "pt-BR" ] ], { selected: profile&.locale },
                       { name: "user_profile[locale]", class: input_class_without_icon }
         end
         div(class: "w-full lg:w-1/3") do
@@ -58,12 +58,12 @@ class Views::Profiles::Form < Views::Base
       end
 
       div(class: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6") do
-        render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [ I18n.t("profiles.form.options.theme.#{k}"), k ] })
         render_preference_select(form, :landing_page, landing_page_options)
-        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ k.titleize, k ] })
-        render_preference_select(form, :row_color_mode, UserPreference.row_color_modes.keys.map { |k| [ k.titleize, k ] })
-        render_preference_select(form, :default_card_transaction_date_order, UserPreference.default_card_transaction_date_orders.keys.map { |k| [ k.titleize, k ] })
-        render_preference_select(form, :default_cash_transaction_date_order, UserPreference.default_cash_transaction_date_orders.keys.map { |k| [ k.titleize, k ] })
+        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ I18n.t("profiles.form.options.exchange_default_bound_type.#{k}"), k ] })
+        render_preference_select(form, :row_color_mode, UserPreference.row_color_modes.keys.map { |k| [ I18n.t("profiles.form.options.row_color_mode.#{k}"), k ] })
+        render_preference_select(form, :default_card_transaction_date_order, UserPreference.default_card_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_card_transaction_date_order.#{k}"), k ] })
+        render_preference_select(form, :default_cash_transaction_date_order, UserPreference.default_cash_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_cash_transaction_date_order.#{k}"), k ] })
 
         render_preference_select_with_custom_label(form, :default_cash_transaction_user_bank_account_id, I18n.t("profiles.form.default_cash_account"),
                                                    user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
@@ -97,12 +97,12 @@ class Views::Profiles::Form < Views::Base
 
   def landing_page_options
     options = [
-      %w[Cash cash_transactions],
-      %w[Balance balance]
+      [ I18n.t("profiles.form.options.landing_page.cash_transactions"), "cash_transactions" ],
+      [ I18n.t("profiles.form.options.landing_page.balance"), "balance" ]
     ]
 
     user_cards.each do |card|
-      options << [ "Card: #{card.user_card_name}", "card_transactions_#{card.id}" ]
+      options << [ I18n.t("profiles.form.options.landing_page.card", name: card.user_card_name), "card_transactions_#{card.id}" ]
     end
 
     options

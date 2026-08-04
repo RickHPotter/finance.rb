@@ -279,6 +279,30 @@ en:
         masculine: "Masculine"
         feminine: "Feminine"
         not_specified: "Would Rather Not Say"
+      options:
+        locale:
+          en: "English"
+          pt_br: "Brazilian Portuguese"
+        theme:
+          system: "System"
+          light: "Light"
+          dark: "Dark"
+        landing_page:
+          cash_transactions: "Cash"
+          balance: "Balance"
+          card: "Card: %{name}"
+        exchange_default_bound_type:
+          standalone: "Standalone"
+          card_bound: "Card Bound"
+        row_color_mode:
+          badges_only: "Badges Only"
+          row_coloured: "Row Coloured"
+        default_card_transaction_date_order:
+          card_installment_date: "Card Installment Date"
+          card_transaction_date: "Card Transaction Date"
+        default_cash_transaction_date_order:
+          cash_installment_date: "Cash Installment Date"
+          cash_transaction_date: "Cash Transaction Date"
   friendships:
     index:
       title: "Friendships Hub"
@@ -578,6 +602,30 @@ pt-BR:
         masculine: "Masculino"
         feminine: "Feminino"
         not_specified: "Prefiro não dizer"
+      options:
+        locale:
+          en: "Inglês"
+          pt_br: "Português do Brasil"
+        theme:
+          system: "Sistema"
+          light: "Claro"
+          dark: "Escuro"
+        landing_page:
+          cash_transactions: "Dinheiro"
+          balance: "Balanço"
+          card: "Cartão: %{name}"
+        exchange_default_bound_type:
+          standalone: "Avulso"
+          card_bound: "Vinculado ao Cartão"
+        row_color_mode:
+          badges_only: "Somente Emblemas"
+          row_coloured: "Linha Colorida"
+        default_card_transaction_date_order:
+          card_installment_date: "Data da Parcela"
+          card_transaction_date: "Data da Transação"
+        default_cash_transaction_date_order:
+          cash_installment_date: "Data da Parcela"
+          cash_transaction_date: "Data da Transação"
   friendships:
     index:
       title: "Central de Amizades"

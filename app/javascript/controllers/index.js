@@ -121,6 +121,9 @@ application.register("price-mask", PriceMaskController)
 import PriceSumController from "./price_sum_controller"
 application.register("price-sum", PriceSumController)
 
+import ProfileFormController from "./profile_form_controller"
+application.register("profile-form", ProfileFormController)
+
 import PushController from "./push_controller"
 application.register("push", PushController)
 
