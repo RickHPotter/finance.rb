@@ -88,10 +88,11 @@ module TabsConcern
 
   def set_profile_sublinks
     conversation_notification_type = unread_conversation_notification_type
+    friendship_notification_type = pending_friendship_notification_type
 
     @profile_tab = [
       Item.new(t("tabs.me"),           :user,       edit_profile_path,  @active_sub_menu == :me),
-      Item.new(t("tabs.friendship"),   :user_group, friendships_path,   @active_sub_menu == :friendship),
+      Item.new(t("tabs.friendship"),   :user_group, friendships_path,   @active_sub_menu == :friendship, friendship_notification_type),
       Item.new(t("tabs.conversation"), :message,    conversations_path, @active_sub_menu == :conversation, conversation_notification_type)
     ]
   end
@@ -149,5 +150,9 @@ module TabsConcern
                              .unread
                              .any?
     has_unread ? 1 : 0
+  end
+
+  def pending_friendship_notification_type
+    Friendship.where(friend: current_user, state: "pending").any? ? 1 : 0
   end
 end
