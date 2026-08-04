@@ -17,7 +17,7 @@ class Views::Profiles::Edit < Views::Base
       div(class: compact_crud_shell_class) do
         div(class: compact_crud_header_class) do
           div(class: "flex flex-col items-start") do
-            h1(class: compact_crud_title_class) { "Profile and Preferences" }
+            h1(class: compact_crud_title_class) { I18n.t("profiles.edit.title") }
           end
         end
 

@@ -21,23 +21,23 @@ class Views::Profiles::Form < Views::Base
               class: "contents text-slate-900 dark:text-slate-100") do |form|
       div(class: "lg:flex lg:gap-2 w-full mb-3") do
         div(class: "w-full lg:w-1/2") do
-          form.label :first_name, "first name", class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
+          form.label :first_name, I18n.t("profiles.form.first_name"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
           form.text_field :user_profile_first_name, name: "user_profile[first_name]", value: profile&.first_name, class: input_class_without_icon, autofocus: true
         end
         div(class: "w-full lg:w-1/2") do
-          form.label :last_name, "last name", class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
+          form.label :last_name, I18n.t("profiles.form.last_name"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
           form.text_field :user_profile_last_name, name: "user_profile[last_name]", value: profile&.last_name, class: input_class_without_icon
         end
       end
 
       div(class: "lg:flex lg:gap-2 w-full mb-6") do
         div(class: "w-full lg:w-1/2") do
-          form.label :locale, "locale", class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
+          form.label :locale, I18n.t("profiles.form.locale"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
           form.select :user_profile_locale, [ [ "English", "en" ], [ "Brazilian Portuguese", "pt-BR" ] ], { selected: profile&.locale },
                       { name: "user_profile[locale]", class: input_class_without_icon }
         end
         div(class: "w-full lg:w-1/2") do
-          form.label :timezone, "timezone", class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
+          form.label :timezone, I18n.t("profiles.form.timezone"), class: "font-poetsen-one text-medium font-bold text-gray-500 dark:text-slate-400"
           form.select :user_profile_timezone, [ %w[UTC UTC] ], { selected: profile&.timezone || "UTC" },
                       { name: "user_profile[timezone]", class: input_class_without_icon }
         end
@@ -51,7 +51,7 @@ class Views::Profiles::Form < Views::Base
         render_preference_select(form, :default_card_transaction_date_order, UserPreference.default_card_transaction_date_orders.keys.map { |k| [ k.titleize, k ] })
         render_preference_select(form, :default_cash_transaction_date_order, UserPreference.default_cash_transaction_date_orders.keys.map { |k| [ k.titleize, k ] })
 
-        render_preference_select_with_custom_label(form, :default_cash_transaction_user_bank_account_id, "default cash transaction account",
+        render_preference_select_with_custom_label(form, :default_cash_transaction_user_bank_account_id, I18n.t("profiles.form.default_cash_account"),
                                                    user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
       end
 
@@ -59,7 +59,7 @@ class Views::Profiles::Form < Views::Base
         button(type: :submit,
                class: "w-64 border-sky-900 bg-sky-500 text-white hover:border-sky-500 hover:bg-sky-100 " \
                       "hover:text-sky-900 rounded p-2") do
-          "Update Profile"
+          I18n.t("profiles.form.update")
         end
       end
     end

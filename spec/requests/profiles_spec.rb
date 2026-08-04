@@ -18,7 +18,7 @@ RSpec.describe "Profiles", type: :request do
 
   describe "PATCH /profile" do
     it "updates the profile and redirects" do
-      patch "/profile", params: { user_profile: { display_name: "New Name" } }
+      patch "/profile", params: { user_profile: { first_name: "New", last_name: "Name" } }
       expect(response).to redirect_to(edit_profile_path)
       expect(user.profile.reload.display_name).to eq("New Name")
     end

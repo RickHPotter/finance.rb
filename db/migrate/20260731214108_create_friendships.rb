@@ -8,6 +8,8 @@ class CreateFriendships < ActiveRecord::Migration[8.1]
       t.string :state, null: false, default: "pending"
       t.string :public_id, null: false
 
+      t.jsonb :policies, default: {}, null: false
+
       t.timestamps
     end
 
@@ -15,11 +17,11 @@ class CreateFriendships < ActiveRecord::Migration[8.1]
               "LEAST(user_id, friend_id), GREATEST(user_id, friend_id)",
               unique: true,
               name: "index_friendships_on_user_and_friend_canonical"
-              
+
     add_index :friendships, :public_id, unique: true
 
     add_column :users, :public_id, :string
-    
+
     up_only do
       User.find_each do |user|
         user.update_column(:public_id, SecureRandom.uuid)
@@ -32,10 +34,10 @@ class CreateFriendships < ActiveRecord::Migration[8.1]
     up_only do
       Entity.where.not(entity_user_id: nil).find_each do |entity|
         next if entity.user_id == entity.entity_user_id # Prevent self-friending if data is corrupted
-        
+
         # Determine the canonical pair to avoid duplicate key errors if both added each other
-        user_1 = [entity.user_id, entity.entity_user_id].min
-        user_2 = [entity.user_id, entity.entity_user_id].max
+        user_1 = [ entity.user_id, entity.entity_user_id ].min
+        user_2 = [ entity.user_id, entity.entity_user_id ].max
 
         next if Friendship.where(user_id: user_1, friend_id: user_2).or(Friendship.where(user_id: user_2, friend_id: user_1)).exists?
 

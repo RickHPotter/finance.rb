@@ -36,19 +36,19 @@ class Views::Friendships::Index < Views::Base
 
   def render_hero
     div(class: resource_index_hero_class) do
-      h1(class: resource_index_title_class) { "Friendships Hub" }
+      h1(class: resource_index_title_class) { I18n.t("friendships.index.title") }
     end
   end
 
   def render_request_form
     div(class: "mb-8 p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50") do
-      h2(class: "text-md font-bold mb-3 dark:text-slate-200") { "Add a Friend" }
+      h2(class: "text-md font-bold mb-3 dark:text-slate-200") { I18n.t("friendships.index.add_friend") }
       form_with(url: friendships_path, method: :post, class: "flex gap-2") do |form|
         form.text_field :friend_public_id,
-                        placeholder: "Friend's Public ID or Email",
+                        placeholder: I18n.t("friendships.index.friend_id_placeholder"),
                         class: input_class,
                         required: true
-        Button(type: :submit, class: "shrink-0 #{submit_button_class(:new)}") { "Send Request" }
+        Button(type: :submit, class: "shrink-0 #{submit_button_class(:new)}") { I18n.t("friendships.index.send_request") }
       end
     end
   end
@@ -58,20 +58,20 @@ class Views::Friendships::Index < Views::Base
     return if received.empty?
 
     section(class: "mb-8") do
-      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { "Received Requests" }
+      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { I18n.t("friendships.index.received_requests") }
       ul(class: "flex flex-col gap-3") do
         received.each do |friendship|
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800") do
             span { friendship.user.profile&.display_name || friendship.user.email }
             div(class: "flex gap-2") do
               button_to(
-                "Accept",
+                I18n.t("friendships.index.accept"),
                 friendship_path(friendship.public_id, state: "accepted"),
                 method: :patch,
                 class: "px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-semibold"
               )
               button_to(
-                "Reject",
+                I18n.t("friendships.index.reject"),
                 friendship_path(friendship.public_id, state: "rejected"),
                 method: :patch,
                 class: "px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
@@ -88,12 +88,12 @@ class Views::Friendships::Index < Views::Base
     return if sent.empty?
 
     section(class: "mb-8") do
-      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { "Sent Requests" }
+      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { I18n.t("friendships.index.sent_requests") }
       ul(class: "flex flex-col gap-3") do
         sent.each do |friendship|
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800 text-slate-500") do
             span { friendship.friend.profile&.display_name || friendship.friend.email }
-            button_to "Cancel", friendship_path(friendship.public_id), method: :delete, class: "text-sm underline hover:text-red-500"
+            button_to I18n.t("friendships.index.cancel"), friendship_path(friendship.public_id), method: :delete, class: "text-sm underline hover:text-red-500"
           end
         end
       end
@@ -105,7 +105,7 @@ class Views::Friendships::Index < Views::Base
     return if active.empty?
 
     section(class: "mb-8") do
-      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { "My Friends" }
+      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { I18n.t("friendships.index.my_friends") }
       ul(class: "flex flex-col gap-3") do
         active.each do |friendship|
           other_user = friendship.user_id == current_user.id ? friendship.friend : friendship.user
@@ -113,13 +113,14 @@ class Views::Friendships::Index < Views::Base
             span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
             div(class: "flex items-center gap-4") do
               form_with(model: friendship, url: friendship_path(friendship.public_id), method: :patch, class: "flex items-center gap-2") do |form|
-                form.label :auto_accept_actionable_messages, "Auto-accept exchanges?", class: "text-sm text-slate-500"
+                form.label :auto_accept_actionable_messages, I18n.t("friendships.index.auto_accept"), class: "text-sm text-slate-500"
                 form.check_box :auto_accept_actionable_messages, onchange: "this.form.requestSubmit()",
                                                                  class: "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               end
 
-              button_to "Block", friendship_path(friendship.public_id, state: "blocked"), method: :patch, class: "text-sm text-orange-500 hover:underline"
-              button_to "Remove", friendship_path(friendship.public_id), method: :delete, class: "text-sm text-red-500 hover:underline"
+              button_to I18n.t("friendships.index.block"), friendship_path(friendship.public_id, state: "blocked"), method: :patch,
+                                                                                                               class: "text-sm text-orange-500 hover:underline"
+              button_to I18n.t("friendships.index.remove"), friendship_path(friendship.public_id), method: :delete, class: "text-sm text-red-500 hover:underline"
             end
           end
         end
@@ -132,13 +133,13 @@ class Views::Friendships::Index < Views::Base
     return if blocked.empty?
 
     section(class: "mb-8") do
-      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { "Blocked Users" }
+      h2(class: "text-lg font-bold mb-4 dark:text-slate-200") { I18n.t("friendships.index.blocked_users") }
       ul(class: "flex flex-col gap-3") do
         blocked.each do |friendship|
           other_user = friendship.user_id == current_user.id ? friendship.friend : friendship.user
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800 text-slate-400 line-through") do
             span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
-            button_to "Remove Block", friendship_path(friendship.public_id), method: :delete, class: "text-sm text-slate-500 hover:underline"
+            button_to I18n.t("friendships.index.remove_block"), friendship_path(friendship.public_id), method: :delete, class: "text-sm text-slate-500 hover:underline"
           end
         end
       end

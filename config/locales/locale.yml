@@ -258,6 +258,34 @@ en:
       all_installments_title: "Count every installment in selected budgets."
       destroy_title: "Destroy selected budgets."
 
+  profiles:
+    edit:
+      title: "Profile and Preferences"
+    form:
+      first_name: "first name"
+      last_name: "last name"
+      locale: "locale"
+      timezone: "timezone"
+      default_cash_account: "default cash transaction account"
+      update: "Update Profile"
+  friendships:
+    index:
+      title: "Friendships Hub"
+      add_friend: "Add a Friend"
+      friend_id_placeholder: "Friend's Public ID or Email"
+      send_request: "Send Request"
+      received_requests: "Received Requests"
+      accept: "Accept"
+      reject: "Reject"
+      sent_requests: "Sent Requests"
+      cancel: "Cancel"
+      my_friends: "My Friends"
+      auto_accept: "Auto-accept exchanges?"
+      block: "Block"
+      remove: "Remove"
+      blocked_users: "Blocked Users"
+      remove_block: "Remove Block"
+
 pt-BR:
   confirmation:
     sure: "Tem certeza?"
@@ -517,3 +545,31 @@ pt-BR:
       all_installments: "Considerar Todas as Parcelas"
       all_installments_title: "Conta todas as parcelas nos orçamentos selecionados."
       destroy_title: "Destrói os orçamentos selecionados."
+
+  profiles:
+    edit:
+      title: "Perfil e Preferências"
+    form:
+      first_name: "nome"
+      last_name: "sobrenome"
+      locale: "idioma"
+      timezone: "fuso horário"
+      default_cash_account: "conta bancária padrão"
+      update: "Atualizar Perfil"
+  friendships:
+    index:
+      title: "Central de Amizades"
+      add_friend: "Adicionar Amigo"
+      friend_id_placeholder: "ID Público ou E-mail do Amigo"
+      send_request: "Enviar Solicitação"
+      received_requests: "Solicitações Recebidas"
+      accept: "Aceitar"
+      reject: "Rejeitar"
+      sent_requests: "Solicitações Enviadas"
+      cancel: "Cancelar"
+      my_friends: "Meus Amigos"
+      auto_accept: "Auto-aceitar despesas?"
+      block: "Bloquear"
+      remove: "Remover"
+      blocked_users: "Usuários Bloqueados"
+      remove_block: "Desbloquear"
