@@ -365,6 +365,10 @@ module Views
         rails_view_context.params
       end
 
+      def current_user
+        rails_view_context.current_user
+      end
+
       def submitted_bound_type
         rails_view_context.params["bound_type_#{form.index}"]&.presence_in(%w[standalone card_bound])&.to_sym
       end
