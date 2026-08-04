@@ -7,7 +7,7 @@ class ConversationsController < ApplicationController
 
   def index
     @active_filter = conversation_filter
-    @conversations = filtered_conversations.preload(:users, :messages).sort_by do |conversation|
+    @conversations = filtered_conversations.preload(:messages, users: :profile).sort_by do |conversation|
       [ conversation.human? ? 0 : 1, -(conversation.latest_message&.created_at || conversation.created_at).to_i ]
     end
 
@@ -15,7 +15,7 @@ class ConversationsController < ApplicationController
   end
 
   def show
-    @conversation = scoped_conversations.preload(:users).find(params[:id])
+    @conversation = scoped_conversations.preload(users: :profile).find(params[:id])
     @active_message_filter = conversation_message_filter
     @active_message_sides = conversation_message_sides
     @messages = filtered_messages(@conversation)
