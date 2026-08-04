@@ -6,7 +6,9 @@ class FriendshipsController < ApplicationController
   before_action :set_basic_tabs
 
   def index
-    @friendships = Friendship.where(user: current_user).or(Friendship.where(friend: current_user))
+    @friendships = Friendship.where(user: current_user)
+                             .or(Friendship.where(friend: current_user))
+                             .includes(user: :profile, friend: :profile)
     render Views::Friendships::Index.new(friendships: @friendships, current_user: current_user)
   end
 

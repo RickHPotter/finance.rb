@@ -37,7 +37,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def new
-    user_bank_account_id = params[:user_bank_account_id] || current_user.preference&.default_cash_transaction_user_bank_account_id || current_user.user_bank_accounts.active.first&.id
+    user_bank_account_id = params[:user_bank_account_id] || current_user.default_cash_transaction_user_bank_account
     @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
     handle_params
     @chain_context = current_chain_context(mode: "create")

@@ -53,7 +53,6 @@ class User < ApplicationRecord
 
   # @callbacks ................................................................
   before_create -> { self.public_id ||= SecureRandom.uuid }
-  before_validation :set_default_locale
   before_create :create_built_ins
   before_create :set_confirmed_at
   after_create :create_main_context
@@ -124,7 +123,7 @@ class User < ApplicationRecord
   end
 
   def locale
-    profile&.locale || @locale
+    profile&.locale || I18n.locale
   end
 
   def timezone
@@ -133,6 +132,10 @@ class User < ApplicationRecord
 
   def theme
     preference&.theme || "system"
+  end
+
+  def default_cash_transaction_user_bank_account
+    preference&.default_cash_transaction_user_bank_account_id || user_bank_accounts.active.first&.id
   end
 
   protected
@@ -153,10 +156,6 @@ class User < ApplicationRecord
       default_card_transaction_date_order: "card_installment_date",
       default_cash_transaction_date_order: "cash_transaction_date"
     )
-  end
-
-  def set_default_locale
-    @locale ||= I18n.locale
   end
 
   # Creates built-in `categories` for given user.

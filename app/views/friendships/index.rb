@@ -118,9 +118,19 @@ class Views::Friendships::Index < Views::Base
                                                                  class: "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               end
 
-              button_to I18n.t("friendships.index.block"), friendship_path(friendship.public_id, state: "blocked"), method: :patch,
-                                                                                                               class: "text-sm text-orange-500 hover:underline"
-              button_to I18n.t("friendships.index.remove"), friendship_path(friendship.public_id), method: :delete, class: "text-sm text-red-500 hover:underline"
+              button_to(
+                I18n.t("friendships.index.block"),
+                friendship_path(friendship.public_id, state: "blocked"),
+                method: :patch,
+                class: "text-sm text-orange-500 hover:underline"
+              )
+
+              button_to(
+                I18n.t("friendships.index.remove"),
+                friendship_path(friendship.public_id),
+                method: :delete,
+                class: "text-sm text-red-500 hover:underline"
+              )
             end
           end
         end
@@ -139,7 +149,12 @@ class Views::Friendships::Index < Views::Base
           other_user = friendship.user_id == current_user.id ? friendship.friend : friendship.user
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800 text-slate-400 line-through") do
             span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
-            button_to I18n.t("friendships.index.remove_block"), friendship_path(friendship.public_id), method: :delete, class: "text-sm text-slate-500 hover:underline"
+            button_to(
+              I18n.t("friendships.index.remove_block"),
+              friendship_path(friendship.public_id),
+              method: :delete,
+              class: "text-sm text-slate-500 hover:underline"
+            )
           end
         end
       end
