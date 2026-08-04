@@ -11,7 +11,7 @@ class FriendshipsController < ApplicationController
   end
 
   def create
-    friend = User.find_by(public_id: params[:friend_public_id]) || User.find_by(email: params[:email])
+    friend = User.find_by(public_id: params[:friend_public_id]) || User.find_by(email: params[:friend_public_id])
 
     if friend.nil?
       return redirect_back fallback_location: friendships_path, alert: "User not found."
