@@ -6,12 +6,12 @@ class ReconcileEntitiesWithFriendships < ActiveRecord::Migration[8.1]
 
     up_only do
       Entity.where.not(entity_user_id: nil).find_each do |entity|
-        user_1 = [entity.user_id, entity.entity_user_id].min
-        user_2 = [entity.user_id, entity.entity_user_id].max
-        
-        friendship = Friendship.find_by(user_id: user_1, friend_id: user_2) || 
+        user_1 = [ entity.user_id, entity.entity_user_id ].min
+        user_2 = [ entity.user_id, entity.entity_user_id ].max
+
+        friendship = Friendship.find_by(user_id: user_1, friend_id: user_2) ||
                      Friendship.find_by(user_id: user_2, friend_id: user_1)
-                     
+
         entity.update_column(:friendship_id, friendship.id) if friendship
       end
     end
@@ -26,7 +26,7 @@ class ReconcileEntitiesWithFriendships < ActiveRecord::Migration[8.1]
       Entity.where.not(friendship_id: nil).find_each do |entity|
         friendship = Friendship.find_by(id: entity.friendship_id)
         next unless friendship
-        
+
         target_user_id = friendship.user_id == entity.user_id ? friendship.friend_id : friendship.user_id
         entity.update_column(:entity_user_id, target_user_id)
       end
