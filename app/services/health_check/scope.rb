@@ -36,8 +36,8 @@ class HealthCheck::Scope
   end
 
   def connected_users
-    User.joins(:profile)
-        .where(id: user.entities.that_are_users.map(&:entity_user_id).uniq)
+    User.joins(:profile).includes(:profile)
+        .where(id: user.entities.that_are_users.includes(:friendship).map(&:entity_user_id).uniq)
         .order("user_profiles.first_name ASC, user_profiles.last_name ASC, users.id ASC")
         .to_a
   end

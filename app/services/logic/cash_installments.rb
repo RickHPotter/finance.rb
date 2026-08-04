@@ -50,7 +50,7 @@ module Logic
                  .includes(cash_transaction: [
                              :categories,
                              :entities,
-                             :card_installments,
+                             :reference_transactable,
                              { category_transactions: :category },
                              { entity_transactions: :entity }
                            ])

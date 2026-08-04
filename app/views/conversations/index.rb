@@ -138,7 +138,7 @@ class Views::Conversations::Index < Views::Base
   end
 
   def counterpart_entities
-    @counterpart_entities ||= current_user.entities.that_are_users.index_by(&:entity_user_id)
+    @counterpart_entities ||= current_user.entities.that_are_users.includes(:friendship).index_by(&:entity_user_id)
   end
 
   def latest_message_preview(message)
