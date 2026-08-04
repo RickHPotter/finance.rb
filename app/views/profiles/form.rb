@@ -57,16 +57,21 @@ class Views::Profiles::Form < Views::Base
         end
       end
 
-      div(class: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6") do
+      div(class: "grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6") do
         render_preference_select(form, :theme, UserPreference.themes.keys.map { |k| [ I18n.t("profiles.form.options.theme.#{k}"), k ] })
         render_preference_select(form, :landing_page, landing_page_options)
-        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ I18n.t("profiles.form.options.exchange_default_bound_type.#{k}"), k ] })
         render_preference_select(form, :row_color_mode, UserPreference.row_color_modes.keys.map { |k| [ I18n.t("profiles.form.options.row_color_mode.#{k}"), k ] })
-        render_preference_select(form, :default_card_transaction_date_order, UserPreference.default_card_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_card_transaction_date_order.#{k}"), k ] })
-        render_preference_select(form, :default_cash_transaction_date_order, UserPreference.default_cash_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_cash_transaction_date_order.#{k}"), k ] })
+      end
 
+      div(class: "grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6") do
+        render_preference_select(form, :exchange_default_bound_type, UserPreference.exchange_default_bound_types.keys.map { |k| [ I18n.t("profiles.form.options.exchange_default_bound_type.#{k}"), k ] })
         render_preference_select_with_custom_label(form, :default_cash_transaction_user_bank_account_id, I18n.t("profiles.form.default_cash_account"),
                                                    user_bank_accounts.map { |acc| [ acc.user_bank_account_name, acc.id ] }, include_blank: true)
+      end
+
+      div(class: "grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6") do
+        render_preference_select(form, :default_cash_transaction_date_order, UserPreference.default_cash_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_cash_transaction_date_order.#{k}"), k ] })
+        render_preference_select(form, :default_card_transaction_date_order, UserPreference.default_card_transaction_date_orders.keys.map { |k| [ I18n.t("profiles.form.options.default_card_transaction_date_order.#{k}"), k ] })
       end
 
       div(class: "flex w-full flex-col gap-3 mt-4") do
