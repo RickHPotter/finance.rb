@@ -55,7 +55,7 @@ RSpec.describe "Health Check dashboard", type: :request do
   end
 
   it "renders the workspace in the administrator's Portuguese locale" do
-    admin.update!(locale: :"pt-BR")
+    admin.profile.update!(locale: :"pt-BR")
     sign_in admin
 
     get healthcheck_path

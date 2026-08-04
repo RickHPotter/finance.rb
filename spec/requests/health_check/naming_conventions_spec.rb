@@ -155,7 +155,7 @@ RSpec.describe "Health Check Naming Convention maintenance", type: :request do
 
   it "renders complete Portuguese maintenance copy without changing stable controls" do
     create_naming_candidate
-    admin.update!(locale: "pt-BR")
+    admin.profile.update!(locale: :"pt-BR")
     sign_in admin
 
     get preview_healthcheck_naming_convention_path

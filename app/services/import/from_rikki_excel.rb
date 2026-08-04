@@ -45,12 +45,12 @@ module Import
     end
 
     def delete_user
-      user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+      user = User.find_by(email: "rikki.potteru@mail.com")
       user.destroy if user.present?
     end
 
     def aftermath_fix
-      @user = User.find_by(first_name: "Rikki", last_name: "Potteru")
+      @user = User.find_by(email: "rikki.potteru@mail.com")
 
       fix_user_card_dates
       fix_user_bank_account_banks
