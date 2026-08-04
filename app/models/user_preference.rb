@@ -28,11 +28,11 @@ end
 #
 #  id                                            :bigint           not null, primary key
 #  default_card_transaction_date_order           :string           default("card_installment_date"), not null
-#  default_cash_transaction_date_order           :string           default("cash_transaction_date"), not null
+#  default_cash_transaction_date_order           :string           default("cash_installment_date"), not null
 #  exchange_default_bound_type                   :string           default("standalone"), not null
-#  landing_page                                  :string           default("cash_transactions")
-#  row_color_mode                                :string           default("badges_only"), not null
-#  theme                                         :string           default("system"), not null
+#  landing_page                                  :string           default("cash_transactions"), not null
+#  row_color_mode                                :string           default("row_coloured"), not null
+#  theme                                         :string           default("light"), not null
 #  created_at                                    :datetime         not null
 #  updated_at                                    :datetime         not null
 #  active_context_id                             :integer

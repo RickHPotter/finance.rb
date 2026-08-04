@@ -739,9 +739,9 @@ CREATE TABLE public.friendships (
     friend_id bigint NOT NULL,
     state character varying DEFAULT 'pending'::character varying NOT NULL,
     public_id character varying NOT NULL,
+    policies jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    policies jsonb DEFAULT '{}'::jsonb NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1174,16 +1174,16 @@ ALTER SEQUENCE public.user_cards_id_seq OWNED BY public.user_cards.id;
 CREATE TABLE public.user_preferences (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
-    theme character varying DEFAULT 'system'::character varying NOT NULL,
+    theme character varying DEFAULT 'light'::character varying NOT NULL,
+    landing_page character varying DEFAULT 'cash_transactions'::character varying NOT NULL,
     active_context_id integer,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
     exchange_default_bound_type character varying DEFAULT 'standalone'::character varying NOT NULL,
-    row_color_mode character varying DEFAULT 'badges_only'::character varying NOT NULL,
+    row_color_mode character varying DEFAULT 'row_coloured'::character varying NOT NULL,
     default_cash_transaction_user_bank_account_id integer,
     default_card_transaction_date_order character varying DEFAULT 'card_installment_date'::character varying NOT NULL,
-    default_cash_transaction_date_order character varying DEFAULT 'cash_transaction_date'::character varying NOT NULL,
-    landing_page character varying DEFAULT 'cash_transactions'::character varying
+    default_cash_transaction_date_order character varying DEFAULT 'cash_installment_date'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1218,9 +1218,9 @@ CREATE TABLE public.user_profiles (
     last_name character varying,
     locale character varying DEFAULT 'en'::character varying NOT NULL,
     timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
+    sex character varying DEFAULT 'not_specified'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    sex character varying DEFAULT 'not_specified'::character varying NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -3064,11 +3064,6 @@ SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20260804132347'),
-('20260804131329'),
-('20260802160237'),
-('20260802140257'),
-('20260802140211'),
-('20260731233944'),
 ('20260731215015'),
 ('20260731214108'),
 ('20260731212727'),
