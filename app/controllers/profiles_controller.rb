@@ -31,10 +31,10 @@ class ProfilesController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: "Profile updated successfully" })
+          turbo_stream.update(:notification, partial: "shared/flash", locals: { notice: I18n.t("profiles.update.success") })
         ]
       end
-      format.html { redirect_to edit_profile_path, notice: "Profile updated successfully" }
+      format.html { redirect_to edit_profile_path, notice: I18n.t("profiles.update.success") }
     end
   rescue ActiveRecord::RecordInvalid
     @profile.validate if params[:user_profile].present?

@@ -275,6 +275,8 @@ en:
       default_cash_transaction_date_order: "default cash transaction date order"
       default_cash_account: "default cash transaction account"
       update: "Update Profile"
+    update:
+      success: "Profile updated successfully"
       sex_options:
         masculine: "Masculine"
         feminine: "Feminine"
@@ -598,6 +600,8 @@ pt-BR:
       default_cash_transaction_date_order: "ordem padrão de data (dinheiro)"
       default_cash_account: "conta bancária padrão"
       update: "Atualizar Perfil"
+    update:
+      success: "Perfil atualizado com sucesso"
       sex_options:
         masculine: "Masculino"
         feminine: "Feminino"
