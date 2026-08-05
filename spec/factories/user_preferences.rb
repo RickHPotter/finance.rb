@@ -6,7 +6,6 @@ FactoryBot.define do
     theme { "MyString" }
     landing_page { "MyString" }
     active_context_id { 1 }
-    page_density { "MyString" }
     date_time_presentation { "MyString" }
     default_account_id { 1 }
     default_card_id { 1 }

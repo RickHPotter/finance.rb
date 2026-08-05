@@ -58,6 +58,9 @@ module FriendNotifiable
   def notify_friend(friend, action)
     friend_user = friend.entity_user
 
+    friendship = user.friendship_with(friend_user)
+    return unless friendship&.accepted_state?
+
     return if reference_transactable&.user == friend_user
 
     receiver_context = receiver_context_for(friend_user)

@@ -13,7 +13,7 @@ KAKASHI-12 elevates the user to a first-class product record by adding public pr
 - **Profile Surface:** Add a `Profile` model (or expand `User` safely) for `display_name`, `avatar`, `locale`, `timezone`, etc.
 - **Dedicated Routing:** Expose profile edits through dedicated controllers/views (e.g., `ProfilesController`) rather than modifying Devise registrations.
 - **Preference Record:** Create a `UserPreference` model (1:1 with User) to replace browser-local state and untyped JSON blobs.
-- **Persisted Settings:** Support defaults for `theme`, `landing_page`, `active_context`, `page_density`, `exchange_default_bound_type` (e.g., `standalone` vs `card_bound`), `row_color_mode` (e.g., `BADGES_ONLY` vs `ROW_COLOURED`), and `default_cash_transaction_user_bank_account`.
+- **Persisted Settings:** Support defaults for `theme`, `landing_page`, `active_context`, `exchange_default_bound_type` (e.g., `standalone` vs `card_bound`), `row_color_mode` (e.g., `BADGES_ONLY` vs `ROW_COLOURED`), and `default_cash_transaction_user_bank_account`.
 - **Theme Sync:** Synchronize the user's `theme` preference with the early layout boot script to prevent theme flashing on first render.
 - **Overrides:** Allow explicit URL or form states to temporarily override the saved preference during a request.
 - **Validation:** Validate all preference enums and values server-side.
@@ -58,7 +58,7 @@ KAKASHI-12 elevates the user to a first-class product record by adding public pr
 ### Deliverables
 
 - **Profile Form:** Build a Phlex/Ruby UI form in `app/views/profiles/edit.rb` or `.html.erb` for editing profile details (display name, avatar, locale, timezone).
-- **Preferences UI:** Build the preference toggles and select inputs for all server-backed settings (Theme, Landing Page, Active Context, Page Density, Exchange Default Bound Type, Row Color Mode, Default Cash Transaction Account).
+- **Preferences UI:** Build the preference toggles and select inputs for all server-backed settings (Theme, Landing Page, Active Context, Exchange Default Bound Type, Row Color Mode, Default Cash Transaction Account).
 - **Live Updates:** Ensure preferences (like Theme) trigger immediate layout/CSS updates via Turbo streams when changed.
 - **Validations Feedback:** Display inline validation errors and success toasts (flash notifications) using existing shared components.
 

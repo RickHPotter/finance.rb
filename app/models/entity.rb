@@ -41,7 +41,7 @@ class Entity < ApplicationRecord
     if friendship_id?
       other_user = friendship.user_id == user_id ? friendship.friend : friendship.user
       display_name = other_user&.profile&.display_name
-      return "#{attributes["entity_name"]} [#{display_name}]" if display_name
+      return "#{attributes['entity_name']} [#{display_name}]" if display_name
     end
 
     return attributes["entity_name"] unless built_in?

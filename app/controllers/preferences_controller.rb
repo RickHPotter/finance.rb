@@ -21,7 +21,7 @@ class PreferencesController < ApplicationController
 
   def preference_params
     params.require(:user_preference).permit(
-      :theme, :landing_page, :page_density, :date_time_presentation,
+      :theme, :landing_page, :date_time_presentation,
       :active_context_id, :default_account_id, :default_card_id
     )
   end
