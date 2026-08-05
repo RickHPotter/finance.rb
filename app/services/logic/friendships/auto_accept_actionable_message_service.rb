@@ -13,7 +13,7 @@ module Logic
         return unless policy_allows?
         return unless safe?
 
-        Audit::Current.with_actor(message.user) do
+        Audit::Current.with_actor(friend_user) do
           Audit::Operation.record(
             source: :actionable_message,
             parent_operation_id: message.audit_operation_id
@@ -25,8 +25,11 @@ module Logic
 
       private
 
+      def friend_user
+        @friend_user ||= message.conversation.conversation_participants.where.not(user_id: message.user_id).first&.user
+      end
+
       def policy_allows?
-        friend_user = message.conversation.conversation_participants.where.not(user_id: message.user_id).first&.user
         return false unless friend_user
 
         friendship = message.user.friendship_with(friend_user)
@@ -44,7 +47,7 @@ module Logic
         return false unless action.in?(%w[create update])
 
         if action == "update"
-          reference = message.local_reference_for(context: message.user.ensure_main_context!)
+          reference = message.local_reference_for(context: friend_user.ensure_main_context!)
           return false if reference.blank?
         end
 
@@ -64,7 +67,7 @@ module Logic
       end
 
       def apply! # rubocop:disable Metrics/AbcSize
-        context = message.user.ensure_main_context!
+        context = friend_user.ensure_main_context!
         action = message.send(:notification_action)
         attributes = build_attributes
         payload = message.replay_payload || {}
@@ -72,7 +75,7 @@ module Logic
 
         ActiveRecord::Base.transaction do
           if action == "create"
-            cash_transaction = context.cash_transactions.new(attributes.merge(user: message.user, imported: false))
+            cash_transaction = context.cash_transactions.new(attributes.merge(user: friend_user, imported: false))
             cash_transaction.category_transactions.build(category_id: category_id) if category_id.present?
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
             raise ActiveRecord::Rollback unless cash_transaction.save
@@ -106,7 +109,7 @@ module Logic
           reference_transactable_type: payload["type"],
           reference_transactable_id: payload["id"],
           source_message_id: message.id,
-          user_bank_account_id: message.user.user_bank_accounts.active.first&.id,
+          user_bank_account_id: friend_user.default_cash_transaction_user_bank_account,
           cash_installments_attributes: replay_cash_installments_attributes(payload),
           entity_transactions_attributes: replay_entity_transactions_attributes(payload)
         }.compact_blank.with_indifferent_access
@@ -116,7 +119,7 @@ module Logic
         attributes = Array(payload["cash_installments_attributes"]).map(&:with_indifferent_access)
 
         if message.send(:notification_action) == "update"
-          cash_transaction = message.local_reference_for(context: message.user.ensure_main_context!)
+          cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
           if cash_transaction
             existing_by_number = cash_transaction.cash_installments.index_by(&:number)
             attributes = attributes.map do |attrs|
@@ -133,7 +136,7 @@ module Logic
         attributes = Array(payload["entity_transactions_attributes"]).map(&:with_indifferent_access)
 
         if message.send(:notification_action) == "update"
-          cash_transaction = message.local_reference_for(context: message.user.ensure_main_context!)
+          cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
           if cash_transaction
             existing_by_entity = cash_transaction.entity_transactions.index_by(&:entity_id)
             attributes = attributes.map do |attrs|

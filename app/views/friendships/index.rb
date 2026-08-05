@@ -95,7 +95,8 @@ class Views::Friendships::Index < Views::Base
         sent.each do |friendship|
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800 text-slate-500") do
             span { friendship.friend.profile&.display_name || friendship.friend.email }
-            button_to I18n.t("friendships.index.cancel"), friendship_path(friendship.public_id), method: :delete, data: { turbo_frame: "_top" }, class: "text-sm underline hover:text-red-500"
+            button_to I18n.t("friendships.index.cancel"), friendship_path(friendship.public_id), method: :delete, data: { turbo_frame: "_top" },
+                                                                                                 class: "text-sm underline hover:text-red-500"
           end
         end
       end
@@ -114,7 +115,8 @@ class Views::Friendships::Index < Views::Base
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800") do
             span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
             div(class: "flex items-center gap-4") do
-              form_with(model: friendship, url: friendship_path(friendship.public_id), method: :patch, class: "flex items-center gap-2", data: { turbo_frame: "_top" }) do |form|
+              form_with(model: friendship, url: friendship_path(friendship.public_id), method: :patch, class: "flex items-center gap-2",
+                        data: { turbo_frame: "_top" }) do |form|
                 form.label :auto_accept_actionable_messages, I18n.t("friendships.index.auto_accept"), class: "text-sm text-slate-500"
                 form.check_box :auto_accept_actionable_messages, onchange: "this.form.requestSubmit()",
                                                                  class: "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"

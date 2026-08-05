@@ -41,7 +41,7 @@ class Entity < ApplicationRecord
     if friendship_id?
       other_user = friendship.user_id == user_id ? friendship.friend : friendship.user
       display_name = other_user&.profile&.display_name
-      return "#{attributes["entity_name"]} [#{display_name}]" if display_name
+      return "#{attributes['entity_name']} [#{display_name}]" if display_name
     end
 
     return attributes["entity_name"] unless built_in?
@@ -65,8 +65,6 @@ class Entity < ApplicationRecord
       read_attribute(:entity_user_id)
     elsif has_attribute?(:friendship_id) && friendship_id?
       friendship.user_id == user_id ? friendship.friend_id : friendship.user_id
-    else
-      nil
     end
   end
 
@@ -82,8 +80,6 @@ class Entity < ApplicationRecord
       User.find_by(id: read_attribute(:entity_user_id))
     elsif has_attribute?(:friendship_id) && friendship_id?
       friendship.user_id == user_id ? friendship.friend : friendship.user
-    else
-      nil
     end
   end
 
