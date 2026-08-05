@@ -16,17 +16,17 @@ class FriendshipsController < ApplicationController
     friend = User.find_by(public_id: params[:friend_public_id]) || User.find_by(email: params[:friend_public_id])
 
     if friend.nil?
-      return redirect_back fallback_location: friendships_path, alert: "User not found."
+      return redirect_back fallback_location: friendships_path, status: :see_other, alert: "User not found."
     elsif friend == current_user
-      return redirect_back fallback_location: friendships_path, alert: "You cannot friend yourself."
+      return redirect_back fallback_location: friendships_path, status: :see_other, alert: "You cannot friend yourself."
     end
 
     friendship = Friendship.new(user: current_user, friend: friend, state: "pending")
 
     if friendship.save
-      redirect_back fallback_location: friendships_path, notice: "Friend request sent."
+      redirect_back fallback_location: friendships_path, status: :see_other, notice: "Friend request sent."
     else
-      redirect_back fallback_location: friendships_path, alert: "Could not send friend request."
+      redirect_back fallback_location: friendships_path, status: :see_other, alert: "Could not send friend request."
     end
   end
 
@@ -36,7 +36,7 @@ class FriendshipsController < ApplicationController
     handle_state_update(friendship) if params[:state].present?
     handle_policy_update(friendship) if params[:friendship].present?
 
-    redirect_back fallback_location: friendships_path
+    redirect_back fallback_location: friendships_path, status: :see_other
   end
 
   def destroy
@@ -44,7 +44,7 @@ class FriendshipsController < ApplicationController
 
     friendship.update!(state: "removed")
 
-    redirect_back fallback_location: friendships_path, notice: "Friendship removed."
+    redirect_back fallback_location: friendships_path, status: :see_other, notice: "Friendship removed."
   end
 
   private

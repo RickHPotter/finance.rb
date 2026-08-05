@@ -43,7 +43,7 @@ class Views::Friendships::Index < Views::Base
   def render_request_form
     div(class: "mb-8 p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50") do
       h2(class: "text-md font-bold mb-3 dark:text-slate-200") { I18n.t("friendships.index.add_friend") }
-      form_with(url: friendships_path, method: :post, class: "flex gap-2") do |form|
+      form_with(url: friendships_path, method: :post, class: "flex gap-2", data: { turbo_frame: "_top" }) do |form|
         form.text_field :friend_public_id,
                         placeholder: I18n.t("friendships.index.friend_id_placeholder"),
                         class: input_class,
@@ -68,12 +68,14 @@ class Views::Friendships::Index < Views::Base
                 I18n.t("friendships.index.accept"),
                 friendship_path(friendship.public_id, state: "accepted"),
                 method: :patch,
+                data: { turbo_frame: "_top" },
                 class: "px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-semibold"
               )
               button_to(
                 I18n.t("friendships.index.reject"),
                 friendship_path(friendship.public_id, state: "rejected"),
                 method: :patch,
+                data: { turbo_frame: "_top" },
                 class: "px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
               )
             end
@@ -93,7 +95,7 @@ class Views::Friendships::Index < Views::Base
         sent.each do |friendship|
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800 text-slate-500") do
             span { friendship.friend.profile&.display_name || friendship.friend.email }
-            button_to I18n.t("friendships.index.cancel"), friendship_path(friendship.public_id), method: :delete, class: "text-sm underline hover:text-red-500"
+            button_to I18n.t("friendships.index.cancel"), friendship_path(friendship.public_id), method: :delete, data: { turbo_frame: "_top" }, class: "text-sm underline hover:text-red-500"
           end
         end
       end
@@ -112,7 +114,7 @@ class Views::Friendships::Index < Views::Base
           li(class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800") do
             span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
             div(class: "flex items-center gap-4") do
-              form_with(model: friendship, url: friendship_path(friendship.public_id), method: :patch, class: "flex items-center gap-2") do |form|
+              form_with(model: friendship, url: friendship_path(friendship.public_id), method: :patch, class: "flex items-center gap-2", data: { turbo_frame: "_top" }) do |form|
                 form.label :auto_accept_actionable_messages, I18n.t("friendships.index.auto_accept"), class: "text-sm text-slate-500"
                 form.check_box :auto_accept_actionable_messages, onchange: "this.form.requestSubmit()",
                                                                  class: "rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
@@ -122,6 +124,7 @@ class Views::Friendships::Index < Views::Base
                 I18n.t("friendships.index.block"),
                 friendship_path(friendship.public_id, state: "blocked"),
                 method: :patch,
+                data: { turbo_frame: "_top" },
                 class: "text-sm text-orange-500 hover:underline"
               )
 
@@ -129,6 +132,7 @@ class Views::Friendships::Index < Views::Base
                 I18n.t("friendships.index.remove"),
                 friendship_path(friendship.public_id),
                 method: :delete,
+                data: { turbo_frame: "_top" },
                 class: "text-sm text-red-500 hover:underline"
               )
             end
@@ -153,6 +157,7 @@ class Views::Friendships::Index < Views::Base
               I18n.t("friendships.index.remove_block"),
               friendship_path(friendship.public_id),
               method: :delete,
+              data: { turbo_frame: "_top" },
               class: "text-sm text-slate-500 hover:underline"
             )
           end
