@@ -115,15 +115,27 @@ class User < ApplicationRecord
   # @protected_instance_methods ...............................................
 
   def first_name
-    profile&.first_name || @first_name
+    if has_attribute?(:first_name)
+      profile&.first_name || read_attribute(:first_name) || @first_name
+    else
+      profile&.first_name || @first_name
+    end
   end
 
   def last_name
-    profile&.last_name || @last_name
+    if has_attribute?(:last_name)
+      profile&.last_name || read_attribute(:last_name) || @last_name
+    else
+      profile&.last_name || @last_name
+    end
   end
 
   def locale
-    profile&.locale || @locale || "en"
+    if has_attribute?(:locale)
+      profile&.locale || read_attribute(:locale) || @locale || "en"
+    else
+      profile&.locale || @locale || "en"
+    end
   end
 
   def timezone

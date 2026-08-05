@@ -60,9 +60,13 @@ class Entity < ApplicationRecord
   end
 
   def entity_user_id
-    return nil unless friendship_id?
-
-    friendship.user_id == user_id ? friendship.friend_id : friendship.user_id
+    if has_attribute?(:entity_user_id) && read_attribute(:entity_user_id).present?
+      read_attribute(:entity_user_id)
+    elsif has_attribute?(:friendship_id) && friendship_id?
+      friendship.user_id == user_id ? friendship.friend_id : friendship.user_id
+    else
+      nil
+    end
   end
 
   def entity_user_id=(id)
@@ -73,9 +77,13 @@ class Entity < ApplicationRecord
   end
 
   def entity_user
-    return nil unless friendship_id?
-
-    friendship.user_id == user_id ? friendship.friend : friendship.user
+    if has_attribute?(:entity_user_id) && read_attribute(:entity_user_id).present?
+      User.find_by(id: read_attribute(:entity_user_id))
+    elsif has_attribute?(:friendship_id) && friendship_id?
+      friendship.user_id == user_id ? friendship.friend : friendship.user
+    else
+      nil
+    end
   end
 
   attr_accessor :entity_user_to_assign
