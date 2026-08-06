@@ -5,7 +5,7 @@ class Friendship < ApplicationRecord
   # @includes .................................................................
   include FinancialAuditable
 
-  audits_financial_changes
+  audits_financial_changes skip: [:policies]
 
   # @security (i.e. attr_accessible) ..........................................
   enum :state, { pending: "pending", accepted: "accepted", rejected: "rejected", blocked: "blocked", removed: "removed" }, suffix: true
