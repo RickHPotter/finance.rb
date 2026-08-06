@@ -56,4 +56,31 @@ RSpec.describe "Messages", type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe "[ #revert ]" do
+    let(:friendship) { create(:friendship, user: user, friend: other_user, state: "accepted") }
+    let(:message) do
+      conversation.messages.create!(
+        user: other_user,
+        body: "friend message",
+        auto_applied: true,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", receiver_first_name: user.first_name, details: { description: "Dinner" } }
+        }.to_json
+      )
+    end
+
+    before do
+      friendship
+      allow_any_instance_of(Logic::Friendships::RevertAutoApplyService).to receive(:call).and_return(
+        Audit::Rollback::ApplyResult.new(status: "applied", operation: nil, reason_code: nil, duplicate: false)
+      )
+    end
+
+    it "reverts an auto-applied message" do
+      patch revert_conversation_message_path(conversation, message), headers: turbo_stream_headers
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

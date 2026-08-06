@@ -95,8 +95,13 @@ module Logic
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
             raise ActiveRecord::Rollback unless cash_transaction.save
           end
+          message.update!(applied_at: Time.current, auto_applied: true)
 
-          message.update!(applied_at: Time.current)
+          Turbo::StreamsChannel.broadcast_replace_to(
+            message.conversation,
+            target: ActionView::RecordIdentifier.dom_id(message),
+            html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
+          )
         end
       end
 

@@ -92,7 +92,11 @@ class Message < ApplicationRecord
   end
 
   def applied?
-    applied_at.present?
+    applied_at.present? && reverted_at.blank?
+  end
+
+  def reverted?
+    reverted_at.present?
   end
 
   def action_button_key(local_reference_exists:)

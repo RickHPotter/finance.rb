@@ -951,7 +951,9 @@ CREATE TABLE public.messages (
     reference_transactable_type character varying,
     reference_transactable_id bigint,
     applied_at timestamp(6) without time zone,
-    audit_operation_id uuid
+    audit_operation_id uuid,
+    auto_applied boolean DEFAULT false NOT NULL,
+    reverted_at timestamp(6) without time zone
 );
 
 
@@ -2446,6 +2448,13 @@ CREATE INDEX index_messages_on_reference_transactable ON public.messages USING b
 
 
 --
+-- Name: index_messages_on_reverted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_reverted_at ON public.messages USING btree (reverted_at);
+
+
+--
 -- Name: index_messages_on_superseded_by_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3063,6 +3072,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806181854'),
 ('20260804132347'),
 ('20260731215015'),
 ('20260731214108'),
