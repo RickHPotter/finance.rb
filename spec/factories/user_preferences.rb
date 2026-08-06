@@ -23,6 +23,7 @@ end
 #  default_cash_transaction_date_order           :string           default("cash_installment_date"), not null
 #  exchange_default_bound_type                   :string           default("standalone"), not null
 #  landing_page                                  :string           default("cash_transactions"), not null
+#  page_density                                  :string           default("default"), not null
 #  row_color_mode                                :string           default("row_coloured"), not null
 #  theme                                         :string           default("light"), not null
 #  created_at                                    :datetime         not null

@@ -1185,7 +1185,8 @@ CREATE TABLE public.user_preferences (
     default_card_transaction_date_order character varying DEFAULT 'card_installment_date'::character varying NOT NULL,
     default_cash_transaction_date_order character varying DEFAULT 'cash_installment_date'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    page_density character varying DEFAULT 'default'::character varying NOT NULL
 );
 
 
@@ -3072,6 +3073,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806201337'),
 ('20260806181854'),
 ('20260804132347'),
 ('20260731215015'),
