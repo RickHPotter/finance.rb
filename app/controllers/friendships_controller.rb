@@ -34,7 +34,7 @@ class FriendshipsController < ApplicationController
     friendship = Friendship.where(user: current_user).or(Friendship.where(friend: current_user)).find_by!(public_id: params[:public_id])
 
     handle_state_update(friendship) if params[:state].present?
-    
+
     if params[:friendship].present?
       handle_policy_update(friendship)
       respond_to do |format|
@@ -53,12 +53,13 @@ class FriendshipsController < ApplicationController
     friendship = Friendship.where(user: current_user).or(Friendship.where(friend: current_user)).find_by!(public_id: params[:public_id])
 
     if friendship.pending_state?
-      if friendship.user == current_user
-        friendship.update!(state: "removed")
-        notice = I18n.t("friendships.notices.cancelled")
-      else
+      if friendship.user != current_user
         return redirect_back fallback_location: friendships_path, status: :see_other, alert: I18n.t("friendships.alerts.cannot_cancel")
       end
+
+      friendship.update!(state: "removed")
+      notice = I18n.t("friendships.notices.cancelled")
+
     else
       friendship.update!(state: "removed")
       notice = I18n.t("friendships.notices.removed")

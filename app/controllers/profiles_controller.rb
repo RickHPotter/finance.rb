@@ -61,7 +61,7 @@ class ProfilesController < ApplicationController
 
   def preference_params
     params.require(:user_preference).permit(
-      :theme, :landing_page, :page_density, :exchange_default_bound_type, :row_color_mode,
+      :theme, :landing_page, :exchange_default_bound_type, :row_color_mode,
       :default_card_transaction_date_order, :default_cash_transaction_date_order,
       :default_cash_transaction_user_bank_account_id
     )

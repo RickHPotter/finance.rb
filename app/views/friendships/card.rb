@@ -16,7 +16,7 @@ class Views::Friendships::Card < Views::Base
 
   def view_template
     other_user = friendship.user_id == current_user.id ? friendship.friend : friendship.user
-    
+
     li(id: dom_id(friendship), class: "flex items-center justify-between p-3 rounded border border-slate-200 dark:border-slate-800") do
       span(class: "font-medium") { other_user.profile&.display_name || other_user.email }
       div(class: "flex items-center gap-4") do

@@ -44,15 +44,15 @@ RSpec.describe "Friendships", type: :request do
     let!(:friendship) { create(:friendship, user: friend, friend: user, state: "pending") }
 
     it "accepts the request and creates an audit trail" do
-      expect {
+      expect do
         patch "/friendships/#{friendship.public_id}", params: { state: "accepted" }
-      }.to change(AuditOperation, :count).by(1)
-       .and change(AuditVersion, :count).by(1)
+      end.to change(AuditOperation, :count).by(1)
+                                           .and change(AuditVersion, :count).by(1)
 
       expect(response).to redirect_to(friendships_path)
       expect(flash[:notice]).to eq(I18n.t("friendships.notices.request_accepted"))
       expect(friendship.reload.state).to eq("accepted")
-      
+
       version = AuditVersion.last
       expect(version.item).to eq(friendship)
       expect(version.event).to eq("update")
@@ -60,15 +60,15 @@ RSpec.describe "Friendships", type: :request do
     end
 
     it "rejects the request and creates an audit trail" do
-      expect {
+      expect do
         patch "/friendships/#{friendship.public_id}", params: { state: "rejected" }
-      }.to change(AuditOperation, :count).by(1)
-       .and change(AuditVersion, :count).by(1)
+      end.to change(AuditOperation, :count).by(1)
+                                           .and change(AuditVersion, :count).by(1)
 
       expect(response).to redirect_to(friendships_path)
       expect(flash[:notice]).to eq(I18n.t("friendships.notices.request_rejected"))
       expect(friendship.reload.state).to eq("rejected")
-      
+
       version = AuditVersion.last
       expect(version.item).to eq(friendship)
       expect(version.event).to eq("update")
@@ -76,10 +76,10 @@ RSpec.describe "Friendships", type: :request do
     end
 
     it "blocks the user and creates an audit trail" do
-      expect {
+      expect do
         patch "/friendships/#{friendship.public_id}", params: { state: "blocked" }
-      }.to change(AuditOperation, :count).by(1)
-       .and change(AuditVersion, :count).by(1)
+      end.to change(AuditOperation, :count).by(1)
+                                           .and change(AuditVersion, :count).by(1)
 
       expect(response).to redirect_to(friendships_path)
       expect(flash[:notice]).to eq(I18n.t("friendships.notices.user_blocked"))
@@ -97,10 +97,10 @@ RSpec.describe "Friendships", type: :request do
       let!(:friendship) { create(:friendship, user: user, friend: friend, state: "pending") }
 
       it "cancels the request and creates an audit trail" do
-        expect {
+        expect do
           delete "/friendships/#{friendship.public_id}"
-        }.to change(AuditOperation, :count).by(1)
-         .and change(AuditVersion, :count).by(1)
+        end.to change(AuditOperation, :count).by(1)
+                                             .and change(AuditVersion, :count).by(1)
 
         expect(response).to redirect_to(friendships_path)
         expect(flash[:notice]).to eq(I18n.t("friendships.notices.cancelled"))
@@ -112,9 +112,9 @@ RSpec.describe "Friendships", type: :request do
       let!(:friendship) { create(:friendship, user: friend, friend: user, state: "pending") }
 
       it "does not allow cancellation and returns an alert" do
-        expect {
+        expect do
           delete "/friendships/#{friendship.public_id}"
-        }.not_to change(AuditOperation, :count)
+        end.not_to change(AuditOperation, :count)
 
         expect(response).to redirect_to(friendships_path)
         expect(flash[:alert]).to eq(I18n.t("friendships.alerts.cannot_cancel"))
@@ -126,10 +126,10 @@ RSpec.describe "Friendships", type: :request do
       let!(:friendship) { create(:friendship, user: user, friend: friend, state: "accepted") }
 
       it "removes the friendship and creates an audit trail" do
-        expect {
+        expect do
           delete "/friendships/#{friendship.public_id}"
-        }.to change(AuditOperation, :count).by(1)
-         .and change(AuditVersion, :count).by(1)
+        end.to change(AuditOperation, :count).by(1)
+                                             .and change(AuditVersion, :count).by(1)
 
         expect(response).to redirect_to(friendships_path)
         expect(flash[:notice]).to eq(I18n.t("friendships.notices.removed"))
