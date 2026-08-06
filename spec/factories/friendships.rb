@@ -1,10 +1,29 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
+  sequence(:friendship_user_email)   { |n| "friendship_user_#{n}@example.com" }
+  sequence(:friendship_friend_email) { |n| "friendship_friend_#{n}@example.com" }
+
   factory :friendship do
-    user { nil }
-    friend { nil }
-    state { "MyString" }
+    user   { create(:user, :random) }
+    friend { create(:user, :random) }
+    state  { "pending" }
+
+    trait :accepted do
+      state { "accepted" }
+    end
+
+    trait :blocked do
+      state { "blocked" }
+    end
+
+    trait :rejected do
+      state { "rejected" }
+    end
+
+    trait :removed do
+      state { "removed" }
+    end
   end
 end
 

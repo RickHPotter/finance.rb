@@ -12,6 +12,9 @@ module Logic
       return false if counterpart_transaction.blank?
       return false if reference_transactable.blank?
 
+      friendship = transaction.user.friendship_with(counterpart_transaction.user)
+      return false unless friendship&.accepted_state?
+
       conversation = Conversation.find_or_create_assistant_between!(
         transaction.user,
         counterpart_transaction.user,

@@ -95,10 +95,12 @@ module Logic
     end
 
     def notify_counterpart_paid_state_change!
-      return create_counterpart_structure_update_message if open_actionable_update_exists?
-
       sender = installment.cash_transaction.user
       receiver = counterpart_installment.cash_transaction.user
+      return unless sender.friendship_with(receiver)&.accepted_state?
+
+      return create_counterpart_structure_update_message if open_actionable_update_exists?
+
       conversation = Conversation.find_or_create_assistant_between!(
         sender,
         receiver,
