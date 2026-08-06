@@ -62,7 +62,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       render_outdated_state
     else
       return if message.paid_state_sync_message? && my_assistant_notification?
-      return if my_assistant_notification? || message.applied?
+      return if my_assistant_notification? || message.applied? || message.reverted?
 
       render_transaction_actions
     end
@@ -120,11 +120,32 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_completed_state
-    return unless message.applied?
     return if message.superseded_by_id.present?
+
+    if message.reverted?
+      p(class: status_badge_class) do
+        model_attribute(message, :reverted)
+      end
+      return
+    end
+
+    return unless message.applied?
 
     p(class: status_badge_class) do
       model_attribute(message, message.completed_message_key)
+    end
+
+    if message.auto_applied?
+      p(class: status_badge_class) do
+        model_attribute(message, :auto_applied)
+      end
+
+      if message.user_id != viewer&.id
+        div(class: "flex gap-2 mt-2") do
+          render_acknowledge_action
+          render_revert_action
+        end
+      end
     end
 
     return if message.transaction_destroy_notification_message?
@@ -270,6 +291,28 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :ok) }
+    end
+  end
+
+  def render_revert_action
+    Link(
+      href: revert_conversation_message_path(
+        message.conversation,
+        message,
+        format: :turbo_stream,
+        message_filter: active_message_filter,
+        message_side: active_message_sides
+      ),
+      size: :xs,
+      class: action_button_class(:destroy), # Re-using destroy styling for red danger tint
+      data: {
+        turbo_method: :patch,
+        turbo_frame: "_top",
+        turbo_prefetch: "false",
+        chat_target: :messageAction
+      }
+    ) do
+      span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :revert) }
     end
   end
 

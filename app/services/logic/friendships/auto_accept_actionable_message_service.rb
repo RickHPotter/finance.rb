@@ -44,9 +44,6 @@ module Logic
         return false if message.transaction_destroy_notification_message?
         return false if message.paid_state_sync_message?
 
-        payload = message.replay_payload || {}
-        return false if contains_paid_installments?(payload)
-
         action = message.send(:notification_action)
         return false unless action.in?(%w[create update])
 
@@ -56,18 +53,6 @@ module Logic
         end
 
         true
-      end
-
-      def contains_paid_installments?(payload)
-        installments = Array(payload["cash_installments_attributes"]) + Array(payload["card_installments_attributes"])
-        return true if installments.any? { |inst| [ true, "true" ].include?(inst["paid"]) }
-
-        Array(payload["entity_transactions_attributes"]).each do |et|
-          exchanges = Array(et["exchanges_attributes"])
-          return true if exchanges.any? { |ex| [ true, "true" ].include?(ex["paid"]) }
-        end
-
-        false
       end
 
       def apply! # rubocop:disable Metrics/AbcSize
@@ -80,24 +65,34 @@ module Logic
         ActiveRecord::Base.transaction do
           if action == "create"
             cash_transaction = context.cash_transactions.new(attributes.merge(user: friend_user, imported: false))
-            cash_transaction.category_transactions.build(category_id: category_id) if category_id.present?
+            cash_transaction.category_transactions.build(category_id:) if category_id.present?
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
             raise ActiveRecord::Rollback unless cash_transaction.save
           elsif action == "update"
-            cash_transaction = message.local_reference_for(context: context)
+            cash_transaction = message.local_reference_for(context:)
 
-            if category_id.present?
+            if category_id.present? && cash_transaction.category_transactions.find_by(category_id:).blank?
               cash_transaction.category_transactions.each(&:mark_for_destruction)
-              cash_transaction.category_transactions.build(category_id: category_id)
+              cash_transaction.category_transactions.build(category_id:)
             end
 
             cash_transaction.assign_attributes(attributes.merge(imported: false))
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
             raise ActiveRecord::Rollback unless cash_transaction.save
           end
-
-          message.update!(applied_at: Time.current)
+          message.update!(applied_at: Time.current, auto_applied: true)
         end
+
+        # Best-effort broadcast outside the transaction — a render failure must
+        # never roll back the already-committed cash transaction or applied_at stamp.
+        message.reload
+        Turbo::StreamsChannel.broadcast_replace_to(
+          message.conversation,
+          target: ActionView::RecordIdentifier.dom_id(message),
+          html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
+        )
+      rescue StandardError => e
+        Rails.logger.error("[AutoAcceptActionableMessageService] broadcast failed: #{e.message}")
       end
 
       def build_attributes

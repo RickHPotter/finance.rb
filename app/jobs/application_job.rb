@@ -11,6 +11,10 @@ class ApplicationJob < ActiveJob::Base
     job.audit_context_id ||= Audit::Current.context_id
   end
 
+  before_perform do
+    Rails.application.eager_load!
+  end
+
   around_perform do |job, block|
     Audit::Operation.run(
       actor: job.audit_actor_id || Audit::Current.actor_id,

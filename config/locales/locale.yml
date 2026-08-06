@@ -306,6 +306,19 @@ en:
     update:
       success: "Profile updated successfully"
   friendships:
+    notices:
+      request_sent: "Friend request sent."
+      cancelled: "Friend request cancelled."
+      removed: "Friendship removed."
+      request_accepted: "Friend request accepted."
+      request_rejected: "Friend request rejected."
+      user_blocked: "User blocked."
+      policy_updated: "Friendship policy updated."
+    alerts:
+      user_not_found: "User not found."
+      cannot_friend_self: "You cannot friend yourself."
+      request_failed: "Could not send friend request."
+      cannot_cancel: "You cannot cancel this request."
     index:
       title: "Friendships Hub"
       add_friend: "Add a Friend"
@@ -631,6 +644,19 @@ pt-BR:
     update:
       success: "Perfil atualizado com sucesso"
   friendships:
+    notices:
+      request_sent: "Pedido de amizade enviado."
+      cancelled: "Pedido de amizade cancelado."
+      removed: "Amizade desfeita."
+      request_accepted: "Pedido de amizade aceito."
+      request_rejected: "Pedido de amizade recusado."
+      user_blocked: "Usuário bloqueado."
+      policy_updated: "Política de amizade atualizada."
+    alerts:
+      user_not_found: "Usuário não encontrado."
+      cannot_friend_self: "Você não pode ser amigo de si mesmo."
+      request_failed: "Não foi possível enviar o pedido de amizade."
+      cannot_cancel: "Você não pode cancelar este pedido."
     index:
       title: "Central de Amizades"
       add_friend: "Adicionar Amigo"

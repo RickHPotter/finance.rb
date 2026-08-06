@@ -24,6 +24,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
                 :piggy_bank_projection_write, :skip_post_commit_financial_recalculation
 
   FRIEND_NOTIFICATION_INTENTS = %w[loan reimbursement].freeze
+  EXCHANGE_CATEGORIES = [ "EXCHANGE RETURN", "BORROW RETURN", "LEND RETURN" ].freeze
 
   # @relationships ............................................................
   belongs_to :user
@@ -605,8 +606,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
       return if visited.include?(visit_key)
 
       visited << visit_key
-      return current_reference if current_reference.user_id != user_id && current_reference.categories.pluck(:category_name).intersect?([ "EXCHANGE RETURN",
-                                                                                                                                          "BORROW RETURN" ])
+      return current_reference if current_reference.user_id != user_id && current_reference.categories.pluck(:category_name).intersect?(EXCHANGE_CATEGORIES)
 
       current_reference = current_reference.reference_transactable
     end
@@ -638,7 +638,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def shared_return_counterpart_candidate?(transaction)
-    transaction.categories.pluck(:category_name).intersect?([ "EXCHANGE RETURN", "BORROW RETURN" ]).present?
+    transaction.categories.pluck(:category_name).intersect?(EXCHANGE_CATEGORIES).present?
   end
 
   def counterpart_shared_return_context(counterpart_user)

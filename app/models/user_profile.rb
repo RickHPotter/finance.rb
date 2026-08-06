@@ -7,6 +7,8 @@ class UserProfile < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
 
+  has_one_attached :avatar
+
   before_validation :set_display_name
 
   # @validations ..............................................................

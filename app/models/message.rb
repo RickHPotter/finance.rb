@@ -92,7 +92,11 @@ class Message < ApplicationRecord
   end
 
   def applied?
-    applied_at.present?
+    applied_at.present? && reverted_at.blank?
+  end
+
+  def reverted?
+    reverted_at.present?
   end
 
   def action_button_key(local_reference_exists:)
@@ -120,6 +124,9 @@ class Message < ApplicationRecord
   end
 
   def actionable_for?(context: user.ensure_main_context!)
+    # Auto-applied messages are still pending the receiver's review (OK or Revert)
+    # until they have been acknowledged (read_at set) or reverted.
+    return true if auto_applied? && read_at.blank? && !reverted?
     return false if applied?
 
     action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
@@ -150,7 +157,7 @@ class Message < ApplicationRecord
   private
 
   def enqueue_auto_apply
-    ActionableMessageAutoApplyJob.perform_later(self)
+    ActionableMessageAutoApplyJob.perform_now(self)
   end
 
   def assign_audit_operation
@@ -362,10 +369,12 @@ end
 #
 #  id                          :bigint           not null, primary key
 #  applied_at                  :datetime         indexed
+#  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
+#  reverted_at                 :datetime         indexed
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
@@ -380,6 +389,7 @@ end
 #  index_messages_on_audit_operation_id      (audit_operation_id)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
+#  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
 #  index_messages_on_user_id                 (user_id)
 #

@@ -396,17 +396,7 @@ module Logic
     end
 
     def structure_source_transaction
-      transaction = installment.cash_transaction
-      return transaction unless transaction.respond_to?(:counterpart_shared_return_transaction)
-
-      counterpart_transaction = transaction.counterpart_shared_return_transaction
-      return transaction if counterpart_transaction.blank?
-
-      sender_shared_return_candidate = [ transaction, counterpart_transaction ].find do |candidate|
-        candidate.respond_to?(:exchange_return?) && candidate.exchange_return?
-      end
-
-      sender_shared_return_candidate || transaction
+      installment.cash_transaction
     end
 
     def open_actionable_update_exists?
