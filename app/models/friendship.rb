@@ -10,11 +10,12 @@ class Friendship < ApplicationRecord
   # @security (i.e. attr_accessible) ..........................................
   enum :state, { pending: "pending", accepted: "accepted", rejected: "rejected", blocked: "blocked", removed: "removed" }, suffix: true
 
-  store_accessor :policies, :auto_accept_actionable_messages
+  store_accessor :policies, :auto_accept_actionable_messages, :boolean
 
   # @relationships ............................................................
   belongs_to :user
   belongs_to :friend, class_name: "User"
+  has_many :entities, dependent: :nullify
 
   # @validations ..............................................................
   validates :public_id, :state, presence: true

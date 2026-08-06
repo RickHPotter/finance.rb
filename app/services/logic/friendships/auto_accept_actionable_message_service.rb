@@ -13,13 +13,13 @@ module Logic
         return unless policy_allows?
         return unless safe?
 
-        Audit::Current.with_actor(friend_user) do
-          Audit::Operation.record(
-            source: :actionable_message,
-            parent_operation_id: message.audit_operation_id
-          ) do
-            apply!
-          end
+        Audit::Operation.run(
+          source: :actionable_message,
+          actor: friend_user,
+          parent_operation_id: message.audit_operation_id,
+          join_existing: false
+        ) do
+          apply!
         end
       end
 
@@ -32,8 +32,12 @@ module Logic
       def policy_allows?
         return false unless friend_user
 
+        # message.user is the *sender*; friend_user is the *recipient* whose
+        # policy we are checking. friendship_with is symmetric — it returns the
+        # same canonical Friendship record regardless of which user calls it —
+        # so both directions resolve to the same row and the same policy value.
         friendship = message.user.friendship_with(friend_user)
-        [ "true", true ].include?(friendship&.auto_accept_actionable_messages)
+        friendship&.auto_accept_actionable_messages == true
       end
 
       def safe?
