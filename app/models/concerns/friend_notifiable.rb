@@ -121,6 +121,11 @@ module FriendNotifiable
                        build_cash_transaction_headers(friend_user, exchanges)
                      end
 
+    # If no mirror entity exists on the friend's side yet (friendship accepted but
+    # ReconcileEntityService hasn't run), the payload builder returns nil — skip the
+    # notification entirely rather than saving a non-replayable stub message.
+    return if replay_payload.nil?
+
     message.headers = {
       version: "message_notification_v2",
       event: build_notification_event(friend_user, exchanges, action, transaction_type),
@@ -166,12 +171,14 @@ module FriendNotifiable
   end
 
   def build_card_transaction_headers(friend_user, exchanges)
+    entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless entity_id
+
     exchanges = exchanges.map do |exchange|
       { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1, paid: exchange.mirrored_paid? }
     end
 
     price = exchanges.pluck(:price).sum
-    friend_user.entities.that_are_users.where_entity_user(user).first.id
 
     {
       id:,
@@ -182,7 +189,7 @@ module FriendNotifiable
       month:,
       year:,
       category_ids: friend_user.categories.find_by(category_name: "BORROW RETURN").id,
-      entity_ids: friend_user.entities.that_are_users.where_entity_user(user).first.id,
+      entity_ids: entity_id,
       cash_installments_attributes: exchanges
     }
   end
@@ -198,8 +205,12 @@ module FriendNotifiable
   end
 
   def build_cash_loan_headers(friend_user, exchanges, intent)
+    entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless entity_id
+
+    # Structural notifications carry shape only — payment state travels via paid_state_sync messages.
     cash_installments_attributes = installments.order(:number, :date).map do |installment|
-      installment.slice(:number, :date, :month, :year, :paid).merge(price: installment.price * -1)
+      installment.slice(:number, :date, :month, :year).merge(price: installment.price * -1)
     end
 
     exchanges_attributes = cash_loan_exchange_attributes(exchanges)
@@ -224,7 +235,7 @@ module FriendNotifiable
           is_payer: true,
           price: exchanges_price,
           price_to_be_returned: exchanges_price,
-          entity_id: friend_user.entities.that_are_users.where_entity_user(user).first.id,
+          entity_id:,
           exchanges_count: exchanges.count,
           exchanges_attributes:
         }
@@ -239,10 +250,12 @@ module FriendNotifiable
   end
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)
-    counterpart_entity_id = friend_user.entities.that_are_users.where_entity_user(user).first.id
-    paid_by_number = installments.order(:number, :date).index_by(&:number)
+    counterpart_entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless counterpart_entity_id
+
+    # Structural notifications carry shape only — payment state travels via paid_state_sync messages.
     cash_installments_attributes = exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: paid_by_number[exchange.number]&.paid || false)
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
     end
 
     installments_price = cash_installments_attributes.pluck(:price).sum

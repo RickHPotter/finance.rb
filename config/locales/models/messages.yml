@@ -24,6 +24,9 @@ en:
         already_updated: This transaction was already updated.
         already_destroyed: This transaction was already destroyed.
         already_acknowledged: This notification was already acknowledged.
+        auto_applied: Auto-applied
+        reverted: Reverted
+        revert: Revert
         create: Create
         edit: Edit
         correct: Correct
@@ -63,6 +66,9 @@ pt-BR:
         already_updated: Essa transação já foi atualizada.
         already_destroyed: Essa transação já foi excluída.
         already_acknowledged: Essa notificação já foi confirmada.
+        auto_applied: Aplicado automaticamente
+        reverted: Revertido
+        revert: Reverter
         create: Criar
         edit: Editar
         correct: Corrigir

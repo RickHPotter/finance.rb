@@ -44,9 +44,6 @@ module Logic
         return false if message.transaction_destroy_notification_message?
         return false if message.paid_state_sync_message?
 
-        payload = message.replay_payload || {}
-        return false if contains_paid_installments?(payload)
-
         action = message.send(:notification_action)
         return false unless action.in?(%w[create update])
 
@@ -56,18 +53,6 @@ module Logic
         end
 
         true
-      end
-
-      def contains_paid_installments?(payload)
-        installments = Array(payload["cash_installments_attributes"]) + Array(payload["card_installments_attributes"])
-        return true if installments.any? { |inst| [ true, "true" ].include?(inst["paid"]) }
-
-        Array(payload["entity_transactions_attributes"]).each do |et|
-          exchanges = Array(et["exchanges_attributes"])
-          return true if exchanges.any? { |ex| [ true, "true" ].include?(ex["paid"]) }
-        end
-
-        false
       end
 
       def apply! # rubocop:disable Metrics/AbcSize

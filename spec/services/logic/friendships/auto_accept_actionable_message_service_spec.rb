@@ -107,7 +107,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       expect(msg.reload.applied_at).to be_nil
     end
 
-    it "does not apply messages with paid installments" do
+    it "applies messages with paid installments" do
       payload = {
         id: nil, type: "CashTransaction", description: "Paid trip", price: 200,
         date: Time.zone.today.iso8601, month: Time.zone.today.month, year: Time.zone.today.year,
@@ -116,6 +116,20 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
         ]
       }
       msg = build_message(action: "create", payload:)
+      expect { described_class.new(msg).call }.to change(CashTransaction, :count).by(1)
+      expect(msg.reload.applied_at).not_to be_nil
+    end
+
+    it "does not apply paid_state_sync messages" do
+      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      msg = conversation.messages.create!(
+        user: sender, body: "notification:paid_state_sync",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "paid_state_sync", receiver_first_name: recipient.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: nil
+        }.to_json
+      )
       expect { described_class.new(msg).call }.not_to change(CashTransaction, :count)
       expect(msg.reload.applied_at).to be_nil
     end
