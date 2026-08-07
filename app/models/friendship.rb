@@ -5,12 +5,23 @@ class Friendship < ApplicationRecord
   # @includes .................................................................
   include FinancialAuditable
 
+  BOOLEAN_CASTER = ActiveModel::Type::Boolean.new
+
   audits_financial_changes skip: [ :policies ]
 
   # @security (i.e. attr_accessible) ..........................................
   enum :state, { pending: "pending", accepted: "accepted", rejected: "rejected", blocked: "blocked", removed: "removed" }, suffix: true
 
-  store_accessor :policies, :auto_accept_actionable_messages, :boolean
+  # store_accessor on JSONB reads the raw hash directly, bypassing the
+  # attribute type system, so :boolean type-hints are silently ignored.
+  # These explicit reader/writer methods normalise to proper booleans.
+  def auto_accept_actionable_messages
+    BOOLEAN_CASTER.cast(policies&.dig("auto_accept_actionable_messages"))
+  end
+
+  def auto_accept_actionable_messages=(value)
+    self.policies = (policies || {}).merge("auto_accept_actionable_messages" => BOOLEAN_CASTER.cast(value))
+  end
 
   # @relationships ............................................................
   belongs_to :user

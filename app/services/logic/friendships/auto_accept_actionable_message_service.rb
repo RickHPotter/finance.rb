@@ -81,13 +81,18 @@ module Logic
             raise ActiveRecord::Rollback unless cash_transaction.save
           end
           message.update!(applied_at: Time.current, auto_applied: true)
-
-          Turbo::StreamsChannel.broadcast_replace_to(
-            message.conversation,
-            target: ActionView::RecordIdentifier.dom_id(message),
-            html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
-          )
         end
+
+        # Best-effort broadcast outside the transaction — a render failure must
+        # never roll back the already-committed cash transaction or applied_at stamp.
+        message.reload
+        Turbo::StreamsChannel.broadcast_replace_to(
+          message.conversation,
+          target: ActionView::RecordIdentifier.dom_id(message),
+          html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
+        )
+      rescue StandardError => e
+        Rails.logger.error("[AutoAcceptActionableMessageService] broadcast failed: #{e.message}")
       end
 
       def build_attributes
