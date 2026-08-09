@@ -284,8 +284,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     [ reference, *reference_descendants_for(reference, scope:) ].uniq { |candidate| [ candidate.class.name, candidate.id ] }
   end
 
-  def self.first_reference_descendant_for(reference, scope: all)
+  def self.first_reference_descendant_for(reference, scope: all, visited: [])
     return if reference.blank?
+
+    visit_key = [ reference.class.name, reference.id ]
+    return if visited.include?(visit_key)
+
+    visited << visit_key
 
     direct_children = reference_children_for(reference)
     matching_child_ids = scope.where(id: direct_children.map(&:id)).pluck(:id)
@@ -293,7 +298,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return matching_child if matching_child.present?
 
     direct_children.each do |child|
-      descendant = first_reference_descendant_for(child, scope:)
+      descendant = first_reference_descendant_for(child, scope:, visited:)
       return descendant if descendant.present?
     end
 
@@ -594,7 +599,24 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def chain_counterpart_shared_return_transaction
-    cross_user_reference_shared_return_transaction || descendant_counterpart_shared_return_transaction
+    cross_user_reference_shared_return_transaction ||
+      descendant_counterpart_shared_return_transaction ||
+      sibling_counterpart_shared_return_transaction
+  end
+
+  def sibling_counterpart_shared_return_transaction
+    return unless reference_transactable.is_a?(CardTransaction) || reference_transactable.is_a?(CashTransaction)
+
+    c_user = reference_transactable.user_id == user_id ? entities.that_are_users.first&.entity_user : reference_transactable.user
+    return if c_user.blank?
+
+    c_context = counterpart_shared_return_context(c_user)
+    return if c_context.blank?
+
+    c_context.cash_transactions
+             .where(reference_transactable:)
+             .order(:created_at, :id)
+             .detect { |candidate| shared_return_counterpart_candidate?(candidate) }
   end
 
   def cross_user_reference_shared_return_transaction

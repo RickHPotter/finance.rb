@@ -67,6 +67,7 @@ module Logic
             cash_transaction = context.cash_transactions.new(attributes.merge(user: friend_user, imported: false))
             cash_transaction.category_transactions.build(category_id:) if category_id.present?
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
+
             raise ActiveRecord::Rollback unless cash_transaction.save
           elsif action == "update"
             cash_transaction = message.local_reference_for(context:)
@@ -78,6 +79,7 @@ module Logic
 
             cash_transaction.assign_attributes(attributes.merge(imported: false))
             cash_transaction.build_month_year if cash_transaction.user_bank_account_id
+
             raise ActiveRecord::Rollback unless cash_transaction.save
           end
           message.update!(applied_at: Time.current, auto_applied: true)
@@ -97,6 +99,8 @@ module Logic
 
       def build_attributes
         payload = message.replay_payload || {}
+        category_id = Array(payload["category_ids"]).first
+        is_exchange = friend_user.categories.find_by(id: category_id)&.category_name == "EXCHANGE"
 
         {
           description: payload["description"],
@@ -104,7 +108,7 @@ module Logic
           date: payload["date"],
           month: payload["month"],
           year: payload["year"],
-          friend_notification_intent: payload["intent"],
+          friend_notification_intent: (payload["intent"] if is_exchange),
           reference_transactable_type: payload["type"],
           reference_transactable_id: payload["id"],
           source_message_id: message.id,

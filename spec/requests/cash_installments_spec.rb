@@ -1027,6 +1027,68 @@ RSpec.describe "CashInstallments", type: :request do
     end
 
     context "with mirror exchange flows between entity users" do
+      it "keeps a card-origin borrow return synchronized after partially and then fully paying the split installment" do
+        sender = create(:user, :random)
+        receiver = user
+        _origin_card_transaction, sender_shared_return, receiver_shared_return =
+          create_card_origin_shared_return_bundle(sender:, receiver:)
+        sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
+
+        patch pay_cash_installment_path(receiver_shared_return.cash_installments.find_by!(number: 1)), params: {
+          cash_installment: {
+            date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+            price: -500
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(receiver_shared_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -500, false ], [ -1_000, false ] ])
+        expect(sender_shared_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -500, false ], [ -1_000, false ] ])
+
+        split_installment = receiver_shared_return.cash_installments.find_by!(number: 2)
+        patch pay_cash_installment_path(split_installment), params: {
+          cash_installment: {
+            date: installment_date.next_day.strftime("%Y-%m-%dT%H:%M"),
+            price: split_installment.price
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(split_installment.reload).to be_paid
+        expect(sender_shared_return.cash_installments.find_by!(number: 2).reload).to be_paid
+      end
+
+      it "keeps a cash-origin exchange return synchronized after partially and then fully paying the split installment" do
+        sender = user
+        receiver = create(:user, :random)
+        _origin_cash_transaction, sender_shared_return, receiver_shared_return =
+          create_reimbursement_shared_return_bundle(sender:, receiver:)
+        sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
+
+        patch pay_cash_installment_path(sender_shared_return.cash_installments.find_by!(number: 1)), params: {
+          cash_installment: {
+            date: installment_date.strftime("%Y-%m-%dT%H:%M"),
+            price: -500
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(sender_shared_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -500, false ], [ -1_000, false ] ])
+        expect(receiver_shared_return.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -500, true ], [ -500, false ], [ -1_000, false ] ])
+
+        split_installment = sender_shared_return.cash_installments.find_by!(number: 2)
+        patch pay_cash_installment_path(split_installment), params: {
+          cash_installment: {
+            date: installment_date.next_day.strftime("%Y-%m-%dT%H:%M"),
+            price: split_installment.price
+          }
+        }, headers: turbo_stream_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(split_installment.reload).to be_paid
+        expect(receiver_shared_return.cash_installments.find_by!(number: 2).reload).to be_paid
+      end
+
       it "synchronizes paid state from a card-origin shared return to the counterpart borrow return" do
         sender = user
         receiver = create(:user, :random)

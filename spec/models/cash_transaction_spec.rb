@@ -384,6 +384,10 @@ RSpec.describe CashTransaction, type: :model do
 
       expect(source.first_reference_descendant(scope: receiver.main_context.cash_transactions)).to eq(receiver_borrow_return)
       expect(receiver_borrow_return.reference_root_transaction).to eq(source)
+
+      receiver_borrow_return.update!(reference_transactable: source)
+
+      expect(sender_shared_return.counterpart_shared_return_transaction).to eq(receiver_borrow_return)
     end
 
     it "prefers the receiver exchange return as the shared-return counterpart in a canonical loan chain" do
