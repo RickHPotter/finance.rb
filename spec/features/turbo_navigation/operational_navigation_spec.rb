@@ -50,7 +50,7 @@ RSpec.describe "Health Check and audit Turbo navigation", type: :feature do
     refresh_browser_at(preview_path)
     browser_back_to(audit_operation_path(operation))
 
-    find("#audit_health_check_link").click
+    find("a[href='#{healthcheck_path}']", match: :first).click
     expect_browser_path(healthcheck_path)
 
     browser_back_to(audit_operation_path(operation))

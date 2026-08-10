@@ -105,6 +105,7 @@ RSpec.describe Logic::ContextCloneService do
       cash_transaction.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: standalone_reference.id)
 
       card_transaction = create(:card_transaction, user:, context: source_context, user_card:, subscription:)
+      card_transaction.subscription_allocation_sync = true
       card_transaction.categories = [ category ]
       card_transaction.entities = [ entity ]
       card_transaction.save!
@@ -198,6 +199,7 @@ RSpec.describe Logic::ContextCloneService do
         subscription:,
         description: "Subscription cash side"
       )
+      subscription_cash_transaction.subscription_allocation_sync = true
       subscription_cash_transaction.categories = [ category ]
       subscription_cash_transaction.entities = [ entity ]
       subscription_cash_transaction.save!
@@ -211,6 +213,7 @@ RSpec.describe Logic::ContextCloneService do
         description: "Subscription card side",
         date: Date.new(2026, 3, 18)
       )
+      subscription_card_transaction.subscription_allocation_sync = true
       subscription_card_transaction.categories = [ category ]
       subscription_card_transaction.entities = [ entity ]
       subscription_card_transaction.save!
@@ -358,6 +361,7 @@ RSpec.describe Logic::ContextCloneService do
         subscription:,
         description: "Rollback cash side"
       )
+      cash_transaction.subscription_allocation_sync = true
       cash_transaction.categories = [ category ]
       cash_transaction.entities = [ entity ]
       cash_transaction.save!
@@ -370,6 +374,7 @@ RSpec.describe Logic::ContextCloneService do
         subscription:,
         description: "Rollback card side"
       )
+      card_transaction.subscription_allocation_sync = true
       card_transaction.categories = [ category ]
       card_transaction.entities = [ entity ]
       card_transaction.save!

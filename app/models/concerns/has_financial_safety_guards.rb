@@ -34,6 +34,7 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
 
   def prevent_unsafe_paid_history_rewrites
     return unless persisted?
+    return if Audit::Current.mutation_source == "rollback"
     return if respond_to?(:piggy_bank_projection_write) && piggy_bank_projection_write
     return unless paid_history? || paid_projection_target_rewrite_attempted?
     return if paid_history_write_envelope_safe?
