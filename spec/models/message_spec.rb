@@ -221,7 +221,7 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("human")
     end
 
-    it "derives create, correct, and edit button states from applied_at and notification type" do
+    it "derives pending actions from notification type and removes them after application" do
       create_message = described_class.create!(
         conversation:,
         user: sender,
@@ -252,7 +252,7 @@ RSpec.describe Message, type: :model do
 
       update_message.update!(applied_at: Time.current)
 
-      expect(update_message.action_button_key(local_reference_exists: true)).to eq(:edit)
+      expect(update_message.action_button_key(local_reference_exists: true)).to be_nil
     end
 
     it "does not resolve a structural fallback through an applied predecessor once canonical chains are required" do

@@ -11,6 +11,7 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
     conversation.messages.create!(
       user: sender,
       body: "test",
+      applied_at: Time.current,
       auto_applied: true,
       headers: {
         version: "message_notification_v2",
@@ -42,13 +43,25 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
     end
   end
 
-  context "when not auto-applied" do
-    before { message.update!(auto_applied: false) }
+  context "when not applied" do
+    before { message.update!(applied_at: nil, auto_applied: false) }
 
-    it "fails with not_auto_applied" do
+    it "fails with not_applied" do
       result = service.call
       expect(result.reverted?).to be false
-      expect(result.failure_reason).to eq("not_auto_applied")
+      expect(result.failure_reason).to eq("not_applied")
+    end
+  end
+
+  context "when superseded" do
+    before do
+      newer_message = conversation.messages.create!(user: sender, body: "newer message")
+      message.update!(superseded_by: newer_message)
+    end
+
+    it "does not offer or perform a revert" do
+      expect(service.revertible?).to be(false)
+      expect(service.call.failure_reason).to eq("superseded")
     end
   end
 
@@ -65,6 +78,7 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
 
     before do
       message.update!(audit_operation_id: original_op.id)
+      allow(Audit::Rollback::Preview).to receive(:new).and_return(instance_double(Audit::Rollback::Preview, state: "previewable"))
 
       allow(Audit::Rollback::DirectApply).to receive(:new).and_return(
         Class.new do
@@ -113,6 +127,33 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
       message.update!(audit_operation_id: parent_operation.id)
 
       expect(service.send(:auto_apply_operation)).to eq(actionable_operation)
+    end
+  end
+
+  context "with a manually applied message linked to the recipient's operation" do
+    it "is revertible when the operation still has a safe preview" do
+      operation = AuditOperation.create!(
+        source: "web",
+        actor_id: recipient.id,
+        context_id: recipient.main_context.id,
+        result: "committed"
+      )
+      AuditVersion.create!(
+        operation:,
+        owner_id: recipient.id,
+        context_id: recipient.main_context.id,
+        item_type: "CashTransaction",
+        item_subtype: "CashTransaction",
+        item_id: 123,
+        event: :update,
+        mutation_source: :web,
+        object_changes: { "description" => %w[Before After] },
+        metadata: {}
+      )
+      message.update!(auto_applied: false, audit_operation: operation)
+      allow(Audit::Rollback::Preview).to receive(:new).and_return(instance_double(Audit::Rollback::Preview, state: "previewable"))
+
+      expect(service.revertible?).to be(true)
     end
   end
 end

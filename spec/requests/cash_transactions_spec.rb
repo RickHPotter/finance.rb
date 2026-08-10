@@ -1554,7 +1554,11 @@ RSpec.describe "CashTransactions", type: :request do
         cash_transaction: { source_message_id: source_message.id }
       ), headers: turbo_stream_headers
 
-      expect(source_message.reload.applied_at).to be_present
+      expect(source_message.reload).to have_attributes(
+        applied_at: be_present,
+        audit_operation: have_attributes(actor_id: user.id, context_id: user.main_context.id, source: "web")
+      )
+      expect(source_message.audit_operation.audit_versions).to be_present
     end
 
     it "accepts indexed nested-hash params when creating a receiver borrow return from an actionable message" do

@@ -484,7 +484,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def mark_source_message_applied
-    source_message&.update!(applied_at: Time.current)
+    return if source_message.blank?
+
+    source_message.update!(
+      applied_at: Time.current,
+      audit_operation: Audit::Operation.ensure_persisted!
+    )
   end
 
   def handle_save

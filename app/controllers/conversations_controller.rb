@@ -19,7 +19,7 @@ class ConversationsController < ApplicationController
     @active_message_filter = conversation_message_filter
     @active_message_sides = conversation_message_sides
     @messages = filtered_messages(@conversation)
-    @conversation.messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
+    @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).update_all(read_at: Time.current)
 
     render Views::Conversations::Show.new(
       conversation: @conversation,

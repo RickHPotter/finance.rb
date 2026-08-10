@@ -100,9 +100,9 @@ class Message < ApplicationRecord
   end
 
   def action_button_key(local_reference_exists:)
+    return if applied? || reverted? || superseded_by_id.present?
     return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
-    return :edit if applied? && local_reference_exists
     return :correct if notification_action == "update" && local_reference_exists
     return :create unless local_reference_exists
 
@@ -124,8 +124,6 @@ class Message < ApplicationRecord
   end
 
   def actionable_for?(context: user.ensure_main_context!)
-    # Auto-applied messages are still pending the receiver's review (OK or Revert)
-    # until they have been acknowledged (read_at set) or reverted.
     return true if auto_applied? && read_at.blank? && !reverted?
     return false if applied?
 

@@ -140,18 +140,17 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
         model_attribute(message, :auto_applied)
       end
 
-      if message.user_id != viewer&.id
+      if recipient_viewer?
         div(class: "flex gap-2 mt-2") do
-          render_acknowledge_action
-          render_revert_action
+          render_acknowledge_action(grouped: true)
+          render_revert_action(grouped: true) if revertible_for_viewer?
         end
       end
+
+      return
     end
 
-    return if message.transaction_destroy_notification_message?
-    return unless reference_transactable_for_viewer.present?
-
-    render_edit_action(reference_transactable_for_viewer, :edit)
+    render_revert_action if recipient_viewer? && revertible_for_viewer?
   end
 
   def render_my_assistant_show_action
@@ -255,7 +254,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end
@@ -266,13 +265,13 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }),
       size: :xs,
       class: action_button_class(action_button_key),
-      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction }
+      data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, action_button_key) }
     end
   end
 
-  def render_acknowledge_action
+  def render_acknowledge_action(grouped: false)
     Link(
       href: apply_conversation_message_path(
         message.conversation,
@@ -282,19 +281,20 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
         message_side: active_message_sides
       ),
       size: :xs,
-      class: action_button_class(:ok),
+      class: action_button_class(:ok, grouped:),
       data: {
         turbo_method: :patch,
         turbo_frame: "_top",
         turbo_prefetch: "false",
-        chat_target: :messageAction
+        chat_target: :messageAction,
+        message_action: :ok
       }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :ok) }
     end
   end
 
-  def render_revert_action
+  def render_revert_action(grouped: false)
     Link(
       href: revert_conversation_message_path(
         message.conversation,
@@ -304,12 +304,13 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
         message_side: active_message_sides
       ),
       size: :xs,
-      class: action_button_class(:destroy), # Re-using destroy styling for red danger tint
+      class: action_button_class(:revert, grouped:),
       data: {
         turbo_method: :patch,
         turbo_frame: "_top",
         turbo_prefetch: "false",
-        chat_target: :messageAction
+        chat_target: :messageAction,
+        message_action: :revert
       }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :revert) }
@@ -320,14 +321,15 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     Link(
       href: cash_transaction_path(id: reference_transactable, message_id: message.id),
       size: :xs,
-      class: "mt-3 flex flex-col items-center text-center text-black bg-red-500 hover:bg-red-600 p-3 rounded-xs font-medium shadow",
+      class: action_button_class(:destroy),
       data: {
         turbo_method: :delete,
         turbo_action: "replace",
         turbo_confirm: "Are you sure you want to destroy this transaction: #{reference_transactable.description}?",
         turbo_frame: "_top",
         turbo_prefetch: "false",
-        chat_target: :messageAction
+        chat_target: :messageAction,
+        message_action: :destroy
       }
     ) do
       span(class: "truncate block max-w-full leading-tight") { model_attribute(message, :destroy) }
@@ -346,21 +348,53 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     "mt-3 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-2xs font-semibold uppercase"
   end
 
-  def action_button_class(action_button_key)
-    base_class = "mt-3 flex flex-col items-center text-center p-3 rounded-xs font-medium shadow transition-colors"
+  def action_button_class(action_button_key, grouped: false)
+    layout_class = grouped ? "flex-1" : "mt-3 w-full"
+    base_class = "#{layout_class} inline-flex min-h-10 items-center justify-center rounded-lg border px-4 py-2.5 text-center text-xs " \
+                 "font-semibold uppercase tracking-wide shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2"
 
     case action_button_key.to_sym
-    when :create
-      "#{base_class} text-white bg-emerald-600 hover:bg-emerald-700"
+    when :create, :ok
+      "#{base_class} border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-emerald-600"
     when :correct
-      "#{base_class} text-black bg-amber-400 hover:bg-amber-500"
+      "#{base_class} border-amber-500 bg-amber-400 text-amber-950 hover:bg-amber-500 focus-visible:outline-amber-500"
     when :edit
-      "#{base_class} text-black bg-sky-400 hover:bg-sky-500"
+      "#{base_class} border-sky-500 bg-sky-400 text-sky-950 hover:bg-sky-500 focus-visible:outline-sky-500"
     when :destroy
-      "#{base_class} text-white bg-red-500 hover:bg-red-600"
+      "#{base_class} border-red-700 bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600"
+    when :revert
+      "#{base_class} border-red-300 bg-white text-red-700 hover:border-red-400 hover:bg-red-50 focus-visible:outline-red-500 " \
+      "dark:border-red-800 dark:bg-slate-950 dark:text-red-300 dark:hover:bg-red-950/40"
     else
-      "#{base_class} text-black bg-stone-300 hover:bg-stone-400"
+      "#{base_class} border-stone-300 bg-white text-stone-700 hover:bg-stone-100 focus-visible:outline-stone-500 " \
+      "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
     end
+  end
+
+  def recipient_viewer?
+    message.user_id != message_action_actor&.id
+  end
+
+  def revertible_for_viewer?
+    actor = message_action_actor
+    context = message_action_context
+    return false if actor.blank? || context.blank?
+
+    Logic::Friendships::RevertAutoApplyService.new(message:, actor:, context:).revertible?
+  end
+
+  def message_action_actor
+    @message_action_actor ||= viewer || message.conversation.users.where.not(id: message.user_id).first
+  end
+
+  def message_action_context
+    return current_context if viewer.present?
+
+    actor = message_action_actor
+    return if actor.blank?
+    return actor.main_context if message.conversation.scenario_key.blank?
+
+    actor.contexts.find_by(scenario_key: message.conversation.scenario_key)
   end
 
   def assistant_presented_notification?
@@ -402,19 +436,6 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def assistant_avatar_wrapper_class
     my_assistant_notification? ? "ml-3 order-last" : "mr-3"
-  end
-
-  def reference_transactable_for_viewer
-    return @reference_transactable_for_viewer if defined?(@reference_transactable_for_viewer)
-    return @reference_transactable_for_viewer = nil if current_context.blank?
-
-    payload = message.replay_payload || {}
-    type = payload["type"]
-    id = payload["id"]
-
-    return unless message.transaction_destroy_notification_message? || (type.present? && id.present?)
-
-    @reference_transactable_for_viewer = message.local_reference_for(context: current_context)
   end
 
   def showable_my_transaction
@@ -507,11 +528,5 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def active_message_sides
     requested_sides = Array(request.params[:message_side]).presence || %w[mine theirs]
     requested_sides & %w[mine theirs]
-  end
-
-  def viewer_cash_transactions
-    return CashTransaction.none if viewer.blank?
-
-    current_context.cash_transactions
   end
 end

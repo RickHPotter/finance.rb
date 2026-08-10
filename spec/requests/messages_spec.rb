@@ -142,5 +142,45 @@ RSpec.describe "Messages", type: :request do
       expect(CashTransaction.exists?(created_transaction.id)).to be(false)
       expect(actionable_message.reload).to be_reverted
     end
+
+    it "rolls back a safely audited manual application" do
+      account = create(:user_bank_account, :random, user:)
+      transaction = PaperTrail.request(enabled: false) do
+        create(
+          :cash_transaction,
+          user:,
+          context: user.main_context,
+          user_bank_account: account,
+          description: "Before manual apply"
+        )
+      end
+      operation = nil
+      Audit::Operation.run(source: :web, actor: user, context: user.main_context) do
+        transaction.update!(description: "After manual apply")
+        operation = Audit::Operation.ensure_persisted!
+      end
+      manually_applied_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        applied_at: Time.current,
+        audit_operation: operation,
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "update",
+            transaction_type: "CashTransaction",
+            receiver_first_name: user.first_name,
+            details: { description: "After manual apply" }
+          },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      patch revert_conversation_message_path(conversation, manually_applied_message), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(transaction.reload.description).to eq("Before manual apply")
+      expect(manually_applied_message.reload).to be_reverted
+    end
   end
 end

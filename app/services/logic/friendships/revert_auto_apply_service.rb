@@ -14,27 +14,18 @@ module Logic
       end
 
       def call
-        failure = check_preconditions
-        return failure if failure
-
-        original_operation = auto_apply_operation
-        return Result.new(reverted?: false, failure_reason: "missing_audit") if original_operation.blank?
+        failure_reason = eligibility_failure_reason
+        return Result.new(reverted?: false, failure_reason:) if failure_reason
 
         ActiveRecord::Base.transaction do
-          # Create a rollback operation linking to the original
           Audit::Operation.run(
             source: :rollback,
             actor: actor,
             parent_operation_id: message.audit_operation_id,
-            rollback_of_operation_id: original_operation.id,
+            rollback_of_operation_id: rollback_operation.id,
             join_existing: false
           ) do
-            # The original auto_accept_actionable_message_service operation is where the cash transaction was created/updated.
-            # We want to rollback the changes introduced in that operation.
-            # Usually, PaperTrail allows reverting a version, but here we want to revert an entire operation.
-            # The app likely has Audit::Rollback::Apply.
-
-            result = Audit::Rollback::DirectApply.new(operation: original_operation, actor: actor).call
+            result = Audit::Rollback::DirectApply.new(operation: rollback_operation, actor: actor).call
 
             raise ActiveRecord::Rollback unless result.status == "applied"
 
@@ -47,16 +38,55 @@ module Logic
         else
           Result.new(reverted?: false, failure_reason: "rollback_failed")
         end
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
+        Result.new(reverted?: false, failure_reason: "rollback_failed")
+      end
+
+      def revertible?
+        eligibility_failure_reason.nil?
       end
 
       private
 
-      def check_preconditions
-        return Result.new(reverted?: false, failure_reason: "unauthorized") if message.user_id == actor.id
-        return Result.new(reverted?: false, failure_reason: "already_reverted") if message.reverted?
-        return Result.new(reverted?: false, failure_reason: "not_auto_applied") unless message.auto_applied?
+      def eligibility_failure_reason
+        return @eligibility_failure_reason if defined?(@eligibility_failure_reason)
 
-        nil
+        @eligibility_failure_reason =
+          if actor.blank? || message.user_id == actor.id
+            "unauthorized"
+          elsif message.reverted?
+            "already_reverted"
+          elsif !message.applied?
+            "not_applied"
+          elsif message.superseded_by_id.present?
+            "superseded"
+          elsif rollback_operation.blank?
+            "missing_audit"
+          elsif rollback_preview.state != "previewable"
+            "rollback_unavailable"
+          end
+      rescue StandardError
+        @eligibility_failure_reason = "rollback_unavailable"
+      end
+
+      def rollback_preview
+        @rollback_preview ||= Audit::Rollback::Preview.new(operation: rollback_operation, actor:)
+      end
+
+      def rollback_operation
+        return @rollback_operation if defined?(@rollback_operation)
+
+        @rollback_operation = message.auto_applied? ? auto_apply_operation : manual_apply_operation
+      end
+
+      def manual_apply_operation
+        operation = message.audit_operation
+        return if operation.blank?
+        return unless operation.actor_id == actor.id && operation.context_id == context.id
+        return if operation.audit_versions.none?
+
+        operation
       end
 
       def auto_apply_operation
