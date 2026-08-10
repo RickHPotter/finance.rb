@@ -1149,6 +1149,7 @@ RSpec.describe CashTransaction, type: :model do
           "exchanges_count" => 1
         )
       )
+      expect(headers.dig("replay", "entity_transactions_attributes", 0, "exchanges_attributes", 0)).not_to have_key("paid")
     end
 
     it "hydrates the effective friend notification intent from the latest active message headers" do

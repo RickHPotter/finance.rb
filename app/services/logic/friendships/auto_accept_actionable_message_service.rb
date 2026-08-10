@@ -41,10 +41,11 @@ module Logic
       end
 
       def safe?
-        return false if message.transaction_destroy_notification_message?
+        return false if message.applied_at.present? || message.reverted?
         return false if message.paid_state_sync_message?
 
         action = message.send(:notification_action)
+        return safe_destroy? if action == "destroy"
         return false unless action.in?(%w[create update])
 
         if action == "update"
@@ -55,33 +56,36 @@ module Logic
         true
       end
 
-      def apply! # rubocop:disable Metrics/AbcSize
+      def safe_destroy?
+        cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
+
+        cash_transaction.present? &&
+          cash_transaction == message.reference_transactable &&
+          cash_transaction.user_id == friend_user.id &&
+          cash_transaction.context_id == friend_user.ensure_main_context!.id &&
+          safe_destroy_transaction_kind?(cash_transaction) &&
+          cash_transaction.entities.that_are_users.where_entity_user(message.user).exists? &&
+          !cash_transaction.paid_history?
+      end
+
+      def safe_destroy_transaction_kind?(cash_transaction)
+        linked_exchange =
+          cash_transaction.categories.exists?(category_name: "EXCHANGE") &&
+          cash_transaction.reference_transactable_type == "CashTransaction" &&
+          cash_transaction.reference_transactable_id.present?
+        orphaned_borrow_return =
+          cash_transaction.categories.exists?(category_name: "BORROW RETURN") &&
+          cash_transaction.reference_transactable.blank?
+
+        linked_exchange || orphaned_borrow_return
+      end
+
+      def apply!
         context = friend_user.ensure_main_context!
         action = message.send(:notification_action)
-        attributes = build_attributes
-        payload = message.replay_payload || {}
-        category_id = Array(payload["category_ids"]).first
 
         ActiveRecord::Base.transaction do
-          if action == "create"
-            cash_transaction = context.cash_transactions.new(attributes.merge(user: friend_user, imported: false))
-            cash_transaction.category_transactions.build(category_id:) if category_id.present?
-            cash_transaction.build_month_year if cash_transaction.user_bank_account_id
-
-            raise ActiveRecord::Rollback unless cash_transaction.save
-          elsif action == "update"
-            cash_transaction = message.local_reference_for(context:)
-
-            if category_id.present? && cash_transaction.category_transactions.find_by(category_id:).blank?
-              cash_transaction.category_transactions.each(&:mark_for_destruction)
-              cash_transaction.category_transactions.build(category_id:)
-            end
-
-            cash_transaction.assign_attributes(attributes.merge(imported: false))
-            cash_transaction.build_month_year if cash_transaction.user_bank_account_id
-
-            raise ActiveRecord::Rollback unless cash_transaction.save
-          end
+          apply_action!(action, context)
           message.update!(applied_at: Time.current, auto_applied: true)
         end
 
@@ -94,7 +98,47 @@ module Logic
           html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
         )
       rescue StandardError => e
-        Rails.logger.error("[AutoAcceptActionableMessageService] broadcast failed: #{e.message}")
+        Rails.logger.error("[AutoAcceptActionableMessageService] auto-apply failed: #{e.message}")
+      end
+
+      def apply_action!(action, context)
+        case action
+        when "destroy" then destroy_transaction!(context)
+        when "create" then create_transaction!(context)
+        when "update" then update_transaction!(context)
+        end
+      end
+
+      def destroy_transaction!(context)
+        cash_transaction = message.local_reference_for(context:)
+        cash_transaction.source_message_id = message.id
+        first_installment_date = cash_transaction.cash_installments.order(:date).pick(:date)
+        Audit::BulkMutation.update_columns!(cash_transaction, date: first_installment_date) if first_installment_date.present?
+        cash_transaction.destroy!
+      end
+
+      def create_transaction!(context)
+        cash_transaction = context.cash_transactions.new(build_attributes.merge(user: friend_user, imported: false))
+        cash_transaction.category_transactions.build(category_id:) if category_id.present?
+        cash_transaction.build_month_year if cash_transaction.user_bank_account_id
+        cash_transaction.save!
+      end
+
+      def update_transaction!(context)
+        cash_transaction = message.local_reference_for(context:)
+
+        if category_id.present? && cash_transaction.category_transactions.find_by(category_id:).blank?
+          cash_transaction.category_transactions.each(&:mark_for_destruction)
+          cash_transaction.category_transactions.build(category_id:)
+        end
+
+        cash_transaction.assign_attributes(build_attributes.merge(imported: false))
+        cash_transaction.build_month_year if cash_transaction.user_bank_account_id
+        cash_transaction.save!
+      end
+
+      def category_id
+        @category_id ||= Array(message.replay_payload&.fetch("category_ids", nil)).first
       end
 
       def build_attributes
@@ -136,7 +180,14 @@ module Logic
       end
 
       def replay_entity_transactions_attributes(payload) # rubocop:disable Metrics/AbcSize
-        attributes = Array(payload["entity_transactions_attributes"]).map(&:with_indifferent_access)
+        attributes = Array(payload["entity_transactions_attributes"]).map do |entity_attributes|
+          entity_attributes = entity_attributes.with_indifferent_access
+          exchanges_attributes = Array(entity_attributes[:exchanges_attributes]).map do |exchange_attributes|
+            exchange_attributes.with_indifferent_access.except(:paid)
+          end
+
+          entity_attributes.merge(exchanges_attributes:)
+        end
 
         if message.send(:notification_action) == "update"
           cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)

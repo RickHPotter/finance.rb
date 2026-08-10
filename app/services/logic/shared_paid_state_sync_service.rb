@@ -237,6 +237,9 @@ module Logic
 
     def structure_update_reference_transactable
       transaction = installment.cash_transaction
+      return counterpart_transaction if transaction.borrow_return? && counterpart_transaction.present?
+      return counterpart_transaction if mirrored_side_exchange_return?(transaction) && counterpart_transaction.present?
+      return transaction if transaction.reference_transactable == transaction
 
       transaction.exchanges.includes(entity_transaction: :transactable).first&.entity_transaction&.transactable ||
         transaction.reference_transactable ||
@@ -260,6 +263,8 @@ module Logic
     def counterpart_replay_transaction(reference_transactable, counterpart_transaction)
       local_projection = counterpart_transaction.reference_transactable
 
+      return counterpart_transaction if installment.cash_transaction.borrow_return?
+      return counterpart_transaction if mirrored_side_exchange_return?(installment.cash_transaction)
       return counterpart_transaction unless reference_transactable.is_a?(CashTransaction)
       return counterpart_transaction unless local_projection.is_a?(CashTransaction)
       return counterpart_transaction unless local_projection.user_id == counterpart_transaction.user_id
@@ -267,6 +272,18 @@ module Logic
       return counterpart_transaction if local_projection == reference_transactable
 
       local_projection
+    end
+
+    def mirrored_side_exchange_return?(transaction)
+      return false unless transaction.exchange_return?
+
+      local_exchange = transaction.reference_transactable
+      return false unless local_exchange.is_a?(CashTransaction)
+      return false unless local_exchange.user_id == transaction.user_id
+      return false unless local_exchange.exchange_category?
+
+      shared_source = local_exchange.reference_transactable
+      shared_source.is_a?(CashTransaction) && shared_source.user_id != transaction.user_id
     end
 
     def counterpart_replay_entity_source_transaction(reference_transactable, replay_transaction)

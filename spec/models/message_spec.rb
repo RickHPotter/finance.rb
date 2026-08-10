@@ -123,6 +123,29 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
     end
 
+    it "sends v2 destroy notifications through automatic application" do
+      allow(ActionableMessageAutoApplyJob).to receive(:perform_now)
+
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: { description: "WATER BILL" }
+          },
+          replay: nil
+        }.to_json
+      )
+
+      expect(ActionableMessageAutoApplyJob).to have_received(:perform_now).with(message)
+    end
+
     it "renders v2 destroy notification bodies from headers at display time" do
       message = described_class.create!(
         conversation:,

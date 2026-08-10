@@ -531,6 +531,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def prevent_linked_borrow_return_destruction
     return if context_destroying?
+    return if applying_actionable_message? && exchange_category?
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -599,9 +600,22 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def chain_counterpart_shared_return_transaction
-    cross_user_reference_shared_return_transaction ||
+    counterpart_return_through_local_exchange ||
+      cross_user_reference_shared_return_transaction ||
       descendant_counterpart_shared_return_transaction ||
       sibling_counterpart_shared_return_transaction
+  end
+
+  def counterpart_return_through_local_exchange
+    return unless exchange_return?
+
+    local_exchange = reference_transactable
+    return unless local_exchange.is_a?(CashTransaction)
+    return unless local_exchange.user_id == user_id
+    return unless local_exchange.exchange_category?
+
+    counterpart = local_exchange.counterpart_shared_return_transaction
+    counterpart if counterpart.present? && counterpart.user_id != user_id
   end
 
   def sibling_counterpart_shared_return_transaction

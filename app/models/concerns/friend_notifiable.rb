@@ -254,7 +254,6 @@ module FriendNotifiable
     exchanges.map do |exchange|
       exchange.slice(:number, :date, :month, :year).merge(
         price: exchange.price * -1,
-        paid: exchange.mirrored_paid?,
         exchange_type: exchange.exchange_type
       )
     end

@@ -50,6 +50,8 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
 
   around { |ex| perform_enqueued_jobs { ex.run } }
 
+  before { allow(ActionableMessageAutoApplyJob).to receive(:perform_now) }
+
   # ─── Policy guard ────────────────────────────────────────────────────────────
 
   describe "#call — policy guard" do
@@ -93,17 +95,97 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
   # ─── Safety guards ───────────────────────────────────────────────────────────
 
   describe "#call — safety guards" do
-    it "does not apply destroy-type messages" do
+    it "auto-applies an unambiguous destroy for an unpaid linked exchange" do
+      sender_source = create(:cash_transaction, user: sender, context: sender.main_context, user_bank_account: sender_bank)
+      recipient_exchange = create(
+        :cash_transaction,
+        user: recipient,
+        context: recipient.main_context,
+        user_bank_account: recipient_bank,
+        reference_transactable: sender_source
+      )
+      recipient_exchange.categories = [ recipient.built_in_category("EXCHANGE") ]
+      recipient_exchange.friend_notification_intent = "loan"
+      recipient_exchange.entity_transactions.create!(entity: recipient_entity, price: 100, price_to_be_returned: 100, is_payer: true)
+      recipient_exchange.save!
+
       conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
-        user: sender, body: "notification:destroy",
+        user: sender,
+        reference_transactable: recipient_exchange,
+        body: "notification:destroy",
         headers: {
           version: "message_notification_v2",
           event: { action: "destroy", receiver_first_name: recipient.first_name, transaction_type: "CashTransaction", details: {} },
           replay: nil
         }.to_json
       )
-      expect { described_class.new(msg).call }.not_to change(CashTransaction, :count)
+
+      described_class.new(msg).call
+
+      expect(CashTransaction.exists?(recipient_exchange.id)).to be(false)
+      expect(msg.reload).to be_auto_applied
+    end
+
+    it "auto-applies an unambiguous destroy for an unpaid borrow return whose source was destroyed" do
+      recipient_return = create(
+        :cash_transaction,
+        user: recipient,
+        context: recipient.main_context,
+        user_bank_account: recipient_bank
+      )
+      recipient_return.categories = [ recipient.built_in_category("BORROW RETURN") ]
+      recipient_return.entity_transactions.create!(entity: recipient_entity, price: 0, price_to_be_returned: 0, is_payer: false)
+      recipient_return.save!
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      msg = conversation.messages.create!(
+        user: sender,
+        reference_transactable: recipient_return,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "destroy", receiver_first_name: recipient.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: nil
+        }.to_json
+      )
+
+      described_class.new(msg).call
+
+      expect(CashTransaction.exists?(recipient_return.id)).to be(false)
+      expect(msg.reload).to be_auto_applied
+    end
+
+    it "does not auto-apply destroy messages for paid linked exchanges" do
+      sender_source = create(:cash_transaction, user: sender, context: sender.main_context, user_bank_account: sender_bank)
+      recipient_exchange = create(
+        :cash_transaction,
+        user: recipient,
+        context: recipient.main_context,
+        user_bank_account: recipient_bank,
+        reference_transactable: sender_source
+      )
+      recipient_exchange.categories = [ recipient.built_in_category("EXCHANGE") ]
+      recipient_exchange.friend_notification_intent = "loan"
+      recipient_exchange.entity_transactions.create!(entity: recipient_entity, price: 100, price_to_be_returned: 100, is_payer: true)
+      recipient_exchange.save!
+      recipient_exchange.cash_installments.first.update!(paid: true)
+
+      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      msg = conversation.messages.create!(
+        user: sender,
+        reference_transactable: recipient_exchange,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "destroy", receiver_first_name: recipient.first_name, transaction_type: "CashTransaction", details: {} },
+          replay: nil
+        }.to_json
+      )
+
+      described_class.new(msg).call
+
+      expect(CashTransaction.exists?(recipient_exchange.id)).to be(true)
       expect(msg.reload.applied_at).to be_nil
     end
 
@@ -176,6 +258,42 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     it "creates an AuditOperation linked to the message's audit_operation_id" do
       expect { described_class.new(msg).call }
         .to change { AuditOperation.where(source: "actionable_message").count }.by_at_least(1)
+    end
+
+    it "creates a loan exchange from the full actionable replay payload" do
+      loan_payload = payload.merge(
+        entity_transactions_attributes: [
+          {
+            entity_id: recipient_entity.id,
+            is_payer: true,
+            price: 100,
+            price_to_be_returned: 100,
+            exchanges_count: 1,
+            exchanges_attributes: [
+              {
+                number: 1,
+                exchange_type: "monetary",
+                date: Time.zone.today.iso8601,
+                month: Time.zone.today.month,
+                year: Time.zone.today.year,
+                price: 100,
+                paid: false
+              }
+            ]
+          }
+        ]
+      )
+      loan_message = build_message(action: "create", payload: loan_payload)
+      recipient_exchanges = recipient.ensure_main_context!.cash_transactions.joins(:categories).where(categories: { category_name: "EXCHANGE" })
+      existing_exchange_ids = recipient_exchanges.ids
+
+      expect { described_class.new(loan_message).call }
+        .to change(recipient_exchanges, :count).by(1)
+
+      created_transaction = recipient_exchanges.where.not(id: existing_exchange_ids).find_by!(description: "Dinner")
+      expect(created_transaction).to have_attributes(friend_notification_intent: "loan")
+      expect(created_transaction.entity_transactions.first.exchanges.first).to have_attributes(exchange_type: "monetary", price: 100)
+      expect(loan_message.reload).to be_auto_applied
     end
   end
 
