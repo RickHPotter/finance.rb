@@ -255,6 +255,14 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       expect(msg.reload.applied_at).not_to be_nil
     end
 
+    it "links the message to its exact actionable audit operation" do
+      described_class.new(msg).call
+
+      operation = msg.reload.audit_operation
+      expect(operation).to have_attributes(source: "actionable_message", actor_id: recipient.id, context_id: recipient.main_context.id)
+      expect(operation.metadata).to include("actionable_message_id" => msg.id)
+    end
+
     it "creates an AuditOperation linked to the message's audit_operation_id" do
       expect { described_class.new(msg).call }
         .to change { AuditOperation.where(source: "actionable_message").count }.by_at_least(1)

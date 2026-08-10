@@ -44,7 +44,7 @@ class MessagesController < ApplicationController
         if result.reverted?
           redirect_to target, notice: I18n.t("messages.revert.success"), status: :see_other
         else
-          redirect_back fallback_location: target, alert: I18n.t("messages.revert.\#{result.failure_reason}"), status: :see_other
+          redirect_back fallback_location: target, alert: I18n.t("messages.revert.#{result.failure_reason}"), status: :see_other
         end
       end
     end

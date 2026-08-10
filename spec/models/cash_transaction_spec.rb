@@ -930,7 +930,7 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.destroy_locked_after_payment"))
     end
 
-    it "blocks destruction for a borrow return that is linked to a shared-return parent" do
+    it "blocks ordinary destruction for a linked borrow return but permits rollback compensation" do
       sender = create(:user, :random)
       receiver = create(:user, :random)
       sender_bank_account = create(:user_bank_account, user: sender, bank: create(:bank, :random))
@@ -972,6 +972,11 @@ RSpec.describe CashTransaction, type: :model do
 
       expect(receiver_return.destroy).to be(false)
       expect(receiver_return.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.destroy_linked_shared_return"))
+
+      Audit::Operation.run(source: :rollback, actor: receiver, context: receiver.main_context, join_existing: false) do
+        receiver_return.destroy
+        expect(receiver_return).to be_destroyed
+      end
     end
 
     it "allows destroying a local borrow return without a reference transactable" do

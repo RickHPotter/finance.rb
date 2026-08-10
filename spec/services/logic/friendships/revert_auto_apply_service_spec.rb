@@ -94,4 +94,25 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
       expect(rollback_op.actor_id).to eq(recipient.id)
     end
   end
+
+  context "with a legacy message linked to the parent web operation" do
+    it "resolves the recipient's sole actionable child operation" do
+      parent_operation = AuditOperation.create!(
+        source: "web",
+        actor_id: sender.id,
+        context_id: sender.main_context.id,
+        result: "committed"
+      )
+      actionable_operation = AuditOperation.create!(
+        source: "actionable_message",
+        actor_id: recipient.id,
+        context_id: recipient.main_context.id,
+        parent_operation_id: parent_operation.id,
+        result: "committed"
+      )
+      message.update!(audit_operation_id: parent_operation.id)
+
+      expect(service.send(:auto_apply_operation)).to eq(actionable_operation)
+    end
+  end
 end

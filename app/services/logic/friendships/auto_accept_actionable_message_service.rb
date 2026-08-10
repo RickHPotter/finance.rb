@@ -16,7 +16,9 @@ module Logic
         Audit::Operation.run(
           source: :actionable_message,
           actor: friend_user,
+          context: friend_user.ensure_main_context!,
           parent_operation_id: message.audit_operation_id,
+          metadata: { actionable_message_id: message.id },
           join_existing: false
         ) do
           apply!
@@ -86,7 +88,8 @@ module Logic
 
         ActiveRecord::Base.transaction do
           apply_action!(action, context)
-          message.update!(applied_at: Time.current, auto_applied: true)
+          auto_apply_operation = Audit::Operation.ensure_persisted!
+          message.update!(applied_at: Time.current, auto_applied: true, audit_operation: auto_apply_operation)
         end
 
         # Best-effort broadcast outside the transaction — a render failure must

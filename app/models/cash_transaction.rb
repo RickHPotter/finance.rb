@@ -531,6 +531,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def prevent_linked_borrow_return_destruction
     return if context_destroying?
+    return if Audit::Current.mutation_source == "rollback"
     return if applying_actionable_message? && exchange_category?
     return unless linked_borrow_return?
 

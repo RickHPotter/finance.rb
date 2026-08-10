@@ -53,7 +53,7 @@ class Audit::Rollback::DirectApply
 
   def acquire_operation_lock!
     connection = AuditOperation.connection
-    connection.quote("audit-rollback:\#{operation.id}")
-    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(\#{lock_key}, 0))")
+    lock_key = connection.quote("audit-rollback:#{operation.id}")
+    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(#{lock_key}, 0))")
   end
 end
