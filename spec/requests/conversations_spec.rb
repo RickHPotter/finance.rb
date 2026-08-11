@@ -126,6 +126,32 @@ RSpec.describe "Conversations", type: :request do
       expect(message.reload.read_at).to be_present
     end
 
+    it "marks unread superseded predecessors at the same time as their replacement" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      original_read_at = 2.days.ago.change(usec: 0)
+      already_read_predecessor = conversation.messages.create!(
+        user: other_user,
+        body: "Already read predecessor",
+        read_at: original_read_at,
+        auto_applied: true
+      )
+      unread_predecessor = conversation.messages.create!(
+        user: other_user,
+        body: "Unread predecessor",
+        auto_applied: true
+      )
+      replacement = conversation.messages.create!(user: other_user, body: "Current replacement")
+      already_read_predecessor.update!(superseded_by: replacement)
+      unread_predecessor.update!(superseded_by: replacement)
+
+      get conversation_path(conversation)
+
+      replacement_read_at = replacement.reload.read_at
+      expect(replacement_read_at).to be_present
+      expect(unread_predecessor.reload.read_at).to eq(replacement_read_at)
+      expect(already_read_predecessor.reload.read_at).to eq(original_read_at)
+    end
+
     it "hides the composer and defaults assistant threads to pending messages" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       create(:cash_transaction, user:, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random))).tap do |local_reference|

@@ -19,6 +19,7 @@ class Message < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :assign_audit_operation, on: :create
+  after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
   after_create_commit do
     broadcast_append_to conversation,
                         target: "messages_#{conversation.id}",
@@ -26,7 +27,9 @@ class Message < ApplicationRecord
   end
   after_create_commit :send_email, if: -> { Rails.env.production? }
   after_create_commit :enqueue_auto_apply, if: :auto_apply_candidate?
+
   # @scopes ...................................................................
+  scope :latest, -> { where(superseded_by_id: nil) }
   scope :unread, -> { where(read_at: nil) }
 
   # @additional_config ........................................................
@@ -165,6 +168,29 @@ class Message < ApplicationRecord
   def assign_audit_operation
     operation_id = Audit::Current.operation_id
     self.audit_operation_id = operation_id if operation_id.present? && AuditOperation.exists?(id: operation_id)
+  end
+
+  def read_at_became_present?
+    saved_change_to_read_at? && read_at.present?
+  end
+
+  def propagate_read_at_to_superseded_messages
+    Message.where(id: superseded_message_ids, read_at: nil).update_all(read_at:)
+  end
+
+  def superseded_message_ids
+    seen_ids = [ id ]
+    frontier_ids = seen_ids
+
+    loop do
+      predecessor_ids = Message.where(superseded_by_id: frontier_ids).where.not(id: seen_ids).pluck(:id)
+      break if predecessor_ids.empty?
+
+      seen_ids.concat(predecessor_ids)
+      frontier_ids = predecessor_ids
+    end
+
+    seen_ids.without(id)
   end
 
   def local_reference_exists_for?(context:)

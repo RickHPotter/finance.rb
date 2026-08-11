@@ -84,6 +84,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @exchange_projection_notification_required = exchange_projection_notification_required?
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
+    synchronize_submitted_category_transactions!
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     apply_submitted_exchange_paid_states!
     @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
@@ -395,7 +396,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def strip_non_exchange_friend_notification_intent(params)
     return params if effective_category_names.include?("EXCHANGE")
 
-    params.except(:friend_notification_intent)
+    params.except(:friend_notification_intent).merge(friend_notification_intent: nil)
+  end
+
+  def synchronize_submitted_category_transactions!
+    return unless effective_cash_transaction_params.key?(:category_transactions_attributes)
+
+    submitted_category_ids = effective_category_ids
+    @cash_transaction.category_transactions.each do |category_transaction|
+      category_transaction.mark_for_destruction unless submitted_category_ids.include?(category_transaction.category_id)
+    end
   end
 
   def preserve_existing_reference_transactable?

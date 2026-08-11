@@ -26,7 +26,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
 
   # A simple helper that creates a message in the assistant conversation between
   # sender and recipient, with the supplied replay payload.
-  def build_message(action:, payload:)
+  def build_message(action:, payload:, reference_transactable: nil)
     conversation = Conversation.find_or_create_assistant_between!(
       sender,
       recipient,
@@ -34,6 +34,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     )
     conversation.messages.create!(
       user: sender,
+      reference_transactable:,
       body: "notification:#{action}",
       headers: {
         version: "message_notification_v2",
@@ -392,6 +393,89 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     it "sets applied_at on the message" do
       described_class.new(msg).call
       expect(msg.reload.applied_at).not_to be_nil
+    end
+
+    it "auto-applies a loan-to-reimbursement conversion and removes the receiver exchange structure" do
+      sender_return = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_bank,
+        reference_transactable: sender_ct,
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE RETURN").id } ]
+      )
+      sender_entity_transaction = sender_ct.entity_transactions.create!(
+        entity: sender_entity,
+        is_payer: true,
+        price: 50,
+        price_to_be_returned: 50,
+        exchanges_count: 1
+      )
+      create(
+        :exchange,
+        entity_transaction: sender_entity_transaction,
+        cash_transaction: sender_return,
+        exchange_type: :monetary,
+        number: 1,
+        price: 50,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      entity_transaction = existing_ct.entity_transactions.create!(
+        entity: recipient_entity,
+        is_payer: true,
+        price: -50,
+        price_to_be_returned: -50,
+        exchanges_count: 1
+      )
+      exchange = create(
+        :exchange,
+        entity_transaction:,
+        exchange_type: :monetary,
+        number: 1,
+        price: -50,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      reimbursement_message = build_message(
+        action: "update",
+        reference_transactable: sender_ct,
+        payload: {
+          id: sender_ct.id,
+          type: "CashTransaction",
+          version: "cash_exchange_v2",
+          intent: "reimbursement",
+          description: "Updated reimbursement",
+          price: -50,
+          date: Time.zone.today.iso8601,
+          month: Time.zone.today.month,
+          year: Time.zone.today.year,
+          category_ids: recipient.built_in_category("BORROW RETURN").id,
+          cash_installments_attributes: [
+            { number: 1, date: Time.zone.today.iso8601, month: Time.zone.today.month, year: Time.zone.today.year, price: -50 }
+          ],
+          entity_transactions_attributes: [
+            {
+              entity_id: recipient_entity.id,
+              is_payer: false,
+              price: 0,
+              price_to_be_returned: 0,
+              exchanges_count: 0,
+              exchanges_attributes: []
+            }
+          ]
+        }
+      )
+
+      described_class.new(reimbursement_message).call
+
+      expect(existing_ct.reload.categories.pluck(:category_name)).to eq([ "BORROW RETURN" ])
+      expect(existing_ct.friend_notification_intent).to be_nil
+      expect(existing_ct.reference_transactable).to eq(sender_return)
+      expect(Exchange.exists?(exchange.id)).to be(false)
+      expect(reimbursement_message.reload).to be_auto_applied
     end
   end
 

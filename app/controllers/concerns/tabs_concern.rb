@@ -147,6 +147,7 @@ module TabsConcern
     has_unread = current_user.received_messages
                              .joins(:conversation)
                              .where(conversations: { scenario_key: current_context.scenario_key })
+                             .latest
                              .unread
                              .any?
     has_unread ? 1 : 0
