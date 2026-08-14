@@ -3377,6 +3377,58 @@ RSpec.describe "CashTransactions", type: :request do
   end
 
   describe "[ exchange return counterpart notifications ]" do
+    it "auto-applies an installment date change from a shared exchange return to its counterpart" do
+      sender = create(:user, first_name: "Rikki", email: "rikki-exchange-return-date@example.com")
+      receiver = create(:user, first_name: "Gigi", email: "gigi-exchange-return-date@example.com")
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+      sender_transaction.cash_installments.first.update!(paid: false)
+      receiver_transaction.category_transactions.first.update!(category: receiver.built_in_category("EXCHANGE RETURN"))
+      receiver_transaction.update!(price: receiver_transaction.price * -1)
+      receiver_transaction.cash_installments.first.update!(price: receiver_transaction.cash_installments.first.price * -1, paid: false)
+      sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
+      new_date = Time.zone.local(2026, 3, 25, 14, 30)
+
+      sign_out user
+      sign_in sender
+
+      expect do
+        patch cash_transaction_path(sender_transaction), params: {
+          cash_transaction: {
+            description: sender_transaction.description,
+            comment: sender_transaction.comment,
+            price: sender_transaction.price,
+            date: sender_transaction.date,
+            month: sender_transaction.month,
+            year: sender_transaction.year,
+            user_id: sender.id,
+            user_bank_account_id: sender_transaction.user_bank_account_id,
+            category_transactions_attributes: sender_transaction.category_transactions.map { |record| { id: record.id, category_id: record.category_id } },
+            entity_transactions_attributes: sender_transaction.entity_transactions.map do |record|
+              { id: record.id, entity_id: record.entity_id, is_payer: record.is_payer, price: record.price, price_to_be_returned: record.price_to_be_returned,
+                exchanges_attributes: [] }
+            end,
+            cash_installments_attributes: [
+              {
+                id: sender_transaction.cash_installments.first.id,
+                number: 1,
+                date: new_date,
+                month: 3,
+                year: 2026,
+                price: sender_transaction.cash_installments.first.price,
+                paid: false
+              }
+            ]
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      message = Message.where(body: "notification:update").order(:id).last
+
+      expect(response).to have_http_status(:see_other)
+      expect(message).to be_auto_applied
+      expect(receiver_transaction.reload.cash_installments.first.date).to eq(new_date)
+    end
+
     it "creates an actionable update message when unpaid mirrored installments change structurally" do
       receiver = create(:user, :random)
       receiver_entity = create(:entity, user:, entity_name: receiver.first_name.upcase, entity_user: receiver)

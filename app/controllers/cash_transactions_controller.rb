@@ -634,12 +634,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_successful_save
-    if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
-      @cash_transaction.sync_exchange_projection_back_to_source!
-      notify_exchange_projection_counterpart_update! if @exchange_projection_notification_required && source_message.blank?
-    end
+    @cash_transaction.sync_exchange_projection_back_to_source! if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
 
-    notify_shared_return_counterpart_update! if @shared_return_counterpart_notification_required && source_message.blank?
+    shared_return_counterpart_notified = notify_shared_return_counterpart_update! if @shared_return_counterpart_notification_required && source_message.blank?
+
+    notify_exchange_projection_counterpart_update! if notify_exchange_projection_counterpart_update_after_save?(shared_return_counterpart_notified)
 
     sync_shared_paid_state_messages_from_form!
     mark_source_message_applied
@@ -782,7 +781,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def shared_return_counterpart_notification_required?
-    return false unless @cash_transaction.borrow_return?
+    return false unless @cash_transaction.borrow_return? || @cash_transaction.exchange_return?
     return false unless @cash_transaction.shared_return_flow?
 
     exchange_projection_notification_required_for_submitted_installments?
@@ -834,6 +833,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return unless source_transactable.respond_to?(:notify_friends, true)
 
     source_transactable.send(:notify_friends, :update)
+  end
+
+  def notify_exchange_projection_counterpart_update_after_save?(shared_return_counterpart_notified)
+    return false unless @cash_transaction.edit_phase && @cash_transaction.exchange_return?
+    return false unless @exchange_projection_notification_required
+    return false if source_message.present?
+
+    !shared_return_counterpart_notified
   end
 
   def notify_shared_return_counterpart_update!

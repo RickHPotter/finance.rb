@@ -170,12 +170,23 @@ module Logic
       end
 
       def replay_reference_attributes(payload, category_name:)
+        return {} if replay_payload_identifies_update_target?(payload)
+
         reference = replay_reference_transaction(payload, category_name:)
 
         {
           reference_transactable_type: reference&.class&.name || payload["type"],
           reference_transactable_id: reference&.id || payload["id"]
         }
+      end
+
+      def replay_payload_identifies_update_target?(payload)
+        return false unless message.send(:notification_action) == "update"
+
+        local_reference = message.local_reference_for(context: friend_user.ensure_main_context!)
+        return false if local_reference.blank?
+
+        payload["type"] == local_reference.class.name && payload["id"].to_s == local_reference.id.to_s
       end
 
       def replay_reference_transaction(payload, category_name:)

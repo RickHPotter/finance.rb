@@ -1783,6 +1783,109 @@ RSpec.describe "CashInstallments", type: :request do
   end
 
   describe "[ #transfer_multiple ]" do
+    it "keeps shared exchange-return transfers and partial payments synchronized in both directions" do
+      sender = create(:user, first_name: "Rikki", email: "rikki-transfer-return@example.com")
+      receiver = create(:user, first_name: "Gigi", email: "gigi-transfer-return@example.com")
+      sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:)
+      receiver_transaction.category_transactions.first.update!(category: receiver.built_in_category("EXCHANGE RETURN"))
+      receiver_transaction.update!(price: receiver_transaction.price * -1)
+      receiver_transaction.cash_installments.first.update!(price: receiver_transaction.cash_installments.first.price * -1)
+      receiver_transaction.update!(reference_transactable: nil)
+      sender_exchange = create(
+        :cash_transaction,
+        user: sender,
+        context: sender.main_context,
+        user_bank_account: sender_transaction.user_bank_account,
+        reference_transactable: receiver_transaction,
+        description: "Shared loan exchange",
+        date: installment_date - 1.day,
+        month: 3,
+        year: 2026,
+        price: 1_000,
+        friend_notification_intent: "loan",
+        category_transactions_attributes: [ { category_id: sender.built_in_category("EXCHANGE").id } ],
+        entity_transactions_attributes: [
+          {
+            entity_id: sender.entities.that_are_users.where_entity_user(receiver).first.id,
+            is_payer: true,
+            price: 1_000,
+            price_to_be_returned: 1_000
+          }
+        ],
+        cash_installments_attributes: [
+          { number: 1, date: installment_date - 1.day, month: 3, year: 2026, price: 1_000, paid: false }
+        ]
+      )
+      sender_transaction.update!(reference_transactable: sender_exchange)
+      sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
+      sender_date = Time.zone.local(2026, 3, 11, 13, 0)
+      receiver_date = Time.zone.local(2026, 3, 12, 14, 0)
+
+      sign_out user
+      sign_in sender
+
+      expect do
+        post transfer_multiple_cash_installments_path, params: {
+          ids: sender_transaction.cash_installments.first.id.to_s,
+          reference_date: "2026-03",
+          cash_installment: { date: sender_date.strftime("%Y-%m-%dT%H:%M") }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      expect(receiver_transaction.reload.cash_installments.first.date).to eq(sender_date)
+      expect(receiver_transaction.reference_transactable).to be_nil
+      expect(sender_transaction.reload.reference_transactable).to eq(sender_exchange)
+
+      sign_out sender
+      sign_in receiver
+
+      expect do
+        post transfer_multiple_cash_installments_path, params: {
+          ids: receiver_transaction.cash_installments.first.id.to_s,
+          reference_date: "2026-03",
+          cash_installment: { date: receiver_date.strftime("%Y-%m-%dT%H:%M") }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      expect(sender_transaction.reload.cash_installments.first.date).to eq(receiver_date)
+      expect(sender_transaction.reference_transactable).to eq(sender_exchange)
+      expect(receiver_transaction.reload.reference_transactable).to be_nil
+      expect(sender_transaction.counterpart_shared_return_transaction).to eq(receiver_transaction)
+      expect(receiver_transaction.counterpart_shared_return_transaction).to eq(sender_transaction)
+      expect(Message.where(body: "notification:update").order(:id).last(2)).to all(be_auto_applied)
+
+      receiver_installment = receiver_transaction.cash_installments.find_by!(number: 1)
+
+      expect do
+        patch pay_cash_installment_path(receiver_installment), params: {
+          cash_installment: {
+            date: (receiver_date + 1.minute).strftime("%Y-%m-%dT%H:%M"),
+            price: 400
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      expect(receiver_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 400, true ], [ 600, false ] ])
+      expect(sender_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -400, true ], [ -600, false ] ])
+
+      sign_out receiver
+      sign_in sender
+      sender_installment = sender_transaction.cash_installments.find_by!(number: 2)
+
+      expect do
+        patch pay_cash_installment_path(sender_installment), params: {
+          cash_installment: {
+            date: (receiver_date + 2.minutes).strftime("%Y-%m-%dT%H:%M"),
+            price: -200
+          }
+        }, headers: turbo_stream_headers
+      end.to change(Message.where(body: "notification:update"), :count).by(1)
+
+      expect(sender_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ -400, true ], [ -200, true ], [ -400, false ] ])
+      expect(receiver_transaction.reload.cash_installments.order(:number).pluck(:price, :paid)).to eq([ [ 400, true ], [ 200, true ], [ 400, false ] ])
+      expect(Message.where(body: "notification:update").order(:id).last(4)).to all(be_auto_applied)
+    end
+
     it "moves all selected installments to the chosen reference month" do
       first = create(
         :cash_transaction,
