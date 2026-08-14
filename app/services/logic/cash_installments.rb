@@ -79,7 +79,7 @@ module Logic
         relation.select("installments.*", "cash_transactions.description")
                 .order(Arel.sql("cash_transactions.description #{direction}, installments.id #{direction}"))
       when "installment_date"
-        relation.order(Arel.sql("installments.date #{direction}, installments.id #{direction}"))
+        relation.order(Arel.sql("installments.date #{direction}, installments.order_id #{direction}, installments.id #{direction}"))
       when "transaction_date"
         relation.select("installments.*", "cash_transactions.date")
                 .order(Arel.sql("cash_transactions.date #{direction}, installments.id #{direction}"))
