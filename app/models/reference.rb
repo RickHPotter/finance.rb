@@ -8,7 +8,7 @@ class Reference < ApplicationRecord
   audits_financial_changes
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :skip_reference_closing_date_calculation, :skip_card_payment_date_sync
+  attr_accessor :merge_mode, :skip_reference_closing_date_calculation, :skip_card_payment_date_sync
 
   # @relationships ............................................................
   belongs_to :context, optional: false

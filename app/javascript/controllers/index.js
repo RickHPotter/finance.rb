@@ -133,11 +133,17 @@ application.register("pwa-installation", PwaInstallationController)
 import ReactiveFormController from "./reactive_form_controller"
 application.register("reactive-form", ReactiveFormController)
 
+import ReferenceMergeController from "./reference_merge_controller"
+application.register("reference-merge", ReferenceMergeController)
+
 import ReferenceYearCarouselController from "./reference_year_carousel_controller"
 application.register("reference-year-carousel", ReferenceYearCarouselController)
 
 import RequestSubmitController from "./request_submit_controller"
 application.register("request-submit", RequestSubmitController)
+
+import RollbackApplyController from "./rollback_apply_controller"
+application.register("rollback-apply", RollbackApplyController)
 
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)

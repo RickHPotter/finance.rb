@@ -57,7 +57,7 @@ class Audit::Rollback::ExecutionPlan
   end
 
   def parent_child_edge(parent:, child:)
-    child.action == "destroy" ? [ child.key, parent.key ] : [ parent.key, child.key ]
+    parent.action == "destroy" || child.action == "destroy" ? [ child.key, parent.key ] : [ parent.key, child.key ]
   end
 
   def topological_rows(graph)

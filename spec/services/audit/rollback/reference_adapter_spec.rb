@@ -140,6 +140,52 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
     expect(invoice.cash_installments.sole.reload.date.iso8601(3)).to eq(original_installment_date.iso8601(3))
   end
 
+  it "restores a UserCard payment-date change and its replacement reference graph" do
+    user_card.update_columns(due_date_day: 9, days_until_due_date: 7)
+    references = PaperTrail.request(enabled: false) do
+      [ 11, 12 ].map do |month|
+        create(
+          :reference,
+          user_card:,
+          context:,
+          month:,
+          year: 2026,
+          reference_date: Date.new(2026, month, 9),
+          reference_closing_date: Date.new(2026, month, 2)
+        )
+      end
+    end
+    references.first.update_columns(reference_closing_date: Date.new(2026, 10, 2))
+    invoices = references.map { |reference| create_invoice(reference, price: -1_000) }
+    original_reference_ids = references.map(&:id)
+    original_invoice_dates = invoices.to_h { |invoice| [ invoice.id, invoice.date.iso8601(3) ] }
+    original_installment_dates = invoices.to_h { |invoice| [ invoice.id, invoice.cash_installments.sole.date.iso8601(3) ] }
+
+    operation = audited_operation do
+      user_card.update!(
+        due_date_day: 8,
+        days_until_due_date: 37,
+        current_due_date: Date.new(2026, 11, 8),
+        current_closing_date: Date.new(2026, 10, 2)
+      )
+    end
+
+    expect(Reference.where(id: original_reference_ids)).to be_empty
+    preview, result = apply(operation)
+
+    expect(operation.audit_versions.pluck(:item_subtype)).to include("UserCard", "Reference", "CashTransaction", "CashInstallment")
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(user_card.reload).to have_attributes(due_date_day: 9, days_until_due_date: 7)
+    expect(Reference.where(id: original_reference_ids).order(:month).pluck(:month, :reference_date, :reference_closing_date)).to eq(
+      [ [ 11, Date.new(2026, 11, 9), Date.new(2026, 10, 2) ], [ 12, Date.new(2026, 12, 9), Date.new(2026, 12, 2) ] ]
+    )
+    invoices.each do |invoice|
+      expect(invoice.reload.date.iso8601(3)).to eq(original_invoice_dates.fetch(invoice.id))
+      expect(invoice.cash_installments.sole.reload.date.iso8601(3)).to eq(original_installment_dates.fetch(invoice.id))
+    end
+  end
+
   it "restores a neighboring reference merge and its invoice routing graph" do
     march_reference = PaperTrail.request(enabled: false) do
       create(
@@ -166,7 +212,15 @@ RSpec.describe Audit::Rollback::Adapters::Reference do
     original_april_closing_date = april_reference.reference_closing_date
     march_invoice = create_invoice(march_reference, price: -1_000)
     april_invoice = create_invoice(april_reference, price: -1_200)
-    expect(Logic::References.merge(user_card, "2026-03-01", "2026-04-01", context:)).to be_truthy
+    expect(
+      Logic::References.merge(
+        user_card,
+        "2026-03-01",
+        "2026-04-01",
+        merge_mode: Logic::References::COMBINE_INTO_TARGET,
+        context:
+      )
+    ).to be_truthy
     operation = AuditOperation.last
 
     preview, result = apply(operation)

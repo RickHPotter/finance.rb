@@ -127,7 +127,8 @@ RSpec.describe "Supporting screen navigation", type: :request do
     expect do
       post perform_merge_user_card_references_path(user_card), params: {
         source_reference_date: "2026-05",
-        target_reference_date: "2026-07"
+        target_reference_date: "2026-07",
+        merge_mode: Logic::References::COMBINE_INTO_TARGET
       }, headers: turbo_stream_headers
     end.not_to change(Reference, :count)
 
@@ -137,13 +138,20 @@ RSpec.describe "Supporting screen navigation", type: :request do
   end
 
   it "redirects a successful reference merge with 303 to the retained card edit destination" do
-    allow(Logic::References).to receive(:merge).and_return(true)
     return_to = user_cards_path(search_term: "visa")
+    expect(Logic::References).to receive(:merge).with(
+      user_card,
+      "2026-05-01",
+      "2026-06-01",
+      merge_mode: Logic::References::COMBINE_INTO_TARGET,
+      context: user.main_context
+    ).and_return(true)
 
     post perform_merge_user_card_references_path(user_card), params: {
       return_to:,
       source_reference_date: "2026-05",
-      target_reference_date: "2026-06"
+      target_reference_date: "2026-06",
+      merge_mode: Logic::References::COMBINE_INTO_TARGET
     }, headers: turbo_stream_headers
 
     expect(response).to have_http_status(:see_other)

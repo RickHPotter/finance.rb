@@ -33,6 +33,15 @@ RSpec.describe Audit::Rollback::ExecutionPlan do
     expect(plan.ordered_rows.map(&:key)).to eq(%w[Child:2 Parent:1])
   end
 
+  it "moves an updated child away before destroying its current parent" do
+    parent = row("Parent:1", action: "destroy")
+    child = row("Child:2", action: "update", dependencies: [ dependency("Parent:1", relationship: :parent) ])
+
+    plan = described_class.new(rows: [ parent, child ])
+
+    expect(plan.ordered_rows.map(&:key)).to eq(%w[Child:2 Parent:1])
+  end
+
   it "rejects dependency cycles" do
     first = row("First:1", dependencies: [ dependency("Second:2", relationship: :parent) ])
     second = row("Second:2", dependencies: [ dependency("First:1", relationship: :parent) ])
