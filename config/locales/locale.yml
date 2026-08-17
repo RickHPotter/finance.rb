@@ -258,6 +258,84 @@ en:
       all_installments_title: "Count every installment in selected budgets."
       destroy_title: "Destroy selected budgets."
 
+  profiles:
+    edit:
+      title: "Profile and Preferences"
+    form:
+      first_name: "first name"
+      last_name: "last name"
+      locale: "locale"
+      timezone: "timezone"
+      sex: "sex"
+      theme: "theme"
+      landing_page: "landing page"
+      exchange_default_bound_type: "exchange default bound type"
+      row_color_mode: "row color mode"
+      default_card_transaction_date_order: "default card transaction date order"
+      default_cash_transaction_date_order: "default cash transaction date order"
+      default_cash_account: "default cash transaction account"
+      update: "Update Profile"
+      sex_options:
+        masculine: "Masculine"
+        feminine: "Feminine"
+        not_specified: "Would Rather Not Say"
+      options:
+        locale:
+          en: "English"
+          pt_br: "Brazilian Portuguese"
+        theme:
+          system: "System"
+          light: "Light"
+          dark: "Dark"
+        landing_page:
+          cash_transactions: "Cash"
+          balance: "Balance"
+          card: "Card: %{name}"
+        exchange_default_bound_type:
+          standalone: "Standalone"
+          card_bound: "Card Bound"
+        row_color_mode:
+          badges_only: "Badges Only"
+          row_coloured: "Row Coloured"
+        default_card_transaction_date_order:
+          card_installment_date: "Card Installment Date"
+          card_transaction_date: "Card Transaction Date"
+        default_cash_transaction_date_order:
+          cash_installment_date: "Cash Installment Date"
+          cash_transaction_date: "Cash Transaction Date"
+    update:
+      success: "Profile updated successfully"
+  friendships:
+    notices:
+      request_sent: "Friend request sent."
+      cancelled: "Friend request cancelled."
+      removed: "Friendship removed."
+      request_accepted: "Friend request accepted."
+      request_rejected: "Friend request rejected."
+      user_blocked: "User blocked."
+      policy_updated: "Friendship policy updated."
+    alerts:
+      user_not_found: "User not found."
+      cannot_friend_self: "You cannot friend yourself."
+      request_failed: "Could not send friend request."
+      cannot_cancel: "You cannot cancel this request."
+    index:
+      title: "Friendships Hub"
+      add_friend: "Add a Friend"
+      friend_id_placeholder: "Friend's Public ID or Email"
+      send_request: "Send Request"
+      received_requests: "Received Requests"
+      accept: "Accept"
+      reject: "Reject"
+      sent_requests: "Sent Requests"
+      cancel: "Cancel"
+      my_friends: "My Friends"
+      auto_accept: "Auto-accept exchanges?"
+      block: "Block"
+      remove: "Remove"
+      blocked_users: "Blocked Users"
+      remove_block: "Remove Block"
+
 pt-BR:
   confirmation:
     sure: "Tem certeza?"
@@ -517,3 +595,81 @@ pt-BR:
       all_installments: "Considerar Todas as Parcelas"
       all_installments_title: "Conta todas as parcelas nos orçamentos selecionados."
       destroy_title: "Destrói os orçamentos selecionados."
+
+  profiles:
+    edit:
+      title: "Perfil e Preferências"
+    form:
+      first_name: "nome"
+      last_name: "sobrenome"
+      locale: "idioma"
+      timezone: "fuso horário"
+      sex: "sexo"
+      theme: "tema"
+      landing_page: "página inicial"
+      exchange_default_bound_type: "tipo de vínculo padrão para conversão"
+      row_color_mode: "modo de cor das linhas"
+      default_card_transaction_date_order: "ordem padrão de data (cartão)"
+      default_cash_transaction_date_order: "ordem padrão de data (dinheiro)"
+      default_cash_account: "conta bancária padrão"
+      update: "Atualizar Perfil"
+      sex_options:
+        masculine: "Masculino"
+        feminine: "Feminino"
+        not_specified: "Prefiro não dizer"
+      options:
+        locale:
+          en: "Inglês"
+          pt_br: "Português do Brasil"
+        theme:
+          system: "Sistema"
+          light: "Claro"
+          dark: "Escuro"
+        landing_page:
+          cash_transactions: "Dinheiro"
+          balance: "Balanço"
+          card: "Cartão: %{name}"
+        exchange_default_bound_type:
+          standalone: "Simples"
+          card_bound: "Cartão"
+        row_color_mode:
+          badges_only: "Somente Emblemas"
+          row_coloured: "Linha Colorida"
+        default_card_transaction_date_order:
+          card_installment_date: "Data da Parcela"
+          card_transaction_date: "Data da Transação"
+        default_cash_transaction_date_order:
+          cash_installment_date: "Data da Parcela"
+          cash_transaction_date: "Data da Transação"
+    update:
+      success: "Perfil atualizado com sucesso"
+  friendships:
+    notices:
+      request_sent: "Pedido de amizade enviado."
+      cancelled: "Pedido de amizade cancelado."
+      removed: "Amizade desfeita."
+      request_accepted: "Pedido de amizade aceito."
+      request_rejected: "Pedido de amizade recusado."
+      user_blocked: "Usuário bloqueado."
+      policy_updated: "Política de amizade atualizada."
+    alerts:
+      user_not_found: "Usuário não encontrado."
+      cannot_friend_self: "Você não pode ser amigo de si mesmo."
+      request_failed: "Não foi possível enviar o pedido de amizade."
+      cannot_cancel: "Você não pode cancelar este pedido."
+    index:
+      title: "Central de Amizades"
+      add_friend: "Adicionar Amigo"
+      friend_id_placeholder: "ID Público ou E-mail do Amigo"
+      send_request: "Enviar Solicitação"
+      received_requests: "Solicitações Recebidas"
+      accept: "Aceitar"
+      reject: "Rejeitar"
+      sent_requests: "Solicitações Enviadas"
+      cancel: "Cancelar"
+      my_friends: "Meus Amigos"
+      auto_accept: "Auto-aceitar despesas?"
+      block: "Bloquear"
+      remove: "Remover"
+      blocked_users: "Usuários Bloqueados"
+      remove_block: "Desbloquear"

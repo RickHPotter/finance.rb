@@ -52,20 +52,55 @@ module FeatureHelper
   end
 end
 
-if ENV["CHROME_EXECUTABLE"].present?
-  Capybara.register_driver :selenium_chrome_headless do |app|
-    options = Selenium::WebDriver::Chrome::Options.new
-    options.binary = ENV.fetch("CHROME_EXECUTABLE")
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-site-isolation-trials")
+module FeatureBrowser
+  CHROME_CANDIDATES = %w[
+    /opt/google/chrome/chrome
+    /opt/google/chrome/google-chrome
+    /usr/bin/google-chrome-stable
+    /usr/bin/google-chrome
+    /usr/bin/chromium
+  ].freeze
 
-    driver_options = { browser: :chrome, options: }
-    driver_options[:service] = Selenium::WebDriver::Chrome::Service.new(path: ENV.fetch("CHROMEDRIVER_EXECUTABLE")) if ENV["CHROMEDRIVER_EXECUTABLE"].present?
+  class << self
+    def paths
+      browser_path = usable_path(ENV.fetch("CHROME_EXECUTABLE", nil)) || CHROME_CANDIDATES.find { |path| usable_path(path) }
+      driver_path = usable_path(ENV.fetch("CHROMEDRIVER_EXECUTABLE", nil))
+      return { browser_path:, driver_path: } if browser_path && driver_path
 
-    Capybara::Selenium::Driver.new(app, **driver_options)
+      arguments = [ "--browser", "chrome", "--skip-driver-in-path" ]
+      arguments += [ "--browser-path", browser_path ] if browser_path
+      managed_paths = Selenium::WebDriver::SeleniumManager.binary_paths(*arguments)
+
+      {
+        browser_path: browser_path || managed_paths.fetch("browser_path"),
+        driver_path: driver_path || managed_paths.fetch("driver_path")
+      }
+    end
+
+    private
+
+    def usable_path(path)
+      return if path.blank? || !File.executable?(path)
+      return if path.start_with?("/snap/") || File.realpath(path) == "/usr/bin/snap"
+
+      path
+    rescue Errno::ENOENT
+      nil
+    end
   end
+end
+
+Capybara.register_driver :selenium_chrome_headless do |app|
+  paths = FeatureBrowser.paths
+  options = Selenium::WebDriver::Chrome::Options.new
+  options.binary = paths.fetch(:browser_path)
+  options.add_argument("--headless=new")
+  options.add_argument("--no-sandbox")
+  options.add_argument("--disable-dev-shm-usage")
+  options.add_argument("--disable-site-isolation-trials")
+
+  service = Selenium::WebDriver::Chrome::Service.new(path: paths.fetch(:driver_path))
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options:, service:)
 end
 
 RSpec.configure do |config|

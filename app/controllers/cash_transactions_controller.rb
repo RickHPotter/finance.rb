@@ -37,7 +37,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def new
-    user_bank_account_id = params[:user_bank_account_id] || current_user.user_bank_accounts.active.first&.id
+    user_bank_account_id = params[:user_bank_account_id] || current_user.default_cash_transaction_user_bank_account
     @cash_transaction = current_context.cash_transactions.new(user: current_user, user_bank_account_id:, date: Time.zone.now)
     handle_params
     @chain_context = current_chain_context(mode: "create")
@@ -84,6 +84,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     @exchange_projection_notification_required = exchange_projection_notification_required?
     @shared_return_counterpart_notification_required = shared_return_counterpart_notification_required?
     @cash_transaction.edit_phase = true if submitted_cash_installment_attributes.present?
+    synchronize_submitted_category_transactions!
     @cash_transaction.assign_attributes(assignable_cash_transaction_params.merge(imported: false))
     apply_submitted_exchange_paid_states!
     @cash_transaction.historical_correction_confirmation = cash_transaction_params[:historical_correction_confirmation]
@@ -395,7 +396,16 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   def strip_non_exchange_friend_notification_intent(params)
     return params if effective_category_names.include?("EXCHANGE")
 
-    params.except(:friend_notification_intent)
+    params.except(:friend_notification_intent).merge(friend_notification_intent: nil)
+  end
+
+  def synchronize_submitted_category_transactions!
+    return unless effective_cash_transaction_params.key?(:category_transactions_attributes)
+
+    submitted_category_ids = effective_category_ids
+    @cash_transaction.category_transactions.each do |category_transaction|
+      category_transaction.mark_for_destruction unless submitted_category_ids.include?(category_transaction.category_id)
+    end
   end
 
   def preserve_existing_reference_transactable?
@@ -484,7 +494,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def mark_source_message_applied
-    source_message&.update!(applied_at: Time.current)
+    return if source_message.blank?
+
+    source_message.update!(
+      applied_at: Time.current,
+      audit_operation: Audit::Operation.ensure_persisted!
+    )
   end
 
   def handle_save
@@ -619,12 +634,11 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def handle_successful_save
-    if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
-      @cash_transaction.sync_exchange_projection_back_to_source!
-      notify_exchange_projection_counterpart_update! if @exchange_projection_notification_required && source_message.blank?
-    end
+    @cash_transaction.sync_exchange_projection_back_to_source! if @cash_transaction.edit_phase && @cash_transaction.exchange_return?
 
-    notify_shared_return_counterpart_update! if @shared_return_counterpart_notification_required && source_message.blank?
+    shared_return_counterpart_notified = notify_shared_return_counterpart_update! if @shared_return_counterpart_notification_required && source_message.blank?
+
+    notify_exchange_projection_counterpart_update! if notify_exchange_projection_counterpart_update_after_save?(shared_return_counterpart_notified)
 
     sync_shared_paid_state_messages_from_form!
     mark_source_message_applied
@@ -767,7 +781,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def shared_return_counterpart_notification_required?
-    return false unless @cash_transaction.borrow_return?
+    return false unless @cash_transaction.borrow_return? || @cash_transaction.exchange_return?
     return false unless @cash_transaction.shared_return_flow?
 
     exchange_projection_notification_required_for_submitted_installments?
@@ -819,6 +833,14 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     return unless source_transactable.respond_to?(:notify_friends, true)
 
     source_transactable.send(:notify_friends, :update)
+  end
+
+  def notify_exchange_projection_counterpart_update_after_save?(shared_return_counterpart_notified)
+    return false unless @cash_transaction.edit_phase && @cash_transaction.exchange_return?
+    return false unless @exchange_projection_notification_required
+    return false if source_message.present?
+
+    !shared_return_counterpart_notified
   end
 
   def notify_shared_return_counterpart_update!

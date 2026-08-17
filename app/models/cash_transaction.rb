@@ -24,6 +24,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
                 :piggy_bank_projection_write, :skip_post_commit_financial_recalculation
 
   FRIEND_NOTIFICATION_INTENTS = %w[loan reimbursement].freeze
+  EXCHANGE_CATEGORIES = [ "EXCHANGE RETURN", "BORROW RETURN", "LEND RETURN" ].freeze
 
   # @relationships ............................................................
   belongs_to :user
@@ -283,8 +284,13 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     [ reference, *reference_descendants_for(reference, scope:) ].uniq { |candidate| [ candidate.class.name, candidate.id ] }
   end
 
-  def self.first_reference_descendant_for(reference, scope: all)
+  def self.first_reference_descendant_for(reference, scope: all, visited: [])
     return if reference.blank?
+
+    visit_key = [ reference.class.name, reference.id ]
+    return if visited.include?(visit_key)
+
+    visited << visit_key
 
     direct_children = reference_children_for(reference)
     matching_child_ids = scope.where(id: direct_children.map(&:id)).pluck(:id)
@@ -292,7 +298,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
     return matching_child if matching_child.present?
 
     direct_children.each do |child|
-      descendant = first_reference_descendant_for(child, scope:)
+      descendant = first_reference_descendant_for(child, scope:, visited:)
       return descendant if descendant.present?
     end
 
@@ -300,11 +306,8 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def counterpart_shared_return_user
-    entity_transactions.joins(:entity)
-                       .where.not(entities: { entity_user_id: nil })
-                       .where.not(entities: { entity_user_id: user_id })
-                       .pick("entities.entity_user_id")
-                       .then { |counterpart_user_id| User.find_by(id: counterpart_user_id) }
+    counterpart_id = entity_transactions.map(&:entity).compact.map(&:entity_user_id).compact.reject { |id| id == user_id }.first
+    User.find_by(id: counterpart_id) if counterpart_id
   end
 
   def can_be_destroyed?
@@ -528,6 +531,8 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def prevent_linked_borrow_return_destruction
     return if context_destroying?
+    return if Audit::Current.mutation_source == "rollback"
+    return if applying_actionable_message? && exchange_category?
     return unless linked_borrow_return?
 
     errors.add(:base, :destroy_linked_shared_return)
@@ -596,7 +601,37 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def chain_counterpart_shared_return_transaction
-    cross_user_reference_shared_return_transaction || descendant_counterpart_shared_return_transaction
+    counterpart_return_through_local_exchange ||
+      cross_user_reference_shared_return_transaction ||
+      descendant_counterpart_shared_return_transaction ||
+      sibling_counterpart_shared_return_transaction
+  end
+
+  def counterpart_return_through_local_exchange
+    return unless exchange_return?
+
+    local_exchange = reference_transactable
+    return unless local_exchange.is_a?(CashTransaction)
+    return unless local_exchange.user_id == user_id
+    return unless local_exchange.exchange_category?
+
+    counterpart = local_exchange.counterpart_shared_return_transaction
+    counterpart if counterpart.present? && counterpart.user_id != user_id
+  end
+
+  def sibling_counterpart_shared_return_transaction
+    return unless reference_transactable.is_a?(CardTransaction) || reference_transactable.is_a?(CashTransaction)
+
+    c_user = reference_transactable.user_id == user_id ? entities.that_are_users.first&.entity_user : reference_transactable.user
+    return if c_user.blank?
+
+    c_context = counterpart_shared_return_context(c_user)
+    return if c_context.blank?
+
+    c_context.cash_transactions
+             .where(reference_transactable:)
+             .order(:created_at, :id)
+             .detect { |candidate| shared_return_counterpart_candidate?(candidate) }
   end
 
   def cross_user_reference_shared_return_transaction
@@ -608,8 +643,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
       return if visited.include?(visit_key)
 
       visited << visit_key
-      return current_reference if current_reference.user_id != user_id && current_reference.categories.pluck(:category_name).intersect?([ "EXCHANGE RETURN",
-                                                                                                                                          "BORROW RETURN" ])
+      return current_reference if current_reference.user_id != user_id && current_reference.categories.pluck(:category_name).intersect?(EXCHANGE_CATEGORIES)
 
       current_reference = current_reference.reference_transactable
     end
@@ -641,7 +675,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def shared_return_counterpart_candidate?(transaction)
-    transaction.categories.pluck(:category_name).intersect?([ "EXCHANGE RETURN", "BORROW RETURN" ]).present?
+    transaction.categories.pluck(:category_name).intersect?(EXCHANGE_CATEGORIES).present?
   end
 
   def counterpart_shared_return_context(counterpart_user)

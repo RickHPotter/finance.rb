@@ -19,7 +19,7 @@ class HealthCheck::Broadcaster
     end
 
     def connected_scopes(scope)
-      connected_user_ids = scope.user.entities.that_are_users.distinct.pluck(:entity_user_id)
+      connected_user_ids = scope.user.entities.that_are_users.map(&:entity_user_id).uniq
       User.where(id: connected_user_ids).map do |connected_user|
         HealthCheck::Scope.new(
           user: scope.user,

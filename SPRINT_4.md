@@ -744,7 +744,7 @@ User preferences:
 - add a one-to-one typed settings record instead of relying on browser-local state or
   an unvalidated JSON dumping ground
 - support persisted defaults for theme, landing page, active context, per-index sort and
-  direction, date/time presentation, default account/card, page density, and other
+  direction, date/time presentation, default account/card, and other
   repeated workflow choices as they become concrete
 - let explicit URL/form state override a saved default for the current request
 - synchronize theme preference with the early layout boot script so the first render

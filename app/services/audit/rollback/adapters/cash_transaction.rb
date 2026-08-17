@@ -21,7 +21,7 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     attributes -= %w[cash_transaction_type reference_transactable_id reference_transactable_type user_card_id] if supported_exchange_graph?
     attributes -= %w[cash_transaction_type reference_transactable_id reference_transactable_type] if supported_piggy_bank_graph?
     attributes.delete("friend_notification_intent") if supported_friend_notification_intent?
-    attributes -= %w[reference_transactable_id reference_transactable_type] if supported_reference_transaction_graph?
+    attributes -= %w[reference_transactable_id reference_transactable_type] if supported_reference_transaction_graph? || orphaned_actionable_reference_recreation?
     attributes -= %w[cash_transaction_type user_card_id] if supported_card_advance_graph?
     issues = attributes.present? ? [ issue(:unsupported_transaction_graph, attributes:) ] : []
     issues << issue(:incomplete_transaction_graph) if action == "recreate" && historical_installments.empty?
@@ -43,6 +43,13 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     return {} unless supported_card_payment_projection_update?
 
     before_state.slice("description", "comment")
+  end
+
+  def rollback_ignored_attributes
+    attributes = super
+    return attributes unless orphaned_actionable_reference_recreation?
+
+    attributes + %w[reference_transactable_id reference_transactable_type]
   end
 
   private
@@ -142,8 +149,21 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   def reference_dependencies
     reference_type, reference_id = historical_state.values_at("reference_transactable_type", "reference_transactable_id")
     return [] unless reference_type.in?(%w[CashTransaction CardTransaction]) && reference_id.present?
+    return [] if orphaned_actionable_reference_recreation?
 
     [ dependency(record_type: reference_type, item_id: reference_id, relationship: :parent) ]
+  end
+
+  def orphaned_actionable_reference_recreation?
+    return false unless action == "recreate"
+    return false unless transition.versions.all? { |version| version.operation.source_actionable_message? }
+
+    reference_type, reference_id = historical_state.values_at("reference_transactable_type", "reference_transactable_id")
+    return false unless reference_type.in?(%w[CashTransaction CardTransaction]) && reference_id.present?
+
+    !reference_type.constantize.unscoped.exists?(id: reference_id) && transitions.none? do |candidate|
+      candidate.record_type == reference_type && candidate.item_id == reference_id && candidate.before_state.present?
+    end
   end
 
   def subscription_dependencies

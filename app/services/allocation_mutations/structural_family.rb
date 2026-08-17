@@ -38,7 +38,7 @@ class AllocationMutations::StructuralFamily
       codes << :generated_projection if owner.is_a?(CashTransaction) && owner.cash_transaction_type.present?
       codes << :payer_entity if adapter.entity_allocations.any?(&:is_payer?)
       codes << :exchange_bearing_entity if adapter.entity_allocations.any? { |allocation| allocation.exchanges_count.to_i.positive? }
-      codes << :friend_identity if adapter.entity_allocations.any? { |allocation| allocation.entity&.entity_user_id.present? }
+      codes << :friend_identity if adapter.entity_allocations.any? { |allocation| allocation.entity&.friendship_id.present? }
     end
   end
 end

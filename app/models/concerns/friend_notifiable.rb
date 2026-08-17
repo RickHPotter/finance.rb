@@ -58,6 +58,9 @@ module FriendNotifiable
   def notify_friend(friend, action)
     friend_user = friend.entity_user
 
+    friendship = user.friendship_with(friend_user)
+    return unless friendship&.accepted_state?
+
     return if reference_transactable&.user == friend_user
 
     receiver_context = receiver_context_for(friend_user)
@@ -118,6 +121,11 @@ module FriendNotifiable
                        build_cash_transaction_headers(friend_user, exchanges)
                      end
 
+    # If no mirror entity exists on the friend's side yet (friendship accepted but
+    # ReconcileEntityService hasn't run), the payload builder returns nil — skip the
+    # notification entirely rather than saving a non-replayable stub message.
+    return if replay_payload.nil?
+
     message.headers = {
       version: "message_notification_v2",
       event: build_notification_event(friend_user, exchanges, action, transaction_type),
@@ -163,12 +171,14 @@ module FriendNotifiable
   end
 
   def build_card_transaction_headers(friend_user, exchanges)
+    entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless entity_id
+
     exchanges = exchanges.map do |exchange|
       { **exchange.slice(:number, :date, :month, :year), price: exchange.price * -1, paid: exchange.mirrored_paid? }
     end
 
     price = exchanges.pluck(:price).sum
-    friend_user.entities.that_are_users.find_by(entity_user: user).id
 
     {
       id:,
@@ -178,8 +188,8 @@ module FriendNotifiable
       date:,
       month:,
       year:,
-      category_ids: friend_user.categories.find_by(category_name: "BORROW RETURN").id,
-      entity_ids: friend_user.entities.that_are_users.find_by(entity_user: user).id,
+      category_ids: counterpart_return_category_id_for(friend_user),
+      entity_ids: entity_id,
       cash_installments_attributes: exchanges
     }
   end
@@ -195,10 +205,10 @@ module FriendNotifiable
   end
 
   def build_cash_loan_headers(friend_user, exchanges, intent)
-    cash_installments_attributes = installments.order(:number, :date).map do |installment|
-      installment.slice(:number, :date, :month, :year, :paid).merge(price: installment.price * -1)
-    end
+    entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless entity_id
 
+    cash_installments_attributes = cash_installments_for_exchanges(exchanges)
     exchanges_attributes = cash_loan_exchange_attributes(exchanges)
 
     installments_price = cash_installments_attributes.pluck(:price).sum
@@ -221,7 +231,7 @@ module FriendNotifiable
           is_payer: true,
           price: exchanges_price,
           price_to_be_returned: exchanges_price,
-          entity_id: friend_user.entities.that_are_users.find_by(entity_user: user).id,
+          entity_id:,
           exchanges_count: exchanges.count,
           exchanges_attributes:
         }
@@ -229,17 +239,33 @@ module FriendNotifiable
     }
   end
 
+  def cash_installments_for_exchanges(exchanges)
+    exchanged_numbers = exchanges.map(&:number)
+
+    # Structural notifications carry shape only — payment state travels via paid_state_sync messages.
+    # Only send the installments that were actually exchanged with this friend so that a partial
+    # transaction (some installments shared, others not) produces the correct subset for the receiver.
+    installments.order(:number, :date)
+                .select { |i| exchanged_numbers.include?(i.number) }
+                .map { |i| i.slice(:number, :date, :month, :year).merge(price: i.price * -1) }
+  end
+
   def cash_loan_exchange_attributes(exchanges)
     exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: exchange.mirrored_paid?)
+      exchange.slice(:number, :date, :month, :year).merge(
+        price: exchange.price * -1,
+        exchange_type: exchange.exchange_type
+      )
     end
   end
 
   def build_cash_reimbursement_headers(friend_user, exchanges, intent)
-    counterpart_entity_id = friend_user.entities.that_are_users.find_by(entity_user: user).id
-    paid_by_number = installments.order(:number, :date).index_by(&:number)
+    counterpart_entity_id = friend_user.entities.that_are_users.where_entity_user(user).first&.id
+    return unless counterpart_entity_id
+
+    # Structural notifications carry shape only — payment state travels via paid_state_sync messages.
     cash_installments_attributes = exchanges.map do |exchange|
-      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1, paid: paid_by_number[exchange.number]&.paid || false)
+      exchange.slice(:number, :date, :month, :year).merge(price: exchange.price * -1)
     end
 
     installments_price = cash_installments_attributes.pluck(:price).sum
@@ -254,7 +280,7 @@ module FriendNotifiable
       date:,
       month:,
       year:,
-      category_ids: friend_user.categories.find_by(category_name: "BORROW RETURN").id,
+      category_ids: counterpart_return_category_id_for(friend_user),
       entity_ids: counterpart_entity_id,
       cash_installments_attributes:,
       entity_transactions_attributes: [
@@ -337,6 +363,17 @@ module FriendNotifiable
     end
   end
 
+  def counterpart_return_category_id_for(friend_user)
+    my_category_names = categories.pluck(:category_name)
+    counterpart_name = if my_category_names.include?("BORROW RETURN")
+                         "LEND RETURN"
+                       else
+                         "BORROW RETURN"
+                       end
+
+    friend_user.categories.find_by(category_name: counterpart_name)&.id
+  end
+
   # HELPER VALUE METHODS
   def exchange_category
     @exchange_category ||= user.categories.find_by(category_name: "EXCHANGE")
@@ -359,7 +396,7 @@ module FriendNotifiable
     category_names = categories.pluck(:category_name)
     return true if (category_names - [ "EXCHANGE" ]).present?
 
-    counterpart_entity_id = user.entities.that_are_users.find_by(entity_user: friend_user)&.id
+    counterpart_entity_id = user.entities.that_are_users.where_entity_user(friend_user).first&.id
 
     entity_transactions.where.not(entity_id: counterpart_entity_id).exists?
   end

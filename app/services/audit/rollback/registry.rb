@@ -17,7 +17,8 @@ class Audit::Rollback::Registry
     "Subscription" => Audit::Rollback::Adapters::Subscription,
     "Investment" => Audit::Rollback::Adapters::Investment,
     "Exchange" => Audit::Rollback::Adapters::Exchange,
-    "PiggyBank" => Audit::Rollback::Adapters::PiggyBank
+    "PiggyBank" => Audit::Rollback::Adapters::PiggyBank,
+    "Friendship" => Audit::Rollback::Adapters::Friendship
   }.freeze
 
   class << self

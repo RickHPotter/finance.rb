@@ -120,7 +120,7 @@ class EntitiesController < ApplicationController
   def entities_scope
     build_index_context if @index_context.blank?
 
-    scope = current_user.entities
+    scope = current_user.entities.includes(friendship: { user: :profile, friend: :profile })
     scope = scope.where(active: status_values) if @index_context[:status].present?
 
     if @index_context[:search_term].present?

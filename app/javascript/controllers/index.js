@@ -4,11 +4,11 @@
 
 import { application } from "./application"
 
-import AutofocusController from "./autofocus_controller"
-application.register("autofocus", AutofocusController)
-
 import AllocationMutationController from "./allocation_mutation_controller"
 application.register("allocation-mutation", AllocationMutationController)
+
+import AutofocusController from "./autofocus_controller"
+application.register("autofocus", AutofocusController)
 
 import AutosaveController from "./autosave_controller"
 application.register("autosave", AutosaveController)
@@ -28,14 +28,14 @@ application.register("budget-value-helper", BudgetValueHelperController)
 import CalculatorController from "./calculator_controller"
 application.register("calculator", CalculatorController)
 
+import CategoryColourPreviewController from "./category_colour_preview_controller"
+application.register("category-colour-preview", CategoryColourPreviewController)
+
 import ChatController from "./chat_controller"
 application.register("chat", ChatController)
 
 import ColourPickerController from "./colour_picker_controller"
 application.register("colour-picker", ColourPickerController)
-
-import CategoryColourPreviewController from "./category_colour_preview_controller"
-application.register("category-colour-preview", CategoryColourPreviewController)
 
 import ConfirmController from "./confirm_controller"
 application.register("confirm", ConfirmController)
@@ -91,6 +91,9 @@ application.register("installments-display", InstallmentsDisplayController)
 import InteractiveBreakdownDashboardController from "./interactive_breakdown_dashboard_controller"
 application.register("interactive-breakdown-dashboard", InteractiveBreakdownDashboardController)
 
+import LazyTabsController from "./lazy_tabs_controller"
+application.register("lazy-tabs", LazyTabsController)
+
 import LetitsnowController from "./letitsnow_controller"
 application.register("letitsnow", LetitsnowController)
 
@@ -99,9 +102,6 @@ application.register("mobile-scroll-nav", MobileScrollNavController)
 
 import MonthYearSelectorController from "./month_year_selector_controller"
 application.register("month-year-selector", MonthYearSelectorController)
-
-import LazyTabsController from "./lazy_tabs_controller"
-application.register("lazy-tabs", LazyTabsController)
 
 import NestedFormController from "./nested_form_controller"
 application.register("nested-form", NestedFormController)
@@ -120,6 +120,9 @@ application.register("price-mask", PriceMaskController)
 
 import PriceSumController from "./price_sum_controller"
 application.register("price-sum", PriceSumController)
+
+import ProfileFormController from "./profile_form_controller"
+application.register("profile-form", ProfileFormController)
 
 import PushController from "./push_controller"
 application.register("push", PushController)

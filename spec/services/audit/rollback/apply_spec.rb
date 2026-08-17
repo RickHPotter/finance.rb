@@ -192,6 +192,7 @@ RSpec.describe Audit::Rollback::Apply do
       )
     end
     incomplete_preview = Audit::Rollback::Preview.new(operation: incomplete_operation, actor: admin)
+    expect(preview).to be_confirmation_required
     result = I18n.with_locale(:"pt-BR") do
       described_class.new(
         operation: audited_operation,
@@ -199,7 +200,7 @@ RSpec.describe Audit::Rollback::Apply do
         context: admin.main_context,
         request_id: SecureRandom.uuid,
         token: preview.apply_token,
-        confirmed: false
+        confirmed: true
       ).call
     end
 

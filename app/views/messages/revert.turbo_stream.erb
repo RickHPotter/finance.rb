@@ -1,0 +1,5 @@
+<% if params[:message_filter] == "pending" %>
+  <%= turbo_stream.remove(dom_id(@message)) %>
+<% else %>
+  <%= turbo_stream.replace(dom_id(@message), Views::Messages::Message.new(message: @message)) %>
+<% end %>

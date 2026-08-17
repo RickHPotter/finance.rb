@@ -10,15 +10,18 @@ module Logic
     end
 
     def counterpart_installment
-      @counterpart_installment ||= begin
+      @counterpart_installment ||= counterpart_transaction&.cash_installments&.find_by(number: installment.number)
+    end
+
+    def counterpart_transaction
+      @counterpart_transaction ||= begin
         transaction = installment.cash_transaction
-        counterpart_transaction = direct_counterpart_transaction(transaction) || mirrored_counterpart_transaction(transaction)
-        counterpart_transaction&.cash_installments&.find_by(number: installment.number)
+        direct_counterpart_transaction(transaction) || mirrored_counterpart_transaction(transaction)
       end
     end
 
     def syncable?
-      counterpart_installment.present?
+      counterpart_transaction.present?
     end
 
     def call
@@ -30,6 +33,7 @@ module Logic
     def synchronize_paid_state
       return false unless syncable?
       return create_counterpart_structure_update_message if counterpart_structure_update_required?
+      return false unless counterpart_installment.present?
 
       counterpart_updated = false
 
@@ -95,10 +99,12 @@ module Logic
     end
 
     def notify_counterpart_paid_state_change!
-      return create_counterpart_structure_update_message if open_actionable_update_exists?
-
       sender = installment.cash_transaction.user
       receiver = counterpart_installment.cash_transaction.user
+      return unless sender.friendship_with(receiver)&.accepted_state?
+
+      return create_counterpart_structure_update_message if open_actionable_update_exists?
+
       conversation = Conversation.find_or_create_assistant_between!(
         sender,
         receiver,
@@ -118,7 +124,7 @@ module Logic
 
     def create_counterpart_structure_update_message # rubocop:disable Naming/PredicateMethod
       sender = installment.cash_transaction.user
-      receiver = counterpart_installment.cash_transaction.user
+      receiver = counterpart_transaction.user
       reference_transactable = structure_update_reference_transactable
       conversation = Conversation.find_or_create_assistant_between!(
         sender,
@@ -171,7 +177,6 @@ module Logic
 
     def counterpart_update_context(reference_transactable)
       desired_installments = desired_counterpart_installments
-      counterpart_transaction = counterpart_installment.cash_transaction
       replay_transaction = counterpart_replay_transaction(reference_transactable, counterpart_transaction)
       entity_source_transaction = counterpart_replay_entity_source_transaction(reference_transactable, replay_transaction)
 
@@ -232,6 +237,10 @@ module Logic
 
     def structure_update_reference_transactable
       transaction = installment.cash_transaction
+      return counterpart_transaction if transaction.borrow_return? && counterpart_transaction.present?
+      return counterpart_transaction if root_exchange_return_pair?
+      return counterpart_transaction if mirrored_side_exchange_return?(transaction) && counterpart_transaction.present?
+      return transaction if transaction.reference_transactable == transaction
 
       transaction.exchanges.includes(entity_transaction: :transactable).first&.entity_transaction&.transactable ||
         transaction.reference_transactable ||
@@ -255,6 +264,9 @@ module Logic
     def counterpart_replay_transaction(reference_transactable, counterpart_transaction)
       local_projection = counterpart_transaction.reference_transactable
 
+      return counterpart_transaction if installment.cash_transaction.borrow_return?
+      return counterpart_transaction if root_exchange_return_pair?
+      return counterpart_transaction if mirrored_side_exchange_return?(installment.cash_transaction)
       return counterpart_transaction unless reference_transactable.is_a?(CashTransaction)
       return counterpart_transaction unless local_projection.is_a?(CashTransaction)
       return counterpart_transaction unless local_projection.user_id == counterpart_transaction.user_id
@@ -262,6 +274,25 @@ module Logic
       return counterpart_transaction if local_projection == reference_transactable
 
       local_projection
+    end
+
+    def root_exchange_return_pair?
+      transaction = installment.cash_transaction
+      return false unless transaction.exchange_return? && counterpart_transaction&.exchange_return?
+
+      transaction.reference_transactable.blank? || transaction.reference_transactable == transaction
+    end
+
+    def mirrored_side_exchange_return?(transaction)
+      return false unless transaction.exchange_return?
+
+      local_exchange = transaction.reference_transactable
+      return false unless local_exchange.is_a?(CashTransaction)
+      return false unless local_exchange.user_id == transaction.user_id
+      return false unless local_exchange.exchange_category?
+
+      shared_source = local_exchange.reference_transactable
+      shared_source.is_a?(CashTransaction) && shared_source.user_id != transaction.user_id
     end
 
     def counterpart_replay_entity_source_transaction(reference_transactable, replay_transaction)
@@ -273,14 +304,14 @@ module Logic
     def replay_cash_installments(reference_transactable, replay_transaction, desired_installments)
       return if cash_root_exchange_projection?(reference_transactable, replay_transaction)
 
-      desired_installments if replay_transaction == counterpart_installment.cash_transaction
+      desired_installments if replay_transaction == counterpart_transaction
     end
 
     def cash_root_exchange_projection?(reference_transactable, replay_transaction)
       installment.cash_transaction.try(:effective_friend_notification_intent) == "loan" &&
         reference_transactable.is_a?(CashTransaction) &&
         replay_transaction.is_a?(CashTransaction) &&
-        replay_transaction.user_id == counterpart_installment.cash_transaction.user_id &&
+        replay_transaction.user_id == counterpart_transaction.user_id &&
         reference_transactable.user_id != replay_transaction.user_id &&
         replay_transaction.categories.exists?(category_name: "EXCHANGE")
     end
@@ -375,11 +406,11 @@ module Logic
     end
 
     def counterpart_structure_update_required?
-      installment.cash_transaction.cash_installments_count != counterpart_installment.cash_transaction.cash_installments_count
+      installment.cash_transaction.cash_installments_count != counterpart_transaction.cash_installments_count
     end
 
     def desired_counterpart_installments
-      sign = counterpart_installment.cash_transaction.price.negative? ? -1 : 1
+      sign = counterpart_transaction.price.negative? ? -1 : 1
 
       structure_source_transaction.cash_installments.order(:number, :date).map do |cash_installment|
         {
@@ -394,17 +425,7 @@ module Logic
     end
 
     def structure_source_transaction
-      transaction = installment.cash_transaction
-      return transaction unless transaction.respond_to?(:counterpart_shared_return_transaction)
-
-      counterpart_transaction = transaction.counterpart_shared_return_transaction
-      return transaction if counterpart_transaction.blank?
-
-      sender_shared_return_candidate = [ transaction, counterpart_transaction ].find do |candidate|
-        candidate.respond_to?(:exchange_return?) && candidate.exchange_return?
-      end
-
-      sender_shared_return_candidate || transaction
+      installment.cash_transaction
     end
 
     def open_actionable_update_exists?

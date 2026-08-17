@@ -73,7 +73,7 @@ RSpec.describe "Balances", type: :request do
     end
 
     it "renders Portuguese configuration from the signed-in user" do
-      user.update!(locale: "pt-BR")
+      user.profile.update!(locale: "pt-BR")
 
       get monthly_analysis_balances_path
 

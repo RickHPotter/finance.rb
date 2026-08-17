@@ -65,7 +65,7 @@ class Conversation < ApplicationRecord
   end
 
   def unread_count_for(user)
-    return messages.unread.where.not(user_id: user.id).count unless messages.loaded?
+    return messages.latest.unread.where.not(user_id: user.id).count unless messages.loaded?
 
     messages.target.count { |message| message.read_at.nil? && message.user_id != user.id }
   end

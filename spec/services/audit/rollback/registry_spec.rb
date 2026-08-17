@@ -15,6 +15,7 @@ RSpec.describe Audit::Rollback::Registry do
       CategoryTransaction
       EntityTransaction
       Exchange
+      Friendship
       Investment
       PiggyBank
       Reference
@@ -42,7 +43,8 @@ RSpec.describe Audit::Rollback::Registry do
       "Subscription" => Audit::Rollback::Adapters::Subscription,
       "Investment" => Audit::Rollback::Adapters::Investment,
       "Exchange" => Audit::Rollback::Adapters::Exchange,
-      "PiggyBank" => Audit::Rollback::Adapters::PiggyBank
+      "PiggyBank" => Audit::Rollback::Adapters::PiggyBank,
+      "Friendship" => Audit::Rollback::Adapters::Friendship
     )
   end
 
@@ -87,5 +89,32 @@ RSpec.describe Audit::Rollback::Registry do
     expect(operation.audit_versions.where(item_type: "Subscription", event: :create)).to exist
     expect(Audit::Rollback::Preview.new(operation:, actor: admin)).to have_attributes(state: "previewable")
     expect(described_class.supported_types).to include("Subscription")
+  end
+
+  it "restores audited Friendship state updates" do
+    user = create(:user, :random)
+    friend = create(:user, :random)
+    admin = create(:user, :random, admin: true)
+    friendship = PaperTrail.request(enabled: false) { create(:friendship, user:, friend:, state: "accepted") }
+    operation = nil
+
+    Audit::Operation.run(actor: user, source: :web) do
+      friendship.update!(state: "blocked")
+      operation = Audit::Operation.ensure_persisted!
+    end
+
+    preview = Audit::Rollback::Preview.new(operation:, actor: admin)
+    result = Audit::Rollback::Apply.new(
+      operation:,
+      actor: admin,
+      context: admin.main_context,
+      request_id: SecureRandom.uuid,
+      token: preview.apply_token,
+      confirmed: false
+    ).call
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(result).to have_attributes(status: "applied")
+    expect(friendship.reload).to be_accepted_state
   end
 end

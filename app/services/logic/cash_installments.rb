@@ -50,10 +50,10 @@ module Logic
                  .includes(cash_transaction: [
                              :categories,
                              :entities,
-                             :card_installments,
                              { category_transactions: :category },
                              { entity_transactions: :entity }
                            ])
+                 .preload(cash_transaction: :reference_transactable)
                  .where(options[:conditions])
                  .where(options[:search_term_condition])
 
@@ -79,7 +79,7 @@ module Logic
         relation.select("installments.*", "cash_transactions.description")
                 .order(Arel.sql("cash_transactions.description #{direction}, installments.id #{direction}"))
       when "installment_date"
-        relation.order(Arel.sql("installments.date #{direction}, installments.id #{direction}"))
+        relation.order(Arel.sql("installments.date #{direction}, installments.order_id #{direction}, installments.id #{direction}"))
       when "transaction_date"
         relation.select("installments.*", "cash_transactions.date")
                 .order(Arel.sql("cash_transactions.date #{direction}, installments.id #{direction}"))

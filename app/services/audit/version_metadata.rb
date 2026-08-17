@@ -17,7 +17,8 @@ class Audit::VersionMetadata
     "BudgetEntity" => %w[budget_id entity_id],
     "Subscription" => [],
     "Investment" => %w[user_bank_account_id investment_type_id cash_transaction_id piggy_bank_return_cash_transaction_id],
-    "PiggyBank" => %w[source_cash_transaction_id return_cash_transaction_id]
+    "PiggyBank" => %w[source_cash_transaction_id return_cash_transaction_id],
+    "Friendship" => %w[user_id friend_id]
   }.freeze
 
   class << self

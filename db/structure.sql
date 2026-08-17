@@ -42,6 +42,105 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: active_storage_attachments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_attachments_id_seq OWNED BY public.active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    service_name character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    checksum character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_blobs_id_seq OWNED BY public.active_storage_blobs.id;
+
+
+--
+-- Name: active_storage_variant_records; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_variant_records (
+    id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    variation_digest character varying NOT NULL
+);
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_variant_records_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_variant_records_id_seq OWNED BY public.active_storage_variant_records.id;
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -585,8 +684,8 @@ CREATE TABLE public.entities (
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    entity_user_id bigint,
-    built_in boolean DEFAULT false NOT NULL
+    built_in boolean DEFAULT false NOT NULL,
+    friendship_id bigint
 );
 
 
@@ -626,7 +725,7 @@ CREATE TABLE public.entity_transactions (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     loan_return_percentage numeric(10,4) DEFAULT 100.0 NOT NULL,
-    CONSTRAINT entity_transactions_status_values CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'finished'::character varying])::text[])))
+    CONSTRAINT entity_transactions_status_values CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('finished'::character varying)::text])))
 );
 
 
@@ -668,7 +767,7 @@ CREATE TABLE public.exchanges (
     date timestamp(6) without time zone NOT NULL,
     month integer NOT NULL,
     year integer NOT NULL,
-    CONSTRAINT exchanges_exchange_type_values CHECK (((exchange_type)::text = ANY ((ARRAY['non_monetary'::character varying, 'monetary'::character varying])::text[])))
+    CONSTRAINT exchanges_exchange_type_values CHECK (((exchange_type)::text = ANY (ARRAY[('non_monetary'::character varying)::text, ('monetary'::character varying)::text])))
 );
 
 
@@ -727,6 +826,41 @@ CREATE SEQUENCE public.finance_subscriptions_id_seq
 --
 
 ALTER SEQUENCE public.finance_subscriptions_id_seq OWNED BY public.finance_subscriptions.id;
+
+
+--
+-- Name: friendships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.friendships (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    friend_id bigint NOT NULL,
+    state character varying DEFAULT 'pending'::character varying NOT NULL,
+    public_id character varying NOT NULL,
+    policies jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: friendships_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.friendships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: friendships_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.friendships_id_seq OWNED BY public.friendships.id;
 
 
 --
@@ -916,7 +1050,9 @@ CREATE TABLE public.messages (
     reference_transactable_type character varying,
     reference_transactable_id bigint,
     applied_at timestamp(6) without time zone,
-    audit_operation_id uuid
+    audit_operation_id uuid,
+    auto_applied boolean DEFAULT false NOT NULL,
+    reverted_at timestamp(6) without time zone
 );
 
 
@@ -1133,6 +1269,82 @@ ALTER SEQUENCE public.user_cards_id_seq OWNED BY public.user_cards.id;
 
 
 --
+-- Name: user_preferences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_preferences (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    theme character varying DEFAULT 'light'::character varying NOT NULL,
+    landing_page character varying DEFAULT 'cash_transactions'::character varying NOT NULL,
+    active_context_id integer,
+    exchange_default_bound_type character varying DEFAULT 'standalone'::character varying NOT NULL,
+    row_color_mode character varying DEFAULT 'row_coloured'::character varying NOT NULL,
+    default_cash_transaction_user_bank_account_id integer,
+    default_card_transaction_date_order character varying DEFAULT 'card_installment_date'::character varying NOT NULL,
+    default_cash_transaction_date_order character varying DEFAULT 'cash_installment_date'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_preferences_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_preferences_id_seq OWNED BY public.user_preferences.id;
+
+
+--
+-- Name: user_profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_profiles (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    display_name character varying,
+    first_name character varying,
+    last_name character varying,
+    locale character varying DEFAULT 'en'::character varying NOT NULL,
+    timezone character varying DEFAULT 'UTC'::character varying NOT NULL,
+    sex character varying DEFAULT 'not_specified'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: user_profiles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_profiles_id_seq OWNED BY public.user_profiles.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1147,12 +1359,10 @@ CREATE TABLE public.users (
     unconfirmed_email character varying,
     confirmed_at timestamp(6) without time zone,
     confirmation_sent_at timestamp(6) without time zone,
-    first_name character varying NOT NULL,
-    last_name character varying NOT NULL,
-    locale character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    admin boolean DEFAULT false NOT NULL
+    admin boolean DEFAULT false NOT NULL,
+    public_id character varying NOT NULL
 );
 
 
@@ -1173,6 +1383,27 @@ CREATE SEQUENCE public.users_id_seq
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('public.active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('public.active_storage_blobs_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_variant_records id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records ALTER COLUMN id SET DEFAULT nextval('public.active_storage_variant_records_id_seq'::regclass);
 
 
 --
@@ -1295,6 +1526,13 @@ ALTER TABLE ONLY public.finance_subscriptions ALTER COLUMN id SET DEFAULT nextva
 
 
 --
+-- Name: friendships id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships ALTER COLUMN id SET DEFAULT nextval('public.friendships_id_seq'::regclass);
+
+
+--
 -- Name: health_check_runs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1365,10 +1603,48 @@ ALTER TABLE ONLY public.user_cards ALTER COLUMN id SET DEFAULT nextval('public.u
 
 
 --
+-- Name: user_preferences id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences ALTER COLUMN id SET DEFAULT nextval('public.user_preferences_id_seq'::regclass);
+
+
+--
+-- Name: user_profiles id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles ALTER COLUMN id SET DEFAULT nextval('public.user_profiles_id_seq'::regclass);
+
+
+--
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_variant_records active_storage_variant_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT active_storage_variant_records_pkey PRIMARY KEY (id);
 
 
 --
@@ -1524,6 +1800,14 @@ ALTER TABLE ONLY public.finance_subscriptions
 
 
 --
+-- Name: friendships friendships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT friendships_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: health_check_runs health_check_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1609,6 +1893,22 @@ ALTER TABLE ONLY public.user_bank_accounts
 
 ALTER TABLE ONLY public.user_cards
     ADD CONSTRAINT user_cards_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_preferences user_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences
+    ADD CONSTRAINT user_preferences_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_pkey PRIMARY KEY (id);
 
 
 --
@@ -1701,6 +2001,34 @@ CREATE UNIQUE INDEX idx_references_context_user_card_month_year ON public."refer
 --
 
 CREATE UNIQUE INDEX idx_references_context_user_card_reference_date ON public."references" USING btree (context_id, user_card_id, reference_date);
+
+
+--
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON public.active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON public.active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_blobs USING btree (key);
+
+
+--
+-- Name: index_active_storage_variant_records_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
 
 
 --
@@ -2061,10 +2389,10 @@ CREATE INDEX index_conversations_on_scenario_key ON public.conversations USING b
 
 
 --
--- Name: index_entities_on_entity_user_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_entities_on_friendship_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_entities_on_entity_user_id ON public.entities USING btree (entity_user_id);
+CREATE INDEX index_entities_on_friendship_id ON public.entities USING btree (friendship_id);
 
 
 --
@@ -2135,6 +2463,34 @@ CREATE INDEX index_finance_subscriptions_on_status ON public.finance_subscriptio
 --
 
 CREATE INDEX index_finance_subscriptions_on_user_id ON public.finance_subscriptions USING btree (user_id);
+
+
+--
+-- Name: index_friendships_on_friend_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendships_on_friend_id ON public.friendships USING btree (friend_id);
+
+
+--
+-- Name: index_friendships_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_friendships_on_public_id ON public.friendships USING btree (public_id);
+
+
+--
+-- Name: index_friendships_on_user_and_friend_canonical; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_friendships_on_user_and_friend_canonical ON public.friendships USING btree (LEAST(user_id, friend_id), GREATEST(user_id, friend_id));
+
+
+--
+-- Name: index_friendships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendships_on_user_id ON public.friendships USING btree (user_id);
 
 
 --
@@ -2264,6 +2620,13 @@ CREATE INDEX index_messages_on_reference_transactable ON public.messages USING b
 
 
 --
+-- Name: index_messages_on_reverted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_reverted_at ON public.messages USING btree (reverted_at);
+
+
+--
 -- Name: index_messages_on_superseded_by_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2355,6 +2718,20 @@ CREATE INDEX index_user_cards_on_user_id ON public.user_cards USING btree (user_
 
 
 --
+-- Name: index_user_preferences_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_preferences_on_user_id ON public.user_preferences USING btree (user_id);
+
+
+--
+-- Name: index_user_profiles_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_profiles_on_user_id ON public.user_profiles USING btree (user_id);
+
+
+--
 -- Name: index_users_on_confirmation_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2366,6 +2743,13 @@ CREATE UNIQUE INDEX index_users_on_confirmation_token ON public.users USING btre
 --
 
 CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
+
+
+--
+-- Name: index_users_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_public_id ON public.users USING btree (public_id);
 
 
 --
@@ -2614,6 +2998,14 @@ ALTER TABLE ONLY public.investments
 
 
 --
+-- Name: entities fk_rails_82c9adde2a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entities
+    ADD CONSTRAINT fk_rails_82c9adde2a FOREIGN KEY (friendship_id) REFERENCES public.friendships(id);
+
+
+--
 -- Name: budget_categories fk_rails_83cbbb6bcc; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2622,11 +3014,11 @@ ALTER TABLE ONLY public.budget_categories
 
 
 --
--- Name: entities fk_rails_8a74aa079f; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: user_profiles fk_rails_87a6352e58; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.entities
-    ADD CONSTRAINT fk_rails_8a74aa079f FOREIGN KEY (entity_user_id) REFERENCES public.users(id);
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT fk_rails_87a6352e58 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2646,6 +3038,14 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
 -- Name: exchanges fk_rails_9a3f8bc972; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2659,6 +3059,14 @@ ALTER TABLE ONLY public.exchanges
 
 ALTER TABLE ONLY public.card_transactions
     ADD CONSTRAINT fk_rails_9bf4edc382 FOREIGN KEY (context_id) REFERENCES public.contexts(id);
+
+
+--
+-- Name: user_preferences fk_rails_a69bfcfd81; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_preferences
+    ADD CONSTRAINT fk_rails_a69bfcfd81 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2702,6 +3110,14 @@ ALTER TABLE ONLY public.categories
 
 
 --
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
 -- Name: investments fk_rails_ce357552d4; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2742,11 +3158,27 @@ ALTER TABLE ONLY public.user_bank_accounts
 
 
 --
+-- Name: friendships fk_rails_d78dc9c7fd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT fk_rails_d78dc9c7fd FOREIGN KEY (friend_id) REFERENCES public.users(id);
+
+
+--
 -- Name: exchanges fk_rails_deee80dcd2; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.exchanges
     ADD CONSTRAINT fk_rails_deee80dcd2 FOREIGN KEY (entity_transaction_id) REFERENCES public.entity_transactions(id);
+
+
+--
+-- Name: friendships fk_rails_e3733b59b7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendships
+    ADD CONSTRAINT fk_rails_e3733b59b7 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2828,6 +3260,13 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260810150000'),
+('20260806181854'),
+('20260804132347'),
+('20260731215015'),
+('20260731214108'),
+('20260731212727'),
+('20260731212726'),
 ('20260730120000'),
 ('20260725120000'),
 ('20260724120000'),

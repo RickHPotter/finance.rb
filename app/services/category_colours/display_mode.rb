@@ -8,7 +8,7 @@ class CategoryColours::DisplayMode
 
   class << self
     def for(user)
-      value = user.category_colour_display_mode if user.respond_to?(:category_colour_display_mode)
+      value = user.preference&.row_color_mode if user.respond_to?(:preference)
       resolve(value)
     end
 

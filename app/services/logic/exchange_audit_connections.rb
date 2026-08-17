@@ -91,7 +91,7 @@ class Logic::ExchangeAuditConnections
   end
 
   def entity_names_for(owner, related_user)
-    owner.entities.that_are_users.where(entity_user_id: related_user.id).order(:entity_name).pluck(:entity_name)
+    owner.entities.that_are_users.where_entity_user_id(related_user.id).order(:entity_name).pluck(:entity_name)
   end
 
   def sorted_connection_rows(connection_rows)

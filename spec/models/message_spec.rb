@@ -123,6 +123,29 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
     end
 
+    it "sends v2 destroy notifications through automatic application" do
+      allow(ActionableMessageAutoApplyJob).to receive(:perform_now)
+
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        reference_transactable: reference_transaction,
+        body: "notification:destroy",
+        headers: {
+          version: "message_notification_v2",
+          event: {
+            action: "destroy",
+            receiver_first_name: "Gigi",
+            transaction_type: "CashTransaction",
+            details: { description: "WATER BILL" }
+          },
+          replay: nil
+        }.to_json
+      )
+
+      expect(ActionableMessageAutoApplyJob).to have_received(:perform_now).with(message)
+    end
+
     it "renders v2 destroy notification bodies from headers at display time" do
       message = described_class.create!(
         conversation:,
@@ -198,7 +221,7 @@ RSpec.describe Message, type: :model do
       expect(message.backfill_kind).to eq("human")
     end
 
-    it "derives create, correct, and edit button states from applied_at and notification type" do
+    it "derives pending actions from notification type and removes them after application" do
       create_message = described_class.create!(
         conversation:,
         user: sender,
@@ -229,7 +252,7 @@ RSpec.describe Message, type: :model do
 
       update_message.update!(applied_at: Time.current)
 
-      expect(update_message.action_button_key(local_reference_exists: true)).to eq(:edit)
+      expect(update_message.action_button_key(local_reference_exists: true)).to be_nil
     end
 
     it "does not resolve a structural fallback through an applied predecessor once canonical chains are required" do
@@ -606,10 +629,12 @@ end
 #
 #  id                          :bigint           not null, primary key
 #  applied_at                  :datetime         indexed
+#  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
+#  reverted_at                 :datetime         indexed
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
@@ -624,6 +649,7 @@ end
 #  index_messages_on_audit_operation_id      (audit_operation_id)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
+#  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
 #  index_messages_on_user_id                 (user_id)
 #

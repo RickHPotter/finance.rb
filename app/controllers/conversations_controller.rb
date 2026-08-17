@@ -7,7 +7,7 @@ class ConversationsController < ApplicationController
 
   def index
     @active_filter = conversation_filter
-    @conversations = filtered_conversations.preload(:users, :messages).sort_by do |conversation|
+    @conversations = filtered_conversations.preload(:messages, users: :profile).sort_by do |conversation|
       [ conversation.human? ? 0 : 1, -(conversation.latest_message&.created_at || conversation.created_at).to_i ]
     end
 
@@ -15,11 +15,14 @@ class ConversationsController < ApplicationController
   end
 
   def show
-    @conversation = scoped_conversations.preload(:users).find(params[:id])
+    @conversation = scoped_conversations.preload(users: :profile).find(params[:id])
     @active_message_filter = conversation_message_filter
     @active_message_sides = conversation_message_sides
     @messages = filtered_messages(@conversation)
-    @conversation.messages.unread.where.not(user_id: current_user.id).update_all(read_at: Time.current)
+    read_at = Time.current
+    @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
+      message.update!(read_at:)
+    end
 
     render Views::Conversations::Show.new(
       conversation: @conversation,
@@ -38,7 +41,7 @@ class ConversationsController < ApplicationController
   private
 
   def set_conversation_tabs
-    set_tabs(active_menu: :hub, active_sub_menu: :conversation)
+    set_tabs(active_menu: :profile, active_sub_menu: :conversation)
   end
 
   def filtered_conversations

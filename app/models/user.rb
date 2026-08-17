@@ -6,7 +6,12 @@ class User < ApplicationRecord
 
   # @includes .................................................................
   # @security (i.e. attr_accessible) ..........................................
+  attr_writer :first_name, :last_name, :locale
+
   # @relationships ............................................................
+  has_one :profile, class_name: "UserProfile", dependent: :destroy
+  has_one :preference, class_name: "UserPreference", dependent: :destroy
+
   has_many :card_transactions, dependent: :destroy
   has_many :card_installments, through: :card_transactions
   has_many :advance_cash_transactions, through: :card_transactions
@@ -41,20 +46,23 @@ class User < ApplicationRecord
   has_many :push_subscriptions, class_name: "PushSubscription", dependent: :destroy
 
   # @validations ..............................................................
-  validates :first_name, :last_name, :email, presence: true
+  validates :email, presence: true
+  validates :first_name, :last_name, presence: true, on: :create
   validates :email, uniqueness: true
   validates :password, length: { in: 6..22 }
 
   # @callbacks ................................................................
-  before_validation :set_default_locale
+  before_create -> { self.public_id ||= SecureRandom.uuid }
   before_create :create_built_ins
   before_create :set_confirmed_at
   after_create :create_main_context
+  after_create :create_default_profile_and_preference!
 
   # @scopes ...................................................................
   # @additional_config ........................................................
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
+  delegate :display_name, to: :profile, allow_nil: true
 
   # Helper methods to return a full name based on `first_name` and `last_name`.
   #
@@ -100,12 +108,54 @@ class User < ApplicationRecord
     contexts.create!(name: "Main", main: true)
   end
 
+  def friendship_with(other_user)
+    Friendship.where(user_id: [ id, other_user.id ], friend_id: [ id, other_user.id ]).first
+  end
+
   # @protected_instance_methods ...............................................
+
+  def first_name
+    profile&.first_name || @first_name
+  end
+
+  def last_name
+    profile&.last_name || @last_name
+  end
+
+  def locale
+    profile&.locale || @locale || "en"
+  end
+
+  def timezone
+    profile&.timezone || "UTC"
+  end
+
+  def theme
+    preference&.theme || "system"
+  end
+
+  def default_cash_transaction_user_bank_account
+    preference&.default_cash_transaction_user_bank_account_id || user_bank_accounts.active.first&.id
+  end
 
   protected
 
-  def set_default_locale
-    self.locale ||= I18n.locale
+  def create_default_profile_and_preference!
+    create_profile!(
+      first_name:,
+      last_name:,
+      locale: locale || "en",
+      timezone: "UTC"
+    )
+
+    create_preference!(
+      theme: "system",
+      landing_page: "cash_transactions",
+      exchange_default_bound_type: "standalone",
+      row_color_mode: "badges_only",
+      default_card_transaction_date_order: "card_installment_date",
+      default_cash_transaction_date_order: "cash_transaction_date"
+    )
   end
 
   # Creates built-in `categories` for given user.
@@ -155,19 +205,18 @@ end
 #  confirmed_at           :datetime
 #  email                  :string           default(""), not null, uniquely indexed
 #  encrypted_password     :string           default(""), not null
-#  first_name             :string           not null
-#  last_name              :string           not null
-#  locale                 :string           not null
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string           uniquely indexed
 #  unconfirmed_email      :string
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
+#  public_id              :string           not null, uniquely indexed
 #
 # Indexes
 #
 #  index_users_on_confirmation_token    (confirmation_token) UNIQUE
 #  index_users_on_email                 (email) UNIQUE
+#  index_users_on_public_id             (public_id) UNIQUE
 #  index_users_on_reset_password_token  (reset_password_token) UNIQUE
 #

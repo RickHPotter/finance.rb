@@ -19,14 +19,17 @@ class Message < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :assign_audit_operation, on: :create
+  after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
   after_create_commit do
     broadcast_append_to conversation,
                         target: "messages_#{conversation.id}",
                         html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
   after_create_commit :send_email, if: -> { Rails.env.production? }
+  after_create_commit :enqueue_auto_apply, if: :auto_apply_candidate?
 
   # @scopes ...................................................................
+  scope :latest, -> { where(superseded_by_id: nil) }
   scope :unread, -> { where(read_at: nil) }
 
   # @additional_config ........................................................
@@ -92,13 +95,17 @@ class Message < ApplicationRecord
   end
 
   def applied?
-    applied_at.present?
+    applied_at.present? && reverted_at.blank?
+  end
+
+  def reverted?
+    reverted_at.present?
   end
 
   def action_button_key(local_reference_exists:)
+    return if applied? || reverted? || superseded_by_id.present?
     return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
-    return :edit if applied? && local_reference_exists
     return :correct if notification_action == "update" && local_reference_exists
     return :create unless local_reference_exists
 
@@ -120,6 +127,7 @@ class Message < ApplicationRecord
   end
 
   def actionable_for?(context: user.ensure_main_context!)
+    return true if auto_applied? && read_at.blank? && !reverted?
     return false if applied?
 
     action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
@@ -149,9 +157,40 @@ class Message < ApplicationRecord
 
   private
 
+  def enqueue_auto_apply
+    ActionableMessageAutoApplyJob.perform_now(self)
+  end
+
+  def auto_apply_candidate?
+    (transaction_notification_message? || transaction_destroy_notification_message?) && !paid_state_sync_message?
+  end
+
   def assign_audit_operation
     operation_id = Audit::Current.operation_id
     self.audit_operation_id = operation_id if operation_id.present? && AuditOperation.exists?(id: operation_id)
+  end
+
+  def read_at_became_present?
+    saved_change_to_read_at? && read_at.present?
+  end
+
+  def propagate_read_at_to_superseded_messages
+    Message.where(id: superseded_message_ids, read_at: nil).update_all(read_at:)
+  end
+
+  def superseded_message_ids
+    seen_ids = [ id ]
+    frontier_ids = seen_ids
+
+    loop do
+      predecessor_ids = Message.where(superseded_by_id: frontier_ids).where.not(id: seen_ids).pluck(:id)
+      break if predecessor_ids.empty?
+
+      seen_ids.concat(predecessor_ids)
+      frontier_ids = predecessor_ids
+    end
+
+    seen_ids.without(id)
   end
 
   def local_reference_exists_for?(context:)
@@ -358,10 +397,12 @@ end
 #
 #  id                          :bigint           not null, primary key
 #  applied_at                  :datetime         indexed
+#  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
+#  reverted_at                 :datetime         indexed
 #  created_at                  :datetime         not null
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
@@ -376,6 +417,7 @@ end
 #  index_messages_on_audit_operation_id      (audit_operation_id)
 #  index_messages_on_conversation_id         (conversation_id)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
+#  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
 #  index_messages_on_user_id                 (user_id)
 #

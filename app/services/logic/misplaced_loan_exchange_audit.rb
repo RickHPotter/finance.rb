@@ -90,7 +90,7 @@ module Logic
     def visible_source_user_ids
       @visible_source_user_ids ||= [
         current_user.id,
-        *(connected_user_id.present? ? [ connected_user_id ] : current_user.entities.that_are_users.pluck(:entity_user_id))
+        *(connected_user_id.present? ? [ connected_user_id ] : current_user.entities.that_are_users.map(&:entity_user_id))
       ].uniq
     end
 

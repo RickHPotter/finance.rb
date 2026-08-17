@@ -1,0 +1,23 @@
+en:
+  messages:
+    revert:
+      success: The applied change was reverted.
+      unauthorized: You cannot revert this message.
+      already_reverted: This message was already reverted.
+      not_applied: This message has not been applied.
+      superseded: A newer assistant message has replaced this one.
+      missing_audit: The applied change does not have a complete audit trail.
+      rollback_unavailable: This change can no longer be reverted safely.
+      rollback_failed: The change could not be reverted.
+
+pt-BR:
+  messages:
+    revert:
+      success: A alteração aplicada foi revertida.
+      unauthorized: Você não pode reverter esta mensagem.
+      already_reverted: Esta mensagem já foi revertida.
+      not_applied: Esta mensagem ainda não foi aplicada.
+      superseded: Uma mensagem mais recente do assistente substituiu esta mensagem.
+      missing_audit: A alteração aplicada não possui um histórico de auditoria completo.
+      rollback_unavailable: Esta alteração não pode mais ser revertida com segurança.
+      rollback_failed: Não foi possível reverter a alteração.

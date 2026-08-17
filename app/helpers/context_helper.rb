@@ -29,7 +29,9 @@ module ContextHelper
   end
 
   def set_entities
-    @entities = current_user.entities.active.order(:entity_name).map { |entity| [ entity.name, entity.id ] }
+    @entities = current_user.entities.active.includes(friendship: { user: :profile, friend: :profile }).order(:entity_name).map do |entity|
+      [ entity.name, entity.id ]
+    end
   end
 
   def set_all_categories

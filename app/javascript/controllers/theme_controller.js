@@ -1,35 +1,33 @@
 import { Controller } from "@hotwired/stimulus"
 
-const STORAGE_KEY = "finance.theme"
-
 export default class extends Controller {
-  connect() {
-    this.sync()
-  }
+  static values = { updateUrl: String }
 
   toggle() {
-    const nextTheme = this.currentTheme() === "dark" ? "light" : "dark"
-    this.apply(nextTheme)
+    const isDark = document.documentElement.classList.contains("dark")
+    const nextTheme = isDark ? "light" : "dark"
 
+    // Optimistic UI update
+    document.documentElement.classList.toggle("dark", !isDark)
+    this.element.textContent = isDark ? "Dark" : "Light"
+
+    // Save to local storage for instant reload before server responds
     try {
-      window.localStorage.setItem(STORAGE_KEY, nextTheme)
+      window.localStorage.setItem("finance.theme", nextTheme)
     } catch (_) {}
-  }
 
-  sync() {
-    this.apply(this.currentTheme())
-  }
+    if (this.updateUrlValue) {
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
 
-  currentTheme() {
-    return document.documentElement.classList.contains("dark") ? "dark" : "light"
-  }
-
-  apply(theme) {
-    const dark = theme === "dark"
-
-    document.documentElement.classList.toggle("dark", dark)
-    this.element.setAttribute("aria-pressed", String(dark))
-    this.element.setAttribute("title", dark ? "Switch to light theme" : "Switch to dark theme")
-    this.element.textContent = dark ? "Dark" : "Light"
+      fetch(this.updateUrlValue, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': token,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ user_preference: { theme: nextTheme } })
+      })
+    }
   }
 }

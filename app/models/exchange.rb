@@ -75,7 +75,7 @@ class Exchange < ApplicationRecord
     # FIXME: this is the path for loan EXCHANGE, but not sure for reimbursement, any input?
     counterpart_transactable = counterpart_transactable.reference_transactable if counterpart_transactable.exchange_return?
 
-    counterpart_entity_transaction = counterpart_transactable.entity_transactions.joins(:entity).find_by(entity: { entity_user_id: user.id })
+    counterpart_entity_transaction = counterpart_transactable.entity_transactions.joins(:entity).merge(Entity.where_entity_user_id(user.id)).first
     return false if counterpart_entity_transaction.blank?
 
     counterpart_exchange = counterpart_entity_transaction.exchanges.find_by(number:)

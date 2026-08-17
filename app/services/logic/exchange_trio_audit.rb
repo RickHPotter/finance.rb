@@ -57,7 +57,7 @@ module Logic
     end
 
     def connected_relationship_conversation_ids
-      participant_ids = [ current_user.id, *current_user.entities.that_are_users.pluck(:entity_user_id) ]
+      participant_ids = [ current_user.id, *current_user.entities.that_are_users.map(&:entity_user_id) ]
 
       ConversationParticipant.where(user_id: participant_ids)
                              .group(:conversation_id)
@@ -66,7 +66,7 @@ module Logic
     end
 
     def connected_user_allowed?
-      current_user.entities.that_are_users.exists?(entity_user_id: connected_user_id)
+      current_user.entities.that_are_users.where_entity_user_id(connected_user_id).exists?
     end
 
     def build_row(message)
@@ -229,7 +229,7 @@ module Logic
     def linked_to_receiver?(transaction, receiver)
       cache_key = [ transaction.class.name, transaction.id, receiver.id ]
       linked_receiver_cache.fetch(cache_key) do
-        linked_receiver_cache[cache_key] = transaction.entity_transactions.joins(:entity).where(entities: { entity_user_id: receiver.id }).exists?
+        linked_receiver_cache[cache_key] = transaction.entity_transactions.joins(:entity).merge(Entity.where_entity_user_id(receiver.id)).exists?
       end
     end
 
@@ -361,7 +361,7 @@ module Logic
       candidates = receiver_context.cash_transactions
                                    .includes(:categories, :cash_installments, :entities)
                                    .joins(:entities, :categories)
-                                   .where(entities: { entity_user_id: sender_user_id })
+                                   .merge(Entity.where_entity_user_id(sender_user_id))
                                    .where(categories: { category_name: expected_receiver_category_names(end_kind) })
                                    .distinct
 
@@ -383,7 +383,7 @@ module Logic
       receiver_context.cash_transactions
                       .includes(:categories, :cash_installments, :entities)
                       .joins(:entities, :categories)
-                      .where(entities: { entity_user_id: sender_user_id })
+                      .merge(Entity.where_entity_user_id(sender_user_id))
                       .where(categories: { category_name: expected_receiver_category_names(end_kind) })
                       .distinct
                       .select do |candidate|

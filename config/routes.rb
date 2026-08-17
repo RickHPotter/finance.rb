@@ -3,10 +3,14 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
-  root "cash_transactions#index"
+  root "home#index"
 
   devise_for :users
   patch "/locale", to: "users#update_locale", as: :update_locale
+
+  resource :profile, only: %i[edit update]
+  resource :preference, only: %i[update]
+  resources :friendships, param: :public_id, only: %i[index create update destroy]
 
   # devise_for :users, controllers: {
   #   confirmations: "users/confirmations"
@@ -163,6 +167,7 @@ Rails.application.routes.draw do
     resources :messages, only: :create do
       member do
         patch :apply
+        patch :revert
       end
     end
   end

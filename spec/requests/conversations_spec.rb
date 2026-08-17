@@ -126,6 +126,32 @@ RSpec.describe "Conversations", type: :request do
       expect(message.reload.read_at).to be_present
     end
 
+    it "marks unread superseded predecessors at the same time as their replacement" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      original_read_at = 2.days.ago.change(usec: 0)
+      already_read_predecessor = conversation.messages.create!(
+        user: other_user,
+        body: "Already read predecessor",
+        read_at: original_read_at,
+        auto_applied: true
+      )
+      unread_predecessor = conversation.messages.create!(
+        user: other_user,
+        body: "Unread predecessor",
+        auto_applied: true
+      )
+      replacement = conversation.messages.create!(user: other_user, body: "Current replacement")
+      already_read_predecessor.update!(superseded_by: replacement)
+      unread_predecessor.update!(superseded_by: replacement)
+
+      get conversation_path(conversation)
+
+      replacement_read_at = replacement.reload.read_at
+      expect(replacement_read_at).to be_present
+      expect(unread_predecessor.reload.read_at).to eq(replacement_read_at)
+      expect(already_read_predecessor.reload.read_at).to eq(original_read_at)
+    end
+
     it "hides the composer and defaults assistant threads to pending messages" do
       conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       create(:cash_transaction, user:, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random))).tap do |local_reference|
@@ -163,6 +189,92 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).to include(Conversation.human_attribute_name(:pending))
       expect(response.body).to include(Conversation.human_attribute_name(:mine))
       expect(response.body).to include(Conversation.human_attribute_name(:theirs))
+    end
+
+    it "does not acknowledge an auto-applied message merely by opening the conversation" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        applied_at: Time.current,
+        auto_applied: true,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Still pending review" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "pending")
+
+      expect(response.body).to include("Still pending review")
+      expect(message.reload.read_at).to be_nil
+    end
+
+    it "shows only OK and Revert for a safely revertible auto-applied message" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      transaction = PaperTrail.request(enabled: false) do
+        create(:cash_transaction, user:, context: user.main_context, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
+      end
+      operation = nil
+      Audit::Operation.run(source: :actionable_message, actor: user, context: user.main_context) do
+        transaction.update!(description: "Auto-applied state")
+        operation = Audit::Operation.ensure_persisted!
+      end
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        applied_at: Time.current,
+        auto_applied: true,
+        audit_operation: operation,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Auto-applied state" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      document = Nokogiri::HTML(response.body)
+      actions = document.css("turbo-frame#message_#{message.id} [data-message-action]").map { |node| node["data-message-action"] }
+      expect(actions).to contain_exactly("ok", "revert")
+    end
+
+    it "shows only Revert after a manual apply, and hides it after supersession" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      transaction = PaperTrail.request(enabled: false) do
+        create(:cash_transaction, user:, context: user.main_context, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
+      end
+      operation = nil
+      Audit::Operation.run(source: :web, actor: user, context: user.main_context) do
+        transaction.update!(description: "Manually applied state")
+        operation = Audit::Operation.ensure_persisted!
+      end
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        applied_at: Time.current,
+        audit_operation: operation,
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", receiver_first_name: user.first_name, transaction_type: "CashTransaction", details: { description: "Manually applied state" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      document = Nokogiri::HTML(response.body)
+      actions = document.css("turbo-frame#message_#{message.id} [data-message-action]").map { |node| node["data-message-action"] }
+      expect(actions).to eq([ "revert" ])
+
+      newer_message = conversation.messages.create!(user: other_user, body: "newer assistant message")
+      message.update!(superseded_by: newer_message)
+      get conversation_path(conversation, message_filter: "all")
+
+      document = Nokogiri::HTML(response.body)
+      expect(document.css("turbo-frame#message_#{message.id} [data-message-action]")).to be_empty
     end
 
     it "shows only actionable assistant messages on pending" do

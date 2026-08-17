@@ -77,5 +77,23 @@ RSpec.describe Logic::CashInstallments do
 
       expect(result).to contain_exactly(installment_one, installment_two, installment_three_first, installment_three_second)
     end
+
+    it "preserves balance order when installment dates are equal" do
+      installment_one.update!(order_id: 2941)
+      installment_two.update!(order_id: 2942)
+      installment_three_first.update!(order_id: 2943)
+
+      options = {
+        conditions: {},
+        search_term_condition: nil,
+        ids: [ installment_one.id, installment_two.id, installment_three_first.id ],
+        sort: "installment_date",
+        direction: "asc"
+      }
+
+      result = described_class.fetch_cash_installments(user, month, year, options)
+
+      expect(result.map(&:order_id)).to eq([ 2941, 2942, 2943 ])
+    end
   end
 end

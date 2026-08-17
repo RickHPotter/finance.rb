@@ -2,7 +2,7 @@ version: 1
 
 format_turbo_stream_links:
   - path: app/views/messages/message.rb
-    occurrences: 1
+    occurrences: 2
     classification: in_place_stream
     slice: 9
 
@@ -24,6 +24,11 @@ center_container_replacements:
     expected_occurrences: 1
     classification: in_place_stream
     slice: 4
+  - paths:
+      - app/controllers/allocation_mutations_controller.rb
+    expected_occurrences: 1
+    classification: in_place_stream
+    slice: 9
 legacy_history_shim:
   path: app/javascript/controllers/application.js
   classification: removed

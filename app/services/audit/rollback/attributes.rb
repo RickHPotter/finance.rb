@@ -15,7 +15,7 @@ class Audit::Rollback::Attributes
     private
 
     def ignored_attributes(adapter)
-      adapter.class.const_get(:DERIVED_ATTRIBUTES)
+      adapter.class.const_get(:DERIVED_ATTRIBUTES) + adapter.rollback_ignored_attributes
     end
   end
 end

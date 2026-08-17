@@ -8,9 +8,9 @@ RSpec.describe "Complete transaction graph rollback" do
   let(:context) { user.main_context }
   let(:account) { create(:user_bank_account, :random, user:, bank: create(:bank, :random)) }
 
-  def audited_operation
+  def audited_operation(source: :web)
     operation = nil
-    Audit::Operation.run(actor: user, context:, source: :web) do
+    Audit::Operation.run(actor: user, context:, source:) do
       yield
       operation = Audit::Operation.ensure_persisted!
     end
@@ -43,6 +43,26 @@ RSpec.describe "Complete transaction graph rollback" do
     expect(preview.rows.flat_map(&:support_issues)).to be_empty
     expect(result).to have_attributes(status: "applied")
     expect(referenced.reload).to have_attributes(description: "Referenced return", reference_transactable_id: source.id)
+  end
+
+  it "recreates an auto-applied transaction without a reference whose source was deleted" do
+    source = PaperTrail.request(enabled: false) { create(:cash_transaction, user:, context:, user_bank_account: account, description: "Deleted sender source") }
+    referenced = PaperTrail.request(enabled: false) do
+      create(:cash_transaction, user:, context:, user_bank_account: account, description: "Recipient return", reference_transactable: source)
+    end
+    PaperTrail.request(enabled: false) { source.destroy! }
+    operation = audited_operation(source: :actionable_message) { referenced.destroy! }
+
+    preview, result = apply(operation)
+
+    expect(preview).to have_attributes(state: "previewable")
+    expect(preview.rows.flat_map(&:support_issues)).to be_empty
+    expect(result).to have_attributes(status: "applied")
+    expect(referenced.reload).to have_attributes(
+      description: "Recipient return",
+      reference_transactable_id: nil,
+      reference_transactable_type: nil
+    )
   end
 
   it "restores a card advance with its linked cash transaction" do

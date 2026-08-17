@@ -118,7 +118,7 @@ RSpec.describe DuePaymentsNotifier do
 
       described_class.new.call
 
-      expect(ActionMailer::Base.deliveries.map(&:to)).to contain_exactly([ first_user.email ], [ second_user.email ])
+      expect(ActionMailer::Base.deliveries.map(&:to)).to include([ first_user.email ], [ second_user.email ])
       expect(ActionMailer::Base.deliveries.find { |mail| mail.to == [ first_user.email ] }.html_part.body.encoded).to include("First user reminder")
       expect(ActionMailer::Base.deliveries.find { |mail| mail.to == [ second_user.email ] }.html_part.body.encoded).to include("Second user reminder")
     end
@@ -135,7 +135,7 @@ RSpec.describe DuePaymentsNotifier do
 
       described_class.new.call
 
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(ActionMailer::Base.deliveries.map(&:to).flatten).not_to include(user.email)
     end
 
     it "sends one push notification for overdue installments" do

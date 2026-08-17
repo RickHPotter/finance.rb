@@ -4,10 +4,11 @@ require "rails_helper"
 
 RSpec.describe CategoryColours::DisplayMode do
   describe ".for" do
-    it "reads the future user preference when the model exposes it" do
-      user = Data.define(:category_colour_display_mode).new("row_coloured")
+    it "reads the user preference when the model exposes it" do
+      preference = Data.define(:row_color_mode).new("badges_only")
+      user = Data.define(:preference).new(preference)
 
-      expect(described_class.for(user)).to eq("row_coloured")
+      expect(described_class.for(user)).to eq("badges_only")
     end
 
     it "uses the default before the preference column exists" do

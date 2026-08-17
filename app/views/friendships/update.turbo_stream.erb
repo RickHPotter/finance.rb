@@ -1,0 +1,7 @@
+<%= turbo_stream.replace(dom_id(@friendship)) do %>
+  <%= render Views::Friendships::Card.new(friendship: @friendship, current_user: current_user) %>
+<% end %>
+
+<%= turbo_stream.replace "flash" do %>
+  <%= render "shared/flash" %>
+<% end %>

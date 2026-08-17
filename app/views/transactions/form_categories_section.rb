@@ -65,8 +65,8 @@ class Views::Transactions::FormCategoriesSection < Views::Base
   end
 
   def category_transactions_association
-    association = transaction.category_transactions.includes(:category)
-    association if association.exists?
+    association = transaction.category_transactions.reject(&:marked_for_destruction?)
+    association if association.present?
   end
 
   def render_item(category_transaction_fields)

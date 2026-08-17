@@ -126,18 +126,30 @@ class CashInstallmentsController < ApplicationController
     year, month       = params[:reference_date].split("-").map(&:to_i)
     date              = Time.zone.parse(cash_installment_params[:date]) || Time.zone.now
 
-    min_date          = [ *cash_installments.pluck(:date), date ].min
+    min_date = [ *cash_installments.pluck(:date), date ].min
 
     cash_installments.each do |cash_installment|
       cash_installment.update(date:, year:, month:)
       return handle_failed_save(cash_installment) if cash_installment.errors.any?
     end
 
+    notify_shared_return_transactions_changed_by_transfer(cash_installments)
     Logic::RecalculateBalancesService.new(user: current_user, context: current_context, year: min_date.year, month: min_date.month).call
 
     @cash_installment = cash_installments.first
 
     handle_save
+  end
+
+  def notify_shared_return_transactions_changed_by_transfer(cash_installments)
+    transactions = cash_installments.filter_map do |cash_installment|
+      next unless cash_installment.saved_changes.keys.intersect?(%w[date year month])
+
+      transaction = cash_installment.cash_transaction
+      transaction if transaction.shared_return_flow?
+    end
+
+    transactions.uniq.each { |transaction| Logic::SharedReturnStructureUpdateMessageService.new(transaction:).call }
   end
 
   def handle_save

@@ -63,6 +63,10 @@ class Audit::Rollback::Adapters::Base
     Audit::Rollback::Attributes.for(self)
   end
 
+  def rollback_ignored_attributes
+    []
+  end
+
   def post_compensation_attributes
     {}
   end

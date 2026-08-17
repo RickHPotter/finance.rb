@@ -56,7 +56,7 @@ class AllocationMutations::EntityPlanner
       entity = requested_entities[entity_id]
       return { reason_code: :entity_not_owned, details: { entity_id: } } if entity.blank?
       return { reason_code: :entity_inactive, details: { entity_id: } } unless entity.active?
-      return { reason_code: :entity_protected, details: { entity_id: } } if entity.built_in? || entity.entity_user_id.present?
+      return { reason_code: :entity_protected, details: { entity_id: } } if entity.built_in? || entity.friendship_id.present?
     end
 
     nil

@@ -20,7 +20,8 @@ module Logic
       return false if source_card_payment.nil? || target_card_payment.nil? || source_reference.nil? || target_reference.nil?
 
       Audit::Operation.run(source: :web, join_existing: false, actor: user_card.user, context:) do
-        source_card_payment.card_installments.update_all(
+        Audit::BulkMutation.update_all!(
+          source_card_payment.card_installments,
           year: target_date.year,
           month: target_date.month,
           cash_transaction_id: target_card_payment.id

@@ -135,10 +135,8 @@ RSpec.describe HealthCheckRun, type: :model do
       connected_user_id = User.insert_all!(
         [
           {
-            first_name: "Connected",
-            last_name: "User",
             email: Faker::Internet.unique.email,
-            locale: "en",
+            public_id: SecureRandom.uuid,
             created_at: Time.current,
             updated_at: Time.current
           }

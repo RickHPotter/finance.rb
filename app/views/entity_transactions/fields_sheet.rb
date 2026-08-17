@@ -365,12 +365,18 @@ module Views
         rails_view_context.params
       end
 
+      def current_user
+        rails_view_context.current_user
+      end
+
       def submitted_bound_type
         rails_view_context.params["bound_type_#{form.index}"]&.presence_in(%w[standalone card_bound])&.to_sym
       end
 
       def inferred_bound_type
-        if entity_transaction.exchanges_count.to_i.zero? || entity_transaction.exchanges.first&.standalone?
+        if entity_transaction.exchanges_count.to_i.zero?
+          current_user.preference.exchange_default_bound_type.to_sym
+        elsif entity_transaction.exchanges.first&.standalone?
           :standalone
         else
           :card_bound
