@@ -17,6 +17,26 @@ RSpec.describe "References", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  def create_merge_invoice(reference, price: -1_000)
+    create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_card:,
+      user_bank_account:,
+      cash_transaction_type: "CardInstallment",
+      date: reference.reference_date.end_of_day,
+      month: reference.month,
+      year: reference.year,
+      price:,
+      paid: false,
+      cash_installments: [ build(:cash_installment, number: 1, date: reference.reference_date.end_of_day, month: reference.month, year: reference.year, price:,
+                                                    paid: false) ],
+      category_transactions: [ CategoryTransaction.new(category: user.built_in_category("CARD PAYMENT")) ],
+      entity_transactions: []
+    )
+  end
+
   describe "[ #index ]" do
     it "returns the card references as json" do
       reference
@@ -52,10 +72,95 @@ RSpec.describe "References", type: :request do
   end
 
   describe "[ #merge ]" do
-    it "renders successfully" do
+    it "renders both merge modes without preselecting a financial decision" do
       get merge_user_card_references_path(user_card, id: reference.id)
 
       expect(response).to have_http_status(:success)
+
+      document = Nokogiri::HTML(response.body)
+      mode_inputs = document.css("input[name='merge_mode']")
+
+      expect(mode_inputs.map { |input| input["value"] }).to contain_exactly(*Logic::References::MERGE_MODES)
+      expect(mode_inputs).to all(satisfy { |input| input["required"].present? })
+      expect(mode_inputs).to all(satisfy { |input| input["checked"].nil? })
+      expect(response.body).to include(
+        I18n.t("references.merge.modes.combine_into_target.label"),
+        I18n.t("references.merge.modes.reallocate_installments.label")
+      )
+    end
+
+    it "rejects a missing or unknown merge mode without creating an audit operation" do
+      reference
+
+      [ nil, "unknown" ].each do |merge_mode|
+        expect do
+          post perform_merge_user_card_references_path(user_card), params: {
+            source_reference_date: reference.reference_date.strftime("%Y-%m"),
+            target_reference_date: reference.reference_date.next_month.strftime("%Y-%m"),
+            merge_mode:
+          }
+        end.not_to change(AuditOperation, :count)
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(Reference.human_attribute_name(:merge_mode))
+      end
+    end
+
+    it "reallocates persisted installments through the HTTP endpoint" do
+      user_card.update!(due_date_day: 12, days_until_due_date: 5)
+      august = create(:reference, context: user.main_context, user_card:, month: 8, year: 2026, reference_date: Date.new(2026, 8, 12),
+                                  reference_closing_date: Date.new(2026, 8, 7))
+      september = create(:reference, context: user.main_context, user_card:, month: 9, year: 2026, reference_date: Date.new(2026, 9, 12),
+                                     reference_closing_date: Date.new(2026, 9, 7))
+      august_invoice = create_merge_invoice(august)
+      september_invoice = create_merge_invoice(september)
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        date: Date.new(2026, 7, 6),
+        month: 8,
+        year: 2026,
+        price: -2_000,
+        card_installments: [
+          build(:card_installment, number: 1, date: Date.new(2026, 8, 6), month: 8, year: 2026, price: -1_000, paid: false),
+          build(:card_installment, number: 2, date: Date.new(2026, 9, 6), month: 9, year: 2026, price: -1_000, paid: false)
+        ],
+        category_transactions: [],
+        entity_transactions: []
+      )
+      transaction.card_installments.find_by!(number: 1).update_columns(cash_transaction_id: august_invoice.id)
+      transaction.card_installments.find_by!(number: 2).update_columns(cash_transaction_id: september_invoice.id)
+
+      post perform_merge_user_card_references_path(user_card), params: {
+        source_reference_date: "2026-08",
+        target_reference_date: "2026-09",
+        merge_mode: Logic::References::REALLOCATE_INSTALLMENTS
+      }
+
+      expect(response).to redirect_to(edit_user_card_path(user_card))
+      expect(transaction.card_installments.reload.order(:number).pluck(:month, :year)).to eq([ [ 9, 2026 ], [ 10, 2026 ] ])
+      expect(user_card.references).not_to exist(context: user.main_context, month: 8, year: 2026)
+      expect(AuditOperation.where("metadata ->> 'reference_merge_mode' = ?", Logic::References::REALLOCATE_INSTALLMENTS).count).to eq(1)
+    end
+
+    it "rejects backward reallocation, retains the choice, and shows fail-closed feedback" do
+      reference
+
+      expect do
+        post perform_merge_user_card_references_path(user_card), params: {
+          source_reference_date: "2026-09",
+          target_reference_date: "2026-08",
+          merge_mode: Logic::References::REALLOCATE_INSTALLMENTS
+        }
+      end.not_to change(AuditOperation, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      document = Nokogiri::HTML(response.body)
+      selected_mode = document.at_css("input[name='merge_mode'][value='#{Logic::References::REALLOCATE_INSTALLMENTS}']")
+      expect(selected_mode["checked"]).to be_present
+      expect(response.body).to include(I18n.t("activerecord.errors.models.reference.attributes.merge_mode.not_forward_adjacent"))
     end
   end
 
@@ -228,7 +333,8 @@ RSpec.describe "References", type: :request do
 
       post perform_merge_user_card_references_path(user_card), params: {
         source_reference_date: "2026-03",
-        target_reference_date: "2026-04"
+        target_reference_date: "2026-04",
+        merge_mode: Logic::References::COMBINE_INTO_TARGET
       }
 
       expect(response).to redirect_to(edit_user_card_path(user_card))
@@ -376,7 +482,8 @@ RSpec.describe "References", type: :request do
 
         post perform_merge_user_card_references_path(user_card), params: {
           source_reference_date: "2026-07",
-          target_reference_date: "2026-08"
+          target_reference_date: "2026-08",
+          merge_mode: Logic::References::COMBINE_INTO_TARGET
         }
 
         expect(response).to redirect_to(edit_user_card_path(user_card))

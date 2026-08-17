@@ -32,6 +32,7 @@ class Audit::Rollback::Compensator
     return if handled_keys.include?(row.key)
     return mark_handled(row) if row.action == "none"
     return if row.record_type.in?(INSTALLMENT_TYPES) && included_transaction_parent(row)
+    return compensate_reference_reallocation_installment(row) if reference_reallocation_installment?(row)
 
     if row.record_type.in?(TRANSACTION_TYPES | INSTALLMENT_TYPES)
       compensate_transaction_group(row)
@@ -46,6 +47,24 @@ class Audit::Rollback::Compensator
     record_type, item_id = transaction_parent_key(row)
     rows = transaction_group_rows(record_type:, item_id:)
     compensate_parent(record_type:, item_id:, rows:)
+  end
+
+  def compensate_reference_reallocation_installment(row)
+    installment = row.adapter.live_record
+    raise CompensationError, "reallocated installment #{row.key} is missing" unless installment
+
+    Audit::BulkMutation.update_columns!(installment, row.adapter.restore_attributes)
+    restored_installment = installment.reload
+    expected_cash_transaction_id = row.before_state["cash_transaction_id"]
+    unless restored_installment.cash_transaction_id == expected_cash_transaction_id
+      raise CompensationError,
+            "reallocated installment #{row.key} restored cash transaction #{restored_installment.cash_transaction_id}, expected #{expected_cash_transaction_id}"
+    end
+    mark_handled(row)
+  end
+
+  def reference_reallocation_installment?(row)
+    reference_reallocation? && row.record_type == "CardInstallment" && row.action == "update"
   end
 
   def transaction_parent_key(row)
@@ -88,6 +107,11 @@ class Audit::Rollback::Compensator
   def destroy_parent(parent_row, installment_rows, allocation_rows)
     parent = parent_row.adapter.live_record
     raise CompensationError, "rollback target is missing" unless parent
+
+    parent.reload
+    if reference_reallocation? && parent.is_a?(CashTransaction) && parent.cash_transaction_type == "CardInstallment" && parent.card_installments.exists?
+      raise CompensationError, "card-payment rollback target still owns installments: #{parent.card_installments.ids.join(',')}"
+    end
 
     impact.capture_transaction(parent)
     prepare_parent(parent)
@@ -222,5 +246,9 @@ class Audit::Rollback::Compensator
     actionable_keys = preview.rows.reject { |row| row.action == "none" }.map(&:key)
     missing_keys = actionable_keys - handled_keys.to_a
     raise CompensationError, "unhandled rollback rows: #{missing_keys.join(', ')}" if missing_keys.present?
+  end
+
+  def reference_reallocation?
+    preview.operation.metadata["reference_merge_mode"] == Logic::References::REALLOCATE_INSTALLMENTS
   end
 end

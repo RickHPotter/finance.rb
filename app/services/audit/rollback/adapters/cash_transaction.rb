@@ -195,7 +195,56 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   end
 
   def supported_card_payment_graph?
-    supported_card_payment_projection_update? || supported_reference_date_sync? || supported_reference_merge_graph?
+    supported_card_payment_projection_update? || supported_reference_date_sync? || supported_reference_merge_graph? || supported_reference_reallocation_graph?
+  end
+
+  def supported_reference_reallocation_graph?
+    return false unless reference_reallocation_operation?
+    return false unless historical_state["cash_transaction_type"] == "CardInstallment"
+    return false unless historical_state["user_card_id"] == reference_reallocation_metadata["user_card_id"]
+    return false unless context_id == reference_reallocation_metadata["context_id"]
+    return false unless reference_reallocation_references_supported?
+    return false unless reference_reallocation_installments_supported?
+
+    action.in?(%w[recreate update destroy])
+  end
+
+  def reference_reallocation_operation?
+    reference_reallocation_metadata["reference_merge_mode"] == Logic::References::REALLOCATE_INSTALLMENTS
+  end
+
+  def reference_reallocation_metadata
+    @reference_reallocation_metadata ||= transition.versions.last.operation.metadata
+  end
+
+  def reference_reallocation_references_supported?
+    candidates = transitions.select { |candidate| candidate.record_type == "Reference" }
+    return false unless candidates.size >= 2
+    return false unless candidates.map(&:action).all? { |candidate_action| candidate_action.in?(%w[recreate update destroy]) }
+
+    candidates.all? do |candidate|
+      state = candidate.expected_after_state || candidate.before_state || {}
+      state["user_card_id"] == historical_state["user_card_id"] && candidate.context_id == context_id
+    end
+  end
+
+  def reference_reallocation_installments_supported?
+    candidates = transitions.select { |candidate| candidate.record_type == "CardInstallment" }
+    return false if candidates.empty?
+
+    candidates.all? do |candidate|
+      state = candidate.expected_after_state || candidate.before_state || {}
+      candidate.action == "update" &&
+        candidate.owner_id == owner_id &&
+        candidate.context_id == context_id &&
+        candidate.net_changed_attributes.all? { |attribute| attribute.in?(%w[cash_transaction_id date month year]) } &&
+        reference_reallocation_card_transaction?(state["card_transaction_id"])
+    end
+  end
+
+  def reference_reallocation_card_transaction?(card_transaction_id)
+    transaction = CardTransaction.unscoped.find_by(id: card_transaction_id)
+    transaction&.user_card_id == historical_state["user_card_id"] && transaction&.context_id == context_id
   end
 
   def supported_reference_merge_graph?

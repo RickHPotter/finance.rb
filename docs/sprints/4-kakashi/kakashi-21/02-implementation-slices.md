@@ -59,8 +59,8 @@ Commit: `refactor: plan reference merge reallocation`
 1. Open one database transaction and acquire the plan's locks.
 2. Replan after locking and reject stale membership.
 3. Create missing destination references/invoices through canonical domain paths.
-4. Reassign card installments in descending bucket order, updating destination
-   month/year, reference date, and invoice association only.
+4. Reassign card installments in descending bucket order, advancing their schedule
+   date by one calendar month and updating destination month/year and invoice association only.
 5. Rebuild every affected invoice from final membership.
 6. Remove empty source/intermediate invoices and finally destroy the source reference.
 7. Preserve the existing target-closing-boundary merge behavior.

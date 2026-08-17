@@ -111,7 +111,7 @@ For every moved `CardInstallment`:
 | `card_installments_count` | unchanged |
 | `price` / `starting_price` | unchanged |
 | `month` / `year` | original bucket plus one month |
-| `date` | destination reference date |
+| `date` | original schedule date plus one calendar month |
 | `cash_transaction_id` | destination canonical invoice ID |
 | `paid` | remains false; paid rows block V1 reallocation |
 

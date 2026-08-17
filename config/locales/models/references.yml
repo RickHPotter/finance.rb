@@ -13,8 +13,38 @@ en:
         reference_date: Reference Date
         source_reference_date: Reference to merge FROM
         target_reference_date: Reference to merge INTO
+        merge_mode: Merge behavior
         created_at: Created at
         updated_at: Updated at
+    errors:
+      models:
+        reference:
+          attributes:
+            merge_mode:
+              reallocation_blocked: cannot reallocate paid, locked, stale, or invalid invoice history
+              apply_failed: could not complete the reallocation; no changes were saved (see the server log for the exact error)
+              stale_plan: could not complete because the affected invoice history changed; retry from a refreshed page
+              context_mismatch: cannot use context %{context_id} with user card %{user_card_id}
+              invalid_date: requires valid source and target months
+              not_forward_adjacent: requires the target to be the calendar month immediately after the source
+              missing_root: cannot find one canonical %{missing} for the %{kind} month %{date}
+              empty_shift: cannot find any future installments or card-bound exchanges to reallocate
+              paid_installments: cannot move paid installments (IDs %{ids})
+              invalid_installment_invoices: found installments attached to invalid card invoices (installment IDs %{ids})
+              paid_invoices: cannot rewrite paid invoice history (invoice IDs %{ids})
+              duplicate_invoices: found more than one canonical card invoice in months %{dates}
+              locked_exchange_projections: cannot move exchanges with paid return projections (projection IDs %{ids})
+  references:
+    merge:
+      mode_legend: Choose how to move the invoices
+      mode_hint: This choice changes the schedule of this card's installments.
+      modes:
+        combine_into_target:
+          label: Combine into target
+          hint: Move the source invoice into the target. Later invoices stay where they are.
+        reallocate_installments:
+          label: Reallocate installments
+          hint: Move the source invoice forward and shift every later persisted invoice by one month.
 
 pt-BR:
   activerecord:
@@ -31,5 +61,35 @@ pt-BR:
         reference_date: Data de Referência
         source_reference_date: Referência para mesclar DE
         target_reference_date: Referência para mesclar PARA
+        merge_mode: Comportamento da mesclagem
         created_at: Criado em
         updated_at: Atualizado em
+    errors:
+      models:
+        reference:
+          attributes:
+            merge_mode:
+              reallocation_blocked: não pode realocar um histórico de faturas pago, bloqueado, desatualizado ou inválido
+              apply_failed: não concluiu a realocação; nenhuma alteração foi salva (consulte o log do servidor para ver o erro exato)
+              stale_plan: não concluiu porque o histórico de faturas afetado mudou; atualize a página e tente novamente
+              context_mismatch: não pode usar o contexto %{context_id} com o cartão %{user_card_id}
+              invalid_date: exige meses de origem e destino válidos
+              not_forward_adjacent: exige que o destino seja o mês imediatamente seguinte à origem
+              missing_root: não encontrou um único %{missing} canônico para o mês %{kind} %{date}
+              empty_shift: não encontrou parcelas futuras ou trocas vinculadas ao cartão para realocar
+              paid_installments: não pode mover parcelas pagas (IDs %{ids})
+              invalid_installment_invoices: encontrou parcelas vinculadas a faturas inválidas (IDs das parcelas %{ids})
+              paid_invoices: não pode reescrever o histórico de faturas pagas (IDs das faturas %{ids})
+              duplicate_invoices: encontrou mais de uma fatura canônica nos meses %{dates}
+              locked_exchange_projections: não pode mover trocas com projeções de retorno pagas (IDs das projeções %{ids})
+  references:
+    merge:
+      mode_legend: Escolha como mover as faturas
+      mode_hint: Esta escolha altera o cronograma das parcelas deste cartão.
+      modes:
+        combine_into_target:
+          label: Combinar no destino
+          hint: Move a fatura de origem para o destino. As faturas seguintes permanecem onde estão.
+        reallocate_installments:
+          label: Realocar parcelas
+          hint: Move a fatura de origem e desloca cada fatura futura já registrada em um mês.
