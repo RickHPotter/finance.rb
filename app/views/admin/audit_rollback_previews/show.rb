@@ -216,7 +216,12 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
   def apply_form
     form_with(url: admin_audit_operation_rollback_preview_path(preview.operation), method: :post,
               class: "mt-3 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-end dark:border-slate-700",
-              data: { turbo_frame: "_top", turbo_action: "replace" }) do |form|
+              data: {
+                controller: "rollback-apply",
+                action: "turbo:submit-start->rollback-apply#start",
+                turbo_frame: "_top",
+                turbo_action: "replace"
+              }) do |form|
       form.hidden_field(:apply_token, value: preview.apply_token, id: "audit_rollback_apply_token")
       if preview.confirmation_required?
         label(class: "inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200") do
@@ -225,7 +230,9 @@ class Views::Admin::AuditRollbackPreviews::Show < Views::Base
         end
       end
       form.submit(I18n.t("audit.rollback.actions.apply"),
-                  class: "min-h-10 rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500")
+                  class: "min-h-10 rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800 disabled:cursor-wait disabled:opacity-60 " \
+                         "dark:bg-rose-600 dark:hover:bg-rose-500",
+                  data: { turbo_submits_with: I18n.t("audit.rollback.actions.applying") })
     end
   end
 end

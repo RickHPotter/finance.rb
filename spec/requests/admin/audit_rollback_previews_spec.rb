@@ -54,8 +54,12 @@ RSpec.describe "Admin audit rollback previews", type: :request do
     expect(document.at_css("#audit_health_check_link")).to be_nil
     expect(header.text).not_to include(I18n.t("tabs.health_check"))
     apply_form = document.at_css("form[action='#{admin_audit_operation_rollback_preview_path(operation)}']")
+    apply_button = apply_form.at_css("input[type='submit']")
+    expect(apply_form["data-controller"]).to eq("rollback-apply")
+    expect(apply_form["data-action"]).to eq("turbo:submit-start->rollback-apply#start")
     expect(apply_form["data-turbo-frame"]).to eq("_top")
     expect(apply_form["data-turbo-action"]).to eq("replace")
+    expect(apply_button["data-turbo-submits-with"]).to eq(I18n.t("audit.rollback.actions.applying"))
     expect(workspace_classes).to include("w-full", "px-2", "py-2", "sm:px-3")
     expect(workspace_classes).not_to include("mx-auto", "max-w-7xl")
     expect(AuditVersion.count).to eq(version_count)

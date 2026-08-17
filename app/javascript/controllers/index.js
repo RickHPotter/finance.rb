@@ -142,6 +142,9 @@ application.register("reference-year-carousel", ReferenceYearCarouselController)
 import RequestSubmitController from "./request_submit_controller"
 application.register("request-submit", RequestSubmitController)
 
+import RollbackApplyController from "./rollback_apply_controller"
+application.register("rollback-apply", RollbackApplyController)
+
 import RubyUi__CalendarController from "./ruby_ui/calendar_controller"
 application.register("ruby-ui--calendar", RubyUi__CalendarController)
 

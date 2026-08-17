@@ -15,6 +15,7 @@ en:
         prohibited: "Prohibited"
       actions:
         apply: "Apply rollback"
+        applying: "Applying rollback..."
         confirm_history: "Confirm historical correction"
         destroy: "Destroy"
         update: "Restore"
@@ -189,6 +190,7 @@ pt-BR:
         prohibited: "Proibida"
       actions:
         apply: "Aplicar reversão"
+        applying: "Aplicando reversão..."
         confirm_history: "Confirmar correção histórica"
         destroy: "Excluir"
         update: "Restaurar"
