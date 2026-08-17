@@ -195,7 +195,8 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
   end
 
   def supported_card_payment_graph?
-    supported_card_payment_projection_update? || supported_reference_date_sync? || supported_reference_merge_graph? || supported_reference_reallocation_graph?
+    supported_card_payment_projection_update? || supported_reference_date_sync? || supported_user_card_payment_date_sync? || supported_reference_merge_graph? ||
+      supported_reference_reallocation_graph?
   end
 
   def supported_reference_reallocation_graph?
@@ -281,6 +282,10 @@ class Audit::Rollback::Adapters::CashTransaction < Audit::Rollback::Adapters::Ba
     return false unless projection_cash_installment_date_transition_supported?
 
     transitions.any? { |candidate| reference_date_transition_supported?(candidate) }
+  end
+
+  def supported_user_card_payment_date_sync?
+    Audit::Rollback::Support::UserCardPaymentDateSync.new(transition:, transitions:).supported?
   end
 
   def projection_cash_installment_transition_supported?
