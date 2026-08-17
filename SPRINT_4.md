@@ -796,6 +796,27 @@ Goal: update conversation routing and lifecycle after explicit users, profiles, 
 friendships exist, so direct and actionable-message conversations have canonical URLs,
 participants, context scope, and permissions.
 
+Locked V1 direction:
+
+- preserve all existing actionable-message send/receive, payload, reference,
+  supersession, safety, and auto-apply rules; conversation plumbing may be refactored
+  only behind behavior-parity coverage, and any intentional rule change requires an
+  explicit product decision
+- anchor every conversation to one canonical friendship and permit one thread per
+  friendship, string-backed kind, and scenario
+- expose immutable UUID conversation URLs and derive participants from the friendship;
+  never trust participant user IDs submitted by the browser
+- require an accepted friendship for list, show, create, send, actionable-message, and
+  realtime access; block/unfriend revokes access immediately while retaining history
+- keep archive, mute, and read progress participant-local, with mute suppressing
+  attention notifications but not delivery or unread state
+- persist explicit message kinds and actionable states instead of repeatedly inferring
+  them from headers, references, and timestamps
+- send manual and automatic application through one locked, idempotent validation path
+  and record every attempt in an append-only action ledger linked to financial audits
+- paginate conversations and messages with deterministic keyset cursors while retaining
+  authorized Turbo broadcasts
+
 Relationship and routing:
 
 - require an accepted friendship for new user-to-user conversations
@@ -835,6 +856,12 @@ Coverage:
 - cover canonical thread creation under concurrency, friendship authorization, block
   behavior, scenario isolation, unread isolation, archive/mute state, pagination,
   realtime rendering, auto-accept policy, idempotent apply, and browser URL correctness
+
+References:
+
+- [conversation and message contract](docs/sprints/4-kakashi/kakashi-13/01-conversation-and-message-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-13/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-13/03-decisions-and-test-matrix.md)
 
 ### KAKASHI-14: Guarantee readable category colours
 
@@ -1379,7 +1406,8 @@ Explicitly out of scope:
 
 ### KAKASHI-21: Choose how a user-card reference merge reallocates installments
 
-Issue: to be created.
+- Issues:
+  - [#77](https://github.com/RickHPotter/finance.rb/issues/77)
 
 Goal: make the reference-merge form require an explicit choice between preserving the
 current invoice-collapse behavior and applying the installment reallocation used by
