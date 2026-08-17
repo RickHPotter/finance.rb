@@ -24,6 +24,7 @@
     - [KAKASHI-18: Improve selectors and merge categories or entities](#kakashi-18-improve-selectors-and-merge-categories-or-entities)
     - [KAKASHI-19: Harden internal and external entity ledgers](#kakashi-19-harden-internal-and-external-entity-ledgers)
     - [KAKASHI-20: Audit spec quality and application performance](#kakashi-20-audit-spec-quality-and-application-performance)
+    - [KAKASHI-21: Choose how a user-card reference merge reallocates installments](#kakashi-21-choose-how-a-user-card-reference-merge-reallocates-installments)
   - [CONCLUSION](#conclusion)
 <!--toc:end-->
 
@@ -1376,6 +1377,102 @@ Explicitly out of scope:
 - arbitrary timing assertions tied to one development machine
 - parallelization as a substitute for fixing deadlocks, N+1 queries, or callback storms
 
+### KAKASHI-21: Choose how a user-card reference merge reallocates installments
+
+Issue: to be created.
+
+Goal: make the reference-merge form require an explicit choice between preserving the
+current invoice-collapse behavior and applying the installment reallocation used by
+Itaú, while keeping either operation atomic, auditable, and completely reversible
+through KAKASHI-08 guarded rollback.
+
+Merge modes:
+
+1. `Combine into target` preserves the current behavior. Every installment in the
+   source invoice moves into the adjacent target invoice, where it can share the same
+   reference with an installment that was already there. No later invoice is shifted.
+2. `Reallocate installments` postpones the complete persisted invoice sequence by one
+   billing cycle from the source reference onward. Source content moves to target,
+   original target content moves to the following reference, and each later occupied
+   bucket moves forward once. Installment numbers, counts, prices, and transaction
+   identity remain unchanged.
+
+The reallocation example is the locked acceptance case. When references `2026-08` and
+`2026-09` are merged for a 12-installment transaction spanning January through
+December 2026, installments 1 through 7 remain in January through July. Installment 8
+moves from August to September, installment 9 moves from September to October, and the
+same one-month shift continues until installment 12 moves from December 2026 to January
+2027. The result must never place installments 8 and 9 in the same reference. A
+single-installment purchase keeps its identity and installment metadata; if its bucket
+is in the shifted range, that one installment simply moves forward once.
+
+Locked V1 direction:
+
+- require a merge-mode choice in the form and reject missing or unknown values without
+  mutation; do not infer the financially significant decision from the card brand
+- retain both existing adjacent-direction merges for `Combine into target`
+- offer `Reallocate installments` only when the source immediately precedes the target,
+  because V1 models a forward bill postponement rather than a backward schedule rewrite
+- scope every read and write to the selected `UserCard` and `current_context`
+- shift all persisted unpaid card installments in occupied buckets from the source
+  onward, not only installments belonging to a multi-installment transaction
+- keep earlier installments and every installment's `number`,
+  `card_installments_count`, `price`, `starting_price`, and parent transaction unchanged
+- update each moved installment's month, year, billing date, and card-payment invoice
+  association to the next canonical reference
+- process occupied buckets from latest to earliest under deterministic locks so a
+  destination is vacated before its predecessor arrives
+- destroy the emptied source invoice/reference, reuse canonical future references and
+  invoices, and create only the final tail reference/invoice when it does not exist
+- recompute every affected invoice price, comment, cash installment, date, paid state,
+  and counter from its final installment membership
+- shift matching monetary card-bound exchanges and resynchronize their generated
+  `EXCHANGE RETURN` projections according to KAKASHI-11
+- fail closed before mutation when paid/locked history, a missing canonical dependency,
+  a cross-context row, or an unsupported generated graph would make the full shift or
+  its rollback unsafe
+- recalculate balances once from the earliest affected billing date after the final
+  graph is valid
+
+AuditRollback requirements:
+
+- execute the complete merge, tail creation, projection synchronization, and derived
+  recalculation as one database transaction and one grouped `AuditOperation`
+- store scalar operation metadata identifying the user card, context, source and target
+  buckets, and selected merge mode
+- audit every created, updated, reassigned, or destroyed reference, invoice,
+  cash/card installment, exchange, and generated projection; do not leave business
+  mutations outside the operation or hide them behind unaudited bulk SQL
+- extend the rollback graph recognizers/adapters for a multi-bucket reallocation rather
+  than relying on the current two-reference merge shape
+- make a fresh merge operation immediately previewable and applicable through guarded
+  rollback, subject to the existing administrator, stale-state, and paid-history rules
+- restore the exact pre-merge financial graph, including record IDs, installment
+  membership and order, invoice/reference routing, exchange/projection links, amounts,
+  dates, comments, and paid states; the immutable merge and rollback audit entries are
+  the only intentional additions to history
+- reject stale rollback after any affected record diverges instead of partially
+  restoring the sequence
+
+Coverage:
+
+- preserve the current combine-mode regression suite, including KAKASHI-11 exchange
+  projection behavior
+- cover the January-to-December 12-installment example across the year boundary
+- cover single-installment purchases, multiple transactions in the same future bucket,
+  gaps between occupied buckets, an already-existing tail reference/invoice, and a
+  newly-created tail
+- cover card/context isolation, missing mode, invalid/backward reallocation, paid or
+  locked history, stale plans, synchronization failure, and atomic rollback
+- compare a canonical pre-merge graph snapshot with the graph after AuditRollback and
+  require equality for all financial records and relationships in scope
+
+References:
+
+- [product and data contract](docs/sprints/4-kakashi/kakashi-21/01-product-and-data-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-21/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-21/03-decisions-and-test-matrix.md)
+
 ## CONCLUSION
 
 Kakashi should leave the application more predictable after Jiraiya: subscription and
@@ -1397,4 +1494,7 @@ accessible category colours, correct Turbo navigation, editable allocations, com
 resource dashboards, predictable selectors and merge tools, and hardened shared entity
 ledgers. `KAKASHI-20` keeps that growth sustainable by profiling the spec suite,
 cleaning outdated or wasteful test setup, and using slow examples to improve application
-hot paths without sacrificing financial regression coverage.
+hot paths without sacrificing financial regression coverage. `KAKASHI-21` makes the
+user-card reference merge decision explicit, adds Itaú-style sequence reallocation,
+and requires the entire resulting financial graph to remain eligible for guarded,
+operation-wide rollback.
