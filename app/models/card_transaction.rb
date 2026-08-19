@@ -84,14 +84,13 @@ class CardTransaction < ApplicationRecord
 
     attach_reference if year.nil? && month.nil?
     update_installments
+    card_installments.first&.assign_attributes(month:, year:) if new_record? && month.present? && year.present?
   end
 
   def attach_reference
-    existing_reference = card_installments.first
-    if existing_reference.nil?
-      reference_date = user_card.calculate_reference_date(date)
-      existing_reference = user_card.references.find_by(context:, reference_date:)
-    end
+    reference_date = user_card.calculate_reference_date(date)
+    existing_reference = user_card.references.find_by(context:, reference_date:)
+    existing_reference ||= next_reference_after(reference_date)
 
     if existing_reference
       self.month = existing_reference.month
@@ -104,6 +103,14 @@ class CardTransaction < ApplicationRecord
                .create_with(reference_closing_date: reference_date - user_card.days_until_due_date.days, reference_date:)
                .find_or_create_by(month:, year:)
     end
+  end
+
+  def next_reference_after(reference_date)
+    user_card.references
+             .where(context:)
+             .where("reference_date >= ?", reference_date)
+             .order(:reference_date)
+             .first
   end
 
   def update_installments

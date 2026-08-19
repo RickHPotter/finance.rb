@@ -104,6 +104,27 @@ RSpec.describe CardTransaction, type: :model do
     CashTransaction.where(id: stale_cash_transaction_ids).delete_all
   end
 
+  describe "#build_month_year" do
+    it "uses the next existing reference when the calculated month was merged away" do
+      user = user_card.user
+      user_card.update!(due_date_day: 10, days_until_due_date: 5)
+      create(:reference, context: user.main_context, user_card:, month: 4, year: 2026, reference_date: Date.new(2026, 4, 10))
+
+      transaction = described_class.new(
+        user:,
+        context: user.main_context,
+        user_card:,
+        date: Date.new(2026, 3, 3),
+        price: -1_000
+      )
+
+      transaction.build_month_year
+
+      expect(transaction.month_year).to eq("APR <26>")
+      expect(transaction.card_installments.first.slice(:month, :year)).to eq("month" => 4, "year" => 2026)
+    end
+  end
+
   describe "[ activerecord validations ]" do
     context "( presence, uniqueness, etc )" do
       it "is valid with valid attributes" do
