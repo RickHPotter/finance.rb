@@ -9,6 +9,8 @@ class CardInstallment < Installment
   include TranslateHelper
 
   # @security (i.e. attr_accessible) ..........................................
+  attr_accessor :card_payment_reference_override
+
   # @relationships ............................................................
   belongs_to :card_transaction, counter_cache: true
 
@@ -35,6 +37,8 @@ class CardInstallment < Installment
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def card_payment_date
+    return card_payment_reference_override.reference_date if card_payment_reference_override.present?
+
     reference = user_card.find_or_create_reference_for(date, context: card_transaction.context)
     reference.reference_date
   end

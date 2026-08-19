@@ -1446,8 +1446,8 @@ Locked V1 direction:
   onward, not only installments belonging to a multi-installment transaction
 - keep earlier installments and every installment's `number`,
   `card_installments_count`, `price`, `starting_price`, and parent transaction unchanged
-- update each moved installment's month, year, billing date, and card-payment invoice
-  association to the next canonical reference
+- update each moved installment's month, year, and card-payment invoice association to
+  the next canonical reference while preserving its original purchase/schedule date
 - process occupied buckets from latest to earliest under deterministic locks so a
   destination is vacated before its predecessor arrives
 - destroy the emptied source invoice/reference, reuse canonical future references and

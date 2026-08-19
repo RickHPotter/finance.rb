@@ -84,12 +84,12 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     )
   end
 
-  def build_plan
+  def build_plan(source_date: Date.new(2026, 8, 1), target_date: Date.new(2026, 9, 1))
     ReferenceMerges::ReallocationPlanner.new(
       user_card:,
       context:,
-      source_date: Date.new(2026, 8, 1),
-      target_date: Date.new(2026, 9, 1)
+      source_date:,
+      target_date:
     ).call
   end
 
@@ -151,8 +151,7 @@ RSpec.describe ReferenceMerges::ReallocationApply do
       expect(row.attributes.slice("id", "card_transaction_id", "number", "card_installments_count", "price", "starting_price")).to eq(
         original.slice("id", "card_transaction_id", "number", "card_installments_count", "price", "starting_price")
       )
-      expected_date = original["number"] >= 8 ? original["date"].next_month : original["date"]
-      expect(row.date).to eq(expected_date)
+      expect(row.date).to eq(original["date"])
     end
 
     expect(user_card.references).not_to exist(context:, month: 8, year: 2026)
@@ -172,6 +171,38 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(september_reference.reference_closing_date).not_to eq(original_target_closing_date)
   end
 
+  it "keeps a one-installment purchase date while reallocating its billing bucket" do
+    september = create_reference(9, 2026)
+    october = create_reference(10, 2026)
+    [ september, october ].each { |reference| create_invoice(reference) }
+    transaction = create(
+      :card_transaction,
+      user:,
+      context:,
+      user_card:,
+      date: Time.zone.local(2026, 8, 12),
+      month: 9,
+      year: 2026,
+      price: -1_000,
+      card_installments: [
+        build(:card_installment, number: 1, date: Time.zone.local(2026, 8, 12), month: 9, year: 2026, price: -1_000, paid: false)
+      ],
+      category_transactions: [],
+      entity_transactions: []
+    )
+    installment = transaction.card_installments.sole
+    september_invoice = user_card.unpaid_invoices(context:).find_by!(month: 9, year: 2026)
+    installment.update_columns(cash_transaction_id: september_invoice.id)
+
+    result = described_class.new(
+      plan: build_plan(source_date: Date.new(2026, 9, 1), target_date: Date.new(2026, 10, 1))
+    ).call
+
+    expect(result).to be_applied
+    expect(installment.reload).to have_attributes(date: Time.zone.local(2026, 8, 12), month: 10, year: 2026)
+    expect(installment.cash_transaction).to eq(user_card.unpaid_invoices(context:).find_by!(month: 10, year: 2026))
+  end
+
   it "moves occupied buckets by one calendar month without collapsing an empty gap" do
     august = create_reference(8, 2026)
     september = create_reference(9, 2026)
@@ -187,7 +218,7 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(user_card.references.where(context:, year: 2026).order(:month).pluck(:month)).to include(9, 10, 11, 12)
   end
 
-  it "moves an unpaid final installment after paid history and normalizes a drifted schedule date" do
+  it "moves an unpaid final installment after paid history without rewriting schedule dates" do
     july = create_reference(7, 2026)
     august = create_reference(8, 2026)
     september = create_reference(9, 2026)
@@ -222,10 +253,10 @@ RSpec.describe ReferenceMerges::ReallocationApply do
 
     expect(result).to be_applied
     expect(paid_installment.reload).to have_attributes(date: Time.zone.local(2026, 5, 29), month: 7, year: 2026, paid: true)
-    expect(source_installment.reload).to have_attributes(date: Time.zone.local(2026, 8, 29), month: 9, year: 2026, paid: false)
+    expect(source_installment.reload).to have_attributes(date: Time.zone.local(2026, 6, 29), month: 9, year: 2026, paid: false)
     expect(source_installment.cash_transaction).to have_attributes(month: 9, year: 2026, paid: false)
     expect(source_installment.cash_transaction.date.to_date).to eq(september.reference_date)
-    expect(target_installment.reload).to have_attributes(date: Time.zone.local(2026, 9, 29), month: 10, year: 2026, paid: false)
+    expect(target_installment.reload).to have_attributes(date: Time.zone.local(2026, 7, 29), month: 10, year: 2026, paid: false)
     expect(target_installment.cash_transaction).to have_attributes(month: 10, year: 2026, paid: false)
   end
 

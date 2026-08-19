@@ -114,10 +114,9 @@ The shift set contains every persisted, unpaid `CardInstallment` that:
 This includes one-installment purchases. Their transaction and installment identity do
 not change; the single row moves forward once when it is inside the shift set.
 
-For each moved card installment, only routing/schedule attributes change:
+For each moved card installment, only billing-routing attributes change:
 
 - `month` and `year`
-- billing `date`, derived from the destination reference
 - `cash_transaction_id`, pointing to the destination canonical invoice
 
 The following remain unchanged:
@@ -125,7 +124,18 @@ The following remain unchanged:
 - `id` and `card_transaction_id`
 - `number` and `card_installments_count`
 - `price` and `starting_price`
+- `date`, preserving the original purchase/installment schedule chronology
 - category/entity allocations and parent `CardTransaction` identity
+
+`CardInstallment#date` is not a billing-bucket identifier. A one-installment purchase
+made on August 12 remains dated August 12 when its invoice routing moves from September
+to October. Likewise, a multi-installment sequence retains its original consecutive
+dates; reallocation must not create a false missing month between installments.
+
+When callbacks create or select the destination card-payment invoice, they use the
+destination `Reference` explicitly rather than deriving it from the preserved
+installment date. The generated invoice and its cash installment still use the
+destination reference's billing date.
 
 ### Invoice Reconstruction
 

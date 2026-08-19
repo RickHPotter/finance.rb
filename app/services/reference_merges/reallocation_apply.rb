@@ -105,23 +105,15 @@ class ReferenceMerges::ReallocationApply
   end
 
   def move_bucket_installments!(bucket)
-    destination_reference_for(bucket.destination_date) if bucket.installment_ids.present?
+    destination_reference = destination_reference_for(bucket.destination_date) if bucket.installment_ids.present?
 
     CardInstallment.unscoped.where(id: bucket.installment_ids).order(:id).each do |installment|
+      installment.card_payment_reference_override = destination_reference
       installment.update!(
-        date: reallocated_installment_date(installment, bucket.destination_date),
         month: bucket.destination_date.month,
         year: bucket.destination_date.year
       )
     end
-  end
-
-  def reallocated_installment_date(installment, destination_date)
-    calculated_reference_date = plan.user_card.calculate_reference_date(installment.date).to_date.beginning_of_month
-    distance = month_distance(calculated_reference_date, destination_date)
-    raise IntegrityError if distance.negative?
-
-    installment.date.next_month(distance)
   end
 
   def move_bucket_exchanges!(bucket)
@@ -190,16 +182,23 @@ class ReferenceMerges::ReallocationApply
 
   def verify_installment!(installment, expected_date)
     invoice = installment.cash_transaction
-    calculated_reference_date = plan.user_card.calculate_reference_date(installment.date)
     valid = installment.month == expected_date.month &&
             installment.year == expected_date.year &&
-            calculated_reference_date.month == expected_date.month &&
-            calculated_reference_date.year == expected_date.year &&
+            installment.date == original_attribute_for(installment, "date") &&
             invoice&.month == expected_date.month &&
             invoice&.year == expected_date.year &&
             invoice&.user_card_id == plan.user_card.id &&
             invoice&.context_id == plan.context.id
     raise IntegrityError unless valid
+  end
+
+  def original_attribute_for(record, attribute)
+    planned_state = locked_plan_states.fetch([ record.class.base_class.name, record.id ])
+    planned_state.fetch(:attributes).fetch(attribute)
+  end
+
+  def locked_plan_states
+    @locked_plan_states ||= @locked_plan.state_rows.index_by { |row| [ row.fetch(:record_type), row.fetch(:record_id) ] }
   end
 
   def verify_exchange!(exchange, expected_date)
