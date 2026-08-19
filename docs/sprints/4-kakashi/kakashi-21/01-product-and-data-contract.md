@@ -143,6 +143,9 @@ After reassignment, each affected card-payment invoice is rebuilt from its final
 installment membership. Its price, comment, cash installment price, billing date, paid
 state, and counters must agree with that membership. Empty intermediate invoices are
 removed; exactly one canonical invoice remains for each occupied destination bucket.
+Every installment reassignment remains audited, but aggregate invoice and generated
+cash-installment totals are synchronized once from each bucket's final membership
+instead of being rewritten after every moved row.
 
 The shift is planned and applied from the latest occupied bucket toward the source.
 This avoids temporarily combining neighboring buckets and makes unique routing easier

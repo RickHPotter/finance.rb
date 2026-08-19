@@ -143,6 +143,7 @@ For every affected invoice:
 | Existing destination reference and invoice | reused |
 | Missing tail reference/invoice | planned and created canonically |
 | Multiple transactions in one bucket | all move once; no duplicate invoice |
+| Many installments in one bucket | every reassignment is audited; invoice projection updates remain bucket-bounded |
 | Same transaction spans source/target | installments remain in separate buckets after reallocation |
 | Paid affected installment | blocked before mutation |
 | Locked/generated unsupported graph | blocked with explicit reason |

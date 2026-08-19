@@ -65,8 +65,11 @@ Commit: `refactor: plan reference merge reallocation`
    inferring it from that preserved date.
 5. Rebuild every affected invoice from final membership.
 6. Remove empty source/intermediate invoices and finally destroy the source reference.
-7. Preserve the existing target-closing-boundary merge behavior.
-8. Recalculate balances once from the earliest affected billing date after integrity
+7. Keep projection synchronization proportional to occupied buckets: establish each
+   destination invoice through one representative installment, audit the remaining
+   reassignments without projection callbacks, and synchronize the final aggregate once.
+8. Preserve the existing target-closing-boundary merge behavior.
+9. Recalculate balances once from the earliest affected billing date after integrity
    checks pass.
 
 Acceptance:

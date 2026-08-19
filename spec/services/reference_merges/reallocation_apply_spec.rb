@@ -203,6 +203,47 @@ RSpec.describe ReferenceMerges::ReallocationApply do
     expect(installment.cash_transaction).to eq(user_card.unpaid_invoices(context:).find_by!(month: 10, year: 2026))
   end
 
+  it "audits every reassignment while synchronizing card-payment projections once per bucket" do
+    september = create_reference(9, 2026)
+    october = create_reference(10, 2026)
+    [ september, october ].each { |reference| create_invoice(reference) }
+    transactions = 12.times.map do |index|
+      create(
+        :card_transaction,
+        user:,
+        context:,
+        user_card:,
+        date: Time.zone.local(2026, 8, index + 1),
+        month: 9,
+        year: 2026,
+        price: -1_000,
+        card_installments: [
+          build(:card_installment, number: 1, date: Time.zone.local(2026, 8, index + 1), month: 9, year: 2026, price: -1_000, paid: false)
+        ],
+        category_transactions: [],
+        entity_transactions: []
+      )
+    end
+
+    result = described_class.new(
+      plan: build_plan(source_date: Date.new(2026, 9, 1), target_date: Date.new(2026, 10, 1))
+    ).call
+
+    expect(result).to be_applied
+    expect(transactions.flat_map { |transaction| transaction.card_installments.reload }.pluck(:month, :year).uniq).to eq([ [ 10, 2026 ] ])
+    expect(result.operation.audit_versions.where(item_subtype: "CardInstallment", event: :update).count).to eq(12)
+    projection_updates = result.operation.audit_versions.where(
+      item_subtype: %w[CashTransaction CashInstallment],
+      mutation_source: :projection_sync,
+      event: :update
+    )
+    expect(projection_updates.count).to be <= 6
+
+    invoice = context.cash_transactions.card_payment.find_by!(user_card:, month: 10, year: 2026)
+    expect(invoice).to have_attributes(price: -12_000)
+    expect(invoice.cash_installments.sole.price).to eq(-12_000)
+  end
+
   it "moves occupied buckets by one calendar month without collapsing an empty gap" do
     august = create_reference(8, 2026)
     september = create_reference(9, 2026)
