@@ -56,14 +56,14 @@ class Views::Budgets::Index < Views::Base
   def render_budget_bulk_forms
     budget_bulk_actions.each_key do |action|
       form_with url: bulk_update_budgets_path, method: :patch, class: "hidden", data: { turbo: true }, id: "bulk_budget_#{action}_form" do
-        hidden_field_tag :ids, "", data: { bulk_ids_input: true, bulk_ids_kind: "budget" }
+        hidden_field_tag :ids, "", data: { bulk_ids_input: true, bulk_ids_kind: "budget", bulk_selection_kind: "budget" }
         hidden_field_tag :bulk_action, action
         hidden_field_tag :return_to, request.fullpath
       end
     end
 
     form_with url: bulk_destroy_budgets_path, method: :delete, class: "hidden", data: { turbo: true }, id: "bulk_budget_destroy_form" do
-      hidden_field_tag :ids, "", data: { bulk_ids_input: true, bulk_ids_kind: "budget" }
+      hidden_field_tag :ids, "", data: { bulk_ids_input: true, bulk_ids_kind: "budget", bulk_selection_kind: "budget" }
       hidden_field_tag :return_to, request.fullpath
     end
   end

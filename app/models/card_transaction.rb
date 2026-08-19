@@ -82,9 +82,10 @@ class CardTransaction < ApplicationRecord
     return if user_card_id.nil?
     return if imported
 
+    sync_first_installment_reference = new_record? && incomplete_installment_schedule?(card_installments.first)
     attach_reference if year.nil? && month.nil?
     update_installments
-    card_installments.first&.assign_attributes(month:, year:) if new_record? && month.present? && year.present?
+    card_installments.first&.assign_attributes(month:, year:) if sync_first_installment_reference && month.present? && year.present?
   end
 
   def attach_reference
@@ -230,6 +231,10 @@ class CardTransaction < ApplicationRecord
     return if [ false, true ].include?(paid)
 
     self.paid = false
+  end
+
+  def incomplete_installment_schedule?(installment)
+    installment.present? && installment.slice(:date, :month, :year).values.compact_blank.size < 3
   end
 
   def build_default_card_installments

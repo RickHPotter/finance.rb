@@ -123,6 +123,30 @@ RSpec.describe CardTransaction, type: :model do
       expect(transaction.month_year).to eq("APR <26>")
       expect(transaction.card_installments.first.slice(:month, :year)).to eq("month" => 4, "year" => 2026)
     end
+
+    it "preserves an explicitly supplied first-installment reference" do
+      user = user_card.user
+      transaction = described_class.new(
+        user:,
+        context: user.main_context,
+        user_card:,
+        date: Date.new(2026, 1, 10),
+        month: 1,
+        year: 2026,
+        price: -2_000,
+        card_installments: [
+          CardInstallment.new(number: 1, date: Date.new(2026, 8, 10), month: 8, year: 2026, price: -2_000)
+        ]
+      )
+
+      transaction.build_month_year
+
+      expect(transaction.card_installments.first.slice(:date, :month, :year)).to eq(
+        "date" => Time.zone.local(2026, 8, 10),
+        "month" => 8,
+        "year" => 2026
+      )
+    end
   end
 
   describe "[ activerecord validations ]" do

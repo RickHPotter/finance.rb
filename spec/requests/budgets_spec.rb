@@ -45,6 +45,8 @@ RSpec.describe "Budgets", type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('data-bulk-selection-kind="budget"')
       expect(response.body).to include('data-bulk-ids-kind="budget"')
+      document = Nokogiri::HTML.fragment(response.body)
+      expect(document.css("input[data-bulk-ids-kind='budget'][data-bulk-selection-kind='budget']")).not_to be_empty
       expect(response.body).to include('data-bulk-form-id="bulk_budget_make_inclusive_form"')
       expect(response.body).to include('name="return_to"')
       expect(response.body).to include('value="/budgets"')
