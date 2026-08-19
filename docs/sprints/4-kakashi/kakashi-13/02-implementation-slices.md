@@ -30,6 +30,9 @@ Deliver:
   auto-apply result
 - an operator-readable report with concrete IDs and no automatic destructive repair
 
+Implementation note: the read-only command and compatibility map are documented in
+[`04-current-behavior-inventory.md`](04-current-behavior-inventory.md).
+
 Coverage:
 
 - clean pair
