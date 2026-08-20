@@ -6,7 +6,7 @@ RSpec.describe Logic::Conversations::Stream do
   let(:sender) { create(:user, :random) }
   let(:recipient) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
-  let(:conversation) { Conversation.find_or_create_human_between!(sender, recipient) }
+  let(:conversation) { resolve_human_conversation(sender, recipient) }
 
   it "issues distinct participant stream identities only inside the authorized scenario" do
     sender_stream = described_class.for(conversation:, actor: sender, context: sender.main_context)

@@ -96,3 +96,51 @@ final full payment, category replacement, loan-to-reimbursement and reimbursemen
 loan changes, cash/card sources, shared exchange returns, borrow returns, and established
 no-message branches. Later slices must add before/after assertions before replacing any
 producer call site; this matrix does not authorize changing its financial rules.
+
+## Final Deployment Gate
+
+KAKASHI-13's final constraint migration deliberately fails closed when canonical
+history has not been reconciled. Run these commands against the target environment
+before deploying the final slice:
+
+```sh
+bin/rails conversations:inventory
+bin/rails conversations:backfill
+CONVERSATION_BACKFILL_APPLY=1 bin/rails conversations:backfill
+bin/rails conversations:verify
+```
+
+Do not continue unless the reviewed backfill has no remaining actions and
+`conversations:verify` reports zero issues. An ambiguous participant, friendship,
+scenario, payload, or action-state row is an operator decision: correct it explicitly
+or postpone the deployment. Never remap it to a main context, invent a friendship, or
+delete its history merely to satisfy the gate.
+
+After deployment, rerun:
+
+```sh
+bin/rails conversations:verify
+bin/rails conversations:backfill
+```
+
+The final database boundary requires classified message kinds and valid action-state
+combinations, and uses a deferred constraint trigger to prove that each committed
+friendship-backed conversation contains exactly the friendship's two users. The trigger
+is deferred so the resolver can create the conversation and both participant rows
+atomically. `friendship_id` remains nullable solely so ambiguous historical evidence can
+be inventoried and repaired; repository enforcement prevents application code from
+using that legacy escape hatch.
+
+## Rollback Boundaries
+
+- Rolling application code back to Slice 9 is safe while the additive columns and
+  constraints remain in place. Prefer this operational rollback first.
+- The canonical backfill is not automatically reversible: duplicate conversation rows
+  were consolidated while message IDs and links were retained. Restoring their exact
+  former split requires the pre-deployment database backup and the reviewed plan.
+- Do not roll back canonical identity, message classification, or message-action
+  migrations after new traffic. Their down paths remove identity or audit projections.
+- The final enforcement migration may be rolled back only after the older application
+  is live; doing so loosens constraints but does not rewrite data.
+- `last_message_at` is derived and can be rebuilt from message timestamps, but keep it
+  while any paginated application version is serving requests.

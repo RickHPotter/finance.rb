@@ -6,7 +6,7 @@ RSpec.describe Logic::Messages::Respond do
   let(:sender) { create(:user, :random) }
   let(:recipient) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
-  let(:conversation) { Conversation.find_or_create_assistant_between!(sender, recipient) }
+  let(:conversation) { resolve_assistant_conversation(sender, recipient) }
 
   before { allow(ActionableMessageAutoApplyJob).to receive(:perform_now) }
 

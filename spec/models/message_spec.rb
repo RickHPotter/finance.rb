@@ -7,7 +7,7 @@ RSpec.describe Message, type: :model do
     let(:sender) { create(:user, :random) }
     let(:recipient) { create(:user, :random) }
     let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
-    let(:conversation) { Conversation.find_or_create_human_between!(sender, recipient) }
+    let(:conversation) { resolve_human_conversation(sender, recipient) }
 
     it "reactivates an archived conversation and advances activity monotonically in the create transaction" do
       conversation.conversation_participants.update_all(archived_at: 1.day.ago)
@@ -712,7 +712,7 @@ end
 #  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
-#  kind                        :string           indexed => [action_state]
+#  kind                        :string           not null, indexed => [action_state]
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed

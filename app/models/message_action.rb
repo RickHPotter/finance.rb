@@ -76,17 +76,17 @@ end
 #
 # Indexes
 #
-#  index_message_actions_on_actor_id                       (actor_id)
-#  index_message_actions_on_actor_id_and_created_at        (actor_id,created_at)
-#  index_message_actions_on_audit_operation_id             (audit_operation_id)
-#  index_message_actions_on_conversation_id                (conversation_id)
-#  index_message_actions_on_conversation_id_and_created_at (conversation_id,created_at)
-#  index_message_actions_on_friend_id                      (friend_id)
-#  index_message_actions_on_friendship_id                  (friendship_id)
-#  index_message_actions_on_message_id                     (message_id)
-#  index_message_actions_on_recipient_context_id           (recipient_context_id)
-#  index_message_actions_on_recipient_context_id_and_created_at (recipient_context_id,created_at)
-#  index_message_actions_on_successful_effect              (message_id,action) UNIQUE WHERE ((outcome)::text = 'succeeded'::text)
+#  index_message_actions_on_actor_id                             (actor_id)
+#  index_message_actions_on_actor_id_and_created_at              (actor_id,created_at)
+#  index_message_actions_on_audit_operation_id                   (audit_operation_id)
+#  index_message_actions_on_conversation_id                      (conversation_id)
+#  index_message_actions_on_conversation_id_and_created_at       (conversation_id,created_at)
+#  index_message_actions_on_friend_id                            (friend_id)
+#  index_message_actions_on_friendship_id                        (friendship_id)
+#  index_message_actions_on_message_id                           (message_id)
+#  index_message_actions_on_recipient_context_id                 (recipient_context_id)
+#  index_message_actions_on_recipient_context_id_and_created_at  (recipient_context_id,created_at)
+#  index_message_actions_on_successful_effect                    (message_id,action) UNIQUE WHERE ((outcome)::text = 'succeeded'::text)
 #
 # Foreign Keys
 #
@@ -97,3 +97,4 @@ end
 #  fk_rails_...  (friendship_id => friendships.id) ON DELETE => restrict
 #  fk_rails_...  (message_id => messages.id) ON DELETE => restrict
 #  fk_rails_...  (recipient_context_id => contexts.id) ON DELETE => restrict
+#

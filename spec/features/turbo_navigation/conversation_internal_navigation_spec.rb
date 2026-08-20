@@ -10,7 +10,7 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
   before { sign_in user }
 
   it "selects and updates a conversation without letting realtime streams change its URL" do
-    conversation = Conversation.find_or_create_human_between!(user, other_user)
+    conversation = resolve_human_conversation(user, other_user)
     conversation.messages.create!(user: other_user, body: "Hello from history")
     index_path = conversations_path(filter: "human")
 
@@ -32,7 +32,7 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
 
   it "opens an actionable message at the canonical transaction form URL" do
     remote_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-    conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+    conversation = resolve_assistant_conversation(other_user, user)
     message = conversation.messages.create!(
       user: other_user,
       body: "notification:create",

@@ -14,8 +14,6 @@ class Conversation < ApplicationRecord
   has_many :users, through: :conversation_participants
   has_many :messages, dependent: :destroy
 
-  accepts_nested_attributes_for :conversation_participants, allow_destroy: true
-
   # @validations ..............................................................
   validates :public_id, presence: true, uniqueness: true
   validate :canonical_friendship_is_immutable, on: :update
@@ -26,14 +24,6 @@ class Conversation < ApplicationRecord
   before_create -> { self.last_message_at ||= created_at || Time.current }
 
   # @scopes ...................................................................
-  scope :for_users, lambda { |user_ids|
-    ids = Array(user_ids).uniq
-
-    joins(:conversation_participants)
-      .where(conversation_participants: { user_id: ids })
-      .group("conversations.id")
-      .having("COUNT(DISTINCT conversation_participants.user_id) = ?", ids.size)
-  }
   scope :for_scenario, ->(scenario_key) { where(scenario_key:) }
   scope :active_for, lambda { |user|
     joins(:conversation_participants).where(conversation_participants: { user_id: user.id, archived_at: nil })
@@ -55,24 +45,8 @@ class Conversation < ApplicationRecord
 
   # @additional_config ........................................................
   # @class_methods ............................................................
-  def self.fast_create(user1, user2)
-    find_or_create_human_between!(user1, user2)
-  end
-
   def self.find_by_public_id!(public_id)
     find_by!(public_id:)
-  end
-
-  def self.find_or_create_human_between!(user1, user2, scenario_key: nil)
-    resolve_between!(user1, user2, kind: :human, scenario_key:)
-  end
-
-  def self.find_or_create_assistant_between!(user1, user2, scenario_key: nil)
-    resolve_between!(user1, user2, kind: :assistant, scenario_key:)
-  end
-
-  def self.resolve_between!(user1, user2, kind:, scenario_key: nil)
-    Logic::Conversations::Resolve.call(actor: user1, friendship: user1.friendship_with(user2), kind:, scenario_key:)
   end
 
   # @public_instance_methods ..................................................

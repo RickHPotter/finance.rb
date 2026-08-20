@@ -27,7 +27,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
   # A simple helper that creates a message in the assistant conversation between
   # sender and recipient, with the supplied replay payload.
   def build_message(action:, payload:, reference_transactable: nil)
-    conversation = Conversation.find_or_create_assistant_between!(
+    conversation = resolve_assistant_conversation(
       sender,
       recipient,
       scenario_key: sender.ensure_main_context!.scenario_key
@@ -114,7 +114,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_exchange.entity_transactions.create!(entity: recipient_entity, price: 100, price_to_be_returned: 100, is_payer: true)
       recipient_exchange.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_exchange,
@@ -143,7 +143,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_return.entity_transactions.create!(entity: recipient_entity, price: 0, price_to_be_returned: 0, is_payer: false)
       recipient_return.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_return,
@@ -176,7 +176,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_exchange.save!
       recipient_exchange.cash_installments.first.update!(paid: true)
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_exchange,
@@ -208,7 +208,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     end
 
     it "does not apply paid_state_sync messages" do
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender, body: "notification:paid_state_sync",
         headers: {
@@ -381,7 +381,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     end
 
     let!(:msg) do
-      conversation = Conversation.find_or_create_assistant_between!(
+      conversation = resolve_assistant_conversation(
         sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key
       )
       conversation.messages.create!(

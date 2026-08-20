@@ -6,7 +6,7 @@ RSpec.describe "Messages", type: :request do
   let(:user) { create(:user, :random) }
   let(:other_user) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
-  let(:conversation) { Conversation.find_or_create_human_between!(user, other_user) }
+  let(:conversation) { resolve_human_conversation(user, other_user) }
 
   before { sign_in user }
 
@@ -28,7 +28,7 @@ RSpec.describe "Messages", type: :request do
     it "creates a message inside a derived-scenario conversation" do
       derived_context = create(:context, user:, name: "Message Scenario", source_context: user.main_context)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
+      derived_conversation = resolve_human_conversation(user, other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
 
@@ -67,7 +67,7 @@ RSpec.describe "Messages", type: :request do
     end
 
     it "denies every message action route after friendship revocation" do
-      assistant = Conversation.find_or_create_assistant_between!(user, other_user)
+      assistant = resolve_assistant_conversation(user, other_user)
       actionable_message = assistant.messages.create!(
         user: other_user,
         body: "notification:create",

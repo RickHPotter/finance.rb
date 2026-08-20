@@ -67,7 +67,7 @@ RSpec.describe "Audit operation context", type: :request do
     sender = create(:user, :random)
     create(:friendship, :accepted, user:, friend: sender)
     reference = create(:cash_transaction, user: sender, context: sender.main_context)
-    conversation = Conversation.find_or_create_assistant_between!(user, sender)
+    conversation = resolve_assistant_conversation(user, sender)
     parent_operation = nil
     message = nil
 

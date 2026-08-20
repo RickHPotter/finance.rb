@@ -6,7 +6,7 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
   let(:sender) { create(:user, email: "sender@example.com") }
   let(:recipient) { create(:user, email: "recipient@example.com") }
   let!(:friendship) { create(:friendship, user: recipient, friend: sender, state: "accepted") }
-  let(:conversation) { Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key) }
+  let(:conversation) { resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key) }
   let(:message) do
     conversation.messages.create!(
       user: sender,

@@ -506,7 +506,7 @@ end
 #  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
-#  kind                        :string           indexed => [action_state]
+#  kind                        :string           not null, indexed => [action_state]
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed

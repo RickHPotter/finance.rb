@@ -24,6 +24,53 @@ COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching
 
 
 --
+-- Name: enforce_canonical_conversation_participants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_canonical_conversation_participants() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  conversation_key bigint;
+  conversation_keys bigint[];
+  participant_count integer;
+  participant_user_ids bigint[];
+  expected_user_ids bigint[];
+BEGIN
+  IF TG_TABLE_NAME = 'conversations' THEN
+    conversation_keys := ARRAY[NEW.id];
+  ELSIF TG_OP = 'DELETE' THEN
+    conversation_keys := ARRAY[OLD.conversation_id];
+  ELSIF TG_OP = 'UPDATE' AND OLD.conversation_id <> NEW.conversation_id THEN
+    conversation_keys := ARRAY[OLD.conversation_id, NEW.conversation_id];
+  ELSE
+    conversation_keys := ARRAY[NEW.conversation_id];
+  END IF;
+
+  FOREACH conversation_key IN ARRAY conversation_keys LOOP
+    SELECT COUNT(*), ARRAY_AGG(user_id ORDER BY user_id)
+    INTO participant_count, participant_user_ids
+    FROM conversation_participants
+    WHERE conversation_id = conversation_key;
+
+    SELECT ARRAY[LEAST(friendships.user_id, friendships.friend_id), GREATEST(friendships.user_id, friendships.friend_id)]::bigint[]
+    INTO expected_user_ids
+    FROM conversations
+    JOIN friendships ON friendships.id = conversations.friendship_id
+    WHERE conversations.id = conversation_key;
+
+    IF expected_user_ids IS NOT NULL AND (participant_count <> 2 OR participant_user_ids <> expected_user_ids) THEN
+      RAISE EXCEPTION 'conversation % must contain exactly its friendship participants', conversation_key
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
 -- Name: prevent_financial_audit_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -665,7 +712,8 @@ CREATE TABLE public.conversations (
     scenario_key character varying,
     friendship_id bigint,
     public_id uuid DEFAULT gen_random_uuid() NOT NULL,
-    last_message_at timestamp(6) without time zone NOT NULL
+    last_message_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT conversations_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'assistant'::character varying])::text[])))
 );
 
 
@@ -1122,8 +1170,11 @@ CREATE TABLE public.messages (
     audit_operation_id uuid,
     auto_applied boolean DEFAULT false NOT NULL,
     reverted_at timestamp(6) without time zone,
-    kind character varying,
-    action_state character varying
+    kind character varying NOT NULL,
+    action_state character varying,
+    CONSTRAINT messages_action_state CHECK (((action_state IS NULL) OR ((action_state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'expired'::character varying, 'failed'::character varying, 'unavailable'::character varying, 'reverted'::character varying])::text[])))),
+    CONSTRAINT messages_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'transaction_notification'::character varying, 'transaction_destroy_notification'::character varying, 'paid_state_sync'::character varying])::text[]))),
+    CONSTRAINT messages_kind_action_state CHECK (((((kind)::text = 'human'::text) AND (action_state IS NULL)) OR (((kind)::text <> 'human'::text) AND (action_state IS NOT NULL))))
 );
 
 
@@ -3000,6 +3051,20 @@ CREATE TRIGGER audit_versions_append_only BEFORE DELETE OR UPDATE ON public.audi
 
 
 --
+-- Name: conversation_participants conversation_participants_canonical_pair; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER conversation_participants_canonical_pair AFTER INSERT OR DELETE OR UPDATE ON public.conversation_participants DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_canonical_conversation_participants();
+
+
+--
+-- Name: conversations conversations_canonical_participants; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER conversations_canonical_participants AFTER INSERT OR UPDATE ON public.conversations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_canonical_conversation_participants();
+
+
+--
 -- Name: message_actions message_actions_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -3565,6 +3630,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260820220000'),
 ('20260820210000'),
 ('20260820180000'),
 ('20260820150000'),

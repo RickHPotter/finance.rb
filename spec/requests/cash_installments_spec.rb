@@ -560,7 +560,7 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
       message = conversation.messages.order(:id).last
 
       expect(response).to have_http_status(:ok)
@@ -593,7 +593,7 @@ RSpec.describe "CashInstallments", type: :request do
       expect(sender_transaction.cash_installments.first.reload).to be_paid
       expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
       expect(receiver_transaction.cash_installments.first.date).to eq(installment_date)
-      expect(Conversation.for_users([ sender.id, receiver.id ]).assistant).to be_empty
+      expect(conversation_scope_for(sender, receiver).assistant).to be_empty
     end
 
     it "synchronizes paid state inside the matching derived scenario only" do
@@ -622,7 +622,7 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.for_scenario(sender_derived.scenario_key).order(:id).last
+      conversation = conversation_scope_for(sender, receiver).assistant.for_scenario(sender_derived.scenario_key).order(:id).last
       message = conversation.messages.order(:id).last
 
       expect(response).to have_http_status(:ok)
@@ -646,7 +646,7 @@ RSpec.describe "CashInstallments", type: :request do
       sender_transaction, receiver_transaction = create_shared_return_pair(sender:, receiver:, link_reference: false)
       receiver_transaction.update_columns(price: -2_000, starting_price: -2_000)
       receiver_transaction.cash_installments.first.update_columns(price: -2_000)
-      Conversation.find_or_create_assistant_between!(sender, receiver).messages.create!(
+      resolve_assistant_conversation(sender, receiver).messages.create!(
         user: sender,
         reference_transactable: sender_transaction,
         body: "notification:update",
@@ -687,7 +687,7 @@ RSpec.describe "CashInstallments", type: :request do
       receiver_transaction.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -3_000, paid: false)
       receiver_transaction.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: -3_000, paid: false)
       receiver_transaction.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
 
       patch pay_cash_installment_path(sender_transaction.cash_installments.find_by!(number: 1)), params: {
         cash_installment: {
@@ -866,7 +866,7 @@ RSpec.describe "CashInstallments", type: :request do
       reference_transactable = service.send(:structure_update_reference_transactable)
       update_context = service.send(:counterpart_update_context, reference_transactable)
       replay = service.send(:counterpart_update_replay, update_context)
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       message = conversation.messages.create!(
         user: sender,
         reference_transactable: reference_transactable,
@@ -908,7 +908,7 @@ RSpec.describe "CashInstallments", type: :request do
       receiver_transaction.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: -3_000, paid: false)
       receiver_transaction.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       stale_update = conversation.messages.create!(
         user: receiver,
         reference_transactable: sender_transaction,
@@ -1007,7 +1007,7 @@ RSpec.describe "CashInstallments", type: :request do
       receiver_shared_return.cash_installments.create!(number: 1, date: Date.new(2026, 3, 20), month: 3, year: 2026, price: -3_000, paid: false)
       receiver_shared_return.cash_installments.create!(number: 2, date: Date.new(2026, 4, 20), month: 4, year: 2026, price: -3_000, paid: false)
       receiver_shared_return.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver_shared_return.user)
+      conversation = resolve_assistant_conversation(user, receiver_shared_return.user)
 
       patch pay_cash_installment_path(sender_shared_return.cash_installments.find_by!(number: 1)), params: {
         cash_installment: {
@@ -1079,7 +1079,7 @@ RSpec.describe "CashInstallments", type: :request do
         receiver_return.cash_installments.create!(number: 1, date: installment_date, month: 3, year: 2026, price: -1_000, paid: false)
         receiver_return.cash_installments.create!(number: 2, date: installment_date.next_month, month: 4, year: 2026, price: -1_000, paid: false)
         sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
-        conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+        conversation = resolve_assistant_conversation(sender, receiver)
 
         patch pay_cash_installment_path(receiver_return.cash_installments.find_by!(number: 1)), params: {
           cash_installment: {
@@ -1127,7 +1127,7 @@ RSpec.describe "CashInstallments", type: :request do
         receiver_return.category_transactions.create!(category: receiver.built_in_category("EXCHANGE RETURN"))
         receiver_return.update!(reference_transactable: receiver_exchange)
         sender.friendship_with(receiver).update!(auto_accept_actionable_messages: true)
-        conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+        conversation = resolve_assistant_conversation(sender, receiver)
         sync_service = Logic::SharedPaidStateSyncService.new(installment: receiver_return.cash_installments.find_by!(number: 1))
 
         expect(receiver_exchange.counterpart_shared_return_transaction).to eq(sender_return)
@@ -1158,7 +1158,7 @@ RSpec.describe "CashInstallments", type: :request do
           create_reimbursement_shared_return_bundle(sender: exchange_owner, receiver: borrow_owner)
         borrow_return.update!(reference_transactable: source_transaction)
         exchange_owner.friendship_with(borrow_owner).update!(auto_accept_actionable_messages: true)
-        conversation = Conversation.find_or_create_assistant_between!(exchange_owner, borrow_owner)
+        conversation = resolve_assistant_conversation(exchange_owner, borrow_owner)
 
         sign_in borrow_owner
         patch pay_cash_installment_path(borrow_return.cash_installments.find_by!(number: 1)), params: {
@@ -1190,7 +1190,7 @@ RSpec.describe "CashInstallments", type: :request do
         )
         exchange_return.cash_installments.order(:number).each { |cash_installment| cash_installment.update_columns(price: 1_000, starting_price: 1_000) }
         exchange_owner.friendship_with(borrow_owner).update!(auto_accept_actionable_messages: true)
-        conversation = Conversation.find_or_create_assistant_between!(exchange_owner, borrow_owner)
+        conversation = resolve_assistant_conversation(exchange_owner, borrow_owner)
 
         sign_in borrow_owner
         patch pay_cash_installment_path(borrow_return.cash_installments.find_by!(number: 1)), params: {
@@ -1311,7 +1311,7 @@ RSpec.describe "CashInstallments", type: :request do
           }
         }, headers: turbo_stream_headers
 
-        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
         message = assistant_conversation.messages.order(:id).last
 
         expect(response).to have_http_status(:ok)
@@ -1394,7 +1394,7 @@ RSpec.describe "CashInstallments", type: :request do
           expect(response).to have_http_status(:ok)
         end
 
-        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
         paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
 
         expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
@@ -1417,7 +1417,7 @@ RSpec.describe "CashInstallments", type: :request do
           }
         }, headers: turbo_stream_headers
 
-        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
         message = assistant_conversation.messages.order(:id).last
 
         expect(response).to have_http_status(:ok)
@@ -1442,7 +1442,7 @@ RSpec.describe "CashInstallments", type: :request do
           }
         }, headers: turbo_stream_headers
 
-        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
         message = assistant_conversation.messages.order(:id).last
 
         expect(response).to have_http_status(:ok)
@@ -1476,7 +1476,7 @@ RSpec.describe "CashInstallments", type: :request do
           expect(response).to have_http_status(:ok)
         end
 
-        assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+        assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
         paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
 
         expect(sender_shared_return.cash_installments.find_by!(number: 1).reload).to be_paid
@@ -1588,7 +1588,7 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
       paid_state_messages = assistant_conversation.messages.where(body: "notification:paid_state").order(:id)
 
       expect(response).to have_http_status(:ok)
@@ -1616,7 +1616,7 @@ RSpec.describe "CashInstallments", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      assistant_conversation = Conversation.for_users([ sender.id, receiver.id ]).assistant.order(:id).last
+      assistant_conversation = conversation_scope_for(sender, receiver).assistant.order(:id).last
       message = assistant_conversation.messages.where(body: "notification:paid_state").order(:id).last
 
       expect(response).to have_http_status(:ok)

@@ -9,7 +9,7 @@ RSpec.describe Logic::Conversations::Page do
   def conversation_with(friend:, kind: :human, scenario_key: nil, activity_at: timestamp)
     create(:friendship, :accepted, user:, friend:)
     create(:context, user: friend, scenario_key:) if scenario_key.present?
-    conversation = Conversation.public_send("find_or_create_#{kind}_between!", user, friend, scenario_key:)
+    conversation = public_send("resolve_#{kind}_conversation", user, friend, scenario_key:)
     conversation.update_columns(last_message_at: activity_at)
     conversation
   end

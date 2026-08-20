@@ -6,7 +6,7 @@ RSpec.describe Logic::Conversations::RevokeAccess do
   let(:sender) { create(:user, :random) }
   let(:recipient) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
-  let(:conversation) { Conversation.find_or_create_assistant_between!(sender, recipient) }
+  let(:conversation) { resolve_assistant_conversation(sender, recipient) }
 
   before do
     allow(ActionableMessageAutoApplyJob).to receive(:perform_now)
@@ -50,19 +50,19 @@ RSpec.describe Logic::Conversations::RevokeAccess do
   end
 
   it "restores the same canonical thread identities without reviving unavailable actions" do
-    human_conversation = Conversation.find_or_create_human_between!(sender, recipient)
+    human_conversation = resolve_human_conversation(sender, recipient)
     pending_message = actionable_message
 
     friendship.update!(state: "removed")
     friendship.update!(state: "accepted")
 
-    expect(Conversation.find_or_create_human_between!(sender, recipient)).to eq(human_conversation)
-    expect(Conversation.find_or_create_assistant_between!(sender, recipient)).to eq(conversation)
+    expect(resolve_human_conversation(sender, recipient)).to eq(human_conversation)
+    expect(resolve_assistant_conversation(sender, recipient)).to eq(conversation)
     expect(pending_message.reload.workflow_state).to eq("unavailable")
   end
 
   it "removes every open canonical conversation surface after revocation" do
-    human_conversation = Conversation.find_or_create_human_between!(sender, recipient)
+    human_conversation = resolve_human_conversation(sender, recipient)
     assistant_conversation = conversation
 
     friendship.update!(state: "blocked")

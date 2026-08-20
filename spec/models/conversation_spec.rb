@@ -10,8 +10,8 @@ RSpec.describe Conversation, type: :model do
 
     it "finds or creates a single human conversation between the same two users" do
       friendship
-      first = described_class.find_or_create_human_between!(rikki, gigi)
-      second = described_class.find_or_create_human_between!(rikki, gigi)
+      first = resolve_human_conversation(rikki, gigi)
+      second = resolve_human_conversation(rikki, gigi)
 
       expect(first).to eq(second)
       expect(first.kind).to eq("human")
@@ -20,8 +20,8 @@ RSpec.describe Conversation, type: :model do
 
     it "finds or creates a single shared assistant conversation between the same two users" do
       friendship
-      first = described_class.find_or_create_assistant_between!(rikki, gigi)
-      second = described_class.find_or_create_assistant_between!(gigi, rikki)
+      first = resolve_assistant_conversation(rikki, gigi)
+      second = resolve_assistant_conversation(gigi, rikki)
 
       expect(first).to eq(second)
       expect(first.kind).to eq("assistant")
@@ -29,10 +29,10 @@ RSpec.describe Conversation, type: :model do
 
     it "keeps conversations distinct across scenario keys" do
       friendship
-      main = described_class.find_or_create_human_between!(rikki, gigi)
+      main = resolve_human_conversation(rikki, gigi)
       create(:context, user: rikki, scenario_key: "scenario-1")
       create(:context, user: gigi, scenario_key: "scenario-1")
-      scenario = described_class.find_or_create_human_between!(rikki, gigi, scenario_key: "scenario-1")
+      scenario = resolve_human_conversation(rikki, gigi, scenario_key: "scenario-1")
 
       expect(main).not_to eq(scenario)
       expect(main.scenario_key).to be_nil
@@ -43,8 +43,8 @@ RSpec.describe Conversation, type: :model do
       friendship
       create(:context, user: rikki, scenario_key: "scenario-1")
       create(:context, user: gigi, scenario_key: "scenario-1")
-      first = described_class.find_or_create_assistant_between!(rikki, gigi, scenario_key: "scenario-1")
-      second = described_class.find_or_create_assistant_between!(gigi, rikki, scenario_key: "scenario-1")
+      first = resolve_assistant_conversation(rikki, gigi, scenario_key: "scenario-1")
+      second = resolve_assistant_conversation(gigi, rikki, scenario_key: "scenario-1")
 
       expect(first).to eq(second)
       expect(first.scenario_key).to eq("scenario-1")
@@ -52,7 +52,7 @@ RSpec.describe Conversation, type: :model do
 
     it "assigns an immutable public id and resolves it without exposing the numeric id" do
       friendship
-      conversation = described_class.find_or_create_human_between!(rikki, gigi)
+      conversation = resolve_human_conversation(rikki, gigi)
 
       expect(conversation.public_id).to match(/\A[0-9a-f-]{36}\z/)
       expect(conversation.to_param).to eq(conversation.public_id)

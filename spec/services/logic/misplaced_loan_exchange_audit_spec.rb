@@ -59,13 +59,15 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
         friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: user.built_in_category("EXCHANGE").id } ]
       )
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       message_insert = Message.insert!({
                                          user_id: user.id,
                                          conversation_id: conversation.id,
                                          reference_transactable_type: "CashTransaction",
                                          reference_transactable_id: source.id,
                                          body: "notification:update",
+                                         kind: "transaction_notification",
+                                         action_state: "pending",
                                          headers: {
                                            version: "message_notification_v2",
                                            event: { action: "update", details: { description: source.description } },
@@ -128,13 +130,15 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
       )
       receiver = create(:user, :random)
       create(:friendship, :accepted, user:, friend: receiver)
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       message_insert = Message.insert!({
                                          user_id: user.id,
                                          conversation_id: conversation.id,
                                          reference_transactable_type: "CashTransaction",
                                          reference_transactable_id: source.id,
                                          body: "notification:update",
+                                         kind: "transaction_notification",
+                                         action_state: "pending",
                                          headers: {
                                            version: "message_notification_v2",
                                            replay: {

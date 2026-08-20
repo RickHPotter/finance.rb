@@ -9,7 +9,7 @@ RSpec.describe "Conversation policy revocation concurrency" do
     user = create(:user, :random)
     friend = create(:user, :random)
     friendship = create(:friendship, :accepted, user:, friend:)
-    conversation = Conversation.find_or_create_human_between!(user, friend)
+    conversation = resolve_human_conversation(user, friend)
     participant_id = conversation.participant_for!(user).id
     mutation_started = Queue.new
     release_mutation = Queue.new

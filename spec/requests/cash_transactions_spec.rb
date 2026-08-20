@@ -1532,7 +1532,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "marks the source message as applied when creating from a message" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user:, friend: other_user)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -1563,7 +1563,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "applies a duplicated manual create request only once" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user:, friend: other_user)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -1589,7 +1589,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_bank_account = create(:user_bank_account, :random, user: receiver, bank: create(:bank, :random))
       create(:entity, user: sender, entity_name: "RECEIVER", entity_user: receiver)
       receiver_counterpart = create(:entity, user: receiver, entity_name: "SENDER", entity_user: sender)
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       source_message = conversation.messages.create!(
         user: sender,
         body: "notification:create",
@@ -1695,7 +1695,7 @@ RSpec.describe "CashTransactions", type: :request do
       friendship.update!(state: "accepted") unless friendship.accepted_state?
       create(:context, user: sender, scenario_key: derived_context.scenario_key)
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver, scenario_key: derived_context.scenario_key)
+      conversation = resolve_assistant_conversation(sender, receiver, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: sender,
         body: "notification:create",
@@ -1826,7 +1826,7 @@ RSpec.describe "CashTransactions", type: :request do
         friend_notification_intent: "reimbursement"
       )
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       create_message = conversation.messages.order(:id).last
 
       sign_out user
@@ -2004,7 +2004,7 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       destroy_message = conversation.messages.create!(
         user: sender,
         body: "notification:destroy",
@@ -2095,7 +2095,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "marks the source message as applied when updating from a message" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user:, friend: other_user)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:update",
@@ -2211,7 +2211,7 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
 
-      message = Conversation.find_or_create_assistant_between!(sender, user).messages.create!(
+      message = resolve_assistant_conversation(sender, user).messages.create!(
         user: sender,
         reference_transactable: sender_exchange,
         body: "notification:update",
@@ -2921,7 +2921,7 @@ RSpec.describe "CashTransactions", type: :request do
       ).call
       create(:friendship, :accepted, user: other_user, friend: user)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      conversation = resolve_assistant_conversation(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -3017,7 +3017,7 @@ RSpec.describe "CashTransactions", type: :request do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user: other_user, friend: user)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      conversation = resolve_assistant_conversation(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:update",
@@ -3064,7 +3064,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "denies a source message from another scenario when creating in a derived context" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user: other_user, friend: user)
-      main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      main_conversation = resolve_assistant_conversation(other_user, user)
       source_message = main_conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -3180,13 +3180,13 @@ RSpec.describe "CashTransactions", type: :request do
       end.to change { receiver.contexts.count }.by(1)
 
       receiver_context = receiver.contexts.find_by!(scenario_key: sender_context.scenario_key)
-      message = Conversation.for_users([ sender.id, receiver.id ])
-                            .assistant
-                            .for_scenario(sender_context.scenario_key)
-                            .first
-                            .messages
-                            .order(:id)
-                            .last
+      message = conversation_scope_for(sender, receiver)
+                .assistant
+                .for_scenario(sender_context.scenario_key)
+                .first
+                .messages
+                .order(:id)
+                .last
 
       patch switch_context_path(receiver_context)
 
@@ -3332,7 +3332,7 @@ RSpec.describe "CashTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      conversation = Conversation.for_users([ receiver.id, sender.id ]).assistant.order(:id).last
+      conversation = conversation_scope_for(receiver, sender).assistant.order(:id).last
 
       expect(response).to have_http_status(:see_other)
       expect(receiver_transaction.cash_installments.first.reload).not_to be_paid
@@ -3698,7 +3698,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_return.cash_installments.create!(number: 2, date: Time.zone.local(2026, 5, 10, 0, 0, 0), month: 5, year: 2026, price: -6_000, paid: true)
       receiver_return.update_columns(cash_installments_count: 2, price: -12_000, starting_price: -12_000)
 
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       update_message = conversation.messages.create!(
         user: user,
         reference_transactable: card_transaction,
@@ -3864,7 +3864,7 @@ RSpec.describe "CashTransactions", type: :request do
       receiver_return.cash_installments.create!(number: 2, date: Time.zone.local(2026, 5, 10, 0, 0, 0), month: 5, year: 2026, price: -3_000, paid: false)
       receiver_return.update_columns(cash_installments_count: 2, price: -6_000, starting_price: -6_000)
 
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       update_message = conversation.messages.create!(
         user: user,
         reference_transactable: card_transaction,
@@ -4018,7 +4018,7 @@ RSpec.describe "CashTransactions", type: :request do
           { number: 2, date: Time.zone.local(2026, 5, 10, 0, 0, 0), month: 5, year: 2026, price: -1_000, paid: false }
         ]
       )
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       update_message = conversation.messages.create!(
         user: user,
         reference_transactable: card_transaction,
@@ -4146,7 +4146,7 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
 
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       update_message = conversation.messages.create!(
         user: user,
         reference_transactable: sender_exchange,
@@ -4320,7 +4320,7 @@ RSpec.describe "CashTransactions", type: :request do
       )
       receiver_exchange.entity_transactions.first.exchanges.update_all(cash_transaction_id: receiver_return.id)
 
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       update_message = conversation.messages.create!(
         user: user,
         reference_transactable: sender_exchange,
@@ -4495,7 +4495,7 @@ RSpec.describe "CashTransactions", type: :request do
         ]
       )
 
-      conversation = Conversation.find_or_create_assistant_between!(receiver, user)
+      conversation = resolve_assistant_conversation(receiver, user)
       source_message = conversation.messages.create!(
         user: receiver,
         reference_transactable: sender_return,
@@ -4823,7 +4823,7 @@ RSpec.describe "CashTransactions", type: :request do
     it "marks the source message as applied when destroying from a message" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user:, friend: other_user)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:destroy",
@@ -4925,7 +4925,7 @@ RSpec.describe "CashTransactions", type: :request do
       locked_transaction = create_cash_transaction_with_paid_history(description: "Locked destroy replay")
       other_user = create(:user, :random)
       create(:friendship, :accepted, user:, friend: other_user)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:destroy",

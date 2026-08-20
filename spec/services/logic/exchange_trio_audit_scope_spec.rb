@@ -20,10 +20,10 @@ RSpec.describe Logic::ExchangeTrioAudit, "#visible_conversation_scope" do
   end
 
   it "keeps all-connections diagnosis inside the selected scenario and known relationships" do
-    selected = Conversation.find_or_create_assistant_between!(admin, selected_user, scenario_key: context.scenario_key)
-    other_connected = Conversation.find_or_create_assistant_between!(admin, other_connected_user, scenario_key: context.scenario_key)
-    Conversation.find_or_create_assistant_between!(admin, selected_user)
-    Conversation.find_or_create_assistant_between!(admin, unrelated_user, scenario_key: context.scenario_key)
+    selected = resolve_assistant_conversation(admin, selected_user, scenario_key: context.scenario_key)
+    other_connected = resolve_assistant_conversation(admin, other_connected_user, scenario_key: context.scenario_key)
+    resolve_assistant_conversation(admin, selected_user)
+    resolve_assistant_conversation(admin, unrelated_user, scenario_key: context.scenario_key)
 
     service = described_class.new(current_user: admin, current_context: context)
 
@@ -31,8 +31,8 @@ RSpec.describe Logic::ExchangeTrioAudit, "#visible_conversation_scope" do
   end
 
   it "narrows diagnosis to one validated connected-user pair" do
-    selected = Conversation.find_or_create_assistant_between!(admin, selected_user, scenario_key: context.scenario_key)
-    Conversation.find_or_create_assistant_between!(admin, other_connected_user, scenario_key: context.scenario_key)
+    selected = resolve_assistant_conversation(admin, selected_user, scenario_key: context.scenario_key)
+    resolve_assistant_conversation(admin, other_connected_user, scenario_key: context.scenario_key)
 
     service = described_class.new(
       current_user: admin,
@@ -44,7 +44,7 @@ RSpec.describe Logic::ExchangeTrioAudit, "#visible_conversation_scope" do
   end
 
   it "returns no conversations for an unrelated selected user" do
-    Conversation.find_or_create_assistant_between!(admin, unrelated_user, scenario_key: context.scenario_key)
+    resolve_assistant_conversation(admin, unrelated_user, scenario_key: context.scenario_key)
 
     service = described_class.new(
       current_user: admin,

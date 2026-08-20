@@ -91,3 +91,31 @@ RSpec.describe ConversationParticipant, type: :model do
     expect(WebPush).to have_received(:payload_send).once.with(hash_including(endpoint: recipient_subscription.endpoint))
   end
 end
+
+# == Schema Information
+#
+# Table name: conversation_participants
+# Database name: primary
+#
+#  id                   :bigint           not null, primary key
+#  archived_at          :datetime
+#  muted_at             :datetime
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  conversation_id      :bigint           not null, indexed, uniquely indexed => [user_id]
+#  last_read_message_id :bigint           indexed
+#  user_id              :bigint           not null, uniquely indexed => [conversation_id], indexed
+#
+# Indexes
+#
+#  index_conversation_participants_on_conversation_id       (conversation_id)
+#  index_conversation_participants_on_last_read_message_id  (last_read_message_id)
+#  index_conversation_participants_on_membership            (conversation_id,user_id) UNIQUE
+#  index_conversation_participants_on_user_id               (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (conversation_id => conversations.id)
+#  fk_rails_...  (last_read_message_id => messages.id) ON DELETE => nullify
+#  fk_rails_...  (user_id => users.id)
+#

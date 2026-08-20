@@ -6,7 +6,7 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
   let(:user) { create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-navigation@example.com") }
   let(:other_user) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
-  let(:conversation) { Conversation.find_or_create_human_between!(user, other_user) }
+  let(:conversation) { resolve_human_conversation(user, other_user) }
 
   before { sign_in user }
 
@@ -46,7 +46,7 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
 
   it "uses top-level advances for conversation selection and actionable transaction entry" do
     remote_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-    assistant_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+    assistant_conversation = resolve_assistant_conversation(other_user, user)
     message = assistant_conversation.messages.create!(
       user: other_user,
       body: "notification:create",

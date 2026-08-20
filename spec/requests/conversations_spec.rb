@@ -11,8 +11,8 @@ RSpec.describe "Conversations", type: :request do
 
   describe "[ #index ]" do
     it "renders successfully" do
-      human_conversation = Conversation.find_or_create_human_between!(user, other_user)
-      assistant_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      human_conversation = resolve_human_conversation(user, other_user)
+      assistant_conversation = resolve_assistant_conversation(other_user, user)
 
       get conversations_path
 
@@ -22,8 +22,8 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "filters conversations by unread, human, and assistant" do
-      human_conversation = Conversation.find_or_create_human_between!(user, other_user)
-      assistant_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      human_conversation = resolve_human_conversation(user, other_user)
+      assistant_conversation = resolve_assistant_conversation(other_user, user)
       human_conversation.messages.create!(user: other_user, body: "Unread human")
       assistant_conversation.messages.create!(user:, body: "Read assistant", read_at: Time.current)
 
@@ -44,8 +44,8 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "orders cards by latest activity and id without grouping conversation kinds" do
-      older_human = Conversation.find_or_create_human_between!(user, other_user)
-      newer_assistant = Conversation.find_or_create_assistant_between!(other_user, user)
+      older_human = resolve_human_conversation(user, other_user)
+      newer_assistant = resolve_assistant_conversation(other_user, user)
       older_human.messages.create!(user: other_user, body: "Older activity", created_at: 2.hours.ago)
       newer_assistant.messages.create!(user: other_user, body: "Newer activity", created_at: 1.hour.ago)
 
@@ -57,11 +57,11 @@ RSpec.describe "Conversations", type: :request do
 
     it "loads later conversation cursor pages into a dedicated frame" do
       stub_const("Logic::Conversations::Page::DEFAULT_SIZE", 2)
-      conversations = [ Conversation.find_or_create_human_between!(user, other_user) ]
+      conversations = [ resolve_human_conversation(user, other_user) ]
       2.times do
         friend = create(:user, :random)
         create(:friendship, :accepted, user:, friend:)
-        conversations << Conversation.find_or_create_human_between!(user, friend)
+        conversations << resolve_human_conversation(user, friend)
       end
       conversations.each { |conversation| conversation.update_columns(last_message_at: Time.zone.local(2026, 8, 20, 12)) }
 
@@ -82,11 +82,11 @@ RSpec.describe "Conversations", type: :request do
     it "renders profile display names with attached and fallback avatars" do
       other_user.profile.update!(first_name: "Gigi", last_name: "February")
       other_user.profile.avatar.attach(io: StringIO.new("avatar"), filename: "gigi.png", content_type: "image/png")
-      Conversation.find_or_create_human_between!(user, other_user)
+      resolve_human_conversation(user, other_user)
 
       fallback_friend = create(:user, :random)
       create(:friendship, :accepted, user:, friend: fallback_friend)
-      Conversation.find_or_create_human_between!(user, fallback_friend)
+      resolve_human_conversation(user, fallback_friend)
 
       get conversations_path
 
@@ -97,10 +97,10 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "isolates archived and muted participant filters" do
-      archived_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      archived_conversation = resolve_human_conversation(user, other_user)
       muted_friend = create(:user, :random)
       create(:friendship, :accepted, user:, friend: muted_friend)
-      muted_conversation = Conversation.find_or_create_human_between!(user, muted_friend)
+      muted_conversation = resolve_human_conversation(user, muted_friend)
       archived_conversation.participant_for!(user).update!(archived_at: Time.current)
       muted_conversation.participant_for!(user).update!(muted_at: Time.current)
 
@@ -116,7 +116,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows the selected main scenario and participant controls on every card" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
 
       get conversations_path
 
@@ -128,7 +128,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "retains revoked history without exposing it in lists or unread counts" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       message = conversation.messages.create!(user: other_user, body: "Retained revoked history")
       friendship.update!(state: "blocked")
       sign_in user
@@ -142,10 +142,10 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows only conversations for the current scenario" do
-      main_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      main_conversation = resolve_human_conversation(user, other_user)
       derived_context = create(:context, user:, name: "Conversation Scenario", source_context: user.main_context)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
+      derived_conversation = resolve_human_conversation(user, other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
       get conversations_path
@@ -155,10 +155,10 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps unread filtering isolated between main and derived scenarios" do
-      main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      main_conversation = resolve_assistant_conversation(other_user, user)
       derived_context = create(:context, user:, name: "Unread Scenario", source_context: user.main_context)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      derived_conversation = resolve_assistant_conversation(other_user, user, scenario_key: derived_context.scenario_key)
 
       main_conversation.messages.create!(user: other_user, body: "notification:create", headers: {
         version: "message_notification_v2",
@@ -296,7 +296,7 @@ RSpec.describe "Conversations", type: :request do
   describe "[ #show ]" do
     it "renders profile identity, navigation, controls, main scenario, and a human empty state" do
       other_user.profile.update!(first_name: "Gigi", last_name: "Conversation")
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
 
       get conversation_path(conversation)
 
@@ -311,7 +311,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "includes the conversation as return navigation on actionable transaction links" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       local_reference = create(:cash_transaction, user:, context: user.main_context,
                                                   user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
       local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 987_654)
@@ -334,7 +334,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "marks unread messages from other users as read" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       message = conversation.messages.create!(user: other_user, body: "Hello")
 
       get conversation_path(conversation)
@@ -344,7 +344,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "loads the newest bounded page first and prepends older messages without advancing the read cursor" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       started_at = Time.zone.local(2026, 8, 20, 8)
       messages = 42.times.map do |index|
         conversation.messages.create!(user: other_user, body: "Page message #{index}", created_at: started_at + index.minutes)
@@ -369,7 +369,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "marks unread superseded predecessors at the same time as their replacement" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       original_read_at = 2.days.ago.change(usec: 0)
       already_read_predecessor = conversation.messages.create!(
         user: other_user,
@@ -395,7 +395,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "hides the composer and defaults assistant threads to pending messages" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       create(:cash_transaction, user:, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random))).tap do |local_reference|
         local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 999)
       end
@@ -434,7 +434,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "does not acknowledge an auto-applied message merely by opening the conversation" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       message = conversation.messages.create!(
         user: other_user,
         body: "notification:update",
@@ -454,7 +454,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows only OK and Revert for a safely revertible auto-applied message" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       transaction = PaperTrail.request(enabled: false) do
         create(:cash_transaction, user:, context: user.main_context, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
       end
@@ -484,7 +484,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows only Revert after a manual apply, and hides it after supersession" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       transaction = PaperTrail.request(enabled: false) do
         create(:cash_transaction, user:, context: user.main_context, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
       end
@@ -520,7 +520,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows only actionable assistant messages on pending" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       local_reference = create(:cash_transaction, user:, user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
       local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 999)
 
@@ -604,7 +604,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps paid-state notifications in pending until acknowledged" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       message = conversation.messages.create!(
         user: other_user,
         body: "notification:paid_state",
@@ -638,7 +638,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps pending assistant message resolution scoped to the current context" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       bank = create(:bank, :random)
       user_bank_account = create(:user_bank_account, user:, bank:)
       create(:cash_transaction, user:, context: user.main_context, user_bank_account:).tap do |local_reference|
@@ -677,7 +677,7 @@ RSpec.describe "Conversations", type: :request do
 
       derived_context = create(:context, user:, name: "Conversation Action Isolation", source_context: user.main_context)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      derived_conversation = resolve_assistant_conversation(other_user, user, scenario_key: derived_context.scenario_key)
 
       derived_conversation.messages.create!(
         user: other_user,
@@ -699,7 +699,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps showing create when the latest update only matches a prior applied predecessor structurally" do
-      conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+      conversation = resolve_assistant_conversation(other_user, user)
       sender_transaction = create(
         :cash_transaction,
         user: other_user,
@@ -765,7 +765,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "renders distinct assistant message sides for my notifications and the other user's notifications" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       conversation.messages.create!(
         user: user,
         body: "notification:update",
@@ -794,7 +794,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "shows outdated assistant message links for my notifications too" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       outdated_message = conversation.messages.create!(
         user: user,
         body: "notification:update",
@@ -823,7 +823,7 @@ RSpec.describe "Conversations", type: :request do
 
     it "renders a larger sender-side show modal path for card transactions too" do
       card_transaction = create(:card_transaction, user:, context: user.main_context)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       conversation.messages.create!(
         user: user,
         body: "notification:update",
@@ -845,7 +845,7 @@ RSpec.describe "Conversations", type: :request do
 
     it "labels sender-side historical show state as destroyed for destroy notifications" do
       cash_transaction = create(:cash_transaction, user:, context: user.main_context)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       conversation.messages.create!(
         user: user,
         body: "notification:destroy",
@@ -860,7 +860,7 @@ RSpec.describe "Conversations", type: :request do
 
     it "renders paid-state messages with an ok action and without the destroyed badge" do
       cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       conversation.messages.create!(
         user: other_user,
         body: "notification:paid_state",
@@ -891,7 +891,7 @@ RSpec.describe "Conversations", type: :request do
 
     it "allows acknowledging a paid-state message" do
       cash_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       message = conversation.messages.create!(
         user: other_user,
         body: "notification:paid_state",
@@ -922,7 +922,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "filters assistant messages by mine and theirs" do
-      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      conversation = resolve_assistant_conversation(user, other_user)
       conversation.messages.create!(
         user: user,
         body: "notification:update",
@@ -956,7 +956,7 @@ RSpec.describe "Conversations", type: :request do
     it "does not allow access to conversations outside the current user scope" do
       outsider = create(:user, :random)
       create(:friendship, :accepted, user: other_user, friend: outsider)
-      outsider_conversation = Conversation.find_or_create_human_between!(other_user, outsider)
+      outsider_conversation = resolve_human_conversation(other_user, outsider)
 
       get conversation_path(outsider_conversation)
 
@@ -964,7 +964,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "does not allow access to conversations from another scenario" do
-      main_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      main_conversation = resolve_human_conversation(user, other_user)
       derived_context = create(:context, user:, name: "Conversation Access", source_context: user.main_context)
 
       patch switch_context_path(derived_context)
@@ -974,7 +974,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "uses only the public conversation id and revokes non-accepted friendship access" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
 
       get "/conversations/#{conversation.id}"
       expect(response).to have_http_status(:not_found)
@@ -991,7 +991,7 @@ RSpec.describe "Conversations", type: :request do
 
   describe "[ participant state ]" do
     it "archives and restores only the current participant's conversation copy" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       user_participant = conversation.participant_for!(user)
       other_participant = conversation.participant_for!(other_user)
 
@@ -1015,7 +1015,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "mutes and unmutes only the current participant without hiding the conversation" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       user_participant = conversation.participant_for!(user)
       other_participant = conversation.participant_for!(other_user)
 
@@ -1032,7 +1032,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "denies participant-state changes after friendship revocation" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       participant = conversation.participant_for!(user)
       friendship.update!(state: "blocked")
       sign_in user
@@ -1045,11 +1045,11 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps read progress isolated across kinds and scenarios" do
-      main_human = Conversation.find_or_create_human_between!(user, other_user)
+      main_human = resolve_human_conversation(user, other_user)
       main_message = main_human.messages.create!(user: other_user, body: "Main hello")
       derived_context = create(:context, user:, name: "Cursor scenario", source_context: user.main_context)
       create(:context, user: other_user, scenario_key: derived_context.scenario_key)
-      derived_assistant = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      derived_assistant = resolve_assistant_conversation(other_user, user, scenario_key: derived_context.scenario_key)
       derived_message = derived_assistant.messages.create!(user: other_user, body: "Derived hello")
 
       get conversation_path(main_human)
@@ -1065,7 +1065,7 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "keeps a message arriving after the visible cursor unread" do
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      conversation = resolve_human_conversation(user, other_user)
       visible_message = conversation.messages.create!(user: other_user, body: "Visible")
 
       get conversation_path(conversation)

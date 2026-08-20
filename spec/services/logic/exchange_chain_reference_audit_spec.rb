@@ -20,7 +20,7 @@ RSpec.describe Logic::ExchangeChainReferenceAudit do
     end
 
     def assistant_conversation
-      Conversation.find_or_create_assistant_between!(sender, receiver)
+      resolve_assistant_conversation(sender, receiver)
     end
 
     def create_pending_reimbursement_case(extra_middle: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength

@@ -754,7 +754,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("BORROW RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       message = conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,
@@ -845,7 +845,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("EXCHANGE RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,
@@ -918,7 +918,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("BORROW RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,

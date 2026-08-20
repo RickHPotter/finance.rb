@@ -6,7 +6,7 @@ RSpec.describe Logic::Messages::Page do
   let(:sender) { create(:user, :random) }
   let(:recipient) { create(:user, :random) }
   let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
-  let(:conversation) { Conversation.find_or_create_human_between!(sender, recipient) }
+  let(:conversation) { resolve_human_conversation(sender, recipient) }
   let(:timestamp) { Time.zone.local(2026, 8, 20, 12) }
 
   it "retrieves by creation time and id while rendering each page chronologically" do

@@ -1584,14 +1584,14 @@ RSpec.describe CashTransaction, type: :model do
       end.to change { gigi.contexts.count }.by(1)
 
       receiver_context = gigi.contexts.find_by(scenario_key: optimistic.scenario_key)
-      derived_conversation = Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(optimistic.scenario_key).first
+      derived_conversation = conversation_scope_for(rikki, gigi).assistant.for_scenario(optimistic.scenario_key).first
 
       expect(receiver_context).to be_present
       expect(receiver_context.source_context).to eq(gigi.main_context)
       expect(receiver_context.name).to eq("Optimistic")
       expect(derived_conversation).to be_present
       expect(derived_conversation.messages.last.body).to eq("notification:create")
-      expect(Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(nil)).to be_empty
+      expect(conversation_scope_for(rikki, gigi).assistant.for_scenario(nil)).to be_empty
 
       headers = JSON.parse(derived_conversation.messages.last.headers)
       expect(headers.fetch("replay")).to include(
@@ -1649,7 +1649,7 @@ RSpec.describe CashTransaction, type: :model do
         )
       end.not_to(change { gigi.contexts.count })
 
-      conversation = Conversation.for_users([ rikki.id, gigi.id ]).assistant.for_scenario(optimistic.scenario_key).first
+      conversation = conversation_scope_for(rikki, gigi).assistant.for_scenario(optimistic.scenario_key).first
 
       expect(gigi.contexts.find_by(scenario_key: optimistic.scenario_key)).to eq(existing_receiver_context)
       expect(conversation).to be_present
