@@ -34,6 +34,17 @@ class Conversation < ApplicationRecord
       .having("COUNT(DISTINCT conversation_participants.user_id) = ?", ids.size)
   }
   scope :for_scenario, ->(scenario_key) { where(scenario_key:) }
+  scope :active_for, lambda { |user|
+    joins(:conversation_participants).where(conversation_participants: { user_id: user.id, archived_at: nil })
+  }
+  scope :with_unread_for, lambda { |user|
+    joins(:conversation_participants, :messages)
+      .where(conversation_participants: { user_id: user.id })
+      .merge(Message.latest)
+      .where.not(messages: { user_id: user.id })
+      .where("messages.id > COALESCE(conversation_participants.last_read_message_id, 0)")
+      .distinct
+  }
 
   # @additional_config ........................................................
   # @class_methods ............................................................
@@ -73,9 +84,19 @@ class Conversation < ApplicationRecord
   end
 
   def unread_count_for(user)
-    return messages.latest.unread.where.not(user_id: user.id).count unless messages.loaded?
+    participant_for(user)&.unread_count.to_i
+  end
 
-    messages.target.count { |message| message.read_at.nil? && message.user_id != user.id }
+  def participant_for(user)
+    if conversation_participants.loaded?
+      conversation_participants.target.find { |participant| participant.user_id == user.id }
+    else
+      conversation_participants.find_by(user:)
+    end
+  end
+
+  def participant_for!(user)
+    participant_for(user) || raise(ActiveRecord::RecordNotFound)
   end
 
   def latest_message

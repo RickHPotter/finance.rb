@@ -144,11 +144,11 @@ module TabsConcern
   end
 
   def unread_conversation_notification_type
-    has_unread = current_user.received_messages
-                             .joins(:conversation)
-                             .where(conversations: { scenario_key: current_context.scenario_key })
-                             .latest
-                             .unread
+    has_unread = Conversation.active_for(current_user)
+                             .with_unread_for(current_user)
+                             .joins(:friendship)
+                             .merge(Friendship.accepted_state)
+                             .for_scenario(current_context.scenario_key)
                              .any?
     has_unread ? 1 : 0
   end

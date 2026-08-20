@@ -7,7 +7,7 @@ class ConversationsController < ApplicationController
 
   def index
     @active_filter = conversation_filter
-    @conversations = filtered_conversations.preload(:messages, users: :profile).sort_by do |conversation|
+    @conversations = filtered_conversations.preload(:messages, :conversation_participants, users: :profile).sort_by do |conversation|
       [ conversation.human? ? 0 : 1, -(conversation.latest_message&.created_at || conversation.created_at).to_i ]
     end
 
@@ -23,6 +23,7 @@ class ConversationsController < ApplicationController
     @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
       message.update!(read_at:)
     end
+    @conversation.participant_for!(current_user).advance_read_cursor_to!(@conversation.messages.latest.order(:id).last)
 
     render Views::Conversations::Show.new(
       conversation: @conversation,
@@ -46,6 +47,22 @@ class ConversationsController < ApplicationController
     head :not_found
   end
 
+  def archive
+    update_participant_state!({ archived_at: Time.current }, destination: conversations_path)
+  end
+
+  def unarchive
+    update_participant_state!({ archived_at: nil }, destination: conversation_path(state_conversation))
+  end
+
+  def mute
+    update_participant_state!({ muted_at: Time.current }, destination: conversation_path(state_conversation))
+  end
+
+  def unmute
+    update_participant_state!({ muted_at: nil }, destination: conversation_path(state_conversation))
+  end
+
   private
 
   def set_conversation_tabs
@@ -57,7 +74,7 @@ class ConversationsController < ApplicationController
 
     case conversation_filter
     when "unread"
-      scope = scope.joins(:messages).merge(Message.unread.where.not(user_id: current_user.id)).distinct
+      scope = scope.with_unread_for(current_user)
     when "human"
       scope = scope.human
     when "assistant"
@@ -68,6 +85,10 @@ class ConversationsController < ApplicationController
   end
 
   def scoped_conversations
+    accessible_conversations.active_for(current_user)
+  end
+
+  def accessible_conversations
     current_user.conversations.joins(:friendship).merge(Friendship.accepted_state).for_scenario(current_context.scenario_key)
   end
 
@@ -77,6 +98,15 @@ class ConversationsController < ApplicationController
 
   def current_user_friendships
     Friendship.where(user: current_user).or(Friendship.where(friend: current_user))
+  end
+
+  def state_conversation
+    @state_conversation ||= accessible_conversations.find_by!(public_id: params[:public_id])
+  end
+
+  def update_participant_state!(attributes, destination:)
+    state_conversation.participant_for!(current_user).update!(attributes)
+    redirect_to destination, status: :see_other
   end
 
   def filtered_messages(conversation)

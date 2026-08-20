@@ -19,6 +19,7 @@ class Message < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation :assign_audit_operation, on: :create
+  after_create :reactivate_conversation_participants
   after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
   after_create_commit do
     broadcast_append_to conversation,
@@ -168,6 +169,10 @@ class Message < ApplicationRecord
   def assign_audit_operation
     operation_id = Audit::Current.operation_id
     self.audit_operation_id = operation_id if operation_id.present? && AuditOperation.exists?(id: operation_id)
+  end
+
+  def reactivate_conversation_participants
+    conversation.conversation_participants.where.not(archived_at: nil).update_all(archived_at: nil, updated_at: Time.current)
   end
 
   def read_at_became_present?
@@ -361,24 +366,26 @@ class Message < ApplicationRecord
     body =  model_attribute(self, :you_have_a_new_message)
     url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.com" : "localhost")
 
-    friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id)
+    friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id).where(muted_at: nil)
 
-    friends_to_notify.each do |friend|
-      friend_user = friend.user
-      I18n.locale = friend_user.locale
-
-      friend_user.push_subscriptions.each do |subscription|
-        WebPush.payload_send(
-          message: { title:, body:, url: }.to_json,
-          endpoint: subscription.endpoint,
-          p256dh: subscription.p256dh,
-          auth: subscription.auth,
-          vapid:
-        )
-      end
-    end
+    friends_to_notify.each { |participant| send_push_notification_to(participant, title:, body:, url:) }
 
     I18n.locale = user.locale
+  end
+
+  def send_push_notification_to(participant, title:, body:, url:)
+    friend_user = participant.user
+    I18n.locale = friend_user.locale
+
+    friend_user.push_subscriptions.each do |subscription|
+      WebPush.payload_send(
+        message: { title:, body:, url: }.to_json,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.p256dh,
+        auth: subscription.auth,
+        vapid:
+      )
+    end
   end
 
   def vapid

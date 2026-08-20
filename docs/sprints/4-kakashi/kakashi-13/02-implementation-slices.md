@@ -148,6 +148,14 @@ Coverage:
 - read progress is isolated across scenarios and conversation kinds
 - concurrent show/new-message activity advances monotonically
 
+Implementation note: the migration initializes each participant cursor from the newest
+incoming message with a legacy `read_at` timestamp and leaves every timestamp intact.
+Unread list/badge queries then use the participant cursor and ignore superseded rows.
+Opening a thread advances only the viewer's cursor; the legacy `read_at` update remains
+in place for actionable-message acknowledgement compatibility. Archive and mute actions
+write only the viewer's participant row, and mute gates push attention after storage and
+realtime broadcast behavior has already remained available.
+
 Suggested commit:
 
 ```text

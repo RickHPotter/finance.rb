@@ -164,6 +164,13 @@ Rails.application.routes.draw do
   resource :settings, only: :show
 
   resources :conversations, param: :public_id, only: %i[index show create] do
+    member do
+      patch :archive
+      patch :unarchive
+      patch :mute
+      patch :unmute
+    end
+
     resources :messages, only: :create do
       member do
         patch :apply

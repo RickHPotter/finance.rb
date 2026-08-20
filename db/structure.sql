@@ -613,7 +613,10 @@ CREATE TABLE public.conversation_participants (
     conversation_id bigint NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    archived_at timestamp(6) without time zone,
+    muted_at timestamp(6) without time zone,
+    last_read_message_id bigint
 );
 
 
@@ -2370,6 +2373,13 @@ CREATE INDEX index_conversation_participants_on_conversation_id ON public.conver
 
 
 --
+-- Name: index_conversation_participants_on_last_read_message_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversation_participants_on_last_read_message_id ON public.conversation_participants USING btree (last_read_message_id);
+
+
+--
 -- Name: index_conversation_participants_on_membership; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3227,6 +3237,14 @@ ALTER TABLE ONLY public.friendships
 
 
 --
+-- Name: conversation_participants fk_rails_e618757051; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversation_participants
+    ADD CONSTRAINT fk_rails_e618757051 FOREIGN KEY (last_read_message_id) REFERENCES public.messages(id) ON DELETE SET NULL;
+
+
+--
 -- Name: budgets fk_rails_e708f32fd8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3305,6 +3323,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260820120000'),
 ('20260819210000'),
 ('20260810150000'),
 ('20260806181854'),

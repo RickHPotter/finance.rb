@@ -786,4 +786,92 @@ RSpec.describe "Conversations", type: :request do
       end
     end
   end
+
+  describe "[ participant state ]" do
+    it "archives and restores only the current participant's conversation copy" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      user_participant = conversation.participant_for!(user)
+      other_participant = conversation.participant_for!(other_user)
+
+      patch archive_conversation_path(conversation)
+
+      expect(response).to redirect_to(conversations_path)
+      expect(user_participant.reload).to be_archived
+      expect(other_participant.reload).not_to be_archived
+
+      get conversations_path
+      expect(response.body).not_to include(conversation_path(conversation))
+
+      sign_in other_user
+      get conversations_path
+      expect(response.body).to include(conversation_path(conversation))
+
+      sign_in user
+      patch unarchive_conversation_path(conversation)
+      expect(user_participant.reload).not_to be_archived
+      expect(response).to redirect_to(conversation_path(conversation))
+    end
+
+    it "mutes and unmutes only the current participant without hiding the conversation" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      user_participant = conversation.participant_for!(user)
+      other_participant = conversation.participant_for!(other_user)
+
+      patch mute_conversation_path(conversation)
+
+      expect(user_participant.reload).to be_muted
+      expect(other_participant.reload).not_to be_muted
+
+      get conversations_path
+      expect(response.body).to include(conversation_path(conversation))
+
+      patch unmute_conversation_path(conversation)
+      expect(user_participant.reload).not_to be_muted
+    end
+
+    it "denies participant-state changes after friendship revocation" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      participant = conversation.participant_for!(user)
+      friendship.update!(state: "blocked")
+      sign_in user
+
+      expect do
+        patch archive_conversation_path(conversation)
+      end.not_to(change { participant.reload.archived_at })
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "keeps read progress isolated across kinds and scenarios" do
+      main_human = Conversation.find_or_create_human_between!(user, other_user)
+      main_message = main_human.messages.create!(user: other_user, body: "Main hello")
+      derived_context = create(:context, user:, name: "Cursor scenario", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
+      derived_assistant = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
+      derived_message = derived_assistant.messages.create!(user: other_user, body: "Derived hello")
+
+      get conversation_path(main_human)
+
+      expect(main_human.participant_for!(user).reload.last_read_message).to eq(main_message)
+      expect(derived_assistant.participant_for!(user).reload.last_read_message).to be_nil
+
+      patch switch_context_path(derived_context)
+      get conversation_path(derived_assistant)
+
+      expect(derived_assistant.participant_for!(user).reload.last_read_message).to eq(derived_message)
+      expect(main_human.participant_for!(user).reload.last_read_message).to eq(main_message)
+    end
+
+    it "keeps a message arriving after the visible cursor unread" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      visible_message = conversation.messages.create!(user: other_user, body: "Visible")
+
+      get conversation_path(conversation)
+      arriving_message = conversation.messages.create!(user: other_user, body: "Arriving")
+
+      participant = conversation.participant_for!(user).reload
+      expect(participant.last_read_message).to eq(visible_message)
+      expect(participant.unread_messages).to contain_exactly(arriving_message)
+    end
+  end
 end
