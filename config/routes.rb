@@ -163,7 +163,7 @@ Rails.application.routes.draw do
         as: :healthcheck_naming_convention
   resource :settings, only: :show
 
-  resources :conversations, param: :public_id, only: %i[index show create] do
+  resources :conversations, param: :public_id, only: %i[index new show create] do
     member do
       patch :archive
       patch :unarchive

@@ -68,7 +68,8 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
 
     get conversation_path(assistant_conversation, message_filter: "all")
     document = Nokogiri::HTML(response.body)
-    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id })
+    return_to = conversation_path(assistant_conversation, message_filter: "all", message_side: %w[mine theirs])
+    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to:)
     expect_top_level_advance(document.at_css("a[href='#{action_path}']"))
     expect(response.body).not_to include("format=turbo_stream")
   end

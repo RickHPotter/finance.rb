@@ -48,7 +48,8 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
       }.to_json
     )
     conversation_path_with_state = conversation_path(conversation, message_filter: "all")
-    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id })
+    return_to = conversation_path(conversation, message_filter: "all", message_side: %w[mine theirs])
+    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to:)
 
     visit conversation_path_with_state
     find("a[href='#{action_path}']", match: :first).click

@@ -98,7 +98,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     if reference_transactable
       render_edit_action(reference_transactable, action_button_key)
-    elsif params["type"]&.constantize&.find_by(id: params["id"])
+    elsif payload_source_exists?(params)
       render_create_action(action_button_key)
     else
       span(class: status_badge_class) do
@@ -251,7 +251,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_edit_action(reference_transactable, action_button_key)
     Link(
-      href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }),
+      href: edit_cash_transaction_path(
+        id: reference_transactable,
+        cash_transaction: { source_message_id: message.id },
+        return_to: conversation_return_path
+      ),
       size: :xs,
       class: action_button_class(action_button_key),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
@@ -262,7 +266,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_create_action(action_button_key)
     Link(
-      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }),
+      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to: conversation_return_path),
       size: :xs,
       class: action_button_class(action_button_key),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
@@ -319,7 +323,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_destroy_action(reference_transactable)
     Link(
-      href: cash_transaction_path(id: reference_transactable, message_id: message.id),
+      href: cash_transaction_path(id: reference_transactable, message_id: message.id, return_to: conversation_return_path),
       size: :xs,
       class: action_button_class(:destroy),
       data: {
@@ -461,10 +465,24 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     case transaction
     when CashTransaction
-      edit_cash_transaction_path(transaction)
+      edit_cash_transaction_path(transaction, return_to: conversation_return_path)
     when CardTransaction
-      edit_card_transaction_path(transaction)
+      edit_card_transaction_path(transaction, return_to: conversation_return_path)
     end
+  end
+
+  def payload_source_exists?(payload)
+    transaction_class = { "CashTransaction" => CashTransaction, "CardTransaction" => CardTransaction }[payload["type"]]
+
+    transaction_class&.exists?(id: payload["id"]) == true
+  end
+
+  def conversation_return_path
+    conversation_path(
+      message.conversation,
+      message_filter: active_message_filter,
+      message_side: active_message_sides
+    )
   end
 
   def render_showable_transaction_details(transaction)

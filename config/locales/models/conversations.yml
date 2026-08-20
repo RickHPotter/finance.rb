@@ -12,6 +12,13 @@ en:
         assistant_of: "%{name}'s assistant"
         assistant_with: "%{name} assistant"
         all: All
+        active: Active
+        archived: Archived
+        muted: Muted
+        archive: Archive
+        unarchive: Restore
+        mute: Mute
+        unmute: Unmute
         mine: Mine
         pending: Pending
         theirs: Theirs
@@ -23,6 +30,17 @@ en:
         friend_assistant_thread: "%{name}'s assistant thread"
         no_messages_yet: No messages yet
         empty_message: Empty message
+        new_conversation: New conversation
+        start_conversation: Start a conversation
+        open: Open
+        back: Back
+        back_to_conversations: Back to conversations
+        no_available_friends: No friends are available in this scenario
+        no_available_friends_hint: Accept a friendship, or make sure both people have this scenario available.
+        empty_filter: No conversations match this view
+        empty_filter_hint: Choose another filter or start a conversation with a friend.
+        empty_human: This conversation is ready
+        empty_human_hint: Send the first message below when you are ready.
     errors:
       models:
         conversation:
@@ -44,6 +62,13 @@ pt-BR:
         assistant_of: Assistente de %{name}
         assistant_with: "Assistente de %{name}"
         all: Todas
+        active: Ativas
+        archived: Arquivadas
+        muted: Silenciadas
+        archive: Arquivar
+        unarchive: Restaurar
+        mute: Silenciar
+        unmute: Reativar notificações
         mine: Minhas
         pending: Pendentes
         theirs: Deles
@@ -55,6 +80,17 @@ pt-BR:
         friend_assistant_thread: Conversa com assistente de %{name}
         no_messages_yet: Nenhuma mensagem ainda
         empty_message: Mensagem vazia
+        new_conversation: Nova conversa
+        start_conversation: Iniciar uma conversa
+        open: Abrir
+        back: Voltar
+        back_to_conversations: Voltar para conversas
+        no_available_friends: Nenhum amigo está disponível neste cenário
+        no_available_friends_hint: Aceite uma amizade ou confirme que as duas pessoas possuem este cenário.
+        empty_filter: Nenhuma conversa corresponde a esta visualização
+        empty_filter_hint: Escolha outro filtro ou inicie uma conversa com um amigo.
+        empty_human: Esta conversa está pronta
+        empty_human_hint: Envie a primeira mensagem abaixo quando quiser.
     errors:
       models:
         conversation:

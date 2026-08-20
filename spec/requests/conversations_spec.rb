@@ -43,6 +43,66 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include(conversation_path(human_conversation))
     end
 
+    it "orders cards by latest activity and id without grouping conversation kinds" do
+      older_human = Conversation.find_or_create_human_between!(user, other_user)
+      newer_assistant = Conversation.find_or_create_assistant_between!(other_user, user)
+      older_human.messages.create!(user: other_user, body: "Older activity", created_at: 2.hours.ago)
+      newer_assistant.messages.create!(user: other_user, body: "Newer activity", created_at: 1.hour.ago)
+
+      get conversations_path
+
+      card_ids = Nokogiri::HTML(response.body).css("[data-conversation-id]").map { |node| node["data-conversation-id"] }.uniq
+      expect(card_ids).to eq([ newer_assistant.public_id, older_human.public_id ])
+    end
+
+    it "renders profile display names with attached and fallback avatars" do
+      other_user.profile.update!(first_name: "Gigi", last_name: "February")
+      other_user.profile.avatar.attach(io: StringIO.new("avatar"), filename: "gigi.png", content_type: "image/png")
+      Conversation.find_or_create_human_between!(user, other_user)
+
+      fallback_friend = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: fallback_friend)
+      Conversation.find_or_create_human_between!(user, fallback_friend)
+
+      get conversations_path
+
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css('img[data-profile-avatar="attached"][alt="Gigi February"]')).to be_present
+      expect(document.at_css("img[data-profile-avatar=\"fallback\"][alt=\"#{fallback_friend.display_name}\"]")).to be_present
+      expect(response.body).to include("Gigi February")
+    end
+
+    it "isolates archived and muted participant filters" do
+      archived_conversation = Conversation.find_or_create_human_between!(user, other_user)
+      muted_friend = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: muted_friend)
+      muted_conversation = Conversation.find_or_create_human_between!(user, muted_friend)
+      archived_conversation.participant_for!(user).update!(archived_at: Time.current)
+      muted_conversation.participant_for!(user).update!(muted_at: Time.current)
+
+      get conversations_path(filter: "archived")
+
+      expect(response.body).to include(conversation_path(archived_conversation))
+      expect(response.body).not_to include(conversation_path(muted_conversation))
+
+      get conversations_path(filter: "muted")
+
+      expect(response.body).to include(conversation_path(muted_conversation))
+      expect(response.body).not_to include(conversation_path(archived_conversation))
+    end
+
+    it "shows the selected main scenario and participant controls on every card" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+
+      get conversations_path
+
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css("[data-conversation-scenario]").text).to include(I18n.t("contexts.index.main_label"))
+      card = document.at_css("[data-conversation-id=\"#{conversation.public_id}\"]")
+      expect(card.at_css("[data-conversation-action=archive]")).to be_present
+      expect(card.at_css("[data-conversation-action=mute]")).to be_present
+    end
+
     it "retains revoked history without exposing it in lists or unread counts" do
       conversation = Conversation.find_or_create_human_between!(user, other_user)
       message = conversation.messages.create!(user: other_user, body: "Retained revoked history")
@@ -97,6 +157,46 @@ RSpec.describe "Conversations", type: :request do
 
       expect(response.body).to include(conversation_path(derived_conversation))
       expect(response.body).not_to include(conversation_path(main_conversation))
+    end
+  end
+
+  describe "[ #new ]" do
+    it "lists accepted friends by profile identity and posts only the friendship public id" do
+      other_user.profile.update!(first_name: "Rikki", last_name: "Friend")
+      pending_friend = create(:user, :random)
+      create(:friendship, user:, friend: pending_friend, state: "pending")
+
+      get new_conversation_path
+
+      expect(response).to have_http_status(:success)
+      document = Nokogiri::HTML(response.body)
+      expect(response.body).to include("Rikki Friend")
+      expect(response.body).not_to include(pending_friend.display_name)
+      form = document.at_css("form[action*='friendship_public_id']")
+      expect(form["action"]).to include(friendship.public_id)
+      expect(form["action"]).not_to include("user_id")
+    end
+
+    it "shows an empty state when no accepted friend is available in the selected scenario" do
+      friendship.update!(state: "removed")
+      sign_in user
+
+      get new_conversation_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(Conversation.human_attribute_name(:no_available_friends))
+    end
+
+    it "omits a friend until both participants have the selected derived scenario" do
+      derived_context = create(:context, user:, name: "Private scenario", source_context: user.main_context)
+      patch switch_context_path(derived_context)
+
+      get new_conversation_path
+      expect(response.body).not_to include(other_user.display_name)
+
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
+      get new_conversation_path
+      expect(response.body).to include(other_user.display_name)
     end
   end
 
@@ -170,6 +270,45 @@ RSpec.describe "Conversations", type: :request do
   end
 
   describe "[ #show ]" do
+    it "renders profile identity, navigation, controls, main scenario, and a human empty state" do
+      other_user.profile.update!(first_name: "Gigi", last_name: "Conversation")
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+
+      get conversation_path(conversation)
+
+      document = Nokogiri::HTML(response.body)
+      expect(response.body).to include("Gigi Conversation")
+      expect(document.at_css("[data-conversation-back=true]")).to be_present
+      expect(document.at_css("[data-conversation-action=archive]")).to be_present
+      expect(document.at_css("[data-conversation-action=mute]")).to be_present
+      expect(document.at_css("[data-conversation-scenario]").text).to include(I18n.t("contexts.index.main_label"))
+      expect(document.at_css("[data-conversation-empty=human]")).to be_present
+      expect(document.at_css("textarea[name='message[body]']")).to be_present
+    end
+
+    it "includes the conversation as return navigation on actionable transaction links" do
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      local_reference = create(:cash_transaction, user:, context: user.main_context,
+                                                  user_bank_account: create(:user_bank_account, user:, bank: create(:bank, :random)))
+      local_reference.update_columns(reference_transactable_type: "CashTransaction", reference_transactable_id: 987_654)
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:update",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "update", transaction_type: "CashTransaction", details: {} },
+          replay: { id: 987_654, type: "CashTransaction" }
+        }.to_json
+      )
+
+      get conversation_path(conversation, message_filter: "all")
+
+      href = Nokogiri::HTML(response.body).at_css("turbo-frame#message_#{message.id} [data-message-action=correct]")["href"]
+      return_to = Rack::Utils.parse_nested_query(URI.parse(href).query).fetch("return_to")
+      expect(return_to).to start_with(conversation_path(conversation))
+      expect(return_to).to include("message_filter=all")
+    end
+
     it "marks unread messages from other users as read" do
       conversation = Conversation.find_or_create_human_between!(user, other_user)
       message = conversation.messages.create!(user: other_user, body: "Hello")

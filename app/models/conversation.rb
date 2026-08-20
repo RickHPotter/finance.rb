@@ -37,6 +37,12 @@ class Conversation < ApplicationRecord
   scope :active_for, lambda { |user|
     joins(:conversation_participants).where(conversation_participants: { user_id: user.id, archived_at: nil })
   }
+  scope :archived_for, lambda { |user|
+    joins(:conversation_participants).where(conversation_participants: { user_id: user.id }).where.not(conversation_participants: { archived_at: nil })
+  }
+  scope :muted_for, lambda { |user|
+    joins(:conversation_participants).where(conversation_participants: { user_id: user.id }).where.not(conversation_participants: { muted_at: nil })
+  }
   scope :with_unread_for, lambda { |user|
     joins(:conversation_participants, :messages)
       .where(conversation_participants: { user_id: user.id })
@@ -76,10 +82,13 @@ class Conversation < ApplicationRecord
   end
 
   def title_for(user)
+    friend = friend_for(user)
+    friend_name = friend&.profile&.display_name.presence || friend&.email
+
     if human?
-      friend_for(user)&.first_name
+      friend_name
     else
-      I18n.t("activerecord.attributes.conversation.assistant_with", name: friend_for(user)&.first_name)
+      I18n.t("activerecord.attributes.conversation.assistant_with", name: friend_name)
     end
   end
 

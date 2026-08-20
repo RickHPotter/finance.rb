@@ -5,8 +5,6 @@ class Views::Conversations::Show < Views::Base
   register_value_helper :current_context
 
   include Phlex::Rails::Helpers::TurboStreamFrom
-  include Phlex::Rails::Helpers::ImageTag
-  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
 
@@ -25,10 +23,14 @@ class Views::Conversations::Show < Views::Base
         div(class: "flex h-[calc(100svh-16rem)] min-h-128 flex-col overflow-hidden rounded-lg sm:min-h-144", data: { controller: :chat }) do
           div(class: "border-b px-4 py-4 md:px-5 #{header_container_class} md:flex md:items-center md:justify-between md:gap-6") do
             div(class: "flex items-center gap-4 md:min-w-0 md:flex-1") do
-              div(class: "relative shrink-0") do
-                image_tag(asset_path("avatars/#{conversation_avatar_name}"), class: conversation_avatar_class)
-                div(class: "absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-white #{presence_dot_class}")
-              end
+              Link(
+                href: conversations_path,
+                class: "shrink-0 rounded-lg border border-stone-300 bg-white px-2 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 " \
+                       "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
+                data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", conversation_back: "true" }
+              ) { model_attribute(conversation, :back) }
+
+              ProfileAvatar(user: conversation.friend_for(current_user), class: conversation_avatar_class)
 
               div(class: "flex min-w-0 flex-1 flex-col items-start") do
                 h2(class: "truncate text-left text-base font-semibold text-stone-900 md:text-lg dark:text-slate-100") { conversation.title_for(current_user) }
@@ -37,17 +39,20 @@ class Views::Conversations::Show < Views::Base
               end
             end
 
-            if conversation.assistant?
-              div(class: "mt-4 md:mt-0 md:shrink-0 md:self-start") do
-                render_message_filter_badges
-              end
+            div(class: "mt-4 flex flex-col items-stretch gap-2 md:mt-0 md:shrink-0 md:items-end md:self-start") do
+              render_message_filter_badges if conversation.assistant?
+              render_participant_controls
             end
           end
 
           div(class: messages_container_class,
               id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
             turbo_stream_from conversation
-            render Views::Messages::Index.new(messages:)
+            if messages.empty? && conversation.human?
+              render_empty_human_conversation
+            else
+              render Views::Messages::Index.new(messages:)
+            end
           end
 
           unless conversation.assistant?
@@ -61,12 +66,6 @@ class Views::Conversations::Show < Views::Base
   end
 
   private
-
-  def conversation_avatar_name
-    return "people/21.png" if conversation.assistant?
-
-    current_user.entities.that_are_users.where_entity_user(conversation.friend_for(current_user)).first&.avatar_name || "people/0.png"
-  end
 
   def messages_container_class
     "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 " \
@@ -95,24 +94,46 @@ class Views::Conversations::Show < Views::Base
     end
   end
 
-  def presence_dot_class
-    conversation.assistant? ? "bg-amber-500" : "bg-emerald-500"
-  end
-
   def subtitle_text
     conversation.assistant? ? model_attribute(conversation, :assistant) : model_attribute(conversation, :chat)
   end
 
   def render_scenario_badge
-    return if current_context.main?
+    badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 px-3 py-1 text-2xs font-semibold uppercase"
 
-    badge_class = "mt-2 inline-flex items-center border-l-4 border-red-700 bg-rose-400/30 " \
-                  "px-3 py-1 text-2xs font-semibold uppercase"
-
-    div(class: badge_class) do
+    div(class: badge_class, data: { conversation_scenario: scenario_label }) do
       plain(Context.model_name.human)
       plain(": ")
-      plain(current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name)
+      plain(scenario_label)
+    end
+  end
+
+  def scenario_label
+    current_context.main? ? I18n.t("contexts.index.main_label") : current_context.name
+  end
+
+  def render_participant_controls
+    participant = conversation.participant_for!(current_user)
+
+    div(class: "flex flex-wrap gap-2") do
+      render_state_link(participant.archived? ? :unarchive : :archive)
+      render_state_link(participant.muted? ? :unmute : :mute)
+    end
+  end
+
+  def render_state_link(action)
+    Link(
+      href: public_send("#{action}_conversation_path", conversation),
+      class: "rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-2xs font-semibold text-stone-700 hover:bg-stone-100 " \
+             "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
+      data: { turbo_method: :patch, turbo_frame: "_top", turbo_prefetch: "false", conversation_action: action }
+    ) { model_attribute(conversation, action) }
+  end
+
+  def render_empty_human_conversation
+    div(class: "flex h-full min-h-48 flex-col items-center justify-center px-6 text-center", data: { conversation_empty: "human" }) do
+      p(class: "text-sm font-semibold text-stone-700 dark:text-slate-200") { model_attribute(conversation, :empty_human) }
+      p(class: "mt-2 max-w-sm text-sm text-stone-500 dark:text-slate-400") { model_attribute(conversation, :empty_human_hint) }
     end
   end
 

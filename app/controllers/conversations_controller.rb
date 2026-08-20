@@ -3,19 +3,24 @@
 class ConversationsController < ApplicationController
   include TabsConcern
 
-  before_action :set_conversation_tabs, only: %i[index show]
+  before_action :set_conversation_tabs, only: %i[index new show]
 
   def index
     @active_filter = conversation_filter
-    @conversations = filtered_conversations.preload(:messages, :conversation_participants, users: :profile).sort_by do |conversation|
-      [ conversation.human? ? 0 : 1, -(conversation.latest_message&.created_at || conversation.created_at).to_i ]
+    @conversations = filtered_conversations.preload(:messages, :conversation_participants, users: { profile: { avatar_attachment: :blob } }).sort_by do |conversation|
+      [ -(conversation.latest_message&.created_at || conversation.created_at).to_f, -conversation.id ]
     end
 
     render Views::Conversations::Index.new(conversations: @conversations, active_filter: @active_filter)
   end
 
+  def new
+    @friendships = available_friendships
+    render Views::Conversations::New.new(friendships: @friendships)
+  end
+
   def show
-    @conversation = scoped_conversations.preload(users: :profile).find_by!(public_id: params[:public_id])
+    @conversation = accessible_conversations.preload(users: { profile: { avatar_attachment: :blob } }).find_by!(public_id: params[:public_id])
     conversation_policy(@conversation).with_access do
       @active_message_filter = conversation_message_filter
       @active_message_sides = conversation_message_sides
@@ -72,7 +77,7 @@ class ConversationsController < ApplicationController
   end
 
   def filtered_conversations
-    scope = scoped_conversations
+    scope = participant_filtered_conversations
 
     case conversation_filter
     when "unread"
@@ -90,16 +95,50 @@ class ConversationsController < ApplicationController
     accessible_conversations.active_for(current_user)
   end
 
+  def participant_filtered_conversations
+    case conversation_filter
+    when "archived"
+      accessible_conversations.archived_for(current_user)
+    when "muted"
+      accessible_conversations.active_for(current_user).muted_for(current_user)
+    else
+      scoped_conversations
+    end
+  end
+
   def accessible_conversations
     Logic::Conversations::Policy.scope(user: current_user, context: current_context)
   end
 
   def conversation_filter
-    params[:filter].presence_in(%w[unread human assistant]) || "all"
+    params[:filter].presence_in(%w[active unread human assistant archived muted]) || "active"
   end
 
   def current_user_friendships
     Friendship.where(user: current_user).or(Friendship.where(friend: current_user))
+  end
+
+  def available_friendships
+    friendships = current_user_friendships
+                  .accepted_state
+                  .includes(user: { profile: { avatar_attachment: :blob } }, friend: { profile: { avatar_attachment: :blob } })
+                  .select do |friendship|
+      friend = friendship.user_id == current_user.id ? friendship.friend : friendship.user
+      context_available_for?(friend)
+    end
+
+    friendships.sort_by do |friendship|
+      friend = friendship.user_id == current_user.id ? friendship.friend : friendship.user
+      [ (friend.display_name.presence || friend.email).downcase, friendship.id ]
+    end
+  end
+
+  def context_available_for?(friend)
+    if current_context.main?
+      friend.contexts.active.exists?(main: true)
+    else
+      friend.contexts.active.exists?(main: false, scenario_key: current_context.scenario_key)
+    end
   end
 
   def state_conversation
