@@ -29,7 +29,7 @@ module Logic
 
             raise ActiveRecord::Rollback unless result.status == "applied"
 
-            message.update!(reverted_at: Time.current)
+            Logic::Messages::Transition.call(message, :revert)
           end
         end
 

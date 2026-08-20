@@ -1057,7 +1057,9 @@ CREATE TABLE public.messages (
     applied_at timestamp(6) without time zone,
     audit_operation_id uuid,
     auto_applied boolean DEFAULT false NOT NULL,
-    reverted_at timestamp(6) without time zone
+    reverted_at timestamp(6) without time zone,
+    kind character varying,
+    action_state character varying
 );
 
 
@@ -2660,6 +2662,13 @@ CREATE INDEX index_messages_on_conversation_id ON public.messages USING btree (c
 
 
 --
+-- Name: index_messages_on_kind_and_action_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_kind_and_action_state ON public.messages USING btree (kind, action_state);
+
+
+--
 -- Name: index_messages_on_reference_transactable; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3323,6 +3332,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260820150000'),
 ('20260820120000'),
 ('20260819210000'),
 ('20260810150000'),

@@ -116,7 +116,7 @@ class ConversationsController < ApplicationController
     scope.includes(:user).to_a.select do |message|
       next false unless conversation_message_sides.include?(message.assistant_side_for(current_user))
       next true if conversation_message_filter == "all"
-      next false if message.superseded_by_id.present?
+      next false if message.workflow_state == "expired"
 
       message.actionable_for?(context: current_context)
     end

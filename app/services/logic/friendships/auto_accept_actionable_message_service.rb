@@ -89,7 +89,7 @@ module Logic
         ActiveRecord::Base.transaction do
           apply_action!(action, context)
           auto_apply_operation = Audit::Operation.ensure_persisted!
-          message.update!(applied_at: Time.current, auto_applied: true, audit_operation: auto_apply_operation)
+          Logic::Messages::Transition.call(message, :apply, auto_applied: true, audit_operation: auto_apply_operation)
         end
 
         # Best-effort broadcast outside the transaction — a render failure must

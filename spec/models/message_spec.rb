@@ -43,6 +43,8 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_notification")
+      expect(message).to have_attributes(kind: "transaction_notification", action_state: "pending")
+      expect(message).to be_classification_compatible_with_legacy
     end
 
     it "renders v2 notification bodies from headers at display time" do
@@ -89,6 +91,7 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_destroy_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
+      expect(message).to have_attributes(kind: "transaction_destroy_notification", action_state: "pending")
     end
 
     it "classifies v2 destroy notifications even when headers are present" do
@@ -121,6 +124,18 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_destroy_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
+    end
+
+    it "preserves the legacy classifier fallback for an unsupported v2 action" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        body: "Unsupported notification",
+        headers: { version: "message_notification_v2", event: { action: "archive" } }.to_json
+      )
+
+      expect(message).to have_attributes(kind: "human", action_state: nil)
+      expect(message).to be_classification_compatible_with_legacy
     end
 
     it "sends v2 destroy notifications through automatic application" do
@@ -204,6 +219,7 @@ RSpec.describe Message, type: :model do
       )
 
       expect(message.paid_state_sync_message?).to be(true)
+      expect(message).to have_attributes(kind: "paid_state_sync", action_state: "pending")
       expect(message.transaction_notification_message?).to be(false)
       expect(message.rendered_body).to include("SHARED RETURN")
       expect(message.preview_body).to include("SHARED RETURN")
@@ -219,6 +235,33 @@ RSpec.describe Message, type: :model do
 
       expect(message.human_message?).to be(true)
       expect(message.backfill_kind).to eq("human")
+      expect(message).to have_attributes(kind: "human", action_state: nil)
+    end
+
+    it "does not permit human messages to acquire actionable state" do
+      message = described_class.create!(conversation:, user: sender, body: "hello")
+
+      expect(message.update(action_state: "pending")).to be(false)
+      expect(message.errors[:action_state]).to include("must be blank for human messages")
+    end
+
+    it "requires accepted and reverted states to retain their legacy timestamps" do
+      accepted = described_class.new(conversation:, user: sender, body: "Accepted", kind: "transaction_notification", action_state: "accepted")
+      reverted = described_class.new(conversation:, user: sender, body: "Reverted", kind: "transaction_notification", action_state: "reverted",
+                                     applied_at: Time.current)
+
+      expect(accepted).not_to be_valid
+      expect(accepted.errors[:applied_at]).to include("can't be blank for accepted messages")
+      expect(reverted).not_to be_valid
+      expect(reverted.errors[:reverted_at]).to include("can't be blank for reverted messages")
+    end
+
+    it "classifies malformed actionable intent as unavailable and renders it safely" do
+      message = described_class.create!(conversation:, user: sender, body: "Malformed notification", headers: "{not-json")
+
+      expect(message).to have_attributes(kind: "transaction_notification", action_state: "unavailable")
+      expect(message.rendered_body).to eq("Malformed notification")
+      expect(message.action_button_key(local_reference_exists: false)).to be_nil
     end
 
     it "derives pending actions from notification type and removes them after application" do

@@ -30,7 +30,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
             end
 
             div(
-              class: "max-w-xs md:max-w-lg px-4 py-2 rounded-2xl shadow-sm text-sm #{'ring-1 ring-red-800' if message.headers}",
+              class: "max-w-xs md:max-w-lg px-4 py-2 rounded-2xl shadow-sm text-sm #{'ring-1 ring-red-800' unless message.human_message?}",
               data: { chat_target: :messageColour }
             ) do
               if assistant_presented_notification?
@@ -58,11 +58,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   private
 
   def render_message_actions
-    if message.superseded_by_id
+    if message.workflow_state == "expired"
       render_outdated_state
     else
       return if message.paid_state_sync_message? && my_assistant_notification?
-      return if my_assistant_notification? || message.applied? || message.reverted?
+      return if my_assistant_notification? || message.workflow_state != "pending"
 
       render_transaction_actions
     end
@@ -109,7 +109,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_assistant_instruction
     return unless assistant_presented_notification?
-    return if message.superseded_by_id.present? || message.applied?
+    return unless message.workflow_state == "pending"
     return unless %w[create update].include?(message.send(:notification_action))
 
     instruction_key = my_assistant_notification? ? :click_down_below_mine : :click_down_below_theirs
@@ -120,7 +120,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_completed_state
-    return if message.superseded_by_id.present?
+    return if message.workflow_state == "expired"
 
     if message.reverted?
       p(class: status_badge_class) do

@@ -69,8 +69,6 @@ class Logic::Conversations::MessageInventory
   end
 
   def inferred_kind(message)
-    return "paid_state_sync" if message.paid_state_sync_message?
-
     message.backfill_kind
   end
 

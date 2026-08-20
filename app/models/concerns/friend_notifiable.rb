@@ -311,7 +311,7 @@ module FriendNotifiable
                                     .where(superseded_by_id: nil)
                                     .where.not(id: new_message.id)
 
-    previous_messages.update_all(superseded_by_id: new_message.id)
+    Logic::Messages::Transition.expire_scope!(previous_messages, superseded_by: new_message)
   end
 
   def reference_scope_for(references)

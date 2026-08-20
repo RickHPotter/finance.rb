@@ -17,9 +17,7 @@ class MessagesController < ApplicationController
     @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
-    # Slice 9: setting read_at for the OK acknowledge button
-    @message.update!(read_at: Time.current) if @message.auto_applied? && @message.read_at.blank?
-    @message.update!(applied_at: Time.current) unless @message.applied?
+    Logic::Messages::Transition.call(@message, :acknowledge)
 
     respond_to do |format|
       format.turbo_stream
