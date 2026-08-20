@@ -664,7 +664,8 @@ CREATE TABLE public.conversations (
     kind character varying DEFAULT 'human'::character varying NOT NULL,
     scenario_key character varying,
     friendship_id bigint,
-    public_id uuid DEFAULT gen_random_uuid() NOT NULL
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    last_message_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -2474,6 +2475,13 @@ CREATE INDEX index_conversation_participants_on_user_id ON public.conversation_p
 
 
 --
+-- Name: index_conversations_on_activity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversations_on_activity ON public.conversations USING btree (last_message_at DESC, id DESC);
+
+
+--
 -- Name: index_conversations_on_friendship_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2807,6 +2815,13 @@ CREATE INDEX index_messages_on_applied_at ON public.messages USING btree (applie
 --
 
 CREATE INDEX index_messages_on_audit_operation_id ON public.messages USING btree (audit_operation_id);
+
+
+--
+-- Name: index_messages_on_conversation_cursor; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_conversation_cursor ON public.messages USING btree (conversation_id, created_at DESC, id DESC);
 
 
 --
@@ -3550,6 +3565,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260820210000'),
 ('20260820180000'),
 ('20260820150000'),
 ('20260820120000'),

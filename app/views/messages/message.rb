@@ -16,7 +16,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def view_template
-    div(class: "m-2") do
+    div(id: message_entry_id, class: "m-2") do
       turbo_frame_tag dom_id(message) do
         div(
           class: "whitespace-pre-wrap wrap-break-word text-start",
@@ -50,12 +50,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
           end
         end
       end
-    end
 
-    render_my_assistant_transaction_modal
+      render_my_assistant_transaction_modal
+    end
   end
 
   private
+
+  def message_entry_id
+    "message_entry_#{message.id}"
+  end
 
   def render_message_actions
     if message.workflow_state == "expired"

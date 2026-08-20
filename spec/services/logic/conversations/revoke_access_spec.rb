@@ -67,8 +67,12 @@ RSpec.describe Logic::Conversations::RevokeAccess do
 
     friendship.update!(state: "blocked")
 
-    expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to).with(assistant_conversation, target: "center_container")
-    expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to).with(human_conversation, target: "center_container")
+    [ assistant_conversation, human_conversation ].each do |revoked_conversation|
+      revoked_conversation.conversation_participants.each do |participant|
+        streamables = Logic::Conversations::Stream.for_participant(conversation: revoked_conversation, participant:)
+        expect(Turbo::StreamsChannel).to have_received(:broadcast_remove_to).with(*streamables, target: "center_container")
+      end
+    end
   end
 
   it "does not broadcast a message created after persisted access has been revoked" do

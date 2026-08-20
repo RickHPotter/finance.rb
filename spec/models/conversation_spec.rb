@@ -15,6 +15,7 @@ RSpec.describe Conversation, type: :model do
 
       expect(first).to eq(second)
       expect(first.kind).to eq("human")
+      expect(first.last_message_at).to eq(first.created_at)
     end
 
     it "finds or creates a single shared assistant conversation between the same two users" do
@@ -123,16 +124,18 @@ end
 # Table name: conversations
 # Database name: primary
 #
-#  id            :bigint           not null, primary key
-#  kind          :string           default("human"), not null, indexed, uniquely indexed => [friendship_id], uniquely indexed => [friendship_id, scenario_key]
-#  scenario_key  :string           uniquely indexed => [friendship_id, kind], indexed
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#  friendship_id :bigint           indexed, uniquely indexed => [kind], uniquely indexed => [kind, scenario_key]
-#  public_id     :uuid             not null, uniquely indexed
+#  id              :bigint           not null, primary key, indexed => [last_message_at]
+#  kind            :string           default("human"), not null, indexed, uniquely indexed => [friendship_id], uniquely indexed => [friendship_id, scenario_key]
+#  last_message_at :datetime         not null, indexed => [id]
+#  scenario_key    :string           uniquely indexed => [friendship_id, kind], indexed
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  friendship_id   :bigint           indexed, uniquely indexed => [kind], uniquely indexed => [kind, scenario_key]
+#  public_id       :uuid             not null, uniquely indexed
 #
 # Indexes
 #
+#  index_conversations_on_activity                     (last_message_at,id)
 #  index_conversations_on_friendship_id                (friendship_id)
 #  index_conversations_on_kind                         (kind)
 #  index_conversations_on_main_canonical_identity      (friendship_id,kind) UNIQUE WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NULL))

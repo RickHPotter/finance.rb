@@ -23,6 +23,7 @@ class Conversation < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation -> { self.public_id ||= SecureRandom.uuid }, on: :create
+  before_create -> { self.last_message_at ||= created_at || Time.current }
 
   # @scopes ...................................................................
   scope :for_users, lambda { |user_ids|
@@ -109,9 +110,9 @@ class Conversation < ApplicationRecord
   end
 
   def latest_message
-    return messages.max_by(&:created_at) if messages.loaded?
+    return messages.max_by { |message| [ message.created_at, message.id ] } if messages.loaded?
 
-    messages.order(created_at: :desc).first
+    messages.order(created_at: :desc, id: :desc).first
   end
 
   def to_param
@@ -144,16 +145,18 @@ end
 # Table name: conversations
 # Database name: primary
 #
-#  id            :bigint           not null, primary key
-#  kind          :string           default("human"), not null, indexed, uniquely indexed => [friendship_id], uniquely indexed => [friendship_id, scenario_key]
-#  scenario_key  :string           uniquely indexed => [friendship_id, kind], indexed
-#  created_at    :datetime         not null
-#  updated_at    :datetime         not null
-#  friendship_id :bigint           indexed, uniquely indexed => [kind], uniquely indexed => [kind, scenario_key]
-#  public_id     :uuid             not null, uniquely indexed
+#  id              :bigint           not null, primary key, indexed => [last_message_at]
+#  kind            :string           default("human"), not null, indexed, uniquely indexed => [friendship_id], uniquely indexed => [friendship_id, scenario_key]
+#  last_message_at :datetime         not null, indexed => [id]
+#  scenario_key    :string           uniquely indexed => [friendship_id, kind], indexed
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  friendship_id   :bigint           indexed, uniquely indexed => [kind], uniquely indexed => [kind, scenario_key]
+#  public_id       :uuid             not null, uniquely indexed
 #
 # Indexes
 #
+#  index_conversations_on_activity                     (last_message_at,id)
 #  index_conversations_on_friendship_id                (friendship_id)
 #  index_conversations_on_kind                         (kind)
 #  index_conversations_on_main_canonical_identity      (friendship_id,kind) UNIQUE WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NULL))

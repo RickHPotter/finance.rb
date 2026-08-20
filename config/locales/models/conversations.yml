@@ -41,6 +41,8 @@ en:
         empty_filter_hint: Choose another filter or start a conversation with a friend.
         empty_human: This conversation is ready
         empty_human_hint: Send the first message below when you are ready.
+        load_more: Load more conversations
+        load_older: Load older messages
     errors:
       models:
         conversation:
@@ -91,6 +93,8 @@ pt-BR:
         empty_filter_hint: Escolha outro filtro ou inicie uma conversa com um amigo.
         empty_human: Esta conversa está pronta
         empty_human_hint: Envie a primeira mensagem abaixo quando quiser.
+        load_more: Carregar mais conversas
+        load_older: Carregar mensagens anteriores
     errors:
       models:
         conversation:

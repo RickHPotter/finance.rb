@@ -28,7 +28,10 @@ class Logic::Conversations::RevokeAccess
   private
 
   def broadcast_conversation_revocation(conversation)
-    Turbo::StreamsChannel.broadcast_remove_to(conversation, target: "center_container")
+    conversation.conversation_participants.find_each do |participant|
+      streamables = Logic::Conversations::Stream.for_participant(conversation:, participant:)
+      Turbo::StreamsChannel.broadcast_remove_to(*streamables, target: "center_container")
+    end
   rescue StandardError => e
     Rails.error.report(e, handled: true, severity: :warning, context: { conversation_id: conversation.id, component: self.class.name })
   end

@@ -55,6 +55,30 @@ RSpec.describe "Conversations", type: :request do
       expect(card_ids).to eq([ newer_assistant.public_id, older_human.public_id ])
     end
 
+    it "loads later conversation cursor pages into a dedicated frame" do
+      stub_const("Logic::Conversations::Page::DEFAULT_SIZE", 2)
+      conversations = [ Conversation.find_or_create_human_between!(user, other_user) ]
+      2.times do
+        friend = create(:user, :random)
+        create(:friendship, :accepted, user:, friend:)
+        conversations << Conversation.find_or_create_human_between!(user, friend)
+      end
+      conversations.each { |conversation| conversation.update_columns(last_message_at: Time.zone.local(2026, 8, 20, 12)) }
+
+      get conversations_path
+
+      document = Nokogiri::HTML(response.body)
+      first_page_ids = document.css("[data-conversation-id]").map { |node| node["data-conversation-id"] }
+      next_link = document.at_css("[data-conversation-page=next]")
+      expect(first_page_ids).to eq(conversations.last(2).reverse.map(&:public_id))
+
+      get next_link["href"], headers: { "Turbo-Frame" => next_link["data-turbo-frame"] }
+
+      next_document = Nokogiri::HTML(response.body)
+      expect(next_document.at_css("turbo-frame##{next_link['data-turbo-frame']}")).to be_present
+      expect(next_document.css("[data-conversation-id]").map { |node| node["data-conversation-id"] }).to eq([ conversations.first.public_id ])
+    end
+
     it "renders profile display names with attached and fallback avatars" do
       other_user.profile.update!(first_name: "Gigi", last_name: "February")
       other_user.profile.avatar.attach(io: StringIO.new("avatar"), filename: "gigi.png", content_type: "image/png")
@@ -317,6 +341,31 @@ RSpec.describe "Conversations", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(message.reload.read_at).to be_present
+    end
+
+    it "loads the newest bounded page first and prepends older messages without advancing the read cursor" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      started_at = Time.zone.local(2026, 8, 20, 8)
+      messages = 42.times.map do |index|
+        conversation.messages.create!(user: other_user, body: "Page message #{index}", created_at: started_at + index.minutes)
+      end
+
+      get conversation_path(conversation)
+
+      document = Nokogiri::HTML(response.body)
+      first_page_ids = document.css("[id^='message_entry_']").map { |node| node["id"].delete_prefix("message_entry_").to_i }
+      older_link = document.at_css("[data-message-page=older]")
+      cursor_after_newest_page = conversation.participant_for!(user).reload.last_read_message_id
+
+      expect(first_page_ids).to eq(messages.last(40).map(&:id))
+      expect(cursor_after_newest_page).to eq(messages.last.id)
+
+      get older_link["href"], headers: { "Turbo-Frame" => older_link["data-turbo-frame"] }
+
+      older_document = Nokogiri::HTML(response.body)
+      older_ids = older_document.css("[id^='message_entry_']").map { |node| node["id"].delete_prefix("message_entry_").to_i }
+      expect(older_ids).to eq(messages.first(2).map(&:id))
+      expect(conversation.participant_for!(user).reload.last_read_message_id).to eq(cursor_after_newest_page)
     end
 
     it "marks unread superseded predecessors at the same time as their replacement" do

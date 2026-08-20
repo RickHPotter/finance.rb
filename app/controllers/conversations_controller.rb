@@ -7,11 +7,18 @@ class ConversationsController < ApplicationController
 
   def index
     @active_filter = conversation_filter
-    @conversations = filtered_conversations.preload(:messages, :conversation_participants, users: { profile: { avatar_attachment: :blob } }).sort_by do |conversation|
-      [ -(conversation.latest_message&.created_at || conversation.created_at).to_f, -conversation.id ]
-    end
+    page = Logic::Conversations::Page.call(
+      scope: filtered_conversations.preload(:conversation_participants, users: { profile: { avatar_attachment: :blob } }),
+      cursor: params[:cursor]
+    )
+    @conversations = page.records
 
-    render Views::Conversations::Index.new(conversations: @conversations, active_filter: @active_filter)
+    render Views::Conversations::Index.new(
+      conversations: @conversations,
+      active_filter: @active_filter,
+      page_cursor: params[:cursor],
+      next_cursor: page.next_cursor
+    )
   end
 
   def new
@@ -22,21 +29,7 @@ class ConversationsController < ApplicationController
   def show
     @conversation = accessible_conversations.preload(users: { profile: { avatar_attachment: :blob } }).find_by!(public_id: params[:public_id])
     conversation_policy(@conversation).with_access do
-      @active_message_filter = conversation_message_filter
-      @active_message_sides = conversation_message_sides
-      @messages = filtered_messages(@conversation).to_a
-      read_at = Time.current
-      @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
-        message.update!(read_at:)
-      end
-      @conversation.participant_for!(current_user).advance_read_cursor_to!(@conversation.messages.latest.order(:id).last)
-
-      render Views::Conversations::Show.new(
-        conversation: @conversation,
-        messages: @messages,
-        active_message_filter: @active_message_filter,
-        active_message_sides: @active_message_sides
-      )
+      prepare_conversation_show
     end
   end
 
@@ -156,17 +149,54 @@ class ConversationsController < ApplicationController
     Logic::Conversations::Policy.new(conversation:, actor: current_user, context: current_context)
   end
 
-  def filtered_messages(conversation)
-    scope = conversation.messages.order(:created_at)
-    return scope if conversation.human?
+  def prepare_conversation_show
+    @active_message_filter = conversation_message_filter
+    @active_message_sides = conversation_message_sides
+    scope, selector = filtered_messages(@conversation)
+    page = Logic::Messages::Page.call(scope:, selector:, cursor: params[:message_cursor])
+    @messages = page.records
+    @newest_page_message = @conversation.messages.latest.reorder(created_at: :desc, id: :desc).first if params[:message_cursor].blank?
+    mark_visible_page_read if params[:message_cursor].blank?
 
-    scope.includes(:user).to_a.select do |message|
-      next false unless conversation_message_sides.include?(message.assistant_side_for(current_user))
+    render_conversation_show(page)
+  end
+
+  def mark_visible_page_read
+    read_at = Time.current
+    @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
+      message.update!(read_at:)
+    end
+    @conversation.participant_for!(current_user).advance_read_cursor_to!(@newest_page_message)
+  end
+
+  def render_conversation_show(page)
+    render Views::Conversations::Show.new(
+      conversation: @conversation,
+      messages: @messages,
+      active_message_filter: @active_message_filter,
+      active_message_sides: @active_message_sides,
+      message_page_cursor: params[:message_cursor],
+      next_message_cursor: page.next_cursor,
+      streamables: Logic::Conversations::Stream.for(conversation: @conversation, actor: current_user, context: current_context)
+    )
+  end
+
+  def filtered_messages(conversation)
+    scope = conversation.messages.includes(:user)
+    return [ scope, nil ] if conversation.human?
+
+    if conversation_message_sides.one?
+      scope = conversation_message_sides.first == "mine" ? scope.where(user_id: current_user.id) : scope.where.not(user_id: current_user.id)
+    end
+
+    selector = lambda do |message|
       next true if conversation_message_filter == "all"
       next false if message.workflow_state == "expired"
 
       message.actionable_for?(context: current_context)
     end
+
+    [ scope, selector ]
   end
 
   def conversation_message_filter

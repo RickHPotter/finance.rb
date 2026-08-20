@@ -8,16 +8,32 @@ class Views::Conversations::Show < Views::Base
 
   include TranslateHelper
 
-  attr_reader :conversation, :messages, :active_message_filter, :active_message_sides
+  attr_reader :conversation, :messages, :active_message_filter, :active_message_sides, :message_page_cursor, :next_message_cursor, :streamables
 
-  def initialize(conversation:, messages: conversation.messages.order(:created_at), active_message_filter: "all", active_message_sides: %w[mine theirs])
+  def initialize(
+    conversation:,
+    streamables:,
+    messages: conversation.messages.order(:created_at),
+    active_message_filter: "all",
+    active_message_sides: %w[mine theirs],
+    message_page_cursor: nil,
+    next_message_cursor: nil
+  )
     @conversation = conversation
     @messages = messages
     @active_message_filter = active_message_filter
     @active_message_sides = active_message_sides
+    @message_page_cursor = message_page_cursor
+    @next_message_cursor = next_message_cursor
+    @streamables = streamables
   end
 
   def view_template
+    if message_page_cursor.present?
+      render_message_page_frame(message_page_cursor)
+      return
+    end
+
     turbo_frame_tag :center_container do
       div(class: "#{compact_crud_shell_class} ring ring-stone-200 dark:ring-slate-800") do
         div(class: "flex h-[calc(100svh-16rem)] min-h-128 flex-col overflow-hidden rounded-lg sm:min-h-144", data: { controller: :chat }) do
@@ -47,10 +63,11 @@ class Views::Conversations::Show < Views::Base
 
           div(class: messages_container_class,
               id: "messages_#{conversation.id}", data: { chat_target: :scroll }) do
-            turbo_stream_from conversation
+            turbo_stream_from(*streamables)
             if messages.empty? && conversation.human?
               render_empty_human_conversation
             else
+              render_next_message_page_frame
               render Views::Messages::Index.new(messages:)
             end
           end
@@ -66,6 +83,41 @@ class Views::Conversations::Show < Views::Base
   end
 
   private
+
+  def render_message_page_frame(cursor)
+    turbo_frame_tag message_page_frame_id(cursor) do
+      render_next_message_page_frame
+      render Views::Messages::Index.new(messages:)
+    end
+  end
+
+  def render_next_message_page_frame
+    return if next_message_cursor.blank?
+
+    frame_id = message_page_frame_id(next_message_cursor)
+    turbo_frame_tag(
+      frame_id,
+      data: {
+        action: "turbo:before-fetch-request->chat#rememberScrollPosition turbo:frame-load->chat#restoreScrollPosition"
+      }
+    ) do
+      Link(
+        href: conversation_path(
+          conversation,
+          message_cursor: next_message_cursor,
+          message_filter: active_message_filter,
+          message_side: active_message_sides
+        ),
+        class: "mx-auto mb-3 flex w-fit items-center justify-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-semibold " \
+               "text-stone-700 hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
+        data: { turbo_frame: frame_id, turbo_prefetch: "false", message_page: "older" }
+      ) { model_attribute(Conversation, :load_older) }
+    end
+  end
+
+  def message_page_frame_id(cursor)
+    "older_messages_#{conversation.id}_#{cursor}"
+  end
 
   def messages_container_class
     "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 " \

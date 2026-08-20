@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Views::Conversations::Index < Views::Base
-  attr_reader :conversations, :active_filter
+  attr_reader :conversations, :active_filter, :page_cursor, :next_cursor
 
   register_value_helper :current_user
   register_value_helper :current_context
@@ -10,12 +10,19 @@ class Views::Conversations::Index < Views::Base
 
   include TranslateHelper
 
-  def initialize(conversations:, active_filter: "active")
+  def initialize(conversations:, active_filter: "active", page_cursor: nil, next_cursor: nil)
     @conversations = conversations
     @active_filter = active_filter
+    @page_cursor = page_cursor
+    @next_cursor = next_cursor
   end
 
   def view_template
+    if page_cursor.present?
+      render_conversation_page_frame(page_cursor)
+      return
+    end
+
     turbo_frame_tag :center_container do
       div(class: compact_crud_shell_class) do
         div(class: compact_crud_header_class) do
@@ -46,7 +53,7 @@ class Views::Conversations::Index < Views::Base
           if conversations.empty?
             render_empty_state
           else
-            conversations.each { |conversation| render_conversation_card(conversation) }
+            render_conversation_page
           end
         end
       end
@@ -54,6 +61,35 @@ class Views::Conversations::Index < Views::Base
   end
 
   private
+
+  def render_conversation_page
+    conversations.each { |conversation| render_conversation_card(conversation) }
+    render_next_page_frame
+  end
+
+  def render_conversation_page_frame(cursor)
+    turbo_frame_tag conversation_page_frame_id(cursor) do
+      render_conversation_page
+    end
+  end
+
+  def render_next_page_frame
+    return if next_cursor.blank?
+
+    frame_id = conversation_page_frame_id(next_cursor)
+    turbo_frame_tag frame_id do
+      Link(
+        href: conversations_path(filter: active_filter == "active" ? nil : active_filter, cursor: next_cursor),
+        class: "flex w-full items-center justify-center rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 " \
+               "hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
+        data: { turbo_frame: frame_id, turbo_prefetch: "false", conversation_page: "next" }
+      ) { model_attribute(Conversation, :load_more) }
+    end
+  end
+
+  def conversation_page_frame_id(cursor)
+    "conversations_page_#{cursor}"
+  end
 
   def render_filter_badge(filter)
     selected = active_filter == filter

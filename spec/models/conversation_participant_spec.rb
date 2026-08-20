@@ -77,7 +77,7 @@ RSpec.describe ConversationParticipant, type: :model do
     expect(message).to be_persisted
     expect(rikki_participant.unread_count).to eq(1)
     expect(WebPush).not_to have_received(:payload_send)
-    expect(ActionCable.server).to have_received(:broadcast)
+    expect(ActionCable.server).to have_received(:broadcast).twice
   end
 
   it "delivers push attention to an unmuted recipient only" do

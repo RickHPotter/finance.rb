@@ -51,16 +51,13 @@ module Logic
       end
 
       def broadcast_message
-        return unless Logic::Conversations::Policy.stream_allowed?(message.conversation)
-
         # Best-effort broadcast outside the transaction — a render failure must
         # never roll back the already-committed cash transaction or applied_at stamp.
         message.reload
-        Turbo::StreamsChannel.broadcast_replace_to(
-          message.conversation,
-          target: ActionView::RecordIdentifier.dom_id(message),
-          html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
-        )
+        html = ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
+        Logic::Conversations::Stream.each_authorized(message.conversation) do |streamables|
+          Turbo::StreamsChannel.broadcast_replace_to(*streamables, target: "message_entry_#{message.id}", html:)
+        end
       rescue StandardError => e
         Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
       end

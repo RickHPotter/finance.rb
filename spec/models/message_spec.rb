@@ -3,6 +3,42 @@
 require "rails_helper"
 
 RSpec.describe Message, type: :model do
+  describe "conversation activity and realtime delivery" do
+    let(:sender) { create(:user, :random) }
+    let(:recipient) { create(:user, :random) }
+    let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
+    let(:conversation) { Conversation.find_or_create_human_between!(sender, recipient) }
+
+    it "reactivates an archived conversation and advances activity monotonically in the create transaction" do
+      conversation.conversation_participants.update_all(archived_at: 1.day.ago)
+      previous_activity = conversation.last_message_at
+      message = conversation.messages.create!(user: sender, body: "Reactivate", created_at: previous_activity + 1.hour)
+
+      expect(conversation.conversation_participants.reload).to all(have_attributes(archived_at: nil))
+      expect(conversation.reload.last_message_at).to eq(message.created_at)
+
+      conversation.messages.create!(user: sender, body: "Backdated", created_at: previous_activity - 1.hour)
+      expect(conversation.reload.last_message_at).to eq(message.created_at)
+    end
+
+    it "broadcasts one stable DOM entry to each currently authorized participant stream" do
+      message = conversation.messages.build(user: sender, body: "Realtime once")
+      allow(message).to receive(:broadcast_append_to)
+
+      message.save!
+
+      expect(message).to have_received(:broadcast_append_to).twice
+      conversation.conversation_participants.each do |participant|
+        streamables = Logic::Conversations::Stream.for_participant(conversation:, participant:)
+        expect(message).to have_received(:broadcast_append_to).with(
+          *streamables,
+          target: "messages_#{conversation.id}",
+          html: include("id=\"message_entry_#{message.id}\"")
+        )
+      end
+    end
+  end
+
   describe "[ business logic ]" do
     let(:sender) { create(:user, first_name: "Rikki", email: "rikki@example.com") }
     let(:receiver) { create(:user, first_name: "Gigi", email: "gigi@example.com") }
@@ -670,18 +706,20 @@ end
 # Table name: messages
 # Database name: primary
 #
-#  id                          :bigint           not null, primary key
+#  id                          :bigint           not null, primary key, indexed => [conversation_id, created_at]
+#  action_state                :string           indexed => [kind]
 #  applied_at                  :datetime         indexed
 #  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
+#  kind                        :string           indexed => [action_state]
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed
-#  created_at                  :datetime         not null
+#  created_at                  :datetime         not null, indexed => [conversation_id, id]
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
-#  conversation_id             :bigint           not null, indexed
+#  conversation_id             :bigint           not null, indexed => [created_at, id], indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
 #  user_id                     :bigint           not null, indexed
@@ -690,7 +728,9 @@ end
 #
 #  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_audit_operation_id      (audit_operation_id)
+#  index_messages_on_conversation_cursor     (conversation_id,created_at DESC,id DESC)
 #  index_messages_on_conversation_id         (conversation_id)
+#  index_messages_on_kind_and_action_state   (kind,action_state)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)

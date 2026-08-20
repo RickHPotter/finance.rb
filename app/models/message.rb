@@ -29,6 +29,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   before_validation :assign_kind_and_action_state
   before_validation :assign_audit_operation, on: :create
   after_create :reactivate_conversation_participants
+  after_create :record_conversation_activity
   after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
   after_create_commit :broadcast_to_conversation, if: -> { Logic::Conversations::Policy.stream_allowed?(conversation) }
   after_create_commit :send_email, if: -> { Rails.env.production? }
@@ -251,9 +252,10 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def broadcast_to_conversation
-    broadcast_append_to conversation,
-                        target: "messages_#{conversation.id}",
-                        html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
+    html = ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
+    Logic::Conversations::Stream.each_authorized(conversation) do |streamables|
+      broadcast_append_to(*streamables, target: "messages_#{conversation.id}", html:)
+    end
   end
 
   def auto_apply_candidate?
@@ -267,6 +269,10 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def reactivate_conversation_participants
     conversation.conversation_participants.where.not(archived_at: nil).update_all(archived_at: nil, updated_at: Time.current)
+  end
+
+  def record_conversation_activity
+    Conversation.where(id: conversation_id).where("last_message_at < ?", created_at).update_all(last_message_at: created_at)
   end
 
   def read_at_became_present?
@@ -494,7 +500,7 @@ end
 # Table name: messages
 # Database name: primary
 #
-#  id                          :bigint           not null, primary key
+#  id                          :bigint           not null, primary key, indexed => [conversation_id, created_at]
 #  action_state                :string           indexed => [kind]
 #  applied_at                  :datetime         indexed
 #  auto_applied                :boolean          default(FALSE), not null
@@ -504,10 +510,10 @@ end
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed
-#  created_at                  :datetime         not null
+#  created_at                  :datetime         not null, indexed => [conversation_id, id]
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
-#  conversation_id             :bigint           not null, indexed
+#  conversation_id             :bigint           not null, indexed => [created_at, id], indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
 #  user_id                     :bigint           not null, indexed
@@ -516,8 +522,9 @@ end
 #
 #  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_audit_operation_id      (audit_operation_id)
+#  index_messages_on_conversation_cursor     (conversation_id,created_at DESC,id DESC)
 #  index_messages_on_conversation_id         (conversation_id)
-#  index_messages_on_kind_and_action_state    (kind,action_state)
+#  index_messages_on_kind_and_action_state   (kind,action_state)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)
