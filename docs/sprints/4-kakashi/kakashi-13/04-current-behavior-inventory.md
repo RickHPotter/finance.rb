@@ -26,6 +26,36 @@ in deployment notes.
 The report is intentionally diagnostic. Slice 1 does not attach friendships, merge
 threads, rewrite payloads, or infer corrections for ambiguous history.
 
+## Canonical Persistence Backfill
+
+Slice 2 adds friendship-backed identity without switching routes or message producers.
+Preview the exact mutations first:
+
+```sh
+bin/rails conversations:backfill
+```
+
+After reviewing the listed canonical conversation, friendship, duplicate conversation,
+and message IDs, apply that same plan with:
+
+```sh
+CONVERSATION_BACKFILL_APPLY=1 bin/rails conversations:backfill
+```
+
+The oldest conversation ID in an otherwise identical friendship/kind/scenario group is
+retained. Messages are moved without recreating them, preserving their IDs, timestamps,
+references, supersession chains, and audit links. Ambiguous participant, friendship, or
+scenario history is reported and left untouched. The apply operation locks the affected
+friendships and conversations, rejects a stale plan, and is idempotent.
+
+Postflight both read-only commands; a completed clean backfill reports zero actions and
+zero inventory issues:
+
+```sh
+bin/rails conversations:backfill
+bin/rails conversations:inventory
+```
+
 ## Existing Lifecycle Characterization
 
 These suites are the behavior-parity boundary before later slices change persistence

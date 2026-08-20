@@ -19,11 +19,15 @@ class Logic::Conversations::Inventory
   private
 
   def conversations
-    @conversations ||= conversation_scope.includes(:conversation_participants).order(:id).to_a
+    @conversations ||= if conversation_scope.respond_to?(:includes)
+                         conversation_scope.includes(:conversation_participants).order(:id).to_a
+                       else
+                         Array(conversation_scope).sort_by(&:id)
+                       end
   end
 
   def messages
-    @messages ||= message_scope.order(:id).to_a
+    @messages ||= message_scope.respond_to?(:order) ? message_scope.order(:id).to_a : Array(message_scope).sort_by(&:id)
   end
 
   def conversation_issues

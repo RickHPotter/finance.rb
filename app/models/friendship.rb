@@ -26,6 +26,7 @@ class Friendship < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :friend, class_name: "User"
+  has_many :conversations, dependent: :restrict_with_error
   has_many :entities, dependent: :nullify
 
   # @validations ..............................................................

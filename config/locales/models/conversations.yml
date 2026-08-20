@@ -23,6 +23,12 @@ en:
         friend_assistant_thread: "%{name}'s assistant thread"
         no_messages_yet: No messages yet
         empty_message: Empty message
+    errors:
+      models:
+        conversation:
+          attributes:
+            friendship:
+              readonly: cannot be changed after the conversation is canonicalized
 
 pt-BR:
   activerecord:
@@ -49,3 +55,9 @@ pt-BR:
         friend_assistant_thread: Conversa com assistente de %{name}
         no_messages_yet: Nenhuma mensagem ainda
         empty_message: Mensagem vazia
+    errors:
+      models:
+        conversation:
+          attributes:
+            friendship:
+              readonly: não pode ser alterada após a conversa ser canonizada

@@ -41,7 +41,6 @@ RSpec.describe Logic::Conversations::Inventory do
     accepted_friendship
     first = create_conversation(rikki, gigi, kind: :assistant)
     duplicate = create_conversation(gigi, rikki, kind: :assistant)
-    duplicate_participant = duplicate.conversation_participants.create!(user: rikki)
     zero_participants = create_conversation
     one_participant = create_conversation(rikki)
     third_user = create(:user, :random)
@@ -55,12 +54,26 @@ RSpec.describe Logic::Conversations::Inventory do
     report = described_class.new.call
 
     expect(issue(report, "duplicate_canonical_thread").record_ids).to contain_exactly(first.id, duplicate.id)
-    expect(issue(report, "duplicate_participant", duplicate_participant.id).details).to include(conversation_id: duplicate.id, user_id: rikki.id, count: 2)
     expect(issue(report, "invalid_participant_count", zero_participants.id).details[:participant_count]).to eq(0)
     expect(issue(report, "invalid_participant_count", one_participant.id).details[:participant_count]).to eq(1)
     expect(issue(report, "invalid_participant_count", three_participants.id).details[:participant_count]).to eq(3)
     expect(issue(report, "missing_friendship", missing_friendship.id).details[:user_ids]).to contain_exactly(rikki.id, user_without_friendship.id)
     expect(issue(report, "missing_scenario", missing_scenario.id).details[:missing_user_ids]).to eq([ gigi.id ])
+  end
+
+  it "identifies a legacy duplicate membership even after the database guard is installed" do
+    accepted_friendship
+    conversation = create_conversation(rikki, gigi)
+    conversation.conversation_participants.load
+    duplicate = conversation.conversation_participants.build(id: -1, user: rikki)
+
+    report = described_class.new(conversation_scope: [ conversation ], message_scope: []).call
+
+    expect(issue(report, "duplicate_participant", duplicate.id).details).to include(
+      conversation_id: conversation.id,
+      user_id: rikki.id,
+      count: 2
+    )
   end
 
   it "reports invalid payloads and contradictory legacy action facts without rejecting valid historical combinations" do

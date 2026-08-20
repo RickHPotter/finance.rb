@@ -73,6 +73,12 @@ Coverage:
 - ambiguous history reported without mutation
 - database rejection under a real uniqueness race
 
+Operational note: preview the canonical assignments and duplicate consolidation with
+`bin/rails conversations:backfill`. Apply the reviewed plan with
+`CONVERSATION_BACKFILL_APPLY=1 bin/rails conversations:backfill`, then rerun the dry
+run and `bin/rails conversations:inventory` as postflight checks. Numeric routes and
+existing conversation producers remain unchanged until Slice 3.
+
 Suggested commit:
 
 ```text

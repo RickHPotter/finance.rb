@@ -645,7 +645,9 @@ CREATE TABLE public.conversations (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     kind character varying DEFAULT 'human'::character varying NOT NULL,
-    scenario_key character varying
+    scenario_key character varying,
+    friendship_id bigint,
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -2368,6 +2370,13 @@ CREATE INDEX index_conversation_participants_on_conversation_id ON public.conver
 
 
 --
+-- Name: index_conversation_participants_on_membership; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversation_participants_on_membership ON public.conversation_participants USING btree (conversation_id, user_id);
+
+
+--
 -- Name: index_conversation_participants_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2375,10 +2384,38 @@ CREATE INDEX index_conversation_participants_on_user_id ON public.conversation_p
 
 
 --
+-- Name: index_conversations_on_friendship_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversations_on_friendship_id ON public.conversations USING btree (friendship_id);
+
+
+--
 -- Name: index_conversations_on_kind; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_conversations_on_kind ON public.conversations USING btree (kind);
+
+
+--
+-- Name: index_conversations_on_main_canonical_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_main_canonical_identity ON public.conversations USING btree (friendship_id, kind) WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NULL));
+
+
+--
+-- Name: index_conversations_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_public_id ON public.conversations USING btree (public_id);
+
+
+--
+-- Name: index_conversations_on_scenario_canonical_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_scenario_canonical_identity ON public.conversations USING btree (friendship_id, kind, scenario_key) WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NOT NULL));
 
 
 --
@@ -3030,6 +3067,14 @@ ALTER TABLE ONLY public."references"
 
 
 --
+-- Name: conversations fk_rails_8da65869f8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT fk_rails_8da65869f8 FOREIGN KEY (friendship_id) REFERENCES public.friendships(id);
+
+
+--
 -- Name: subscriptions fk_rails_933bdff476; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3260,6 +3305,7 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260819210000'),
 ('20260810150000'),
 ('20260806181854'),
 ('20260804132347'),
