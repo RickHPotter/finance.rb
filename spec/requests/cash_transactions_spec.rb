@@ -1531,10 +1531,8 @@ RSpec.describe "CashTransactions", type: :request do
 
     it "marks the source message as applied when creating from a message" do
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:create",
@@ -1555,10 +1553,34 @@ RSpec.describe "CashTransactions", type: :request do
       ), headers: turbo_stream_headers
 
       expect(source_message.reload).to have_attributes(
-        applied_at: be_present,
-        audit_operation: have_attributes(actor_id: user.id, context_id: user.main_context.id, source: "web")
+        applied_at: be_present
       )
-      expect(source_message.audit_operation.audit_versions).to be_present
+      action = source_message.message_actions.find_by!(action: :apply, outcome: :succeeded)
+      expect(action.audit_operation).to have_attributes(actor_id: user.id, context_id: user.main_context.id, source: "web")
+      expect(action.audit_operation.audit_versions).to be_present
+    end
+
+    it "applies a duplicated manual create request only once" do
+      other_user = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
+      source_message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", details: { description: "Salary payment" } },
+          replay: { id: 999, type: "CashTransaction" }
+        }.to_json
+      )
+      request_params = cash_transaction.params.deep_merge(cash_transaction: { source_message_id: source_message.id })
+
+      expect do
+        post cash_transactions_path, params: request_params, headers: turbo_stream_headers
+        post cash_transactions_path, params: request_params, headers: turbo_stream_headers
+      end.to change(CashTransaction, :count).by(1)
+
+      expect(source_message.reload.message_actions.order(:id).pluck(:outcome)).to eq(%w[succeeded idempotent])
     end
 
     it "accepts indexed nested-hash params when creating a receiver borrow return from an actionable message" do
@@ -2072,10 +2094,8 @@ RSpec.describe "CashTransactions", type: :request do
 
     it "marks the source message as applied when updating from a message" do
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:update",
@@ -3041,7 +3061,7 @@ RSpec.describe "CashTransactions", type: :request do
       expect(source_message.reload.applied_at).to be_present
     end
 
-    it "ignores a source message from another scenario when creating in a derived context" do
+    it "denies a source message from another scenario when creating in a derived context" do
       other_user = create(:user, :random)
       create(:friendship, :accepted, user: other_user, friend: user)
       main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
@@ -3108,11 +3128,9 @@ RSpec.describe "CashTransactions", type: :request do
             source_message_id: source_message.id
           }
         }, headers: turbo_stream_headers
-      end.to change { derived_context.cash_transactions.reload.count }.by(1)
+      end.not_to(change { derived_context.cash_transactions.reload.count })
 
-      created_transaction = derived_context.cash_transactions.order(:id).last
-
-      expect(created_transaction.description).to eq("Manual create")
+      expect(response).to have_http_status(:unprocessable_content)
       expect(source_message.reload.applied_at).to be_nil
     end
 
@@ -4804,10 +4822,8 @@ RSpec.describe "CashTransactions", type: :request do
 
     it "marks the source message as applied when destroying from a message" do
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:destroy",
@@ -4908,10 +4924,8 @@ RSpec.describe "CashTransactions", type: :request do
     it "does not mark the source message as applied when guarded destroy fails" do
       locked_transaction = create_cash_transaction_with_paid_history(description: "Locked destroy replay")
       other_user = create(:user, :random)
-      conversation = Conversation.create!.tap do |record|
-        record.conversation_participants.create!(user:)
-        record.conversation_participants.create!(user: other_user)
-      end
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = Conversation.find_or_create_assistant_between!(user, other_user)
       source_message = conversation.messages.create!(
         user: other_user,
         body: "notification:destroy",

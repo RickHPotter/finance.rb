@@ -255,17 +255,30 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
         .not_to(change { sender.ensure_main_context!.cash_transactions.count })
     end
 
+    it "applies duplicate job delivery only once" do
+      service = described_class.new(msg)
+
+      expect do
+        service.call
+        service.call
+      end.to change { recipient.ensure_main_context!.cash_transactions.count }.by(1)
+
+      expect(msg.reload.message_actions.order(:id).pluck(:outcome)).to eq(%w[succeeded idempotent])
+    end
+
     it "sets applied_at on the message" do
       described_class.new(msg).call
       expect(msg.reload.applied_at).not_to be_nil
     end
 
-    it "links the message to its exact actionable audit operation" do
+    it "links the successful action event to its exact actionable audit operation without replacing message provenance" do
       described_class.new(msg).call
 
-      operation = msg.reload.audit_operation
+      action = msg.reload.message_actions.find_by!(action: :apply, outcome: :succeeded)
+      operation = action.audit_operation
       expect(operation).to have_attributes(source: "actionable_message", actor_id: recipient.id, context_id: recipient.main_context.id)
       expect(operation.metadata).to include("actionable_message_id" => msg.id)
+      expect(msg.audit_operation_id).to be_nil
     end
 
     it "creates an AuditOperation linked to the message's audit_operation_id" do

@@ -1,5 +1,22 @@
 en:
   messages:
+    actions:
+      errors:
+        unavailable: This message action is no longer available.
+        friendship_unavailable: This friendship no longer permits the action.
+        wrong_recipient: Only the intended recipient can apply this message.
+        wrong_context: Switch to the message's original context before applying it.
+        superseded: A newer assistant message has replaced this one.
+        invalid_payload: This message payload is invalid.
+        unsupported_action: This message action is not supported.
+        local_reference_unavailable: The linked transaction is no longer available.
+        local_reference_changed: The linked transaction changed and cannot be safely overwritten.
+        wrong_target: The selected transaction does not belong to this context.
+        unsafe_destroy: This transaction cannot be safely removed automatically.
+        paid_history: A transaction with paid history cannot be removed through this message.
+        state_unavailable: This message has already been resolved.
+        validation_failed: The transaction could not be saved. Review the validation errors and try again.
+        persistence_failed: The message action could not be saved. Please try again.
     revert:
       success: The applied change was reverted.
       unauthorized: You cannot revert this message.
@@ -12,6 +29,23 @@ en:
 
 pt-BR:
   messages:
+    actions:
+      errors:
+        unavailable: Esta ação da mensagem não está mais disponível.
+        friendship_unavailable: Esta amizade não permite mais a ação.
+        wrong_recipient: Somente o destinatário pode aplicar esta mensagem.
+        wrong_context: Mude para o contexto original da mensagem antes de aplicá-la.
+        superseded: Uma mensagem mais recente do assistente substituiu esta mensagem.
+        invalid_payload: Os dados desta mensagem são inválidos.
+        unsupported_action: Esta ação da mensagem não é suportada.
+        local_reference_unavailable: A transação vinculada não está mais disponível.
+        local_reference_changed: A transação vinculada mudou e não pode ser sobrescrita com segurança.
+        wrong_target: A transação selecionada não pertence a este contexto.
+        unsafe_destroy: Esta transação não pode ser removida automaticamente com segurança.
+        paid_history: Uma transação com histórico pago não pode ser removida por esta mensagem.
+        state_unavailable: Esta mensagem já foi resolvida.
+        validation_failed: Não foi possível salvar a transação. Revise os erros de validação e tente novamente.
+        persistence_failed: Não foi possível salvar a ação da mensagem. Tente novamente.
     revert:
       success: A alteração aplicada foi revertida.
       unauthorized: Você não pode reverter esta mensagem.

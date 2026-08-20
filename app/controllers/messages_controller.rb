@@ -17,14 +17,27 @@ class MessagesController < ApplicationController
     @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
-    Logic::Messages::Transition.call(@message, :acknowledge)
+    @action_result = Logic::Messages::Respond.new(
+      message: @message,
+      actor: current_user,
+      context: current_context,
+      action: :acknowledge
+    ).call
 
-    respond_to do |format|
-      format.turbo_stream
-      format.html do
-        redirect_to conversation_path(@conversation, message_filter: params[:message_filter], message_side: params[:message_side]), status: :see_other
-      end
-    end
+    respond_with_action_result
+  end
+
+  def reject
+    @conversation = find_conversation
+    @message = @conversation.messages.find(params[:id])
+    @action_result = Logic::Messages::Respond.new(
+      message: @message,
+      actor: current_user,
+      context: current_context,
+      action: :reject
+    ).call
+
+    respond_with_action_result
   end
 
   def revert
@@ -50,12 +63,27 @@ class MessagesController < ApplicationController
 
   private
 
+  def respond_with_action_result
+    target = conversation_path(@conversation, message_filter: params[:message_filter], message_side: params[:message_side])
+
+    respond_to do |format|
+      format.turbo_stream { render :apply }
+      format.html do
+        if @action_result.applied?
+          redirect_to target, status: :see_other
+        else
+          redirect_to target, alert: I18n.t("messages.actions.errors.#{@action_result.error_code}"), status: :see_other
+        end
+      end
+    end
+  end
+
   def audit_operation_source
-    action_name.in?(%w[apply revert]) ? :actionable_message : super
+    action_name.in?(%w[apply reject revert]) ? :actionable_message : super
   end
 
   def audit_parent_operation_id
-    return super unless action_name.in?(%w[apply revert])
+    return super unless action_name.in?(%w[apply reject revert])
 
     conversation = find_conversation
     conversation.messages.find(params[:id]).audit_operation_id

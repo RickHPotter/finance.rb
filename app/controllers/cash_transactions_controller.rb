@@ -98,11 +98,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     set_return_to
     @cash_transaction.historical_correction_confirmation = params[:historical_correction_confirmation]
     @user_bank_account = @cash_transaction.user_bank_account
-    Audit::BulkMutation.update_columns!(@cash_transaction, date: @cash_transaction.cash_installments.order(:date).first.date)
-    destroyed = @cash_transaction.destroy
+    destroyed = apply_source_message(target: @cash_transaction) do
+      Audit::BulkMutation.update_columns!(@cash_transaction, date: @cash_transaction.cash_installments.order(:date).first.date)
+      @cash_transaction.destroy
+    end
 
     if destroyed
-      mark_source_message_applied
       redirect_to @return_to,
                   notice: notification_model(:destroyeda, CashTransaction),
                   status: :see_other
@@ -493,28 +494,25 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
                                     .find_by(id: source_message_id)
   end
 
-  def mark_source_message_applied
-    return if source_message.blank?
-
-    Logic::Messages::Transition.call(
-      source_message,
-      :apply,
-      audit_operation: Audit::Operation.ensure_persisted!
-    )
-  end
-
   def handle_save
     assign_message_context
 
     return render_update_form if params[:commit] == "Update"
 
-    saved = @cash_transaction.save
+    saved = apply_source_message(target: @cash_transaction) { @cash_transaction.save }
     normalize_failed_cash_transaction_save!
     @chain_context = current_chain_context
     set_return_to
 
     unless saved
       render_save_failure
+      return
+    end
+
+    if @message_apply_result&.idempotent?
+      redirect_to @return_to,
+                  notice: notification_model(action_name == "create" ? :createda : :updateda, CashTransaction),
+                  status: :see_other
       return
     end
 
@@ -647,8 +645,36 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     notify_exchange_projection_counterpart_update! if notify_exchange_projection_counterpart_update_after_save?(shared_return_counterpart_notified)
 
     sync_shared_paid_state_messages_from_form!
-    mark_source_message_applied
     handle_chain_save_success
+  end
+
+  def apply_source_message(target:, &)
+    return yield if source_message_id.blank?
+
+    if source_message.blank?
+      add_source_message_failure(:unavailable)
+      return false
+    end
+
+    @message_apply_result = Logic::Messages::Apply.new(
+      message: source_message,
+      actor: current_user,
+      context: current_context,
+      initiator: :manual,
+      target:
+    ).call(&)
+
+    add_source_message_failure(@message_apply_result.error_code) unless @message_apply_result.applied?
+    @message_apply_result.applied?
+  end
+
+  def add_source_message_failure(error_code)
+    return if error_code == "validation_failed" && @cash_transaction.errors.present?
+
+    @cash_transaction.errors.add(
+      :base,
+      I18n.t("messages.actions.errors.#{error_code}", default: I18n.t("messages.actions.errors.unavailable"))
+    )
   end
 
   def handle_chain_save_success

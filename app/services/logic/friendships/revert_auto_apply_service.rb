@@ -30,6 +30,7 @@ module Logic
             raise ActiveRecord::Rollback unless result.status == "applied"
 
             Logic::Messages::Transition.call(message, :revert)
+            record_message_action(result.operation)
           end
         end
 
@@ -48,6 +49,27 @@ module Logic
       end
 
       private
+
+      def record_message_action(operation)
+        friendship = message.conversation.friendship || message.user.friendship_with(actor)
+        friend = message.conversation.friend_for(actor)
+        return if friendship.blank? || friend.blank?
+
+        MessageAction.create!(
+          message:,
+          conversation: message.conversation,
+          friendship:,
+          actor:,
+          friend:,
+          recipient_context: context,
+          audit_operation: operation,
+          scenario_key: message.conversation.scenario_key,
+          action: :revert,
+          initiator: :manual,
+          outcome: :succeeded,
+          resulting_state: message.workflow_state
+        )
+      end
 
       def eligibility_failure_reason
         return @eligibility_failure_reason if defined?(@eligibility_failure_reason)
@@ -81,6 +103,9 @@ module Logic
       end
 
       def manual_apply_operation
+        ledger_operation = message.message_actions.find_by(action: :apply, outcome: :succeeded)&.audit_operation
+        return ledger_operation if ledger_operation.present?
+
         operation = message.audit_operation
         return if operation.blank?
         return unless operation.actor_id == actor.id && operation.context_id == context.id
@@ -91,6 +116,9 @@ module Logic
 
       def auto_apply_operation
         return @auto_apply_operation if defined?(@auto_apply_operation)
+
+        ledger_operation = message.message_actions.find_by(action: :apply, outcome: :succeeded)&.audit_operation
+        return @auto_apply_operation = ledger_operation if ledger_operation.present?
 
         operation = message.audit_operation
         return @auto_apply_operation = nil if operation.blank?

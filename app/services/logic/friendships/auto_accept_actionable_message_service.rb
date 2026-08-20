@@ -11,17 +11,25 @@ module Logic
 
       def call
         return unless policy_allows?
-        return unless safe?
+        return unless friend_context
 
         Audit::Operation.run(
           source: :actionable_message,
           actor: friend_user,
-          context: friend_user.ensure_main_context!,
+          context: friend_context,
           parent_operation_id: message.audit_operation_id,
           metadata: { actionable_message_id: message.id },
           join_existing: false
         ) do
-          apply!
+          apply_result = Logic::Messages::Apply.new(
+            message:,
+            actor: friend_user,
+            context: friend_context,
+            initiator: :automatic
+          ).call { apply_action!(message.action_payload.action, friend_context) }
+
+          broadcast_message if apply_result.applied?
+          apply_result
         end
       end
 
@@ -42,56 +50,7 @@ module Logic
         friendship&.auto_accept_actionable_messages == true
       end
 
-      def safe?
-        return false if message.applied_at.present? || message.reverted?
-        return false if message.paid_state_sync_message?
-
-        action = message.send(:notification_action)
-        return safe_destroy? if action == "destroy"
-        return false unless action.in?(%w[create update])
-
-        if action == "update"
-          reference = message.local_reference_for(context: friend_user.ensure_main_context!)
-          return false if reference.blank?
-        end
-
-        true
-      end
-
-      def safe_destroy?
-        cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
-
-        cash_transaction.present? &&
-          cash_transaction == message.reference_transactable &&
-          cash_transaction.user_id == friend_user.id &&
-          cash_transaction.context_id == friend_user.ensure_main_context!.id &&
-          safe_destroy_transaction_kind?(cash_transaction) &&
-          cash_transaction.entities.that_are_users.where_entity_user(message.user).exists? &&
-          !cash_transaction.paid_history?
-      end
-
-      def safe_destroy_transaction_kind?(cash_transaction)
-        linked_exchange =
-          cash_transaction.categories.exists?(category_name: "EXCHANGE") &&
-          cash_transaction.reference_transactable_type == "CashTransaction" &&
-          cash_transaction.reference_transactable_id.present?
-        orphaned_borrow_return =
-          cash_transaction.categories.exists?(category_name: "BORROW RETURN") &&
-          cash_transaction.reference_transactable.blank?
-
-        linked_exchange || orphaned_borrow_return
-      end
-
-      def apply!
-        context = friend_user.ensure_main_context!
-        action = message.send(:notification_action)
-
-        ActiveRecord::Base.transaction do
-          apply_action!(action, context)
-          auto_apply_operation = Audit::Operation.ensure_persisted!
-          Logic::Messages::Transition.call(message, :apply, auto_applied: true, audit_operation: auto_apply_operation)
-        end
-
+      def broadcast_message
         # Best-effort broadcast outside the transaction — a render failure must
         # never roll back the already-committed cash transaction or applied_at stamp.
         message.reload
@@ -101,7 +60,7 @@ module Logic
           html: ApplicationController.render(Views::Messages::Message.new(message: message), layout: false)
         )
       rescue StandardError => e
-        Rails.logger.error("[AutoAcceptActionableMessageService] auto-apply failed: #{e.message}")
+        Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
       end
 
       def apply_action!(action, context)
@@ -110,6 +69,17 @@ module Logic
         when "create" then create_transaction!(context)
         when "update" then update_transaction!(context)
         end
+      end
+
+      def friend_context
+        return unless friend_user
+
+        @friend_context ||=
+          if message.conversation.scenario_key.present?
+            friend_user.contexts.active.find_by(main: false, scenario_key: message.conversation.scenario_key)
+          else
+            friend_user.contexts.active.find_by(main: true)
+          end
       end
 
       def destroy_transaction!(context)
@@ -183,7 +153,7 @@ module Logic
       def replay_payload_identifies_update_target?(payload)
         return false unless message.send(:notification_action) == "update"
 
-        local_reference = message.local_reference_for(context: friend_user.ensure_main_context!)
+        local_reference = message.local_reference_for(context: friend_context)
         return false if local_reference.blank?
 
         payload["type"] == local_reference.class.name && payload["id"].to_s == local_reference.id.to_s
@@ -208,7 +178,7 @@ module Logic
         attributes = Array(payload["cash_installments_attributes"]).map(&:with_indifferent_access)
 
         if message.send(:notification_action) == "update"
-          cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
+          cash_transaction = message.local_reference_for(context: friend_context)
           if cash_transaction
             existing_by_number = cash_transaction.cash_installments.index_by(&:number)
             attributes = attributes.map do |attrs|
@@ -232,7 +202,7 @@ module Logic
         end
 
         if message.send(:notification_action) == "update"
-          cash_transaction = message.local_reference_for(context: friend_user.ensure_main_context!)
+          cash_transaction = message.local_reference_for(context: friend_context)
           if cash_transaction
             existing_by_entity = cash_transaction.entity_transactions.index_by(&:entity_id)
             attributes = attributes.map do |attrs|

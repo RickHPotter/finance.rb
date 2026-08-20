@@ -16,6 +16,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   has_one :supersedes, class_name: "Message", foreign_key: "superseded_by_id"
   belongs_to :reference_transactable, polymorphic: true, optional: true
   belongs_to :audit_operation, optional: true
+  has_many :message_actions, dependent: :restrict_with_error
 
   # @validations ..............................................................
   validates :body, presence: true
@@ -138,7 +139,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def action_button_key(local_reference_exists:)
-    return unless effective_action_state == "pending"
+    return unless effective_action_state.in?(%w[pending failed])
     return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
     return :correct if notification_action == "update" && local_reference_exists
@@ -163,7 +164,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def actionable_for?(context: user.ensure_main_context!)
     return true if auto_applied? && read_at.blank? && !reverted?
-    return false unless effective_action_state == "pending"
+    return false unless effective_action_state.in?(%w[pending failed])
 
     action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
   end

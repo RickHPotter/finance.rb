@@ -174,6 +174,7 @@ Rails.application.routes.draw do
     resources :messages, only: :create do
       member do
         patch :apply
+        patch :reject
         patch :revert
       end
     end

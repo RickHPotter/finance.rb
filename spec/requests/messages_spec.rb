@@ -139,8 +139,10 @@ RSpec.describe "Messages", type: :request do
 
       created_transaction = user.main_context.cash_transactions.find_by!(description: "Revert auto-applied dinner")
       expect(actionable_message.reload).to be_auto_applied
-      expect(actionable_message.audit_operation).to be_source_actionable_message
-      preview = Audit::Rollback::Preview.new(operation: actionable_message.audit_operation, actor: user)
+      apply_operation = actionable_message.message_actions.find_by!(action: :apply, outcome: :succeeded).audit_operation
+      expect(apply_operation).to be_source_actionable_message
+      expect(actionable_message.audit_operation).to be_source_web
+      preview = Audit::Rollback::Preview.new(operation: apply_operation, actor: user)
       expect(preview.state).to eq("previewable"), preview.digest_payload.inspect
 
       patch revert_conversation_message_path(conversation, actionable_message), headers: turbo_stream_headers
@@ -188,6 +190,27 @@ RSpec.describe "Messages", type: :request do
       expect(response).to have_http_status(:ok)
       expect(transaction.reload.description).to eq("Before manual apply")
       expect(manually_applied_message.reload).to be_reverted
+    end
+  end
+
+  describe "[ #reject ]" do
+    it "rejects an actionable message once and records repeated requests as idempotent" do
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", details: {} },
+          replay: { id: 123, type: "CashTransaction" }
+        }.to_json
+      )
+
+      patch reject_conversation_message_path(conversation, message), headers: turbo_stream_headers
+      patch reject_conversation_message_path(conversation, message), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(message.reload.workflow_state).to eq("rejected")
+      expect(message.message_actions.order(:id).pluck(:outcome)).to eq(%w[succeeded idempotent])
     end
   end
 end

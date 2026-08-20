@@ -62,7 +62,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       render_outdated_state
     else
       return if message.paid_state_sync_message? && my_assistant_notification?
-      return if my_assistant_notification? || message.workflow_state != "pending"
+      return if my_assistant_notification? || !message.workflow_state.in?(%w[pending failed])
 
       render_transaction_actions
     end
@@ -109,7 +109,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_assistant_instruction
     return unless assistant_presented_notification?
-    return unless message.workflow_state == "pending"
+    return unless message.workflow_state.in?(%w[pending failed])
     return unless %w[create update].include?(message.send(:notification_action))
 
     instruction_key = my_assistant_notification? ? :click_down_below_mine : :click_down_below_theirs
