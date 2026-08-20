@@ -15,10 +15,8 @@ module Logic
       friendship = transaction.user.friendship_with(counterpart_transaction.user)
       return false unless friendship&.accepted_state?
 
-      conversation = Conversation.find_or_create_assistant_between!(
-        transaction.user,
-        counterpart_transaction.user,
-        scenario_key: transaction.context.scenario_key
+      conversation = Logic::Conversations::Resolve.call(
+        actor: transaction.user, friendship:, kind: :assistant, scenario_key: transaction.context.scenario_key
       )
       headers = destroy_headers(counterpart_transaction.user).to_json
 

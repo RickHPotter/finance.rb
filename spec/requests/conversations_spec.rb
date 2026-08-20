@@ -5,6 +5,7 @@ require "rails_helper"
 RSpec.describe "Conversations", type: :request do
   let(:user) { create(:user, :random) }
   let(:other_user) { create(:user, :random) }
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
 
   before { sign_in user }
 
@@ -45,6 +46,7 @@ RSpec.describe "Conversations", type: :request do
     it "shows only conversations for the current scenario" do
       main_conversation = Conversation.find_or_create_human_between!(user, other_user)
       derived_context = create(:context, user:, name: "Conversation Scenario", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
@@ -57,6 +59,7 @@ RSpec.describe "Conversations", type: :request do
     it "keeps unread filtering isolated between main and derived scenarios" do
       main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
       derived_context = create(:context, user:, name: "Unread Scenario", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
 
       main_conversation.messages.create!(user: other_user, body: "notification:create", headers: {
@@ -86,10 +89,7 @@ RSpec.describe "Conversations", type: :request do
   describe "[ #create ]" do
     it "creates a conversation and redirects to show" do
       post conversations_path, params: {
-        conversation_participants_attributes: [
-          { user_id: user.id },
-          { user_id: other_user.id }
-        ]
+        friendship_public_id: friendship.public_id
       }
 
       conversation = Conversation.last
@@ -99,25 +99,65 @@ RSpec.describe "Conversations", type: :request do
 
     it "creates conversations inside the current scenario" do
       derived_context = create(:context, user:, name: "Conversation Create", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
 
       post conversations_path, params: {
-        conversation_participants_attributes: [
-          { user_id: user.id },
-          { user_id: other_user.id }
-        ]
+        friendship_public_id: friendship.public_id
       }
 
       expect(Conversation.last.scenario_key).to eq(derived_context.scenario_key)
+    end
+
+    it "derives participants from the accepted friendship and ignores forged user ids" do
+      outsider = create(:user, :random)
+
+      post conversations_path, params: {
+        friendship_public_id: friendship.public_id,
+        conversation_participants_attributes: [ { user_id: outsider.id } ]
+      }
+
+      expect(Conversation.last.users.order(:id)).to eq([ user, other_user ].sort_by(&:id))
+      expect(Conversation.last.users).not_to include(outsider)
+    end
+
+    it "creates the same canonical thread when the current user is either friendship side" do
+      owner = create(:user, :random)
+      reverse_friendship = create(:friendship, :accepted, user: owner, friend: user)
+
+      post conversations_path, params: { friendship_public_id: reverse_friendship.public_id }
+
+      conversation = Conversation.find_by!(friendship: reverse_friendship, kind: :human, scenario_key: nil)
+      expect(response).to redirect_to(conversation_path(conversation))
+      expect(conversation.users.order(:id)).to eq([ user, owner ].sort_by(&:id))
+    end
+
+    it "denies outsider friendship identifiers and every non-accepted friendship state" do
+      outsider = create(:user, :random)
+      outsider_friend = create(:user, :random)
+      outsider_friendship = create(:friendship, :accepted, user: outsider, friend: outsider_friend)
+
+      expect do
+        post conversations_path, params: { friendship_public_id: outsider_friendship.public_id }
+      end.not_to change(Conversation, :count)
+      expect(response).to have_http_status(:not_found)
+
+      %w[pending rejected blocked removed].each do |state|
+        friendship.update!(state:)
+        sign_in user
+
+        expect do
+          post conversations_path, params: { friendship_public_id: friendship.public_id }
+        end.not_to change(Conversation, :count)
+        expect(response).to have_http_status(:not_found), "expected #{state} friendship creation to be denied, got #{response.status} #{response.location}"
+      end
     end
   end
 
   describe "[ #show ]" do
     it "marks unread messages from other users as read" do
-      conversation = Conversation.create!
-      conversation.conversation_participants.create!(user:)
-      conversation.conversation_participants.create!(user: other_user)
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
       message = conversation.messages.create!(user: other_user, body: "Hello")
 
       get conversation_path(conversation)
@@ -434,6 +474,7 @@ RSpec.describe "Conversations", type: :request do
       )
 
       derived_context = create(:context, user:, name: "Conversation Action Isolation", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       derived_conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
 
       derived_conversation.messages.create!(
@@ -711,7 +752,9 @@ RSpec.describe "Conversations", type: :request do
     end
 
     it "does not allow access to conversations outside the current user scope" do
-      outsider_conversation = Conversation.find_or_create_human_between!(other_user, create(:user, :random))
+      outsider = create(:user, :random)
+      create(:friendship, :accepted, user: other_user, friend: outsider)
+      outsider_conversation = Conversation.find_or_create_human_between!(other_user, outsider)
 
       get conversation_path(outsider_conversation)
 
@@ -726,6 +769,21 @@ RSpec.describe "Conversations", type: :request do
       get conversation_path(main_conversation)
 
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "uses only the public conversation id and revokes non-accepted friendship access" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+
+      get "/conversations/#{conversation.id}"
+      expect(response).to have_http_status(:not_found)
+
+      %w[pending rejected blocked removed].each do |state|
+        friendship.update!(state:)
+        sign_in user
+        get conversation_path(conversation)
+
+        expect(response).to have_http_status(:not_found), "expected #{state} friendship access to be denied, got #{response.status} #{response.location}"
+      end
     end
   end
 end

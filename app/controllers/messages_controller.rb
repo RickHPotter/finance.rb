@@ -2,7 +2,7 @@
 
 class MessagesController < ApplicationController
   def create
-    @conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
+    @conversation = find_conversation
     @message = @conversation.messages.build(message_params)
     @message.user = current_user
     @message.save
@@ -14,7 +14,7 @@ class MessagesController < ApplicationController
   end
 
   def apply
-    @conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
+    @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
     # Slice 9: setting read_at for the OK acknowledge button
@@ -30,7 +30,7 @@ class MessagesController < ApplicationController
   end
 
   def revert
-    @conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
+    @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
     result = Logic::Friendships::RevertAutoApplyService.new(
@@ -59,11 +59,19 @@ class MessagesController < ApplicationController
   def audit_parent_operation_id
     return super unless action_name.in?(%w[apply revert])
 
-    conversation = current_user.conversations.for_scenario(current_context.scenario_key).find(params[:conversation_id])
+    conversation = find_conversation
     conversation.messages.find(params[:id]).audit_operation_id
   end
 
   def message_params
     params.require(:message).permit(:body)
+  end
+
+  def find_conversation
+    current_user.conversations
+                .joins(:friendship)
+                .merge(Friendship.accepted_state)
+                .for_scenario(current_context.scenario_key)
+                .find_by!(public_id: params[:conversation_public_id])
   end
 end

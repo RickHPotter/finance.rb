@@ -112,6 +112,13 @@ Coverage:
 - every migrated producer retains its previous send/no-send decision, recipient,
   payload, reference, supersession, and auto-apply behavior
 
+Implementation note: `POST /conversations` accepts only `friendship_public_id`; the
+resolver derives both participants and the selected scenario from persisted state.
+Conversation and nested-message routes use the conversation UUID exclusively. Human
+requests and actionable producers share the same locked resolver, while producer
+eligibility, payload construction, references, supersession, and auto-apply decisions
+remain in their existing owners.
+
 Suggested commit:
 
 ```text

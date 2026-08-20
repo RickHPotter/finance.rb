@@ -69,7 +69,7 @@ module FriendNotifiable
 
     I18n.locale = friend_user.locale
 
-    conversation = find_or_create_conversation(user, friend_user, scenario_key: receiver_context.scenario_key)
+    conversation = find_or_create_conversation(user, friendship, scenario_key: receiver_context.scenario_key)
     destroy_message_reference = destroy_message_reference_transactable(friend_user_reference)
     message = conversation.messages.new(user:, reference_transactable: action == :destroy ? destroy_message_reference : self)
 
@@ -79,8 +79,8 @@ module FriendNotifiable
     save_message(message, friend_user, entity_transaction&.exchanges&.order(:number, :date), action, destroy_reference: friend_user_reference)
   end
 
-  def find_or_create_conversation(user, friend_user, scenario_key:)
-    Conversation.find_or_create_assistant_between!(user, friend_user, scenario_key:)
+  def find_or_create_conversation(user, friendship, scenario_key:)
+    Logic::Conversations::Resolve.call(actor: user, friendship:, kind: :assistant, scenario_key:)
   end
 
   def save_message(message, friend_user, exchanges, action, destroy_reference: nil)

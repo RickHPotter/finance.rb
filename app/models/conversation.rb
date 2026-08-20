@@ -38,7 +38,7 @@ class Conversation < ApplicationRecord
   # @additional_config ........................................................
   # @class_methods ............................................................
   def self.fast_create(user1, user2)
-    create_with_participants!(user1, user2)
+    find_or_create_human_between!(user1, user2)
   end
 
   def self.find_by_public_id!(public_id)
@@ -46,19 +46,15 @@ class Conversation < ApplicationRecord
   end
 
   def self.find_or_create_human_between!(user1, user2, scenario_key: nil)
-    for_users([ user1.id, user2.id ]).human.for_scenario(scenario_key).first || create_with_participants!(user1, user2, kind: :human, scenario_key:)
+    resolve_between!(user1, user2, kind: :human, scenario_key:)
   end
 
   def self.find_or_create_assistant_between!(user1, user2, scenario_key: nil)
-    for_users([ user1.id,
-                user2.id ]).assistant.for_scenario(scenario_key).order(:id).first || create_with_participants!(user1, user2, kind: :assistant, scenario_key:)
+    resolve_between!(user1, user2, kind: :assistant, scenario_key:)
   end
 
-  def self.create_with_participants!(user1, user2, **attributes)
-    create!(attributes).tap do |conversation|
-      conversation.conversation_participants.create!(user: user1)
-      conversation.conversation_participants.create!(user: user2)
-    end
+  def self.resolve_between!(user1, user2, kind:, scenario_key: nil)
+    Logic::Conversations::Resolve.call(actor: user1, friendship: user1.friendship_with(user2), kind:, scenario_key:)
   end
 
   # @public_instance_methods ..................................................
@@ -86,6 +82,10 @@ class Conversation < ApplicationRecord
     return messages.max_by(&:created_at) if messages.loaded?
 
     messages.order(created_at: :desc).first
+  end
+
+  def to_param
+    public_id
   end
 
   # @protected_instance_methods ...............................................

@@ -77,8 +77,12 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       before { friendship.destroy! }
 
       it "does not apply the message" do
-        # Create a bare conversation without the friendship guard
-        conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+        # Preserve a deliberately legacy bare conversation to characterize the
+        # application service's defense when canonical friendship identity is absent.
+        conversation = Conversation.create!(kind: :assistant, scenario_key: sender.ensure_main_context!.scenario_key).tap do |record|
+          record.conversation_participants.create!(user: sender)
+          record.conversation_participants.create!(user: recipient)
+        end
         msg = conversation.messages.create!(
           user: sender, body: "notification:create",
           headers: {

@@ -15,7 +15,7 @@ class ConversationsController < ApplicationController
   end
 
   def show
-    @conversation = scoped_conversations.preload(users: :profile).find(params[:id])
+    @conversation = scoped_conversations.preload(users: :profile).find_by!(public_id: params[:public_id])
     @active_message_filter = conversation_message_filter
     @active_message_sides = conversation_message_sides
     @messages = filtered_messages(@conversation)
@@ -33,9 +33,17 @@ class ConversationsController < ApplicationController
   end
 
   def create
-    @conversation = Conversation.create!(conversation_params.merge(scenario_key: current_context.scenario_key))
+    friendship = current_user_friendships.find_by!(public_id: params.require(:friendship_public_id))
+    @conversation = Logic::Conversations::Resolve.call(
+      actor: current_user,
+      friendship:,
+      kind: :human,
+      scenario_key: current_context.scenario_key
+    )
 
     redirect_to @conversation, status: :see_other
+  rescue Logic::Conversations::Resolve::UnavailableError
+    head :not_found
   end
 
   private
@@ -60,15 +68,15 @@ class ConversationsController < ApplicationController
   end
 
   def scoped_conversations
-    current_user.conversations.for_scenario(current_context.scenario_key)
+    current_user.conversations.joins(:friendship).merge(Friendship.accepted_state).for_scenario(current_context.scenario_key)
   end
 
   def conversation_filter
     params[:filter].presence_in(%w[unread human assistant]) || "all"
   end
 
-  def conversation_params
-    params.permit(conversation_participants_attributes: %i[id user_id _destroy])
+  def current_user_friendships
+    Friendship.where(user: current_user).or(Friendship.where(friend: current_user))
   end
 
   def filtered_messages(conversation)

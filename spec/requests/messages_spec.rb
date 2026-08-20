@@ -5,12 +5,8 @@ require "rails_helper"
 RSpec.describe "Messages", type: :request do
   let(:user) { create(:user, :random) }
   let(:other_user) { create(:user, :random) }
-  let(:conversation) do
-    Conversation.create!.tap do |c|
-      c.conversation_participants.create!(user:)
-      c.conversation_participants.create!(user: other_user)
-    end
-  end
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
+  let(:conversation) { Conversation.find_or_create_human_between!(user, other_user) }
 
   before { sign_in user }
 
@@ -31,6 +27,7 @@ RSpec.describe "Messages", type: :request do
 
     it "creates a message inside a derived-scenario conversation" do
       derived_context = create(:context, user:, name: "Message Scenario", source_context: user.main_context)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
@@ -55,10 +52,22 @@ RSpec.describe "Messages", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it "does not allow posting after the friendship stops being accepted" do
+      conversation
+      friendship.update!(state: "blocked")
+
+      expect do
+        post conversation_messages_path(conversation), params: {
+          message: { body: "Blocked message" }
+        }, headers: turbo_stream_headers
+      end.not_to change(Message, :count)
+
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "[ #revert ]" do
-    let(:friendship) { create(:friendship, user: user, friend: other_user, state: "accepted") }
     let(:message) do
       conversation.messages.create!(
         user: other_user,
@@ -70,8 +79,6 @@ RSpec.describe "Messages", type: :request do
         }.to_json
       )
     end
-
-    before { friendship }
 
     it "reverts an auto-applied message" do
       allow_any_instance_of(Logic::Friendships::RevertAutoApplyService).to receive(:call).and_return(

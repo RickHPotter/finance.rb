@@ -5,6 +5,7 @@ require "rails_helper"
 RSpec.describe "Conversation and internal-screen Turbo navigation", type: :feature do
   let(:user) { create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-browser-navigation@example.com") }
   let(:other_user) { create(:user, :random) }
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
 
   before { sign_in user }
 

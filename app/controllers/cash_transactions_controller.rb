@@ -607,7 +607,12 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     counterpart_user = @cash_transaction.reference_transactable&.user || @cash_transaction.entities.that_are_users.first&.entity_user
     return if counterpart_user.blank?
 
-    conversation = Conversation.find_or_create_assistant_between!(current_user, counterpart_user, scenario_key: @cash_transaction.context.scenario_key)
+    friendship = current_user.friendship_with(counterpart_user)
+    return unless friendship&.accepted_state?
+
+    conversation = Logic::Conversations::Resolve.call(
+      actor: current_user, friendship:, kind: :assistant, scenario_key: @cash_transaction.context.scenario_key
+    )
 
     @shared_paid_state_notifications.each do |notification|
       create_shared_paid_state_message(conversation:, counterpart_user:, notification:)

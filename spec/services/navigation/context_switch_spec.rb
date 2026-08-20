@@ -22,8 +22,9 @@ RSpec.describe Navigation::ContextSwitch do
 
   it "maps conversation details to the conversation index with a redirect signal" do
     other_user = create(:user, :random)
+    create(:friendship, :accepted, user:, friend: other_user)
     conversation = Conversation.find_or_create_human_between!(user, other_user)
-    state = navigation("/conversations/#{conversation.id}")
+    state = navigation("/conversations/#{conversation.public_id}")
 
     expect(state.destination).to eq("/conversations")
     expect(state).to be_redirected_conversation

@@ -6,8 +6,10 @@ RSpec.describe Conversation, type: :model do
   describe "[ business logic ]" do
     let(:rikki) { create(:user, first_name: "Rikki", email: "rikki@example.com") }
     let(:gigi) { create(:user, first_name: "Gigi", email: "gigi@example.com") }
+    let(:friendship) { create(:friendship, :accepted, user: rikki, friend: gigi) }
 
     it "finds or creates a single human conversation between the same two users" do
+      friendship
       first = described_class.find_or_create_human_between!(rikki, gigi)
       second = described_class.find_or_create_human_between!(rikki, gigi)
 
@@ -16,6 +18,7 @@ RSpec.describe Conversation, type: :model do
     end
 
     it "finds or creates a single shared assistant conversation between the same two users" do
+      friendship
       first = described_class.find_or_create_assistant_between!(rikki, gigi)
       second = described_class.find_or_create_assistant_between!(gigi, rikki)
 
@@ -24,7 +27,10 @@ RSpec.describe Conversation, type: :model do
     end
 
     it "keeps conversations distinct across scenario keys" do
+      friendship
       main = described_class.find_or_create_human_between!(rikki, gigi)
+      create(:context, user: rikki, scenario_key: "scenario-1")
+      create(:context, user: gigi, scenario_key: "scenario-1")
       scenario = described_class.find_or_create_human_between!(rikki, gigi, scenario_key: "scenario-1")
 
       expect(main).not_to eq(scenario)
@@ -33,6 +39,9 @@ RSpec.describe Conversation, type: :model do
     end
 
     it "reuses the same scenario-scoped assistant conversation for the same key" do
+      friendship
+      create(:context, user: rikki, scenario_key: "scenario-1")
+      create(:context, user: gigi, scenario_key: "scenario-1")
       first = described_class.find_or_create_assistant_between!(rikki, gigi, scenario_key: "scenario-1")
       second = described_class.find_or_create_assistant_between!(gigi, rikki, scenario_key: "scenario-1")
 
@@ -41,9 +50,11 @@ RSpec.describe Conversation, type: :model do
     end
 
     it "assigns an immutable public id and resolves it without exposing the numeric id" do
+      friendship
       conversation = described_class.find_or_create_human_between!(rikki, gigi)
 
       expect(conversation.public_id).to match(/\A[0-9a-f-]{36}\z/)
+      expect(conversation.to_param).to eq(conversation.public_id)
       expect(described_class.find_by_public_id!(conversation.public_id)).to eq(conversation)
 
       original_public_id = conversation.public_id

@@ -50,6 +50,7 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
     it "converts the source transaction and active message replay intents to reimbursement" do
       user = create(:user, :random)
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: receiver)
       source = create(
         :cash_transaction,
         user:,
@@ -126,6 +127,7 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
         category_transactions_attributes: [ { category_id: user.built_in_category("EXCHANGE").id } ]
       )
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: receiver)
       conversation = Conversation.find_or_create_assistant_between!(user, receiver)
       message_insert = Message.insert!({
                                          user_id: user.id,

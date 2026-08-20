@@ -1669,6 +1669,9 @@ RSpec.describe "CashTransactions", type: :request do
         name: "Optimistic",
         scenario_key: "scenario-optimistic"
       ).call
+      friendship = sender.friendship_with(receiver)
+      friendship.update!(state: "accepted") unless friendship.accepted_state?
+      create(:context, user: sender, scenario_key: derived_context.scenario_key)
 
       conversation = Conversation.find_or_create_assistant_between!(sender, receiver, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
@@ -2896,6 +2899,8 @@ RSpec.describe "CashTransactions", type: :request do
         source_context: user.main_context,
         name: "Replay Create Isolation"
       ).call
+      create(:friendship, :accepted, user: other_user, friend: user)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
@@ -2990,6 +2995,8 @@ RSpec.describe "CashTransactions", type: :request do
       derived_cash_transaction = derived_context.cash_transactions.find_by!(description: main_cash_transaction.description)
 
       other_user = create(:user, :random)
+      create(:friendship, :accepted, user: other_user, friend: user)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
       conversation = Conversation.find_or_create_assistant_between!(other_user, user, scenario_key: derived_context.scenario_key)
       source_message = conversation.messages.create!(
         user: other_user,
@@ -3036,6 +3043,7 @@ RSpec.describe "CashTransactions", type: :request do
 
     it "ignores a source message from another scenario when creating in a derived context" do
       other_user = create(:user, :random)
+      create(:friendship, :accepted, user: other_user, friend: user)
       main_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
       source_message = main_conversation.messages.create!(
         user: other_user,

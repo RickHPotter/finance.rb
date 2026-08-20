@@ -76,9 +76,9 @@ RSpec.describe "Exchange notification authorization guards" do
       let!(:_friendship) { create(:friendship, user: sender, friend: recipient, state: "accepted") }
 
       it "passes the friendship guard" do
-        # Guard passes; the service would proceed to Conversation.find_or_create_assistant_between!
+        # Guard passes; the service would proceed to the canonical resolver.
         # We stub to avoid full integration setup.
-        allow(Conversation).to receive(:find_or_create_assistant_between!).and_raise(StandardError, "passed the guard")
+        allow(Logic::Conversations::Resolve).to receive(:call).and_raise(StandardError, "passed the guard")
         expect { described_class.new(transaction: sender_tx, counterpart_transaction: recipient_tx).call }
           .to raise_error(StandardError, "passed the guard")
       end

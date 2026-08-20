@@ -12,6 +12,11 @@ RSpec.describe Logic::ExchangeTrioAudit, "#visible_conversation_scope" do
   before do
     admin.entities.create!(entity_name: "SELECTED", entity_user: selected_user)
     admin.entities.create!(entity_name: "OTHER CONNECTED", entity_user: other_connected_user)
+    [ selected_user, other_connected_user, unrelated_user ].each do |other_user|
+      friendship = admin.friendship_with(other_user) || create(:friendship, :accepted, user: admin, friend: other_user)
+      friendship.update!(state: "accepted") unless friendship.accepted_state?
+      create(:context, user: other_user, scenario_key: context.scenario_key)
+    end
   end
 
   it "keeps all-connections diagnosis inside the selected scenario and known relationships" do
