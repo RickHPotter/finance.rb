@@ -14,9 +14,29 @@ module Logic
       end
 
       def call
-        failure_reason = eligibility_failure_reason
-        return Result.new(reverted?: false, failure_reason:) if failure_reason
+        conversation_policy.with_friendship_lock do
+          message.with_lock do
+            failure_reason = eligibility_failure_reason
+            return denied_result(failure_reason) if failure_reason
 
+            perform_rollback
+          end
+        end
+
+        rollback_result
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
+        record_failure_action
+        failed_result
+      end
+
+      def revertible?
+        eligibility_failure_reason.nil?
+      end
+
+      private
+
+      def perform_rollback
         ActiveRecord::Base.transaction do
           Audit::Operation.run(
             source: :rollback,
@@ -26,34 +46,29 @@ module Logic
             join_existing: false
           ) do
             result = Audit::Rollback::DirectApply.new(operation: rollback_operation, actor: actor).call
-
             raise ActiveRecord::Rollback unless result.status == "applied"
 
             Logic::Messages::Transition.call(message, :revert)
-            record_message_action(result.operation)
+            record_message_action(outcome: :succeeded, operation: result.operation)
           end
         end
+      end
 
-        if message.reverted?
-          Result.new(reverted?: true)
-        else
-          Result.new(reverted?: false, failure_reason: "rollback_failed")
-        end
-      rescue StandardError => e
-        Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
+      def rollback_result
+        return Result.new(reverted?: true) if message.reload.reverted?
+
+        record_failure_action
+        failed_result
+      end
+
+      def failed_result
         Result.new(reverted?: false, failure_reason: "rollback_failed")
       end
 
-      def revertible?
-        eligibility_failure_reason.nil?
-      end
-
-      private
-
-      def record_message_action(operation)
+      def record_message_action(outcome:, operation: nil, error_code: nil, failure_reason: nil)
         friendship = message.conversation.friendship || message.user.friendship_with(actor)
         friend = message.conversation.friend_for(actor)
-        return if friendship.blank? || friend.blank?
+        return if friendship.blank? || friend.blank? || context.blank? || context.user_id != actor&.id
 
         MessageAction.create!(
           message:,
@@ -66,34 +81,61 @@ module Logic
           scenario_key: message.conversation.scenario_key,
           action: :revert,
           initiator: :manual,
-          outcome: :succeeded,
-          resulting_state: message.workflow_state
+          outcome:,
+          resulting_state: message.workflow_state,
+          error_code:,
+          metadata: { "failure_reason" => failure_reason }.compact
         )
       end
 
-      def eligibility_failure_reason
-        return @eligibility_failure_reason if defined?(@eligibility_failure_reason)
+      def denied_result(failure_reason)
+        outcome = failure_reason == "already_reverted" ? :idempotent : :denied
+        record_message_action(outcome:, error_code: ledger_error_code(failure_reason), failure_reason:)
+        Result.new(reverted?: false, failure_reason:)
+      end
 
-        @eligibility_failure_reason =
-          if actor.blank? || message.user_id == actor.id
-            "unauthorized"
-          elsif message.reverted?
-            "already_reverted"
-          elsif !message.applied?
-            "not_applied"
-          elsif message.superseded_by_id.present?
-            "superseded"
-          elsif rollback_operation.blank?
-            "missing_audit"
-          elsif rollback_preview.state != "previewable"
-            "rollback_unavailable"
-          end
+      def record_failure_action
+        message.reload
+        record_message_action(outcome: :failed, error_code: :persistence_failed, failure_reason: "rollback_failed")
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, severity: :warning, context: { message_id: message.id, component: self.class.name })
+      end
+
+      def ledger_error_code(failure_reason)
+        {
+          "unauthorized" => conversation_policy.failure_code || :wrong_recipient,
+          "already_reverted" => :state_unavailable,
+          "not_applied" => :state_unavailable,
+          "superseded" => :superseded,
+          "missing_audit" => :unavailable,
+          "rollback_unavailable" => :unavailable
+        }.fetch(failure_reason)
+      end
+
+      def eligibility_failure_reason
+        if conversation_policy.failure_code.present? || actor.blank? || message.user_id == actor.id
+          "unauthorized"
+        elsif message.reverted?
+          "already_reverted"
+        elsif !message.applied?
+          "not_applied"
+        elsif message.superseded_by_id.present?
+          "superseded"
+        elsif rollback_operation.blank?
+          "missing_audit"
+        elsif rollback_preview.state != "previewable"
+          "rollback_unavailable"
+        end
       rescue StandardError
-        @eligibility_failure_reason = "rollback_unavailable"
+        "rollback_unavailable"
       end
 
       def rollback_preview
-        @rollback_preview ||= Audit::Rollback::Preview.new(operation: rollback_operation, actor:)
+        Audit::Rollback::Preview.new(operation: rollback_operation, actor:)
+      end
+
+      def conversation_policy
+        @conversation_policy ||= Logic::Conversations::Policy.new(conversation: message.conversation, actor:, context:)
       end
 
       def rollback_operation

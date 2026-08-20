@@ -62,6 +62,30 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
     it "does not offer or perform a revert" do
       expect(service.revertible?).to be(false)
       expect(service.call.failure_reason).to eq("superseded")
+      expect(message.message_actions.last).to have_attributes(
+        action: "revert",
+        outcome: "denied",
+        error_code: "superseded",
+        resulting_state: "accepted"
+      )
+    end
+  end
+
+  context "when friendship access has been revoked" do
+    before do
+      message
+      friendship.update!(state: "blocked")
+    end
+
+    it "keeps the applied state intact and denies revert" do
+      expect(service.revertible?).to be(false)
+      expect(service.call.failure_reason).to eq("unauthorized")
+      expect(message.reload.workflow_state).to eq("accepted")
+      expect(message.message_actions.last).to have_attributes(
+        action: "revert",
+        outcome: "denied",
+        error_code: "friendship_unavailable"
+      )
     end
   end
 
@@ -92,6 +116,10 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
 
     it "reverts the message and sets reverted_at" do
       expect { service.call }.to change { message.reload.reverted_at }.from(nil)
+
+      event = message.message_actions.find_by!(action: :revert, outcome: :succeeded)
+      expect(event.audit_operation).to be_source_rollback
+      expect(event.resulting_state).to eq("reverted")
     end
 
     it "returns success" do
@@ -106,6 +134,20 @@ RSpec.describe Logic::Friendships::RevertAutoApplyService do
       expect(rollback_op.rollback_of_operation_id).to eq(original_op.id)
       expect(rollback_op.parent_operation_id).to eq(message.audit_operation_id)
       expect(rollback_op.actor_id).to eq(recipient.id)
+    end
+
+    it "denies revert when later mutations make the operation unsafe" do
+      allow(Audit::Rollback::Preview).to receive(:new).and_return(instance_double(Audit::Rollback::Preview, state: "conflicted"))
+
+      result = service.call
+
+      expect(result).to have_attributes(reverted?: false, failure_reason: "rollback_unavailable")
+      expect(message.reload.workflow_state).to eq("accepted")
+      expect(message.message_actions.last).to have_attributes(
+        action: "revert",
+        outcome: "denied",
+        error_code: "unavailable"
+      )
     end
   end
 

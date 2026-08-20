@@ -3,9 +3,11 @@
 class MessagesController < ApplicationController
   def create
     @conversation = find_conversation
-    @message = @conversation.messages.build(message_params)
-    @message.user = current_user
-    @message.save
+    with_conversation_access do
+      @message = @conversation.messages.build(message_params)
+      @message.user = current_user
+      @message.save
+    end
 
     respond_to do |format|
       format.turbo_stream
@@ -17,12 +19,14 @@ class MessagesController < ApplicationController
     @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
-    @action_result = Logic::Messages::Respond.new(
-      message: @message,
-      actor: current_user,
-      context: current_context,
-      action: :acknowledge
-    ).call
+    with_conversation_access do
+      @action_result = Logic::Messages::Respond.new(
+        message: @message,
+        actor: current_user,
+        context: current_context,
+        action: :acknowledge
+      ).call
+    end
 
     respond_with_action_result
   end
@@ -30,12 +34,14 @@ class MessagesController < ApplicationController
   def reject
     @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
-    @action_result = Logic::Messages::Respond.new(
-      message: @message,
-      actor: current_user,
-      context: current_context,
-      action: :reject
-    ).call
+    with_conversation_access do
+      @action_result = Logic::Messages::Respond.new(
+        message: @message,
+        actor: current_user,
+        context: current_context,
+        action: :reject
+      ).call
+    end
 
     respond_with_action_result
   end
@@ -44,9 +50,11 @@ class MessagesController < ApplicationController
     @conversation = find_conversation
     @message = @conversation.messages.find(params[:id])
 
-    result = Logic::Friendships::RevertAutoApplyService.new(
-      message: @message, actor: current_user, context: current_context
-    ).call
+    result = with_conversation_access do
+      Logic::Friendships::RevertAutoApplyService.new(
+        message: @message, actor: current_user, context: current_context
+      ).call
+    end
 
     respond_to do |format|
       format.turbo_stream
@@ -62,6 +70,14 @@ class MessagesController < ApplicationController
   end
 
   private
+
+  def with_conversation_access(&)
+    Logic::Conversations::Policy.new(
+      conversation: @conversation,
+      actor: current_user,
+      context: current_context
+    ).with_access(&)
+  end
 
   def respond_with_action_result
     target = conversation_path(@conversation, message_filter: params[:message_filter], message_side: params[:message_side])
@@ -94,10 +110,7 @@ class MessagesController < ApplicationController
   end
 
   def find_conversation
-    current_user.conversations
-                .joins(:friendship)
-                .merge(Friendship.accepted_state)
-                .for_scenario(current_context.scenario_key)
-                .find_by!(public_id: params[:conversation_public_id])
+    Logic::Conversations::Policy.scope(user: current_user, context: current_context)
+                                .find_by!(public_id: params[:conversation_public_id])
   end
 end

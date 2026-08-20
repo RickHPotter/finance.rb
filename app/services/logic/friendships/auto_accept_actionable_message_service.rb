@@ -51,6 +51,8 @@ module Logic
       end
 
       def broadcast_message
+        return unless Logic::Conversations::Policy.stream_allowed?(message.conversation)
+
         # Best-effort broadcast outside the transaction — a render failure must
         # never roll back the already-committed cash transaction or applied_at stamp.
         message.reload

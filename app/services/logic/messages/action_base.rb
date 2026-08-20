@@ -15,10 +15,9 @@ module Logic
       private
 
       def identity_failure_code
-        return :friendship_unavailable unless friendship&.accepted_state?
         return :wrong_recipient unless recipient&.id == actor&.id
 
-        :wrong_context unless context&.user_id == actor.id && context_matches_conversation?
+        conversation_policy.failure_code
       end
 
       def friendship
@@ -29,12 +28,12 @@ module Logic
         @recipient ||= message.conversation.friend_for(message.user)
       end
 
-      def context_matches_conversation?
-        if message.conversation.scenario_key.present?
-          !context.main? && context.scenario_key == message.conversation.scenario_key
-        else
-          context.main?
-        end
+      def conversation_policy
+        @conversation_policy ||= Logic::Conversations::Policy.new(conversation: message.conversation, actor:, context:)
+      end
+
+      def with_conversation_lock(&)
+        conversation_policy.with_friendship_lock(&)
       end
 
       def successful_action(action)

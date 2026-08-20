@@ -30,11 +30,7 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   before_validation :assign_audit_operation, on: :create
   after_create :reactivate_conversation_participants
   after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
-  after_create_commit do
-    broadcast_append_to conversation,
-                        target: "messages_#{conversation.id}",
-                        html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
-  end
+  after_create_commit :broadcast_to_conversation, if: -> { Logic::Conversations::Policy.stream_allowed?(conversation) }
   after_create_commit :send_email, if: -> { Rails.env.production? }
   after_create_commit :enqueue_auto_apply, if: :auto_apply_candidate?
 
@@ -252,6 +248,12 @@ class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def enqueue_auto_apply
     ActionableMessageAutoApplyJob.perform_now(self)
+  end
+
+  def broadcast_to_conversation
+    broadcast_append_to conversation,
+                        target: "messages_#{conversation.id}",
+                        html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
   end
 
   def auto_apply_candidate?

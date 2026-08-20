@@ -14,13 +14,15 @@ module Logic
       end
 
       def call(&)
-        message.with_lock do
-          return idempotent_result(:apply) if message.applied? || successful_action(:apply)
+        with_conversation_lock do
+          message.with_lock do
+            return idempotent_result(:apply) if message.applied? || successful_action(:apply)
 
-          failure_code = eligibility_failure_code
-          return deny!(failure_code) if failure_code
+            failure_code = eligibility_failure_code
+            return deny!(failure_code) if failure_code
 
-          perform_mutation!(&)
+            perform_mutation!(&)
+          end
         end
       rescue StandardError => e
         record_failure(e)

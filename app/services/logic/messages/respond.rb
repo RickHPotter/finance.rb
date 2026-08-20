@@ -15,13 +15,15 @@ module Logic
       def call
         raise ArgumentError, "Unsupported message response: #{action}" unless action.in?(SUPPORTED_ACTIONS)
 
-        message.with_lock do
-          return idempotent_result(action) if completed?
+        with_conversation_lock do
+          message.with_lock do
+            return idempotent_result(action) if completed?
 
-          failure_code = identity_failure_code || response_failure_code
-          return denied_result(action, failure_code) if failure_code
+            failure_code = identity_failure_code || response_failure_code
+            return denied_result(action, failure_code) if failure_code
 
-          apply_response!
+            apply_response!
+          end
         end
       end
 

@@ -43,6 +43,20 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include(conversation_path(human_conversation))
     end
 
+    it "retains revoked history without exposing it in lists or unread counts" do
+      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      message = conversation.messages.create!(user: other_user, body: "Retained revoked history")
+      friendship.update!(state: "blocked")
+      sign_in user
+
+      get conversations_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include(conversation_path(conversation))
+      expect(Message.exists?(message.id)).to be(true)
+      expect(Logic::Conversations::Policy.scope(user:, context: user.main_context).with_unread_for(user)).to be_empty
+    end
+
     it "shows only conversations for the current scenario" do
       main_conversation = Conversation.find_or_create_human_between!(user, other_user)
       derived_context = create(:context, user:, name: "Conversation Scenario", source_context: user.main_context)

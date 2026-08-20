@@ -65,6 +65,30 @@ RSpec.describe "Messages", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it "denies every message action route after friendship revocation" do
+      assistant = Conversation.find_or_create_assistant_between!(user, other_user)
+      actionable_message = assistant.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", details: {} },
+          replay: { id: 123, type: "CashTransaction" }
+        }.to_json
+      )
+      friendship.update!(state: "blocked")
+
+      {
+        apply: apply_conversation_message_path(assistant, actionable_message),
+        reject: reject_conversation_message_path(assistant, actionable_message),
+        revert: revert_conversation_message_path(assistant, actionable_message)
+      }.each do |action, path|
+        sign_in user
+        patch path, headers: turbo_stream_headers
+        expect(response).to have_http_status(:not_found), "expected #{action} to be denied, got #{response.status} #{response.location}"
+      end
+    end
   end
 
   describe "[ #revert ]" do

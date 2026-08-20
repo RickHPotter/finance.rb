@@ -16,21 +16,23 @@ class ConversationsController < ApplicationController
 
   def show
     @conversation = scoped_conversations.preload(users: :profile).find_by!(public_id: params[:public_id])
-    @active_message_filter = conversation_message_filter
-    @active_message_sides = conversation_message_sides
-    @messages = filtered_messages(@conversation)
-    read_at = Time.current
-    @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
-      message.update!(read_at:)
-    end
-    @conversation.participant_for!(current_user).advance_read_cursor_to!(@conversation.messages.latest.order(:id).last)
+    conversation_policy(@conversation).with_access do
+      @active_message_filter = conversation_message_filter
+      @active_message_sides = conversation_message_sides
+      @messages = filtered_messages(@conversation).to_a
+      read_at = Time.current
+      @conversation.messages.unread.where.not(user_id: current_user.id).where(auto_applied: false).find_each do |message|
+        message.update!(read_at:)
+      end
+      @conversation.participant_for!(current_user).advance_read_cursor_to!(@conversation.messages.latest.order(:id).last)
 
-    render Views::Conversations::Show.new(
-      conversation: @conversation,
-      messages: @messages,
-      active_message_filter: @active_message_filter,
-      active_message_sides: @active_message_sides
-    )
+      render Views::Conversations::Show.new(
+        conversation: @conversation,
+        messages: @messages,
+        active_message_filter: @active_message_filter,
+        active_message_sides: @active_message_sides
+      )
+    end
   end
 
   def create
@@ -89,7 +91,7 @@ class ConversationsController < ApplicationController
   end
 
   def accessible_conversations
-    current_user.conversations.joins(:friendship).merge(Friendship.accepted_state).for_scenario(current_context.scenario_key)
+    Logic::Conversations::Policy.scope(user: current_user, context: current_context)
   end
 
   def conversation_filter
@@ -105,8 +107,14 @@ class ConversationsController < ApplicationController
   end
 
   def update_participant_state!(attributes, destination:)
-    state_conversation.participant_for!(current_user).update!(attributes)
+    conversation_policy(state_conversation).with_access do
+      state_conversation.participant_for!(current_user).update!(attributes)
+    end
     redirect_to destination, status: :see_other
+  end
+
+  def conversation_policy(conversation)
+    Logic::Conversations::Policy.new(conversation:, actor: current_user, context: current_context)
   end
 
   def filtered_messages(conversation)
