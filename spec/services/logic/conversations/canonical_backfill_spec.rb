@@ -34,6 +34,7 @@ RSpec.describe Logic::Conversations::CanonicalBackfill do
       friendship_id: friendship.id,
       message_ids: [ replacement.id ]
     )
+    expect(planned.to_text).to include("reported [unassigned_friendship]")
     expect(canonical.reload.friendship_id).to be_nil
     expect(duplicate).to be_persisted
 
@@ -82,6 +83,8 @@ RSpec.describe Logic::Conversations::CanonicalBackfill do
   it "is idempotent after canonical rows have been attached and duplicates removed" do
     conversation = create_legacy_conversation(rikki, gigi)
 
+    expect(Logic::Conversations::Inventory.new.call).not_to be_clean
+
     first = described_class.new(apply: true).call
     second = described_class.new(apply: true).call
 
@@ -90,5 +93,6 @@ RSpec.describe Logic::Conversations::CanonicalBackfill do
     expect(second.actions).to be_empty
     expect(conversation.reload.friendship).to eq(friendship)
     expect(Conversation.where(friendship:).count).to eq(1)
+    expect(Logic::Conversations::Inventory.new.call).to be_clean
   end
 end

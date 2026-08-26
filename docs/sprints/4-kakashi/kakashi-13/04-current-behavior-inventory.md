@@ -19,6 +19,8 @@ in deployment notes.
 | `duplicate_canonical_thread` | the same user pair, kind, and scenario has multiple conversations |
 | `missing_friendship` | a two-user conversation has no canonical friendship |
 | `friendship_not_accepted` | history exists but its friendship is not currently accepted |
+| `unassigned_friendship` | an accepted friendship matches the participant pair, but the conversation has not been anchored to it |
+| `friendship_mismatch` | the conversation's persisted friendship does not match its participant pair |
 | `missing_scenario` | one or both participants lack the conversation's exact main/derived context |
 | `invalid_message_payload` | JSON, version, event action, or replay shape is invalid |
 | `action_state_contradiction` | legacy timestamps/provenance cannot map safely to one action state |

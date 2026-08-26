@@ -8,9 +8,10 @@ RSpec.describe Logic::Conversations::Inventory do
 
   before { allow(ActionableMessageAutoApplyJob).to receive(:perform_now) }
 
-  def create_conversation(*users, kind: :human, scenario_key: nil)
-    Conversation.create!(kind:, scenario_key:).tap do |conversation|
-      users.each { |user| conversation.conversation_participants.create!(user:) }
+  def create_conversation(*users, kind: :human, scenario_key: nil, friendship: nil)
+    Conversation.new(kind:, scenario_key:, friendship:).tap do |conversation|
+      users.each { |user| conversation.conversation_participants.build(user:) }
+      conversation.save!
     end
   end
 
@@ -25,8 +26,8 @@ RSpec.describe Logic::Conversations::Inventory do
   end
 
   it "reports a reversed clean pair without changing conversation or message history" do
-    accepted_friendship
-    conversation = create_conversation(gigi, rikki)
+    friendship = accepted_friendship
+    conversation = create_conversation(gigi, rikki, friendship:)
     message = conversation.messages.create!(user: rikki, body: "Hello")
     timestamps = [ conversation.updated_at, message.updated_at ]
 
@@ -35,6 +36,34 @@ RSpec.describe Logic::Conversations::Inventory do
     expect(report).to be_clean
     expect(report).to have_attributes(conversation_count: 1, message_count: 1)
     expect([ conversation.reload.updated_at, message.reload.updated_at ]).to eq(timestamps)
+  end
+
+  it "reports legacy rows that have not been assigned to their accepted friendship" do
+    friendship = accepted_friendship
+    conversation = create_conversation(gigi, rikki)
+
+    report = described_class.new.call
+
+    expect(issue(report, "unassigned_friendship", conversation.id).details).to include(
+      user_ids: contain_exactly(rikki.id, gigi.id),
+      expected_friendship_id: friendship.id
+    )
+  end
+
+  it "reports a persisted friendship that does not match the participant pair" do
+    expected_friendship = accepted_friendship
+    other_user = create(:user, :random)
+    other_friendship = create(:friendship, :accepted, user: rikki, friend: other_user)
+    conversation = create_conversation(gigi, rikki)
+    conversation.friendship_id = other_friendship.id
+
+    report = described_class.new(conversation_scope: [ conversation ], message_scope: []).call
+
+    expect(issue(report, "friendship_mismatch", conversation.id).details).to include(
+      user_ids: contain_exactly(rikki.id, gigi.id),
+      friendship_id: other_friendship.id,
+      expected_friendship_id: expected_friendship.id
+    )
   end
 
   it "inventories malformed participant, canonical thread, friendship, and scenario shapes with concrete ids" do

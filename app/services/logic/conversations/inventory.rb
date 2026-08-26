@@ -83,14 +83,45 @@ class Logic::Conversations::Inventory
   end
 
   def friendship_issues
-    pair_conversations.filter_map do |conversation|
-      user_ids = participant_user_ids(conversation)
-      friendship = friendships_by_pair[user_ids]
-      next if friendship&.accepted_state?
+    pair_conversations.filter_map { |conversation| friendship_issue_for(conversation) }
+  end
 
-      code = friendship.nil? ? "missing_friendship" : "friendship_not_accepted"
-      issue(code, "Conversation", [ conversation.id ], user_ids:, friendship_id: friendship&.id, friendship_state: friendship&.state)
+  def friendship_issue_for(conversation)
+    user_ids = participant_user_ids(conversation)
+    expected_friendship = friendships_by_pair[user_ids]
+
+    return issue("missing_friendship", "Conversation", [ conversation.id ], user_ids:, friendship_id: nil, friendship_state: nil) if expected_friendship.nil?
+
+    unless expected_friendship.accepted_state?
+      return issue(
+        "friendship_not_accepted",
+        "Conversation",
+        [ conversation.id ],
+        user_ids:,
+        friendship_id: expected_friendship.id,
+        friendship_state: expected_friendship.state
+      )
     end
+
+    if conversation.friendship_id.nil?
+      return issue(
+        "unassigned_friendship",
+        "Conversation",
+        [ conversation.id ],
+        user_ids:,
+        expected_friendship_id: expected_friendship.id
+      )
+    end
+    return if conversation.friendship_id == expected_friendship.id
+
+    issue(
+      "friendship_mismatch",
+      "Conversation",
+      [ conversation.id ],
+      user_ids:,
+      friendship_id: conversation.friendship_id,
+      expected_friendship_id: expected_friendship.id
+    )
   end
 
   def scenario_issues

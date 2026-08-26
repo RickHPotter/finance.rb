@@ -18,7 +18,7 @@ class Logic::Conversations::CanonicalBackfill
                  "messages=#{action.message_ids.join(',')}"
       end
       issues.each do |issue|
-        lines << "skipped/reported [#{issue.code}] #{issue.record_type} ids=#{issue.record_ids.join(',')}"
+        lines << "reported [#{issue.code}] #{issue.record_type} ids=#{issue.record_ids.join(',')}"
       end
       lines.join("\n")
     end
