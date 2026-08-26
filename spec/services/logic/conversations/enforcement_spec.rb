@@ -42,11 +42,15 @@ RSpec.describe "Canonical conversation enforcement", type: :service do
     end
   end
 
-  it "keeps conversation identity profile-first and independent from financial entities" do
-    source = conversation_view_paths.sort.map { |path| File.read(path) }.join("\n")
+  it "keeps profile-first identity while restricting entity avatars to human conversation cards" do
+    index_source = Rails.root.join("app/views/conversations/index.rb").read
+    other_source = conversation_view_paths.reject { |path| path.end_with?("/index.rb") }.sort.map { |path| File.read(path) }.join("\n")
+    source = [ index_source, other_source ].join("\n")
 
     expect(source).to include("ProfileAvatar")
-    expect(source).not_to match(/\bEntity\b|entity_name|avatar_name|\.entities\b/)
+    expect(source).not_to match(/\bEntity\b|entity_name/)
+    expect(index_source).to include("conversation.human?", "current_user.entities", "entity.avatar_name")
+    expect(other_source).not_to match(/avatar_name|\.entities\b/)
   end
 
   it "keeps conversation and message copy structurally complete in English and Portuguese" do

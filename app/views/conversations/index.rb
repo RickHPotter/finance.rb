@@ -7,6 +7,7 @@ class Views::Conversations::Index < Views::Base
   register_value_helper :current_context
 
   include Phlex::Rails::Helpers::LinkTo
+  include Phlex::Rails::Helpers::AssetPath
 
   include TranslateHelper
 
@@ -139,7 +140,7 @@ class Views::Conversations::Index < Views::Base
           class: "flex min-w-0 flex-1 items-center gap-3",
           data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
         ) do
-          ProfileAvatar(user: conversation.friend_for(current_user), class: conversation_avatar_class(conversation))
+          render_conversation_avatar(conversation)
 
           div(class: "min-w-0") do
             p(class: "text-sm font-semibold text-stone-900 dark:text-slate-100") { conversation.title_for(current_user) }
@@ -197,6 +198,27 @@ class Views::Conversations::Index < Views::Base
     ring_class = conversation.assistant? ? "ring-amber-200" : "ring-stone-200"
 
     "size-11 rounded-full bg-white object-cover ring-2 #{ring_class} dark:ring-slate-600"
+  end
+
+  def render_conversation_avatar(conversation)
+    entity = human_conversation_entities[conversation.friendship_id] if conversation.human?
+
+    if entity
+      img(
+        src: asset_path("avatars/#{entity.avatar_name}"),
+        alt: conversation.title_for(current_user),
+        class: conversation_avatar_class(conversation),
+        data: { entity_avatar: entity.id }
+      )
+    else
+      ProfileAvatar(user: conversation.friend_for(current_user), class: conversation_avatar_class(conversation))
+    end
+  end
+
+  def human_conversation_entities
+    friendship_ids = conversations.filter_map { |conversation| conversation.friendship_id if conversation.human? }
+
+    @human_conversation_entities ||= current_user.entities.where(friendship_id: friendship_ids).index_by(&:friendship_id)
   end
 
   def render_participant_controls(conversation, participant)

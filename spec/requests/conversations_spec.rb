@@ -79,20 +79,24 @@ RSpec.describe "Conversations", type: :request do
       expect(next_document.css("[data-conversation-id]").map { |node| node["data-conversation-id"] }).to eq([ conversations.first.public_id ])
     end
 
-    it "renders profile display names with attached and fallback avatars" do
+    it "renders entity avatars for human conversations and profile avatars for assistant conversations" do
       other_user.profile.update!(first_name: "Gigi", last_name: "February")
       other_user.profile.avatar.attach(io: StringIO.new("avatar"), filename: "gigi.png", content_type: "image/png")
+      entity = user.entities.create!(friendship:, entity_name: "GIGI", avatar_name: "people/7.png", built_in: false)
       resolve_human_conversation(user, other_user)
+      resolve_assistant_conversation(user, other_user)
 
       fallback_friend = create(:user, :random)
-      create(:friendship, :accepted, user:, friend: fallback_friend)
+      fallback_friendship = create(:friendship, :accepted, user:, friend: fallback_friend)
+      fallback_entity = user.entities.create!(friendship: fallback_friendship, entity_name: "FALLBACK FRIEND", avatar_name: "people/11.png", built_in: false)
       resolve_human_conversation(user, fallback_friend)
 
       get conversations_path
 
       document = Nokogiri::HTML(response.body)
+      expect(document.at_css("img[data-entity-avatar=\"#{entity.id}\"][alt=\"Gigi February\"]")["src"]).to include("avatars/people/7")
+      expect(document.at_css("img[data-entity-avatar=\"#{fallback_entity.id}\"]")["src"]).to include("avatars/people/11")
       expect(document.at_css('img[data-profile-avatar="attached"][alt="Gigi February"]')).to be_present
-      expect(document.at_css("img[data-profile-avatar=\"fallback\"][alt=\"#{fallback_friend.display_name}\"]")).to be_present
       expect(response.body).to include("Gigi February")
     end
 

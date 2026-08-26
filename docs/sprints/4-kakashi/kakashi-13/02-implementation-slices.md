@@ -265,7 +265,8 @@ Build the profile-backed conversation experience.
 Deliver:
 
 - accepted-friend new-conversation entry and canonical redirect
-- profile display name/avatar in index and show
+- profile display names, with participant-local entity avatars for human conversation
+  cards and profile avatars for assistant conversation cards and conversation headers
 - active, unread, human, assistant, archived, and muted filters
 - deterministic last-message summaries, unread counts, and empty states
 - selected scenario shown on every conversation surface
@@ -325,7 +326,8 @@ Deliver:
 
 - removal of controller nested-participant parameters and direct creation paths
 - removal/deprecation of `fast_create` and scattered pair queries
-- profile-first identity with no entity-name/avatar lookup in conversation views
+- profile-first display names with entity-avatar lookup restricted to human conversation
+  cards owned by the viewing participant
 - database constraints enabled and inventory clean
 - repository guard/coverage preventing actionable producers from bypassing the
   canonical resolver without altering their business decisions

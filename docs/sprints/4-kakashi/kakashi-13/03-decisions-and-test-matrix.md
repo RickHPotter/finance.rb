@@ -112,9 +112,10 @@ Decision: fail closed. There is no fallback to either user's main context.
 
 ### D20. Which identity appears in conversation UI?
 
-Decision: `UserProfile#display_name` and profile avatar, with the shared avatar
-fallback. Entity names and entity avatars are financial allocation data, not public
-identity.
+Decision: `UserProfile#display_name` remains the conversation title and public identity.
+Human cards use the viewing participant's friendship-linked entity avatar; assistant
+cards and conversation headers use the profile avatar with the shared fallback. Entity
+names never replace profile display names.
 
 ### D21. How are lists paginated?
 
