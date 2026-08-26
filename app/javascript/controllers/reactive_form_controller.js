@@ -5,7 +5,7 @@ import { _applyMask, _removeMask } from "../utils/mask.js"
 
 // Connects to data-controller="reactive-form"
 export default class extends Controller {
-  static values = { quickJump: Boolean, type: String }
+  static values = { preserveInstallmentPrices: Boolean, quickJump: Boolean, type: String }
   static targets = [
     "dateInput", "priceInput",
     "closingDateDay", "daysUntilDueDate",
@@ -52,7 +52,7 @@ export default class extends Controller {
     this.syncExchangeIntentVisibility()
     this.syncPiggyBankMode()
 
-    if (this.hasPriceInstallmentInputTargets) {
+    if (this.hasPriceInstallmentInputTargets && !this.preserveInstallmentPricesValue) {
       this._updateInstallmentsPrices()
     }
 

@@ -16,6 +16,7 @@ en:
         price: Price
         price_to_be_returned: Price to be returned
         loan_return_percentage: Return %
+        mirror_installments: Mirror Installments
         exchanges_count: Exchanges Count
         bound_type: Bound Type
         standalone: Standalone
@@ -41,6 +42,7 @@ pt-BR:
         price: Valor
         price_to_be_returned: Valor a ser devolvido
         loan_return_percentage: Retorno %
+        mirror_installments: Espelhar Parcelas
         exchanges_count: Quantidade de Trocas
         bound_type: Tipo de Vínculo
         standalone: Simples

@@ -146,6 +146,21 @@ module Views
                     ) do
                       cached_icon(:calculator)
                     end
+
+                    if transactable.is_a?(CashTransaction)
+                      Button(
+                        type: :button,
+                        class: modal_icon_button_class,
+                        disabled: !mirror_installments_available?,
+                        title: I18n.t("activerecord.attributes.entity_transaction.mirror_installments"),
+                        data: {
+                          entity_transaction_target: :mirrorInstallmentsButton,
+                          action: "entity-transaction#mirrorInstallments"
+                        }
+                      ) do
+                        cached_icon(:duplicate)
+                      end
+                    end
                   end
                 end
 
@@ -339,6 +354,10 @@ module Views
       end
 
       private
+
+      def mirror_installments_available?
+        entity_transaction.is_payer && entity_transaction.paid_installment_prices_match_paid_exchange_prices?
+      end
 
       def modal_icon_button_class
         "rounded-sm border border-transparent bg-gray-100 text-black hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 " \

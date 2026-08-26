@@ -44,6 +44,7 @@ RSpec.describe "Bank-account and user-card Turbo navigation", type: :feature do
   def exercise_edit_navigation(index_path:, edit_path:, record:, field:)
     visit index_path
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
+    expect_browser_path(edit_path)
     replace_field field[:id], with: field[:value]
 
     expect_workflow_finishing_submitter("form button[type='submit']")

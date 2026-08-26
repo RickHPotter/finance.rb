@@ -260,6 +260,7 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include('data-controller="form-loading"')
       expect(response.body).to include('id="cash_transaction_form_submission_skeleton"')
       expect(response.body).to include('name="cash_transaction[historical_correction_confirmation]"')
+      expect(response.body).to include('data-reactive-form-preserve-installment-prices-value="true"')
     end
 
     it "lists every grouped contribution on a Piggy Bank return edit form" do

@@ -791,6 +791,28 @@ RSpec.describe CashTransaction, type: :model do
       expect(transaction.errors[:base]).to include(I18n.t("activerecord.errors.models.cash_transaction.attributes.base.paid_history_locked"))
     end
 
+    it "allows reconciling a stale parent price to an unchanged installment total" do
+      user = create(:user)
+      bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
+      transaction = create_cash_transaction_with_history(
+        user:,
+        user_bank_account: bank_account,
+        description: "Discounted payoff reconciliation",
+        price: 3000,
+        date: Date.new(2026, 3, 10),
+        month: 3,
+        year: 2026,
+        installments_attributes: [
+          { number: 1, price: 1000, date: Date.new(2026, 3, 10), month: 3, year: 2026, paid: true },
+          { number: 2, price: 2000, date: Date.new(2026, 4, 10), month: 4, year: 2026, paid: false }
+        ]
+      )
+      transaction.update_column(:price, 4000)
+      transaction.reload.price = 3000
+
+      expect(transaction).to be_valid
+    end
+
     it "allows a confirmed month-boundary correction for a paid installment" do
       user = create(:user)
       bank_account = create(:user_bank_account, user:, bank: create(:bank, :random))
