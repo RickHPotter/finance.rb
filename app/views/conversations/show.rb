@@ -39,13 +39,6 @@ class Views::Conversations::Show < Views::Base
         div(class: "flex h-[calc(100svh-16rem)] min-h-128 flex-col overflow-hidden rounded-lg sm:min-h-144", data: { controller: :chat }) do
           div(class: "border-b px-4 py-4 md:px-5 #{header_container_class} md:flex md:items-center md:justify-between md:gap-6") do
             div(class: "flex items-center gap-4 md:min-w-0 md:flex-1") do
-              Link(
-                href: conversations_path,
-                class: "shrink-0 rounded-lg border border-stone-300 bg-white px-2 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 " \
-                       "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
-                data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", conversation_back: "true" }
-              ) { model_attribute(conversation, :back) }
-
               ProfileAvatar(user: conversation.friend_for(current_user), class: conversation_avatar_class)
 
               div(class: "flex min-w-0 flex-1 flex-col items-start") do
@@ -56,8 +49,8 @@ class Views::Conversations::Show < Views::Base
             end
 
             div(class: "mt-4 flex flex-col items-stretch gap-2 md:mt-0 md:shrink-0 md:items-end md:self-start") do
-              render_message_filter_badges if conversation.assistant?
               render_participant_controls
+              render_message_filter_badges if conversation.assistant?
             end
           end
 
@@ -108,6 +101,8 @@ class Views::Conversations::Show < Views::Base
           message_filter: active_message_filter,
           message_side: active_message_sides
         ),
+        variant: :outline,
+        size: :sm,
         class: "mx-auto mb-3 flex w-fit items-center justify-center rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-semibold " \
                "text-stone-700 hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
         data: { turbo_frame: frame_id, turbo_prefetch: "false", message_page: "older" }
@@ -120,7 +115,7 @@ class Views::Conversations::Show < Views::Base
   end
 
   def messages_container_class
-    "flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 " \
+    "conversation-message-scroll flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),rgba(241,245,249,0.95))] px-3 py-4 " \
       "dark:bg-none dark:bg-slate-950 md:px-4"
   end
 
@@ -167,19 +162,19 @@ class Views::Conversations::Show < Views::Base
   def render_participant_controls
     participant = conversation.participant_for!(current_user)
 
-    div(class: "flex flex-wrap gap-2") do
+    div(class: "flex flex-wrap gap-2", data: { conversation_header_section: "participant-controls" }) do
       render_state_link(participant.archived? ? :unarchive : :archive)
       render_state_link(participant.muted? ? :unmute : :mute)
     end
   end
 
   def render_state_link(action)
-    Link(
+    ConversationStateButton(
+      action:,
       href: public_send("#{action}_conversation_path", conversation),
-      class: "rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-2xs font-semibold text-stone-700 hover:bg-stone-100 " \
-             "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
-      data: { turbo_method: :patch, turbo_frame: "_top", turbo_prefetch: "false", conversation_action: action }
-    ) { model_attribute(conversation, action) }
+      label: model_attribute(conversation, action),
+      data: { turbo_method: :patch, turbo_frame: "_top", turbo_prefetch: "false" }
+    )
   end
 
   def render_empty_human_conversation
@@ -190,7 +185,8 @@ class Views::Conversations::Show < Views::Base
   end
 
   def render_message_filter_badges
-    div(class: "flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center md:flex-nowrap") do
+    div(class: "flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center md:flex-nowrap",
+        data: { conversation_header_section: "message-filters" }) do
       div(class: "flex flex-wrap items-center gap-2") do
         render_message_filter_badge("pending")
         render_message_filter_badge("all")
@@ -210,6 +206,8 @@ class Views::Conversations::Show < Views::Base
 
     Link(
       href: conversation_path(conversation, message_filter: filter, message_side: active_message_sides),
+      variant: :ghost,
+      size: :sm,
       class: message_filter_badge_class(selected),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do
@@ -223,6 +221,8 @@ class Views::Conversations::Show < Views::Base
 
     Link(
       href: conversation_path(conversation, message_filter: active_message_filter, message_side: next_sides),
+      variant: :ghost,
+      size: :sm,
       class: message_side_badge_class(side, selected),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
     ) do

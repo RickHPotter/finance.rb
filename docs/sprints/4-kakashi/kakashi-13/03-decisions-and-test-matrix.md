@@ -58,8 +58,9 @@ other participant's view.
 
 ### D10. What does mute mean?
 
-Decision: suppress attention channels such as email/push. Delivery, unread state,
-realtime rendering, and financial action availability remain intact.
+Decision: suppress attention channels such as email/push and the conversation tab
+notification dot. Delivery, unread state, unread filtering, realtime rendering, and
+financial action availability remain intact.
 
 ### D11. What does a new message do to an archive?
 

@@ -32,6 +32,11 @@ module FeatureHelper
     expect(page).to have_css("turbo-frame#center_container turbo-frame##{turbo_frame_id}")
   end
 
+  def replace_field(locator, with:)
+    fill_in locator, with:, fill_options: { clear: :backspace }
+    expect(page).to have_field(locator, with:)
+  end
+
   def card_transactions_search_form_params(only: nil, except: [])
     only ||= %i[category_id entity_id]
     params_to_return = only - except

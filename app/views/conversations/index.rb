@@ -33,6 +33,8 @@ class Views::Conversations::Index < Views::Base
 
           Link(
             href: new_conversation_path,
+            variant: :outline,
+            size: :sm,
             class: new_conversation_button_class,
             data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false" }
           ) { model_attribute(Conversation, :new_conversation) }
@@ -80,6 +82,7 @@ class Views::Conversations::Index < Views::Base
     turbo_frame_tag frame_id do
       Link(
         href: conversations_path(filter: active_filter == "active" ? nil : active_filter, cursor: next_cursor),
+        variant: :outline,
         class: "flex w-full items-center justify-center rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 " \
                "hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
         data: { turbo_frame: frame_id, turbo_prefetch: "false", conversation_page: "next" }
@@ -204,12 +207,12 @@ class Views::Conversations::Index < Views::Base
   end
 
   def render_state_link(conversation, action)
-    Link(
+    ConversationStateButton(
+      action:,
       href: public_send("#{action}_conversation_path", conversation),
-      class: "rounded-md border border-stone-300 bg-white px-2 py-1 font-semibold text-stone-700 hover:bg-stone-100 " \
-             "dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
-      data: { turbo_method: :patch, turbo_frame: "_top", turbo_prefetch: "false", conversation_action: action }
-    ) { model_attribute(Conversation, action) }
+      label: model_attribute(Conversation, action),
+      data: { turbo_method: :patch, turbo_frame: "_top", turbo_prefetch: "false" }
+    )
   end
 
   def render_scenario_badge

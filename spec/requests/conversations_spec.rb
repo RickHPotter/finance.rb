@@ -115,6 +115,26 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).not_to include(conversation_path(archived_conversation))
     end
 
+    it "dismisses the tab notification dot for unread muted conversations without clearing unread state" do
+      conversation = resolve_human_conversation(user, other_user)
+      conversation.messages.create!(user: other_user, body: "Unread but quiet")
+
+      get conversations_path
+
+      conversation_tab = controller.instance_variable_get(:@profile_tab).find { |item| item.link == conversations_path }
+      expect(conversation_tab.notification_type).to eq(1)
+
+      conversation.participant_for!(user).update!(muted_at: Time.current)
+      get conversations_path
+
+      conversation_tab = controller.instance_variable_get(:@profile_tab).find { |item| item.link == conversations_path }
+      expect(conversation_tab.notification_type).to eq(0)
+      expect(Logic::Conversations::Policy.scope(user:, context: user.main_context).with_unread_for(user)).to contain_exactly(conversation)
+
+      get conversations_path(filter: "unread")
+      expect(response.body).to include(conversation_path(conversation))
+    end
+
     it "shows the selected main scenario and participant controls on every card" do
       conversation = resolve_human_conversation(user, other_user)
 
@@ -294,7 +314,7 @@ RSpec.describe "Conversations", type: :request do
   end
 
   describe "[ #show ]" do
-    it "renders profile identity, navigation, controls, main scenario, and a human empty state" do
+    it "renders profile identity, controls, main scenario, and a human empty state" do
       other_user.profile.update!(first_name: "Gigi", last_name: "Conversation")
       conversation = resolve_human_conversation(user, other_user)
 
@@ -302,12 +322,15 @@ RSpec.describe "Conversations", type: :request do
 
       document = Nokogiri::HTML(response.body)
       expect(response.body).to include("Gigi Conversation")
-      expect(document.at_css("[data-conversation-back=true]")).to be_present
+      expect(document.at_css("[data-conversation-back=true]")).to be_nil
       expect(document.at_css("[data-conversation-action=archive]")).to be_present
       expect(document.at_css("[data-conversation-action=mute]")).to be_present
+      expect(document.at_css(".conversation-message-scroll")).to be_present
       expect(document.at_css("[data-conversation-scenario]").text).to include(I18n.t("contexts.index.main_label"))
       expect(document.at_css("[data-conversation-empty=human]")).to be_present
-      expect(document.at_css("textarea[name='message[body]']")).to be_present
+      composer = document.at_css("form#messages_conversation_#{conversation.id}")
+      expect(composer.at_css("textarea[name='message[body]']")["class"]).to include("dark:bg-slate-950", "dark:text-slate-100", "focus:border-emerald-500")
+      expect(composer.at_css("input[type=submit]")["class"]).to include("dark:bg-emerald-500", "dark:text-slate-950", "focus-visible:ring-emerald-500")
     end
 
     it "includes the conversation as return navigation on actionable transaction links" do
@@ -431,6 +454,8 @@ RSpec.describe "Conversations", type: :request do
       expect(response.body).to include(Conversation.human_attribute_name(:pending))
       expect(response.body).to include(Conversation.human_attribute_name(:mine))
       expect(response.body).to include(Conversation.human_attribute_name(:theirs))
+      header_sections = Nokogiri::HTML(response.body).css("[data-conversation-header-section]").map { |node| node["data-conversation-header-section"] }
+      expect(header_sections).to eq(%w[participant-controls message-filters])
     end
 
     it "does not acknowledge an auto-applied message merely by opening the conversation" do
@@ -838,9 +863,13 @@ RSpec.describe "Conversations", type: :request do
 
       get conversation_path(conversation, message_filter: "all")
 
-      expect(response.body).to include(I18n.t("actions.show"))
-      expect(response.body).to include(edit_card_transaction_path(card_transaction))
-      expect(response.body).to include("md:min-w-176")
+      document = Nokogiri::HTML(response.body)
+      modal = document.at_css("[data-message-transaction-modal=true]")
+      expect(response.body).to include(I18n.t("actions.show"), edit_card_transaction_path(card_transaction), "md:min-w-176")
+      expect(modal["class"]).to include("dark:bg-slate-950", "dark:border-slate-700")
+      expect(modal.at_css("[data-message-transaction-body=true]")["class"]).to include("dark:text-slate-100")
+      expect(modal.css("[data-message-transaction-panel]").map { |panel| panel["class"] }).to all(include("dark:bg-slate-900/70"))
+      expect(modal.css("[data-message-transaction-row]").map { |row| row["class"] }).to all(include("dark:bg-slate-950/80"))
     end
 
     it "labels sender-side historical show state as destroyed for destroy notifications" do

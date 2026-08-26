@@ -34,6 +34,9 @@ class Conversation < ApplicationRecord
   scope :muted_for, lambda { |user|
     joins(:conversation_participants).where(conversation_participants: { user_id: user.id }).where.not(conversation_participants: { muted_at: nil })
   }
+  scope :unmuted_for, lambda { |user|
+    joins(:conversation_participants).where(conversation_participants: { user_id: user.id, muted_at: nil })
+  }
   scope :with_unread_for, lambda { |user|
     joins(:conversation_participants, :messages)
       .where(conversation_participants: { user_id: user.id })

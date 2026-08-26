@@ -143,7 +143,7 @@ Coverage:
 
 - one participant archives/mutes without affecting the other
 - new incoming message reactivates only the recipient archive
-- mute suppresses email/push but not storage/unread/broadcast
+- mute suppresses email/push and the tab notification dot but not storage/unread/broadcast
 - superseded predecessors do not inflate unread counts
 - read progress is isolated across scenarios and conversation kinds
 - concurrent show/new-message activity advances monotonically
