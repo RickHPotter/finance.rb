@@ -29,6 +29,8 @@ module Navigation
         cash_installment_ids: :scalar_or_array,
         category_id: :scalar_or_array,
         entity_id: :scalar_or_array,
+        id: :scalar_or_array,
+        subscription_id: :scalar_or_array,
         user_bank_account_id: :scalar_or_array
       }
     }.freeze
@@ -47,6 +49,8 @@ module Navigation
           "cash_transaction.cash_installment_ids" => current_context.cash_installments,
           "cash_transaction.category_id" => current_user.categories,
           "cash_transaction.entity_id" => current_user.entities,
+          "cash_transaction.id" => current_context.cash_transactions,
+          "cash_transaction.subscription_id" => current_context.subscriptions,
           "cash_transaction.user_bank_account_id" => current_user.user_bank_accounts
         }
       )

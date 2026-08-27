@@ -8,7 +8,7 @@ module IndexState
     DEFAULT_DIRECTION = "asc"
     VALID_SORTS = %w[default description installment_date transaction_date price].freeze
     VALID_DIRECTIONS = %w[asc desc].freeze
-    TRANSACTION_FILTER_KEYS = %i[category_id entity_id cash_installment_ids user_bank_account_id].freeze
+    TRANSACTION_FILTER_KEYS = %i[category_id entity_id cash_installment_ids id subscription_id user_bank_account_id].freeze
     RANGE_FILTER_KEYS = %i[
       from_ct_price
       to_ct_price
@@ -199,7 +199,11 @@ module IndexState
     end
 
     def account_filter
-      { user_bank_account_id: compact_array(source_context[:user_bank_account_id]) }.compact_blank
+      {
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id]),
+        user_bank_account_id: compact_array(source_context[:user_bank_account_id])
+      }.compact_blank
     end
 
     def default_year_for(active_month_years:, today_zn:)
@@ -223,6 +227,8 @@ module IndexState
         category_id: compact_array(source_context[:category_id]),
         entity_id: compact_array(source_context[:entity_id]),
         cash_installment_ids: compact_array(source_context[:cash_installment_ids]),
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id]),
         user_bank_account_id: compact_array(source_context[:user_bank_account_id])
       }
     end

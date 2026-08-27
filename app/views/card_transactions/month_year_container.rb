@@ -2,7 +2,7 @@
 
 class Views::CardTransactions::MonthYearContainer < Views::Base
   attr_reader :search_term, :card_installment_ids,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :id, :subscription_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -16,6 +16,8 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
     @card_installment_ids = index_context[:card_installment_ids]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @id = index_context[:id]
+    @subscription_id = index_context[:subscription_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -42,7 +44,9 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
           card_installment_ids:,
           user_card_id:,
           category_id:,
-          entity_id:
+          entity_id:,
+          id:,
+          subscription_id:
         },
         search_term:,
         from_ct_price:,

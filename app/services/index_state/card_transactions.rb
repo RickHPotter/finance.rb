@@ -6,7 +6,7 @@ module IndexState
     DEFAULT_DIRECTION = "asc"
     VALID_SORTS = %w[description installment_date transaction_date price].freeze
     VALID_DIRECTIONS = %w[asc desc].freeze
-    TRANSACTION_FILTER_KEYS = %i[card_installment_ids category_id entity_id].freeze
+    TRANSACTION_FILTER_KEYS = %i[card_installment_ids category_id entity_id id subscription_id].freeze
     RANGE_FILTER_KEYS = %i[
       from_ct_price
       to_ct_price
@@ -112,7 +112,9 @@ module IndexState
       {
         card_installment_ids: compact_array(source_context[:card_installment_ids]),
         category_id: compact_array(source_context[:category_id]),
-        entity_id: compact_array(source_context[:entity_id])
+        entity_id: compact_array(source_context[:entity_id]),
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id])
       }
     end
 
@@ -199,7 +201,9 @@ module IndexState
     def months_for_all_month_years
       associations = association_filters
       relation = card_installments
-      relation = relation.joins(card_transaction: associations.keys).where(card_transaction: associations) if associations.present?
+      direct_filters = direct_transaction_filters
+      relation = relation.joins(card_transaction: associations.keys).where(card_transaction: associations.merge(direct_filters)) if associations.present?
+      relation = relation.joins(:card_transaction).where(card_transaction: direct_filters) if associations.blank? && direct_filters.present?
 
       relation.map { |installment| month_year_value(installment.year, installment.month) }.uniq
     end
@@ -211,6 +215,13 @@ module IndexState
         associations[:categories] = { id: category_ids } if category_ids.present?
         associations[:entities] = { id: entity_ids } if entity_ids.present?
       end
+    end
+
+    def direct_transaction_filters
+      {
+        id: compact_array(source_context[:id]),
+        subscription_id: compact_array(source_context[:subscription_id])
+      }.compact_blank
     end
 
     def default_year_for(active_month_years:, max_date:, today:)

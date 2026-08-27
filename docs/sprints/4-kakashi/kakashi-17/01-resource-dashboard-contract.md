@@ -37,6 +37,11 @@ metric cards, collapsible sections, mobile detail cards, audit/edit/duplicate/de
 actions, and `return_to`-aware top-level navigation. KAKASHI-17 consolidates these
 patterns; it does not introduce a second dashboard design system.
 
+The executable source/action inventory is maintained in
+[`dashboard-navigation-inventory.yml`](dashboard-navigation-inventory.yml). It records
+the current destination, required exact filter, target behavior, and delivery slice for
+every audited dashboard claim.
+
 ## Shared Show Contract
 
 Every dashboard in scope must:
@@ -238,4 +243,3 @@ when they are relevant to the claimed set.
 - new Investment or Subscription accounting semantics;
 - changing KAKASHI-18 merge planner/apply behavior;
 - building a generic dashboard DSL before the two missing pages work.
-

@@ -15,7 +15,7 @@ module Logic
         price: raw_conditions[:installments_price],
         number: raw_conditions[:installments_number],
         date: raw_conditions[:date],
-        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :price, :user_bank_account_id).compact_blank,
+        cash_transaction: { **raw_conditions.slice(:cash_installments_count, :id, :price, :subscription_id, :user_bank_account_id).compact_blank,
                             **raw_conditions[:associations] }.compact_blank
       }.compact_blank
 

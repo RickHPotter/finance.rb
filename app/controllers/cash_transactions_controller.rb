@@ -980,7 +980,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
         reference_transactable_type reference_transactable_id category_id entity_id subscription_id
         friend_notification_intent source_message_id historical_correction_confirmation
       ],
-      user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
+      id: [], subscription_id: [], user_bank_account_id: [], category_id: [], entity_id: [], cash_installment_ids: [],
       category_transactions_attributes: %i[id category_id _destroy],
       cash_installments_attributes: %i[id number date month year price paid _destroy],
       piggy_bank_attributes: %i[id return_cash_transaction_id return_date return_price _destroy],

@@ -8,6 +8,7 @@ RSpec.describe Navigation::CashTransactions do
   let(:bank_account) { create(:user_bank_account, :random, user:) }
   let(:category) { create(:category, :random, user:) }
   let(:entity) { create(:entity, :random, user:) }
+  let(:subscription) { create(:subscription, user:, context:) }
   let(:cash_transaction) do
     create(
       :cash_transaction,
@@ -32,6 +33,7 @@ RSpec.describe Navigation::CashTransactions do
     installment = cash_transaction.cash_installments.first
     raw = "/cash_transactions?active_month_years=%5B202607%5D&cash_transaction[cash_installment_ids][]=#{installment.id}" \
           "&cash_transaction[category_id][]=#{category.id}&cash_transaction[entity_id][]=#{entity.id}" \
+          "&cash_transaction[id][]=#{cash_transaction.id}&cash_transaction[subscription_id][]=#{subscription.id}" \
           "&cash_transaction[user_bank_account_id][]=#{bank_account.id}&sort=description&direction=asc"
 
     state = build_state(raw)
@@ -40,7 +42,7 @@ RSpec.describe Navigation::CashTransactions do
     expect(state.destination).to include("/cash_transactions?")
     expect(state.destination).to include("active_month_years=%5B202607%5D")
     expect(state.destination).to include("sort=description")
-    expect(state.destination).to include(installment.id.to_s, category.id.to_s, entity.id.to_s, bank_account.id.to_s)
+    expect(state.destination).to include(installment.id.to_s, category.id.to_s, entity.id.to_s, cash_transaction.id.to_s, subscription.id.to_s, bank_account.id.to_s)
   end
 
   it "strips form data and unrelated query keys" do
@@ -50,7 +52,7 @@ RSpec.describe Navigation::CashTransactions do
     expect(state.destination).to eq("/cash_transactions?search_term=rent")
   end
 
-  it "rejects foreign account, category, entity, and installment identifiers" do
+  it "rejects foreign transaction, subscription, account, category, entity, and installment identifiers" do
     foreign_user = create(:user, :random)
     foreign_bank_account = create(:user_bank_account, :random, user: foreign_user)
     foreign_category = create(:category, :random, user: foreign_user)
@@ -61,10 +63,13 @@ RSpec.describe Navigation::CashTransactions do
       context: foreign_user.main_context,
       user_bank_account: foreign_bank_account
     )
+    foreign_subscription = create(:subscription, user: foreign_user, context: foreign_user.main_context)
     foreign_values = {
       cash_installment_ids: foreign_transaction.cash_installments.first.id,
       category_id: foreign_category.id,
       entity_id: foreign_entity.id,
+      id: foreign_transaction.id,
+      subscription_id: foreign_subscription.id,
       user_bank_account_id: foreign_bank_account.id
     }
 

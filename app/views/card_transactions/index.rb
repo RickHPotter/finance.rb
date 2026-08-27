@@ -40,7 +40,7 @@ class Views::CardTransactions::Index < Views::Base
                 owner_type: "CardTransaction",
                 return_to: index_context[:return_to].presence || request.fullpath
               )
-              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id,
+              render MonthYearContainer.new(index_context: index_context.slice(:search_term, :category_id, :entity_id, :id, :subscription_id,
                                                                                :from_ct_price, :to_ct_price, :from_price, :to_price,
                                                                                :from_installments_count, :to_installments_count,
                                                                                :exchange_bound_type,

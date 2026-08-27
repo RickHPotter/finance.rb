@@ -1169,6 +1169,7 @@ References:
 - [resource dashboard contract](docs/sprints/4-kakashi/kakashi-17/01-resource-dashboard-contract.md)
 - [implementation slices](docs/sprints/4-kakashi/kakashi-17/02-implementation-slices.md)
 - [decisions and test matrix](docs/sprints/4-kakashi/kakashi-17/03-decisions-and-test-matrix.md)
+- [dashboard navigation inventory](docs/sprints/4-kakashi/kakashi-17/dashboard-navigation-inventory.yml)
 
 ### KAKASHI-18: Improve selectors and merge categories or entities
 

@@ -11,7 +11,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   attr_reader :url,
               :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :id, :subscription_id,
               :from_ct_price, :to_ct_price,
               :from_price, :to_price,
               :from_installments_count, :to_installments_count,
@@ -34,6 +34,8 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @id = index_context[:id]
+    @subscription_id = index_context[:subscription_id]
     @from_ct_price = index_context[:from_ct_price]
     @to_ct_price = index_context[:to_ct_price]
     @from_price = index_context[:from_price]
@@ -67,6 +69,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
       build_month_year_selector
 
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
+      exact_scope_inputs("cash_transaction", id:, subscription_id:)
       input type: "hidden", name: :paid_state, value: paid_state || "all", id: "cash_transactions_paid_state"
       input type: "hidden", name: :paid, value: paid, id: "cash_transactions_paid"
       input type: "hidden", name: :pending, value: pending, id: "cash_transactions_pending"
@@ -193,6 +196,14 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
   end
 
   private
+
+  def exact_scope_inputs(scope, **filters)
+    filters.each do |key, values|
+      Array(values).compact_blank.each do |value|
+        input type: "hidden", name: "#{scope}[#{key}][]", value:
+      end
+    end
+  end
 
   def advanced_filter_button_class
     "scale-105 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"

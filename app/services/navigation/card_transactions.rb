@@ -25,6 +25,8 @@ module Navigation
         card_installment_ids: :scalar_or_array,
         category_id: :scalar_or_array,
         entity_id: :scalar_or_array,
+        id: :scalar_or_array,
+        subscription_id: :scalar_or_array,
         user_card_id: :scalar_or_array
       }
     }.freeze
@@ -44,6 +46,8 @@ module Navigation
           "card_transaction.card_installment_ids" => current_context.card_installments,
           "card_transaction.category_id" => current_user.categories,
           "card_transaction.entity_id" => current_user.entities,
+          "card_transaction.id" => current_context.card_transactions,
+          "card_transaction.subscription_id" => current_context.subscriptions,
           "card_transaction.user_card_id" => current_user.user_cards
         }
       )
