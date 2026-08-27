@@ -1164,6 +1164,12 @@ Coverage:
 - cover show rendering, context isolation, action eligibility, exact list URLs, filtered
   result membership, empty relationships, generated records, and useful return paths
 
+References:
+
+- [resource dashboard contract](docs/sprints/4-kakashi/kakashi-17/01-resource-dashboard-contract.md)
+- [implementation slices](docs/sprints/4-kakashi/kakashi-17/02-implementation-slices.md)
+- [decisions and test matrix](docs/sprints/4-kakashi/kakashi-17/03-decisions-and-test-matrix.md)
+
 ### KAKASHI-18: Improve selectors and merge categories or entities
 
 - Issues:
