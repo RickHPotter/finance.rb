@@ -98,7 +98,7 @@ class CategoriesController < ApplicationController
   end
 
   def set_return_to
-    @return_to = category_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || category_navigation_destination(params[:return_to])
   end
 
   def category_navigation_destination(raw)

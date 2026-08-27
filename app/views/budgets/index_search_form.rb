@@ -11,7 +11,7 @@ class Views::Budgets::IndexSearchForm < Views::Base
 
   attr_reader :index_context, :current_user,
               :default_year, :years, :active_month_years, :search_term,
-              :category_id, :entity_id,
+              :category_id, :entity_id, :id,
               :categories, :entities,
               :count_by_month_year,
               :mobile
@@ -25,6 +25,7 @@ class Views::Budgets::IndexSearchForm < Views::Base
     @search_term = index_context[:search_term]
     @category_id = index_context[:category_id]
     @entity_id = index_context[:entity_id]
+    @id = index_context[:id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @mobile = mobile
 
@@ -40,6 +41,7 @@ class Views::Budgets::IndexSearchForm < Views::Base
               class: "w-full",
               data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
       build_month_year_selector
+      exact_scope_inputs
 
       div(class: "flex items-center gap-2") do
         div(class: mobile ? "w-full" : "grid flex-1 grid-cols-3 gap-2") do
@@ -105,6 +107,13 @@ class Views::Budgets::IndexSearchForm < Views::Base
   end
 
   private
+
+  def exact_scope_inputs
+    Array(id).compact_blank.each do |value|
+      input type: "hidden", name: "budget[id][]", value:
+    end
+    input type: "hidden", name: "return_to", value: index_context[:return_to] if index_context[:return_to].present?
+  end
 
   def selected_category_ids
     Array(category_id).map(&:to_s)

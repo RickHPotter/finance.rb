@@ -9,7 +9,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
 
   def index
     build_index_context(current_context.cash_installments)
-    @index_context[:return_to] = cash_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || cash_navigation_return_param(request.fullpath)
 
     render_top_level Views::CashTransactions::Index.new(index_context: @index_context, mobile: @mobile)
   end
@@ -899,7 +899,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def set_return_to
-    @return_to = cash_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || cash_navigation_destination(params[:return_to])
   end
 
   def cash_navigation_destination(raw)
@@ -1075,7 +1075,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
       sort:,
       direction:,
       force_mobile: mobile,
-      return_to: cash_navigation_return_param(params[:return_to])
+      return_to: dashboard_navigation_destination(params[:return_to]) || cash_navigation_return_param(params[:return_to])
     }
   end
 

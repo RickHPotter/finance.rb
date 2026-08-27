@@ -44,6 +44,7 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "Budget", item_id: budget.id), variant: :outline)
+        dashboard_action(I18n.t("dashboards.actions.view_in_list"), budget_index_path, variant: :outline)
         dashboard_action(action_message(:edit), edit_budget_path(budget, return_to:), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_budget_path(budget, return_to:), variant: :duplicate)
         destroy_action
@@ -275,10 +276,8 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
     budgets_path(
       default_year: budget.year,
       active_month_years: active_month_years_param(budget.year, budget.month),
-      budget: {
-        category_id: categories.map(&:id),
-        entity_id: entities.map(&:id)
-      }.compact_blank
+      budget: { id: [ budget.id ] },
+      return_to: budget_path(budget)
     )
   end
 
@@ -415,8 +414,8 @@ class Views::Budgets::Show < Views::Base # rubocop:disable Metrics/ClassLength
 
   def dashboard_path_for(transaction)
     case transaction
-    when CashTransaction then cash_transaction_path(transaction)
-    when CardTransaction then card_transaction_path(transaction)
+    when CashTransaction then cash_transaction_path(transaction, return_to: budget_path(budget))
+    when CardTransaction then card_transaction_path(transaction, return_to: budget_path(budget))
     end
   end
 

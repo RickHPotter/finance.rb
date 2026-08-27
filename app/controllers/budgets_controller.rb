@@ -8,7 +8,7 @@ class BudgetsController < ApplicationController
 
   def index
     build_index_context
-    @index_context[:return_to] = budget_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || budget_navigation_return_param(request.fullpath)
 
     render_top_level Views::Budgets::Index.new(index_context: @index_context, mobile: @mobile)
   end
@@ -27,7 +27,7 @@ class BudgetsController < ApplicationController
       month_year_str:,
       budgets:,
       category_colour_display_mode:,
-      return_to: budget_navigation_return_param(params[:return_to])
+      return_to: dashboard_navigation_destination(params[:return_to]) || budget_navigation_return_param(params[:return_to])
     )
   end
 
@@ -151,7 +151,7 @@ class BudgetsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = budget_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || budget_navigation_destination(params[:return_to])
   end
 
   def budget_navigation_destination(raw)
@@ -189,7 +189,7 @@ class BudgetsController < ApplicationController
 
     ret_params.permit(
       :description, :value, :inclusive, :first_installment_only, :month, :year, :active, :user_id, :category_id, :entity_id,
-      category_id: [], entity_id: [],
+      id: [], category_id: [], entity_id: [],
       budget_categories_attributes: %i[id category_id _destroy],
       budget_entities_attributes: %i[id entity_id _destroy]
     )

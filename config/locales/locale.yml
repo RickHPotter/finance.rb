@@ -116,6 +116,11 @@ en:
       number: "Number"
   dashboards:
     empty: "Nothing to display yet."
+    actions:
+      view_in_list: "View in list"
+      view_transactions: "View transactions"
+      view_cash_transactions: "View cash transactions"
+      view_card_transactions: "View card transactions"
     sections:
       summary: "Summary"
       installments: "Installments"
@@ -454,6 +459,11 @@ pt-BR:
       number: "Número"
   dashboards:
     empty: "Nada para exibir ainda."
+    actions:
+      view_in_list: "Ver na lista"
+      view_transactions: "Ver movimentações"
+      view_cash_transactions: "Ver movimentações em dinheiro"
+      view_card_transactions: "Ver movimentações no cartão"
     sections:
       summary: "Resumo"
       installments: "Parcelas"

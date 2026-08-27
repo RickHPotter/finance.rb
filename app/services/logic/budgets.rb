@@ -33,6 +33,7 @@ module Logic
       search_term_condition = "description ILIKE '%#{raw_conditions[:search_term]}%'" if raw_conditions[:search_term].present?
 
       conditions = {
+        id: raw_conditions[:id],
         price: raw_conditions[:price],
         **raw_conditions[:associations]
       }.compact_blank
@@ -61,6 +62,7 @@ module Logic
 
       {
         search_term: params["search_term"],
+        id: params.delete(:id),
         associations: {
           categories: { id: category_id }.compact_blank,
           entities: { id: entity_id }.compact_blank
@@ -76,6 +78,8 @@ module Logic
                  .left_joins(:categories, :entities)
                  .where(raw_conditions[:associations])
                  .where("budgets.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.where(id: raw_conditions[:id]) if raw_conditions[:id].present?
 
       relation = relation.distinct.select("budgets.id, budgets.month, budgets.year")
 

@@ -59,15 +59,15 @@ dashboards:
     - claim: reference and exchange projections
       current: typed cash/card/budget show links
       target: typed show links with source return_to
-      status: slice_2
+      status: implemented
     - claim: Piggy Bank sources
       current: edit current return transaction
-      target: exact source records or an intentionally labelled mutation action
-      status: slice_2
+      target: intentionally labelled mutation action for managing the source group
+      status: implemented
     - claim: reference descendants count
       current: display_only
       target: exact typed record links or bounded finite collections
-      status: slice_2
+      status: implemented
 
   card_transaction:
     - claim: audit history
@@ -85,11 +85,11 @@ dashboards:
     - claim: invoice payments, references, and exchanges
       current: typed cash/card/budget show links
       target: typed show links with source return_to
-      status: slice_2
+      status: implemented
     - claim: reference descendants count
       current: display_only
       target: exact typed record links or bounded finite collections
-      status: slice_2
+      status: implemented
 
   budget:
     - claim: audit, edit, duplicate, destroy
@@ -99,11 +99,11 @@ dashboards:
     - claim: consumed installments
       current: embedded rows linked to typed transaction shows
       target: preserve and add source return_to
-      status: slice_2
+      status: implemented
     - claim: budget index return
       current: month plus category/entity intersection
       target: exact budget id when the claim is this budget; allocation filters only for aggregation claims
-      status: slice_2
+      status: implemented
 
   user_bank_account:
     - claim: audit, edit, index, destroy
@@ -113,11 +113,11 @@ dashboards:
     - claim: cash transaction count and total
       current: display_only
       target: cash index filtered by account
-      status: slice_2
+      status: implemented
     - claim: category and entity breakdowns
       current: display_only charts and cards
       target: account plus selected allocation filters
-      status: slice_2
+      status: implemented
 
   user_card:
     - claim: audit, edit, index, destroy
@@ -127,11 +127,11 @@ dashboards:
     - claim: card transaction count and total
       current: display_only
       target: card index filtered by user card
-      status: slice_2
+      status: implemented
     - claim: category and entity breakdowns
       current: display_only charts and cards
       target: user card plus selected allocation filters
-      status: slice_2
+      status: implemented
     - claim: billing references
       current: embedded reference cards
       target: retain embedded records; merge entry point remains the existing reference workflow
@@ -141,29 +141,29 @@ dashboards:
     - claim: edit, index, destroy
       current: direct or guarded actions
       target: preserve and add existing KAKASHI-18 merge entry point
-      status: slice_2
+      status: implemented
     - claim: cash/card counts and totals
       current: display_only
       target: typed indexes filtered by category
-      status: slice_2
+      status: implemented
     - claim: entity and funding-source breakdowns
       current: display_only charts
-      target: category plus selected entity/account/card filter
-      status: slice_2
+      target: intentionally display-only visualization with exact typed collection actions in the header
+      status: implemented
 
   entity:
     - claim: edit, index, destroy
       current: direct or guarded actions
       target: preserve and add existing KAKASHI-18 merge entry point
-      status: slice_2
+      status: implemented
     - claim: cash/card counts and totals
       current: display_only
       target: typed indexes filtered by entity
-      status: slice_2
+      status: implemented
     - claim: category and funding-source breakdowns
       current: display_only charts
-      target: entity plus selected category/account/card filter
-      status: slice_2
+      target: intentionally display-only visualization with exact typed collection actions in the header
+      status: implemented
 
 invariants:
   - No collection relationship is represented by search_term.

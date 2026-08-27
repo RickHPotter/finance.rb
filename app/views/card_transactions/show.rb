@@ -49,6 +49,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
       div(class: "grid grid-cols-3 gap-2 [&>*:only-child]:col-span-3 [&>*:nth-child(4):last-child]:col-start-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "CardTransaction", item_id: card_transaction.id), variant: :outline)
+        dashboard_action(I18n.t("dashboards.actions.view_in_list"), card_index_path, variant: :outline)
         dashboard_action(action_message(:edit), edit_card_transaction_path(card_transaction, return_to:), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_card_transaction_path(card_transaction, return_to:), variant: :duplicate) if duplicate_allowed?
         destroy_action
@@ -130,7 +131,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         end
         if card_transaction.advance_cash_transaction.present?
           link_item(I18n.t("dashboards.card_transactions.advance_cash_transaction"), card_transaction.advance_cash_transaction.description,
-                    cash_transaction_path(card_transaction.advance_cash_transaction))
+                    cash_transaction_path(card_transaction.advance_cash_transaction, return_to: card_transaction_path(card_transaction)))
         end
         reference_link_item
         descendants_link_item
@@ -285,9 +286,9 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def card_index_path
     card_transactions_path(
-      user_card_id: card_transaction.user_card_id,
-      default_year: card_transaction.year,
-      active_month_years: active_month_years_param(card_transaction.year, card_transaction.month)
+      all_month_years: true,
+      card_transaction: { id: [ card_transaction.id ] },
+      return_to: card_transaction_path(card_transaction)
     )
   end
 
@@ -304,7 +305,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def exchange_item(exchange)
-    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction) : "#"
+    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction, return_to: card_transaction_path(card_transaction)) : "#"
     link_item(exchange.exchange_type.to_s.humanize, "#{money(exchange.price)} - #{localized_date(exchange.date)}", href)
   end
 
@@ -389,7 +390,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def exchange_row(exchange)
-    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction) : nil
+    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction, return_to: card_transaction_path(card_transaction)) : nil
     row_classes = "grid grid-cols-12 items-center border-t border-slate-200 px-3 py-2 text-sm #{exchange_row_class(exchange)}"
 
     if href.present?
@@ -404,7 +405,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def exchange_mobile_card(exchange)
-    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction) : nil
+    href = exchange.cash_transaction.present? ? cash_transaction_path(exchange.cash_transaction, return_to: card_transaction_path(card_transaction)) : nil
     classes = "rounded-xl border border-inherit px-3 py-2 #{exchange_row_class(exchange)}"
 
     if href.present?
@@ -477,7 +478,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def invoice_link_item(cash_transaction)
-    link_to cash_transaction_path(cash_transaction),
+    link_to cash_transaction_path(cash_transaction, return_to: card_transaction_path(card_transaction)),
             class: "block rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-3 transition hover:border-sky-500 hover:bg-sky-100 " \
                    "dark:border-sky-500/40 dark:bg-slate-900 dark:hover:border-sky-400 dark:hover:bg-slate-800",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
@@ -496,7 +497,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   end
 
   def invoice_row(cash_transaction, number, total_count)
-    link_to cash_transaction_path(cash_transaction),
+    link_to cash_transaction_path(cash_transaction, return_to: card_transaction_path(card_transaction)),
             class: "grid grid-cols-12 items-center border-t px-4 py-3 text-sm transition #{invoice_row_class(cash_transaction)}",
             data: { turbo_frame: "_top", turbo_prefetch: false } do
       span(class: "col-span-2 text-center") { pretty_installments(number, total_count) }
@@ -533,7 +534,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
         end
 
         if cash_transaction.present?
-          link_to cash_transaction_path(cash_transaction),
+          link_to cash_transaction_path(cash_transaction, return_to: card_transaction_path(card_transaction)),
                   class: "block shadow-md rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-right transition hover:border-sky-500 hover:bg-sky-100 " \
                          "dark:border-sky-500/40 dark:bg-slate-900 dark:shadow-none dark:hover:border-sky-400 dark:hover:bg-slate-800",
                   data: { turbo_frame: "_top", turbo_prefetch: false } do
@@ -571,8 +572,14 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
   def descendants_link_item
     return if reference_descendants.empty?
 
-    p(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700") do
-      I18n.t("dashboards.card_transactions.reference_descendants", count: reference_descendants.count)
+    div(class: "space-y-2") do
+      p(class: "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 " \
+               "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300") do
+        I18n.t("dashboards.card_transactions.reference_descendants", count: reference_descendants.count)
+      end
+      reference_descendants.each do |descendant|
+        link_item(descendant.class.model_name.human, descendant.description, reference_path_for(descendant))
+      end
     end
   end
 
@@ -683,9 +690,9 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
 
   def reference_path_for(reference)
     case reference
-    when CashTransaction then cash_transaction_path(reference)
-    when CardTransaction then card_transaction_path(reference)
-    when Budget then budget_path(reference)
+    when CashTransaction then cash_transaction_path(reference, return_to: card_transaction_path(card_transaction))
+    when CardTransaction then card_transaction_path(reference, return_to: card_transaction_path(card_transaction))
+    when Budget then budget_path(reference, return_to: card_transaction_path(card_transaction))
     else "#"
     end
   end

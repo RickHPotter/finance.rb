@@ -70,6 +70,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
 
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
       exact_scope_inputs("cash_transaction", id:, subscription_id:)
+      input type: "hidden", name: "return_to", value: return_to if return_to.present?
       input type: "hidden", name: :paid_state, value: paid_state || "all", id: "cash_transactions_paid_state"
       input type: "hidden", name: :paid, value: paid, id: "cash_transactions_paid"
       input type: "hidden", name: :pending, value: pending, id: "cash_transactions_pending"

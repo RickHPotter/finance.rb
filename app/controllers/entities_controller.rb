@@ -98,7 +98,7 @@ class EntitiesController < ApplicationController
   end
 
   def set_return_to
-    @return_to = entity_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || entity_navigation_destination(params[:return_to])
   end
 
   def entity_navigation_destination(raw)

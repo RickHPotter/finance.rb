@@ -85,6 +85,33 @@ RSpec.describe "Dashboard collection filter contracts", type: :request do
     expect(response.body).not_to include(excluded.description)
   end
 
+  it "filters budget collections by exact ids and persists the dashboard return path" do
+    selected = create(:budget, user:, context:, description: "EXACT BUDGET DASHBOARD", month: 8, year: 2026)
+    excluded = create(:budget, user:, context:, description: "EXCLUDED BUDGET DASHBOARD", month: 8, year: 2026)
+    return_to = user_bank_account_path(bank_account)
+
+    get budgets_path(
+      default_year: 2026,
+      active_month_years: [ 202_608 ].to_json,
+      budget: { id: [ selected.id ] },
+      return_to:
+    )
+
+    document = Nokogiri::HTML.parse(response.body)
+
+    expect(document.at_css(%(input[type="hidden"][name="budget[id][]"][value="#{selected.id}"]))).to be_present
+    expect(document.at_css(%(input[type="hidden"][name="return_to"][value="#{return_to}"]))).to be_present
+
+    get month_year_budgets_path(
+      month_year: "202608",
+      budget: { id: [ selected.id ] },
+      return_to:
+    )
+
+    expect(response.body).to include(selected.description)
+    expect(response.body).not_to include(excluded.description)
+  end
+
   it "rejects foreign dashboard identifiers from approved return paths" do
     foreign_user = create(:user, :random)
     foreign_subscription = create(:subscription, user: foreign_user, context: foreign_user.main_context)

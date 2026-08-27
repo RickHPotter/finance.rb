@@ -11,7 +11,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
     @user_card ||= current_user.user_cards.find_by(id: card_transaction_params[:user_card_id])
 
     build_index_context(card_installments_for_selected_user_card)
-    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(request.fullpath)
 
     set_card_tabs
 
@@ -20,7 +20,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
 
   def search
     build_index_context(current_context.card_installments)
-    @index_context[:return_to] = card_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(request.fullpath)
 
     render_top_level Views::CardTransactions::Index.new(index_context: @index_context, search: true, mobile: @mobile)
   end
@@ -28,7 +28,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   def month_year
     mobile = search_card_transaction_params[:force_mobile] || @mobile
     month_year = search_card_transaction_params[:month_year]
-    return_to = card_navigation_return_param(params[:return_to])
+    return_to = dashboard_navigation_destination(params[:return_to]) || card_navigation_return_param(params[:return_to])
     user_card_id = card_transaction_params[:user_card_id].presence
     user_card = current_user.user_cards.find_by(id: user_card_id)
 
@@ -285,7 +285,7 @@ class CardTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def set_return_to
-    @return_to = card_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || card_navigation_destination(params[:return_to])
     @return_to = card_transactions_path(user_card_id: @card_transaction.user_card_id) if @return_to == card_transactions_path && @card_transaction.user_card_id
   end
 
