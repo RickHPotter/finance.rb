@@ -24,6 +24,53 @@ COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching
 
 
 --
+-- Name: enforce_canonical_conversation_participants(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_canonical_conversation_participants() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  conversation_key bigint;
+  conversation_keys bigint[];
+  participant_count integer;
+  participant_user_ids bigint[];
+  expected_user_ids bigint[];
+BEGIN
+  IF TG_TABLE_NAME = 'conversations' THEN
+    conversation_keys := ARRAY[NEW.id];
+  ELSIF TG_OP = 'DELETE' THEN
+    conversation_keys := ARRAY[OLD.conversation_id];
+  ELSIF TG_OP = 'UPDATE' AND OLD.conversation_id <> NEW.conversation_id THEN
+    conversation_keys := ARRAY[OLD.conversation_id, NEW.conversation_id];
+  ELSE
+    conversation_keys := ARRAY[NEW.conversation_id];
+  END IF;
+
+  FOREACH conversation_key IN ARRAY conversation_keys LOOP
+    SELECT COUNT(*), ARRAY_AGG(user_id ORDER BY user_id)
+    INTO participant_count, participant_user_ids
+    FROM conversation_participants
+    WHERE conversation_id = conversation_key;
+
+    SELECT ARRAY[LEAST(friendships.user_id, friendships.friend_id), GREATEST(friendships.user_id, friendships.friend_id)]::bigint[]
+    INTO expected_user_ids
+    FROM conversations
+    JOIN friendships ON friendships.id = conversations.friendship_id
+    WHERE conversations.id = conversation_key;
+
+    IF expected_user_ids IS NOT NULL AND (participant_count <> 2 OR participant_user_ids <> expected_user_ids) THEN
+      RAISE EXCEPTION 'conversation % must contain exactly its friendship participants', conversation_key
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END;
+$$;
+
+
+--
 -- Name: prevent_financial_audit_mutation(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -32,6 +79,20 @@ CREATE FUNCTION public.prevent_financial_audit_mutation() RETURNS trigger
     AS $$
 BEGIN
   RAISE EXCEPTION '% is append-only', TG_TABLE_NAME
+    USING ERRCODE = 'integrity_constraint_violation';
+END;
+$$;
+
+
+--
+-- Name: prevent_message_action_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.prevent_message_action_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'message_actions is append-only'
     USING ERRCODE = 'integrity_constraint_violation';
 END;
 $$;
@@ -613,7 +674,10 @@ CREATE TABLE public.conversation_participants (
     conversation_id bigint NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    archived_at timestamp(6) without time zone,
+    muted_at timestamp(6) without time zone,
+    last_read_message_id bigint
 );
 
 
@@ -645,7 +709,11 @@ CREATE TABLE public.conversations (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     kind character varying DEFAULT 'human'::character varying NOT NULL,
-    scenario_key character varying
+    scenario_key character varying,
+    friendship_id bigint,
+    public_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    last_message_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT conversations_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'assistant'::character varying])::text[])))
 );
 
 
@@ -1034,6 +1102,55 @@ ALTER SEQUENCE public.investments_id_seq OWNED BY public.investments.id;
 
 
 --
+-- Name: message_actions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.message_actions (
+    id bigint NOT NULL,
+    message_id bigint NOT NULL,
+    conversation_id bigint NOT NULL,
+    friendship_id bigint NOT NULL,
+    actor_id bigint NOT NULL,
+    friend_id bigint NOT NULL,
+    recipient_context_id bigint NOT NULL,
+    audit_operation_id uuid,
+    scenario_key uuid,
+    action character varying NOT NULL,
+    initiator character varying NOT NULL,
+    outcome character varying NOT NULL,
+    resulting_state character varying NOT NULL,
+    error_code character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT message_actions_action CHECK (((action)::text = ANY ((ARRAY['apply'::character varying, 'acknowledge'::character varying, 'reject'::character varying, 'revert'::character varying])::text[]))),
+    CONSTRAINT message_actions_error_code CHECK (((error_code IS NULL) OR ((error_code)::text = ANY ((ARRAY['unavailable'::character varying, 'friendship_unavailable'::character varying, 'wrong_recipient'::character varying, 'wrong_context'::character varying, 'superseded'::character varying, 'invalid_payload'::character varying, 'unsupported_action'::character varying, 'local_reference_unavailable'::character varying, 'local_reference_changed'::character varying, 'wrong_target'::character varying, 'unsafe_destroy'::character varying, 'paid_history'::character varying, 'state_unavailable'::character varying, 'validation_failed'::character varying, 'persistence_failed'::character varying])::text[])))),
+    CONSTRAINT message_actions_initiator CHECK (((initiator)::text = ANY ((ARRAY['manual'::character varying, 'automatic'::character varying, 'system'::character varying])::text[]))),
+    CONSTRAINT message_actions_metadata_size CHECK ((octet_length((metadata)::text) <= 16384)),
+    CONSTRAINT message_actions_outcome CHECK (((outcome)::text = ANY ((ARRAY['succeeded'::character varying, 'failed'::character varying, 'denied'::character varying, 'idempotent'::character varying])::text[]))),
+    CONSTRAINT message_actions_resulting_state CHECK (((resulting_state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'expired'::character varying, 'failed'::character varying, 'unavailable'::character varying, 'reverted'::character varying])::text[])))
+);
+
+
+--
+-- Name: message_actions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.message_actions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: message_actions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.message_actions_id_seq OWNED BY public.message_actions.id;
+
+
+--
 -- Name: messages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1052,7 +1169,12 @@ CREATE TABLE public.messages (
     applied_at timestamp(6) without time zone,
     audit_operation_id uuid,
     auto_applied boolean DEFAULT false NOT NULL,
-    reverted_at timestamp(6) without time zone
+    reverted_at timestamp(6) without time zone,
+    kind character varying NOT NULL,
+    action_state character varying,
+    CONSTRAINT messages_action_state CHECK (((action_state IS NULL) OR ((action_state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'rejected'::character varying, 'expired'::character varying, 'failed'::character varying, 'unavailable'::character varying, 'reverted'::character varying])::text[])))),
+    CONSTRAINT messages_kind CHECK (((kind)::text = ANY ((ARRAY['human'::character varying, 'transaction_notification'::character varying, 'transaction_destroy_notification'::character varying, 'paid_state_sync'::character varying])::text[]))),
+    CONSTRAINT messages_kind_action_state CHECK (((((kind)::text = 'human'::text) AND (action_state IS NULL)) OR (((kind)::text <> 'human'::text) AND (action_state IS NOT NULL))))
 );
 
 
@@ -1561,6 +1683,13 @@ ALTER TABLE ONLY public.investments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: message_actions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions ALTER COLUMN id SET DEFAULT nextval('public.message_actions_id_seq'::regclass);
+
+
+--
 -- Name: messages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1837,6 +1966,14 @@ ALTER TABLE ONLY public.investment_types
 
 ALTER TABLE ONLY public.investments
     ADD CONSTRAINT investments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: message_actions message_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT message_actions_pkey PRIMARY KEY (id);
 
 
 --
@@ -2368,6 +2505,20 @@ CREATE INDEX index_conversation_participants_on_conversation_id ON public.conver
 
 
 --
+-- Name: index_conversation_participants_on_last_read_message_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversation_participants_on_last_read_message_id ON public.conversation_participants USING btree (last_read_message_id);
+
+
+--
+-- Name: index_conversation_participants_on_membership; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversation_participants_on_membership ON public.conversation_participants USING btree (conversation_id, user_id);
+
+
+--
 -- Name: index_conversation_participants_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2375,10 +2526,45 @@ CREATE INDEX index_conversation_participants_on_user_id ON public.conversation_p
 
 
 --
+-- Name: index_conversations_on_activity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversations_on_activity ON public.conversations USING btree (last_message_at DESC, id DESC);
+
+
+--
+-- Name: index_conversations_on_friendship_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_conversations_on_friendship_id ON public.conversations USING btree (friendship_id);
+
+
+--
 -- Name: index_conversations_on_kind; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_conversations_on_kind ON public.conversations USING btree (kind);
+
+
+--
+-- Name: index_conversations_on_main_canonical_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_main_canonical_identity ON public.conversations USING btree (friendship_id, kind) WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NULL));
+
+
+--
+-- Name: index_conversations_on_public_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_public_id ON public.conversations USING btree (public_id);
+
+
+--
+-- Name: index_conversations_on_scenario_canonical_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_conversations_on_scenario_canonical_identity ON public.conversations USING btree (friendship_id, kind, scenario_key) WHERE ((friendship_id IS NOT NULL) AND (scenario_key IS NOT NULL));
 
 
 --
@@ -2592,6 +2778,83 @@ CREATE INDEX index_investments_on_user_id ON public.investments USING btree (use
 
 
 --
+-- Name: index_message_actions_on_actor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_actor_id ON public.message_actions USING btree (actor_id);
+
+
+--
+-- Name: index_message_actions_on_actor_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_actor_id_and_created_at ON public.message_actions USING btree (actor_id, created_at);
+
+
+--
+-- Name: index_message_actions_on_audit_operation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_audit_operation_id ON public.message_actions USING btree (audit_operation_id);
+
+
+--
+-- Name: index_message_actions_on_conversation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_conversation_id ON public.message_actions USING btree (conversation_id);
+
+
+--
+-- Name: index_message_actions_on_conversation_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_conversation_id_and_created_at ON public.message_actions USING btree (conversation_id, created_at);
+
+
+--
+-- Name: index_message_actions_on_friend_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_friend_id ON public.message_actions USING btree (friend_id);
+
+
+--
+-- Name: index_message_actions_on_friendship_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_friendship_id ON public.message_actions USING btree (friendship_id);
+
+
+--
+-- Name: index_message_actions_on_message_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_message_id ON public.message_actions USING btree (message_id);
+
+
+--
+-- Name: index_message_actions_on_recipient_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_recipient_context_id ON public.message_actions USING btree (recipient_context_id);
+
+
+--
+-- Name: index_message_actions_on_recipient_context_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_actions_on_recipient_context_id_and_created_at ON public.message_actions USING btree (recipient_context_id, created_at);
+
+
+--
+-- Name: index_message_actions_on_successful_effect; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_message_actions_on_successful_effect ON public.message_actions USING btree (message_id, action) WHERE ((outcome)::text = 'succeeded'::text);
+
+
+--
 -- Name: index_messages_on_applied_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2606,10 +2869,24 @@ CREATE INDEX index_messages_on_audit_operation_id ON public.messages USING btree
 
 
 --
+-- Name: index_messages_on_conversation_cursor; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_conversation_cursor ON public.messages USING btree (conversation_id, created_at DESC, id DESC);
+
+
+--
 -- Name: index_messages_on_conversation_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_messages_on_conversation_id ON public.messages USING btree (conversation_id);
+
+
+--
+-- Name: index_messages_on_kind_and_action_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_kind_and_action_state ON public.messages USING btree (kind, action_state);
 
 
 --
@@ -2774,11 +3051,40 @@ CREATE TRIGGER audit_versions_append_only BEFORE DELETE OR UPDATE ON public.audi
 
 
 --
+-- Name: conversation_participants conversation_participants_canonical_pair; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER conversation_participants_canonical_pair AFTER INSERT OR DELETE OR UPDATE ON public.conversation_participants DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_canonical_conversation_participants();
+
+
+--
+-- Name: conversations conversations_canonical_participants; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER conversations_canonical_participants AFTER INSERT OR UPDATE ON public.conversations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.enforce_canonical_conversation_participants();
+
+
+--
+-- Name: message_actions message_actions_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER message_actions_append_only BEFORE DELETE OR UPDATE ON public.message_actions FOR EACH ROW EXECUTE FUNCTION public.prevent_message_action_mutation();
+
+
+--
 -- Name: entity_transactions fk_rails_0454212ed0; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.entity_transactions
     ADD CONSTRAINT fk_rails_0454212ed0 FOREIGN KEY (entity_id) REFERENCES public.entities(id);
+
+
+--
+-- Name: message_actions fk_rails_05b26fc07b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_05b26fc07b FOREIGN KEY (audit_operation_id) REFERENCES public.audit_operations(id) ON DELETE RESTRICT;
 
 
 --
@@ -2803,6 +3109,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.card_transactions
     ADD CONSTRAINT fk_rails_09e0bb8e5a FOREIGN KEY (user_card_id) REFERENCES public.user_cards(id);
+
+
+--
+-- Name: message_actions fk_rails_10363fbf05; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_10363fbf05 FOREIGN KEY (message_id) REFERENCES public.messages(id) ON DELETE RESTRICT;
 
 
 --
@@ -2843,6 +3157,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.contexts
     ADD CONSTRAINT fk_rails_2c076dcb91 FOREIGN KEY (source_context_id) REFERENCES public.contexts(id);
+
+
+--
+-- Name: message_actions fk_rails_314bf1ad4d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_314bf1ad4d FOREIGN KEY (friend_id) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -3030,6 +3352,22 @@ ALTER TABLE ONLY public."references"
 
 
 --
+-- Name: conversations fk_rails_8da65869f8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT fk_rails_8da65869f8 FOREIGN KEY (friendship_id) REFERENCES public.friendships(id);
+
+
+--
+-- Name: message_actions fk_rails_8e5bf995fc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_8e5bf995fc FOREIGN KEY (recipient_context_id) REFERENCES public.contexts(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: subscriptions fk_rails_933bdff476; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3110,11 +3448,27 @@ ALTER TABLE ONLY public.categories
 
 
 --
+-- Name: message_actions fk_rails_bbb792b567; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_bbb792b567 FOREIGN KEY (friendship_id) REFERENCES public.friendships(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.active_storage_attachments
     ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: message_actions fk_rails_cd239959ee; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_cd239959ee FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -3174,11 +3528,27 @@ ALTER TABLE ONLY public.exchanges
 
 
 --
+-- Name: message_actions fk_rails_e092d3c63a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_actions
+    ADD CONSTRAINT fk_rails_e092d3c63a FOREIGN KEY (conversation_id) REFERENCES public.conversations(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: friendships fk_rails_e3733b59b7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.friendships
     ADD CONSTRAINT fk_rails_e3733b59b7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: conversation_participants fk_rails_e618757051; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversation_participants
+    ADD CONSTRAINT fk_rails_e618757051 FOREIGN KEY (last_read_message_id) REFERENCES public.messages(id) ON DELETE SET NULL;
 
 
 --
@@ -3260,6 +3630,12 @@ ALTER TABLE ONLY public.card_transactions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260820220000'),
+('20260820210000'),
+('20260820180000'),
+('20260820150000'),
+('20260820120000'),
+('20260819210000'),
 ('20260810150000'),
 ('20260806181854'),
 ('20260804132347'),

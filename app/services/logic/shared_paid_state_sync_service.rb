@@ -101,13 +101,15 @@ module Logic
     def notify_counterpart_paid_state_change!
       sender = installment.cash_transaction.user
       receiver = counterpart_installment.cash_transaction.user
-      return unless sender.friendship_with(receiver)&.accepted_state?
+      friendship = sender.friendship_with(receiver)
+      return unless friendship&.accepted_state?
 
       return create_counterpart_structure_update_message if open_actionable_update_exists?
 
-      conversation = Conversation.find_or_create_assistant_between!(
-        sender,
-        receiver,
+      conversation = Logic::Conversations::Resolve.call(
+        actor: sender,
+        friendship:,
+        kind: :assistant,
         scenario_key: installment.cash_transaction.context.scenario_key
       )
       headers = paid_state_headers(receiver).to_json
@@ -126,9 +128,13 @@ module Logic
       sender = installment.cash_transaction.user
       receiver = counterpart_transaction.user
       reference_transactable = structure_update_reference_transactable
-      conversation = Conversation.find_or_create_assistant_between!(
-        sender,
-        receiver,
+      friendship = sender.friendship_with(receiver)
+      return false unless friendship&.accepted_state?
+
+      conversation = Logic::Conversations::Resolve.call(
+        actor: sender,
+        friendship:,
+        kind: :assistant,
         scenario_key: installment.cash_transaction.context.scenario_key
       )
       headers = counterpart_update_headers(receiver, reference_transactable).to_json
@@ -431,9 +437,13 @@ module Logic
     def open_actionable_update_exists?
       sender = installment.cash_transaction.user
       receiver = counterpart_installment.cash_transaction.user
-      conversation = Conversation.find_or_create_assistant_between!(
-        sender,
-        receiver,
+      friendship = sender.friendship_with(receiver)
+      return false unless friendship&.accepted_state?
+
+      conversation = Logic::Conversations::Resolve.call(
+        actor: sender,
+        friendship:,
+        kind: :assistant,
         scenario_key: installment.cash_transaction.context.scenario_key
       )
       reference_family = installment.cash_transaction.notification_message_reference_family
@@ -462,7 +472,7 @@ module Logic
                                       .where(superseded_by_id: nil)
                                       .where.not(id: new_message.id)
 
-      previous_messages.update_all(superseded_by_id: new_message.id)
+      Logic::Messages::Transition.expire_scope!(previous_messages, superseded_by: new_message)
     end
   end
 end

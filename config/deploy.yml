@@ -16,6 +16,7 @@ proxy:
   ssl: true
   host: 30fev.com
   app_port: 3000
+  response_timeout: 180
   healthcheck:
     path: /up
     interval: 20

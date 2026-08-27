@@ -5,7 +5,8 @@ require "rails_helper"
 RSpec.describe "Conversation and internal-screen navigation", type: :request do
   let(:user) { create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-navigation@example.com") }
   let(:other_user) { create(:user, :random) }
-  let(:conversation) { Conversation.find_or_create_human_between!(user, other_user) }
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
+  let(:conversation) { resolve_human_conversation(user, other_user) }
 
   before { sign_in user }
 
@@ -45,7 +46,7 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
 
   it "uses top-level advances for conversation selection and actionable transaction entry" do
     remote_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-    assistant_conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+    assistant_conversation = resolve_assistant_conversation(other_user, user)
     message = assistant_conversation.messages.create!(
       user: other_user,
       body: "notification:create",
@@ -67,7 +68,8 @@ RSpec.describe "Conversation and internal-screen navigation", type: :request do
 
     get conversation_path(assistant_conversation, message_filter: "all")
     document = Nokogiri::HTML(response.body)
-    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id })
+    return_to = conversation_path(assistant_conversation, message_filter: "all", message_side: %w[mine theirs])
+    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to:)
     expect_top_level_advance(document.at_css("a[href='#{action_path}']"))
     expect(response.body).not_to include("format=turbo_stream")
   end

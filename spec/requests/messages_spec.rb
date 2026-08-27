@@ -5,12 +5,8 @@ require "rails_helper"
 RSpec.describe "Messages", type: :request do
   let(:user) { create(:user, :random) }
   let(:other_user) { create(:user, :random) }
-  let(:conversation) do
-    Conversation.create!.tap do |c|
-      c.conversation_participants.create!(user:)
-      c.conversation_participants.create!(user: other_user)
-    end
-  end
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
+  let(:conversation) { resolve_human_conversation(user, other_user) }
 
   before { sign_in user }
 
@@ -31,7 +27,8 @@ RSpec.describe "Messages", type: :request do
 
     it "creates a message inside a derived-scenario conversation" do
       derived_context = create(:context, user:, name: "Message Scenario", source_context: user.main_context)
-      derived_conversation = Conversation.find_or_create_human_between!(user, other_user, scenario_key: derived_context.scenario_key)
+      create(:context, user: other_user, scenario_key: derived_context.scenario_key)
+      derived_conversation = resolve_human_conversation(user, other_user, scenario_key: derived_context.scenario_key)
 
       patch switch_context_path(derived_context)
 
@@ -55,10 +52,46 @@ RSpec.describe "Messages", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it "does not allow posting after the friendship stops being accepted" do
+      conversation
+      friendship.update!(state: "blocked")
+
+      expect do
+        post conversation_messages_path(conversation), params: {
+          message: { body: "Blocked message" }
+        }, headers: turbo_stream_headers
+      end.not_to change(Message, :count)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "denies every message action route after friendship revocation" do
+      assistant = resolve_assistant_conversation(user, other_user)
+      actionable_message = assistant.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", details: {} },
+          replay: { id: 123, type: "CashTransaction" }
+        }.to_json
+      )
+      friendship.update!(state: "blocked")
+
+      {
+        apply: apply_conversation_message_path(assistant, actionable_message),
+        reject: reject_conversation_message_path(assistant, actionable_message),
+        revert: revert_conversation_message_path(assistant, actionable_message)
+      }.each do |action, path|
+        sign_in user
+        patch path, headers: turbo_stream_headers
+        expect(response).to have_http_status(:not_found), "expected #{action} to be denied, got #{response.status} #{response.location}"
+      end
+    end
   end
 
   describe "[ #revert ]" do
-    let(:friendship) { create(:friendship, user: user, friend: other_user, state: "accepted") }
     let(:message) do
       conversation.messages.create!(
         user: other_user,
@@ -70,8 +103,6 @@ RSpec.describe "Messages", type: :request do
         }.to_json
       )
     end
-
-    before { friendship }
 
     it "reverts an auto-applied message" do
       allow_any_instance_of(Logic::Friendships::RevertAutoApplyService).to receive(:call).and_return(
@@ -132,8 +163,10 @@ RSpec.describe "Messages", type: :request do
 
       created_transaction = user.main_context.cash_transactions.find_by!(description: "Revert auto-applied dinner")
       expect(actionable_message.reload).to be_auto_applied
-      expect(actionable_message.audit_operation).to be_source_actionable_message
-      preview = Audit::Rollback::Preview.new(operation: actionable_message.audit_operation, actor: user)
+      apply_operation = actionable_message.message_actions.find_by!(action: :apply, outcome: :succeeded).audit_operation
+      expect(apply_operation).to be_source_actionable_message
+      expect(actionable_message.audit_operation).to be_source_web
+      preview = Audit::Rollback::Preview.new(operation: apply_operation, actor: user)
       expect(preview.state).to eq("previewable"), preview.digest_payload.inspect
 
       patch revert_conversation_message_path(conversation, actionable_message), headers: turbo_stream_headers
@@ -181,6 +214,27 @@ RSpec.describe "Messages", type: :request do
       expect(response).to have_http_status(:ok)
       expect(transaction.reload.description).to eq("Before manual apply")
       expect(manually_applied_message.reload).to be_reverted
+    end
+  end
+
+  describe "[ #reject ]" do
+    it "rejects an actionable message once and records repeated requests as idempotent" do
+      message = conversation.messages.create!(
+        user: other_user,
+        body: "notification:create",
+        headers: {
+          version: "message_notification_v2",
+          event: { action: "create", transaction_type: "CashTransaction", details: {} },
+          replay: { id: 123, type: "CashTransaction" }
+        }.to_json
+      )
+
+      patch reject_conversation_message_path(conversation, message), headers: turbo_stream_headers
+      patch reject_conversation_message_path(conversation, message), headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(message.reload.workflow_state).to eq("rejected")
+      expect(message.message_actions.order(:id).pluck(:outcome)).to eq(%w[succeeded idempotent])
     end
   end
 end

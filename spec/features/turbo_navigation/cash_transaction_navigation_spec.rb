@@ -68,6 +68,7 @@ RSpec.describe "Cash transaction Turbo navigation", type: :feature do
     visit cash_transactions_path
     edit_path = edit_cash_transaction_path(transaction, return_to: cash_transactions_path)
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
+    expect_browser_path(edit_path)
     fill_in "cash_transaction_description", with: "Browser canonical update"
 
     find("#transaction_form button[type='submit'][data-turbo-frame='_top'][data-turbo-action='replace']", match: :first).click

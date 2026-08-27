@@ -30,7 +30,12 @@ class Views::CashTransactions::Form < Views::Base
       form_with model: cash_transaction,
                 id: :transaction_form,
                 class: "contents text-slate-100",
-                data: { controller: "reactive-form price-mask", reactive_form_type_value: "CashTransaction", action: "submit->price-mask#removeMasks" } do |form|
+                data: {
+                  controller: "reactive-form price-mask",
+                  reactive_form_type_value: "CashTransaction",
+                  reactive_form_preserve_installment_prices_value: cash_transaction.persisted?,
+                  action: "submit->price-mask#removeMasks"
+                } do |form|
         form.hidden_field :user_id, value: current_user.id
         form.hidden_field :context_id, value: cash_transaction.context_id || current_context.id
         form.hidden_field :reference_transactable_type,

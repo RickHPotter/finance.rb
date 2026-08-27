@@ -3,6 +3,42 @@
 require "rails_helper"
 
 RSpec.describe Message, type: :model do
+  describe "conversation activity and realtime delivery" do
+    let(:sender) { create(:user, :random) }
+    let(:recipient) { create(:user, :random) }
+    let!(:friendship) { create(:friendship, :accepted, user: sender, friend: recipient) }
+    let(:conversation) { resolve_human_conversation(sender, recipient) }
+
+    it "reactivates an archived conversation and advances activity monotonically in the create transaction" do
+      conversation.conversation_participants.update_all(archived_at: 1.day.ago)
+      previous_activity = conversation.last_message_at
+      message = conversation.messages.create!(user: sender, body: "Reactivate", created_at: previous_activity + 1.hour)
+
+      expect(conversation.conversation_participants.reload).to all(have_attributes(archived_at: nil))
+      expect(conversation.reload.last_message_at).to eq(message.created_at)
+
+      conversation.messages.create!(user: sender, body: "Backdated", created_at: previous_activity - 1.hour)
+      expect(conversation.reload.last_message_at).to eq(message.created_at)
+    end
+
+    it "broadcasts one stable DOM entry to each currently authorized participant stream" do
+      message = conversation.messages.build(user: sender, body: "Realtime once")
+      allow(message).to receive(:broadcast_append_to)
+
+      message.save!
+
+      expect(message).to have_received(:broadcast_append_to).twice
+      conversation.conversation_participants.each do |participant|
+        streamables = Logic::Conversations::Stream.for_participant(conversation:, participant:)
+        expect(message).to have_received(:broadcast_append_to).with(
+          *streamables,
+          target: "messages_#{conversation.id}",
+          html: include("id=\"message_entry_#{message.id}\"")
+        )
+      end
+    end
+  end
+
   describe "[ business logic ]" do
     let(:sender) { create(:user, first_name: "Rikki", email: "rikki@example.com") }
     let(:receiver) { create(:user, first_name: "Gigi", email: "gigi@example.com") }
@@ -43,6 +79,8 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_notification")
+      expect(message).to have_attributes(kind: "transaction_notification", action_state: "pending")
+      expect(message).to be_classification_compatible_with_legacy
     end
 
     it "renders v2 notification bodies from headers at display time" do
@@ -89,6 +127,7 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_destroy_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
+      expect(message).to have_attributes(kind: "transaction_destroy_notification", action_state: "pending")
     end
 
     it "classifies v2 destroy notifications even when headers are present" do
@@ -121,6 +160,18 @@ RSpec.describe Message, type: :model do
 
       expect(message.transaction_destroy_notification_message?).to be(true)
       expect(message.backfill_kind).to eq("transaction_destroy_notification")
+    end
+
+    it "preserves the legacy classifier fallback for an unsupported v2 action" do
+      message = described_class.create!(
+        conversation:,
+        user: sender,
+        body: "Unsupported notification",
+        headers: { version: "message_notification_v2", event: { action: "archive" } }.to_json
+      )
+
+      expect(message).to have_attributes(kind: "human", action_state: nil)
+      expect(message).to be_classification_compatible_with_legacy
     end
 
     it "sends v2 destroy notifications through automatic application" do
@@ -204,6 +255,7 @@ RSpec.describe Message, type: :model do
       )
 
       expect(message.paid_state_sync_message?).to be(true)
+      expect(message).to have_attributes(kind: "paid_state_sync", action_state: "pending")
       expect(message.transaction_notification_message?).to be(false)
       expect(message.rendered_body).to include("SHARED RETURN")
       expect(message.preview_body).to include("SHARED RETURN")
@@ -219,6 +271,33 @@ RSpec.describe Message, type: :model do
 
       expect(message.human_message?).to be(true)
       expect(message.backfill_kind).to eq("human")
+      expect(message).to have_attributes(kind: "human", action_state: nil)
+    end
+
+    it "does not permit human messages to acquire actionable state" do
+      message = described_class.create!(conversation:, user: sender, body: "hello")
+
+      expect(message.update(action_state: "pending")).to be(false)
+      expect(message.errors[:action_state]).to include("must be blank for human messages")
+    end
+
+    it "requires accepted and reverted states to retain their legacy timestamps" do
+      accepted = described_class.new(conversation:, user: sender, body: "Accepted", kind: "transaction_notification", action_state: "accepted")
+      reverted = described_class.new(conversation:, user: sender, body: "Reverted", kind: "transaction_notification", action_state: "reverted",
+                                     applied_at: Time.current)
+
+      expect(accepted).not_to be_valid
+      expect(accepted.errors[:applied_at]).to include("can't be blank for accepted messages")
+      expect(reverted).not_to be_valid
+      expect(reverted.errors[:reverted_at]).to include("can't be blank for reverted messages")
+    end
+
+    it "classifies malformed actionable intent as unavailable and renders it safely" do
+      message = described_class.create!(conversation:, user: sender, body: "Malformed notification", headers: "{not-json")
+
+      expect(message).to have_attributes(kind: "transaction_notification", action_state: "unavailable")
+      expect(message.rendered_body).to eq("Malformed notification")
+      expect(message.action_button_key(local_reference_exists: false)).to be_nil
     end
 
     it "derives pending actions from notification type and removes them after application" do
@@ -627,18 +706,20 @@ end
 # Table name: messages
 # Database name: primary
 #
-#  id                          :bigint           not null, primary key
+#  id                          :bigint           not null, primary key, indexed => [conversation_id, created_at]
+#  action_state                :string           indexed => [kind]
 #  applied_at                  :datetime         indexed
 #  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
+#  kind                        :string           not null, indexed => [action_state]
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed
-#  created_at                  :datetime         not null
+#  created_at                  :datetime         not null, indexed => [conversation_id, id]
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
-#  conversation_id             :bigint           not null, indexed
+#  conversation_id             :bigint           not null, indexed => [created_at, id], indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
 #  user_id                     :bigint           not null, indexed
@@ -647,7 +728,9 @@ end
 #
 #  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_audit_operation_id      (audit_operation_id)
+#  index_messages_on_conversation_cursor     (conversation_id,created_at DESC,id DESC)
 #  index_messages_on_conversation_id         (conversation_id)
+#  index_messages_on_kind_and_action_state   (kind,action_state)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)

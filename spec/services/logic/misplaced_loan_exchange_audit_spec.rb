@@ -50,6 +50,7 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
     it "converts the source transaction and active message replay intents to reimbursement" do
       user = create(:user, :random)
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user:, friend: receiver)
       source = create(
         :cash_transaction,
         user:,
@@ -58,13 +59,15 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
         friend_notification_intent: "loan",
         category_transactions_attributes: [ { category_id: user.built_in_category("EXCHANGE").id } ]
       )
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       message_insert = Message.insert!({
                                          user_id: user.id,
                                          conversation_id: conversation.id,
                                          reference_transactable_type: "CashTransaction",
                                          reference_transactable_id: source.id,
                                          body: "notification:update",
+                                         kind: "transaction_notification",
+                                         action_state: "pending",
                                          headers: {
                                            version: "message_notification_v2",
                                            event: { action: "update", details: { description: source.description } },
@@ -126,13 +129,16 @@ RSpec.describe Logic::MisplacedLoanExchangeAudit do
         category_transactions_attributes: [ { category_id: user.built_in_category("EXCHANGE").id } ]
       )
       receiver = create(:user, :random)
-      conversation = Conversation.find_or_create_assistant_between!(user, receiver)
+      create(:friendship, :accepted, user:, friend: receiver)
+      conversation = resolve_assistant_conversation(user, receiver)
       message_insert = Message.insert!({
                                          user_id: user.id,
                                          conversation_id: conversation.id,
                                          reference_transactable_type: "CashTransaction",
                                          reference_transactable_id: source.id,
                                          body: "notification:update",
+                                         kind: "transaction_notification",
+                                         action_state: "pending",
                                          headers: {
                                            version: "message_notification_v2",
                                            replay: {

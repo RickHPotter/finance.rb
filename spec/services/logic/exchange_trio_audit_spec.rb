@@ -21,7 +21,7 @@ RSpec.describe Logic::ExchangeTrioAudit do
     end
 
     def assistant_conversation
-      Conversation.find_or_create_assistant_between!(sender, receiver)
+      resolve_assistant_conversation(sender, receiver)
     end
 
     def create_card_origin_case # rubocop:disable Metrics/AbcSize,Metrics/MethodLength

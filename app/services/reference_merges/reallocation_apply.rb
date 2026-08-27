@@ -105,23 +105,57 @@ class ReferenceMerges::ReallocationApply
   end
 
   def move_bucket_installments!(bucket)
-    destination_reference_for(bucket.destination_date) if bucket.installment_ids.present?
+    installments = CardInstallment.unscoped.where(id: bucket.installment_ids).order(:id).to_a
+    return if installments.empty?
 
-    CardInstallment.unscoped.where(id: bucket.installment_ids).order(:id).each do |installment|
-      installment.update!(
-        date: reallocated_installment_date(installment, bucket.destination_date),
-        month: bucket.destination_date.month,
-        year: bucket.destination_date.year
+    source_invoice_ids = installments.filter_map(&:cash_transaction_id).uniq
+    destination_reference = destination_reference_for(bucket.destination_date)
+    representative = move_representative_installment!(installments.shift, bucket.destination_date, destination_reference)
+    move_remaining_installments!(installments, bucket.destination_date, representative.cash_transaction_id)
+
+    Audit::Operation.with_mutation_source(:projection_sync) do
+      synchronize_card_payment_invoice!(representative.cash_transaction)
+      destroy_empty_card_payment_invoices!(source_invoice_ids)
+    end
+  end
+
+  def move_representative_installment!(installment, destination_date, destination_reference)
+    installment.card_payment_reference_override = destination_reference
+    installment.update!(month: destination_date.month, year: destination_date.year)
+    installment
+  end
+
+  def move_remaining_installments!(installments, destination_date, destination_invoice_id)
+    installments.each do |installment|
+      Audit::BulkMutation.update_columns!(
+        installment,
+        month: destination_date.month,
+        year: destination_date.year,
+        cash_transaction_id: destination_invoice_id
       )
     end
   end
 
-  def reallocated_installment_date(installment, destination_date)
-    calculated_reference_date = plan.user_card.calculate_reference_date(installment.date).to_date.beginning_of_month
-    distance = month_distance(calculated_reference_date, destination_date)
-    raise IntegrityError if distance.negative?
+  def synchronize_card_payment_invoice!(invoice)
+    installments = CardInstallment.where(cash_transaction_id: invoice.id)
+    representative = installments.order(:id).first!
+    price = installments.sum(:price)
 
-    installment.date.next_month(distance)
+    Audit::BulkMutation.update_columns!(
+      invoice,
+      description: representative.cash_transaction_description,
+      price:,
+      comment: representative.comment
+    )
+    Audit::BulkMutation.update_columns!(invoice.cash_installments.sole, price:)
+  end
+
+  def destroy_empty_card_payment_invoices!(invoice_ids)
+    CashTransaction.where(id: invoice_ids).find_each do |invoice|
+      next if CardInstallment.exists?(cash_transaction_id: invoice.id)
+
+      invoice.destroy!
+    end
   end
 
   def move_bucket_exchanges!(bucket)
@@ -190,16 +224,23 @@ class ReferenceMerges::ReallocationApply
 
   def verify_installment!(installment, expected_date)
     invoice = installment.cash_transaction
-    calculated_reference_date = plan.user_card.calculate_reference_date(installment.date)
     valid = installment.month == expected_date.month &&
             installment.year == expected_date.year &&
-            calculated_reference_date.month == expected_date.month &&
-            calculated_reference_date.year == expected_date.year &&
+            installment.date == original_attribute_for(installment, "date") &&
             invoice&.month == expected_date.month &&
             invoice&.year == expected_date.year &&
             invoice&.user_card_id == plan.user_card.id &&
             invoice&.context_id == plan.context.id
     raise IntegrityError unless valid
+  end
+
+  def original_attribute_for(record, attribute)
+    planned_state = locked_plan_states.fetch([ record.class.base_class.name, record.id ])
+    planned_state.fetch(:attributes).fetch(attribute)
+  end
+
+  def locked_plan_states
+    @locked_plan_states ||= @locked_plan.state_rows.index_by { |row| [ row.fetch(:record_type), row.fetch(:record_id) ] }
   end
 
   def verify_exchange!(exchange, expected_date)

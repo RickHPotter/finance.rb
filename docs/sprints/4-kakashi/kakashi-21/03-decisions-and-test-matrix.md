@@ -25,8 +25,9 @@ moves independent one-installment purchases in later shifted invoices.
 
 ### D5: Installment identity and economics do not change
 
-Reallocation changes schedule/routing fields only. IDs, transaction parents, installment
-numbers/counts, prices, and starting prices remain identical.
+Reallocation changes billing routing only. IDs, transaction parents, installment
+numbers/counts, prices, starting prices, and original purchase/schedule dates remain
+identical. `month`/`year` and invoice membership move independently from `date`.
 
 ### D6: Calendar gaps remain gaps
 
@@ -111,9 +112,13 @@ For every moved `CardInstallment`:
 | `card_installments_count` | unchanged |
 | `price` / `starting_price` | unchanged |
 | `month` / `year` | original bucket plus one month |
-| `date` | original schedule date plus one calendar month |
+| `date` | unchanged original purchase/installment schedule date |
 | `cash_transaction_id` | destination canonical invoice ID |
 | `paid` | remains false; paid rows block V1 reallocation |
+
+The destination invoice's generated billing date still follows its destination
+`Reference`; preserving `CardInstallment#date` must not cause callback routing to reuse
+the old reference or mark the new invoice paid from the old due date.
 
 For every affected invoice:
 
@@ -138,6 +143,7 @@ For every affected invoice:
 | Existing destination reference and invoice | reused |
 | Missing tail reference/invoice | planned and created canonically |
 | Multiple transactions in one bucket | all move once; no duplicate invoice |
+| Many installments in one bucket | every reassignment is audited; invoice projection updates remain bucket-bounded |
 | Same transaction spans source/target | installments remain in separate buckets after reallocation |
 | Paid affected installment | blocked before mutation |
 | Locked/generated unsupported graph | blocked with explicit reason |

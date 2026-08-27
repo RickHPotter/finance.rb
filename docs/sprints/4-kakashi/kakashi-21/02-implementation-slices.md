@@ -59,12 +59,17 @@ Commit: `refactor: plan reference merge reallocation`
 1. Open one database transaction and acquire the plan's locks.
 2. Replan after locking and reject stale membership.
 3. Create missing destination references/invoices through canonical domain paths.
-4. Reassign card installments in descending bucket order, advancing their schedule
-   date by one calendar month and updating destination month/year and invoice association only.
+4. Reassign card installments in descending bucket order, updating destination
+   month/year and invoice association while preserving every original installment date.
+   Route invoice callbacks through the explicit destination reference instead of
+   inferring it from that preserved date.
 5. Rebuild every affected invoice from final membership.
 6. Remove empty source/intermediate invoices and finally destroy the source reference.
-7. Preserve the existing target-closing-boundary merge behavior.
-8. Recalculate balances once from the earliest affected billing date after integrity
+7. Keep projection synchronization proportional to occupied buckets: establish each
+   destination invoice through one representative installment, audit the remaining
+   reassignments without projection callbacks, and synchronize the final aggregate once.
+8. Preserve the existing target-closing-boundary merge behavior.
+9. Recalculate balances once from the earliest affected billing date after integrity
    checks pass.
 
 Acceptance:
@@ -72,6 +77,10 @@ Acceptance:
 - the 12-installment January–December example ends in January 2027
 - installment IDs, parent transaction IDs, numbers, counts, and monetary values do not
   change
+- an August 12 one-installment purchase routed from September into October remains
+  dated August 12
+- multi-installment purchase/schedule dates remain consecutive without a false skipped
+  month after the first shifted installment
 - one canonical invoice exists per occupied destination bucket
 - a failure during any bucket restores the entire pre-apply state
 

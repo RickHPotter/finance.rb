@@ -20,7 +20,7 @@ RSpec.describe Logic::ExchangeChainReferenceRunner do
     end
 
     def assistant_conversation
-      Conversation.find_or_create_assistant_between!(sender, receiver)
+      resolve_assistant_conversation(sender, receiver)
     end
 
     def build_ambiguous_row(source_transaction:, first_middle:, second_middle:, receiver_borrow_return:) # rubocop:disable Metrics/MethodLength

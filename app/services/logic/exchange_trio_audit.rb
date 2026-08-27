@@ -38,7 +38,7 @@ module Logic
 
       scope = Conversation.assistant.where(id: current_user_conversation_ids)
       scope = if connected_user_id.present?
-                connected_user_allowed? ? scope.for_users([ current_user.id, connected_user_id ]) : scope.none
+                connected_user_allowed? ? scope.where(friendship: connected_friendship) : scope.none
               else
                 scope.where(id: connected_relationship_conversation_ids)
               end
@@ -67,6 +67,10 @@ module Logic
 
     def connected_user_allowed?
       current_user.entities.that_are_users.where_entity_user_id(connected_user_id).exists?
+    end
+
+    def connected_friendship
+      @connected_friendship ||= current_user.friendship_with(User.find_by(id: connected_user_id))
     end
 
     def build_row(message)

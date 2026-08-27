@@ -27,7 +27,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
   # A simple helper that creates a message in the assistant conversation between
   # sender and recipient, with the supplied replay payload.
   def build_message(action:, payload:, reference_transactable: nil)
-    conversation = Conversation.find_or_create_assistant_between!(
+    conversation = resolve_assistant_conversation(
       sender,
       recipient,
       scenario_key: sender.ensure_main_context!.scenario_key
@@ -77,8 +77,12 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       before { friendship.destroy! }
 
       it "does not apply the message" do
-        # Create a bare conversation without the friendship guard
-        conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+        # Preserve a deliberately legacy bare conversation to characterize the
+        # application service's defense when canonical friendship identity is absent.
+        conversation = Conversation.create!(kind: :assistant, scenario_key: sender.ensure_main_context!.scenario_key).tap do |record|
+          record.conversation_participants.create!(user: sender)
+          record.conversation_participants.create!(user: recipient)
+        end
         msg = conversation.messages.create!(
           user: sender, body: "notification:create",
           headers: {
@@ -110,7 +114,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_exchange.entity_transactions.create!(entity: recipient_entity, price: 100, price_to_be_returned: 100, is_payer: true)
       recipient_exchange.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_exchange,
@@ -139,7 +143,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_return.entity_transactions.create!(entity: recipient_entity, price: 0, price_to_be_returned: 0, is_payer: false)
       recipient_return.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_return,
@@ -172,7 +176,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
       recipient_exchange.save!
       recipient_exchange.cash_installments.first.update!(paid: true)
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender,
         reference_transactable: recipient_exchange,
@@ -204,7 +208,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     end
 
     it "does not apply paid_state_sync messages" do
-      conversation = Conversation.find_or_create_assistant_between!(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
+      conversation = resolve_assistant_conversation(sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key)
       msg = conversation.messages.create!(
         user: sender, body: "notification:paid_state_sync",
         headers: {
@@ -251,17 +255,30 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
         .not_to(change { sender.ensure_main_context!.cash_transactions.count })
     end
 
+    it "applies duplicate job delivery only once" do
+      service = described_class.new(msg)
+
+      expect do
+        service.call
+        service.call
+      end.to change { recipient.ensure_main_context!.cash_transactions.count }.by(1)
+
+      expect(msg.reload.message_actions.order(:id).pluck(:outcome)).to eq(%w[succeeded idempotent])
+    end
+
     it "sets applied_at on the message" do
       described_class.new(msg).call
       expect(msg.reload.applied_at).not_to be_nil
     end
 
-    it "links the message to its exact actionable audit operation" do
+    it "links the successful action event to its exact actionable audit operation without replacing message provenance" do
       described_class.new(msg).call
 
-      operation = msg.reload.audit_operation
+      action = msg.reload.message_actions.find_by!(action: :apply, outcome: :succeeded)
+      operation = action.audit_operation
       expect(operation).to have_attributes(source: "actionable_message", actor_id: recipient.id, context_id: recipient.main_context.id)
       expect(operation.metadata).to include("actionable_message_id" => msg.id)
+      expect(msg.audit_operation_id).to be_nil
     end
 
     it "creates an AuditOperation linked to the message's audit_operation_id" do
@@ -364,7 +381,7 @@ RSpec.describe Logic::Friendships::AutoAcceptActionableMessageService do
     end
 
     let!(:msg) do
-      conversation = Conversation.find_or_create_assistant_between!(
+      conversation = resolve_assistant_conversation(
         sender, recipient, scenario_key: sender.ensure_main_context!.scenario_key
       )
       conversation.messages.create!(

@@ -3,16 +3,26 @@ import { initModals } from "flowbite"
 import RailsDate from "../models/railsDate"
 import { sleep } from "../utils/utils.js"
 import { _removeMask, _applyMask } from "../utils/mask.js"
+import { mirroredPrice, paidPricesMatch } from "../lib/installment_mirror.mjs"
 
 // TODO: this is almost a total copy-paste from reactive-form-controller, i will deal with this after it is working
 export default class extends Controller {
   static targets = [
     "button", "dateInput", "priceInput", "priceToBeReturnedInput", "priceExchangeInput", "exchangesCountInput", "exchangesCountEqualsButton",
-    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput"
+    "boundType", "exchangeWrapper", "monthYearExchange", "addExchange", "delExchange", "loanReturnPercentageInput", "mirrorInstallmentsButton"
   ]
 
   async connect() {
     this.initModalOnce()
+    this.boundRefreshMirrorAvailability = this.refreshMirrorInstallmentsAvailability.bind(this)
+    this.transactionForm()?.addEventListener("input", this.boundRefreshMirrorAvailability)
+    this.transactionForm()?.addEventListener("change", this.boundRefreshMirrorAvailability)
+    this.refreshMirrorInstallmentsAvailability()
+  }
+
+  disconnect() {
+    this.transactionForm()?.removeEventListener("input", this.boundRefreshMirrorAvailability)
+    this.transactionForm()?.removeEventListener("change", this.boundRefreshMirrorAvailability)
   }
 
   initModalOnce() {
@@ -163,6 +173,110 @@ export default class extends Controller {
     this.loanReturnPercentageInputTarget.value = this.trimTrailingZeroes(percentage)
 
     await this.applyLoanReturnPercentage()
+  }
+
+  async mirrorInstallments() {
+    if (!this.hasMirrorInstallmentsButtonTarget || !this.paidPricesAreMirrorable()) { return }
+
+    const installments = this.activeInstallmentWrappers()
+    const unpaidInstallments = installments.filter((wrapper) => !this.installmentPaid(wrapper))
+    await this.matchUnpaidExchangeCount(unpaidInstallments.length)
+
+    const sign = this.entityPriceSign()
+    const unpaidExchanges = this.activeExchangeWrappers().filter((wrapper) => wrapper.dataset.locked !== "true")
+
+    unpaidInstallments.forEach((installment, index) => {
+      this.copyInstallmentToExchange(installment, unpaidExchanges[index], sign)
+    })
+
+    const totalCents = installments.reduce((total, wrapper) => total + Math.abs(this.wrapperPrice(wrapper, "priceInstallmentInput")), 0) * sign
+    this.priceInputTarget.value = this._applyMask(totalCents.toString())
+    this.priceToBeReturnedInputTarget.value = this._applyMask(totalCents.toString())
+    this.exchangesCountInputTarget.value = installments.length
+
+    if (this.hasLoanReturnPercentageInputTarget) {
+      const transactionCents = Math.abs(this.transactionTotalCents())
+      const percentage = transactionCents ? ((Math.abs(totalCents) / transactionCents) * 100).toFixed(4) : "0"
+      this.loanReturnPercentageInputTarget.value = this.trimTrailingZeroes(percentage)
+    }
+
+    this.checkForExchangeCategory()
+    this.refreshMirrorInstallmentsAvailability()
+  }
+
+  refreshMirrorInstallmentsAvailability() {
+    if (!this.hasMirrorInstallmentsButtonTarget) { return }
+
+    this.mirrorInstallmentsButtonTarget.disabled = !this.paidPricesAreMirrorable()
+  }
+
+  paidPricesAreMirrorable() {
+    if ((parseInt(this._removeMask(this.priceToBeReturnedInputTarget.value), 10) || 0) === 0) { return false }
+
+    const installmentPrices = this.activeInstallmentWrappers()
+      .filter((wrapper) => this.installmentPaid(wrapper))
+      .map((wrapper) => this.wrapperPrice(wrapper, "priceInstallmentInput"))
+    const exchangePrices = this.activeExchangeWrappers()
+      .filter((wrapper) => wrapper.dataset.locked === "true")
+      .map((wrapper) => this.wrapperPrice(wrapper, "priceExchangeInput"))
+
+    return paidPricesMatch(installmentPrices, exchangePrices)
+  }
+
+  activeInstallmentWrappers() {
+    return Array.from(this.transactionForm()?.querySelectorAll("[data-reactive-form-target='installmentWrapper']") || [])
+      .filter((wrapper) => wrapper.querySelector("input[name*='[_destroy]']")?.value !== "true")
+  }
+
+  installmentPaid(wrapper) {
+    return wrapper.querySelector(".installment_paid")?.checked || false
+  }
+
+  wrapperPrice(wrapper, target) {
+    const controller = target === "priceInstallmentInput" ? "reactive-form" : "entity-transaction"
+    const input = wrapper.querySelector(`[data-${controller}-target='${target}']`)
+
+    return parseInt(this._removeMask(input?.value || "0"), 10) || 0
+  }
+
+  async matchUnpaidExchangeCount(count) {
+    let unpaidExchanges = this.activeExchangeWrappers().filter((wrapper) => wrapper.dataset.locked !== "true")
+
+    unpaidExchanges.slice(count).forEach((wrapper) => this.deactivateExchangeWrapper(wrapper))
+    unpaidExchanges = this.activeExchangeWrappers().filter((wrapper) => wrapper.dataset.locked !== "true")
+
+    const reusableCount = Math.max(count - unpaidExchanges.length, 0)
+    const reusable = this.hiddenExchangeWrappers().filter((wrapper) => wrapper.dataset.locked !== "true").slice(0, reusableCount)
+    reusable.forEach((wrapper) => this.activateExchangeWrapper(wrapper))
+
+    while (this.activeExchangeWrappers().filter((wrapper) => wrapper.dataset.locked !== "true").length < count) {
+      this.addExchangeTarget.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+  }
+
+  copyInstallmentToExchange(installment, exchange, sign) {
+    if (!exchange) { return }
+
+    const installmentDate = installment.querySelector(".installment_date").value
+    const exchangeDate = exchange.querySelector(".exchange_date")
+    const number = installment.querySelector(".installment_number").value
+    const month = installment.querySelector(".installment_month").value
+    const year = installment.querySelector(".installment_year").value
+    const price = mirroredPrice(this.wrapperPrice(installment, "priceInstallmentInput"), sign)
+
+    exchange.querySelector(".exchange_number").value = number
+    exchange.querySelector(".exchange_number_display").textContent = number
+    exchange.querySelector(".exchange_month").value = month
+    exchange.querySelector(".exchange_year").value = year
+    exchange.querySelector(".exchange_month_year").textContent = installment.querySelector(".installment_month_year").textContent
+    exchange.querySelector("[data-entity-transaction-target='priceExchangeInput']").value = this._applyMask(price.toString())
+    exchangeDate.value = installmentDate
+    this.refreshDatetimeInput(exchangeDate)
+  }
+
+  transactionForm() {
+    return this.element.closest("form")
   }
 
   loanReturnPercentage() {

@@ -70,7 +70,8 @@ RSpec.describe "Finance resource Turbo navigation", type: :feature do
   def exercise_edit_navigation(index_path:, edit_path:, field_id:, value:, record:)
     visit index_path
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
-    fill_in field_id, with: value
+    expect_browser_path(edit_path)
+    replace_field field_id, with: value
 
     expect_workflow_finishing_submitter("form button[type='submit']")
     find("form button[type='submit'][data-turbo-frame='_top'][data-turbo-action='replace']", match: :first).click

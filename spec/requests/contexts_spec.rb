@@ -118,7 +118,8 @@ RSpec.describe "Contexts", type: :request do
     it "redirects to conversations index with a notice when switching from conversation show" do
       other_user = create(:user, :random)
       scenario_context = create(:context, user:, name: "Scenario A", source_context: user.main_context)
-      conversation = Conversation.find_or_create_human_between!(user, other_user)
+      create(:friendship, :accepted, user:, friend: other_user)
+      conversation = resolve_human_conversation(user, other_user)
 
       patch switch_context_path(scenario_context), headers: { "HTTP_REFERER" => conversation_path(conversation) }
 

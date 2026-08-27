@@ -42,7 +42,8 @@ RSpec.describe "Category and entity Turbo navigation", type: :feature do
   def exercise_edit_navigation(index_path:, edit_path:, record:, field:)
     visit index_path
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
-    fill_in field[:id], with: field[:value]
+    expect_browser_path(edit_path)
+    replace_field field[:id], with: field[:value]
 
     expect_workflow_finishing_submitter("form button[type='submit']")
     find("form button[type='submit'][data-turbo-frame='_top'][data-turbo-action='replace']", match: :first).click

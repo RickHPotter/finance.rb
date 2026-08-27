@@ -16,7 +16,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def view_template
-    div(class: "m-2") do
+    div(id: message_entry_id, class: "m-2") do
       turbo_frame_tag dom_id(message) do
         div(
           class: "whitespace-pre-wrap wrap-break-word text-start",
@@ -30,7 +30,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
             end
 
             div(
-              class: "max-w-xs md:max-w-lg px-4 py-2 rounded-2xl shadow-sm text-sm #{'ring-1 ring-red-800' if message.headers}",
+              class: "max-w-xs md:max-w-lg px-4 py-2 rounded-2xl shadow-sm text-sm #{'ring-1 ring-red-800' unless message.human_message?}",
               data: { chat_target: :messageColour }
             ) do
               if assistant_presented_notification?
@@ -50,19 +50,23 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
           end
         end
       end
-    end
 
-    render_my_assistant_transaction_modal
+      render_my_assistant_transaction_modal
+    end
   end
 
   private
 
+  def message_entry_id
+    "message_entry_#{message.id}"
+  end
+
   def render_message_actions
-    if message.superseded_by_id
+    if message.workflow_state == "expired"
       render_outdated_state
     else
       return if message.paid_state_sync_message? && my_assistant_notification?
-      return if my_assistant_notification? || message.applied? || message.reverted?
+      return if my_assistant_notification? || !message.workflow_state.in?(%w[pending failed])
 
       render_transaction_actions
     end
@@ -98,7 +102,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     if reference_transactable
       render_edit_action(reference_transactable, action_button_key)
-    elsif params["type"]&.constantize&.find_by(id: params["id"])
+    elsif payload_source_exists?(params)
       render_create_action(action_button_key)
     else
       span(class: status_badge_class) do
@@ -109,7 +113,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_assistant_instruction
     return unless assistant_presented_notification?
-    return if message.superseded_by_id.present? || message.applied?
+    return unless message.workflow_state.in?(%w[pending failed])
     return unless %w[create update].include?(message.send(:notification_action))
 
     instruction_key = my_assistant_notification? ? :click_down_below_mine : :click_down_below_theirs
@@ -120,7 +124,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   end
 
   def render_completed_state
-    return if message.superseded_by_id.present?
+    return if message.workflow_state == "expired"
 
     if message.reverted?
       p(class: status_badge_class) do
@@ -166,7 +170,9 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
     Button(
       type: :button,
       size: :xs,
-      class: "mt-3 w-full text-black bg-white/70 hover:bg-white border border-black/20",
+      variant: :outline,
+      class: "mt-3 w-full border-slate-300 bg-white/80 text-slate-800 hover:border-slate-400 hover:bg-white " \
+             "dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:bg-slate-800",
       data: { modal_target: my_transaction_modal_id, modal_toggle: my_transaction_modal_id }
     ) do
       span(class: "truncate block max-w-full leading-tight") { I18n.t("actions.show") }
@@ -184,11 +190,14 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
       title: transaction.description,
       options: {
         wrapper_class: "px-3 py-6",
-        content_class: "w-[calc(100vw-1.5rem)] max-w-5xl max-h-[calc(100svh-3rem)] overflow-hidden"
+        content_class: "w-[calc(100vw-1.5rem)] max-w-5xl max-h-[calc(100svh-3rem)] overflow-hidden rounded-2xl border-slate-200 " \
+                       "bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-950",
+        content_data: { message_transaction_modal: "true" }
       }
     ) do
-      div(class: "space-y-4 text-sm text-black min-w-[18rem] md:min-w-176 lg:min-w-4xl") do
-        div(class: "border-b border-stone-200 pb-3") do
+      div(class: "min-w-[18rem] space-y-4 text-sm text-slate-900 dark:text-slate-100 md:min-w-176 lg:min-w-4xl",
+          data: { message_transaction_body: "true" }) do
+        div(class: "border-b border-slate-200 pb-4 dark:border-slate-700") do
           div(class: "flex items-start justify-between gap-3") do
             div(class: "space-y-2") do
               if showable_transaction_destroyed?
@@ -197,14 +206,16 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
                 end
               end
 
-              p(class: "text-stone-500 leading-relaxed") { transaction.comment } if transaction.comment.present?
+              p(class: "leading-relaxed text-slate-600 dark:text-slate-300") { transaction.comment } if transaction.comment.present?
             end
 
             if showable_transaction_link.present?
               Link(
                 href: showable_transaction_link,
+                variant: :outline,
                 size: :sm,
-                class: "shrink-0 min-w-40 justify-center text-black bg-white hover:bg-stone-50 border border-black/20 px-4 py-2 font-medium shadow-sm",
+                class: "min-w-32 shrink-0 justify-center border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm hover:border-slate-400 " \
+                       "hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:bg-slate-800",
                 data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", modal_hide: my_transaction_modal_id }
               ) do
                 span(class: "truncate block max-w-full leading-tight") { I18n.t("actions.edit") }
@@ -214,28 +225,28 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
         end
 
         div(class: "grid grid-cols-1 gap-2 md:h-84 md:grid-cols-2 md:items-stretch") do
-          div(class: "flex h-full flex-col overflow-hidden rounded-xl border border-stone-200 bg-stone-50 p-2") do
-            p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
+          div(class: transaction_panel_class, data: { message_transaction_panel: "details" }) do
+            p(class: transaction_panel_heading_class) do
               "#{I18n.t('gerund.show')} #{transaction.model_name.human}"
             end
 
-            div(class: "flex-1 overflow-y-auto space-y-1 pr-1") do
+            div(class: "conversation-message-scroll flex-1 space-y-2 overflow-y-auto pr-1") do
               render_showable_transaction_details(transaction)
             end
           end
 
-          div(class: "flex max-h-72 flex-col overflow-hidden rounded-xl border border-stone-200 bg-stone-50 p-2 md:h-full md:max-h-none") do
-            p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 mb-3") do
+          div(class: "#{transaction_panel_class} max-h-72 md:max-h-none", data: { message_transaction_panel: "installments" }) do
+            p(class: transaction_panel_heading_class) do
               showable_installment_label(transaction)
             end
 
-            div(class: "flex-1 overflow-y-auto space-y-1 pr-1") do
+            div(class: "conversation-message-scroll flex-1 space-y-2 overflow-y-auto pr-1") do
               showable_installments(transaction).order(:number).each do |installment|
-                div(class: "rounded-md bg-stone-100 shadow-xs border border-stone-200 px-3 py-1") do
+                div(class: transaction_row_class, data: { message_transaction_row: "installment" }) do
                   div(class: "flex items-start justify-between gap-2") do
                     div(class: "min-w-0") do
-                      p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500") { "##{installment.number}" }
-                      p(class: "mt-1 text-sm leading-relaxed") { I18n.l(installment.date.to_date, format: :long) }
+                      p(class: transaction_row_label_class) { "##{installment.number}" }
+                      p(class: "mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200") { I18n.l(installment.date.to_date, format: :long) }
                     end
 
                     p(class: "shrink-0 text-sm font-semibold text-end") { from_cent_based_to_float(installment.price, "R$") }
@@ -251,7 +262,11 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_edit_action(reference_transactable, action_button_key)
     Link(
-      href: edit_cash_transaction_path(id: reference_transactable, cash_transaction: { source_message_id: message.id }),
+      href: edit_cash_transaction_path(
+        id: reference_transactable,
+        cash_transaction: { source_message_id: message.id },
+        return_to: conversation_return_path
+      ),
       size: :xs,
       class: action_button_class(action_button_key),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
@@ -262,7 +277,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_create_action(action_button_key)
     Link(
-      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }),
+      href: new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to: conversation_return_path),
       size: :xs,
       class: action_button_class(action_button_key),
       data: { turbo_frame: "_top", turbo_action: "advance", turbo_prefetch: "false", chat_target: :messageAction, message_action: action_button_key }
@@ -319,7 +334,7 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def render_destroy_action(reference_transactable)
     Link(
-      href: cash_transaction_path(id: reference_transactable, message_id: message.id),
+      href: cash_transaction_path(id: reference_transactable, message_id: message.id, return_to: conversation_return_path),
       size: :xs,
       class: action_button_class(:destroy),
       data: {
@@ -461,10 +476,24 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
 
     case transaction
     when CashTransaction
-      edit_cash_transaction_path(transaction)
+      edit_cash_transaction_path(transaction, return_to: conversation_return_path)
     when CardTransaction
-      edit_card_transaction_path(transaction)
+      edit_card_transaction_path(transaction, return_to: conversation_return_path)
     end
+  end
+
+  def payload_source_exists?(payload)
+    transaction_class = { "CashTransaction" => CashTransaction, "CardTransaction" => CardTransaction }[payload["type"]]
+
+    transaction_class&.exists?(id: payload["id"]) == true
+  end
+
+  def conversation_return_path
+    conversation_path(
+      message.conversation,
+      message_filter: active_message_filter,
+      message_side: active_message_sides
+    )
   end
 
   def render_showable_transaction_details(transaction)
@@ -509,10 +538,27 @@ class Views::Messages::Message < Views::Base # rubocop:disable Metrics/ClassLeng
   def transaction_detail_row(label, value)
     return if value.blank?
 
-    div(class: "rounded-md bg-stone-100 shadow-xs border border-stone-200 px-3 py-1") do
-      p(class: "text-xs font-semibold uppercase tracking-[0.18em] text-stone-500") { label }
-      p(class: "mt-1 text-sm leading-relaxed") { value }
+    div(class: transaction_row_class, data: { message_transaction_row: "detail" }) do
+      p(class: transaction_row_label_class) { label }
+      p(class: "mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200") { value }
     end
+  end
+
+  def transaction_panel_class
+    "flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3 " \
+      "dark:border-slate-700 dark:bg-slate-900/70"
+  end
+
+  def transaction_panel_heading_class
+    "mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+  end
+
+  def transaction_row_class
+    "rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-xs dark:border-slate-700 dark:bg-slate-950/80"
+  end
+
+  def transaction_row_label_class
+    "text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
   end
 
   def viewer

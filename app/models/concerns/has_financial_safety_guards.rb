@@ -221,9 +221,9 @@ module HasFinancialSafetyGuards # rubocop:disable Metrics/ModuleLength
   def editable_unpaid_amount_correction?
     return false unless will_save_change_to_price?
     return false if will_save_change_to_date? || will_save_change_to_month? || will_save_change_to_year?
-    return false if changed_installments.empty?
     return false unless current_installment_total == price
     return false unless can_edit_unpaid_future_installments?(editable_installment_dates)
+    return paid_installments_unchanged? if changed_installments.empty?
 
     changed_installments.all? do |installment|
       installment.persisted? &&

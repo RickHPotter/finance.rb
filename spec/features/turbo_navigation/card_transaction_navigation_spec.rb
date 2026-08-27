@@ -46,6 +46,7 @@ RSpec.describe "Card transaction Turbo navigation", type: :feature do
 
     visit expected_path
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
+    expect_browser_path(edit_path)
     fill_in "card_transaction_description", with: "Browser canonical card update"
 
     expect_workflow_finishing_submitter("#transaction_form button[type='submit']")

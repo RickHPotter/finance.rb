@@ -26,6 +26,7 @@ class Friendship < ApplicationRecord
   # @relationships ............................................................
   belongs_to :user
   belongs_to :friend, class_name: "User"
+  has_many :conversations, dependent: :restrict_with_error
   has_many :entities, dependent: :nullify
 
   # @validations ..............................................................
@@ -34,8 +35,22 @@ class Friendship < ApplicationRecord
 
   # @callbacks ................................................................
   before_validation -> { self.public_id ||= SecureRandom.uuid }, on: :create
+  after_update :revoke_conversation_access, if: :accepted_friendship_revoked?
+  after_update_commit :broadcast_conversation_revocation, if: :accepted_friendship_revoked?
 
   private
+
+  def accepted_friendship_revoked?
+    saved_change_to_state? && state_before_last_save == "accepted" && !accepted_state?
+  end
+
+  def revoke_conversation_access
+    Logic::Conversations::RevokeAccess.call(friendship: self)
+  end
+
+  def broadcast_conversation_revocation
+    Logic::Conversations::RevokeAccess.new(friendship: self).broadcast
+  end
 
   def canonical_uniqueness
     return unless Friendship.where(user_id: [ user_id, friend_id ], friend_id: [ user_id, friend_id ]).exists?

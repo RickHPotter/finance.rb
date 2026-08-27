@@ -49,6 +49,31 @@ RSpec.describe EntityTransaction, type: :model do
 
       expect(entity_transaction.calculated_loan_return_percentage).to eq(114.8148.to_d)
     end
+
+    it "allows installment mirroring when paid prices match with opposite signs" do
+      transaction = build(:cash_transaction)
+      transaction.cash_installments = [
+        build(:cash_installment, number: 1, price: -31_163, paid: true),
+        build(:cash_installment, number: 2, price: -30_111, paid: false)
+      ]
+      entity_transaction = build(:entity_transaction, transactable: transaction)
+      paid_exchange = build(:exchange, entity_transaction:, number: 1, price: 31_163)
+      paid_exchange.replay_paid_state = true
+      entity_transaction.exchanges = [ paid_exchange ]
+
+      expect(entity_transaction.paid_installment_prices_match_paid_exchange_prices?).to be(true)
+    end
+
+    it "rejects installment mirroring when a paid exchange price differs" do
+      transaction = build(:cash_transaction)
+      transaction.cash_installments = [ build(:cash_installment, number: 1, price: -31_163, paid: true) ]
+      entity_transaction = build(:entity_transaction, transactable: transaction)
+      paid_exchange = build(:exchange, entity_transaction:, number: 1, price: 30_000)
+      paid_exchange.replay_paid_state = true
+      entity_transaction.exchanges = [ paid_exchange ]
+
+      expect(entity_transaction.paid_installment_prices_match_paid_exchange_prices?).to be(false)
+    end
   end
 end
 

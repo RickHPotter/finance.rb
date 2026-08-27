@@ -9,7 +9,7 @@ CI.run do
   step "Style: Ruby", "bin/rubocop --parallel"
   step "Style: ERuby", "bin/erblint -la"
 
-  step "Specs: Rspec", "#{TEST_ENV}; bin/rspec spec/features spec/models/ spec/concerns spec/requests spec/services"
+  step "Specs: Rspec", "#{TEST_ENV}; bin/rspec"
 
   step "Security: Gem audit", "bin/bundler-audit --update"
   step "Security: Brakeman code analysis", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"

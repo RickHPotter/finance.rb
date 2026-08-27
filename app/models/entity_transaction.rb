@@ -37,6 +37,15 @@ class EntityTransaction < ApplicationRecord
     ((price_to_be_returned.to_i.abs.to_d / transaction_total) * 100).round(4)
   end
 
+  def paid_installment_prices_match_paid_exchange_prices?
+    return false unless transactable.is_a?(CashTransaction)
+
+    paid_installment_prices = transactable.cash_installments.select(&:paid?).map { |installment| installment.price.to_i.abs }.sort
+    paid_exchange_prices = exchanges.reject(&:marked_for_destruction?).select(&:effective_paid_state).map { |exchange| exchange.price.to_i.abs }.sort
+
+    paid_installment_prices == paid_exchange_prices
+  end
+
   # @protected_instance_methods ...............................................
 
   protected

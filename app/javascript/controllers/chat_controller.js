@@ -25,6 +25,24 @@ export default class extends Controller {
     scrollTarget.scrollTop = scrollTarget.scrollHeight
   }
 
+  rememberScrollPosition() {
+    if (!this.hasScrollTarget) { return }
+
+    this.previousScrollHeight = this.scrollTarget.scrollHeight
+    this.previousScrollTop = this.scrollTarget.scrollTop
+  }
+
+  restoreScrollPosition() {
+    if (!this.hasScrollTarget || this.previousScrollHeight === undefined) { return }
+
+    requestAnimationFrame(() => {
+      const addedHeight = this.scrollTarget.scrollHeight - this.previousScrollHeight
+      this.scrollTarget.scrollTop = this.previousScrollTop + addedHeight
+      this.previousScrollHeight = undefined
+      this.previousScrollTop = undefined
+    })
+  }
+
   showMessage() {
     if (!this.hasMessageAlignmentTarget) { return }
 

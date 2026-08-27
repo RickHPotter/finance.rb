@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
-class Message < ApplicationRecord
+class Message < ApplicationRecord # rubocop:disable Metrics/ClassLength
   # @extends ..................................................................
   # @includes .................................................................
   include TranslateHelper
+
+  KINDS = %w[human transaction_notification transaction_destroy_notification paid_state_sync].index_by(&:itself).freeze
+  ACTION_STATES = %w[pending accepted rejected expired failed unavailable reverted].index_by(&:itself).freeze
 
   # @security (i.e. attr_accessible) ..........................................
   # @relationships ............................................................
@@ -13,18 +16,22 @@ class Message < ApplicationRecord
   has_one :supersedes, class_name: "Message", foreign_key: "superseded_by_id"
   belongs_to :reference_transactable, polymorphic: true, optional: true
   belongs_to :audit_operation, optional: true
+  has_many :message_actions, dependent: :restrict_with_error
 
   # @validations ..............................................................
   validates :body, presence: true
+  validates :kind, inclusion: { in: KINDS.keys }
+  validates :action_state, inclusion: { in: ACTION_STATES.keys }, allow_nil: true
+  validate :valid_kind_and_action_state_combination
+  validate :valid_action_state_timestamps
 
   # @callbacks ................................................................
+  before_validation :assign_kind_and_action_state
   before_validation :assign_audit_operation, on: :create
+  after_create :reactivate_conversation_participants
+  after_create :record_conversation_activity
   after_update :propagate_read_at_to_superseded_messages, if: :read_at_became_present?
-  after_create_commit do
-    broadcast_append_to conversation,
-                        target: "messages_#{conversation.id}",
-                        html: ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
-  end
+  after_create_commit :broadcast_to_conversation, if: -> { Logic::Conversations::Policy.stream_allowed?(conversation) }
   after_create_commit :send_email, if: -> { Rails.env.production? }
   after_create_commit :enqueue_auto_apply, if: :auto_apply_candidate?
 
@@ -33,32 +40,56 @@ class Message < ApplicationRecord
   scope :unread, -> { where(read_at: nil) }
 
   # @additional_config ........................................................
+  enum :kind, KINDS, prefix: true
+  enum :action_state, ACTION_STATES, prefix: true
+
   # @class_methods ............................................................
   # @public_instance_methods ..................................................
   def transaction_notification_message?
-    return false if paid_state_sync_message?
-    return %w[create update].include?(notification_action) if notification_payload_v2?
-
-    headers.present?
+    effective_kind == "transaction_notification"
   end
 
   def transaction_destroy_notification_message?
-    return notification_action == "destroy" if notification_payload_v2?
-
-    headers.blank? && reference_transactable.present?
+    effective_kind == "transaction_destroy_notification"
   end
 
   def human_message?
-    return false if transaction_notification_message? || transaction_destroy_notification_message?
-
-    headers.blank? && reference_transactable.blank?
+    effective_kind == "human"
   end
 
   def backfill_kind
-    return "transaction_notification" if transaction_notification_message?
-    return "transaction_destroy_notification" if transaction_destroy_notification_message?
+    return "paid_state_sync" if action_payload.version == "message_paid_state_v1"
+
+    if action_payload.version == "message_notification_v2"
+      return "transaction_destroy_notification" if notification_action == "destroy"
+      return "transaction_notification" if notification_action.in?(%w[create update])
+
+      return "human"
+    end
+
+    return "transaction_notification" if headers.present?
+    return "transaction_destroy_notification" if reference_transactable.present?
 
     "human"
+  end
+
+  def classification_compatible_with_legacy?
+    kind == backfill_kind
+  end
+
+  def action_state_compatible_with_legacy?
+    action_state == inferred_action_state_for(backfill_kind)
+  end
+
+  def workflow_state
+    effective_action_state
+  end
+
+  def action_payload
+    return @action_payload if defined?(@action_payload_headers) && @action_payload_headers == headers
+
+    @action_payload_headers = headers
+    @action_payload = Logic::Messages::ActionPayload.new(headers)
   end
 
   def replay_payload
@@ -70,6 +101,7 @@ class Message < ApplicationRecord
   end
 
   def rendered_body
+    return body unless action_payload.valid?
     return render_paid_state_sync_body if paid_state_sync_message?
     return body unless notification_payload_v2?
 
@@ -77,6 +109,7 @@ class Message < ApplicationRecord
   end
 
   def preview_body
+    return body.to_s.tr("\n", " ").presence || "" unless action_payload.valid?
     return render_paid_state_sync_preview if paid_state_sync_message?
     return body.to_s.tr("\n", " ").presence || "" unless notification_payload_v2?
 
@@ -87,23 +120,23 @@ class Message < ApplicationRecord
   end
 
   def notification_payload_v2?
-    parsed_headers["version"] == "message_notification_v2"
+    action_payload.version == "message_notification_v2"
   end
 
   def paid_state_sync_message?
-    parsed_headers["version"] == "message_paid_state_v1"
+    effective_kind == "paid_state_sync"
   end
 
   def applied?
-    applied_at.present? && reverted_at.blank?
+    effective_action_state == "accepted"
   end
 
   def reverted?
-    reverted_at.present?
+    effective_action_state == "reverted"
   end
 
   def action_button_key(local_reference_exists:)
-    return if applied? || reverted? || superseded_by_id.present?
+    return unless effective_action_state.in?(%w[pending failed])
     return :ok if paid_state_sync_message?
     return :destroy if transaction_destroy_notification_message?
     return :correct if notification_action == "update" && local_reference_exists
@@ -128,7 +161,7 @@ class Message < ApplicationRecord
 
   def actionable_for?(context: user.ensure_main_context!)
     return true if auto_applied? && read_at.blank? && !reverted?
-    return false if applied?
+    return false unless effective_action_state.in?(%w[pending failed])
 
     action_button_key(local_reference_exists: local_reference_for(context:).present?).in?(%i[create correct destroy ok])
   end
@@ -157,8 +190,72 @@ class Message < ApplicationRecord
 
   private
 
+  def effective_kind
+    kind.presence || backfill_kind
+  end
+
+  def effective_action_state
+    action_state.presence || inferred_action_state
+  end
+
+  def assign_kind_and_action_state
+    self.kind ||= backfill_kind
+
+    return unless kind != "human" && (action_state.blank? || (legacy_action_facts_changed? && !will_save_change_to_action_state?))
+
+    self.action_state = inferred_action_state
+  end
+
+  def inferred_action_state
+    inferred_action_state_for(effective_kind)
+  end
+
+  def inferred_action_state_for(message_kind)
+    return if message_kind == "human"
+    return "unavailable" if contradictory_action_facts?
+    return "reverted" if reverted_at.present?
+    return "accepted" if applied_at.present?
+    return "expired" if superseded_by_id.present?
+    return "unavailable" unless action_payload.valid?
+
+    "pending"
+  end
+
+  def contradictory_action_facts?
+    (reverted_at.present? && applied_at.blank?) ||
+      (auto_applied? && applied_at.blank?) ||
+      (reverted_at.present? && applied_at.present? && reverted_at < applied_at)
+  end
+
+  def legacy_action_facts_changed?
+    will_save_change_to_applied_at? || will_save_change_to_reverted_at? || will_save_change_to_superseded_by_id?
+  end
+
+  def valid_kind_and_action_state_combination
+    if kind == "human" && action_state.present?
+      errors.add(:action_state, "must be blank for human messages")
+    elsif kind.present? && kind != "human" && action_state.blank?
+      errors.add(:action_state, "can't be blank for actionable messages")
+    end
+  end
+
+  def valid_action_state_timestamps
+    errors.add(:applied_at, "can't be blank for accepted messages") if action_state == "accepted" && applied_at.blank?
+    return unless action_state == "reverted"
+
+    errors.add(:applied_at, "can't be blank for reverted messages") if applied_at.blank?
+    errors.add(:reverted_at, "can't be blank for reverted messages") if reverted_at.blank?
+  end
+
   def enqueue_auto_apply
     ActionableMessageAutoApplyJob.perform_now(self)
+  end
+
+  def broadcast_to_conversation
+    html = ApplicationController.render(Views::Messages::Message.new(message: self), layout: false)
+    Logic::Conversations::Stream.each_authorized(conversation) do |streamables|
+      broadcast_append_to(*streamables, target: "messages_#{conversation.id}", html:)
+    end
   end
 
   def auto_apply_candidate?
@@ -168,6 +265,14 @@ class Message < ApplicationRecord
   def assign_audit_operation
     operation_id = Audit::Current.operation_id
     self.audit_operation_id = operation_id if operation_id.present? && AuditOperation.exists?(id: operation_id)
+  end
+
+  def reactivate_conversation_participants
+    conversation.conversation_participants.where.not(archived_at: nil).update_all(archived_at: nil, updated_at: Time.current)
+  end
+
+  def record_conversation_activity
+    Conversation.where(id: conversation_id).where("last_message_at < ?", created_at).update_all(last_message_at: created_at)
   end
 
   def read_at_became_present?
@@ -275,17 +380,15 @@ class Message < ApplicationRecord
   end
 
   def parsed_headers
-    @parsed_headers ||= JSON.parse(headers || "{}")
-  rescue JSON::ParserError
-    {}
+    action_payload.data
   end
 
   def notification_action
-    parsed_headers.dig("event", "action")
+    action_payload.action
   end
 
   def notification_event
-    parsed_headers.fetch("event", {})
+    action_payload.event
   end
 
   def render_notification_body # rubocop:disable Metrics/AbcSize
@@ -361,24 +464,26 @@ class Message < ApplicationRecord
     body =  model_attribute(self, :you_have_a_new_message)
     url = Rails.application.routes.url_helpers.root_url(host: Rails.env.production? ? "30fev.com" : "localhost")
 
-    friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id)
+    friends_to_notify = conversation.conversation_participants.where.not(user_id: user.id).where(muted_at: nil)
 
-    friends_to_notify.each do |friend|
-      friend_user = friend.user
-      I18n.locale = friend_user.locale
-
-      friend_user.push_subscriptions.each do |subscription|
-        WebPush.payload_send(
-          message: { title:, body:, url: }.to_json,
-          endpoint: subscription.endpoint,
-          p256dh: subscription.p256dh,
-          auth: subscription.auth,
-          vapid:
-        )
-      end
-    end
+    friends_to_notify.each { |participant| send_push_notification_to(participant, title:, body:, url:) }
 
     I18n.locale = user.locale
+  end
+
+  def send_push_notification_to(participant, title:, body:, url:)
+    friend_user = participant.user
+    I18n.locale = friend_user.locale
+
+    friend_user.push_subscriptions.each do |subscription|
+      WebPush.payload_send(
+        message: { title:, body:, url: }.to_json,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.p256dh,
+        auth: subscription.auth,
+        vapid:
+      )
+    end
   end
 
   def vapid
@@ -395,18 +500,20 @@ end
 # Table name: messages
 # Database name: primary
 #
-#  id                          :bigint           not null, primary key
+#  id                          :bigint           not null, primary key, indexed => [conversation_id, created_at]
+#  action_state                :string           indexed => [kind]
 #  applied_at                  :datetime         indexed
 #  auto_applied                :boolean          default(FALSE), not null
 #  body                        :text
 #  headers                     :text
+#  kind                        :string           not null, indexed => [action_state]
 #  read_at                     :datetime
 #  reference_transactable_type :string           indexed => [reference_transactable_id]
 #  reverted_at                 :datetime         indexed
-#  created_at                  :datetime         not null
+#  created_at                  :datetime         not null, indexed => [conversation_id, id]
 #  updated_at                  :datetime         not null
 #  audit_operation_id          :uuid             indexed
-#  conversation_id             :bigint           not null, indexed
+#  conversation_id             :bigint           not null, indexed => [created_at, id], indexed
 #  reference_transactable_id   :bigint           indexed => [reference_transactable_type]
 #  superseded_by_id            :bigint           indexed
 #  user_id                     :bigint           not null, indexed
@@ -415,7 +522,9 @@ end
 #
 #  index_messages_on_applied_at              (applied_at)
 #  index_messages_on_audit_operation_id      (audit_operation_id)
+#  index_messages_on_conversation_cursor     (conversation_id,created_at DESC,id DESC)
 #  index_messages_on_conversation_id         (conversation_id)
+#  index_messages_on_kind_and_action_state   (kind,action_state)
 #  index_messages_on_reference_transactable  (reference_transactable_type,reference_transactable_id)
 #  index_messages_on_reverted_at             (reverted_at)
 #  index_messages_on_superseded_by_id        (superseded_by_id)

@@ -5,11 +5,12 @@ require "rails_helper"
 RSpec.describe "Conversation and internal-screen Turbo navigation", type: :feature do
   let(:user) { create(:user, first_name: "Rikki", last_name: "Potter", email: "rikki-browser-navigation@example.com") }
   let(:other_user) { create(:user, :random) }
+  let!(:friendship) { create(:friendship, :accepted, user:, friend: other_user) }
 
   before { sign_in user }
 
   it "selects and updates a conversation without letting realtime streams change its URL" do
-    conversation = Conversation.find_or_create_human_between!(user, other_user)
+    conversation = resolve_human_conversation(user, other_user)
     conversation.messages.create!(user: other_user, body: "Hello from history")
     index_path = conversations_path(filter: "human")
 
@@ -31,7 +32,7 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
 
   it "opens an actionable message at the canonical transaction form URL" do
     remote_transaction = create(:cash_transaction, user: other_user, context: other_user.main_context)
-    conversation = Conversation.find_or_create_assistant_between!(other_user, user)
+    conversation = resolve_assistant_conversation(other_user, user)
     message = conversation.messages.create!(
       user: other_user,
       body: "notification:create",
@@ -47,7 +48,8 @@ RSpec.describe "Conversation and internal-screen Turbo navigation", type: :featu
       }.to_json
     )
     conversation_path_with_state = conversation_path(conversation, message_filter: "all")
-    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id })
+    return_to = conversation_path(conversation, message_filter: "all", message_side: %w[mine theirs])
+    action_path = new_cash_transaction_path(cash_transaction: { source_message_id: message.id }, return_to:)
 
     visit conversation_path_with_state
     find("a[href='#{action_path}']", match: :first).click

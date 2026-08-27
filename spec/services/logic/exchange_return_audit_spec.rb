@@ -725,6 +725,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
     it "flags assistant replay payloads that differ from the resolved local shared return" do
       sender = create(:user, :random)
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user: sender, friend: receiver)
       source_transaction = create(
         :cash_transaction,
         user: sender,
@@ -753,7 +754,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("BORROW RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       message = conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,
@@ -808,6 +809,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
     it "does not flag card-source exchange returns that mirror the card payload installments" do
       sender = create(:user, :random)
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user: sender, friend: receiver)
       sender_card = create(:user_card, :random, user: sender, card: create(:card, :random))
       source_transaction = create(
         :card_transaction,
@@ -843,7 +845,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("EXCHANGE RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,
@@ -880,6 +882,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
     it "does not flag card-source borrow returns that match the card payload installments with same signs" do
       sender = create(:user, :random)
       receiver = create(:user, :random)
+      create(:friendship, :accepted, user: sender, friend: receiver)
       sender_card = create(:user_card, :random, user: sender, card: create(:card, :random))
       source_transaction = create(
         :card_transaction,
@@ -915,7 +918,7 @@ RSpec.describe Logic::ExchangeReturnAudit do
       local_transaction.categories = [ receiver.built_in_category("BORROW RETURN") ]
       local_transaction.save!
 
-      conversation = Conversation.find_or_create_assistant_between!(sender, receiver)
+      conversation = resolve_assistant_conversation(sender, receiver)
       conversation.messages.create!(
         user: sender,
         reference_transactable: source_transaction,

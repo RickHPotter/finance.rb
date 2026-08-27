@@ -1384,7 +1384,7 @@ RSpec.describe "CardTransactions", type: :request do
         }
       }, headers: turbo_stream_headers
 
-      conversation = Conversation.find_or_create_assistant_between!(user, gigi)
+      conversation = resolve_assistant_conversation(user, gigi)
       destroy_message = conversation.messages.where(body: "notification:destroy").order(:id).last
 
       expect(destroy_message).to be_present
