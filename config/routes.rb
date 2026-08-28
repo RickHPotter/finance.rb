@@ -138,7 +138,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :subscriptions
+  resources :subscriptions do
+    patch :transition, on: :member
+  end
   post "allocation_mutations/preview", to: "allocation_mutation_previews#create", as: :preview_allocation_mutations
   post "allocation_mutations/apply", to: "allocation_mutations#create", as: :apply_allocation_mutations
   resources :audit_operations, only: %i[index show]

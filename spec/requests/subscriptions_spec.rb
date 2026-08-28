@@ -293,6 +293,111 @@ RSpec.describe "Subscriptions", type: :request do
     end
   end
 
+  describe "[ #transition ]" do
+    it "renders exactly the lifecycle actions available for each current status" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active)
+
+      get subscription_path(subscription)
+      active_document = Nokogiri::HTML.fragment(response.body)
+      expect(response.body).to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+      expect(response.body).to include("linkWithConfirmDialog_subscription_lifecycle_finish_#{subscription.id}")
+      expect(active_document.at_css("#subscription_lifecycle_pause_#{subscription.id}")["href"]).to eq(
+        transition_subscription_path(subscription, event: :pause, return_to: subscription_path(subscription))
+      )
+      expect(active_document.at_css("#linkWithConfirmDialog_subscription_lifecycle_finish_#{subscription.id}")["data-confirm-href-value"]).to eq(
+        transition_subscription_path(subscription, event: :finish, return_to: subscription_path(subscription))
+      )
+
+      subscription.update_column(:status, "paused")
+      get subscription_path(subscription)
+      expect(response.body).to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+
+      subscription.update_column(:status, "finished")
+      get subscription_path(subscription)
+      finished_document = Nokogiri::HTML.fragment(response.body)
+      expect(response.body).to include(
+        "subscription_lifecycle_reopen_#{subscription.id}",
+        "linkWithConfirmDialog_subscription_lifecycle_reopen_#{subscription.id}"
+      )
+      expect(finished_document.at_css("#linkWithConfirmDialog_subscription_lifecycle_reopen_#{subscription.id}")["data-confirm-href-value"]).to eq(
+        transition_subscription_path(subscription, event: :reopen, return_to: subscription_path(subscription))
+      )
+      expect(response.body).not_to include(
+        "subscription_lifecycle_pause_#{subscription.id}",
+        "subscription_lifecycle_resume_#{subscription.id}",
+        "subscription_lifecycle_finish_#{subscription.id}"
+      )
+    end
+
+    it "changes only lifecycle status and refreshes the dashboard with the next valid actions" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active, price: -12_345)
+      subscription.categories << category
+      subscription.entities << entity
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, subscription:)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, subscription:)
+      preserved_subscription_attributes = subscription.reload.attributes.slice("price", "cash_transactions_count", "card_transactions_count")
+      preserved_category_ids = subscription.category_ids
+      preserved_entity_ids = subscription.entity_ids
+      preserved_cash_ids = subscription.cash_transaction_ids
+      preserved_card_ids = subscription.card_transaction_ids
+      cash_updated_at = cash_transaction.reload.updated_at
+      card_updated_at = card_transaction.reload.updated_at
+
+      patch transition_subscription_path(subscription),
+            params: { event: "pause", return_to: subscription_path(subscription) }
+
+      expect(response).to redirect_to(subscription_path(subscription))
+      expect(response).to have_http_status(:see_other)
+
+      subscription.reload
+      expect(subscription).to be_paused
+      expect(subscription.attributes.slice("price", "cash_transactions_count", "card_transactions_count")).to eq(preserved_subscription_attributes)
+      expect(subscription.category_ids).to eq(preserved_category_ids)
+      expect(subscription.entity_ids).to eq(preserved_entity_ids)
+      expect(subscription.cash_transaction_ids).to eq(preserved_cash_ids)
+      expect(subscription.card_transaction_ids).to eq(preserved_card_ids)
+      expect(cash_transaction.reload.updated_at).to eq(cash_updated_at)
+      expect(card_transaction.reload.updated_at).to eq(card_updated_at)
+
+      follow_redirect!
+      expect(response.body).to include(I18n.t("dashboards.subscriptions.lifecycle.success.pause"))
+      expect(response.body).to include("subscription_lifecycle_resume_#{subscription.id}", "subscription_lifecycle_finish_#{subscription.id}")
+      expect(response.body).not_to include("subscription_lifecycle_pause_#{subscription.id}", "subscription_lifecycle_reopen_#{subscription.id}")
+    end
+
+    it "rejects invalid and unknown lifecycle events without mutation" do
+      subscription = create(:subscription, user:, context: user.main_context, status: :active)
+      original_updated_at = subscription.updated_at
+      original_audit_count = AuditVersion.count
+
+      %w[reopen archive].each do |event|
+        patch transition_subscription_path(subscription),
+              params: { event:, return_to: subscription_path(subscription) }
+
+        expect(response).to redirect_to(subscription_path(subscription))
+        expect(response).to have_http_status(:see_other)
+        expect(subscription.reload).to be_active
+        expect(subscription.updated_at).to eq(original_updated_at)
+        expect(AuditVersion.count).to eq(original_audit_count)
+      end
+
+      follow_redirect!
+      expect(Nokogiri::HTML.parse(response.body).text).to include(I18n.t("dashboards.subscriptions.lifecycle.invalid"))
+    end
+
+    it "does not expose the lifecycle endpoint for another context" do
+      other_context = create(:context, user:)
+      subscription = create(:subscription, user:, context: other_context, status: :active)
+
+      patch transition_subscription_path(subscription), params: { event: "pause" }
+
+      expect(response).to have_http_status(:not_found)
+      expect(subscription.reload).to be_active
+    end
+  end
+
   describe "[ #new ]" do
     it "renders the ruby ui comboboxes" do
       get new_subscription_path

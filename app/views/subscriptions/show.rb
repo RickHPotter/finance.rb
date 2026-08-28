@@ -42,6 +42,7 @@ class Views::Subscriptions::Show < Views::Base
         dashboard_action(I18n.t("audit.actions.history"), audit_path, variant: :outline)
         dashboard_action(I18n.t("dashboards.actions.view_in_list"), subscription_index_path, variant: :outline)
         dashboard_action(action_message(:edit), edit_subscription_path(subscription, return_to:), variant: :edit)
+        render Views::Subscriptions::LifecycleActions.new(subscription:)
         dashboard_action(I18n.t("dashboards.subscriptions.actions.add_transaction"), add_transaction_path, variant: :primary)
         dashboard_action(I18n.t("dashboards.subscriptions.actions.attach_cash"), attach_cash_path, variant: :outline)
         dashboard_action(I18n.t("dashboards.subscriptions.actions.attach_card"), attach_card_path, variant: :outline)

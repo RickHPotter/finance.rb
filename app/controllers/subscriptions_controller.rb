@@ -4,7 +4,7 @@ class SubscriptionsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_subscription, only: %i[show edit update destroy]
+  before_action :set_subscription, only: %i[show edit update destroy transition]
   before_action :set_categories, :set_entities, only: %i[new create edit update]
   before_action :set_subscription_tabs
 
@@ -61,6 +61,16 @@ class SubscriptionsController < ApplicationController
     else
       redirect_to @return_to, alert: notification_model(:not_destroyed, Subscription), status: :see_other
     end
+  end
+
+  def transition
+    set_return_to
+    event = params[:event].to_s
+    Logic::Subscriptions::LifecycleTransition.call(subscription: @subscription, event:)
+
+    redirect_to @return_to, notice: I18n.t("dashboards.subscriptions.lifecycle.success.#{event}"), status: :see_other
+  rescue Logic::Subscriptions::LifecycleTransition::InvalidTransition
+    redirect_to @return_to, alert: I18n.t("dashboards.subscriptions.lifecycle.invalid"), status: :see_other
   end
 
   private

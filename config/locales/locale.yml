@@ -215,6 +215,18 @@ en:
         overdue: "Overdue"
         today: "Today"
         future: "Future"
+      lifecycle:
+        actions:
+          pause: "Pause"
+          resume: "Resume"
+          finish: "Finish"
+          reopen: "Reopen"
+        success:
+          pause: "Subscription paused."
+          resume: "Subscription resumed."
+          finish: "Subscription finished."
+          reopen: "Subscription reopened."
+        invalid: "This lifecycle action is not available for the Subscription's current status."
 
   navigation:
     previous: "Previous"
@@ -609,6 +621,18 @@ pt-BR:
         overdue: "Atrasada"
         today: "Hoje"
         future: "Futura"
+      lifecycle:
+        actions:
+          pause: "Pausar"
+          resume: "Retomar"
+          finish: "Finalizar"
+          reopen: "Reabrir"
+        success:
+          pause: "Assinatura pausada."
+          resume: "Assinatura retomada."
+          finish: "Assinatura finalizada."
+          reopen: "Assinatura reaberta."
+        invalid: "Esta ação não está disponível para o status atual da Assinatura."
 
   navigation:
     previous: "Anterior"
