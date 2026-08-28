@@ -20,11 +20,13 @@ class SubscriptionsController < ApplicationController
     set_return_to
     cash_transactions = current_context.cash_transactions.where(subscription_id: @subscription.id).includes(:user_bank_account).to_a
     card_transactions = current_context.card_transactions.where(subscription_id: @subscription.id).includes(:user_card).to_a
+    detached_transactions = Logic::Subscriptions::DetachedHistory.call(subscription: @subscription)
 
     render_top_level Views::Subscriptions::Show.new(
       subscription: @subscription,
       cash_transactions:,
       card_transactions:,
+      detached_transactions:,
       return_to: @return_to
     )
   end

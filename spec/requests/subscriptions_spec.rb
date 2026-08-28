@@ -67,6 +67,23 @@ RSpec.describe "Subscriptions", type: :request do
     transaction.reload
   end
 
+  def create_subscription_history_version(subscription:, item_type:, item_id:, object:, event: :update, context: subscription.context)
+    operation = AuditOperation.create!(source: :web, result: :committed, actor_id: user.id, context_id: context.id)
+    AuditVersion.create!(
+      operation:,
+      owner_id: user.id,
+      context_id: context.id,
+      item_type:,
+      item_subtype: item_type,
+      item_id:,
+      event:,
+      mutation_source: :web,
+      object:,
+      object_changes: { "subscription_id" => [ subscription.id, nil ] },
+      metadata: {}
+    )
+  end
+
   describe "[ #index ]" do
     it "renders successfully" do
       get subscriptions_path
@@ -205,8 +222,114 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).to include(
         I18n.t("dashboards.subscriptions.empty.open"),
         I18n.t("dashboards.subscriptions.empty.paid"),
+        I18n.t("dashboards.subscriptions.empty.detached"),
         "delete_subscription_#{subscription.id}"
       )
+    end
+
+    it "renders audited detached records and destroyed tombstones without guessing from matching descriptions" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "Historical subscription")
+      detached_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: nil,
+        description: "Detached internet bill",
+        date: Time.zone.local(2026, 7, 10),
+        price: -4_500
+      )
+      lookalike = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: nil,
+        description: detached_cash.description,
+        date: Time.zone.local(2026, 7, 11),
+        price: -4_500
+      )
+      destroyed_item_id = CashTransaction.maximum(:id).to_i + 10_000
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CashTransaction",
+        item_id: detached_cash.id,
+        object: detached_cash.attributes.merge("subscription_id" => subscription.id)
+      )
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CashTransaction",
+        item_id: destroyed_item_id,
+        event: :destroy,
+        object: {
+          "id" => destroyed_item_id,
+          "description" => "Destroyed telephone bill",
+          "date" => Time.zone.local(2026, 6, 10).iso8601,
+          "price" => -3_200,
+          "subscription_id" => subscription.id
+        }
+      )
+      audit_count = AuditVersion.count
+      subscription_updated_at = subscription.updated_at
+      transaction_updated_at = detached_cash.updated_at
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(AuditVersion.count).to eq(audit_count)
+      expect(subscription.reload.updated_at).to eq(subscription_updated_at)
+      expect(detached_cash.reload.updated_at).to eq(transaction_updated_at)
+
+      section = Nokogiri::HTML.fragment(response.body).at_css("#subscription_detached_transactions")
+      hrefs = section.css("a").map { |link| link["href"] }
+      expect(section.text).to include(detached_cash.description, "Destroyed telephone bill")
+      expect(section.text.scan(detached_cash.description).size).to eq(1)
+      expect(section.at_css("#detached_subscription_CashTransaction_#{detached_cash.id}")).to be_present
+      expect(section.at_css("#detached_subscription_CashTransaction_#{lookalike.id}")).to be_nil
+      expect(section.at_css("#destroyed_subscription_CashTransaction_#{destroyed_item_id}")).to be_present
+      expect(hrefs).to include(
+        cash_transaction_path(detached_cash, return_to: subscription_path(subscription)),
+        record_audit_versions_path(item_type: "CashTransaction", item_id: destroyed_item_id)
+      )
+      expect(hrefs).not_to include(cash_transaction_path(destroyed_item_id))
+      expect(response.body).to include("delete_subscription_#{subscription.id}")
+
+      get subscription_path(subscription), headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
+      mobile_section = Nokogiri::HTML.fragment(response.body).at_css("#subscription_detached_transactions")
+      expect(mobile_section.at_css("a#detached_subscription_CashTransaction_#{detached_cash.id}")["href"]).to eq(
+        cash_transaction_path(detached_cash, return_to: subscription_path(subscription))
+      )
+      expect(mobile_section.at_css("div#destroyed_subscription_CashTransaction_#{destroyed_item_id}")).to be_present
+      expect(mobile_section.at_css("div#destroyed_subscription_CashTransaction_#{destroyed_item_id} a")["href"]).to eq(
+        record_audit_versions_path(item_type: "CashTransaction", item_id: destroyed_item_id)
+      )
+    end
+
+    it "keeps reattached transactions exclusively in their current live section" do
+      subscription = create(:subscription, user:, context: user.main_context)
+      card_transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription:,
+        description: "Reattached streaming plan",
+        paid: false
+      )
+      create_subscription_history_version(
+        subscription:,
+        item_type: "CardTransaction",
+        item_id: card_transaction.id,
+        object: card_transaction.attributes.merge("subscription_id" => subscription.id)
+      )
+
+      get subscription_path(subscription)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("#subscription_open_transactions").text).to include(card_transaction.description)
+      expect(document.at_css("#subscription_paid_transactions").text).not_to include(card_transaction.description)
+      expect(document.at_css("#subscription_detached_transactions").text).not_to include(card_transaction.description)
+      expect(document.text.scan(card_transaction.description).size).to eq(1)
     end
 
     it "does not expose a subscription from another active context" do

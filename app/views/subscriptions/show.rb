@@ -5,12 +5,13 @@ class Views::Subscriptions::Show < Views::Base
 
   include TranslateHelper
 
-  attr_reader :subscription, :cash_transactions, :card_transactions, :return_to
+  attr_reader :subscription, :cash_transactions, :card_transactions, :detached_transactions, :return_to
 
-  def initialize(subscription:, cash_transactions:, card_transactions:, return_to: "/subscriptions")
+  def initialize(subscription:, cash_transactions:, card_transactions:, detached_transactions:, return_to: "/subscriptions")
     @subscription = subscription
     @cash_transactions = cash_transactions
     @card_transactions = card_transactions
+    @detached_transactions = detached_transactions
     @return_to = return_to
   end
 
@@ -23,6 +24,7 @@ class Views::Subscriptions::Show < Views::Base
           summary_section
           transaction_section(I18n.t("dashboards.subscriptions.open"), open_transactions, :open)
           transaction_section(I18n.t("dashboards.subscriptions.paid_history"), paid_transactions, :paid)
+          render Views::Subscriptions::DetachedHistory.new(subscription:, entries: detached_transactions)
         end
       end
     end

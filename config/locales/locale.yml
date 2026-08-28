@@ -199,6 +199,9 @@ en:
       card_count: "Card transactions"
       open: "Open transactions"
       paid_history: "Paid history"
+      detached_history: "Detached history"
+      detached_state: "State"
+      view_audit: "View audit history"
       type: "Type"
       source: "Source"
       actions:
@@ -208,6 +211,10 @@ en:
       empty:
         open: "There are no open transactions linked to this subscription."
         paid: "There is no paid history linked to this subscription."
+        detached: "There is no audited detached history for this subscription."
+      detached_states:
+        detached: "Detached"
+        destroyed: "Destroyed"
       types:
         cash: "Cash"
         card: "Card"
@@ -605,6 +612,9 @@ pt-BR:
       card_count: "Movimentações no cartão"
       open: "Movimentações em aberto"
       paid_history: "Histórico pago"
+      detached_history: "Histórico desvinculado"
+      detached_state: "Estado"
+      view_audit: "Ver histórico de auditoria"
       type: "Tipo"
       source: "Origem"
       actions:
@@ -614,6 +624,10 @@ pt-BR:
       empty:
         open: "Não há movimentações em aberto vinculadas a esta assinatura."
         paid: "Não há histórico pago vinculado a esta assinatura."
+        detached: "Não há histórico auditado de desvinculação para esta assinatura."
+      detached_states:
+        detached: "Desvinculada"
+        destroyed: "Destruída"
       types:
         cash: "Dinheiro"
         card: "Cartão"
