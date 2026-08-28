@@ -72,6 +72,17 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   scope :card_advance, -> { where(cash_transaction_type: "CardTransaction") }
   scope :exchange_return, -> { where(cash_transaction_type: "Exchange") }
   scope :piggy_bank_return, -> { where(cash_transaction_type: "PiggyBank") }
+  scope :subscription_candidates, lambda {
+    protected_category_ids = Category.where(category_name: [ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ]).select(:id)
+    protected_transaction_ids = CategoryTransaction
+                                .where(transactable_type: "CashTransaction", category_id: protected_category_ids)
+                                .where.not(transactable_id: nil)
+                                .select(:transactable_id)
+
+    where(subscription_id: nil)
+      .where("cash_transaction_type IS NULL OR cash_transaction_type NOT IN (?)", %w[CardInstallment CardTransaction Investment PiggyBank])
+      .where.not(id: protected_transaction_ids)
+  }
 
   # @public_instance_methods ..................................................
 
@@ -145,7 +156,7 @@ class CashTransaction < ApplicationRecord # rubocop:disable Metrics/ClassLength
   end
 
   def bulk_subscription_eligible?
-    !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
+    subscription_id.blank? && !generated_piggy_bank_return? && !categories.pluck(:category_name).intersect?([ "CARD PAYMENT", "CARD ADVANCE", "INVESTMENT" ])
   end
 
   def investment?

@@ -21,7 +21,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               :sort, :direction,
               :user_bank_account_id, :categories, :entities,
               :count_by_month_year,
-              :return_to,
+              :attach_to_subscription_id, :return_to,
               :mobile
 
   def initialize(url:, index_context: {}, mobile: false)
@@ -53,6 +53,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
     @user_bank_account_id = index_context[:user_bank_account_id]
     @count_by_month_year = index_context[:count_by_month_year] || {}
     @return_to = index_context[:return_to]
+    @attach_to_subscription_id = index_context[:attach_to_subscription_id]
     @mobile = mobile
 
     set_all_categories
@@ -71,6 +72,7 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
       exact_scope_inputs("cash_transaction", id:, subscription_id:)
       input type: "hidden", name: "return_to", value: return_to if return_to.present?
+      input type: "hidden", name: :attach_to_subscription_id, value: attach_to_subscription_id if attach_to_subscription_id.present?
       input type: "hidden", name: :paid_state, value: paid_state || "all", id: "cash_transactions_paid_state"
       input type: "hidden", name: :paid, value: paid, id: "cash_transactions_paid"
       input type: "hidden", name: :pending, value: pending, id: "cash_transactions_pending"

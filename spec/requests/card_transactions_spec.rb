@@ -311,6 +311,30 @@ RSpec.describe "CardTransactions", type: :request do
       expect(second_transaction.reload.subscription).to eq(other_subscription)
       expect(response.body).to include(I18n.t("notification.added_to_subscription"))
     end
+
+    it "does not reassign a card transaction that already belongs to a subscription" do
+      original_subscription = create(:subscription, user:, context: user.main_context)
+      destination_subscription = create(:subscription, user:, context: user.main_context)
+      transaction = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card: user_card_one,
+        subscription: original_subscription
+      )
+
+      post add_to_subscription_card_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: destination_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(transaction.reload.subscription).to eq(original_subscription)
+      expect(response.body).to include(I18n.t("bulk_actions.empty_selection"))
+    end
   end
 
   def switch_to_context!(context)

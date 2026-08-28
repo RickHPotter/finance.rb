@@ -127,7 +127,7 @@ class Views::CardTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       div(class: "space-y-2") do
         if card_transaction.subscription.present?
           link_item(model_attribute(CardTransaction, :subscription_id), card_transaction.subscription.description,
-                    edit_subscription_path(card_transaction.subscription))
+                    subscription_path(card_transaction.subscription, return_to: card_transaction_path(card_transaction)))
         end
         if card_transaction.advance_cash_transaction.present?
           link_item(I18n.t("dashboards.card_transactions.advance_cash_transaction"), card_transaction.advance_cash_transaction.description,

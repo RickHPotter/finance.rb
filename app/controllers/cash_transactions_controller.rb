@@ -947,6 +947,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
     params.permit(
       %i[
         search_term
+        attach_to_subscription_id
         from_ct_price
         to_ct_price
         from_price
@@ -1194,7 +1195,7 @@ class CashTransactionsController < ApplicationController # rubocop:disable Metri
   end
 
   def selected_cash_transactions_for_bulk_subscription
-    current_context.cash_transactions.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
+    current_context.cash_transactions.subscription_candidates.where(id: Array(params[:ids].to_s.split(",")).compact_blank).to_a
   end
 
   def render_bulk_subscription_failure(alert_message)

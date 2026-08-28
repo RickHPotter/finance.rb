@@ -5,6 +5,7 @@ module Navigation
     QUERY_SCHEMA = {
       active_month_years: :scalar_or_array,
       all_month_years: :scalar,
+      attach_to_subscription_id: :scalar,
       default_year: :scalar,
       direction: :scalar,
       exchange_bound_type: :scalar,
@@ -48,7 +49,8 @@ module Navigation
           "card_transaction.entity_id" => current_user.entities,
           "card_transaction.id" => current_context.card_transactions,
           "card_transaction.subscription_id" => current_context.subscriptions,
-          "card_transaction.user_card_id" => current_user.user_cards
+          "card_transaction.user_card_id" => current_user.user_cards,
+          "attach_to_subscription_id" => current_context.subscriptions
         }
       )
     end

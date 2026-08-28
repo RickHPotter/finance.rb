@@ -193,6 +193,28 @@ en:
         statuses:
           open: "Open"
           settled: "Settled"
+    subscriptions:
+      derived_total: "Derived live total"
+      cash_count: "Cash transactions"
+      card_count: "Card transactions"
+      open: "Open transactions"
+      paid_history: "Paid history"
+      type: "Type"
+      source: "Source"
+      actions:
+        add_transaction: "Add transaction"
+        attach_cash: "Attach existing cash"
+        attach_card: "Attach existing card"
+      empty:
+        open: "There are no open transactions linked to this subscription."
+        paid: "There is no paid history linked to this subscription."
+      types:
+        cash: "Cash"
+        card: "Card"
+      due:
+        overdue: "Overdue"
+        today: "Today"
+        future: "Future"
 
   navigation:
     previous: "Previous"
@@ -565,6 +587,28 @@ pt-BR:
         statuses:
           open: "Aberto"
           settled: "Liquidado"
+    subscriptions:
+      derived_total: "Total atual calculado"
+      cash_count: "Movimentações em dinheiro"
+      card_count: "Movimentações no cartão"
+      open: "Movimentações em aberto"
+      paid_history: "Histórico pago"
+      type: "Tipo"
+      source: "Origem"
+      actions:
+        add_transaction: "Adicionar movimentação"
+        attach_cash: "Vincular movimentação em dinheiro"
+        attach_card: "Vincular movimentação no cartão"
+      empty:
+        open: "Não há movimentações em aberto vinculadas a esta assinatura."
+        paid: "Não há histórico pago vinculado a esta assinatura."
+      types:
+        cash: "Dinheiro"
+        card: "Cartão"
+      due:
+        overdue: "Atrasada"
+        today: "Hoje"
+        future: "Futura"
 
   navigation:
     previous: "Anterior"

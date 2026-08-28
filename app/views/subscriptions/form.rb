@@ -109,7 +109,7 @@ class Views::Subscriptions::Form < Views::Base
   private
 
   def transactions_section(form:)
-    section(class: "flex flex-1 flex-col") do
+    section(id: "subscription_transactions", class: "flex flex-1 flex-col") do
       div(class: "mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between") do
         div(class: "flex items-center gap-3") do
           h3(class: "text-lg font-semibold text-slate-900 dark:text-slate-100") do

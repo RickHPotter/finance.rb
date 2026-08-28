@@ -98,6 +98,199 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).to include("background-color: #123456", "color: #ffffff")
       expect(response.body).to include(category.name)
     end
+
+    it "links the primary label to show while retaining a distinct edit action" do
+      subscription = create(:subscription, user:, context: user.main_context)
+
+      get subscriptions_path
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css("#show_subscription_#{subscription.id}")["href"]).to eq(subscription_path(subscription))
+      expect(document.at_css("#edit_subscription_#{subscription.id}")["href"]).to eq(edit_subscription_path(subscription))
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders derived live totals, allocations, and disjoint open and paid transaction histories without writes" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "House services", comment: "Shared utilities", status: :paused)
+      subscription.categories << category
+      subscription.entities << entity
+      open_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription:,
+        description: "Open electricity",
+        price: -4_900,
+        date: 2.days.ago
+      )
+      paid_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription:,
+        description: "Paid streaming",
+        price: -5_500,
+        date: 2.days.from_now,
+        month: 9,
+        year: 2026
+      )
+      open_cash.update_column(:paid, false)
+      paid_card.update_column(:paid, true)
+      other_context = create(:context, user:)
+      foreign_cash = create(
+        :cash_transaction,
+        user:,
+        context: other_context,
+        user_bank_account:,
+        description: "Foreign cash relationship",
+        price: -90_000,
+        date: Time.zone.today
+      )
+      foreign_card = create(
+        :card_transaction,
+        user:,
+        context: other_context,
+        user_card:,
+        description: "Foreign card relationship",
+        price: -80_000,
+        date: Time.zone.today
+      )
+      foreign_cash.update_column(:subscription_id, subscription.id)
+      foreign_card.update_column(:subscription_id, subscription.id)
+      subscription.update_columns(price: 123, cash_transactions_count: 99, card_transactions_count: 98)
+      subscription_updated_at = subscription.reload.updated_at
+      cash_updated_at = open_cash.reload.updated_at
+      card_updated_at = paid_card.reload.updated_at
+      audit_count = AuditVersion.count
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(AuditVersion.count).to eq(audit_count)
+      expect(subscription.reload.updated_at).to eq(subscription_updated_at)
+      expect(open_cash.reload.updated_at).to eq(cash_updated_at)
+      expect(paid_card.reload.updated_at).to eq(card_updated_at)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      open_section = document.at_css("#subscription_open_transactions")
+      paid_section = document.at_css("#subscription_paid_transactions")
+      hrefs = document.css("a").map { |link| link["href"] }
+
+      expect(document.text).to include("House services", "Shared utilities", category.name, entity.entity_name, "104.00")
+      expect(document.text).not_to include(foreign_cash.description, foreign_card.description)
+      expect(open_section.text).to include(open_cash.description)
+      expect(open_section.text).not_to include(paid_card.description)
+      expect(paid_section.text).to include(paid_card.description)
+      expect(paid_section.text).not_to include(open_cash.description)
+      expect(hrefs).to include(
+        cash_transaction_path(open_cash, return_to: subscription_path(subscription)),
+        card_transaction_path(paid_card, return_to: subscription_path(subscription)),
+        category_path(category, return_to: subscription_path(subscription)),
+        entity_path(entity, return_to: subscription_path(subscription)),
+        record_audit_versions_path(item_type: "Subscription", item_id: subscription.id)
+      )
+      expect(response.body).not_to include("delete_subscription_#{subscription.id}")
+    end
+
+    it "renders useful empty states and guarded destroy for an empty subscription" do
+      subscription = create(:subscription, user:, context: user.main_context)
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(
+        I18n.t("dashboards.subscriptions.empty.open"),
+        I18n.t("dashboards.subscriptions.empty.paid"),
+        "delete_subscription_#{subscription.id}"
+      )
+    end
+
+    it "does not expose a subscription from another active context" do
+      other_context = create(:context, user:)
+      subscription = create(:subscription, user:, context: other_context)
+
+      get subscription_path(subscription)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "links cash and card transaction dashboards back to the Subscription show" do
+      subscription = create(:subscription, user:, context: user.main_context)
+      cash_transaction = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, subscription:)
+      card_transaction = create(:card_transaction, user:, context: user.main_context, user_card:, subscription:)
+
+      get cash_transaction_path(cash_transaction)
+      expect(response.body).to include(subscription_path(subscription, return_to: cash_transaction_path(cash_transaction)))
+
+      get card_transaction_path(card_transaction)
+      expect(response.body).to include(subscription_path(subscription, return_to: card_transaction_path(card_transaction)))
+    end
+
+    it "opens exact eligible unowned cash and card attachment collections with the destination preselected" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "Target subscription")
+      other_subscription = create(:subscription, user:, context: user.main_context)
+      available_cash = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, description: "Available cash", date: Time.zone.today)
+      owned_cash = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: other_subscription,
+        description: "Owned cash",
+        date: Time.zone.today
+      )
+      available_card = create(:card_transaction, user:, context: user.main_context, user_card:, description: "Available card", date: Time.zone.today)
+      owned_card = create(
+        :card_transaction,
+        user:,
+        context: user.main_context,
+        user_card:,
+        subscription: other_subscription,
+        description: "Owned card",
+        date: Time.zone.today
+      )
+
+      expect(available_cash).to be_bulk_subscription_eligible
+      expect(available_card).to be_bulk_subscription_eligible
+      expect(user.main_context.cash_transactions.subscription_candidates).to include(available_cash)
+      expect(user.main_context.card_transactions.subscription_candidates).to include(available_card)
+
+      get subscription_path(subscription)
+      document = Nokogiri::HTML.fragment(response.body)
+      cash_attach_link = document.css("a").find { |link| link.text == I18n.t("dashboards.subscriptions.actions.attach_cash") }
+      card_attach_link = document.css("a").find { |link| link.text == I18n.t("dashboards.subscriptions.actions.attach_card") }
+
+      expect(cash_attach_link["href"]).to eq(
+        cash_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
+      )
+      expect(card_attach_link["href"]).to eq(
+        card_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
+      )
+
+      get month_year_cash_transactions_path,
+          params: {
+            month_year: available_cash.cash_installments.first.date.strftime("%Y%m"),
+            attach_to_subscription_id: subscription.id
+          }
+      expect(response.body).to include(available_cash.description)
+      expect(response.body).not_to include(owned_cash.description)
+
+      get month_year_card_transactions_path,
+          params: {
+            month_year: Date.new(available_card.card_installments.first.year, available_card.card_installments.first.month).strftime("%Y%m"),
+            attach_to_subscription_id: subscription.id
+          }
+      expect(response.body).to include(available_card.description)
+      expect(response.body).not_to include(owned_card.description)
+
+      get cash_attach_link["href"]
+      selected_option = Nokogiri::HTML.fragment(response.body).at_css("select[name='subscription_id'] option[selected]")
+      expect(selected_option["value"]).to eq(subscription.id.to_s)
+    end
   end
 
   describe "[ #new ]" do

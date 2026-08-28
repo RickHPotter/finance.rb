@@ -108,7 +108,7 @@ class Views::CashTransactions::Show < Views::Base # rubocop:disable Metrics/Clas
       div(class: "space-y-2") do
         if cash_transaction.subscription.present?
           link_item(model_attribute(CashTransaction, :subscription_id), cash_transaction.subscription&.description,
-                    edit_subscription_path(cash_transaction.subscription))
+                    subscription_path(cash_transaction.subscription, return_to: cash_transaction_path(cash_transaction)))
         end
         reference_link_item
         piggy_bank_link_item

@@ -10,6 +10,7 @@ module Logic
       year         = month_year[0..3]
       month        = month_year[4..]
       search_term  = search_params.delete(:search_term) || ""
+      attach_to_subscription_id = search_params.delete(:attach_to_subscription_id)
       category_ids = card_transaction_params.delete(:category_id).presence
       entity_ids   = card_transaction_params.delete(:entity_id).presence
       sort, direction = IndexState::CardTransactions.resolve_sort(
@@ -33,6 +34,8 @@ module Logic
                                 .where(conditions)
                                 .where("card_transactions.description ILIKE ?", "%#{search_term}%")
                                 .where("installments.year = ? AND installments.month = ?", year, month)
+
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?
@@ -120,7 +123,8 @@ module Logic
       card_transaction_params = card_transaction_params.to_h.deep_dup.with_indifferent_access
       search_params = search_params.to_h.deep_dup.with_indifferent_access
 
-      search_term  = search_params.delete(:search_term) || ""
+      search_term = search_params.delete(:search_term) || ""
+      attach_to_subscription_id = search_params.delete(:attach_to_subscription_id)
       category_ids = card_transaction_params.delete(:category_id).presence
       category_ids = [ category_ids ].flatten.compact_blank if category_ids.present?
       entity_ids   = card_transaction_params.delete(:entity_id).presence
@@ -136,6 +140,8 @@ module Logic
                                 .left_joins({ card_transaction: %i[categories entities] })
                                 .where(conditions)
                                 .where("card_transactions.description ILIKE ?", "%#{search_term}%")
+
+      relation = relation.where(card_transaction_id: financial_scope.card_transactions.subscription_candidates.select(:id)) if attach_to_subscription_id.present?
 
       relation = relation.where("categories.id IN (?)", category_ids) if category_ids.present?
       relation = relation.where("entities.id IN (?)", entity_ids) if entity_ids.present?

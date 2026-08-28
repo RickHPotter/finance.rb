@@ -9,7 +9,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
               :exchange_bound_type,
               :from_installments_number, :to_installments_number,
               :user_card_id, :active_month_years,
-              :sort, :direction, :order_by, :force_mobile, :return_to
+              :sort, :direction, :order_by, :force_mobile, :attach_to_subscription_id, :return_to
 
   def initialize(index_context: {})
     @search_term = index_context[:search_term]
@@ -33,6 +33,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
     @direction = index_context[:direction]
     @order_by = index_context[:order_by]
     @force_mobile = index_context[:force_mobile]
+    @attach_to_subscription_id = index_context[:attach_to_subscription_id]
     @return_to = index_context[:return_to]
   end
 
@@ -63,6 +64,7 @@ class Views::CardTransactions::MonthYearContainer < Views::Base
         order_by:,
         force_mobile:
         ,
+        attach_to_subscription_id:,
         return_to:
       },
       path_lambda: ->(params) { month_year_card_transactions_path(params) }

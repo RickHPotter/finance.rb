@@ -4,16 +4,29 @@ class SubscriptionsController < ApplicationController
   include TabsConcern
   include ContextHelper
 
-  before_action :set_subscription, only: %i[edit update destroy]
+  before_action :set_subscription, only: %i[show edit update destroy]
   before_action :set_categories, :set_entities, only: %i[new create edit update]
   before_action :set_subscription_tabs
 
   def index
     build_index_context
     @subscriptions = subscriptions_scope
-    @index_context[:return_to] = subscription_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_return_param(request.fullpath)
 
     render_top_level Views::Subscriptions::Index.new(subscriptions: @subscriptions, index_context: @index_context, mobile: @mobile)
+  end
+
+  def show
+    set_return_to
+    cash_transactions = current_context.cash_transactions.where(subscription_id: @subscription.id).includes(:user_bank_account).to_a
+    card_transactions = current_context.card_transactions.where(subscription_id: @subscription.id).includes(:user_card).to_a
+
+    render_top_level Views::Subscriptions::Show.new(
+      subscription: @subscription,
+      cash_transactions:,
+      card_transactions:,
+      return_to: @return_to
+    )
   end
 
   def new
@@ -57,7 +70,7 @@ class SubscriptionsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = subscription_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || subscription_navigation_destination(params[:return_to])
   end
 
   def subscription_navigation_destination(raw)

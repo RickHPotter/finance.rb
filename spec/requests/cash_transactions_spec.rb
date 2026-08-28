@@ -929,6 +929,30 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include(I18n.t("notification.added_to_subscription"))
     end
 
+    it "does not reassign a cash transaction that already belongs to a subscription" do
+      original_subscription = create(:subscription, user:, context: user.main_context)
+      destination_subscription = create(:subscription, user:, context: user.main_context)
+      transaction = create(
+        :cash_transaction,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        subscription: original_subscription
+      )
+
+      post add_to_subscription_cash_transactions_path,
+           params: {
+             ids: transaction.id.to_s,
+             subscription_id: destination_subscription.id,
+             index_context_json: {}.to_json
+           },
+           headers: turbo_stream_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(transaction.reload.subscription).to eq(original_subscription)
+      expect(response.body).to include(I18n.t("bulk_actions.empty_selection"))
+    end
+
     it "merges subscription categories and entities into a paid-history cash transaction" do
       leisure = create(:category, user:, category_name: "LEISURE")
       nous = create(:entity, user:, entity_name: "NOUS")

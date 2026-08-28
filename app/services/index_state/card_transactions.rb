@@ -19,6 +19,7 @@ module IndexState
     ].freeze
     SEARCH_FILTER_KEYS = [
       :search_term,
+      :attach_to_subscription_id,
       *RANGE_FILTER_KEYS,
       :exchange_bound_type,
       :force_mobile,
@@ -101,7 +102,7 @@ module IndexState
     end
 
     def filter_context
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :exchange_bound_type).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :exchange_bound_type).merge(
         compact_filter_context,
         user_card_context,
         force_mobile: boolean(source_context[:force_mobile])
@@ -201,6 +202,9 @@ module IndexState
     def months_for_all_month_years
       associations = association_filters
       relation = card_installments
+      if source_context[:attach_to_subscription_id].present?
+        relation = relation.where(card_transaction_id: current_context.card_transactions.subscription_candidates.select(:id))
+      end
       direct_filters = direct_transaction_filters
       relation = relation.joins(card_transaction: associations.keys).where(card_transaction: associations.merge(direct_filters)) if associations.present?
       relation = relation.joins(:card_transaction).where(card_transaction: direct_filters) if associations.blank? && direct_filters.present?
@@ -245,7 +249,7 @@ module IndexState
     end
 
     def search_filters_for_count(state)
-      values_from(source_context, :search_term, *RANGE_FILTER_KEYS, :force_mobile, :exchange_bound_type).merge(
+      values_from(source_context, :search_term, :attach_to_subscription_id, *RANGE_FILTER_KEYS, :force_mobile, :exchange_bound_type).merge(
         sort: state[:sort],
         direction: state[:direction]
       )

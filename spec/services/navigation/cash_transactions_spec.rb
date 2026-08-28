@@ -34,7 +34,7 @@ RSpec.describe Navigation::CashTransactions do
     raw = "/cash_transactions?active_month_years=%5B202607%5D&cash_transaction[cash_installment_ids][]=#{installment.id}" \
           "&cash_transaction[category_id][]=#{category.id}&cash_transaction[entity_id][]=#{entity.id}" \
           "&cash_transaction[id][]=#{cash_transaction.id}&cash_transaction[subscription_id][]=#{subscription.id}" \
-          "&cash_transaction[user_bank_account_id][]=#{bank_account.id}&sort=description&direction=asc"
+          "&cash_transaction[user_bank_account_id][]=#{bank_account.id}&attach_to_subscription_id=#{subscription.id}&sort=description&direction=asc"
 
     state = build_state(raw)
 
@@ -43,6 +43,16 @@ RSpec.describe Navigation::CashTransactions do
     expect(state.destination).to include("active_month_years=%5B202607%5D")
     expect(state.destination).to include("sort=description")
     expect(state.destination).to include(installment.id.to_s, category.id.to_s, entity.id.to_s, cash_transaction.id.to_s, subscription.id.to_s, bank_account.id.to_s)
+  end
+
+  it "rejects a foreign attach-to-subscription destination" do
+    foreign_user = create(:user, :random)
+    foreign_subscription = create(:subscription, user: foreign_user, context: foreign_user.main_context)
+
+    state = build_state("/cash_transactions?attach_to_subscription_id=#{foreign_subscription.id}")
+
+    expect(state.destination).to eq("/cash_transactions")
+    expect(state.rejected_reason).to eq(:foreign_identifier)
   end
 
   it "strips form data and unrelated query keys" do
