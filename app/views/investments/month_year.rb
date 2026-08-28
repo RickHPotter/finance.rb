@@ -95,8 +95,8 @@ class Views::Investments::MonthYear < Views::Base
             div(class: "flex items-center justify-between gap-4 w-full text-sm font-semibold") do
               div(class: "flex-1 flex items-center justify-between gap-1 min-w-0") do
                 link_to investment.description,
-                        edit_investment_path(investment, return_to:),
-                        id: "edit_investment_#{investment.id}",
+                        investment_path(investment, return_to:),
+                        id: "show_investment_#{investment.id}",
                         class: "truncate text-md underline underline-offset-[3px]",
                         data: { turbo_frame: "_top" }
 
@@ -157,8 +157,8 @@ class Views::Investments::MonthYear < Views::Base
 
           div(class: "col-span-2 flex-1 flex items-center justify-between gap-1 min-w-0 mx-2 hover:opacity-65") do
             link_to investment.description,
-                    edit_investment_path(investment, return_to:),
-                    id: "edit_investment_#{investment.id}",
+                    investment_path(investment, return_to:),
+                    id: "show_investment_#{investment.id}",
                     class: "flex-1 truncate text-md underline underline-offset-[3px]",
                     data: { turbo_frame: "_top" }
           end
@@ -193,6 +193,7 @@ class Views::Investments::MonthYear < Views::Base
 
           div(class: "py-2 flex items-center justify-center") do
             div(class: "flex items-center justify-center gap-1 px-2") do
+              render_edit_action(investment)
               render_duplicate_action(investment)
 
               LinkWithConfirmation(
@@ -229,6 +230,7 @@ class Views::Investments::MonthYear < Views::Base
 
       PopoverContent(class: "z-40 opacity-100! min-w-44 p-1") do
         div(class: "flex flex-col gap-1") do
+          action_menu_link(action_message(:edit), edit_investment_path(investment, return_to:))
           action_menu_link(action_message(:duplicate), duplicate_investment_path(investment, return_to:))
           action_menu_destroy_link(investment)
         end
@@ -281,6 +283,19 @@ class Views::Investments::MonthYear < Views::Base
       data: { turbo_frame: "_top", turbo_prefetch: false }
     ) do
       cached_icon(:copy)
+    end
+  end
+
+  def render_edit_action(investment)
+    link_to(
+      edit_investment_path(investment, return_to:),
+      id: "edit_investment_#{investment.id}",
+      class: action_button_class,
+      title: action_message(:edit),
+      aria: { label: action_message(:edit) },
+      data: { turbo_frame: "_top", turbo_prefetch: false }
+    ) do
+      cached_icon(:pencil)
     end
   end
 

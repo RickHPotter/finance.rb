@@ -65,6 +65,191 @@ RSpec.describe "Investments", type: :request do
       expect(duplicate_link["href"]).to eq(duplicate_investment_path(investment))
       expect(duplicate_link["href"]).not_to include("next_day")
     end
+
+    it "links the investment label to show and keeps a distinct edit action" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get month_year_investments_path, params: { month_year: Time.zone.today.strftime("%Y%m") }
+
+      document = Nokogiri::HTML.fragment(response.body)
+
+      expect(document.at_css("#show_investment_#{investment.id}")["href"]).to eq(investment_path(investment))
+      expect(document.at_css("#edit_investment_#{investment.id}")["href"]).to eq(edit_investment_path(investment))
+    end
+  end
+
+  describe "[ #show ]" do
+    it "renders an ordinary investment and its context-owned generated cash projection" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Treasury contribution",
+        price: 12_345,
+        date: Time.zone.local(2026, 8, 14, 11, 30),
+        month: 8,
+        year: 2026
+      )
+      projection = investment.cash_transaction
+
+      get investment_path(investment)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Treasury contribution")
+      expect(response.body).to include(I18n.t("dashboards.investments.kind.ordinary"))
+      expect(response.body).not_to include(I18n.t("dashboards.investments.kind.valuation"))
+      expect(response.body).to include(investment_type.display_name)
+      expect(response.body).to include(user_bank_account.user_bank_account_name)
+      expect(response.body).to include(projection.categories.first.name)
+      expect(response.body).to include(projection.entities.first.entity_name)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      projection_link = document.css("a").find { |link| link["href"] == cash_transaction_path(projection, return_to: investment_path(investment)) }
+
+      expect(document.text).to include(projection.description)
+      expect(projection_link).to be_present
+      expect(document.css("a").map { |link| link["href"] }).to include(
+        record_audit_versions_path(item_type: "Investment", item_id: investment.id),
+        edit_investment_path(investment, return_to: investments_path),
+        duplicate_investment_path(investment, return_to: investments_path)
+      )
+      expect(document.at_css("#delete_investment_#{investment.id}")).to be_present
+    end
+
+    it "renders an explicit unavailable state without recreating a missing projection" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        price: 2_500,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      investment.update_column(:cash_transaction_id, nil)
+      updated_at = investment.reload.updated_at
+
+      expect do
+        get investment_path(investment)
+      end.not_to change(CashTransaction, :count)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("dashboards.investments.projection.unavailable"))
+      expect(investment.reload.updated_at).to eq(updated_at)
+      expect(investment.cash_transaction_id).to be_nil
+    end
+
+    it "links to the exact account-and-type aggregation across its represented months" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "August treasury contribution",
+        date: Time.zone.local(2026, 8, 14),
+        month: 8,
+        year: 2026
+      )
+      related_investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "July treasury contribution",
+        date: Time.zone.local(2026, 7, 14),
+        month: 7,
+        year: 2026
+      )
+      unrelated_investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type: create(:investment_type, :random),
+        description: "Unrelated July contribution",
+        date: Time.zone.local(2026, 7, 20),
+        month: 7,
+        year: 2026
+      )
+
+      get investment_path(investment)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      aggregation_link = document.css("a").find { |link| link.text == I18n.t("dashboards.investments.actions.view_aggregation") }
+      query = Rack::Utils.parse_nested_query(URI.parse(aggregation_link["href"]).query)
+
+      expect(JSON.parse(query["active_month_years"])).to eq([ 202_607, 202_608 ])
+      expect(query["investment"]).to eq(
+        "investment_type_id" => [ investment_type.id.to_s ],
+        "user_bank_account_id" => [ user_bank_account.id.to_s ]
+      )
+      expect(query["return_to"]).to eq(investment_path(investment))
+
+      get month_year_investments_path, params: { month_year: "202607", investment: query["investment"], return_to: query["return_to"] }
+
+      expect(response.body).to include(related_investment.description)
+      expect(response.body).not_to include(unrelated_investment.description)
+    end
+
+    it "does not expose an investment from another active context" do
+      other_context = create(:context, user:)
+      other_investment = create(
+        :investment,
+        user:,
+        context: other_context,
+        user_bank_account:,
+        investment_type:,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      get investment_path(other_investment)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "preserves an approved dashboard return destination through show actions" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      return_to = user_bank_account_path(user_bank_account)
+
+      get investment_path(investment), params: { return_to: }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      hrefs = document.css("a").map { |link| link["href"] }
+
+      expect(hrefs).to include(
+        edit_investment_path(investment, return_to:),
+        duplicate_investment_path(investment, return_to:)
+      )
+      confirmation = document.at_css("#linkWithConfirmDialog_#{investment.id}")
+
+      expect(confirmation["data-confirm-href-value"]).to eq(investment_path(investment, return_to:))
+    end
   end
 
   describe "[ #new ]" do

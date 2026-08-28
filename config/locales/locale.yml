@@ -164,6 +164,18 @@ en:
         first_installment_only:
           enabled: "First installment only"
           disabled: "All installments"
+    investments:
+      reference_month: "Reference month"
+      kind:
+        ordinary: "Investment"
+        valuation: "Valuation adjustment"
+      actions:
+        view_aggregation: "Same account and type"
+        view_projection: "View cash projection"
+      projection:
+        title: "Generated cash projection"
+        entries: "Investment entries"
+        unavailable: "The generated cash projection is unavailable. Viewing this dashboard does not recreate it."
 
   navigation:
     previous: "Previous"
@@ -507,6 +519,18 @@ pt-BR:
         first_installment_only:
           enabled: "Apenas primeira parcela"
           disabled: "Todas as parcelas"
+    investments:
+      reference_month: "Mês de referência"
+      kind:
+        ordinary: "Investimento"
+        valuation: "Ajuste de valorização"
+      actions:
+        view_aggregation: "Mesma conta e tipo"
+        view_projection: "Ver projeção em dinheiro"
+      projection:
+        title: "Projeção em dinheiro gerada"
+        entries: "Lançamentos de investimento"
+        unavailable: "A projeção em dinheiro gerada está indisponível. A visualização deste painel não a recria."
 
   navigation:
     previous: "Anterior"

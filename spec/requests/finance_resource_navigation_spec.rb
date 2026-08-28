@@ -23,6 +23,7 @@ RSpec.describe "Finance resource navigation", type: :request do
       duplicate_budget_path(budget),
       investments_path,
       new_investment_path,
+      investment_path(investment),
       edit_investment_path(investment),
       duplicate_investment_path(investment),
       subscriptions_path,

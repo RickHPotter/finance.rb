@@ -3,14 +3,21 @@
 class InvestmentsController < ApplicationController
   include TabsConcern
 
-  before_action :set_investment, only: %i[edit update destroy]
+  before_action :set_investment, only: %i[show edit update destroy]
   before_action :set_investment_tabs
 
   def index
     build_index_context
-    @index_context[:return_to] = investment_navigation_return_param(request.fullpath)
+    @index_context[:return_to] = dashboard_navigation_destination(params[:return_to]) || investment_navigation_return_param(request.fullpath)
 
     render_top_level Views::Investments::Index.new(index_context: @index_context, mobile: @mobile)
+  end
+
+  def show
+    set_return_to
+    generated_cash_transaction = scoped_generated_cash_transaction
+
+    render_top_level Views::Investments::Show.new(investment: @investment, generated_cash_transaction:, return_to: @return_to)
   end
 
   def month_year
@@ -25,7 +32,7 @@ class InvestmentsController < ApplicationController
       month_year_str:,
       investments:,
       current_user:,
-      return_to: investment_navigation_return_param(params[:return_to])
+      return_to: dashboard_navigation_destination(params[:return_to]) || investment_navigation_return_param(params[:return_to])
     )
   end
 
@@ -251,7 +258,13 @@ class InvestmentsController < ApplicationController
   end
 
   def set_return_to
-    @return_to = investment_navigation_destination(params[:return_to])
+    @return_to = dashboard_navigation_destination(params[:return_to]) || investment_navigation_destination(params[:return_to])
+  end
+
+  def scoped_generated_cash_transaction
+    return if @investment.piggy_bank_valuation? || @investment.cash_transaction_id.blank?
+
+    current_context.cash_transactions.includes(:categories, :entities).find_by(id: @investment.cash_transaction_id)
   end
 
   def investment_navigation_destination(raw)

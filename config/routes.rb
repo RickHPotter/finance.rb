@@ -128,7 +128,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :investments, except: :show do
+  resources :investments do
     member do
       get :duplicate
     end
