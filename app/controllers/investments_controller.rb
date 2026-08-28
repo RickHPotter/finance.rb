@@ -16,8 +16,14 @@ class InvestmentsController < ApplicationController
   def show
     set_return_to
     generated_cash_transaction = scoped_generated_cash_transaction
+    piggy_bank_return_cash_transaction = scoped_piggy_bank_return_cash_transaction
 
-    render_top_level Views::Investments::Show.new(investment: @investment, generated_cash_transaction:, return_to: @return_to)
+    render_top_level Views::Investments::Show.new(
+      investment: @investment,
+      generated_cash_transaction:,
+      piggy_bank_return_cash_transaction:,
+      return_to: @return_to
+    )
   end
 
   def month_year
@@ -265,6 +271,15 @@ class InvestmentsController < ApplicationController
     return if @investment.piggy_bank_valuation? || @investment.cash_transaction_id.blank?
 
     current_context.cash_transactions.includes(:categories, :entities).find_by(id: @investment.cash_transaction_id)
+  end
+
+  def scoped_piggy_bank_return_cash_transaction
+    return unless @investment.piggy_bank_valuation?
+
+    current_context.cash_transactions
+                   .piggy_bank_return
+                   .includes(:cash_installments, :piggy_bank_investments, :piggy_bank_return_links)
+                   .find_by(id: @investment.piggy_bank_return_cash_transaction_id)
   end
 
   def investment_navigation_destination(raw)

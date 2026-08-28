@@ -206,6 +206,182 @@ RSpec.describe "Investments", type: :request do
       expect(response.body).not_to include(unrelated_investment.description)
     end
 
+    it "renders a valuation as a calculated Piggy Bank adjustment with exact sibling membership and no writes" do
+      piggy_bank_return = create_piggy_bank_return
+      valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        description: "August reserve valuation",
+        price: 800,
+        date: Time.zone.local(2026, 8, 14),
+        month: 8,
+        year: 2026
+      )
+      sibling = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        description: "September reserve valuation",
+        price: -300,
+        date: Time.zone.local(2026, 9, 14),
+        month: 9,
+        year: 2026
+      )
+      other_return = create_piggy_bank_return
+      unrelated = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: other_return,
+        description: "Other September valuation",
+        price: 400,
+        date: Time.zone.local(2026, 9, 18),
+        month: 9,
+        year: 2026
+      )
+      investment_updated_at = valuation.updated_at
+      return_updated_at = piggy_bank_return.reload.updated_at
+      audit_count = AuditVersion.count
+
+      get investment_path(valuation)
+
+      expect(response).to have_http_status(:success)
+      expect(AuditVersion.count).to eq(audit_count)
+      expect(valuation.reload.updated_at).to eq(investment_updated_at)
+      expect(piggy_bank_return.reload.updated_at).to eq(return_updated_at)
+      expect(response.body).to include(
+        I18n.t("dashboards.investments.kind.valuation"),
+        I18n.t("dashboards.investments.valuation.adjustment"),
+        I18n.t("dashboards.investments.valuation.projected_total")
+      )
+      expect(response.body).not_to include(
+        I18n.t("dashboards.investments.projection.title"),
+        I18n.t("dashboards.investments.actions.view_projection")
+      )
+
+      document = Nokogiri::HTML.fragment(response.body)
+      hrefs = document.css("a").map { |link| link["href"] }
+      sibling_link = document.css("a").find { |link| link.text == I18n.t("dashboards.investments.actions.view_valuations") }
+      sibling_query = Rack::Utils.parse_nested_query(URI.parse(sibling_link["href"]).query)
+
+      expect(document.text).to include(piggy_bank_return.description, "R$ 50.00", "R$ 5.00", "R$ 55.00")
+      expect(hrefs).to include(cash_transaction_path(piggy_bank_return, return_to: investment_path(valuation)))
+      expect(JSON.parse(sibling_query["active_month_years"])).to eq([ 202_608, 202_609 ])
+      expect(sibling_query["investment"]).to eq("piggy_bank_return_cash_transaction_id" => [ piggy_bank_return.id.to_s ])
+
+      get month_year_investments_path,
+          params: { month_year: "202609", investment: sibling_query["investment"], return_to: sibling_query["return_to"] }
+
+      expect(response.body).to include(sibling.description)
+      expect(response.body).not_to include(unrelated.description)
+    end
+
+    it "renders a missing context-owned Piggy Bank target explicitly without relinking it" do
+      piggy_bank_return = create_piggy_bank_return
+      valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        price: 800,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      other_context = create(:context, user:)
+      piggy_bank_return.update_column(:context_id, other_context.id)
+      valuation_updated_at = valuation.reload.updated_at
+      return_updated_at = piggy_bank_return.reload.updated_at
+
+      get investment_path(valuation)
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(I18n.t("dashboards.investments.valuation.unavailable"))
+      expect(response.body).not_to include(I18n.t("dashboards.investments.actions.view_piggy_bank_return"))
+      expect(response.body).not_to include("delete_investment_#{valuation.id}")
+      expect(valuation.reload.updated_at).to eq(valuation_updated_at)
+      expect(piggy_bank_return.reload.updated_at).to eq(return_updated_at)
+      expect(valuation.piggy_bank_return_cash_transaction_id).to eq(piggy_bank_return.id)
+    end
+
+    it "mirrors the valuation destroy guard on show, edit, and index for settled paid history" do
+      piggy_bank_return = create_piggy_bank_return
+      valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        price: 800,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+      source = piggy_bank_return.piggy_bank_return_links.first.source_cash_transaction
+      source.cash_installments.update_all(paid: true)
+      piggy_bank_return.cash_installments.update_all(paid: true)
+
+      expect(valuation.reload.can_be_destroyed?).to be(false)
+      expect(piggy_bank_return.reload.piggy_bank_group_open?).to be(false)
+
+      get investment_path(valuation)
+
+      expect(response.body).to include(I18n.t("dashboards.investments.valuation.statuses.settled"))
+      expect(response.body).not_to include("delete_investment_#{valuation.id}")
+
+      get edit_investment_path(valuation)
+      expect(response.body).not_to include("delete_investment_#{valuation.id}")
+
+      get month_year_investments_path, params: { month_year: valuation.date.strftime("%Y%m") }
+      expect(response.body).not_to include("delete_investment_#{valuation.id}")
+
+      expect do
+        delete investment_path(valuation), headers: turbo_stream_headers
+      end.not_to change(Investment, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(valuation.reload).to be_persisted
+    end
+
+    it "offers and applies destroy when removing a valuation preserves the Piggy Bank projection" do
+      piggy_bank_return = create_piggy_bank_return
+      valuation = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        piggy_bank_return_cash_transaction: piggy_bank_return,
+        price: 800,
+        date: Time.zone.today,
+        month: Time.zone.today.month,
+        year: Time.zone.today.year
+      )
+
+      expect(valuation.can_be_destroyed?).to be(true)
+
+      get investment_path(valuation)
+      expect(response.body).to include("delete_investment_#{valuation.id}")
+
+      expect do
+        delete investment_path(valuation), headers: turbo_stream_headers
+      end.to change(Investment, :count).by(-1)
+
+      expect(piggy_bank_return.reload.price).to eq(5_000)
+    end
+
     it "does not expose an investment from another active context" do
       other_context = create(:context, user:)
       other_investment = create(

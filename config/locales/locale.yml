@@ -171,11 +171,28 @@ en:
         valuation: "Valuation adjustment"
       actions:
         view_aggregation: "Same account and type"
+        view_valuations: "View sibling valuations"
         view_projection: "View cash projection"
+        view_piggy_bank_return: "View Piggy Bank return"
       projection:
         title: "Generated cash projection"
         entries: "Investment entries"
         unavailable: "The generated cash projection is unavailable. Viewing this dashboard does not recreate it."
+      valuation:
+        title: "Piggy Bank valuation"
+        adjustment: "Valuation adjustment"
+        target: "Target Piggy Bank return"
+        principal: "Contributed principal"
+        adjustments: "Valuation adjustments"
+        projected_total: "Calculated projected total"
+        recorded_total: "Recorded return total"
+        paid_total: "Paid return total"
+        siblings: "Valuation entries"
+        status: "Return status"
+        unavailable: "The target Piggy Bank return is unavailable in this context. Viewing this dashboard does not recreate or relink it."
+        statuses:
+          open: "Open"
+          settled: "Settled"
 
   navigation:
     previous: "Previous"
@@ -526,11 +543,28 @@ pt-BR:
         valuation: "Ajuste de valorização"
       actions:
         view_aggregation: "Mesma conta e tipo"
+        view_valuations: "Ver valorizações relacionadas"
         view_projection: "Ver projeção em dinheiro"
+        view_piggy_bank_return: "Ver Retorno do Cofrinho"
       projection:
         title: "Projeção em dinheiro gerada"
         entries: "Lançamentos de investimento"
         unavailable: "A projeção em dinheiro gerada está indisponível. A visualização deste painel não a recria."
+      valuation:
+        title: "Valorização do Cofrinho"
+        adjustment: "Ajuste de valorização"
+        target: "Retorno do Cofrinho de destino"
+        principal: "Principal aportado"
+        adjustments: "Ajustes de valorização"
+        projected_total: "Total projetado calculado"
+        recorded_total: "Total registrado do retorno"
+        paid_total: "Total pago do retorno"
+        siblings: "Lançamentos de valorização"
+        status: "Situação do retorno"
+        unavailable: "O Retorno do Cofrinho de destino está indisponível neste contexto. A visualização deste painel não o recria nem refaz o vínculo."
+        statuses:
+          open: "Aberto"
+          settled: "Liquidado"
 
   navigation:
     previous: "Anterior"

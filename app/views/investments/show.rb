@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
-class Views::Investments::Show < Views::Base
+class Views::Investments::Show < Views::Base # rubocop:disable Metrics/ClassLength
   include Phlex::Rails::Helpers::LinkTo
 
   include TranslateHelper
 
-  attr_reader :investment, :generated_cash_transaction, :return_to
+  attr_reader :investment, :generated_cash_transaction, :piggy_bank_return_cash_transaction, :return_to
 
-  def initialize(investment:, generated_cash_transaction:, return_to: "/investments")
+  def initialize(investment:, generated_cash_transaction:, piggy_bank_return_cash_transaction: nil, return_to: "/investments")
     @investment = investment
     @generated_cash_transaction = generated_cash_transaction
+    @piggy_bank_return_cash_transaction = piggy_bank_return_cash_transaction
     @return_to = return_to
   end
 
@@ -20,7 +21,7 @@ class Views::Investments::Show < Views::Base
 
         div(class: "mt-6 space-y-4") do
           summary_section
-          projection_section unless investment.piggy_bank_valuation?
+          investment.piggy_bank_valuation? ? valuation_section : projection_section
         end
       end
     end
@@ -42,11 +43,11 @@ class Views::Investments::Show < Views::Base
       div(class: "grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), audit_path, variant: :outline)
         dashboard_action(I18n.t("dashboards.actions.view_in_list"), investment_index_path, variant: :outline)
-        dashboard_action(I18n.t("dashboards.investments.actions.view_aggregation"), aggregation_path, variant: :outline)
-        dashboard_action(I18n.t("dashboards.investments.actions.view_projection"), projection_path, variant: :outline) if generated_cash_transaction.present?
+        dashboard_action(relationship_collection_label, relationship_collection_path, variant: :outline) if relationship_collection_path.present?
+        dashboard_action(related_transaction_label, related_transaction_path, variant: :outline) if related_transaction_path.present?
         dashboard_action(action_message(:edit), edit_investment_path(investment, return_to:), variant: :edit)
         dashboard_action(action_message(:duplicate), duplicate_investment_path(investment, return_to:), variant: :duplicate)
-        destroy_action unless investment.piggy_bank_valuation?
+        destroy_action if investment.can_be_destroyed?
       end
     end
   end
@@ -54,7 +55,7 @@ class Views::Investments::Show < Views::Base
   def summary_section
     section_card(I18n.t("dashboards.sections.summary")) do
       div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-5") do
-        dashboard_stat(model_attribute(Investment, :price), money(investment.price), emphasis: true)
+        dashboard_stat(entry_amount_label, money(investment.price), emphasis: true)
         dashboard_stat(model_attribute(Investment, :investment_type_id), investment.investment_type.display_name)
         account_stat
         dashboard_stat(model_attribute(Investment, :date), localized_date(investment.date))
@@ -71,6 +72,33 @@ class Views::Investments::Show < Views::Base
       else
         empty_state(I18n.t("dashboards.investments.projection.unavailable"))
       end
+    end
+  end
+
+  def valuation_section
+    section_card(I18n.t("dashboards.investments.valuation.title")) do
+      if piggy_bank_return_cash_transaction.present?
+        valuation_summary
+      else
+        empty_state(I18n.t("dashboards.investments.valuation.unavailable"))
+      end
+    end
+  end
+
+  def valuation_summary
+    div(class: "grid gap-3 sm:grid-cols-2 xl:grid-cols-4") do
+      linked_stat(
+        I18n.t("dashboards.investments.valuation.target"),
+        piggy_bank_return_cash_transaction.description,
+        piggy_bank_return_path
+      )
+      dashboard_stat(I18n.t("dashboards.investments.valuation.principal"), money(piggy_bank_principal), emphasis: true)
+      dashboard_stat(I18n.t("dashboards.investments.valuation.adjustments"), money(piggy_bank_valuation_delta), emphasis: true)
+      dashboard_stat(I18n.t("dashboards.investments.valuation.projected_total"), money(piggy_bank_projected_total), emphasis: true)
+      dashboard_stat(I18n.t("dashboards.investments.valuation.recorded_total"), money(piggy_bank_return_cash_transaction.price))
+      dashboard_stat(I18n.t("dashboards.investments.valuation.paid_total"), money(piggy_bank_paid_total))
+      dashboard_stat(I18n.t("dashboards.investments.valuation.siblings"), piggy_bank_return_cash_transaction.piggy_bank_investments.size)
+      dashboard_stat(I18n.t("dashboards.investments.valuation.status"), piggy_bank_status_label)
     end
   end
 
@@ -161,6 +189,12 @@ class Views::Investments::Show < Views::Base
     end
   end
 
+  def entry_amount_label
+    return I18n.t("dashboards.investments.valuation.adjustment") if investment.piggy_bank_valuation?
+
+    model_attribute(Investment, :price)
+  end
+
   def reference_badge
     span(class: reference_badge_class) do
       I18n.l(reference_date, format: "%B %Y")
@@ -215,8 +249,43 @@ class Views::Investments::Show < Views::Base
     )
   end
 
+  def valuation_siblings_path
+    investments_path(
+      default_year: valuation_months.max.to_s.first(4).to_i,
+      active_month_years: valuation_months.to_json,
+      investment: { piggy_bank_return_cash_transaction_id: [ piggy_bank_return_cash_transaction.id ] },
+      return_to: investment_path(investment)
+    )
+  end
+
   def projection_path
     cash_transaction_path(generated_cash_transaction, return_to: investment_path(investment))
+  end
+
+  def piggy_bank_return_path
+    cash_transaction_path(piggy_bank_return_cash_transaction, return_to: investment_path(investment))
+  end
+
+  def relationship_collection_label
+    key = investment.piggy_bank_valuation? ? "view_valuations" : "view_aggregation"
+    I18n.t("dashboards.investments.actions.#{key}")
+  end
+
+  def relationship_collection_path
+    return if investment.piggy_bank_valuation? && piggy_bank_return_cash_transaction.blank?
+
+    investment.piggy_bank_valuation? ? valuation_siblings_path : aggregation_path
+  end
+
+  def related_transaction_label
+    key = investment.piggy_bank_valuation? ? "view_piggy_bank_return" : "view_projection"
+    I18n.t("dashboards.investments.actions.#{key}")
+  end
+
+  def related_transaction_path
+    return piggy_bank_return_path if investment.piggy_bank_valuation? && piggy_bank_return_cash_transaction.present?
+
+    projection_path if generated_cash_transaction.present?
   end
 
   def aggregation_months
@@ -226,6 +295,28 @@ class Views::Investments::Show < Views::Base
                                       .order(:year, :month)
                                       .pluck(:year, :month)
                                       .map { |year, month| (year * 100) + month }
+  end
+
+  def valuation_months
+    @valuation_months ||= investment.context.investments
+                                    .where(piggy_bank_return_cash_transaction_id: piggy_bank_return_cash_transaction.id)
+                                    .distinct
+                                    .order(:year, :month)
+                                    .pluck(:year, :month)
+                                    .map { |year, month| (year * 100) + month }
+  end
+
+  def piggy_bank_principal = piggy_bank_return_cash_transaction.piggy_bank_return_links.sum(&:return_price)
+
+  def piggy_bank_valuation_delta = piggy_bank_return_cash_transaction.piggy_bank_investments.sum(&:price)
+
+  def piggy_bank_projected_total = piggy_bank_principal + piggy_bank_valuation_delta
+
+  def piggy_bank_paid_total = piggy_bank_return_cash_transaction.cash_installments.select(&:paid?).sum(&:price)
+
+  def piggy_bank_status_label
+    key = piggy_bank_return_cash_transaction.piggy_bank_group_open? ? "open" : "settled"
+    I18n.t("dashboards.investments.valuation.statuses.#{key}")
   end
 
   def reference_month = (investment.year * 100) + investment.month
@@ -259,8 +350,10 @@ class Views::Investments::Show < Views::Base
   end
 
   def kind_badge_class
-    "rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-emerald-900 " \
-      "dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200"
+    base = "rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.16em]"
+    return "#{base} border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200" if investment.piggy_bank_valuation?
+
+    "#{base} border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200"
   end
 
   def reference_badge_class

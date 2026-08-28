@@ -196,17 +196,19 @@ class Views::Investments::MonthYear < Views::Base
               render_edit_action(investment)
               render_duplicate_action(investment)
 
-              LinkWithConfirmation(
-                id: investment.id,
-                icon: :destroy,
-                link_params: {
-                  href: investment_path(investment, return_to:),
-                  size: :xs,
-                  id: "delete_investment_#{investment.id}",
-                  class: destructive_action_button_class,
-                  data: { turbo_method: :delete }
-                }
-              )
+              if investment.can_be_destroyed?
+                LinkWithConfirmation(
+                  id: investment.id,
+                  icon: :destroy,
+                  link_params: {
+                    href: investment_path(investment, return_to:),
+                    size: :xs,
+                    id: "delete_investment_#{investment.id}",
+                    class: destructive_action_button_class,
+                    data: { turbo_method: :delete }
+                  }
+                )
+              end
             end
           end
         end
@@ -232,7 +234,7 @@ class Views::Investments::MonthYear < Views::Base
         div(class: "flex flex-col gap-1") do
           action_menu_link(action_message(:edit), edit_investment_path(investment, return_to:))
           action_menu_link(action_message(:duplicate), duplicate_investment_path(investment, return_to:))
-          action_menu_destroy_link(investment)
+          action_menu_destroy_link(investment) if investment.can_be_destroyed?
         end
       end
     end

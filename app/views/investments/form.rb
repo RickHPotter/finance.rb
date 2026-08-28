@@ -145,17 +145,19 @@ class Views::Investments::Form < Views::Base
                   action_message(:duplicate)
                 end
 
-                LinkWithConfirmation(
-                  id: investment.id,
-                  text: action_message(:destroy),
-                  link_params: {
-                    href: investment_path(investment, return_to:),
-                    id: "delete_investment_#{investment.id}",
-                    variant: :outline,
-                    class: "min-w-64 #{destroy_button_class}",
-                    data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
-                  }
-                )
+                if investment.can_be_destroyed?
+                  LinkWithConfirmation(
+                    id: investment.id,
+                    text: action_message(:destroy),
+                    link_params: {
+                      href: investment_path(investment, return_to:),
+                      id: "delete_investment_#{investment.id}",
+                      variant: :outline,
+                      class: "min-w-64 #{destroy_button_class}",
+                      data: { turbo_method: :delete, turbo_frame: "_top", turbo_action: "replace" }
+                    }
+                  )
+                end
               end
             end
           end
