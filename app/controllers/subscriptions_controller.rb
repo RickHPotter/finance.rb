@@ -111,6 +111,7 @@ class SubscriptionsController < ApplicationController
     @index_context = {
       current_user:,
       search_term: search_subscription_params[:search_term],
+      id: Array(subscription_filter_params[:id]).compact_blank,
       category_id: Array(subscription_filter_params[:category_id]).compact_blank,
       entity_id: Array(subscription_filter_params[:entity_id]).compact_blank,
       status: Array(subscription_filter_params[:status]).compact_blank
@@ -121,6 +122,7 @@ class SubscriptionsController < ApplicationController
     build_index_context if @index_context.blank?
 
     scope = current_context.subscriptions.includes(:categories, :entities).left_outer_joins(:categories, :entities)
+    scope = scope.where(id: @index_context[:id]) if @index_context[:id].present?
     scope = scope.where(status: @index_context[:status]) if @index_context[:status].present?
     scope = scope.where(categories: { id: @index_context[:category_id] }) if @index_context[:category_id].present?
     scope = scope.where(entities: { id: @index_context[:entity_id] }) if @index_context[:entity_id].present?
@@ -187,6 +189,6 @@ class SubscriptionsController < ApplicationController
   def subscription_filter_params
     return {} if params[:subscription].blank?
 
-    params.require(:subscription).permit(category_id: [], entity_id: [], status: [])
+    params.require(:subscription).permit(id: [], category_id: [], entity_id: [], status: [])
   end
 end

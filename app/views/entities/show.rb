@@ -49,7 +49,6 @@ class Views::Entities::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_action(I18n.t("dashboards.actions.view_cash_transactions"), cash_transactions_index_path, variant: :outline) if scoped_cash_transactions.exists?
         dashboard_action(I18n.t("dashboards.actions.view_card_transactions"), card_transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_entity_path(entity, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
         merge_action
         destroy_action
       end

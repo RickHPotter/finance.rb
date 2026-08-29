@@ -48,7 +48,6 @@ class Views::UserBankAccounts::Show < Views::Base # rubocop:disable Metrics/Clas
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserBankAccount", item_id: user_bank_account.id), variant: :outline)
         dashboard_action(I18n.t("dashboards.actions.view_transactions"), transactions_index_path, variant: :outline) if account_cash_transactions.exists?
         dashboard_action(action_message(:edit), edit_user_bank_account_path(user_bank_account, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end

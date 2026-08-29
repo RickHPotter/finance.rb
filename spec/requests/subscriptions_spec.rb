@@ -183,11 +183,13 @@ RSpec.describe "Subscriptions", type: :request do
       cash_updated_at = open_cash.reload.updated_at
       card_updated_at = paid_card.reload.updated_at
       audit_count = AuditVersion.count
+      message_count = Message.count
 
       get subscription_path(subscription)
 
       expect(response).to have_http_status(:success)
       expect(AuditVersion.count).to eq(audit_count)
+      expect(Message.count).to eq(message_count)
       expect(subscription.reload.updated_at).to eq(subscription_updated_at)
       expect(open_cash.reload.updated_at).to eq(cash_updated_at)
       expect(paid_card.reload.updated_at).to eq(card_updated_at)
@@ -211,6 +213,24 @@ RSpec.describe "Subscriptions", type: :request do
         record_audit_versions_path(item_type: "Subscription", item_id: subscription.id)
       )
       expect(response.body).not_to include("delete_subscription_#{subscription.id}")
+    end
+
+    it "limits the dashboard collection action to the exact subscription" do
+      subscription = create(:subscription, user:, context: user.main_context, description: "Exact dashboard subscription")
+      unrelated = create(:subscription, user:, context: user.main_context, description: "Unrelated dashboard subscription")
+
+      get subscription_path(subscription)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      collection_link = document.css("a").find { |link| link.text == I18n.t("dashboards.actions.view_in_list") }
+      expected_path = subscriptions_path(subscription: { id: [ subscription.id ] }, return_to: subscription_path(subscription))
+      expect(collection_link["href"]).to eq(expected_path)
+
+      get collection_link["href"]
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(subscription.description)
+      expect(response.body).not_to include(unrelated.description)
     end
 
     it "renders useful empty states and guarded destroy for an empty subscription" do

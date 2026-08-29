@@ -102,10 +102,12 @@ RSpec.describe "Investments", type: :request do
         year: 2026
       )
       projection = investment.cash_transaction
+      message_count = Message.count
 
       get investment_path(investment)
 
       expect(response).to have_http_status(:success)
+      expect(Message.count).to eq(message_count)
       expect(response.body).to include("Treasury contribution")
       expect(response.body).to include(I18n.t("dashboards.investments.kind.ordinary"))
       expect(response.body).not_to include(I18n.t("dashboards.investments.kind.valuation"))
@@ -125,6 +127,39 @@ RSpec.describe "Investments", type: :request do
         duplicate_investment_path(investment, return_to: investments_path)
       )
       expect(document.at_css("#delete_investment_#{investment.id}")).to be_present
+    end
+
+    it "renders the generated relationship and exact collection action on mobile without sending messages" do
+      investment = create(
+        :investment,
+        user:,
+        context: user.main_context,
+        user_bank_account:,
+        investment_type:,
+        description: "Mobile treasury contribution",
+        date: Time.zone.local(2026, 8, 14),
+        month: 8,
+        year: 2026
+      )
+      projection = investment.cash_transaction
+      message_count = Message.count
+
+      get investment_path(investment), headers: { "HTTP_USER_AGENT" => "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" }
+
+      document = Nokogiri::HTML.fragment(response.body)
+      hrefs = document.css("a").map { |link| link["href"] }
+      expect(response).to have_http_status(:success)
+      expect(document.text).to include(investment.description, projection.description)
+      expect(hrefs).to include(
+        cash_transaction_path(projection, return_to: investment_path(investment)),
+        investments_path(
+          default_year: 2026,
+          active_month_years: [ 202_608 ].to_json,
+          investment: { id: [ investment.id ] },
+          return_to: investment_path(investment)
+        )
+      )
+      expect(Message.count).to eq(message_count)
     end
 
     it "renders an explicit unavailable state without recreating a missing projection" do

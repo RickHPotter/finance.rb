@@ -67,6 +67,24 @@ RSpec.describe "Category and entity navigation", type: :request do
     end
   end
 
+  it "preserves filtered return paths through edit without rendering redundant list actions" do
+    category = create(:category, :random, user:)
+    entity = create(:entity, :random, user:)
+    category_return = categories_path(search_term: category.category_name)
+    entity_return = entities_path(search_term: entity.entity_name)
+
+    {
+      category_path(category, return_to: category_return) => [ category_return, edit_category_path(category, return_to: category_return) ],
+      entity_path(entity, return_to: entity_return) => [ entity_return, edit_entity_path(entity, return_to: entity_return) ]
+    }.each do |show_path, (return_path, edit_path)|
+      get show_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      expect(document.at_css(%[a[href="#{return_path}"]])).to be_nil
+      expect(document.at_css(%[a[href="#{edit_path}"]])).to be_present
+    end
+  end
+
   it "redirects successful active creates to refreshable seeded card transaction URLs" do
     post categories_path, params: {
       category: {

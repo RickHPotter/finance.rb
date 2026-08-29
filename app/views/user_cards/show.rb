@@ -50,7 +50,6 @@ class Views::UserCards::Show < Views::Base # rubocop:disable Metrics/ClassLength
         dashboard_action(I18n.t("audit.actions.history"), record_audit_versions_path(item_type: "UserCard", item_id: user_card.id), variant: :outline)
         dashboard_action(I18n.t("dashboards.actions.view_transactions"), transactions_index_path, variant: :outline) if scoped_card_transactions.exists?
         dashboard_action(action_message(:edit), edit_user_card_path(user_card, return_to:), variant: :edit)
-        dashboard_action(action_message(:index), return_to, variant: :outline)
         destroy_action
       end
     end
