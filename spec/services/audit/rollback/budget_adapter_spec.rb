@@ -76,11 +76,12 @@ RSpec.describe Audit::Rollback::Adapters::Budget do
     expect(restored.budget_entities.sole).to have_attributes(id: original_ids[:entity], entity_id: entity.id)
   end
 
-  it "restores an allocation replacement when the Budget itself has no material version" do
+  it "restores an allocation replacement and its regenerated Budget description" do
     original_category = category
     replacement_category = create(:category, :random, user:)
     budget = PaperTrail.request(enabled: false) { create_budget }
     original_allocation_id = budget.budget_categories.sole.id
+    original_description = budget.description
     operation = nil
 
     Audit::Operation.run(actor: user, context:, source: :web) do
@@ -93,11 +94,14 @@ RSpec.describe Audit::Rollback::Adapters::Budget do
       operation = Audit::Operation.ensure_persisted!
     end
 
+    expect(budget.description).not_to eq(original_description)
+
     preview, result = apply(operation)
 
-    expect(operation.audit_versions.pluck(:item_type).uniq).to eq([ "BudgetCategory" ])
+    expect(operation.audit_versions.pluck(:item_type).uniq).to contain_exactly("Budget", "BudgetCategory")
     expect(preview).to have_attributes(state: "previewable")
     expect(result).to have_attributes(status: "applied")
-    expect(budget.reload.budget_categories.sole).to have_attributes(id: original_allocation_id, category_id: original_category.id)
+    expect(budget.reload).to have_attributes(description: original_description)
+    expect(budget.budget_categories.sole).to have_attributes(id: original_allocation_id, category_id: original_category.id)
   end
 end

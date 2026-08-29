@@ -9,7 +9,7 @@ class Budget < ApplicationRecord
   audits_financial_changes skip: %i[balance order_id remaining_value]
 
   # @security (i.e. attr_accessible) ..........................................
-  attr_accessor :recalculate_balance, :duplicate
+  attr_accessor :recalculate_balance, :duplicate, :skip_description_refresh
 
   # @relationships ............................................................
   belongs_to :user
@@ -135,6 +135,7 @@ class Budget < ApplicationRecord
   private
 
   def description_dependencies_changed?
+    return false if skip_description_refresh
     return false unless persisted?
 
     will_save_change_to_inclusive? || allocation_collection_changed?(budget_categories, :category_id) ||
