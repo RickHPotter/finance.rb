@@ -64,6 +64,7 @@ class AllocationMutations::CategoryMutator
   def prepare_owner_recalculation
     owner.original_categories = plan.category_ids_before if owner.respond_to?(:original_categories=)
     if owner.is_a?(Budget)
+      owner.refresh_description_from_allocations
       owner.recalculate_balance = false
     else
       owner.skip_allocation_impact_recalculation = true

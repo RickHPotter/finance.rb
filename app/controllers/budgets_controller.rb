@@ -220,6 +220,7 @@ class BudgetsController < ApplicationController
 
   def recalculate_selected_budget_balances
     selected_budgets.find_each do |budget|
+      budget.refresh_description_from_allocations if params[:bulk_action].in?(%w[make_inclusive make_exclusive])
       budget.set_remaining_value
       budget.save!
     end

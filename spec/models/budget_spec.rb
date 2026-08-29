@@ -75,6 +75,37 @@ RSpec.describe Budget, type: :model do
       expect(budget).to be_valid
     end
 
+    it "regenerates its description when exclusivity or allocations change" do
+      user = create(:user, :random)
+      first_category = create(:category, :random, user:, category_name: "FOOD")
+      second_category = create(:category, :random, user:, category_name: "HEALTH")
+      first_entity = create(:entity, :random, user:, entity_name: "ANA")
+      second_entity = create(:entity, :random, user:, entity_name: "BRUNO")
+      budget = create(
+        :budget,
+        user:,
+        context: user.main_context,
+        description: "Stale description",
+        inclusive: false,
+        budget_categories: [ build(:budget_category, category: first_category) ],
+        budget_entities: [ build(:budget_entity, entity: first_entity) ]
+      )
+
+      budget.update!(inclusive: true)
+      expect(budget.description).to eq("[ FOOD ] && ( ANA )")
+
+      category_allocation = budget.budget_categories.first
+      budget.update!(budget_categories_attributes: [ { id: category_allocation.id, category_id: second_category.id } ])
+      expect(budget.description).to eq("[ HEALTH ] && ( ANA )")
+
+      budget.update!(budget_entities_attributes: [ { entity_id: second_entity.id } ])
+      expect(budget.description).to eq("[ HEALTH ] && ( ANA | BRUNO )")
+
+      first_entity_allocation = budget.budget_entities.find_by!(entity_id: first_entity.id)
+      budget.update!(budget_entities_attributes: [ { id: first_entity_allocation.id, _destroy: "1" } ])
+      expect(budget.description).to eq("[ HEALTH ] && ( BRUNO )")
+    end
+
     it "recalculates balances from the previous month when moving a budget forward" do
       budget = create(:budget, month: 8, year: 2026)
       recalculator = instance_double(Logic::RecalculateBalancesService, call: true)
