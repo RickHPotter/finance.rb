@@ -79,6 +79,23 @@ RSpec.describe "Cash transaction Turbo navigation", type: :feature do
     browser_forward_to(cash_transactions_path)
   end
 
+  it "keeps the pending filter when another cash search filter changes" do
+    create_search_transaction(description: "FILTER STATE PENDING", paid: false)
+    create_search_transaction(description: "FILTER STATE PAID", paid: true)
+
+    visit cash_transactions_path(search_term: "FILTER")
+    find("#advanced_filter").click
+    find("button[data-paid-state-value='pending']").click
+    expect(page).to have_text("FILTER STATE PENDING")
+    expect(page).to have_no_text("FILTER STATE PAID")
+
+    fill_in "search_term", with: "FILTER STATE"
+
+    expect(page).to have_field("cash_transactions_paid_state", with: "pending", type: :hidden)
+    expect(page).to have_text("FILTER STATE PENDING")
+    expect(page).to have_no_text("FILTER STATE PAID")
+  end
+
   def seeded_new_path(description:)
     new_cash_transaction_path(
       return_to: cash_transactions_path,
@@ -102,6 +119,29 @@ RSpec.describe "Cash transaction Turbo navigation", type: :feature do
           }
         }
       }
+    )
+  end
+
+  def create_search_transaction(description:, paid:)
+    create(
+      :cash_transaction,
+      user:,
+      context: user.main_context,
+      user_bank_account: bank_account,
+      description:,
+      date: Time.zone.now,
+      month: Time.zone.now.month,
+      year: Time.zone.now.year,
+      cash_installments: [
+        build(
+          :cash_installment,
+          date: Time.zone.now,
+          month: Time.zone.now.month,
+          year: Time.zone.now.year,
+          number: 1,
+          paid:
+        )
+      ]
     )
   end
 end

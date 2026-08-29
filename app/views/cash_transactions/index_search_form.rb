@@ -66,16 +66,19 @@ class Views::CashTransactions::IndexSearchForm < Views::Base
               id: :search_form,
               method: :get,
               class: "w-full",
-              data: { controller: "reactive-form price-mask", action: "submit->price-mask#removeMasks" } do |form|
+              data: {
+                controller: "reactive-form price-mask",
+                action: "submit->reactive-form#syncPaidStateFromActiveButton submit->price-mask#removeMasks"
+              } do |form|
       build_month_year_selector
 
       form.text_field :user_bank_account_id, value: params[:user_bank_account_id] || user_bank_account_id, class: :hidden
       exact_scope_inputs("cash_transaction", id:, subscription_id:)
       input type: "hidden", name: "return_to", value: return_to if return_to.present?
       input type: "hidden", name: :attach_to_subscription_id, value: attach_to_subscription_id if attach_to_subscription_id.present?
-      input type: "hidden", name: :paid_state, value: paid_state || "all", id: "cash_transactions_paid_state"
-      input type: "hidden", name: :paid, value: paid, id: "cash_transactions_paid"
-      input type: "hidden", name: :pending, value: pending, id: "cash_transactions_pending"
+      input type: "hidden", name: "paid_state", value: paid_state || "all", id: "cash_transactions_paid_state"
+      input type: "hidden", name: "paid", value: paid, id: "cash_transactions_paid"
+      input type: "hidden", name: "pending", value: pending, id: "cash_transactions_pending"
       input type: "hidden", name: :sort, value: sort, id: "cash_transactions_sort"
       input type: "hidden", name: :direction, value: direction, id: "cash_transactions_direction"
 

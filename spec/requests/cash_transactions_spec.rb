@@ -380,6 +380,11 @@ RSpec.describe "CashTransactions", type: :request do
       expect(response.body).to include("paid_state=pending")
 
       document = Nokogiri::HTML.fragment(response.body)
+      expect(document.at_css("form#search_form")["data-action"]).to include("submit->reactive-form#syncPaidStateFromActiveButton")
+      expect(document.at_css("#cash_transactions_paid_state")["name"]).to eq("paid_state")
+      expect(document.at_css("#cash_transactions_paid")["name"]).to eq("paid")
+      expect(document.at_css("#cash_transactions_pending")["name"]).to eq("pending")
+
       chips = document.css("a[aria-label^=\"#{I18n.t('filters.summary.clear')}\"]")
       paid_state_chip = chips.find do |chip|
         chip.text.include?(I18n.t("filters.summary.items.paid_state", value: I18n.t("filters.paid_state.pending")))
