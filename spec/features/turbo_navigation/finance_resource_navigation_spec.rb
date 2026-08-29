@@ -67,30 +67,6 @@ RSpec.describe "Finance resource Turbo navigation", type: :feature do
     )
   end
 
-  it "returns an investment row edit from its exact dashboard collection to the dashboard" do
-    investment = create(:investment, user:, context: user.main_context, user_bank_account: bank_account, investment_type:)
-
-    exercise_dashboard_collection_edit(
-      show_path: investment_path(investment),
-      row_edit_selector: "#edit_investment_#{investment.id}",
-      field_id: "investment_description",
-      value: "Dashboard investment update",
-      record: investment
-    )
-  end
-
-  it "returns a subscription row edit from its exact dashboard collection to the dashboard" do
-    subscription = create(:subscription, user:, context: user.main_context, status: :active)
-
-    exercise_dashboard_collection_edit(
-      show_path: subscription_path(subscription),
-      row_edit_selector: "#edit_subscription_#{subscription.id}",
-      field_id: "subscription_description",
-      value: "Dashboard subscription update",
-      record: subscription
-    )
-  end
-
   def exercise_edit_navigation(index_path:, edit_path:, field_id:, value:, record:)
     visit index_path
     page.execute_script("Turbo.visit(arguments[0])", edit_path)
@@ -109,20 +85,5 @@ RSpec.describe "Finance resource Turbo navigation", type: :feature do
 
   def canonical_return(navigation_class, raw, fallback)
     navigation_class.new(raw:, fallback:, current_user: user, current_context: user.main_context).destination
-  end
-
-  def exercise_dashboard_collection_edit(show_path:, row_edit_selector:, field_id:, value:, record:)
-    visit show_path
-    find("a", text: I18n.t("dashboards.actions.view_in_list"), exact_text: true).click
-    expect(page).to have_css(row_edit_selector)
-
-    find(row_edit_selector).click
-    replace_field field_id, with: value
-    expect_workflow_finishing_submitter("form button[type='submit']")
-    find("form button[type='submit'][data-turbo-frame='_top'][data-turbo-action='replace']", match: :first).click
-
-    expect_browser_path(show_path)
-    expect(page).to have_content(value)
-    expect(record.reload.description).to eq(value)
   end
 end

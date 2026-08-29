@@ -129,7 +129,7 @@ RSpec.describe "Investments", type: :request do
       expect(document.at_css("#delete_investment_#{investment.id}")).to be_present
     end
 
-    it "renders the generated relationship and exact collection action on mobile without sending messages" do
+    it "renders the generated relationship on mobile without a redundant collection action or sending messages" do
       investment = create(
         :investment,
         user:,
@@ -150,15 +150,8 @@ RSpec.describe "Investments", type: :request do
       hrefs = document.css("a").map { |link| link["href"] }
       expect(response).to have_http_status(:success)
       expect(document.text).to include(investment.description, projection.description)
-      expect(hrefs).to include(
-        cash_transaction_path(projection, return_to: investment_path(investment)),
-        investments_path(
-          default_year: 2026,
-          active_month_years: [ 202_608 ].to_json,
-          investment: { id: [ investment.id ] },
-          return_to: investment_path(investment)
-        )
-      )
+      expect(hrefs).to include(cash_transaction_path(projection, return_to: investment_path(investment)))
+      expect(document.text).not_to include(I18n.t("dashboards.actions.view_in_list"))
       expect(Message.count).to eq(message_count)
     end
 

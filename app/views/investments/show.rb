@@ -42,7 +42,6 @@ class Views::Investments::Show < Views::Base # rubocop:disable Metrics/ClassLeng
 
       div(class: "grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), audit_path, variant: :outline)
-        dashboard_action(I18n.t("dashboards.actions.view_in_list"), investment_index_path, variant: :outline)
         dashboard_action(relationship_collection_label, relationship_collection_path, variant: :outline) if relationship_collection_path.present?
         dashboard_action(related_transaction_label, related_transaction_path, variant: :outline) if related_transaction_path.present?
         dashboard_action(action_message(:edit), edit_investment_path(investment, return_to:), variant: :edit)
@@ -226,15 +225,6 @@ class Views::Investments::Show < Views::Base # rubocop:disable Metrics/ClassLeng
 
   def audit_path
     record_audit_versions_path(item_type: "Investment", item_id: investment.id)
-  end
-
-  def investment_index_path
-    investments_path(
-      default_year: investment.year,
-      active_month_years: [ reference_month ].to_json,
-      investment: { id: [ investment.id ] },
-      return_to: investment_path(investment)
-    )
   end
 
   def aggregation_path

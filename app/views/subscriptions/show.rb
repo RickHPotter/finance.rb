@@ -42,12 +42,8 @@ class Views::Subscriptions::Show < Views::Base
 
       div(class: "grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end") do
         dashboard_action(I18n.t("audit.actions.history"), audit_path, variant: :outline)
-        dashboard_action(I18n.t("dashboards.actions.view_in_list"), subscription_index_path, variant: :outline)
         dashboard_action(action_message(:edit), edit_subscription_path(subscription, return_to:), variant: :edit)
         render Views::Subscriptions::LifecycleActions.new(subscription:)
-        dashboard_action(I18n.t("dashboards.subscriptions.actions.add_transaction"), add_transaction_path, variant: :primary)
-        dashboard_action(I18n.t("dashboards.subscriptions.actions.attach_cash"), attach_cash_path, variant: :outline)
-        dashboard_action(I18n.t("dashboards.subscriptions.actions.attach_card"), attach_card_path, variant: :outline)
         destroy_action if subscription.can_be_destroyed?
       end
     end
@@ -260,26 +256,12 @@ class Views::Subscriptions::Show < Views::Base
 
   def audit_path = record_audit_versions_path(item_type: "Subscription", item_id: subscription.id)
 
-  def subscription_index_path
-    subscriptions_path(subscription: { id: [ subscription.id ] }, return_to: subscription_path(subscription))
-  end
-
-  def add_transaction_path = edit_subscription_path(subscription, return_to:, anchor: "subscription_transactions")
-
   def cash_index_path
     cash_transactions_path(all_month_years: "1", cash_transaction: { subscription_id: [ subscription.id ] }, return_to: subscription_path(subscription))
   end
 
   def card_index_path
     card_transactions_path(all_month_years: "1", card_transaction: { subscription_id: [ subscription.id ] }, return_to: subscription_path(subscription))
-  end
-
-  def attach_cash_path
-    cash_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
-  end
-
-  def attach_card_path
-    card_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
   end
 
   def money(value) = from_cent_based_to_float(value, "R$")
@@ -330,7 +312,6 @@ class Views::Subscriptions::Show < Views::Base
     return default if variant == :outline
 
     case variant
-    when :primary then "border-emerald-500 bg-emerald-100 text-emerald-900 hover:bg-emerald-500 hover:text-white dark:bg-emerald-950 dark:text-emerald-200"
     when :edit then "border-sky-500 bg-sky-100 text-sky-900 hover:bg-sky-500 hover:text-white dark:bg-sky-950 dark:text-sky-200"
     when :destroy then "border-red-500 bg-red-100 text-red-900 hover:bg-red-500 hover:text-white dark:bg-red-950 dark:text-red-200"
     else default

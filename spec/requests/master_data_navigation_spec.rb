@@ -32,6 +32,21 @@ RSpec.describe "Category and entity navigation", type: :request do
     end
   end
 
+  it "does not render merge actions or preview frames in category and entity indexes" do
+    category = create(:category, :random, user:, built_in: false)
+    entity = create(:entity, :random, user:, built_in: false, entity_user: nil)
+
+    {
+      categories_path => [ "#merge_category_#{category.id}", "#category_merge_preview_#{category.id}" ],
+      entities_path => [ "#merge_entity_#{entity.id}", "#entity_merge_preview_#{entity.id}" ]
+    }.each do |index_path, selectors|
+      get index_path
+
+      document = Nokogiri::HTML.parse(response.body)
+      selectors.each { |selector| expect(document.at_css(selector)).to be_nil }
+    end
+  end
+
   it "canonicalizes obsolete stream-format entry URLs" do
     category = create(:category, :random, user:)
     entity = create(:entity, :random, user:)

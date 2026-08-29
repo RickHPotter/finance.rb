@@ -215,22 +215,18 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).not_to include("delete_subscription_#{subscription.id}")
     end
 
-    it "limits the dashboard collection action to the exact subscription" do
-      subscription = create(:subscription, user:, context: user.main_context, description: "Exact dashboard subscription")
-      unrelated = create(:subscription, user:, context: user.main_context, description: "Unrelated dashboard subscription")
+    it "does not render redundant collection or transaction attachment actions" do
+      subscription = create(:subscription, user:, context: user.main_context)
 
       get subscription_path(subscription)
 
-      document = Nokogiri::HTML.fragment(response.body)
-      collection_link = document.css("a").find { |link| link.text == I18n.t("dashboards.actions.view_in_list") }
-      expected_path = subscriptions_path(subscription: { id: [ subscription.id ] }, return_to: subscription_path(subscription))
-      expect(collection_link["href"]).to eq(expected_path)
-
-      get collection_link["href"]
-
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(subscription.description)
-      expect(response.body).not_to include(unrelated.description)
+      expect(Nokogiri::HTML.fragment(response.body).text).not_to include(
+        I18n.t("dashboards.actions.view_in_list"),
+        I18n.t("dashboards.subscriptions.actions.add_transaction"),
+        I18n.t("dashboards.subscriptions.actions.attach_cash"),
+        I18n.t("dashboards.subscriptions.actions.attach_card")
+      )
     end
 
     it "renders useful empty states and guarded destroy for an empty subscription" do
@@ -373,7 +369,7 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).to include(subscription_path(subscription, return_to: card_transaction_path(card_transaction)))
     end
 
-    it "opens exact eligible unowned cash and card attachment collections with the destination preselected" do
+    it "keeps exact eligible unowned cash and card attachment collections available without dashboard shortcuts" do
       subscription = create(:subscription, user:, context: user.main_context, description: "Target subscription")
       other_subscription = create(:subscription, user:, context: user.main_context)
       available_cash = create(:cash_transaction, user:, context: user.main_context, user_bank_account:, description: "Available cash", date: Time.zone.today)
@@ -402,17 +398,7 @@ RSpec.describe "Subscriptions", type: :request do
       expect(user.main_context.cash_transactions.subscription_candidates).to include(available_cash)
       expect(user.main_context.card_transactions.subscription_candidates).to include(available_card)
 
-      get subscription_path(subscription)
-      document = Nokogiri::HTML.fragment(response.body)
-      cash_attach_link = document.css("a").find { |link| link.text == I18n.t("dashboards.subscriptions.actions.attach_cash") }
-      card_attach_link = document.css("a").find { |link| link.text == I18n.t("dashboards.subscriptions.actions.attach_card") }
-
-      expect(cash_attach_link["href"]).to eq(
-        cash_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
-      )
-      expect(card_attach_link["href"]).to eq(
-        card_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
-      )
+      cash_attach_path = cash_transactions_path(all_month_years: "1", attach_to_subscription_id: subscription.id, return_to: subscription_path(subscription))
 
       get month_year_cash_transactions_path,
           params: {
@@ -430,7 +416,7 @@ RSpec.describe "Subscriptions", type: :request do
       expect(response.body).to include(available_card.description)
       expect(response.body).not_to include(owned_card.description)
 
-      get cash_attach_link["href"]
+      get cash_attach_path
       selected_option = Nokogiri::HTML.fragment(response.body).at_css("select[name='subscription_id'] option[selected]")
       expect(selected_option["value"]).to eq(subscription.id.to_s)
     end
