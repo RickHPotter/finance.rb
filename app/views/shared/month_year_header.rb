@@ -18,7 +18,7 @@ class Views::Shared::MonthYearHeader < Views::Base
         span(class: label_class) { month_year_str }
 
         span(class: total_class, id: total_id, data: { price: total_amount }) do
-          from_cent_based_to_float(total_amount, "R$")
+          localized_cent_based_currency(total_amount, "R$")
         end
       end
 

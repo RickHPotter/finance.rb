@@ -133,6 +133,16 @@ module TranslateHelper
     [ currency, price ].compact.join(" ")
   end
 
+  def localized_cent_based_currency(price, currency = nil)
+    ActiveSupport::NumberHelper.number_to_currency(
+      price.to_i.fdiv(100),
+      locale: I18n.locale,
+      unit: currency.to_s,
+      format: currency.present? ? "%u %n" : "%n",
+      negative_format: currency.present? ? "%u -%n" : "-%n"
+    )
+  end
+
   # @example
   #   pretty_installments(1, 2)
   #   # => "01/02"

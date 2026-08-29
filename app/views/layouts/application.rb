@@ -81,7 +81,7 @@ class Views::Layouts::Application < Views::Base
                     end
                   end
 
-                  div class: "hidden relative", data: { controller: "price-sum" } do
+                  div class: "hidden relative", data: { controller: "price-sum", price_sum_locale_value: I18n.locale.to_s } do
                     div(
                       class: "absolute -top-8 right-0 p-2 rounded-t-lg bg-yellow-400 shadow-md border border-yellow-600 font-lekton font-bold text-black text-md z-40"
                     ) do

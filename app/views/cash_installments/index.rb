@@ -58,7 +58,7 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
           class: "absolute -top-2 right-0 p-1 rounded-t-lg bg-yellow-400 shadow-sm border border-yellow-600 font-lekton font-bold text-black text-sm z-40 " \
                  "#{'animate-pulse' if should_display_link_to_pay && !failed_zeroed_installment}"
         ) do
-          from_cent_based_to_float(cash_installment.balance, "R$")
+          localized_cent_based_currency(cash_installment.balance, "R$")
         end
       end
 
@@ -98,8 +98,8 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               end
             end
 
-            div(class: price_column_class(cash_installment, cash_transaction), title: from_cent_based_to_float(cash_transaction.price, "R$")) do
-              from_cent_based_to_float(display_price(cash_installment, cash_transaction), "R$")
+            div(class: price_column_class(cash_installment, cash_transaction), title: localized_cent_based_currency(cash_transaction.price, "R$")) do
+              localized_cent_based_currency(display_price(cash_installment, cash_transaction), "R$")
             end
           end
 
@@ -173,13 +173,13 @@ class Views::CashInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         render_desktop_entities(cash_transaction, avatar_name)
 
         div(class: price_column_class(cash_installment, cash_transaction),
-            title: from_cent_based_to_float(cash_transaction.price, "R$")) do
-          from_cent_based_to_float(display_price(cash_installment, cash_transaction), "R$")
+            title: localized_cent_based_currency(cash_transaction.price, "R$")) do
+          localized_cent_based_currency(display_price(cash_installment, cash_transaction), "R$")
         end
 
         div(class: "flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto mr-1") do
           div(class: "p-1 rounded-md shadow-sm border border-black") do
-            from_cent_based_to_float(cash_installment.balance, "R$")
+            localized_cent_based_currency(cash_installment.balance, "R$")
           end
         end
       end

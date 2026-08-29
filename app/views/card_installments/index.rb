@@ -74,8 +74,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
               span(class: "whitespace-nowrap pl-2") { I18n.l(card_installment.date, format: :short) }
             end
 
-            div(class: "whitespace-nowrap", title: from_cent_based_to_float(card_transaction.price, "R$")) do
-              from_cent_based_to_float(card_installment.price, "R$")
+            div(class: "whitespace-nowrap", title: localized_cent_based_currency(card_transaction.price, "R$")) do
+              localized_cent_based_currency(card_installment.price, "R$")
             end
           end
 
@@ -195,8 +195,8 @@ class Views::CardInstallments::Index < Views::Base # rubocop:disable Metrics/Cla
         render_desktop_entities(card_transaction)
 
         div(class: "py-2 flex items-center justify-center font-lekton font-bold whitespace-nowrap ml-auto",
-            title: from_cent_based_to_float(card_transaction.price, "R$")) do
-          from_cent_based_to_float(card_installment.price, "R$")
+            title: localized_cent_based_currency(card_transaction.price, "R$")) do
+          localized_cent_based_currency(card_installment.price, "R$")
         end
 
         div(class: "py-2 flex items-center justify-center") do

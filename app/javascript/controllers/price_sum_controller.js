@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
-import { _applyMask } from "../utils/mask.js"
-
 export default class extends Controller {
+  static values = { locale: String }
+
   connect() {
     this.hide = this.hide.bind(this)
     this.refresh = this.refresh.bind(this)
@@ -56,6 +56,12 @@ export default class extends Controller {
     const totalPriceSpan = document.querySelector("#totalPriceSum")
     if (!totalPriceSpan) { return }
 
-    totalPriceSpan.textContent = _applyMask(price.toString())
+    const locale = this.hasLocaleValue ? this.localeValue : (document.documentElement.lang || "en")
+    const amount = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Math.abs(price) / 100)
+
+    totalPriceSpan.textContent = `R$ ${price < 0 ? "-" : ""}${amount}`
   }
 }

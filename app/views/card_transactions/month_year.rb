@@ -99,7 +99,7 @@ class Views::CardTransactions::MonthYear < Views::Base
             span(class: "py-3 col-span-10 text-end") { "#{model_attribute(CardTransaction, :total_amount)}:" }
 
             span(class: "py-3 col-span-2 text-center", id: :totalAmount, data: { price: total_amount }) do
-              from_cent_based_to_float(total_amount, "R$")
+              localized_cent_based_currency(total_amount, "R$")
             end
           end
         end
